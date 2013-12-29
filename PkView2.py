@@ -1,12 +1,17 @@
 #!/usr/bin/env python
-
 from __future__ import division, unicode_literals, absolute_import, print_function
+
+import matplotlib
+matplotlib.use('Qt4Agg')
+matplotlib.rcParams['backend.qt4'] = 'PySide'
 
 import sys
 from PySide import QtCore, QtGui
 
+
 # my libs
 from libs.ImageView import ImageViewLayout
+from libs.AnalysisWidgets import SECurve, SECurve2
 
 
 class MainWidge1(QtGui.QWidget):
@@ -19,27 +24,48 @@ class MainWidge1(QtGui.QWidget):
 
         #loading ImageView
         self.ivl1 = ImageViewLayout()
+        self.sw1 = SECurve()
+        self.sw2 = SECurve2()
+
+        #Connecting widget signals
+        #1) Plotting data on mouse image click
+        self.ivl1.sig_mouse.connect(self.sw1.sig_mouse)
 
         # InitUI
-        # matplotlib central widget figure
+        #Sliders
         self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
-
         self.update_slider_range()
 
-        hbox = QtGui.QVBoxLayout(self)
-
-        #connect to ivl1
+        #connect sliders to ivl1
         self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
         self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
 
+        self.testbutton = QtGui.QPushButton("Test ok")
+
+        # Tabbed Widget
+        self.qtab1 = QtGui.QTabWidget()
+        self.qtab1.setTabsClosable(True)
+        self.qtab1.addTab(self.sw1, "Voxel analysis")
+        self.qtab1.addTab(self.sw2, "Test 2")
+        #signal
+        self.qtab1.tabCloseRequested.connect(self.on_tab_close)
+
+        #Layout
+        hbox = QtGui.QHBoxLayout()
+        vbox = QtGui.QVBoxLayout()
+
         # connect to ivl1
-        hbox.addWidget(self.ivl1)
-        hbox.addWidget(self.sld1)
-        #hbox.addWidget(self.ivl1.win2)
-        hbox.addWidget(self.sld2)
+        vbox.addWidget(self.ivl1)
+        vbox.addWidget(self.sld1)
+        vbox.addWidget(self.sld2)
+
+        # horizontal widgets
+        hbox.addLayout(vbox)
+        hbox.addWidget(self.qtab1)
+        self.setLayout(hbox)
 
     # update slider range
     def update_slider_range(self):
@@ -51,6 +77,10 @@ class MainWidge1(QtGui.QWidget):
         self.ivl1.mouse_click_connect(event)
         self.sld1.setValue(self.ivl1.cim_pos[2])
         self.sld2.setValue(self.ivl1.cim_pos[1])
+
+    def on_tab_close(self, value):
+        print("closing tab...(well testing it anyway) ", value)
+        self.qtab1.removeTab(value)
 
 
 class MainWin1(QtGui.QMainWindow):
@@ -89,13 +119,13 @@ class MainWin1(QtGui.QMainWindow):
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         overlayMenu = menubar.addMenu('&Overlay')
+        widgetmenu = menubar.addMenu('&Widgets')
 
         file_menu.addAction(load_action)
         file_menu.addAction(exit_action)
 
         self.toolbar = self.addToolBar('Load Image')
         self.toolbar.addAction(load_action)
-
 
     def show_dialog(self):
         """
