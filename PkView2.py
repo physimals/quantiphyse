@@ -14,7 +14,8 @@ from libs.ImageView import ImageViewLayout
 from libs.AnalysisWidgets import SECurve, SECurve2
 
 #TODO Need some sort of volume management object...
-#TODO Need map overlay function
+#TODO roi overlay option
+#TODO mouse scroll wheel (not urgent)
 
 
 class MainWidge1(QtGui.QWidget):

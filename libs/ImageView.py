@@ -52,11 +52,16 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         self.img_dims = self.img.shape
         self.cim_pos = [0, 0, 0, 0]
 
-        ##initialise layout
+        ##initialise layout (3 view boxes each containing an image item)
+        self.addLabel('Axial')
+        self.addLabel('Sagittal')
+        self.nextRow()
         self.view1 = self.addViewBox(name="view1")
         self.view1.setAspectLocked(True)
         self.imgwin1 = pg.ImageItem(border='k')
+        self.imgwin1b = pg.ImageItem(border='k')
         self.view1.addItem(self.imgwin1)
+        self.view1.addItem(self.imgwin1b)
         self.view2 = self.addViewBox(name="view2")
         self.view2.setAspectLocked(True)
         self.imgwin2 = pg.ImageItem(border='k')
@@ -64,12 +69,14 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
 
         #set a new row in the graphics layout widget
         self.nextRow()
-
+        self.addLabel('Coronal')
+        self.nextRow()
         self.view3 = self.addViewBox(name="view3")
         self.view3.setAspectLocked(True)
         self.imgwin3 = pg.ImageItem(border='k')
         self.view3.addItem(self.imgwin3)
 
+        #Cross hairs added to each viewbox
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
         self.hline1 = pg.InfiniteLine(angle=0, movable=False)
         self.vline1.setVisible(False)
@@ -174,6 +181,23 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
             self.imgwin1.setImage(self.img[:, :, self.cim_pos[2]])
             self.imgwin2.setImage(self.img[:, self.cim_pos[1], :])
             self.imgwin3.setImage(self.img[self.cim_pos[0], :, :])
+
+            ################ testing
+            print("Testing colormap, LUT and alpha ROIs")
+
+            pos = np.array([-1.0, 0.0, 0.5, 1.0])
+            color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
+            map1 = pg.ColorMap(pos, color)
+            lut = map1.getLookupTable(-1.0, 1.0, 256)
+            img_test = self.img[:, self.cim_pos[1], :]
+            img_test = img_test - img_test.min()
+            img_test = img_test / img_test.max()
+            print(img_test.max())
+            print(img_test.min())
+            print(img_test.mean())
+            img_test[img_test < 0.5] = -1
+            self.imgwin1b.setImage(img_test, lut=lut)
+            #################
 
         elif len(self.img_dims) == 4:
 
