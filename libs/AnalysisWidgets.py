@@ -5,6 +5,7 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import numpy as np
 
+#TODO create an non model based analysis tool which ties into creating new image objects
 
 class SECurve(QtGui.QWidget):
     """

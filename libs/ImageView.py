@@ -24,16 +24,19 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
     This defines the 3D image interaction with the cross hairs,
     provides slots to connect sliders and controls 3D image view updates
 
+    Adding 4D view
+
     Signals:
             self.sig_mouse
     """
+    #TODO handle 4D images in a sensible way
+
     # Signals (moving out of init means that the signal is shared by
     # each instance. Just how Qt appears to be set up)
     sig_mouse = QtCore.Signal(np.ndarray)
 
     def __init__(self):
         super(ImageViewLayout, self).__init__()
-
 
         ## Initialise parameters
         self.file1 = None
@@ -47,7 +50,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
 
         #Current image position and size
         self.img_dims = self.img.shape
-        self.cim_pos = [0, 0, 0]
+        self.cim_pos = [0, 0, 0, 0]
 
         ##initialise layout
         self.view1 = self.addViewBox(name="view1")
@@ -92,6 +95,25 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
 
     #def mouseMoved(self, pos):
     #    print("Image position:", self.imgwin1.mapFromScene(pos))
+
+    def load_image(self, file1):
+        """
+        Loading nifti image
+
+        self.img: variable storing numpy volume
+        self.img_dims: dimensions of the image
+
+        """
+
+        self.file1 = file1
+        img = nib.load(self.file1)
+        self.img = img.get_data()
+        self.img_dims = self.img.shape
+
+        print(self.img_dims)
+
+        # update view
+        self.__update_view()
 
     def __mouse_pos(self):
         """
@@ -143,31 +165,24 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         self.vline3.setVisible(True)
         self.hline3.setVisible(True)
 
-    def load_image(self, file1):
-        """
-        Loading nifti image
-
-        self.img: variable storing numpy volume
-        self.img_dims: dimensions of the image
-
-        """
-
-        self.file1 = file1
-        img = nib.load(self.file1)
-        self.img = img.get_data()
-        self.img_dims = self.img.shape
-
-        # update view
-        self.__update_view()
-
     def __update_view(self):
         """
         Update the image viewer to account for the new position
         """
 
-        self.imgwin1.setImage(self.img[:, :, self.cim_pos[2]])
-        self.imgwin2.setImage(self.img[:, self.cim_pos[1], :])
-        self.imgwin3.setImage(self.img[self.cim_pos[0], :, :])
+        if len(self.img_dims) == 3:
+            self.imgwin1.setImage(self.img[:, :, self.cim_pos[2]])
+            self.imgwin2.setImage(self.img[:, self.cim_pos[1], :])
+            self.imgwin3.setImage(self.img[self.cim_pos[0], :, :])
+
+        elif len(self.img_dims) == 4:
+
+            self.imgwin1.setImage(self.img[:, :, self.cim_pos[2], self.cim_pos[3]])
+            self.imgwin2.setImage(self.img[:, self.cim_pos[1], :, self.cim_pos[3]])
+            self.imgwin3.setImage(self.img[self.cim_pos[0], :, :, self.cim_pos[3]])
+        else:
+            print("Image does not have 3 or 4 dimensions")
+
         self.__update_crosshairs()
 
     # Slots for sliders and mouse
@@ -186,6 +201,12 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         self.cim_pos[0] = value
         self.__update_view()
 
+    @QtCore.Slot(int)
+    def slider_connect4(self, value):
+        self.cim_pos[3] = value
+        self.__update_view()
+
+    @QtCore.Slot(int)
     def mouse_click_connect(self, value):
         """
         On mouse click:
@@ -197,5 +218,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         self.__update_view()
 
         #Signal emit current enhancement curve
-        vec_sig = self.img[self.cim_pos[0], :, self.cim_pos[2]]
+        if len(self.img_dims) == 3: 
+            print("3D image so just calculating cross image profile")
+            vec_sig = self.img[self.cim_pos[0], :, self.cim_pos[2]]
+        elif len(self.img_dims) == 4:
+            vec_sig = self.img[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+
         self.sig_mouse.emit(vec_sig)
