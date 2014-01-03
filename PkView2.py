@@ -10,12 +10,13 @@ from PySide import QtCore, QtGui
 
 
 # my libs
-from libs.ImageView import ImageViewLayout
+from libs.ImageView import ImageViewLayout, ImageViewOverlay
 from libs.AnalysisWidgets import SECurve, SECurve2
 
 #TODO Need some sort of volume management object...
 #TODO roi overlay option
 #TODO mouse scroll wheel (not urgent)
+#TODO look into cross platform packaging
 
 
 class MainWidge1(QtGui.QWidget):
@@ -27,7 +28,7 @@ class MainWidge1(QtGui.QWidget):
         super(MainWidge1, self).__init__()
 
         #loading ImageView
-        self.ivl1 = ImageViewLayout()
+        self.ivl1 = ImageViewOverlay()
         self.sw1 = SECurve()
         self.sw2 = SECurve2()
 
@@ -55,6 +56,12 @@ class MainWidge1(QtGui.QWidget):
 
         self.testbutton = QtGui.QPushButton("Test ok")
 
+        #CheckBox
+
+        cb1 = QtGui.QCheckBox('Show ROI', self)
+        cb1.toggle()
+        cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
+
         # Tabbed Widget
         self.qtab1 = QtGui.QTabWidget()
         self.qtab1.setTabsClosable(True)
@@ -67,8 +74,7 @@ class MainWidge1(QtGui.QWidget):
         #Layout
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
-      
-        # connect to ivl1
+
         grid.addWidget(self.ivl1, 0, 0, 1, 3)
         grid.addWidget(QtGui.QLabel('Axial'), 1, 0)
         grid.addWidget(self.sld1, 1, 1)
@@ -78,6 +84,8 @@ class MainWidge1(QtGui.QWidget):
         grid.addWidget(self.sld3, 3, 1)
         grid.addWidget(QtGui.QLabel('Time'), 4, 0)
         grid.addWidget(self.sld4, 4, 1)
+        grid.addWidget(cb1, 1, 2)
+
         grid.addWidget(self.qtab1, 0, 3, 5, 1)
         #define the proportion of the space each column takes
         grid.setColumnStretch(1, 3)
@@ -108,18 +116,20 @@ class MainWidge1(QtGui.QWidget):
         self.sld2.setValue(self.ivl1.cim_pos[1])
         self.sld3.setValue(self.ivl1.cim_pos[0])
 
+
     # Handles closing of tabs
     def on_tab_close(self, value):
-        print("closing tab...(well testing it anyway) ", value)
         self.qtab1.removeTab(value)
 
         #TODO delete object if tab closed? Create object if menu item clicked?
 
-    #
+    # Connect widget
     def show_se(self):
         index = self.qtab1.addTab(self.sw1, "Voxel analysis")
         print(index)
         self.qtab1.setCurrentIndex(index)
+
+
 
 
 class MainWin1(QtGui.QMainWindow):
@@ -144,10 +154,15 @@ class MainWin1(QtGui.QMainWindow):
     def menu_ui(self):
 
         #File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon('icons/layers.svg'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon('icons/picture.svg'), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
-        load_action.triggered.connect(self.show_dialog)
+        load_action.triggered.connect(self.show_image_load_dialog)
+
+        #File --> Load ROI
+        load_roi_action = QtGui.QAction(QtGui.QIcon('icons/pencil.svg'), '&Load ROI', self)
+        load_roi_action.setStatusTip('Load binary ROI')
+        load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         #File --> Settings
         #TODO
@@ -174,6 +189,7 @@ class MainWin1(QtGui.QMainWindow):
         help_menu = menubar.addMenu('&Help')
 
         file_menu.addAction(load_action)
+        file_menu.addAction(load_roi_action)
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
@@ -182,20 +198,39 @@ class MainWin1(QtGui.QMainWindow):
 
         self.toolbar = self.addToolBar('Load Image')
         self.toolbar.addAction(load_action)
+        self.toolbar.addAction(load_roi_action)
 
         # extra info displayed in the status bar
         self.statusBar()
 
-    def show_dialog(self):
+    def show_image_load_dialog(self):
         """
         Dialog for loading a file
         """
         fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '/home')
-        self.mw1.ivl1.load_image(fname)
-        self.mw1.update_slider_range()
-        print(fname)
+
+        #check if file is returned
+        if fname != '':
+            self.mw1.ivl1.load_image(fname)
+            self.mw1.update_slider_range()
+        else:
+            print('No file selected')
+
+    def show_roi_load_dialog(self):
+        """
+        Dialog for loading a file
+        """
+        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '/home')
+
+        #check if file is returned
+        if fname != '':
+            self.mw1.ivl1.load_roi(fname)
+        else:
+            print('No file selected')
 
 
+
+#~ Main application
 def main():
     app = QtGui.QApplication(sys.argv)
     ex = MainWin1()

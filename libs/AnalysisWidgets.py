@@ -17,7 +17,7 @@ class SECurve(QtGui.QWidget):
 
         win1 = pg.GraphicsWindow(title="Basic plotting examples")
         p1 = win1.addPlot(title="Signal enhancement curve")
-        self.curve = p1.plot(pen='y')
+        self.curve = p1.plot(pen=(200, 200, 200), symbolBrush=(255, 0, 0), symbolPen='k')
 
         l1 = QtGui.QVBoxLayout()
         self.button1 = QtGui.QPushButton("test OK 2")
