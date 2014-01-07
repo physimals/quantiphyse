@@ -234,6 +234,7 @@ class ImageViewOverlay(ImageViewLayout):
 
     def __init__(self):
         # Updating viewer to include second image layer
+        # TODO Only add the image item if the roi is loaded
         super(ImageViewOverlay, self).__init__()
         self.imgwin1b = pg.ImageItem(border='k')
         self.imgwin2b = pg.ImageItem(border='k')
@@ -291,6 +292,7 @@ class ImageViewOverlay(ImageViewLayout):
             self.imgwin2b.setImage(self.roi[:, self.cim_pos[1], :], lut=self.roilut)
             self.imgwin3b.setImage(self.roi[self.cim_pos[0], :, :], lut=self.roilut)
 
+    #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
     def toggle_roi_view(self, state):
 
@@ -301,22 +303,33 @@ class ImageViewOverlay(ImageViewLayout):
         self._update_view()
 
 
+class ImageViewColorOverlay(ImageViewOverlay):
+    """
+    This class adds the ability to have a 3D color image overlay
+    of the medical image
 
-        '''
-        ################ testing colormaps, LUTs and ROIs
-        print("Testing colormap, LUT and alpha ROIs")
+    Interactions should include:
+    1) Show / hide
+    2) Alpha
+    3) colormap (future)
+    """
+    None
 
-        pos = np.array([-1.0, 0.0, 0.5, 1.0])
-        color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
-        map1 = pg.ColorMap(pos, color)
-        lut = map1.getLookupTable(-1.0, 1.0, 256)
-        img_test = self.img[:, self.cim_pos[1], :]
-        img_test = img_test - img_test.min()
-        img_test = img_test / img_test.max()
-        print(img_test.max())
-        print(img_test.min())
-        print(img_test.mean())
-        img_test[img_test < 0.5] = -1
-        self.imgwin1b.setImage(img_test, lut=lut)
-        #################
-        '''
+    '''
+    ################ testing colormaps, LUTs and ROIs
+    print("Testing colormap, LUT and alpha ROIs")
+
+    pos = np.array([-1.0, 0.0, 0.5, 1.0])
+    color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
+    map1 = pg.ColorMap(pos, color)
+    lut = map1.getLookupTable(-1.0, 1.0, 256)
+    img_test = self.img[:, self.cim_pos[1], :]
+    img_test = img_test - img_test.min()
+    img_test = img_test / img_test.max()
+    print(img_test.max())
+    print(img_test.min())
+    print(img_test.mean())
+    img_test[img_test < 0.5] = -1
+    self.imgwin1b.setImage(img_test, lut=lut)
+    #################
+    '''

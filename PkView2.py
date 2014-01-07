@@ -60,6 +60,7 @@ class MainWidge1(QtGui.QWidget):
 
         cb1 = QtGui.QCheckBox('Show ROI', self)
         cb1.toggle()
+        #cb1.setVisible(False)
         cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
 
         # Tabbed Widget
@@ -67,30 +68,47 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1.setTabsClosable(True)
         self.qtab1.setMovable(True)
         self.qtab1.addTab(self.sw1, "Voxel analysis")
-        self.qtab1.addTab(self.sw2, "Test 2")
+        self.qtab1.addTab(self.sw2, "Color overlay")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
+
+        #Position Label and connect to slider
+        lab_p1 = QtGui.QLabel('0')
+        self.sld1.valueChanged[int].connect(lab_p1.setNum)
+        lab_p2 = QtGui.QLabel('0')
+        self.sld2.valueChanged[int].connect(lab_p2.setNum)
+        lab_p3 = QtGui.QLabel('0')
+        self.sld3.valueChanged[int].connect(lab_p3.setNum)
+        lab_p4 = QtGui.QLabel('0')
+        self.sld4.valueChanged[int].connect(lab_p4.setNum)
 
         #Layout
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
 
-        grid.addWidget(self.ivl1, 0, 0, 1, 3)
+        #Layout positions
+        grid.addWidget(self.ivl1, 0, 0, 1, 4)
         grid.addWidget(QtGui.QLabel('Axial'), 1, 0)
         grid.addWidget(self.sld1, 1, 1)
+        grid.addWidget(lab_p1, 1, 2)
         grid.addWidget(QtGui.QLabel('Sagittal'), 2, 0)
         grid.addWidget(self.sld2, 2, 1)
+        grid.addWidget(lab_p2, 2, 2)
         grid.addWidget(QtGui.QLabel('Coronal'), 3, 0)
         grid.addWidget(self.sld3, 3, 1)
+        grid.addWidget(lab_p3, 3, 2)
         grid.addWidget(QtGui.QLabel('Time'), 4, 0)
         grid.addWidget(self.sld4, 4, 1)
-        grid.addWidget(cb1, 1, 2)
+        grid.addWidget(lab_p4, 4, 2)
 
-        grid.addWidget(self.qtab1, 0, 3, 5, 1)
+        grid.addWidget(cb1, 1, 3)
+
+        grid.addWidget(self.qtab1, 0, 4, 5, 1)
         #define the proportion of the space each column takes
-        grid.setColumnStretch(1, 3)
-        grid.setColumnStretch(2, 3)
-        grid.setColumnStretch(3, 4)
+        grid.setColumnStretch(1, 4)
+        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 1)
+        grid.setColumnStretch(4, 4)
         #grid.setColumnMinimumHeight()
 
         # horizontal widgets

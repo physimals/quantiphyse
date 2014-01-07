@@ -42,14 +42,9 @@ class SECurve2(QtGui.QWidget):
     def __init__(self):
         super(SECurve2, self).__init__()
 
-        win1 = pg.GraphicsWindow(title="Basic plotting examples")
-        p1 = win1.addPlot(title="Test plot")
-        self.curve = p1.plot(pen='y')
-
         l1 = QtGui.QVBoxLayout()
         self.button1 = QtGui.QPushButton("test OK 2")
 
-        l1.addWidget(win1)
         l1.addWidget(self.button1)
         self.setLayout(l1)
 
