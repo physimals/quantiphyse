@@ -47,6 +47,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         #ViewerOptions
         self.options = {}
 
+        #arrows
+        self.pts1 = []
+
         ##initialise layout (3 view boxes each containing an image item)
         self.addLabel('Axial')
         self.addLabel('Sagittal')
@@ -92,9 +95,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
         self.view3.addItem(self.hline3, ignoreBounds=True)
         #self.scene().sigMouseMoved.connect(self.mouseMoved)
         #self.scene().sigMouseReleased.connect()
-
-    #def mouseMoved(self, pos):
-    #    print("Image position:", self.imgwin1.mapFromScene(pos))
 
     def load_image(self, file1):
         """
@@ -226,6 +226,34 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
 
         self.sig_mouse.emit(vec_sig)
 
+        #self.add_arrow_current_pos()
+
+    @QtCore.Slot()
+    def add_arrow_current_pos(self):
+        """
+        Place an arrow at the current position
+        """
+
+        aa = pg.ArrowItem()
+        self.pts1.append(aa)
+        self.pts1[-1].setPos(self.cim_pos[0], self.cim_pos[1])
+        self.view1.addItem(self.pts1[-1])
+
+    @QtCore.Slot()
+    def set_current_arrow(self):
+        #TODO
+        None
+
+    @QtCore.Slot()
+    def remove_all_arrows(self):
+        """
+        Remove all the arrows that have been places
+        """
+        for ii in range(len(self.pts1)):
+            self.view1.removeItem(self.pts1[ii])
+
+        self.pts1 = []
+
 
 class ImageViewOverlay(ImageViewLayout):
     """
@@ -234,14 +262,12 @@ class ImageViewOverlay(ImageViewLayout):
 
     def __init__(self):
         # Updating viewer to include second image layer
-        # TODO Only add the image item if the roi is loaded
         super(ImageViewOverlay, self).__init__()
-        self.imgwin1b = pg.ImageItem(border='k')
-        self.imgwin2b = pg.ImageItem(border='k')
-        self.imgwin3b = pg.ImageItem(border='k')
-        self.view1.addItem(self.imgwin1b)
-        self.view2.addItem(self.imgwin2b)
-        self.view3.addItem(self.imgwin3b)
+
+        # Image windows
+        self.imgwin1b = None
+        self.imgwin2b = None
+        self.imgwin3b = None
 
         # ROI image
         self.roi = None
@@ -267,6 +293,7 @@ class ImageViewOverlay(ImageViewLayout):
             print("Please load an image first")
             return
 
+        #Setting ROI data
         self.roi_file1 = file1
         roi = nib.load(self.roi_file1)
         self.roi = roi.get_data()
@@ -278,10 +305,23 @@ class ImageViewOverlay(ImageViewLayout):
             self.roi = None
             self.roi_dims = None
 
+        if self.imgwin1b is None:
+            # Initialises viewer if it hasn't been initialised before
+            self.imgwin1b = pg.ImageItem(border='k')
+            self.imgwin2b = pg.ImageItem(border='k')
+            self.imgwin3b = pg.ImageItem(border='k')
+            self.view1.addItem(self.imgwin1b)
+            self.view2.addItem(self.imgwin2b)
+            self.view3.addItem(self.imgwin3b)
+
         self._update_view()
 
     def _update_view(self):
         super(ImageViewOverlay, self)._update_view()
+
+        if self.imgwin1b is None:
+            #If an overlay hasn't been added then return
+            return
 
         if (self.roi_dims is None) or (self.options['ShowOverlay'] == 0):
             self.imgwin1b.setImage(np.zeros((1, 1)))
@@ -312,24 +352,102 @@ class ImageViewColorOverlay(ImageViewOverlay):
     1) Show / hide
     2) Alpha
     3) colormap (future)
+
+    Inherits from ImageViewOverlay
+    - this is the image view class that allows a ROI to be set
     """
-    None
 
-    '''
-    ################ testing colormaps, LUTs and ROIs
-    print("Testing colormap, LUT and alpha ROIs")
+    def __init__(self):
+        # Updating viewer to include second image layer
+        super(ImageViewColorOverlay, self).__init__()
 
-    pos = np.array([-1.0, 0.0, 0.5, 1.0])
-    color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
-    map1 = pg.ColorMap(pos, color)
-    lut = map1.getLookupTable(-1.0, 1.0, 256)
-    img_test = self.img[:, self.cim_pos[1], :]
-    img_test = img_test - img_test.min()
-    img_test = img_test / img_test.max()
-    print(img_test.max())
-    print(img_test.min())
-    print(img_test.mean())
-    img_test[img_test < 0.5] = -1
-    self.imgwin1b.setImage(img_test, lut=lut)
-    #################
-    '''
+        # Image windows
+        self.imgwin1c = None
+        self.imgwin2c = None
+        self.imgwin3c = None
+
+        # ROI image
+        self.ovreg = None
+        self.ovreg_dims = None
+        self.ovreg_file1 = None
+
+        # Viewing options as a dictionary
+        self.options['ShowColorOverlay'] = 1
+
+        # Setting up overlay region viewing parameters
+        ovreg_color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
+        ovreg_pos = np.array([-1.0, 0.0, 0.33, 0.66, 1.0])
+        map1 = pg.ColorMap(ovreg_pos, ovreg_color)
+        self.ovreg_lut = map1.getLookupTable(-1.0, 1.0, 1000)
+
+    def load_ovreg(self, file1):
+        """
+        Loads and checks Overlay region image
+        """
+        #TODO Might be cleaner to do this checking in the loading function
+
+        if self.img.shape[0] == 1:
+            print("Please load an image first")
+            return
+
+        #Setting Overlay region data
+        self.ovreg_file1 = file1
+        ovreg = nib.load(self.ovreg_file1)
+        self.ovreg = ovreg.get_data()
+        self.ovreg_dims = self.ovreg.shape
+
+        # Convert to numpy double
+        self.ovreg = np.array(self.ovreg, dtype=np.double)
+
+        #Normalisation
+        self.ovreg = self.ovreg - np.min(self.ovreg)
+        self.ovreg = self.ovreg / np.max(self.ovreg)
+
+        #Set transparent around ROI
+        if self.roi is not None:
+            #TODO remove unneccesary variable creation
+            roi1 = np.logical_not(self.roi)
+            self.ovreg[roi1] = -1.0
+
+        if (self.ovreg_dims != self.img_dims[:3]) or (len(self.ovreg_dims) > 3):
+            print("First 3 Dimensions of the overlay region must be the same as the image, "
+                  "and overlay region must be 3D")
+            self.ovreg = None
+            self.ovreg_dims = None
+
+        if self.imgwin1c is None:
+            # Initialises viewer if it hasn't been initialised before
+            self.imgwin1c = pg.ImageItem(border='k')
+            self.imgwin2c = pg.ImageItem(border='k')
+            self.imgwin3c = pg.ImageItem(border='k')
+            self.view1.addItem(self.imgwin1c)
+            self.view2.addItem(self.imgwin2c)
+            self.view3.addItem(self.imgwin3c)
+
+        self._update_view()
+
+    def _update_view(self):
+        super(ImageViewColorOverlay, self)._update_view()
+
+        if self.imgwin1c is None:
+            #If an overlay hasn't been added then return
+            return
+
+        if (self.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
+            self.imgwin1c.setImage(np.zeros((1, 1)))
+            self.imgwin2c.setImage(np.zeros((1, 1)))
+            self.imgwin3c.setImage(np.zeros((1, 1)))
+        else:
+            self.imgwin1c.setImage(self.ovreg[:, :, self.cim_pos[2]], lut=self.ovreg_lut)
+            self.imgwin2c.setImage(self.ovreg[:, self.cim_pos[1], :], lut=self.ovreg_lut)
+            self.imgwin3c.setImage(self.ovreg[self.cim_pos[0], :, :], lut=self.ovreg_lut)
+
+    #Slot to toggle whether the overlay is seen or not
+    @QtCore.Slot()
+    def toggle_ovreg_view(self, state):
+
+        if state == QtCore.Qt.Checked:
+            self.options['ShowColorOverlay'] = 1
+        else:
+            self.options['ShowColorOverlay'] = 0
+        self._update_view()
