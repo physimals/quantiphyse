@@ -8,13 +8,12 @@ matplotlib.rcParams['backend.qt4'] = 'PySide'
 import sys
 from PySide import QtCore, QtGui
 
-
-# my libs
-from libs.ImageView import ImageViewLayout, ImageViewOverlay
-from libs.AnalysisWidgets import SECurve, SECurve2
+# My libs
+from libs.ImageView import ImageViewColorOverlay
+from libs.AnalysisWidgets import SECurve, ColorOverlay1, SECurve3
 
 #TODO Need some sort of volume management object...
-#TODO roi overlay option
+#TODO Need to build separate image processing classes tied to individual widgets
 #TODO mouse scroll wheel (not urgent)
 #TODO look into cross platform packaging
 
@@ -28,9 +27,16 @@ class MainWidge1(QtGui.QWidget):
         super(MainWidge1, self).__init__()
 
         #loading ImageView
-        self.ivl1 = ImageViewOverlay()
+        self.ivl1 = ImageViewColorOverlay()
+
+        #Loading widgets
         self.sw1 = SECurve()
-        self.sw2 = SECurve2()
+        self.sw2 = ColorOverlay1()
+        self.sw3 = SECurve3()
+
+        # Connect widgets
+        #Connect colormap choice
+        self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
 
         #Connecting widget signals
         #1) Plotting data on mouse image click
@@ -54,10 +60,7 @@ class MainWidge1(QtGui.QWidget):
         self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
         self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
 
-        self.testbutton = QtGui.QPushButton("Test ok")
-
         #CheckBox
-
         cb1 = QtGui.QCheckBox('Show ROI', self)
         cb1.toggle()
         #cb1.setVisible(False)
@@ -67,8 +70,10 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1 = QtGui.QTabWidget()
         self.qtab1.setTabsClosable(True)
         self.qtab1.setMovable(True)
+        #Widgets
         self.qtab1.addTab(self.sw1, "Voxel analysis")
         self.qtab1.addTab(self.sw2, "Color overlay")
+        self.qtab1.addTab(self.sw3, "ROI statistics")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
 
@@ -114,6 +119,10 @@ class MainWidge1(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(grid)
 
+        # Signals to connect widget
+        self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
+        self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+
     # update slider range
     def update_slider_range(self):
         #set slider range
@@ -148,8 +157,6 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
 
-
-
 class MainWin1(QtGui.QMainWindow):
     """
     Really just used to add standard menu options etc.
@@ -159,12 +166,15 @@ class MainWin1(QtGui.QMainWindow):
         self.mw1 = MainWidge1()
 
         self.toolbar = None
+        self.default_directory ='/home'
+
 
         self.init_ui()
 
     def init_ui(self):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
+        self.setWindowTitle("PkViewer")
 
         self.menu_ui()
         self.show()
@@ -181,6 +191,11 @@ class MainWin1(QtGui.QMainWindow):
         load_roi_action = QtGui.QAction(QtGui.QIcon('icons/pencil.svg'), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
+
+        #File --> Load Overlay
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon('icons/pencil.svg'), '&Load Overlay', self)
+        load_ovreg_action.setStatusTip('Load color overlay')
+        load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
         #File --> Settings
         #TODO
@@ -208,6 +223,7 @@ class MainWin1(QtGui.QMainWindow):
 
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
+        file_menu.addAction(load_ovreg_action)
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
@@ -225,7 +241,8 @@ class MainWin1(QtGui.QMainWindow):
         """
         Dialog for loading a file
         """
-        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '/home')
+        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        self.default_directory = self.get_dir(fname)
 
         #check if file is returned
         if fname != '':
@@ -238,7 +255,8 @@ class MainWin1(QtGui.QMainWindow):
         """
         Dialog for loading a file
         """
-        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '/home')
+        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        self.default_directory = self.get_dir(fname)
 
         #check if file is returned
         if fname != '':
@@ -246,7 +264,24 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('No file selected')
 
+    def show_ovreg_load_dialog(self):
+        """
+        Dialog for loading a file
+        """
+        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        self.default_directory = self.get_dir(fname)
 
+        #check if file is returned
+        if fname != '':
+            self.mw1.ivl1.load_ovreg(fname)
+        else:
+            print('No file selected')
+
+    @staticmethod
+    def get_dir(str1):
+        ind1 = str1.rfind('/')
+        dir1 = str1[:ind1]
+        return dir1
 
 #~ Main application
 def main():

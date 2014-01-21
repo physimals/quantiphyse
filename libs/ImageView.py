@@ -5,8 +5,9 @@ matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 #from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #import matplotlib.pyplot as plt
+from matplotlib import cm
 
-from PySide import QtGui, QtCore
+from PySide import QtCore
 
 import nibabel as nib
 import numpy as np
@@ -17,13 +18,11 @@ pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
 
-class ImageViewLayout(pg.GraphicsLayoutWidget):
+class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
-    provides slots to connect sliders and controls 3D image view updates
-
-    Adding 4D view
+    provides slots to connect sliders and controls 3D/4D image view updates
 
     Signals:
             self.sig_mouse
@@ -223,6 +222,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget):
             vec_sig = self.img[self.cim_pos[0], :, self.cim_pos[2]]
         elif len(self.img_dims) == 4:
             vec_sig = self.img[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        else:
+            vec_sig = None
+            print("Image is not 3D or 4D")
 
         self.sig_mouse.emit(vec_sig)
 
@@ -373,19 +375,18 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
+        self.options['ColorMap'] = 'jet' # default. Can choose any matplotlib colormap
 
-        # Setting up overlay region viewing parameters
-        ovreg_color = np.array([[0, 0, 0, 0], [0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]], dtype=np.ubyte)
-        ovreg_pos = np.array([-1.0, 0.0, 0.33, 0.66, 1.0])
-        map1 = pg.ColorMap(ovreg_pos, ovreg_color)
-        self.ovreg_lut = map1.getLookupTable(-1.0, 1.0, 1000)
+        #testing
+        self.set_default_colormap_matplotlib()
+        #self.set_default_colormap_manual()
 
     def load_ovreg(self, file1):
         """
         Loads and checks Overlay region image
         """
-        #TODO Might be cleaner to do this checking in the loading function
 
+        #TODO Might be cleaner to do this checking in the loading function
         if self.img.shape[0] == 1:
             print("Please load an image first")
             return
@@ -399,15 +400,19 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Convert to numpy double
         self.ovreg = np.array(self.ovreg, dtype=np.double)
 
-        #Normalisation
-        self.ovreg = self.ovreg - np.min(self.ovreg)
-        self.ovreg = self.ovreg / np.max(self.ovreg)
-
-        #Set transparent around ROI
         if self.roi is not None:
-            #TODO remove unneccesary variable creation
-            roi1 = np.logical_not(self.roi)
-            self.ovreg[roi1] = -1.0
+            #Set transparency around ROI
+            self.ovreg[np.logical_not(self.roi)] = -0.01
+
+            #Scale ROI
+            subreg1 = self.ovreg[np.array(self.roi, dtype=bool)]
+            self.ovreg = self.ovreg - np.min(subreg1)
+            self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
+
+        else:
+            #Normalisation
+            self.ovreg = self.ovreg - np.min(self.ovreg)
+            self.ovreg = self.ovreg / np.max(self.ovreg)
 
         if (self.ovreg_dims != self.img_dims[:3]) or (len(self.ovreg_dims) > 3):
             print("First 3 Dimensions of the overlay region must be the same as the image, "
@@ -446,8 +451,84 @@ class ImageViewColorOverlay(ImageViewOverlay):
     @QtCore.Slot()
     def toggle_ovreg_view(self, state):
 
+        """
+        Show or hide overlay
+        """
+
         if state == QtCore.Qt.Checked:
             self.options['ShowColorOverlay'] = 1
         else:
             self.options['ShowColorOverlay'] = 0
+
         self._update_view()
+
+    #Slot to change overlay transparency
+    @QtCore.Slot()
+    def set_overlay_alpha(self, state):
+        """
+        Set the transparency
+        """
+
+        alpha = int(state * 255)
+
+        # Changing colormap
+        self.ovreg_lut[:, 3] = alpha
+        self.ovreg_lut[0, 3] = 0
+
+        self.imgwin1c.setLookupTable(self.ovreg_lut)
+        self.imgwin2c.setLookupTable(self.ovreg_lut)
+        self.imgwincc.setLookupTable(self.ovreg_lut)
+        #self._update_view()
+
+    @QtCore.Slot(str)
+    def set_colormap(self, text):
+        """
+        Choose a colormap
+        """
+        self.options['ColorMap'] = text
+
+        # update colormap
+        self.set_default_colormap_matplotlib()
+
+        # set colormap
+        self.imgwin1c.setLookupTable(self.ovreg_lut)
+        self.imgwin2c.setLookupTable(self.ovreg_lut)
+        self.imgwin3c.setLookupTable(self.ovreg_lut)
+        #self._update_view()
+
+    def set_default_colormap_matplotlib(self):
+
+        """
+        Use default colormaps from matplotlib.
+        """
+
+        cmap1 = getattr(cm, self.options['ColorMap'])
+
+        lut = [[int(255*rgb1) for rgb1 in cmap1(ii)[:3]] for ii in xrange(256)]
+        self.ovreg_lut = np.array(lut, dtype=np.ubyte)
+
+        alpha1 = np.ones((self.ovreg_lut.shape[0], 1))
+        alpha1 *= 255
+        alpha1[0] = 0
+        self.ovreg_lut = np.hstack((self.ovreg_lut, alpha1))
+
+    def set_default_colormap_manual(self):
+        """
+        Manually create a colormap
+        """
+
+        # Setting up overlay region viewing parameters
+        ovreg_color = np.array([[0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]],
+                               dtype=np.ubyte)
+        ovreg_pos = np.array([0.0, 0.33, 0.66, 1.0])
+        map1 = pg.ColorMap(ovreg_pos, ovreg_color)
+
+        self.ovreg_lut = map1.getLookupTable(0, 1.0, 1000)
+        self.ovreg_lut[0, 3] = 0
+
+
+
+
+
+
+
