@@ -35,8 +35,11 @@ class MainWidge1(QtGui.QWidget):
         self.sw3 = SECurve3()
 
         # Connect widgets
-        #Connect colormap choice
+        #Connect colormap choice, alpha
         self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
+        self.sw2.sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
+        self.sw2.cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
+        self.sw2.cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
         #Connecting widget signals
         #1) Plotting data on mouse image click

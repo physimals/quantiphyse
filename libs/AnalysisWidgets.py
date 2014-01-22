@@ -5,7 +5,7 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import numpy as np
 
-#TODO create an non model based analysis tool which ties into creating new image objects
+#TODO create an non-model based analysis tool which ties into creating new image objects
 
 
 class SECurve(QtGui.QWidget):
@@ -83,7 +83,6 @@ class SECurve(QtGui.QWidget):
 
         if self.values2_mean is None:
             self.values2_mean = np.zeros((1, len(xx)))
-
 
         if self.cb3.isChecked() is True:
             m1 = np.mean(values1[:3])
@@ -166,21 +165,44 @@ class ColorOverlay1(QtGui.QWidget):
     #emit colormap choice
     sig_choose_cmap = QtCore.Signal(str)
 
+    #emit alpha value
+    sig_set_alpha = QtCore.Signal(int)
+
+
     def __init__(self):
         super(ColorOverlay1, self).__init__()
 
         l1 = QtGui.QVBoxLayout()
-        button1 = QtGui.QPushButton("test OK 2")
+
+        lab1 = QtGui.QLabel("Transparency")
+
+        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        sld1.setRange(0, 255)
+        sld1.setValue(255)
+        sld1.valueChanged[int].connect(self.emit_alpha)
 
         combo = QtGui.QComboBox(self)
         combo.addItem("jet")
         combo.addItem("hot")
         combo.addItem("gist_heat")
-        combo.activated[str].connect(self.combo_act)
+        combo.activated[str].connect(self.emit_cmap)
 
+        # Take a local region mean to reduce noise
+        self.cb1 = QtGui.QCheckBox('Show overlay', self)
+
+        # Take a local region mean to reduce noise
+        self.cb2 = QtGui.QCheckBox('Just ROI', self)
+
+        self.cb1.toggle()
+        self.cb2.toggle()
+
+        l1.addWidget(lab1)
+        l1.addWidget(sld1)
+        l1.addWidget(self.cb1)
+        l1.addWidget(self.cb2)
         l1.addWidget(combo)
 
-        l1.addWidget(button1)
         self.setLayout(l1)
 
     def __plot(self, values1):
@@ -191,8 +213,12 @@ class ColorOverlay1(QtGui.QWidget):
         self.__plot(values1)
 
     @QtCore.Slot(str)
-    def combo_act(self, text):
+    def emit_cmap(self, text):
         self.sig_choose_cmap.emit(text)
+
+    @QtCore.Slot(int)
+    def emit_alpha(self, val1):
+        self.sig_set_alpha.emit(val1)
 
 
 class SECurve3(QtGui.QWidget):

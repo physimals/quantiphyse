@@ -376,6 +376,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
         self.options['ColorMap'] = 'jet' # default. Can choose any matplotlib colormap
+        self.options['UseROI'] = 1
 
         #testing
         self.set_default_colormap_matplotlib()
@@ -394,25 +395,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
         #Setting Overlay region data
         self.ovreg_file1 = file1
         ovreg = nib.load(self.ovreg_file1)
-        self.ovreg = ovreg.get_data()
-        self.ovreg_dims = self.ovreg.shape
+        self.ovreg_in = ovreg.get_data()
 
-        # Convert to numpy double
-        self.ovreg = np.array(self.ovreg, dtype=np.double)
-
-        if self.roi is not None:
-            #Set transparency around ROI
-            self.ovreg[np.logical_not(self.roi)] = -0.01
-
-            #Scale ROI
-            subreg1 = self.ovreg[np.array(self.roi, dtype=bool)]
-            self.ovreg = self.ovreg - np.min(subreg1)
-            self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
-
-        else:
-            #Normalisation
-            self.ovreg = self.ovreg - np.min(self.ovreg)
-            self.ovreg = self.ovreg / np.max(self.ovreg)
+        self._process_overlay()
 
         if (self.ovreg_dims != self.img_dims[:3]) or (len(self.ovreg_dims) > 3):
             print("First 3 Dimensions of the overlay region must be the same as the image, "
@@ -430,6 +415,27 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.view3.addItem(self.imgwin3c)
 
         self._update_view()
+
+    def _process_overlay(self):
+
+        self.ovreg = np.copy(self.ovreg_in)
+        self.ovreg_dims = self.ovreg.shape
+        # Convert to numpy double
+        self.ovreg = np.array(self.ovreg, dtype=np.double)
+
+        if (self.roi is not None) and (self.options['UseROI'] == 1):
+            #Set transparency around ROI
+            self.ovreg[np.logical_not(self.roi)] = -0.01
+
+            #Scale ROI
+            subreg1 = self.ovreg[np.array(self.roi, dtype=bool)]
+            self.ovreg = self.ovreg - np.min(subreg1)
+            self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
+
+        else:
+            #Normalisation
+            self.ovreg = self.ovreg - np.min(self.ovreg)
+            self.ovreg = self.ovreg / np.max(self.ovreg)
 
     def _update_view(self):
         super(ImageViewColorOverlay, self)._update_view()
@@ -449,11 +455,22 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
-    def toggle_ovreg_view(self, state):
+    def toggle_roi_lim(self, state):
 
         """
         Show or hide overlay
         """
+
+        if state == QtCore.Qt.Checked:
+            self.options['UseROI'] = 1
+        else:
+            self.options['UseROI'] = 0
+
+        self._process_overlay()
+        self._update_view()
+
+    @QtCore.Slot()
+    def toggle_ovreg_view(self, state):
 
         if state == QtCore.Qt.Checked:
             self.options['ShowColorOverlay'] = 1
@@ -462,22 +479,21 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         self._update_view()
 
+
     #Slot to change overlay transparency
-    @QtCore.Slot()
+    @QtCore.Slot(int)
     def set_overlay_alpha(self, state):
         """
         Set the transparency
         """
 
-        alpha = int(state * 255)
-
         # Changing colormap
-        self.ovreg_lut[:, 3] = alpha
+        self.ovreg_lut[:, 3] = state
         self.ovreg_lut[0, 3] = 0
 
         self.imgwin1c.setLookupTable(self.ovreg_lut)
         self.imgwin2c.setLookupTable(self.ovreg_lut)
-        self.imgwincc.setLookupTable(self.ovreg_lut)
+        self.imgwin3c.setLookupTable(self.ovreg_lut)
         #self._update_view()
 
     @QtCore.Slot(str)
