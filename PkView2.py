@@ -210,7 +210,7 @@ class MainWin1(QtGui.QMainWindow):
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         #File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load color overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
@@ -234,7 +234,7 @@ class MainWin1(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
-        overlayMenu = menubar.addMenu('&Overlay')
+        overlayMenu = menubar.addMenu('&Analysis')
         widget_menu = menubar.addMenu('&Widgets')
         help_menu = menubar.addMenu('&Help')
 
@@ -247,9 +247,11 @@ class MainWin1(QtGui.QMainWindow):
 
         help_menu.addAction(help_action)
 
+        #Toolbar
         self.toolbar = self.addToolBar('Load Image')
         self.toolbar.addAction(load_action)
         self.toolbar.addAction(load_roi_action)
+        self.toolbar.addAction(load_ovreg_action)
 
         # extra info displayed in the status bar
         self.statusBar()
