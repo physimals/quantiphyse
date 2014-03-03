@@ -9,16 +9,11 @@ Python 2.7
 
 #### Python libraries:
 
-PySide
-
-matplotlib
-
-numpy 
-
-nibabel
-
-
-pyqtgraph
+- PySide
+- matplotlib
+- numpy 
+- nibabel
+- pyqtgraph
 
 
 ### Overview
