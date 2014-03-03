@@ -1,7 +1,7 @@
 PkView
 ======
 
-Viewer for 4D data and Pk modelling
+Viewer for 3D/4D data and Pk modelling
 
 
 ### Dependencies:
