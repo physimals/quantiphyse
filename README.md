@@ -37,12 +37,12 @@ AnalysisWidgets.py
 ### Usage
 
 ``` bash
-python PkView.py
+python PkView2.py
 ```
 or
 
 ``` bash
-./PkView.py
+./PkView2.py
 ```
 
 Load image :
