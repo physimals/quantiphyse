@@ -32,7 +32,7 @@ ImageView.py
 - ImageViewColorOverlay(ImageViewOverlay): Adds colormap overlay functionality
 
 AnalysisWidgets.py
-- Contains sidebar widgets that provide additionals functionality
+- Contains sidebar widgets that provide additional functionality
 
 ### Usage
 
