@@ -4,10 +4,10 @@ PkView
 Viewer for 4D data and Pk modelling
 
 
-## Dependencies:
+### Dependencies:
 Python 2.7
 
-###Python libraries:
+#### Python libraries:
 PySide
 matplotlib
 numpy 
@@ -15,11 +15,11 @@ nibabel
 pyqtgraph
 
 
-## Overview
+### Overview
 
-## Code Organisation
+### Code Organisation
 
-## Usage
+### Usage
 
 
 
