@@ -13,8 +13,9 @@ class SECurve(QtGui.QWidget):
     Side widgets for plotting SE curves
     """
 
-    sig_add_pnt = QtCore.Signal(bool)
+    sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
+
 
     def __init__(self):
         super(SECurve, self).__init__()
@@ -43,18 +44,34 @@ class SECurve(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
+        # Select plot color
+        combo = QtGui.QComboBox(self)
+        combo.addItem("red")
+        combo.addItem("blue")
+        combo.addItem("green")
+        combo.addItem("orange")
+        combo.addItem("cyan")
+        combo.addItem("brown")
+        combo.activated[str].connect(self.emit_cchoice)
+
         l1 = QtGui.QGridLayout()
         l1.setSpacing(10)
         l1.addWidget(self.win1, 0, 0, 1, 3)
 
-        l1.addWidget(self.cb1, 1, 0)
-        l1.addWidget(self.cb2, 2, 0)
-        l1.addWidget(self.cb3, 3, 0)
+        space1 = QtGui.QLabel('')
+        l1.addWidget(space1, 1, 0)
 
-        l1.addWidget(QtGui.QLabel("Temporal resolution (s)"), 1, 1)
-        l1.addWidget(self.text1, 1, 2)
+        l1.addWidget(self.cb1, 2, 0)
+        l1.addWidget(self.cb2, 3, 0)
+        l1.addWidget(self.cb3, 4, 0)
+        l1.addWidget(QtGui.QLabel('Plot color'), 5, 0)
 
-        l1.addWidget(self.cb4, 2, 1)
+        l1.addWidget(QtGui.QLabel("Temporal resolution (s)"), 2, 1)
+        l1.addWidget(self.text1, 2, 2)
+        l1.addWidget(self.cb4, 3, 1)
+        l1.addWidget(combo, 5, 1)
+
+
 
         l1.setRowStretch(0, 2)
         l1.setRowStretch(1, 1)
@@ -65,6 +82,8 @@ class SECurve(QtGui.QWidget):
         l1.setColumnStretch(2, 1)
 
         self.setLayout(l1)
+
+        self.plot_color = (200, 200, 200)
 
     def _plot(self, values1):
 
@@ -102,17 +121,17 @@ class SECurve(QtGui.QWidget):
         if self.cb2.isChecked() is False:
             if self.curve1 is None:
                 self.curve1 = self.p1.plot(pen=None, symbolBrush=(255, 0, 0), symbolPen='k')
-                self.curve2 = self.p1.plot(pen=(200, 200, 200))
+                self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
             self.curve2.setData(xx, values2)
             self.curve1.setData(xx, values1)
 
         # Multiple plots
         else:
             #Signal (add point to image
-            self.sig_add_pnt.emit(True)
+            self.sig_add_pnt.emit(self.plot_color)
 
-            self.p1.plot(xx, values2, pen=(200, 200, 200))
-            self.p1.plot(xx, values1, pen=None, symbolBrush=(0, 0, 255), symbolPen='k', symbolSize=3.0)
+            self.p1.plot(xx, values2, pen=self.plot_color, width=4.0)
+            self.p1.plot(xx, values1, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
 
             # Plot mean curve as well
             if self.cb4.isChecked() is True:
@@ -156,18 +175,34 @@ class SECurve(QtGui.QWidget):
         """
         self._plot(values1)
 
+    @QtCore.Slot(str)
+    def emit_cchoice(self, text):
+        if text == 'red':
+            cvec = (255, 0, 0)
+        elif text == 'green':
+            cvec = (0, 255, 0)
+        elif text == 'blue':
+            cvec = (0, 0, 255)
+        elif text == 'orange':
+            cvec = (255, 140, 0)
+        elif text == 'cyan':
+            cvec = (0, 255, 255)
+        elif text == 'brown':
+            cvec = (139, 69, 19)
+        else:
+            cvec = (255, 255, 255)
+        self.plot_color = cvec
 
 class ColorOverlay1(QtGui.QWidget):
     """
     Color overlay interaction
     """
 
+    #Signals
     #emit colormap choice
     sig_choose_cmap = QtCore.Signal(str)
-
     #emit alpha value
     sig_set_alpha = QtCore.Signal(int)
-
 
     def __init__(self):
         super(ColorOverlay1, self).__init__()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import matplotlib
@@ -6,6 +7,7 @@ matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 
 import sys
+import os
 from PySide import QtCore, QtGui
 
 # My libs
@@ -19,8 +21,10 @@ from libs.AnalysisWidgets import SECurve, ColorOverlay1, SECurve3
 
 
 class MainWidge1(QtGui.QWidget):
+
     """
     Main widget where most of the control should happen
+
     """
 
     def __init__(self):
@@ -69,6 +73,11 @@ class MainWidge1(QtGui.QWidget):
         #cb1.setVisible(False)
         cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
 
+        #CheckBox
+        cb2 = QtGui.QCheckBox('Show ROI contour', self)
+        cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
+
+
         # Tabbed Widget
         self.qtab1 = QtGui.QTabWidget()
         self.qtab1.setTabsClosable(True)
@@ -110,6 +119,8 @@ class MainWidge1(QtGui.QWidget):
         grid.addWidget(lab_p4, 4, 2)
 
         grid.addWidget(cb1, 1, 3)
+        grid.addWidget(cb2, 2, 3)
+
 
         grid.addWidget(self.qtab1, 0, 4, 5, 1)
         #define the proportion of the space each column takes
@@ -171,6 +182,8 @@ class MainWin1(QtGui.QMainWindow):
         self.toolbar = None
         self.default_directory ='/home'
 
+        # Get path of current directory
+        self.local_file_path = os.path.dirname(__file__)
 
         self.init_ui()
 
@@ -178,6 +191,7 @@ class MainWin1(QtGui.QMainWindow):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer")
+        self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
 
         self.menu_ui()
         self.show()
@@ -185,18 +199,18 @@ class MainWin1(QtGui.QMainWindow):
     def menu_ui(self):
 
         #File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon('icons/picture.svg'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
         #File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon('icons/pencil.svg'), '&Load ROI', self)
+        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         #File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon('icons/pencil.svg'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load color overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
@@ -285,6 +299,7 @@ class MainWin1(QtGui.QMainWindow):
         ind1 = str1.rfind('/')
         dir1 = str1[:ind1]
         return dir1
+
 
 #~ Main application
 def main():

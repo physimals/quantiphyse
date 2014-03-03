@@ -45,31 +45,44 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         #ViewerOptions
         self.options = {}
+        self.options['one_view'] = False
+
+        #For creating screenshots. single large window
 
         #arrows
         self.pts1 = []
 
         ##initialise layout (3 view boxes each containing an image item)
         self.addLabel('Axial')
-        self.addLabel('Sagittal')
-        self.nextRow()
+
+        if not self.options['one_view']:
+            self.addLabel('Sagittal')
+            self.nextRow()
+        else:
+            axwin = pg.GraphicsLayoutWidget()
+            self.view2 = axwin.addViewBox(name="view2")
+            self.view3 = axwin.addViewBox(name="view3")
+
         self.view1 = self.addViewBox(name="view1")
         self.view1.setAspectLocked(True)
         self.imgwin1 = pg.ImageItem(border='k')
         self.view1.addItem(self.imgwin1)
-        self.view2 = self.addViewBox(name="view2")
+        if not self.options['one_view']:
+            self.view2 = self.addViewBox(name="view2")
         self.view2.setAspectLocked(True)
         self.imgwin2 = pg.ImageItem(border='k')
         self.view2.addItem(self.imgwin2)
 
         #set a new row in the graphics layout widget
-        self.nextRow()
-        self.addLabel('Coronal')
-        self.nextRow()
-        self.view3 = self.addViewBox(name="view3")
+        if not self.options['one_view']:
+            self.nextRow()
+            self.addLabel('Coronal')
+            self.nextRow()
+            self.view3 = self.addViewBox(name="view3")
         self.view3.setAspectLocked(True)
         self.imgwin3 = pg.ImageItem(border='k')
         self.view3.addItem(self.imgwin3)
+
 
         #Cross hairs added to each viewbox
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
@@ -109,7 +122,17 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.img = img.get_data()
         self.img_dims = self.img.shape
 
-        print(self.img_dims)
+        h1 = img.get_affine()
+        self.voxel_size = [h1[0, 0], h1[1, 1], h1[2, 2]]
+
+        print("Manually overridge voxel size")
+        self.voxel_size = [1.0, 1.0, 2.0]
+
+        print("Image dimensions: ", self.img_dims)
+        print("Voxel size: ", self.voxel_size)
+        self.view1.setAspectLocked(True, ratio=(self.voxel_size[0]/self.voxel_size[1]))
+        self.view2.setAspectLocked(True, ratio=(self.voxel_size[0]/self.voxel_size[2]))
+        self.view3.setAspectLocked(True, ratio=(self.voxel_size[1]/self.voxel_size[2]))
 
         # update view
         self._update_view()
@@ -231,12 +254,16 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #self.add_arrow_current_pos()
 
     @QtCore.Slot()
-    def add_arrow_current_pos(self):
+    def set_arrow_color(self, c):
+        None
+
+    @QtCore.Slot()
+    def add_arrow_current_pos(self, pen1=(255, 0, 0)):
         """
         Place an arrow at the current position
         """
 
-        aa = pg.ArrowItem()
+        aa = pg.ArrowItem(pen=pen1, brush=pen1)
         self.pts1.append(aa)
         self.pts1[-1].setPos(self.cim_pos[0], self.cim_pos[1])
         self.view1.addItem(self.pts1[-1])
@@ -270,6 +297,10 @@ class ImageViewOverlay(ImageViewLayout):
         self.imgwin1b = None
         self.imgwin2b = None
         self.imgwin3b = None
+        # Contour
+        self.cont1 = None
+        self.cont2 = None
+        self.cont3 = None
 
         # ROI image
         self.roi = None
@@ -278,6 +309,8 @@ class ImageViewOverlay(ImageViewLayout):
 
         # Viewing options as a dictionary
         self.options['ShowOverlay'] = 1
+        self.options['ShowOverlayContour'] = False
+        self.options['roi_outline_width'] = 3.0
 
         # Setting up ROI viewing parameters
         pos = np.array([0.0, 1.0])
@@ -316,6 +349,13 @@ class ImageViewOverlay(ImageViewLayout):
             self.view2.addItem(self.imgwin2b)
             self.view3.addItem(self.imgwin3b)
 
+            self.cont1 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
+            self.cont2 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
+            self.cont3 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
+            self.view1.addItem(self.cont1)
+            self.view2.addItem(self.cont2)
+            self.view3.addItem(self.cont3)
+
         self._update_view()
 
     def _update_view(self):
@@ -329,10 +369,22 @@ class ImageViewOverlay(ImageViewLayout):
             self.imgwin1b.setImage(np.zeros((1, 1)))
             self.imgwin2b.setImage(np.zeros((1, 1)))
             self.imgwin3b.setImage(np.zeros((1, 1)))
+
         else:
             self.imgwin1b.setImage(self.roi[:, :, self.cim_pos[2]], lut=self.roilut)
             self.imgwin2b.setImage(self.roi[:, self.cim_pos[1], :], lut=self.roilut)
             self.imgwin3b.setImage(self.roi[self.cim_pos[0], :, :], lut=self.roilut)
+
+        if self.options['ShowOverlayContour']:
+            self.cont1.setData(self.roi[:, :, self.cim_pos[2]])
+            self.cont2.setData(self.roi[:, self.cim_pos[1], :])
+            self.cont3.setData(self.roi[self.cim_pos[0], :, :])
+        else:
+            self.cont1.setData(None)
+            self.cont2.setData(None)
+            self.cont3.setData(None)
+
+
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
@@ -342,6 +394,15 @@ class ImageViewOverlay(ImageViewLayout):
             self.options['ShowOverlay'] = 1
         else:
             self.options['ShowOverlay'] = 0
+        self._update_view()
+
+    @QtCore.Slot()
+    def toggle_roi_contour(self, state):
+
+        if state == QtCore.Qt.Checked:
+            self.options['ShowOverlayContour'] = True
+        else:
+            self.options['ShowOverlayContour'] = False
         self._update_view()
 
 
@@ -424,6 +485,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.ovreg = np.array(self.ovreg, dtype=np.double)
 
         if (self.roi is not None) and (self.options['UseROI'] == 1):
+
             #Set transparency around ROI
             self.ovreg[np.logical_not(self.roi)] = -0.01
 
