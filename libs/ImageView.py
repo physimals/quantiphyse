@@ -123,10 +123,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.img_dims = self.img.shape
 
         h1 = img.get_affine()
-        self.voxel_size = [h1[0, 0], h1[1, 1], h1[2, 2]]
+        self.voxel_size = [np.abs(h1[0, 0]), np.abs(h1[1, 1]), np.abs(h1[2, 2])]
 
-        print("Manually overridge voxel size")
-        self.voxel_size = [1.0, 1.0, 2.0]
+        #print("Manually overridge voxel size")
+        #self.voxel_size = [1.0, 1.0, 2.0]
 
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)
