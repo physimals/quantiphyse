@@ -8,10 +8,16 @@ Viewer for 4D data and Pk modelling
 Python 2.7
 
 #### Python libraries:
+
 PySide
+
 matplotlib
+
 numpy 
+
 nibabel
+
+
 pyqtgraph
 
 
