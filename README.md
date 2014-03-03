@@ -61,7 +61,7 @@ Load ROI :
 
 Load overlay :
 
-![alt text](screenshots/3.png "Example 1")
+![alt text](screenshots/4.png "Example 1")
 
 
 
