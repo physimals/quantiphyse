@@ -1,7 +1,7 @@
 PkView
 ======
 
-Viewer for 4D data and Pk modelling
+Viewer for 3D/4D data and Pk modelling
 
 
 ### Dependencies:
@@ -37,12 +37,12 @@ AnalysisWidgets.py
 ### Usage
 
 ``` bash
-python PkView.py
+python PkView2.py
 ```
 or
 
 ``` bash
-./PkView.py
+./PkView2.py
 ```
 
 Load image :
@@ -61,7 +61,7 @@ Load ROI :
 
 Load overlay :
 
-![alt text](screenshots/3.png "Example 1")
+![alt text](screenshots/4.png "Example 1")
 
 
 
