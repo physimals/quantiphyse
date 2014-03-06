@@ -83,8 +83,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin3 = pg.ImageItem(border='k')
         self.view3.addItem(self.imgwin3)
 
-
         #Cross hairs added to each viewbox
+
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
         self.hline1 = pg.InfiniteLine(angle=0, movable=False)
         self.vline1.setVisible(False)
@@ -108,6 +108,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #self.scene().sigMouseMoved.connect(self.mouseMoved)
         #self.scene().sigMouseReleased.connect()
 
+        #Voxel size initialisation
+        self.voxel_size = [1.0, 1.0, 1.0]
+
     def load_image(self, file1):
         """
         Loading nifti image
@@ -125,14 +128,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         h1 = img.get_affine()
         self.voxel_size = [np.abs(h1[0, 0]), np.abs(h1[1, 1]), np.abs(h1[2, 2])]
 
-        #print("Manually overridge voxel size")
-        #self.voxel_size = [1.0, 1.0, 2.0]
-
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)
-        self.view1.setAspectLocked(True, ratio=(self.voxel_size[0]/self.voxel_size[1]))
-        self.view2.setAspectLocked(True, ratio=(self.voxel_size[0]/self.voxel_size[2]))
-        self.view3.setAspectLocked(True, ratio=(self.voxel_size[1]/self.voxel_size[2]))
+
 
         # update view
         self._update_view()
@@ -282,6 +280,21 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.view1.removeItem(self.pts1[ii])
 
         self.pts1 = []
+
+    @QtCore.Slot()
+    def toggle_dimscale(self, state):
+        #toggles whether voxel scaling is used
+
+        if state == QtCore.Qt.Checked:
+            self.view1.setAspectLocked(True, ratio=(self.voxel_size[0] / self.voxel_size[1]))
+            self.view2.setAspectLocked(True, ratio=(self.voxel_size[0] / self.voxel_size[2]))
+            self.view3.setAspectLocked(True, ratio=(self.voxel_size[1] / self.voxel_size[2]))
+        else:
+            self.view1.setAspectLocked(True, ratio=1)
+            self.view2.setAspectLocked(True, ratio=1)
+            self.view3.setAspectLocked(True, ratio=1)
+
+        self._update_view()
 
 
 class ImageViewOverlay(ImageViewLayout):
