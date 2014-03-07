@@ -162,7 +162,6 @@ class MainWidge1(QtGui.QWidget):
         self.sld2.setValue(self.ivl1.cim_pos[1])
         self.sld3.setValue(self.ivl1.cim_pos[0])
 
-
     # Handles closing of tabs
     def on_tab_close(self, value):
         self.qtab1.removeTab(value)

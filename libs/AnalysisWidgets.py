@@ -16,7 +16,6 @@ class SECurve(QtGui.QWidget):
     sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
 
-
     def __init__(self):
         super(SECurve, self).__init__()
 
@@ -39,6 +38,11 @@ class SECurve(QtGui.QWidget):
 
         #Show mean
         self.cb4 = QtGui.QCheckBox('Show mean', self)
+
+        #Clear curves button
+        b1 = QtGui.QPushButton('Clear curves', self)
+        b1.clicked.connect(self.reset_graph)
+
 
         # input temporal resolution
         self.text1 = QtGui.QLineEdit('1.0', self)
@@ -69,6 +73,7 @@ class SECurve(QtGui.QWidget):
         l1.addWidget(QtGui.QLabel("Temporal resolution (s)"), 2, 1)
         l1.addWidget(self.text1, 2, 2)
         l1.addWidget(self.cb4, 3, 1)
+        l1.addWidget(b1, 4, 1)
         l1.addWidget(combo, 5, 1)
 
 
@@ -193,6 +198,7 @@ class SECurve(QtGui.QWidget):
             cvec = (255, 255, 255)
         self.plot_color = cvec
 
+
 class ColorOverlay1(QtGui.QWidget):
     """
     Color overlay interaction
@@ -225,11 +231,10 @@ class ColorOverlay1(QtGui.QWidget):
 
         # Take a local region mean to reduce noise
         self.cb1 = QtGui.QCheckBox('Show overlay', self)
+        self.cb1.toggle()
 
         # Take a local region mean to reduce noise
-        self.cb2 = QtGui.QCheckBox('Just ROI', self)
-
-        self.cb1.toggle()
+        self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
         self.cb2.toggle()
 
         l1.addWidget(lab1)

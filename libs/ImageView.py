@@ -110,6 +110,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         #Voxel size initialisation
         self.voxel_size = [1.0, 1.0, 1.0]
+        # Range of image
+        self.img_range = [0, 1]
 
     def load_image(self, file1):
         """
@@ -128,9 +130,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         h1 = img.get_affine()
         self.voxel_size = [np.abs(h1[0, 0]), np.abs(h1[1, 1]), np.abs(h1[2, 2])]
 
+        self.img_range = [self.img.min(), self.img.max()]
+
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)
-
+        print("Image range: ", self.img_range)
 
         # update view
         self._update_view()
@@ -204,6 +208,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             print("Image does not have 3 or 4 dimensions")
 
         self.__update_crosshairs()
+        self.imgwin1.setLevels(self.img_range)
+        self.imgwin2.setLevels(self.img_range)
+        self.imgwin3.setLevels(self.img_range)
+
 
     # Slots for sliders and mouse
     @QtCore.Slot(int)
@@ -398,7 +406,6 @@ class ImageViewOverlay(ImageViewLayout):
             self.cont3.setData(None)
 
 
-
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
     def toggle_roi_view(self, state):
@@ -452,9 +459,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.options['ColorMap'] = 'jet' # default. Can choose any matplotlib colormap
         self.options['UseROI'] = 1
 
-        #testing
+        #Initialise the colormap
+        self.ovreg_lut = None
         self.set_default_colormap_matplotlib()
         #self.set_default_colormap_manual()
+        self.ov_range = [0.0, 1.0]
 
     def load_ovreg(self, file1):
         """
@@ -488,6 +497,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)
 
+
+        self.imgwin1c.setLevels(self.ov_range)
+        self.imgwin2c.setLevels(self.ov_range)
+        self.imgwin3c.setLevels(self.ov_range)
+
         self._update_view()
 
     def _process_overlay(self):
@@ -499,18 +513,23 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if (self.roi is not None) and (self.options['UseROI'] == 1):
 
-            #Set transparency around ROI
-            self.ovreg[np.logical_not(self.roi)] = -0.01
-
             #Scale ROI
             subreg1 = self.ovreg[np.array(self.roi, dtype=bool)]
             self.ovreg = self.ovreg - np.min(subreg1)
             self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
+            #Set transparency around ROI
+            self.ovreg[np.logical_not(self.roi)] = -0.01
+
+            self.ov_range = [self.ovreg.min(), self.ovreg.max()]
+
         else:
             #Normalisation
             self.ovreg = self.ovreg - np.min(self.ovreg)
             self.ovreg = self.ovreg / np.max(self.ovreg)
+
+            self.ov_range = [self.ovreg.min(), self.ovreg.max()]
+
 
     def _update_view(self):
         super(ImageViewColorOverlay, self)._update_view()
@@ -527,6 +546,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin1c.setImage(self.ovreg[:, :, self.cim_pos[2]], lut=self.ovreg_lut)
             self.imgwin2c.setImage(self.ovreg[:, self.cim_pos[1], :], lut=self.ovreg_lut)
             self.imgwin3c.setImage(self.ovreg[self.cim_pos[0], :, :], lut=self.ovreg_lut)
+
+
+        self.imgwin1c.setLevels(self.ov_range)
+        self.imgwin2c.setLevels(self.ov_range)
+        self.imgwin3c.setLevels(self.ov_range)
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
@@ -554,7 +578,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         self._update_view()
 
-
     #Slot to change overlay transparency
     @QtCore.Slot(int)
     def set_overlay_alpha(self, state):
@@ -570,6 +593,13 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin2c.setLookupTable(self.ovreg_lut)
         self.imgwin3c.setLookupTable(self.ovreg_lut)
         #self._update_view()
+
+    @QtCore.Slot()
+    def set_overlay_range(self, state):
+        """
+        Set the range of the overlay map
+        """
+        None
 
     @QtCore.Slot(str)
     def set_colormap(self, text):
@@ -587,10 +617,15 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin3c.setLookupTable(self.ovreg_lut)
         #self._update_view()
 
+
+
     def set_default_colormap_matplotlib(self):
 
         """
         Use default colormaps from matplotlib.
+
+        First value out of the 255 range is set to be transparent. This needs to maybe be defined in a slightly better
+        way to avoid scaling issue.
         """
 
         cmap1 = getattr(cm, self.options['ColorMap'])
