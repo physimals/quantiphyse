@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 
 # My libs
 from libs.ImageView import ImageViewColorOverlay
-from libs.AnalysisWidgets import SECurve, ColorOverlay1, SECurve3
+from libs.AnalysisWidgets import SECurve, ColorOverlay1, OverlayAnalysisWidget
 
 #TODO Need some sort of volume management object...
 #TODO Need to build separate image processing classes tied to individual widgets
@@ -36,7 +36,7 @@ class MainWidge1(QtGui.QWidget):
         #Loading widgets
         self.sw1 = SECurve()
         self.sw2 = ColorOverlay1()
-        self.sw3 = SECurve3()
+        self.sw3 = OverlayAnalysisWidget()
 
         # Connect widgets
         #Connect colormap choice, alpha
@@ -70,17 +70,11 @@ class MainWidge1(QtGui.QWidget):
         #CheckBox
         cb1 = QtGui.QCheckBox('Show ROI', self)
         cb1.toggle()
-        #cb1.setVisible(False)
         cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
-
-        #CheckBox
         cb2 = QtGui.QCheckBox('Show ROI contour', self)
         cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
-
-        #CheckBox
         cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
         cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
-
 
         # Tabbed Widget
         self.qtab1 = QtGui.QTabWidget()
@@ -104,35 +98,47 @@ class MainWidge1(QtGui.QWidget):
         self.sld4.valueChanged[int].connect(lab_p4.setNum)
 
         #Layout
+        # Box of buttons
+        gBox = QtGui.QGroupBox("Image and ROI options")
+        gBoxlay = QtGui.QVBoxLayout()
+        gBoxlay.addWidget(cb1)
+        gBoxlay.addWidget(cb2)
+        gBoxlay.addWidget(cb3)
+        gBoxlay.addStretch(1)
+        gBox.setLayout(gBoxlay)
+
+        #gBox.setStyleSheet("QGroupBox {border: 3px solid rgb(255, 0, 0); }")
+        # Slider layout
+        gBox2 = QtGui.QGroupBox("Navigation Sliders")
+        gBoxlay2 = QtGui.QGridLayout()
+        gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
+        gBoxlay2.addWidget(self.sld1, 0, 1)
+        gBoxlay2.addWidget(lab_p1, 0, 2)
+        gBoxlay2.addWidget(QtGui.QLabel('Sagittal'), 1, 0)
+        gBoxlay2.addWidget(self.sld2, 1, 1)
+        gBoxlay2.addWidget(lab_p2, 1, 2)
+        gBoxlay2.addWidget(QtGui.QLabel('Coronal'), 2, 0)
+        gBoxlay2.addWidget(self.sld3, 2, 1)
+        gBoxlay2.addWidget(lab_p3, 2, 2)
+        gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
+        gBoxlay2.addWidget(self.sld4, 3, 1)
+        gBoxlay2.addWidget(lab_p4, 3, 2)
+        gBox2.setLayout(gBoxlay2)
+
+        # Overall layout
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
-
         #Layout positions
-        grid.addWidget(self.ivl1, 0, 0, 1, 4)
-        grid.addWidget(QtGui.QLabel('Axial'), 1, 0)
-        grid.addWidget(self.sld1, 1, 1)
-        grid.addWidget(lab_p1, 1, 2)
-        grid.addWidget(QtGui.QLabel('Sagittal'), 2, 0)
-        grid.addWidget(self.sld2, 2, 1)
-        grid.addWidget(lab_p2, 2, 2)
-        grid.addWidget(QtGui.QLabel('Coronal'), 3, 0)
-        grid.addWidget(self.sld3, 3, 1)
-        grid.addWidget(lab_p3, 3, 2)
-        grid.addWidget(QtGui.QLabel('Time'), 4, 0)
-        grid.addWidget(self.sld4, 4, 1)
-        grid.addWidget(lab_p4, 4, 2)
-
-        grid.addWidget(cb1, 1, 3)
-        grid.addWidget(cb2, 2, 3)
-        grid.addWidget(cb3, 3, 3)
-
-
-        grid.addWidget(self.qtab1, 0, 4, 5, 1)
+        grid.addWidget(self.ivl1, 0, 0, 1, 2)
+        grid.addWidget(gBox2, 1, 0, 1, 1)
+        grid.addWidget(gBox, 1, 1, 1, 1)
+        grid.addWidget(self.qtab1, 0, 2, 2, 1)
         #define the proportion of the space each column takes
-        grid.setColumnStretch(1, 4)
-        grid.setColumnStretch(2, 1)
-        grid.setColumnStretch(3, 1)
-        grid.setColumnStretch(4, 4)
+        grid.setColumnStretch(0, 3)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(2, 2)
+        grid.setRowStretch(0, 2)
+        grid.setRowStretch(1, 0)
         #grid.setColumnMinimumHeight()
 
         # horizontal widgets

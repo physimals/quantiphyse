@@ -261,13 +261,13 @@ class ColorOverlay1(QtGui.QWidget):
         self.sig_set_alpha.emit(val1)
 
 
-class SECurve3(QtGui.QWidget):
+class OverlayAnalysisWidget(QtGui.QWidget):
     """
     Side widgets for plotting SE curves
     """
 
     def __init__(self):
-        super(SECurve3, self).__init__()
+        super(OverlayAnalysisWidget, self).__init__()
 
         l1 = QtGui.QVBoxLayout()
         button1 = QtGui.QPushButton("test OK 2")
