@@ -125,24 +125,34 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBox2.setLayout(gBoxlay2)
 
-        # Overall layout
+        # Viewing window layout
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
         #Layout positions
         grid.addWidget(self.ivl1, 0, 0, 1, 2)
         grid.addWidget(gBox2, 1, 0, 1, 1)
         grid.addWidget(gBox, 1, 1, 1, 1)
-        grid.addWidget(self.qtab1, 0, 2, 2, 1)
+        #grid.addWidget(self.qtab1, 0, 2, 2, 1)
         #define the proportion of the space each column takes
         grid.setColumnStretch(0, 3)
         grid.setColumnStretch(1, 1)
-        grid.setColumnStretch(2, 2)
+        #grid.setColumnStretch(2, 2)
         grid.setRowStretch(0, 2)
         grid.setRowStretch(1, 0)
         #grid.setColumnMinimumHeight()
+        grid_box = QtGui.QGroupBox("Viewer")
+        grid_box.setLayout(grid)
+
+        # Add a splitter
+        hbox = QtGui.QHBoxLayout(self)
+        splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        splitter1.addWidget(grid_box)
+        splitter1.addWidget(self.qtab1)
+        hbox.addWidget(splitter1)
+
 
         # horizontal widgets
-        self.setLayout(grid)
+        self.setLayout(hbox)
 
         # Signals to connect widget
         self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
