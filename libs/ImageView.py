@@ -314,17 +314,23 @@ class ImageViewOverlay(ImageViewLayout):
         # Updating viewer to include second image layer
         super(ImageViewOverlay, self).__init__()
 
-        # Image windows
-        self.imgwin1b = None
-        self.imgwin2b = None
-        self.imgwin3b = None
+        # Number of ROIs
+        self.num_roi = 0
+
+        # ROI Image windows
+        self.imgwin1b = []
+        self.imgwin2b = []
+        self.imgwin3b = []
+
+
         # Contour
-        self.cont1 = None
-        self.cont2 = None
-        self.cont3 = None
+        self.cont1 = []
+        self.cont2 = []
+        self.cont3 = []
 
         # ROI image
         self.roi = None
+        self.roi_all = []  # All rois
         self.roi_dims = None
         self.roi_file1 = None
 
@@ -332,6 +338,12 @@ class ImageViewOverlay(ImageViewLayout):
         self.options['ShowOverlay'] = 1
         self.options['ShowOverlayContour'] = False
         self.options['roi_outline_width'] = 3.0
+
+        # ROI pens
+        self.roipen = [pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']),
+                       pg.mkPen((0, 255, 0), width=self.options['roi_outline_width']),
+                       pg.mkPen((0, 0, 255), width=self.options['roi_outline_width'])]
+
 
         # Setting up ROI viewing parameters
         pos = np.array([0.0, 1.0])
@@ -342,8 +354,8 @@ class ImageViewOverlay(ImageViewLayout):
     def load_roi(self, file1):
         """
         Loads and checks roi image
+        Initialise viewing windows
         """
-        #TODO Might be cleaner to do this checking in the loading function
 
         if self.img.shape[0] == 1:
             print("Please load an image first")
@@ -353,6 +365,7 @@ class ImageViewOverlay(ImageViewLayout):
         self.roi_file1 = file1
         roi = nib.load(self.roi_file1)
         self.roi = roi.get_data()
+        self.roi_all.append(self.roi)
         self.roi_dims = self.roi.shape
 
         if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
@@ -361,50 +374,54 @@ class ImageViewOverlay(ImageViewLayout):
             self.roi = None
             self.roi_dims = None
 
-        if self.imgwin1b is None:
-            # Initialises viewer if it hasn't been initialised before
-            self.imgwin1b = pg.ImageItem(border='k')
-            self.imgwin2b = pg.ImageItem(border='k')
-            self.imgwin3b = pg.ImageItem(border='k')
-            self.view1.addItem(self.imgwin1b)
-            self.view2.addItem(self.imgwin2b)
-            self.view3.addItem(self.imgwin3b)
+        else:
+            self.num_roi += 1
 
-            self.cont1 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
-            self.cont2 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
-            self.cont3 = pg.IsocurveItem(level=1.0, pen=pg.mkPen((255, 0, 0), width=self.options['roi_outline_width']))
-            self.view1.addItem(self.cont1)
-            self.view2.addItem(self.cont2)
-            self.view3.addItem(self.cont3)
+        # Initialises viewer if it hasn't been initialised before
+        self.imgwin1b.append(pg.ImageItem(border='k'))
+        self.imgwin2b.append(pg.ImageItem(border='k'))
+        self.imgwin3b.append(pg.ImageItem(border='k'))
+        self.view1.addItem(self.imgwin1b[self.num_roi-1])
+        self.view2.addItem(self.imgwin2b[self.num_roi-1])
+        self.view3.addItem(self.imgwin3b[self.num_roi-1])
+
+        self.cont1.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
+        self.cont2.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
+        self.cont3.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
+        self.view1.addItem(self.cont1[self.num_roi-1])
+        self.view2.addItem(self.cont2[self.num_roi-1])
+        self.view3.addItem(self.cont3[self.num_roi-1])
 
         self._update_view()
 
     def _update_view(self):
         super(ImageViewOverlay, self)._update_view()
 
-        if self.imgwin1b is None:
+        if self.num_roi == 0:
             #If an overlay hasn't been added then return
             return
 
-        if (self.roi_dims is None) or (self.options['ShowOverlay'] == 0):
-            self.imgwin1b.setImage(np.zeros((1, 1)))
-            self.imgwin2b.setImage(np.zeros((1, 1)))
-            self.imgwin3b.setImage(np.zeros((1, 1)))
+        #Loop over each volume
+        for ii in range(self.num_roi):
 
-        else:
-            self.imgwin1b.setImage(self.roi[:, :, self.cim_pos[2]], lut=self.roilut)
-            self.imgwin2b.setImage(self.roi[:, self.cim_pos[1], :], lut=self.roilut)
-            self.imgwin3b.setImage(self.roi[self.cim_pos[0], :, :], lut=self.roilut)
+            if (self.roi_dims is None) or (self.options['ShowOverlay'] == 0):
+                self.imgwin1b[ii].setImage(np.zeros((1, 1)))
+                self.imgwin2b[ii].setImage(np.zeros((1, 1)))
+                self.imgwin3b[ii].setImage(np.zeros((1, 1)))
 
-        if self.options['ShowOverlayContour']:
-            self.cont1.setData(self.roi[:, :, self.cim_pos[2]])
-            self.cont2.setData(self.roi[:, self.cim_pos[1], :])
-            self.cont3.setData(self.roi[self.cim_pos[0], :, :])
-        else:
-            self.cont1.setData(None)
-            self.cont2.setData(None)
-            self.cont3.setData(None)
+            else:
+                self.imgwin1b[ii].setImage(self.roi_all[ii][:, :, self.cim_pos[2]], lut=self.roilut)
+                self.imgwin2b[ii].setImage(self.roi_all[ii][:, self.cim_pos[1], :], lut=self.roilut)
+                self.imgwin3b[ii].setImage(self.roi_all[ii][self.cim_pos[0], :, :], lut=self.roilut)
 
+            if self.options['ShowOverlayContour']:
+                self.cont1[ii].setData(self.roi_all[ii][:, :, self.cim_pos[2]])
+                self.cont2[ii].setData(self.roi_all[ii][:, self.cim_pos[1], :])
+                self.cont3[ii].setData(self.roi_all[ii][self.cim_pos[0], :, :])
+            else:
+                self.cont1[ii].setData(None)
+                self.cont2[ii].setData(None)
+                self.cont3[ii].setData(None)
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
