@@ -215,7 +215,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.imgwin2.setLevels(self.img_range)
             self.imgwin3.setLevels(self.img_range)
 
-
     # Slots for sliders and mouse
     @QtCore.Slot(int)
     def slider_connect1(self, value):

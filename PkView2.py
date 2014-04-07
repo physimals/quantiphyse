@@ -20,6 +20,19 @@ from libs.AnalysisWidgets import SECurve, ColorOverlay1, OverlayAnalysisWidget
 #TODO look into cross platform packaging
 
 
+class QGroupBoxClick(QtGui.QGroupBox):
+
+    """
+    Subclassing QGroupBox to detect clicks and signal click
+    """
+
+    sig_click = QtCore.Signal(int)
+
+    # Mouse clicked on widget
+    def mousePressEvent(self, event):
+        self.sig_click.emit(1)
+
+
 class MainWidge1(QtGui.QWidget):
 
     """
@@ -107,7 +120,6 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay.addStretch(1)
         gBox.setLayout(gBoxlay)
 
-        #gBox.setStyleSheet("QGroupBox {border: 3px solid rgb(255, 0, 0); }")
         # Slider layout
         gBox2 = QtGui.QGroupBox("Navigation Sliders")
         gBoxlay2 = QtGui.QGridLayout()
@@ -125,7 +137,7 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBox2.setLayout(gBoxlay2)
 
-        # Viewing window layout
+        # Viewing window layout (
         grid = QtGui.QGridLayout()
         grid.setSpacing(10)
         #Layout positions
@@ -140,7 +152,8 @@ class MainWidge1(QtGui.QWidget):
         grid.setRowStretch(0, 2)
         grid.setRowStretch(1, 0)
         #grid.setColumnMinimumHeight()
-        grid_box = QtGui.QGroupBox("Viewer")
+        grid_box = QGroupBoxClick("Viewer")
+        grid_box.sig_click.connect(self.mpe)
         grid_box.setLayout(grid)
 
         # Add a splitter
@@ -149,7 +162,6 @@ class MainWidge1(QtGui.QWidget):
         splitter1.addWidget(grid_box)
         splitter1.addWidget(self.qtab1)
         hbox.addWidget(splitter1)
-
 
         # horizontal widgets
         self.setLayout(hbox)
@@ -171,7 +183,22 @@ class MainWidge1(QtGui.QWidget):
             self.sld4.setRange(0, 0)
 
     # Mouse clicked on widget
-    def mousePressEvent(self, event):
+    # def mousePressEvent(self, event):
+    #
+    #     #trigger update of image
+    #     self.ivl1.mouse_click_connect(event)
+    #
+    #     #update slider positions
+    #     self.sld1.setValue(self.ivl1.cim_pos[2])
+    #     self.sld2.setValue(self.ivl1.cim_pos[1])
+    #     self.sld3.setValue(self.ivl1.cim_pos[0])
+
+    # Mouse clicked on widget
+    @QtCore.Slot(int)
+    def mpe(self, event):
+        """
+        Provides a pathway to updating mouse points
+        """
 
         #trigger update of image
         self.ivl1.mouse_click_connect(event)
