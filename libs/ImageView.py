@@ -45,12 +45,19 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         #ViewerOptions
         self.options = {}
-        self.options['one_view'] = False
 
         #For creating screenshots. single large window
+        self.options['one_view'] = False
+        # Automatically adjust threshold for each view
+        # If false then use the same threshold for the entire volume
+        self.options['view_thresh'] = True
 
-        #arrows
+        #empty array for arrows
         self.pts1 = []
+        #Voxel size initialisation
+        self.voxel_size = [1.0, 1.0, 1.0]
+        # Range of image
+        self.img_range = [0, 1]
 
         ##initialise layout (3 view boxes each containing an image item)
         self.addLabel('Axial')
@@ -108,11 +115,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #self.scene().sigMouseMoved.connect(self.mouseMoved)
         #self.scene().sigMouseReleased.connect()
 
-        #Voxel size initialisation
-        self.voxel_size = [1.0, 1.0, 1.0]
-        # Range of image
-        self.img_range = [0, 1]
-
     def load_image(self, file1):
         """
         Loading nifti image
@@ -127,8 +129,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.img = img.get_data()
         self.img_dims = self.img.shape
 
-        h1 = img.get_affine()
-        self.voxel_size = [np.abs(h1[0, 0]), np.abs(h1[1, 1]), np.abs(h1[2, 2])]
+        self.voxel_size = img.get_header().get_zooms()
 
         self.img_range = [self.img.min(), self.img.max()]
 
@@ -208,9 +209,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             print("Image does not have 3 or 4 dimensions")
 
         self.__update_crosshairs()
-        self.imgwin1.setLevels(self.img_range)
-        self.imgwin2.setLevels(self.img_range)
-        self.imgwin3.setLevels(self.img_range)
+
+        if not self.options['view_thresh']:
+            self.imgwin1.setLevels(self.img_range)
+            self.imgwin2.setLevels(self.img_range)
+            self.imgwin3.setLevels(self.img_range)
 
 
     # Slots for sliders and mouse
