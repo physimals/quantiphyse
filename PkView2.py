@@ -162,7 +162,10 @@ class MainWidge1(QtGui.QWidget):
 
     # Mouse clicked on widget
     def mousePressEvent(self, event):
+
+        #trigger update of image
         self.ivl1.mouse_click_connect(event)
+
         #update slider positions
         self.sld1.setValue(self.ivl1.cim_pos[2])
         self.sld2.setValue(self.ivl1.cim_pos[1])

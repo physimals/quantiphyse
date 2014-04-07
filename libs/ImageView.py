@@ -248,7 +248,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.__mouse_pos()
         self._update_view()
 
-        #Signal emit current enhancement curve
+        #Signal emit current enhancement curve to widget
         if len(self.img_dims) == 3: 
             print("3D image so just calculating cross image profile")
             vec_sig = self.img[self.cim_pos[0], :, self.cim_pos[2]]
