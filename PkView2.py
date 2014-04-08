@@ -137,30 +137,33 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBox2.setLayout(gBoxlay2)
 
-        # Viewing window layout (
-        grid = QtGui.QGridLayout()
-        grid.setSpacing(10)
-        #Layout positions
-        grid.addWidget(self.ivl1, 0, 0, 1, 2)
-        grid.addWidget(gBox2, 1, 0, 1, 1)
-        grid.addWidget(gBox, 1, 1, 1, 1)
-        #grid.addWidget(self.qtab1, 0, 2, 2, 1)
-        #define the proportion of the space each column takes
-        grid.setColumnStretch(0, 3)
-        grid.setColumnStretch(1, 1)
-        #grid.setColumnStretch(2, 2)
-        grid.setRowStretch(0, 2)
-        grid.setRowStretch(1, 0)
-        #grid.setColumnMinimumHeight()
+        # All buttons layout
+        gBox_all = QtGui.QGroupBox()
+        gBoxlay_all = QtGui.QHBoxLayout()
+        gBoxlay_all.addWidget(gBox2)
+        gBoxlay_all.addWidget(gBox)
+        gBox_all.setLayout(gBoxlay_all)
+
+        # Viewing window layout + buttons
+        # Add a horizontal splitter between image viewer and buttons below
         grid_box = QGroupBoxClick("Viewer")
         grid_box.sig_click.connect(self.mpe)
+        grid = QtGui.QVBoxLayout()
+        splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter2.addWidget(self.ivl1)
+        splitter2.addWidget(gBox_all)
+        splitter2.setStretchFactor(0, 3)
+        splitter2.setStretchFactor(1, 1)
+        grid.addWidget(splitter2)
         grid_box.setLayout(grid)
 
-        # Add a splitter
+        # Add a vertical splitter between main view and tabs
         hbox = QtGui.QHBoxLayout(self)
         splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter1.addWidget(grid_box)
         splitter1.addWidget(self.qtab1)
+        splitter1.setStretchFactor(0, 2)
+        splitter1.setStretchFactor(1, 1)
         hbox.addWidget(splitter1)
 
         # horizontal widgets
