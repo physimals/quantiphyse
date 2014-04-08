@@ -235,8 +235,12 @@ class MainWin1(QtGui.QMainWindow):
         self.toolbar = None
         self.default_directory ='/home'
 
-        # Get path of current directory
-        self.local_file_path = os.path.dirname(__file__)
+        # Patch for if file is frozen
+        if getattr(sys, 'frozen', False):
+            # if frozen
+            self.local_file_path = os.path.dirname(sys.executable)
+        else:
+            self.local_file_path = os.path.dirname(__file__)
 
         self.init_ui()
 
