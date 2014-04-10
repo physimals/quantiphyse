@@ -15,9 +15,14 @@ from libs.ImageView import ImageViewColorOverlay
 from libs.AnalysisWidgets import SECurve, ColorOverlay1, OverlayAnalysisWidget
 
 #TODO Need some sort of volume management object...
+# Object can just store each volume, assign a tag for each type assignment and
+# give access to the correct volume when used
+# Tie in with drag and drop files volumes and window
+#TODO Drag and drop file volumes into a volume window
+
 #TODO Need to build separate image processing classes tied to individual widgets
 #TODO mouse scroll wheel (not urgent)
-#TODO look into cross platform packaging
+#TODO look into cross platform packaging (Linux done with cx_freeze)
 
 
 class QGroupBoxClick(QtGui.QGroupBox):
@@ -240,7 +245,8 @@ class MainWin1(QtGui.QMainWindow):
             # if frozen
             self.local_file_path = os.path.dirname(sys.executable)
         else:
-            self.local_file_path = os.path.dirname(__file__)
+            #self.local_file_path = os.path.dirname(__file__)
+            self.local_file_path = os.getcwd()
 
         self.init_ui()
 
