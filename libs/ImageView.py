@@ -35,13 +35,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     def __init__(self):
         super(ImageViewLayout, self).__init__()
 
-        ## Initialise parameters
-        self.file1 = None
-        self.img = np.zeros((1, 1, 1))
-
-        #Current image position and size
-        self.img_dims = self.img.shape
-        self.cim_pos = [0, 0, 0, 0]
+        # volume management for the images
+        self.ivm = None
 
         #ViewerOptions
         self.options = {}
@@ -50,14 +45,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.options['one_view'] = False
         # Automatically adjust threshold for each view
         # If false then use the same threshold for the entire volume
-        self.options['view_thresh'] = True
+        self.options['view_thresh'] = False
 
         #empty array for arrows
         self.pts1 = []
-        #Voxel size initialisation
-        self.voxel_size = [1.0, 1.0, 1.0]
-        # Range of image
-        self.img_range = [0, 1]
 
         ##initialise layout (3 view boxes each containing an image item)
         self.addLabel('Axial')
@@ -112,30 +103,14 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.hline3.setVisible(False)
         self.view3.addItem(self.vline3, ignoreBounds=True)
         self.view3.addItem(self.hline3, ignoreBounds=True)
-        #self.scene().sigMouseMoved.connect(self.mouseMoved)
-        #self.scene().sigMouseReleased.connect()
 
-    def load_image(self, file1):
+    def add_image_management(self, image_vol_management):
         """
-        Loading nifti image
-
-        self.img: variable storing numpy volume
-        self.img_dims: dimensions of the image
-
+        Adding image management
         """
+        self.ivm = image_vol_management
 
-        self.file1 = file1
-        img = nib.load(self.file1)
-        self.img = img.get_data()
-        self.img_dims = self.img.shape
-
-        self.voxel_size = img.get_header().get_zooms()
-
-        self.img_range = [self.img.min(), self.img.max()]
-
-        print("Image dimensions: ", self.img_dims)
-        print("Voxel size: ", self.voxel_size)
-        print("Image range: ", self.img_range)
+    def load_image(self):
 
         # update view
         self._update_view()
@@ -151,23 +126,23 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         if self.view1.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 1:", self.imgwin1.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin1.mapFromScene(self.lastMousePos)
-            self.cim_pos[0] = mouse_point.x()
-            self.cim_pos[1] = mouse_point.y()
-            print(self.cim_pos)
+            self.ivm.cim_pos[0] = mouse_point.x()
+            self.ivm.cim_pos[1] = mouse_point.y()
+            print(self.ivm.cim_pos)
 
         elif self.view2.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 2:", self.imgwin2.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin2.mapFromScene(self.lastMousePos)
-            self.cim_pos[0] = mouse_point.x()
-            self.cim_pos[2] = mouse_point.y()
-            print(self.cim_pos)
+            self.ivm.cim_pos[0] = mouse_point.x()
+            self.ivm.cim_pos[2] = mouse_point.y()
+            print(self.ivm.cim_pos)
 
         elif self.view3.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 3:", self.imgwin3.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin3.mapFromScene(self.lastMousePos)
-            self.cim_pos[1] = mouse_point.x()
-            self.cim_pos[2] = mouse_point.y()
-            print(self.cim_pos)
+            self.ivm.cim_pos[1] = mouse_point.x()
+            self.ivm.cim_pos[2] = mouse_point.y()
+            print(self.ivm.cim_pos)
 
     def __update_crosshairs(self):
         """
@@ -175,18 +150,18 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         """
 
-        self.vline1.setPos(self.cim_pos[0])
-        self.hline1.setPos(self.cim_pos[1])
+        self.vline1.setPos(self.ivm.cim_pos[0])
+        self.hline1.setPos(self.ivm.cim_pos[1])
         self.vline1.setVisible(True)
         self.hline1.setVisible(True)
         #
-        self.vline2.setPos(self.cim_pos[0])
-        self.hline2.setPos(self.cim_pos[2])
+        self.vline2.setPos(self.ivm.cim_pos[0])
+        self.hline2.setPos(self.ivm.cim_pos[2])
         self.vline2.setVisible(True)
         self.hline2.setVisible(True)
         #
-        self.vline3.setPos(self.cim_pos[1])
-        self.hline3.setPos(self.cim_pos[2])
+        self.vline3.setPos(self.ivm.cim_pos[1])
+        self.hline3.setPos(self.ivm.cim_pos[2])
         self.vline3.setVisible(True)
         self.hline3.setVisible(True)
 
@@ -195,45 +170,45 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         Update the image viewer to account for the new position
         """
 
-        if len(self.img_dims) == 3:
-            self.imgwin1.setImage(self.img[:, :, self.cim_pos[2]])
-            self.imgwin2.setImage(self.img[:, self.cim_pos[1], :])
-            self.imgwin3.setImage(self.img[self.cim_pos[0], :, :])
+        if len(self.ivm.img_dims) == 3:
+            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2]])
+            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :])
+            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :])
 
-        elif len(self.img_dims) == 4:
+        elif len(self.ivm.img_dims) == 4:
 
-            self.imgwin1.setImage(self.img[:, :, self.cim_pos[2], self.cim_pos[3]])
-            self.imgwin2.setImage(self.img[:, self.cim_pos[1], :, self.cim_pos[3]])
-            self.imgwin3.setImage(self.img[self.cim_pos[0], :, :, self.cim_pos[3]])
+            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]])
+            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]])
+            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]])
         else:
             print("Image does not have 3 or 4 dimensions")
 
         self.__update_crosshairs()
 
         if not self.options['view_thresh']:
-            self.imgwin1.setLevels(self.img_range)
-            self.imgwin2.setLevels(self.img_range)
-            self.imgwin3.setLevels(self.img_range)
+            self.imgwin1.setLevels(self.ivm.img_range)
+            self.imgwin2.setLevels(self.ivm.img_range)
+            self.imgwin3.setLevels(self.ivm.img_range)
 
     # Slots for sliders and mouse
     @QtCore.Slot(int)
     def slider_connect1(self, value):
-        self.cim_pos[2] = value
+        self.ivm.cim_pos[2] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect2(self, value):
-        self.cim_pos[1] = value
+        self.ivm.cim_pos[1] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect3(self, value):
-        self.cim_pos[0] = value
+        self.ivm.cim_pos[0] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect4(self, value):
-        self.cim_pos[3] = value
+        self.ivm.cim_pos[3] = value
         self._update_view()
 
     @QtCore.Slot(int)
@@ -248,11 +223,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self._update_view()
 
         #Signal emit current enhancement curve to widget
-        if len(self.img_dims) == 3: 
+        if len(self.ivm.img_dims) == 3:
             print("3D image so just calculating cross image profile")
-            vec_sig = self.img[self.cim_pos[0], :, self.cim_pos[2]]
-        elif len(self.img_dims) == 4:
-            vec_sig = self.img[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+            vec_sig = self.ivm.image[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
+        elif len(self.ivm.img_dims) == 4:
+            vec_sig = self.ivm.image[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
         else:
             vec_sig = None
             print("Image is not 3D or 4D")
@@ -273,7 +248,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         aa = pg.ArrowItem(pen=pen1, brush=pen1)
         self.pts1.append(aa)
-        self.pts1[-1].setPos(self.cim_pos[0], self.cim_pos[1])
+        self.pts1[-1].setPos(self.ivm.cim_pos[0], self.ivm.cim_pos[1])
         self.view1.addItem(self.pts1[-1])
 
     @QtCore.Slot()
@@ -296,9 +271,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #toggles whether voxel scaling is used
 
         if state == QtCore.Qt.Checked:
-            self.view1.setAspectLocked(True, ratio=(self.voxel_size[0] / self.voxel_size[1]))
-            self.view2.setAspectLocked(True, ratio=(self.voxel_size[0] / self.voxel_size[2]))
-            self.view3.setAspectLocked(True, ratio=(self.voxel_size[1] / self.voxel_size[2]))
+            self.view1.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[1]))
+            self.view2.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[2]))
+            self.view3.setAspectLocked(True, ratio=(self.ivm.voxel_size[1] / self.ivm.voxel_size[2]))
         else:
             self.view1.setAspectLocked(True, ratio=1)
             self.view2.setAspectLocked(True, ratio=1)
@@ -316,25 +291,15 @@ class ImageViewOverlay(ImageViewLayout):
         # Updating viewer to include second image layer
         super(ImageViewOverlay, self).__init__()
 
-        # Number of ROIs
-        self.num_roi = 0
-
         # ROI Image windows
         self.imgwin1b = []
         self.imgwin2b = []
         self.imgwin3b = []
 
-
         # Contour
         self.cont1 = []
         self.cont2 = []
         self.cont3 = []
-
-        # ROI image
-        self.roi = None
-        self.roi_all = []  # All rois
-        self.roi_dims = None
-        self.roi_file1 = None
 
         # Viewing options as a dictionary
         self.options['ShowOverlay'] = 1
@@ -353,73 +318,57 @@ class ImageViewOverlay(ImageViewLayout):
         map1 = pg.ColorMap(pos, color)
         self.roilut = map1.getLookupTable(0.0, 1.0, 256)
 
-    def load_roi(self, file1):
+    def load_roi(self):
         """
         Loads and checks roi image
         Initialise viewing windows
         """
 
-        if self.img.shape[0] == 1:
+        if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
-
-        #Setting ROI data
-        self.roi_file1 = file1
-        roi = nib.load(self.roi_file1)
-        self.roi = roi.get_data()
-        self.roi_all.append(self.roi)
-        self.roi_dims = self.roi.shape
-
-        if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
-            print("First 3 Dimensions of the ROI must be the same as the image, "
-                  "and ROI must be 3D")
-            self.roi = None
-            self.roi_dims = None
-
-        else:
-            self.num_roi += 1
 
         # Initialises viewer if it hasn't been initialised before
         self.imgwin1b.append(pg.ImageItem(border='k'))
         self.imgwin2b.append(pg.ImageItem(border='k'))
         self.imgwin3b.append(pg.ImageItem(border='k'))
-        self.view1.addItem(self.imgwin1b[self.num_roi-1])
-        self.view2.addItem(self.imgwin2b[self.num_roi-1])
-        self.view3.addItem(self.imgwin3b[self.num_roi-1])
+        self.view1.addItem(self.imgwin1b[self.ivm.num_roi-1])
+        self.view2.addItem(self.imgwin2b[self.ivm.num_roi-1])
+        self.view3.addItem(self.imgwin3b[self.ivm.num_roi-1])
 
-        self.cont1.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
-        self.cont2.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
-        self.cont3.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.num_roi-1]))
-        self.view1.addItem(self.cont1[self.num_roi-1])
-        self.view2.addItem(self.cont2[self.num_roi-1])
-        self.view3.addItem(self.cont3[self.num_roi-1])
+        self.cont1.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
+        self.cont2.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
+        self.cont3.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
+        self.view1.addItem(self.cont1[self.ivm.num_roi-1])
+        self.view2.addItem(self.cont2[self.ivm.num_roi-1])
+        self.view3.addItem(self.cont3[self.ivm.num_roi-1])
 
         self._update_view()
 
     def _update_view(self):
         super(ImageViewOverlay, self)._update_view()
 
-        if self.num_roi == 0:
+        if self.ivm.num_roi == 0:
             #If an overlay hasn't been added then return
             return
 
         #Loop over each volume
-        for ii in range(self.num_roi):
+        for ii in range(self.ivm.num_roi):
 
-            if (self.roi_dims is None) or (self.options['ShowOverlay'] == 0):
+            if (self.ivm.roi_dims is None) or (self.options['ShowOverlay'] == 0):
                 self.imgwin1b[ii].setImage(np.zeros((1, 1)))
                 self.imgwin2b[ii].setImage(np.zeros((1, 1)))
                 self.imgwin3b[ii].setImage(np.zeros((1, 1)))
 
             else:
-                self.imgwin1b[ii].setImage(self.roi_all[ii][:, :, self.cim_pos[2]], lut=self.roilut)
-                self.imgwin2b[ii].setImage(self.roi_all[ii][:, self.cim_pos[1], :], lut=self.roilut)
-                self.imgwin3b[ii].setImage(self.roi_all[ii][self.cim_pos[0], :, :], lut=self.roilut)
+                self.imgwin1b[ii].setImage(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]], lut=self.roilut)
+                self.imgwin2b[ii].setImage(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :], lut=self.roilut)
+                self.imgwin3b[ii].setImage(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :], lut=self.roilut)
 
             if self.options['ShowOverlayContour']:
-                self.cont1[ii].setData(self.roi_all[ii][:, :, self.cim_pos[2]])
-                self.cont2[ii].setData(self.roi_all[ii][:, self.cim_pos[1], :])
-                self.cont3[ii].setData(self.roi_all[ii][self.cim_pos[0], :, :])
+                self.cont1[ii].setData(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]])
+                self.cont2[ii].setData(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :])
+                self.cont3[ii].setData(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :])
             else:
                 self.cont1[ii].setData(None)
                 self.cont2[ii].setData(None)
@@ -470,8 +419,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         # ROI image
         self.ovreg = None
-        self.ovreg_dims = None
-        self.ovreg_file1 = None
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
@@ -484,28 +431,17 @@ class ImageViewColorOverlay(ImageViewOverlay):
         #self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
-    def load_ovreg(self, file1):
+    def load_ovreg(self):
         """
         Loads and checks Overlay region image
         """
 
         #TODO Might be cleaner to do this checking in the loading function
-        if self.img.shape[0] == 1:
+        if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
 
-        #Setting Overlay region data
-        self.ovreg_file1 = file1
-        ovreg = nib.load(self.ovreg_file1)
-        self.ovreg_in = ovreg.get_data()
-
         self._process_overlay()
-
-        if (self.ovreg_dims != self.img_dims[:3]) or (len(self.ovreg_dims) > 3):
-            print("First 3 Dimensions of the overlay region must be the same as the image, "
-                  "and overlay region must be 3D")
-            self.ovreg = None
-            self.ovreg_dims = None
 
         if self.imgwin1c is None:
             # Initialises viewer if it hasn't been initialised before
@@ -516,7 +452,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)
 
-
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
         self.imgwin3c.setLevels(self.ov_range)
@@ -525,20 +460,20 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
     def _process_overlay(self):
 
-        self.ovreg = np.copy(self.ovreg_in)
-        self.ovreg_dims = self.ovreg.shape
+        self.ovreg = np.copy(self.ivm.overlay)
+
         # Convert to numpy double
         self.ovreg = np.array(self.ovreg, dtype=np.double)
 
-        if (self.roi is not None) and (self.options['UseROI'] == 1):
+        if (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
 
             #Scale ROI
-            subreg1 = self.ovreg[np.array(self.roi, dtype=bool)]
+            subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
             self.ovreg = self.ovreg - np.min(subreg1)
             self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
             #Set transparency around ROI
-            self.ovreg[np.logical_not(self.roi)] = -0.01
+            self.ovreg[np.logical_not(self.ivm.roi)] = -0.01
 
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
@@ -549,7 +484,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
-
     def _update_view(self):
         super(ImageViewColorOverlay, self)._update_view()
 
@@ -557,15 +491,14 @@ class ImageViewColorOverlay(ImageViewOverlay):
             #If an overlay hasn't been added then return
             return
 
-        if (self.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
+        if (self.ivm.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
             self.imgwin1c.setImage(np.zeros((1, 1)))
             self.imgwin2c.setImage(np.zeros((1, 1)))
             self.imgwin3c.setImage(np.zeros((1, 1)))
         else:
-            self.imgwin1c.setImage(self.ovreg[:, :, self.cim_pos[2]], lut=self.ovreg_lut)
-            self.imgwin2c.setImage(self.ovreg[:, self.cim_pos[1], :], lut=self.ovreg_lut)
-            self.imgwin3c.setImage(self.ovreg[self.cim_pos[0], :, :], lut=self.ovreg_lut)
-
+            self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], lut=self.ovreg_lut)
+            self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], lut=self.ovreg_lut)
+            self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], lut=self.ovreg_lut)
 
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)

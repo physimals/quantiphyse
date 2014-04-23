@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+#TODO 1) Drag and drop file volumes into a volume window
+#TODO 2) Need to build separate image processing classes tied to individual widgets
+
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import matplotlib
@@ -13,16 +16,8 @@ from PySide import QtCore, QtGui
 # My libs
 from libs.ImageView import ImageViewColorOverlay
 from libs.AnalysisWidgets import SECurve, ColorOverlay1, OverlayAnalysisWidget
-
-#TODO Need some sort of volume management object...
-# Object can just store each volume, assign a tag for each type assignment and
-# give access to the correct volume when used
-# Tie in with drag and drop files volumes and window
-#TODO Drag and drop file volumes into a volume window
-
-#TODO Need to build separate image processing classes tied to individual widgets
-#TODO mouse scroll wheel (not urgent)
-#TODO look into cross platform packaging (Linux done with cx_freeze)
+from analysis.volume_management import ImageVolumeManagement
+from analysis.overlay_analysis import OverlayAnalyis
 
 
 class QGroupBoxClick(QtGui.QGroupBox):
@@ -48,12 +43,23 @@ class MainWidge1(QtGui.QWidget):
     def __init__(self):
         super(MainWidge1, self).__init__()
 
+        # Loading data management object
+        self.ivm = ImageVolumeManagement()
+
+        # Loading image analysis
+        self.ia = OverlayAnalyis()
+        self.ia.add_image_management(self.ivm)
+
         #loading ImageView
         self.ivl1 = ImageViewColorOverlay()
+        self.ivl1.add_image_management(self.ivm)
 
-        #Loading widgets
+        # Loading widgets
         self.sw1 = SECurve()
+
         self.sw2 = ColorOverlay1()
+        self.sw2.add_analysis(self.ia)
+
         self.sw3 = OverlayAnalysisWidget()
 
         # Connect widgets
@@ -69,13 +75,13 @@ class MainWidge1(QtGui.QWidget):
 
         # InitUI
         #Sliders
-        self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld1 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld2 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
         self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld3 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld4 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
         self.update_slider_range()
 
@@ -140,6 +146,8 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
         gBoxlay2.addWidget(self.sld4, 3, 1)
         gBoxlay2.addWidget(lab_p4, 3, 2)
+        gBoxlay2.setColumnStretch(0, 1)
+        gBoxlay2.setColumnStretch(1, 2)
         gBox2.setLayout(gBoxlay2)
 
         # All buttons layout
@@ -147,6 +155,9 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay_all = QtGui.QHBoxLayout()
         gBoxlay_all.addWidget(gBox2)
         gBoxlay_all.addWidget(gBox)
+        gBoxlay_all.addStretch(1)
+        gBoxlay_all.setStretch(0, 2)
+        gBoxlay_all.setStretch(1, 1)
         gBox_all.setLayout(gBoxlay_all)
 
         # Viewing window layout + buttons
@@ -181,25 +192,14 @@ class MainWidge1(QtGui.QWidget):
     # update slider range
     def update_slider_range(self):
         #set slider range
-        self.sld1.setRange(0, self.ivl1.img_dims[2]-1)
-        self.sld2.setRange(0, self.ivl1.img_dims[1]-1)
-        self.sld3.setRange(0, self.ivl1.img_dims[0]-1)
+        self.sld1.setRange(0, self.ivm.img_dims[2]-1)
+        self.sld2.setRange(0, self.ivm.img_dims[1]-1)
+        self.sld3.setRange(0, self.ivm.img_dims[0]-1)
 
-        if len(self.ivl1.img_dims) == 4:
-            self.sld4.setRange(0, self.ivl1.img_dims[3]-1)
+        if len(self.ivm.img_dims) == 4:
+            self.sld4.setRange(0, self.ivm.img_dims[3]-1)
         else:
             self.sld4.setRange(0, 0)
-
-    # Mouse clicked on widget
-    # def mousePressEvent(self, event):
-    #
-    #     #trigger update of image
-    #     self.ivl1.mouse_click_connect(event)
-    #
-    #     #update slider positions
-    #     self.sld1.setValue(self.ivl1.cim_pos[2])
-    #     self.sld2.setValue(self.ivl1.cim_pos[1])
-    #     self.sld3.setValue(self.ivl1.cim_pos[0])
 
     # Mouse clicked on widget
     @QtCore.Slot(int)
@@ -212,9 +212,9 @@ class MainWidge1(QtGui.QWidget):
         self.ivl1.mouse_click_connect(event)
 
         #update slider positions
-        self.sld1.setValue(self.ivl1.cim_pos[2])
-        self.sld2.setValue(self.ivl1.cim_pos[1])
-        self.sld3.setValue(self.ivl1.cim_pos[0])
+        self.sld1.setValue(self.ivm.cim_pos[2])
+        self.sld2.setValue(self.ivm.cim_pos[1])
+        self.sld3.setValue(self.ivm.cim_pos[0])
 
     # Handles closing of tabs
     def on_tab_close(self, value):
@@ -241,12 +241,12 @@ class MainWin1(QtGui.QMainWindow):
         self.default_directory ='/home'
 
         # Patch for if file is frozen
-        if getattr(sys, 'frozen', False):
+        if hasattr(sys, 'frozen'):
             # if frozen
             self.local_file_path = os.path.dirname(sys.executable)
         else:
-            #self.local_file_path = os.path.dirname(__file__)
-            self.local_file_path = os.getcwd()
+            self.local_file_path = os.path.dirname(__file__)
+            #self.local_file_path = os.getcwd()
 
         self.init_ui()
 
@@ -328,7 +328,8 @@ class MainWin1(QtGui.QMainWindow):
 
         #check if file is returned
         if fname != '':
-            self.mw1.ivl1.load_image(fname)
+            self.mw1.ivm.load_image(fname)
+            self.mw1.ivl1.load_image()
             self.mw1.update_slider_range()
         else:
             print('No file selected')
@@ -342,7 +343,8 @@ class MainWin1(QtGui.QMainWindow):
 
         #check if file is returned
         if fname != '':
-            self.mw1.ivl1.load_roi(fname)
+            self.mw1.ivm.load_roi(fname)
+            self.mw1.ivl1.load_roi()
         else:
             print('No file selected')
 
@@ -355,7 +357,8 @@ class MainWin1(QtGui.QMainWindow):
 
         #check if file is returned
         if fname != '':
-            self.mw1.ivl1.load_ovreg(fname)
+            self.mw1.ivm.load_ovreg(fname)
+            self.mw1.ivl1.load_ovreg()
         else:
             print('No file selected')
 

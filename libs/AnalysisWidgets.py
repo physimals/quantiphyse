@@ -4,6 +4,7 @@ from PySide import QtCore, QtGui
 
 import pyqtgraph as pg
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 
 #TODO create an non-model based analysis tool which ties into creating new image objects
 
@@ -20,7 +21,7 @@ class SECurve(QtGui.QWidget):
         super(SECurve, self).__init__()
 
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
-        self.win1.setVisible(False)
+        self.win1.setVisible(True)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         self.reset_graph()
 
@@ -50,6 +51,7 @@ class SECurve(QtGui.QWidget):
 
         # Select plot color
         combo = QtGui.QComboBox(self)
+        combo.addItem("grey")
         combo.addItem("red")
         combo.addItem("blue")
         combo.addItem("green")
@@ -58,36 +60,48 @@ class SECurve(QtGui.QWidget):
         combo.addItem("brown")
         combo.activated[str].connect(self.emit_cchoice)
 
-        l1 = QtGui.QGridLayout()
-        l1.setSpacing(10)
-        l1.addWidget(self.win1, 0, 0, 1, 3)
+        l1 = QtGui.QVBoxLayout()
 
+        l03 = QtGui.QHBoxLayout()
+        l03.addStretch(1)
+        l03.addWidget(b1)
+        l1.addLayout(l03)
+
+        l1.addWidget(self.win1)
         space1 = QtGui.QLabel('')
-        l1.addWidget(space1, 1, 0)
+        l1.addWidget(space1)
+
+        l01 = QtGui.QHBoxLayout()
+        l01.addWidget(QtGui.QLabel('Plot color'))
+        l01.addWidget(combo)
+        l01.addStretch(1)
+        l1.addLayout(l01)
+
+        l02 = QtGui.QHBoxLayout()
+        l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
+        l02.addWidget(self.text1)
+        l02.addStretch(1)
+        l1.addLayout(l02)
 
         l1.addWidget(self.cb1, 2, 0)
         l1.addWidget(self.cb2, 3, 0)
         l1.addWidget(self.cb3, 4, 0)
-        l1.addWidget(QtGui.QLabel('Plot color'), 5, 0)
-
-        l1.addWidget(QtGui.QLabel("Temporal resolution (s)"), 2, 1)
-        l1.addWidget(self.text1, 2, 2)
-        l1.addWidget(self.cb4, 3, 1)
-        l1.addWidget(b1, 4, 1)
-        l1.addWidget(combo, 5, 1)
+        l1.addWidget(self.cb4)
+        l1.addStretch(1)
 
 
 
-        l1.setRowStretch(0, 2)
-        l1.setRowStretch(1, 1)
-        l1.setRowStretch(2, 1)
-        l1.setRowStretch(3, 1)
-        l1.setColumnStretch(0, 1)
-        l1.setColumnStretch(1, 1)
-        l1.setColumnStretch(2, 1)
+        #l1.setRowStretch(0, 2)
+        #l1.setRowStretch(1, 1)
+        #l1.setRowStretch(2, 1)
+        #l1.setRowStretch(3, 1)
+        #l1.setColumnStretch(0, 1)
+        #l1.setColumnStretch(1, 1)
+        #l1.setColumnStretch(2, 1)
 
         self.setLayout(l1)
 
+        # initial plot colour
         self.plot_color = (200, 200, 200)
 
     def _plot(self, values1):
@@ -116,18 +130,24 @@ class SECurve(QtGui.QWidget):
         if self.cb1.isChecked() is True:
             wsize = 3
             cwin1 = np.ones(wsize)/wsize
-            values2 = np.convolve(values1, cwin1)
-            print(len(values1))
-            print(len(values2))
-            values2 = values2[1:-1]
-            print(len(values2))
+
+            r1 = range(len(values1))
+            #tolerance does not scale by data value to scale input
+            s = UnivariateSpline(r1, values1/values1.max(), s=0.1, k=4)
+            knots1 = s.get_knots()
+            print("Number of knots in B-spline smoothing: ", len(knots1))
+            values2 = s(r1)*values1.max()
+
+            #Previous smoothing method using a convolution
+            #values2 = np.convolve(values1, cwin1)
+            #values2 = values2[1:-1]
 
         # Plotting using single or multiple plots
         if self.cb2.isChecked() is False:
             if self.curve1 is None:
-                self.curve1 = self.p1.plot(pen=None, symbolBrush=(255, 0, 0), symbolPen='k')
+                self.curve1 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
                 self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
-            self.curve2.setData(xx, values2)
+            self.curve2.setData(xx, values2, pen=self.plot_color)
             self.curve1.setData(xx, values1)
 
         # Multiple plots
@@ -184,6 +204,8 @@ class SECurve(QtGui.QWidget):
     def emit_cchoice(self, text):
         if text == 'red':
             cvec = (255, 0, 0)
+        elif text == 'grey':
+            cvec = (200, 200, 200)
         elif text == 'green':
             cvec = (0, 255, 0)
         elif text == 'blue':
@@ -196,6 +218,7 @@ class SECurve(QtGui.QWidget):
             cvec = (139, 69, 19)
         else:
             cvec = (255, 255, 255)
+
         self.plot_color = cvec
 
 
@@ -213,9 +236,12 @@ class ColorOverlay1(QtGui.QWidget):
     def __init__(self):
         super(ColorOverlay1, self).__init__()
 
-        l1 = QtGui.QVBoxLayout()
+        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1.setVisible(False)
+        self.plt1 = self.win1.addPlot(title="Signal enhancement curve")
 
-        lab1 = QtGui.QLabel("Transparency")
+        # Method
+        self.ivm = None
 
         sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -237,13 +263,103 @@ class ColorOverlay1(QtGui.QWidget):
         self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
         self.cb2.toggle()
 
-        l1.addWidget(lab1)
-        l1.addWidget(sld1)
+        self.tabmod1 = QtGui.QStandardItemModel()
+
+        self.tab1 = QtGui.QTableView()
+        self.tab1.resizeColumnsToContents()
+        self.tab1.setModel(self.tabmod1)
+        self.tab1.setVisible(False)
+
+        l00 = QtGui.QHBoxLayout()
+        l00.addWidget(QtGui.QLabel("Overlay Transparency"))
+        l00.addWidget(sld1)
+        l00.addStretch(1)
+
+        l01 = QtGui.QHBoxLayout()
+        l01.addWidget(QtGui.QLabel("Color Map                        "))
+        l01.addWidget(combo)
+        l01.addStretch(1)
+
+        l02 = QtGui.QHBoxLayout()
+        l02.addWidget(QtGui.QLabel("Overlay Statistics"))
+        butgen = QtGui.QPushButton("Generate")
+        butgen.clicked.connect(self.generate_overlay_stats)
+        l02.addWidget(butgen)
+        l02.addStretch(1)
+
+        l03 = QtGui.QHBoxLayout()
+        l03.addWidget(QtGui.QLabel("Overlay Histogram"))
+        butgen2 = QtGui.QPushButton("Generate")
+        butgen2.clicked.connect(self.generate_histogram)
+        l03.addWidget(butgen2)
+        l03.addStretch(1)
+
+        l1 = QtGui.QVBoxLayout()
+        l1.addLayout(l00)
+        l1.addLayout(l01)
         l1.addWidget(self.cb1)
         l1.addWidget(self.cb2)
-        l1.addWidget(combo)
-
+        l1.addWidget(QtGui.QLabel(""))
+        l1.addLayout(l02)
+        l1.addWidget(self.tab1)
+        l1.addWidget(QtGui.QLabel(""))
+        l1.addLayout(l03)
+        l1.addWidget(self.win1)
+        l1.addWidget(QtGui.QLabel(""))
+        l1.addWidget(QtGui.QLabel(""))
+        l1.addStretch(1)
         self.setLayout(l1)
+
+    def add_analysis(self, image_analysis):
+
+        """
+        Reference to image analysis class
+        """
+
+        self.ia = image_analysis
+
+    @QtCore.Slot()
+    def generate_overlay_stats(self):
+        """
+        Some initial analysis
+        (temporary location before moving analysis into a separate framework)
+        """
+
+        self.tab1.setVisible(True)
+
+        # get analysis from analysis object
+        m1, m2, m3, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+
+        self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
+        self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
+        self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+
+        for ii in range(len(m1)):
+
+            self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
+
+            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(m1[ii], 2))))
+            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(m2[ii], 2))))
+            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(m3[ii], 2))))
+
+    @QtCore.Slot()
+    def generate_histogram(self):
+        """
+        Some initial analysis
+        (temporary location before moving analysis into a separate framework)
+        """
+
+        # get analysis from analysis object
+        m1, m2, m3, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+
+        self.win1.setVisible(True)
+        self.win1.removeItem(self.plt1)
+        self.plt1 = self.win1.addPlot(title="")
+
+        for ii in range(len(m1)):
+            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, fillLevel=0, brush=(0, 0, 255, 255),
+                                     pen=(0, 0, 0))
+            self.plt1.addItem(curve)
 
     def __plot(self, values1):
         self.curve.setData(values1)
