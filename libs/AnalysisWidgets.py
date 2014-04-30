@@ -61,6 +61,8 @@ class SECurve(QtGui.QWidget):
         combo.addItem("cyan")
         combo.addItem("brown")
         combo.activated[str].connect(self.emit_cchoice)
+        combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
+                         "Allows visualisation of multiple enhancement curves of different colours")
 
         l1 = QtGui.QVBoxLayout()
 
@@ -246,10 +248,13 @@ class ColorOverlay1(QtGui.QWidget):
         combo.addItem("jet")
         combo.addItem("hot")
         combo.addItem("gist_heat")
+        combo.setToolTip("The colormaps available for visualising the overlay")
         combo.activated[str].connect(self.emit_cmap)
 
         # combo for choosing overlay volume
         self.combo2 = QtGui.QComboBox(self)
+        self.combo2.setToolTip("The overlays that have currently been loaded or generated")
+        # TODO make the combobox change the overlay
         #self.combo2.activated[str].connect(self.emit_cmap)
         # current list of choices
         self.combo2_all = []
@@ -267,7 +272,7 @@ class ColorOverlay1(QtGui.QWidget):
         self.tab1 = QtGui.QTableView()
         self.tab1.resizeColumnsToContents()
         self.tab1.setModel(self.tabmod1)
-        self.tab1.setVisible(False)
+        self.tab1.setVisible(True)
 
         l00 = QtGui.QHBoxLayout()
         l00.addWidget(QtGui.QLabel("Overlay Transparency"))
@@ -282,6 +287,7 @@ class ColorOverlay1(QtGui.QWidget):
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Overlay Statistics"))
         butgen = QtGui.QPushButton("Generate")
+        butgen.setToolTip("Generate standard statistics for the overlay values in each ROI")
         butgen.clicked.connect(self.generate_overlay_stats)
         l02.addWidget(butgen)
         l02.addStretch(1)
@@ -289,12 +295,13 @@ class ColorOverlay1(QtGui.QWidget):
         l03 = QtGui.QHBoxLayout()
         l03.addWidget(QtGui.QLabel("Overlay Histogram"))
         butgen2 = QtGui.QPushButton("Generate")
+        butgen2.setToolTip("Generate a histogram of the overlay values in each ROI")
         butgen2.clicked.connect(self.generate_histogram)
         l03.addWidget(butgen2)
         l03.addStretch(1)
 
         l04 = QtGui.QHBoxLayout()
-        l04.addWidget(QtGui.QLabel("Overlay choice              "))
+        l04.addWidget(QtGui.QLabel("Available Overlays         "))
         l04.addWidget(self.combo2)
         l04.addStretch(1)
 
