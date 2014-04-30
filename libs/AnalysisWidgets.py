@@ -20,6 +20,8 @@ class SECurve(QtGui.QWidget):
     def __init__(self):
         super(SECurve, self).__init__()
 
+        self.setStatusTip("Click points on the 4D volume to see time curve")
+
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setVisible(True)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
@@ -88,17 +90,6 @@ class SECurve(QtGui.QWidget):
         l1.addWidget(self.cb3, 4, 0)
         l1.addWidget(self.cb4)
         l1.addStretch(1)
-
-
-
-        #l1.setRowStretch(0, 2)
-        #l1.setRowStretch(1, 1)
-        #l1.setRowStretch(2, 1)
-        #l1.setRowStretch(3, 1)
-        #l1.setColumnStretch(0, 1)
-        #l1.setColumnStretch(1, 1)
-        #l1.setColumnStretch(2, 1)
-
         self.setLayout(l1)
 
         # initial plot colour
@@ -236,6 +227,8 @@ class ColorOverlay1(QtGui.QWidget):
     def __init__(self):
         super(ColorOverlay1, self).__init__()
 
+        self.setStatusTip("Load a ROI and overlay to analyse statistics")
+
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Signal enhancement curve")
@@ -254,6 +247,12 @@ class ColorOverlay1(QtGui.QWidget):
         combo.addItem("hot")
         combo.addItem("gist_heat")
         combo.activated[str].connect(self.emit_cmap)
+
+        # combo for choosing overlay volume
+        self.combo2 = QtGui.QComboBox(self)
+        #self.combo2.activated[str].connect(self.emit_cmap)
+        # current list of choices
+        self.combo2_all = []
 
         # Take a local region mean to reduce noise
         self.cb1 = QtGui.QCheckBox('Show overlay', self)
@@ -294,7 +293,13 @@ class ColorOverlay1(QtGui.QWidget):
         l03.addWidget(butgen2)
         l03.addStretch(1)
 
+        l04 = QtGui.QHBoxLayout()
+        l04.addWidget(QtGui.QLabel("Overlay choice              "))
+        l04.addWidget(self.combo2)
+        l04.addStretch(1)
+
         l1 = QtGui.QVBoxLayout()
+        l1.addLayout(l04)
         l1.addLayout(l00)
         l1.addLayout(l01)
         l1.addWidget(self.cb1)
@@ -315,8 +320,40 @@ class ColorOverlay1(QtGui.QWidget):
         """
         Reference to image analysis class
         """
-
         self.ia = image_analysis
+
+    def add_image_management(self, image_vol_management):
+        """
+        Adding image management
+        """
+        self.ivm = image_vol_management
+
+        #listen to volume management changes
+        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
+        self.ivm.sig_all_overlays.connect(self.update_overlays)
+
+    @QtCore.Slot(list)
+    def update_overlays(self, list1):
+
+        """
+        Adds additional overlay volumes to the combo list
+        """
+
+        for ii in list1:
+            if ii not in self.combo2_all:
+                self.combo2_all.append(ii)
+                self.combo2.addItem(ii)
+
+
+    @QtCore.Slot(str)
+    def update_current_overlay(self, str1):
+
+        if str1 in self.combo2_all:
+            ind1 = self.combo2_all.index(str1)
+            self.combo2.setCurrentIndex(ind1)
+
+        else:
+            print("Warning: This option does not exist")
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -328,19 +365,23 @@ class ColorOverlay1(QtGui.QWidget):
         self.tab1.setVisible(True)
 
         # get analysis from analysis object
-        m1, m2, m3, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
         self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        self.tabmod1.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
+        self.tabmod1.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
-        for ii in range(len(m1)):
+        for ii in range(len(stats1['mean'])):
 
             self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
 
-            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(m1[ii], 2))))
-            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(m2[ii], 2))))
-            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(m3[ii], 2))))
+            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
+            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
+            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
+            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
+            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
 
     @QtCore.Slot()
     def generate_histogram(self):
@@ -350,13 +391,13 @@ class ColorOverlay1(QtGui.QWidget):
         """
 
         # get analysis from analysis object
-        m1, m2, m3, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
         self.win1.setVisible(True)
         self.win1.removeItem(self.plt1)
         self.plt1 = self.win1.addPlot(title="")
 
-        for ii in range(len(m1)):
+        for ii in range(len(stats1['mean'])):
             curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, fillLevel=0, brush=(0, 0, 255, 255),
                                      pen=(0, 0, 0))
             self.plt1.addItem(curve)
@@ -377,13 +418,13 @@ class ColorOverlay1(QtGui.QWidget):
         self.sig_set_alpha.emit(val1)
 
 
-class OverlayAnalysisWidget(QtGui.QWidget):
+class PharmaWidget(QtGui.QWidget):
     """
     Side widgets for plotting SE curves
     """
 
     def __init__(self):
-        super(OverlayAnalysisWidget, self).__init__()
+        super(PharmaWidget, self).__init__()
 
         l1 = QtGui.QVBoxLayout()
         button1 = QtGui.QPushButton("test OK 2")

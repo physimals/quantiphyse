@@ -15,7 +15,7 @@ from PySide import QtCore, QtGui
 
 # My libs
 from libs.ImageView import ImageViewColorOverlay
-from libs.AnalysisWidgets import SECurve, ColorOverlay1, OverlayAnalysisWidget
+from libs.AnalysisWidgets import SECurve, ColorOverlay1, PharmaWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
 
@@ -59,8 +59,9 @@ class MainWidge1(QtGui.QWidget):
 
         self.sw2 = ColorOverlay1()
         self.sw2.add_analysis(self.ia)
+        self.sw2.add_image_management(self.ivm)
 
-        self.sw3 = OverlayAnalysisWidget()
+        self.sw3 = PharmaWidget()
 
         # Connect widgets
         #Connect colormap choice, alpha
@@ -75,13 +76,13 @@ class MainWidge1(QtGui.QWidget):
 
         # InitUI
         #Sliders
-        self.sld1 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
+        self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld2 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
+        self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld3 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
+        self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld4 = QtGui.QScrollBar(QtCore.Qt.Horizontal, self)
+        self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
         self.update_slider_range()
 
@@ -107,7 +108,7 @@ class MainWidge1(QtGui.QWidget):
         #Widgets
         self.qtab1.addTab(self.sw1, "Voxel analysis")
         self.qtab1.addTab(self.sw2, "Color overlay")
-        self.qtab1.addTab(self.sw3, "ROI statistics")
+        self.qtab1.addTab(self.sw3, "Pharmacokinetics")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
 

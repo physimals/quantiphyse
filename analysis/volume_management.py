@@ -6,19 +6,27 @@
 
 from __future__ import division, print_function
 
+from PySide import QtCore
 import nibabel as nib
 import numpy as np
 
 
-class ImageVolumeManagement(object):
-
+class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """
     ImageVolumeManagement
     1) Holds all image volumes used in analysis
     2) Better support for switching volumes instead of having a single volume hardcoded
+
+    Has to inherit from a Qt base class that supports signals
+    Note that the correct QT Model/View structure has not been set up but is intended in future
     """
 
+    #Signalse
+    sig_current_overlay = QtCore.Signal(str)
+    sig_all_overlays = QtCore.Signal(list)
+
     def __init__(self):
+        super(ImageVolumeManagement, self).__init__()
 
         # Main background image
         self.image_file1 = None
@@ -31,9 +39,16 @@ class ImageVolumeManagement(object):
         self.img_range = [0, 1]
 
         # Current overlay
-        self.overlay = []
+        self.overlay = None
         self.ovreg_dims = None
         self.ovreg_file1 = None
+        # Type of the current overlay
+        self.overlay_label = None
+        # List of possible overlays that can be loaded
+        self.overlay_label_all = ['loaded', 'ktrans', 'kep', 've', 'vp']
+
+        # All overlays
+        self.overlay_all = {}
 
         # ROI image
         self.roi = None
@@ -53,7 +68,7 @@ class ImageVolumeManagement(object):
         return self.image
 
     def get_overlay(self):
-        return self.roi
+        return self.overlay
 
     def set_roi(self, x):
         self.roi = x
@@ -61,8 +76,40 @@ class ImageVolumeManagement(object):
     def set_image(self, x):
         self.image = x
 
-    def set_overlay(self, x):
-        self.overlay = x
+    def set_overlay(self, choice1, ovreg):
+        """
+        Set an overlay for storage
+        """
+
+        if (ovreg.shape != self.img_dims[:3]) or (len(ovreg.shape) > 3):
+            print("First 3 Dimensions of the overlay region must be the same as the image, "
+                  "and overlay region must be 3D")
+            return
+
+        if choice1 not in self.overlay_label_all:
+            print("Warning: Label choice is incorrect")
+            return
+
+        self.overlay_all[choice1] = ovreg
+        self.overlay_label = choice1
+
+        # emit all overlays (QtCore)
+        self.sig_all_overlays.emit(self.overlay_all.keys())
+
+    def set_current_overlay(self, choice1):
+        """
+        Set the current overlay
+        """
+
+        if choice1 in self.overlay_label_all and choice1 in self.overlay_all.keys():
+            self.overlay_label = choice1
+            self.overlay = self.overlay_all[choice1]
+            self.ovreg_dims = self.overlay.shape
+        else:
+            print("Warning: Label choice is incorrect")
+
+        # emit current overlay (QtCore)
+        self.sig_current_overlay.emit(self.overlay_label)
 
     def load_image(self, image_file1):
         """
@@ -133,14 +180,14 @@ class ImageVolumeManagement(object):
         ovreg = nib.load(self.ovreg_file1)
         # NB: np.array appears to convert to an array instead of a numpy memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-        self.overlay = np.array(ovreg.get_data())
-        self.ovreg_dims = self.overlay.shape
+        overlay_load = np.array(ovreg.get_data())
 
-        if (self.ovreg_dims != self.img_dims[:3]) or (len(self.ovreg_dims) > 3):
-            print("First 3 Dimensions of the overlay region must be the same as the image, "
-                  "and overlay region must be 3D")
-            self.overlay = None
-            self.ovreg_dims = None
+        # add the loaded overlay
+        self.set_overlay('loaded', overlay_load)
+
+        # set the loaded overlay to be the current overlay
+        self.set_current_overlay('loaded')
+
 
 
 
