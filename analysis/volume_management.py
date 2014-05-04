@@ -1,7 +1,6 @@
 """
-- Develops the data management framework
-- Currently just a skeleton with an interface
-- Will allow more flexibility to manage the data for all widgets within this class
+- Data management framework
+
 """
 
 from __future__ import division, print_function
@@ -96,7 +95,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # emit all overlays (QtCore)
         self.sig_all_overlays.emit(self.overlay_all.keys())
 
-    def set_current_overlay(self, choice1):
+    def set_current_overlay(self, choice1, broadcast_change=True):
         """
         Set the current overlay
         """
@@ -109,7 +108,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             print("Warning: Label choice is incorrect")
 
         # emit current overlay (QtCore)
-        self.sig_current_overlay.emit(self.overlay_label)
+        if broadcast_change:
+            self.sig_current_overlay.emit(self.overlay_label)
 
     def load_image(self, image_file1):
         """

@@ -6,7 +6,15 @@ import pyqtgraph as pg
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-#TODO create an non-model based analysis tool which ties into creating new image objects
+
+# subclassing QGroupBoxB for nice border
+class QGroupBoxB(QtGui.QGroupBox):
+
+    def __init__(self):
+        super(QGroupBoxB, self).__init__()
+
+        self.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
+                           "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
 
 class SECurve(QtGui.QWidget):
@@ -64,33 +72,44 @@ class SECurve(QtGui.QWidget):
         combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
 
-        l1 = QtGui.QVBoxLayout()
 
         l03 = QtGui.QHBoxLayout()
         l03.addStretch(1)
         l03.addWidget(b1)
-        l1.addLayout(l03)
 
-        l1.addWidget(self.win1)
         space1 = QtGui.QLabel('')
-        l1.addWidget(space1)
 
         l01 = QtGui.QHBoxLayout()
         l01.addWidget(QtGui.QLabel('Plot color'))
         l01.addWidget(combo)
         l01.addStretch(1)
-        l1.addLayout(l01)
 
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
         l02.addWidget(self.text1)
         l02.addStretch(1)
-        l1.addLayout(l02)
 
-        l1.addWidget(self.cb1, 2, 0)
-        l1.addWidget(self.cb2, 3, 0)
-        l1.addWidget(self.cb3, 4, 0)
-        l1.addWidget(self.cb4)
+        l04 = QtGui.QVBoxLayout()
+        l04.addLayout(l01)
+        l04.addLayout(l02)
+        l04.addWidget(self.cb1)
+        l04.addWidget(self.cb2)
+        l04.addWidget(self.cb3)
+        l04.addWidget(self.cb4)
+
+        g01 = QGroupBoxB()
+        g01.setLayout(l04)
+        g01.setTitle('Curve options')
+
+        l05 = QtGui.QHBoxLayout()
+        l05.addWidget(g01)
+        l05.addStretch()
+
+        l1 = QtGui.QVBoxLayout()
+        l1.addLayout(l03)
+        l1.addWidget(self.win1)
+        l1.addWidget(space1)
+        l1.addLayout(l05)
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -235,7 +254,8 @@ class ColorOverlay1(QtGui.QWidget):
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Signal enhancement curve")
 
-        # Method
+        # Analysis and volume management objects
+        self.ia = None
         self.ivm = None
 
         sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
@@ -254,8 +274,7 @@ class ColorOverlay1(QtGui.QWidget):
         # combo for choosing overlay volume
         self.combo2 = QtGui.QComboBox(self)
         self.combo2.setToolTip("The overlays that have currently been loaded or generated")
-        # TODO make the combobox change the overlay
-        #self.combo2.activated[str].connect(self.emit_cmap)
+        self.combo2.activated[str].connect(self.emit_volume)
         # current list of choices
         self.combo2_all = []
 
@@ -277,15 +296,12 @@ class ColorOverlay1(QtGui.QWidget):
         l00 = QtGui.QHBoxLayout()
         l00.addWidget(QtGui.QLabel("Overlay Transparency"))
         l00.addWidget(sld1)
-        l00.addStretch(1)
 
         l01 = QtGui.QHBoxLayout()
         l01.addWidget(QtGui.QLabel("Color Map                        "))
         l01.addWidget(combo)
-        l01.addStretch(1)
 
         l02 = QtGui.QHBoxLayout()
-        l02.addWidget(QtGui.QLabel("Overlay Statistics"))
         butgen = QtGui.QPushButton("Generate")
         butgen.setToolTip("Generate standard statistics for the overlay values in each ROI")
         butgen.clicked.connect(self.generate_overlay_stats)
@@ -293,7 +309,6 @@ class ColorOverlay1(QtGui.QWidget):
         l02.addStretch(1)
 
         l03 = QtGui.QHBoxLayout()
-        l03.addWidget(QtGui.QLabel("Overlay Histogram"))
         butgen2 = QtGui.QPushButton("Generate")
         butgen2.setToolTip("Generate a histogram of the overlay values in each ROI")
         butgen2.clicked.connect(self.generate_histogram)
@@ -303,27 +318,53 @@ class ColorOverlay1(QtGui.QWidget):
         l04 = QtGui.QHBoxLayout()
         l04.addWidget(QtGui.QLabel("Available Overlays         "))
         l04.addWidget(self.combo2)
-        l04.addStretch(1)
+
+        l05 = QtGui.QVBoxLayout()
+        l05.addLayout(l04)
+        l05.addLayout(l00)
+        l05.addLayout(l01)
+        l05.addWidget(self.cb1)
+        l05.addWidget(self.cb2)
+
+        l06 = QtGui.QHBoxLayout()
+        l06.addLayout(l05)
+        l06.addStretch(1)
+
+        f01 = QGroupBoxB()
+        f01.setTitle('Overlay options')
+        f01.setLayout(l06)
+
+        l07 = QtGui.QVBoxLayout()
+        l07.addLayout(l03)
+        l07.addWidget(self.win1)
+        l07.addStretch(1)
+
+        f02 = QGroupBoxB()
+        f02.setTitle('Overlay Histogram')
+        f02.setLayout(l07)
+
+        l08 = QtGui.QVBoxLayout()
+        l08.addLayout(l02)
+        l08.addWidget(self.tab1)
+        l08.addStretch(1)
+
+        f03 = QGroupBoxB()
+        f03.setTitle('Overlay Statistics')
+        f03.setLayout(l08)
 
         l1 = QtGui.QVBoxLayout()
-        l1.addLayout(l04)
-        l1.addLayout(l00)
-        l1.addLayout(l01)
-        l1.addWidget(self.cb1)
-        l1.addWidget(self.cb2)
+        l1.addWidget(f01)
         l1.addWidget(QtGui.QLabel(""))
-        l1.addLayout(l02)
-        l1.addWidget(self.tab1)
+        l1.addWidget(f03)
+
         l1.addWidget(QtGui.QLabel(""))
-        l1.addLayout(l03)
-        l1.addWidget(self.win1)
+        l1.addWidget(f02)
         l1.addWidget(QtGui.QLabel(""))
         l1.addWidget(QtGui.QLabel(""))
         l1.addStretch(1)
         self.setLayout(l1)
 
     def add_analysis(self, image_analysis):
-
         """
         Reference to image analysis class
         """
@@ -350,7 +391,6 @@ class ColorOverlay1(QtGui.QWidget):
             if ii not in self.combo2_all:
                 self.combo2_all.append(ii)
                 self.combo2.addItem(ii)
-
 
     @QtCore.Slot(str)
     def update_current_overlay(self, str1):
@@ -420,28 +460,74 @@ class ColorOverlay1(QtGui.QWidget):
     def emit_cmap(self, text):
         self.sig_choose_cmap.emit(text)
 
+    @QtCore.Slot(str)
+    def emit_volume(self, choice1):
+        self.ivm.set_current_overlay(choice1, broadcast_change=False)
+
     @QtCore.Slot(int)
     def emit_alpha(self, val1):
         self.sig_set_alpha.emit(val1)
 
 
 class PharmaWidget(QtGui.QWidget):
+
     """
-    Side widgets for plotting SE curves
+    Widget for generating pharmacokinetics
     """
 
     def __init__(self):
         super(PharmaWidget, self).__init__()
 
-        l1 = QtGui.QVBoxLayout()
-        button1 = QtGui.QPushButton("test OK 2")
+        # generate button
+        but_gen = QtGui.QPushButton('Run modelling', self)
 
-        l1.addWidget(button1)
-        self.setLayout(l1)
+        # progress of generation
+        prog_gen = QtGui.QProgressBar(self)
+        prog_gen.setStatusTip('Progress of Pk modelling. Be patient. Progress is only updated in chunks')
 
-    def __plot(self, values1):
-        self.curve.setData(values1)
+        #Inputs
+        p1 = QtGui.QLabel('Param 1')
+        p1in = QtGui.QLineEdit('1.0', self)
+        p2 = QtGui.QLabel('Param 2')
+        p2in = QtGui.QLineEdit('1.0', self)
+        p3 = QtGui.QLabel('Param 3')
+        p3in = QtGui.QLineEdit('1.0', self)
+        p4 = QtGui.QLabel('Param 4')
+        p4in = QtGui.QLineEdit('1.0', self)
 
-    @QtCore.Slot(np.ndarray)
-    def sig_mouse(self, values1):
-        self.__plot(values1)
+        #LAYOUTS
+        # Progress
+        l01 = QtGui.QHBoxLayout()
+        l01.addWidget(but_gen)
+        l01.addWidget(prog_gen)
+
+        f01 = QGroupBoxB()
+        f01.setTitle('Running')
+        f01.setLayout(l01)
+
+        # Inputs
+        l02 = QtGui.QGridLayout()
+        l02.addWidget(p1, 0, 0)
+        l02.addWidget(p1in, 0, 1)
+        l02.addWidget(p2, 1, 0)
+        l02.addWidget(p2in, 1, 1)
+        l02.addWidget(p3, 2, 0)
+        l02.addWidget(p3in, 2, 1)
+        l02.addWidget(p4, 3, 0)
+        l02.addWidget(p4in, 3, 1)
+
+        f02 = QGroupBoxB()
+        f02.setTitle('Parameters')
+        f02.setLayout(l02)
+
+        l03 = QtGui.QHBoxLayout()
+        l03.addWidget(f02)
+        l03.addStretch(2)
+
+        l0 = QtGui.QVBoxLayout()
+        l0.addLayout(l03)
+        l0.addWidget(f01)
+        l0.addStretch()
+
+        self.setLayout(l0)
+

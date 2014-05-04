@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+"""
+Benjamin Irving
+
+"""
+
 #TODO 1) Drag and drop file volumes into a volume window
-#TODO 2) Need to build separate image processing classes tied to individual widgets
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
@@ -131,6 +135,8 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay.addWidget(cb3)
         gBoxlay.addStretch(1)
         gBox.setLayout(gBoxlay)
+        gBox.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
+                           "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
         # Slider layout
         gBox2 = QtGui.QGroupBox("Navigation Sliders")
@@ -149,7 +155,13 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBoxlay2.setColumnStretch(0, 1)
         gBoxlay2.setColumnStretch(1, 2)
-        gBox2.setLayout(gBoxlay2)
+
+        gBoxlay3 = QtGui.QHBoxLayout()
+        gBoxlay3.addLayout(gBoxlay2)
+        #gBoxlay3.addStretch()
+        gBox2.setLayout(gBoxlay3)
+        gBox2.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
+                            "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
         # All buttons layout
         gBox_all = QtGui.QGroupBox()
@@ -232,7 +244,9 @@ class MainWidge1(QtGui.QWidget):
 
 class MainWin1(QtGui.QMainWindow):
     """
-    Really just used to add standard menu options etc.
+    Overall window framework
+    Only purpose is to put the menu, menu bar etc decorations around the main window
+    Also initialises the open file menus
     """
     def __init__(self):
         super(MainWin1, self).__init__()
@@ -333,7 +347,7 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.ivl1.load_image()
             self.mw1.update_slider_range()
         else:
-            print('No file selected')
+            print('Warning: No file selected')
 
     def show_roi_load_dialog(self):
         """
@@ -347,7 +361,7 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.ivm.load_roi(fname)
             self.mw1.ivl1.load_roi()
         else:
-            print('No file selected')
+            print('Warning: No file selected')
 
     def show_ovreg_load_dialog(self):
         """
@@ -361,7 +375,7 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.ivm.load_ovreg(fname)
             self.mw1.ivl1.load_ovreg()
         else:
-            print('No file selected')
+            print('Warning: No file selected')
 
     @staticmethod
     def get_dir(str1):
@@ -372,6 +386,9 @@ class MainWin1(QtGui.QMainWindow):
 
 #~ Main application
 def main():
+    """
+    Run the application
+    """
     app = QtGui.QApplication(sys.argv)
     ex = MainWin1()
     sys.exit(app.exec_())

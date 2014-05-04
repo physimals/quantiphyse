@@ -320,8 +320,7 @@ class ImageViewOverlay(ImageViewLayout):
 
     def load_roi(self):
         """
-        Loads and checks roi image
-        Initialise viewing windows
+        Adds roi to viewer
         """
 
         if self.ivm.image.shape[0] == 1:
@@ -433,10 +432,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
     def load_ovreg(self):
         """
-        Loads and checks Overlay region image
+        Adds overlay to image viewer
         """
 
-        #TODO Might be cleaner to do this checking in the loading function
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
@@ -459,6 +457,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self._update_view()
 
     def _process_overlay(self):
+        """
+        Processes overlay for visualisation on viewer
+        """
 
         self.ovreg = np.copy(self.ivm.overlay)
 
@@ -485,6 +486,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
     def _update_view(self):
+
+        """
+        Updates the viewing windows
+        """
+
         super(ImageViewColorOverlay, self)._update_view()
 
         if self.imgwin1c is None:
@@ -509,7 +515,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
     def toggle_roi_lim(self, state):
 
         """
-        Show or hide overlay
+        Slot to limit overlay to ROI
         """
 
         if state == QtCore.Qt.Checked:
@@ -522,6 +528,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
     @QtCore.Slot()
     def toggle_ovreg_view(self, state):
+        """
+        Slot to show or hide overlay
+        """
 
         if state == QtCore.Qt.Checked:
             self.options['ShowColorOverlay'] = 1
@@ -551,12 +560,14 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Set the range of the overlay map
         """
+        #TODO
+
         None
 
     @QtCore.Slot(str)
     def set_colormap(self, text):
         """
-        Choose a colormap
+        Choose a colormap for the overlay
         """
         self.options['ColorMap'] = text
 
@@ -568,8 +579,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin2c.setLookupTable(self.ovreg_lut)
         self.imgwin3c.setLookupTable(self.ovreg_lut)
         #self._update_view()
-
-
 
     def set_default_colormap_matplotlib(self):
 
