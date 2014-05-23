@@ -153,13 +153,10 @@ class MainWidge1(QtGui.QWidget):
         gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
         gBoxlay2.addWidget(self.sld4, 3, 1)
         gBoxlay2.addWidget(lab_p4, 3, 2)
-        gBoxlay2.setColumnStretch(0, 1)
+        gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
 
-        gBoxlay3 = QtGui.QHBoxLayout()
-        gBoxlay3.addLayout(gBoxlay2)
-        #gBoxlay3.addStretch()
-        gBox2.setLayout(gBoxlay3)
+        gBox2.setLayout(gBoxlay2)
         gBox2.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
                             "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
@@ -167,10 +164,10 @@ class MainWidge1(QtGui.QWidget):
         gBox_all = QtGui.QGroupBox()
         gBoxlay_all = QtGui.QHBoxLayout()
         gBoxlay_all.addWidget(gBox2)
-        gBoxlay_all.addWidget(gBox)
         gBoxlay_all.addStretch(1)
+        gBoxlay_all.addWidget(gBox)
         gBoxlay_all.setStretch(0, 2)
-        gBoxlay_all.setStretch(1, 1)
+        gBoxlay_all.setStretch(2, 1)
         gBox_all.setLayout(gBoxlay_all)
 
         # Viewing window layout + buttons
