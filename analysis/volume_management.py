@@ -69,6 +69,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def get_overlay(self):
         return self.overlay
 
+    def get_image_shape(self):
+        return self.image.shape
+
     def set_roi(self, x):
         self.roi = x
 
@@ -130,7 +133,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.img_dims = self.image.shape
         self.voxel_size = img.get_header().get_zooms()
 
-        self.img_range = [self.image.min(), self.image.max()]
+        # 90% of the image range
+        self.img_range = [self.image.min(), 0.5*self.image.max()]
 
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)

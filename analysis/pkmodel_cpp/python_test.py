@@ -1,4 +1,4 @@
-#from __future__ import division, print_function
+from __future__ import division, print_function
 
 import nibabel as nib
 import numpy as np
@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 
 from pk import PyPk
 
-
-folder1 = "/home/benjamin/Dropbox/BioMedIA1/Code/9_GUI/data/"
+folder1 = "/local/engs1170/Dropbox/BioMedIA1/Code/9_GUI/data/"
+#folder1 = "/home/benjamin/Dropbox/BioMedIA1/Code/9_GUI/data/"
 file1 = "RIT005img_original.nii"
-
 
 img = nib.load(folder1 + file1)
 img1 = np.array(img.get_data())
@@ -49,8 +48,8 @@ AIFin = [2.65, 1.51, 22.40, 0.23, 0]
 
 
 # Subset
-img1sub = np.ascontiguousarray(np.array(img1vec[:10000, :], dtype=np.double))
-T10sub = np.ascontiguousarray(T10vec[:10000], dtype=np.double)
+img1sub = np.ascontiguousarray(np.array(img1vec[:11410, :], dtype=np.double))
+T10sub = np.ascontiguousarray(T10vec[:11410], dtype=np.double)
 t1 = np.ascontiguousarray(t1, dtype=np.double)
 
 
@@ -82,8 +81,8 @@ fcurve2 = np.array(fcurveb)
 print (fcurve2.shape)
 print("plot curves")
 
-plt.plot(fcurve2[9888, :])
-plt.plot(img1sub[9888, :])
+plt.plot(fcurve2[9674, :])
+plt.plot(img1sub[9674, :])
 plt.show()
 
 

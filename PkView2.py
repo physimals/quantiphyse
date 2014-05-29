@@ -19,7 +19,9 @@ from PySide import QtCore, QtGui
 
 # My libs
 from libs.ImageView import ImageViewColorOverlay
-from libs.AnalysisWidgets import SECurve, ColorOverlay1, PharmaWidget
+from libs.AnalysisWidgets import SECurve, ColorOverlay1
+from libs.PharmaWidgets import PharmaWidget
+from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
 
@@ -61,11 +63,17 @@ class MainWidge1(QtGui.QWidget):
         # Loading widgets
         self.sw1 = SECurve()
 
+        # Color overlay widget
         self.sw2 = ColorOverlay1()
         self.sw2.add_analysis(self.ia)
         self.sw2.add_image_management(self.ivm)
 
+        # Pharmacokinetic modelling widget
         self.sw3 = PharmaWidget()
+
+        # Gif creation widget
+        self.sw4 = ImageExportWidget()
+        self.sw4.add_image_management(self.ivm)
 
         # Connect widgets
         #Connect colormap choice, alpha
@@ -73,6 +81,10 @@ class MainWidge1(QtGui.QWidget):
         self.sw2.sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
         self.sw2.cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
         self.sw2.cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
+
+        #Connect image export widget
+        self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)
+        self.sw4.sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
         #Connecting widget signals
         #1) Plotting data on mouse image click
@@ -238,6 +250,12 @@ class MainWidge1(QtGui.QWidget):
         print(index)
         self.qtab1.setCurrentIndex(index)
 
+    # Connect widget
+    def show_ic(self):
+        index = self.qtab1.addTab(self.sw4, "Image Export")
+        print(index)
+        self.qtab1.setCurrentIndex(index)
+
 
 class MainWin1(QtGui.QMainWindow):
     """
@@ -258,7 +276,11 @@ class MainWin1(QtGui.QMainWindow):
             self.local_file_path = os.path.dirname(sys.executable)
         else:
             self.local_file_path = os.path.dirname(__file__)
-            #self.local_file_path = os.getcwd()
+
+        if self.local_file_path == "":
+
+            print("Reverting to current directory as base")
+            self.local_file_path = os.getcwd()
 
         self.init_ui()
 
@@ -303,6 +325,10 @@ class MainWin1(QtGui.QMainWindow):
         se_action.setStatusTip('Plot SE of a voxel')
         se_action.triggered.connect(self.mw1.show_se)
 
+        ic_action = QtGui.QAction('&ImageExport', self)
+        ic_action.setStatusTip('Export images from the GUI')
+        ic_action.triggered.connect(self.mw1.show_ic)
+
         #Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
         help_action.setStatusTip('See online help file')
@@ -319,6 +345,8 @@ class MainWin1(QtGui.QMainWindow):
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
+        widget_menu.addAction(ic_action)
+
 
         help_menu.addAction(help_action)
 

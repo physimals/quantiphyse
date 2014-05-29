@@ -5,8 +5,6 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import numpy as np
 from scipy.interpolate import UnivariateSpline
-import multiprocessing, multiprocessing.pool
-import time
 
 
 # subclassing QGroupBoxB for nice border
@@ -73,7 +71,6 @@ class SECurve(QtGui.QWidget):
         combo.activated[str].connect(self.emit_cchoice)
         combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
-
 
         l03 = QtGui.QHBoxLayout()
         l03.addStretch(1)
@@ -471,138 +468,3 @@ class ColorOverlay1(QtGui.QWidget):
         self.sig_set_alpha.emit(val1)
 
 
-class PharmaWidget(QtGui.QWidget):
-
-    """
-    Widget for generating pharmacokinetics
-    """
-
-    def __init__(self):
-        super(PharmaWidget, self).__init__()
-        self.init_multiproc()
-
-        # progress of generation
-        self.prog_gen = QtGui.QProgressBar(self)
-        self.prog_gen.setStatusTip('Progress of Pk modelling. Be patient. Progress is only updated in chunks')
-
-        # generate button
-        but_gen = QtGui.QPushButton('Run modelling', self)
-        but_gen.clicked.connect(self.start_task)
-
-        #Inputs
-        p1 = QtGui.QLabel('R1')
-        p1in = QtGui.QLineEdit('1.0', self)
-        p2 = QtGui.QLabel('R2')
-        p2in = QtGui.QLineEdit('1.0', self)
-        p3 = QtGui.QLabel('Flip Angle')
-        p3in = QtGui.QLineEdit('1.0', self)
-        p4 = QtGui.QLabel('TR')
-        p4in = QtGui.QLineEdit('1.0', self)
-        p5 = QtGui.QLabel('TE')
-        p5in = QtGui.QLineEdit('1.0', self)
-        p6 = QtGui.QLabel('delta T')
-        p6in = QtGui.QLineEdit('1.0', self)
-        p7 = QtGui.QLabel('T10')
-        p7in = QtGui.QLineEdit('1.0', self)
-
-        # AIF
-        # Select plot color
-        combo = QtGui.QComboBox(self)
-        combo.addItem("Clinical : Orton AIF (3rd model)")
-        combo.addItem("Preclinical : Biexponential model (Heilmann)")
-        #combo.activated[str].connect(self.emit_cchoice)
-        #combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
-        #                 "Allows visualisation of multiple enhancement curves of different colours")
-
-        #LAYOUTS
-        # Progress
-        l01 = QtGui.QHBoxLayout()
-        l01.addWidget(but_gen)
-        l01.addWidget(self.prog_gen)
-
-        f01 = QGroupBoxB()
-        f01.setTitle('Running')
-        f01.setLayout(l01)
-
-        # Inputs
-        l02 = QtGui.QGridLayout()
-        l02.addWidget(p1, 0, 0)
-        l02.addWidget(p1in, 0, 1)
-        l02.addWidget(p2, 1, 0)
-        l02.addWidget(p2in, 1, 1)
-        l02.addWidget(p3, 2, 0)
-        l02.addWidget(p3in, 2, 1)
-        l02.addWidget(p4, 3, 0)
-        l02.addWidget(p4in, 3, 1)
-        l02.addWidget(p5, 4, 0)
-        l02.addWidget(p5in, 4, 1)
-        l02.addWidget(p6, 5, 0)
-        l02.addWidget(p6in, 5, 1)
-        l02.addWidget(p7, 6, 0)
-        l02.addWidget(p7in, 6, 1)
-
-        f02 = QGroupBoxB()
-        f02.setTitle('Parameters')
-        f02.setLayout(l02)
-
-        l03 = QtGui.QHBoxLayout()
-        l03.addWidget(f02)
-        l03.addStretch(2)
-
-        l04 = QtGui.QHBoxLayout()
-        l04.addWidget(QtGui.QLabel('AIF choice'))
-        l04.addWidget(combo)
-        l04.addStretch(1)
-
-        f03 = QGroupBoxB()
-        f03.setTitle('AIF options')
-        f03.setLayout(l04)
-
-        l0 = QtGui.QVBoxLayout()
-        l0.addLayout(l03)
-        l0.addWidget(f03)
-        l0.addWidget(f01)
-        l0.addStretch()
-
-        self.setLayout(l0)
-
-        # Check for updates from the process
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.CheckProg)
-
-    def init_multiproc(self):
-        # Set up the background process
-        self.queue = multiprocessing.Queue()
-        self.pool = multiprocessing.Pool(processes=4, initializer=pool_init, initargs=(self.queue,))
-
-    def start_task(self):
-        self.timer.start(1000)
-
-        self.pool.apply_async(func=compute, args=(1,))
-        self.prog_gen.setValue(0)
-
-    def CheckProg(self):
-        if self.queue.empty():
-                return
-        # unpack the queue
-        num_row, progress = self.queue.get()
-        self.prog_gen.setValue(progress)
-
-
-def compute(num_row):
-    print("worker started at %d" % num_row)
-    random_number = 10
-    for second in range(random_number):
-        progress = float(second) / float(random_number) * 100
-        compute.queue.put((num_row, progress,))
-        time.sleep(1)
-
-    # put in the queue
-    compute.queue.put((num_row, 100))
-
-
-def pool_init(queue):
-    # see http://stackoverflow.com/a/3843313/852994
-    # In python every function is an object so this is a quick and dirty way of adding a variable
-    # to a function for easy access later. Prob better to create a class out of compute?
-    compute.queue = queue

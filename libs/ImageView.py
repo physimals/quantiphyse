@@ -13,6 +13,7 @@ import nibabel as nib
 import numpy as np
 
 import pyqtgraph as pg
+from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
@@ -189,6 +190,34 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.imgwin1.setLevels(self.ivm.img_range)
             self.imgwin2.setLevels(self.ivm.img_range)
             self.imgwin3.setLevels(self.ivm.img_range)
+
+    # Set the 3D position of the cross hairs
+    @QtCore.Slot(int)
+    def set_temporal_position(self, value):
+
+        # Set 3D coordinates of the image
+        self.ivm.cim_pos[3] = value
+
+        # Update the view
+        self._update_view()
+
+    # Create an image from one of the windows
+    @QtCore.Slot(int, str)
+    def capture_view_as_image(self, window, outputfile):
+        # exporting image using pyqtgraph
+        if window == 1:
+            expimg = self.imgwin1
+        elif window == 2:
+            expimg = self.imgwin2
+        elif window == 3:
+            expimg = self.imgwin3
+        else:
+            expimg = self.imgwin1m
+            print("Warning: Window choice does not exist. Using window 1")
+
+        exporter = ImageExporter(expimg)
+        exporter.parameters()['width'] = 2000
+        exporter.export(str(outputfile))
 
     # Slots for sliders and mouse
     @QtCore.Slot(int)
