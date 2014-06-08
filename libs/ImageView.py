@@ -72,6 +72,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin2 = pg.ImageItem(border='k')
         self.view2.addItem(self.imgwin2)
 
+
         #set a new row in the graphics layout widget
         if not self.options['one_view']:
             self.nextRow()
@@ -83,6 +84,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.view3.addItem(self.imgwin3)
 
         #Cross hairs added to each viewbox
+
+        # Adding a histogram LUT
+        self.h1 = pg.HistogramLUTItem(fillHistogram=False)
+        self.addItem(self.h1)
+        self.h1.setImageItem(self.imgwin1)
 
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
         self.hline1 = pg.InfiniteLine(angle=0, movable=False)
@@ -114,6 +120,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     def load_image(self):
 
         # update view
+        self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])
         self._update_view()
 
     def __mouse_pos(self):
@@ -187,6 +194,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.__update_crosshairs()
 
         if not self.options['view_thresh']:
+            # self.imgwin1.setLevels(self.ivm.img_range)
+            # self.imgwin2.setLevels(self.ivm.img_range)
+            # self.imgwin3.setLevels(self.ivm.img_range)
+
+            self.ivm.img_range = self.h1.getLevels()
             self.imgwin1.setLevels(self.ivm.img_range)
             self.imgwin2.setLevels(self.ivm.img_range)
             self.imgwin3.setLevels(self.ivm.img_range)
