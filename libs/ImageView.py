@@ -18,6 +18,19 @@ from pyqtgraph.exporters.ImageExporter import ImageExporter
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
+#TODO subclass HistogramLUTItem for the greyscale image as
+#TODO well so that it signals any change in the range causing an update.
+
+
+# class HistogramLUTItemOverlay(pg.HistogramLUTItem):
+#
+#     def __init__(self, fillHistogram=True):
+#         super(HistogramLUTItemOverlay, self).__init__(fillHistogram=fillHistogram)
+#         self.gradient.loadPreset('thermal')
+#
+#     def setColorMap(self, cm1):
+#         self.gradient.setColorMap(cm1)
+
 
 class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     """
@@ -55,6 +68,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.addLabel('Axial')
 
         if not self.options['one_view']:
+            self.nextCol()
             self.addLabel('Sagittal')
             self.nextRow()
         else:
@@ -62,23 +76,22 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.view2 = axwin.addViewBox(name="view2")
             self.view3 = axwin.addViewBox(name="view3")
 
-        self.view1 = self.addViewBox(name="view1")
+        self.view1 = self.addViewBox(name="view1", colspan=2, rowspan=1)
         self.view1.setAspectLocked(True)
         self.imgwin1 = pg.ImageItem(border='k')
         self.view1.addItem(self.imgwin1)
         if not self.options['one_view']:
-            self.view2 = self.addViewBox(name="view2")
+            self.view2 = self.addViewBox(name="view2", colspan=2, rowspan=1)
         self.view2.setAspectLocked(True)
         self.imgwin2 = pg.ImageItem(border='k')
         self.view2.addItem(self.imgwin2)
-
 
         #set a new row in the graphics layout widget
         if not self.options['one_view']:
             self.nextRow()
             self.addLabel('Coronal')
             self.nextRow()
-            self.view3 = self.addViewBox(name="view3")
+            self.view3 = self.addViewBox(name="view3", colspan=2, rowspan=1)
         self.view3.setAspectLocked(True)
         self.imgwin3 = pg.ImageItem(border='k')
         self.view3.addItem(self.imgwin3)
@@ -460,6 +473,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # ROI image
         self.ovreg = None
 
+        # Histogram
+        self.h2 = None
+
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
         self.options['ColorMap'] = 'jet' # default. Can choose any matplotlib colormap
@@ -471,6 +487,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         #self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
+        self.view4 = self.addViewBox(lockAspect=True, colspan=1, rowspan=1)
+
     def load_ovreg(self):
         """
         Adds overlay to image viewer
@@ -481,6 +499,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             return
 
         self._process_overlay()
+        self._create_colorbar()
 
         if self.imgwin1c is None:
             # Initialises viewer if it hasn't been initialised before
@@ -491,11 +510,24 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)
 
+            self.imgcolbar1 = pg.ImageItem(border='k')
+            self.view4.addItem(self.imgcolbar1)
+            axcol = pg.AxisItem('right')
+            self.addItem(axcol)
+
+        self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
+        axcol.setRange(self.ov_range_orig[0], self.ov_range_orig[1])
+
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
         self.imgwin3c.setLevels(self.ov_range)
 
         self._update_view()
+
+    def _create_colorbar(self):
+        c1 = np.linspace(self.ov_range[0], self.ov_range[1], 1000)
+        c1 = np.expand_dims(c1, axis=0)
+        self.colbar1 = np.tile(c1, (100, 1))
 
     def _process_overlay(self):
         """
@@ -510,7 +542,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
         if (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
 
             #Scale ROI
+            #TODO Try and get rid of overlay scaling so that it can be used with a histogramLUT directly
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
+            self.ov_range_orig = [np.min(subreg1), np.max(subreg1)]
             self.ovreg = self.ovreg - np.min(subreg1)
             self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
@@ -521,6 +555,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         else:
             #Normalisation
+            self.ov_range_orig = [np.min(self.ovreg), np.max(self.ovreg)]
             self.ovreg = self.ovreg - np.min(self.ovreg)
             self.ovreg = self.ovreg / np.max(self.ovreg)
 
@@ -550,6 +585,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
         self.imgwin3c.setLevels(self.ov_range)
+
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
@@ -594,7 +630,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin1c.setLookupTable(self.ovreg_lut)
         self.imgwin2c.setLookupTable(self.ovreg_lut)
         self.imgwin3c.setLookupTable(self.ovreg_lut)
-        #self._update_view()
+        self.imgcolbar1.setLookupTable(self.ovreg_lut)
 
     @QtCore.Slot()
     def set_overlay_range(self, state):
@@ -610,6 +646,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Choose a colormap for the overlay
         """
+        #TODO change the functionality to use the builtin HistogramLUTItem colormaps
+        # Subclass HistogramLUTITtem to signal changes in the colormap etc
+
         self.options['ColorMap'] = text
 
         # update colormap
@@ -619,7 +658,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin1c.setLookupTable(self.ovreg_lut)
         self.imgwin2c.setLookupTable(self.ovreg_lut)
         self.imgwin3c.setLookupTable(self.ovreg_lut)
-        #self._update_view()
+        self.imgcolbar1.setLookupTable(self.ovreg_lut)
 
     def set_default_colormap_matplotlib(self):
 
