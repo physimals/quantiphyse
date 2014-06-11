@@ -24,6 +24,9 @@ from libs.PharmaWidgets import PharmaWidget
 from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
+import pyqtgraph as pg
+import pyqtgraph.console
+import numpy as np
 
 
 class QGroupBoxClick(QtGui.QGroupBox):
@@ -333,11 +336,18 @@ class MainWin1(QtGui.QMainWindow):
         help_action = QtGui.QAction('&Online Help', self)
         help_action.setStatusTip('See online help file')
 
+        # Advanced --> Python Console
+        console_action = QtGui.QAction('&Console', self)
+        console_action.setStatusTip('Run a console for advanced interaction')
+        console_action.triggered.connect(self.show_console)
+
+
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         overlayMenu = menubar.addMenu('&Analysis')
         widget_menu = menubar.addMenu('&Widgets')
         help_menu = menubar.addMenu('&Help')
+        advanced_menu = menubar.addMenu('&Advanced')
 
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
@@ -347,8 +357,9 @@ class MainWin1(QtGui.QMainWindow):
         widget_menu.addAction(se_action)
         widget_menu.addAction(ic_action)
 
-
         help_menu.addAction(help_action)
+
+        advanced_menu.addAction(console_action)
 
         #Toolbar
         self.toolbar = self.addToolBar('Load Image')
@@ -358,6 +369,36 @@ class MainWin1(QtGui.QMainWindow):
 
         # extra info displayed in the status bar
         self.statusBar()
+
+    def show_console(self):
+        """
+
+        Creates a pop up console that allows interaction with the GUI and data
+        Uses:
+        pyqtgraph.console
+
+        """
+
+        # Places that the console has access to
+        namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm}
+        text = (
+            """
+            ****** PkView Console ******
+
+            This is a python console that allows interaction with the GUI data and running of scripts.
+
+            Libraries already imported
+            np: Numpy
+
+            Access to data
+            mw1: Access to the main window
+            ivm: Access to all the stored image data
+
+            """)
+        self.con1 = pg.console.ConsoleWidget(namespace=namespace, text=text)
+        self.con1.setWindowTitle('pyqtgraph example: ConsoleWidget')
+        self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
+        self.con1.show()
 
     def show_image_load_dialog(self):
         """

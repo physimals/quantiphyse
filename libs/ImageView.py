@@ -6,7 +6,6 @@ matplotlib.rcParams['backend.qt4'] = 'PySide'
 #from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #import matplotlib.pyplot as plt
 from matplotlib import cm
-
 from PySide import QtCore
 
 import nibabel as nib
@@ -475,6 +474,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         # Histogram
         self.h2 = None
+        self.axcol = None
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
@@ -512,11 +512,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
             self.imgcolbar1 = pg.ImageItem(border='k')
             self.view4.addItem(self.imgcolbar1)
-            axcol = pg.AxisItem('right')
-            self.addItem(axcol)
+            self.axcol = pg.AxisItem('right')
+            self.addItem(self.axcol)
 
         self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
-        axcol.setRange(self.ov_range_orig[0], self.ov_range_orig[1])
+        self.axcol.setRange(self.ov_range_orig[0], self.ov_range_orig[1])
 
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)

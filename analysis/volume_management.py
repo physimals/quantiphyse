@@ -8,6 +8,7 @@ from __future__ import division, print_function
 from PySide import QtCore
 import nibabel as nib
 import numpy as np
+import warnings
 
 
 class ImageVolumeManagement(QtCore.QAbstractItemModel):
@@ -130,6 +131,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
         self.image = np.array(img.get_data())
+
+        self.image = self._remove_nans(self.image)
+
         self.img_dims = self.image.shape
         self.voxel_size = img.get_header().get_zooms()
 
@@ -158,6 +162,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
         self.roi = np.array(roi.get_data())
+
+        self.roi = self._remove_nans(self.roi)
+
         self.roi_all.append(self.roi)
         self.roi_dims = self.roi.shape
 
@@ -186,11 +193,27 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         overlay_load = np.array(ovreg.get_data())
 
+        overlay_load = self._remove_nans(overlay_load)
+
         # add the loaded overlay
         self.set_overlay('loaded', overlay_load)
 
         # set the loaded overlay to be the current overlay
         self.set_current_overlay('loaded')
+
+    @staticmethod
+    def _remove_nans(image1):
+        """
+        Function to check for and remove nans from images
+        """
+
+        nan1 = np.isnan(image1)
+
+        if nan1.sum() > 0:
+            warnings.warn("Image contains nans")
+            image1[nan1] = 0
+
+        return image1
 
 
 
