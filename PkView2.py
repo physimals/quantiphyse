@@ -16,6 +16,7 @@ matplotlib.rcParams['backend.qt4'] = 'PySide'
 import sys
 import os
 from PySide import QtCore, QtGui
+import argparse
 
 # My libs
 from libs.ImageView import ImageViewColorOverlay
@@ -266,12 +267,19 @@ class MainWin1(QtGui.QMainWindow):
     Only purpose is to put the menu, menu bar etc decorations around the main window
     Also initialises the open file menus
     """
-    def __init__(self):
+    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None):
         super(MainWin1, self).__init__()
+
+        #Load the main widget
         self.mw1 = MainWidge1()
 
         self.toolbar = None
         self.default_directory ='/home'
+
+        # Directories for the three main files
+        self.image_dir_in = image_dir_in
+        self.roi_dir_in = roi_dir_in
+        self.overlay_dir_in = overlay_dir_in
 
         # Patch for if file is frozen
         if hasattr(sys, 'frozen'):
@@ -285,7 +293,11 @@ class MainWin1(QtGui.QMainWindow):
             print("Reverting to current directory as base")
             self.local_file_path = os.getcwd()
 
+        #initialise the whole UI
         self.init_ui()
+
+        #autoload any files that have been passed from the command line
+        self.auto_load_files()
 
     def init_ui(self):
         self.setGeometry(100, 100, 1000, 500)
@@ -400,11 +412,15 @@ class MainWin1(QtGui.QMainWindow):
         self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
         self.con1.show()
 
-    def show_image_load_dialog(self):
+    def show_image_load_dialog(self, fname=None):
         """
         Dialog for loading a file
+        @fname: allows a file name to be passed in automatically
         """
-        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        if fname is None:
+            # Show file select widget
+            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+
         self.default_directory = self.get_dir(fname)
 
         #check if file is returned
@@ -415,11 +431,14 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
-    def show_roi_load_dialog(self):
+    def show_roi_load_dialog(self, fname=None):
         """
         Dialog for loading a file
+        @fname: allows a file name to be passed in automatically
         """
-        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        if fname is None:
+            # Show file select widget
+            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
         self.default_directory = self.get_dir(fname)
 
         #check if file is returned
@@ -429,11 +448,14 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
-    def show_ovreg_load_dialog(self):
+    def show_ovreg_load_dialog(self, fname=None):
         """
         Dialog for loading a file
+        @fname: allows a file name to be passed in automatically
         """
-        fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+        if fname is None:
+            #Show file select widget
+            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
         self.default_directory = self.get_dir(fname)
 
         #check if file is returned
@@ -443,6 +465,18 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
+    def auto_load_files(self):
+        """
+        Check to see if any input directories have been passed for auto loading and loads those images
+        """
+
+        if self.image_dir_in is not None:
+            self.show_image_load_dialog(fname=self.image_dir_in)
+        if self.roi_dir_in is not None:
+            self.show_roi_load_dialog(fname=self.roi_dir_in)
+        if self.overlay_dir_in is not None:
+            self.show_ovreg_load_dialog(fname=self.overlay_dir_in)
+
     @staticmethod
     def get_dir(str1):
         ind1 = str1.rfind('/')
@@ -450,18 +484,22 @@ class MainWin1(QtGui.QMainWindow):
         return dir1
 
 
-#~ Main application
-def main():
+if __name__ == '__main__':
     """
     Run the application
     """
+
+    # Parse input arguments to pass info to GUI
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
+    parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
+    parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
+    args = parser.parse_args()
+
+
     app = QtGui.QApplication(sys.argv)
-    ex = MainWin1()
+    ex = MainWin1(args.image, args.roi, args.overlay)
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
 
 
 
