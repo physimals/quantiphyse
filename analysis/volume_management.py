@@ -126,11 +126,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         self.image_file1 = image_file1
         img = nib.load(self.image_file1)
-        # NB: np.array appears to convert to an array instead of a numpy memmap.
+        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
-        self.image = np.array(img.get_data())
+        self.image = np.asarray(img.get_data())
 
         self.image = self._remove_nans(self.image)
 
@@ -157,11 +157,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         #Setting ROI data
         self.roi_file1 = file1
         roi = nib.load(self.roi_file1)
-        # NB: np.array appears to convert to an array instead of a numpy memmap.
+        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
-        self.roi = np.array(roi.get_data())
+        self.roi = np.asarray(roi.get_data())
 
         self.roi = self._remove_nans(self.roi)
 
@@ -189,9 +189,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         #Setting Overlay region data
         self.ovreg_file1 = file1
         ovreg = nib.load(self.ovreg_file1)
-        # NB: np.array appears to convert to an array instead of a numpy memmap.
+        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-        overlay_load = np.array(ovreg.get_data())
+        overlay_load = np.asarray(ovreg.get_data())
 
         overlay_load = self._remove_nans(overlay_load)
 
