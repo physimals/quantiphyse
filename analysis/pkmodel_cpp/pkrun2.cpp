@@ -12,6 +12,7 @@ Pkrun2::Pkrun2(std::vector<double> & tt1, std::vector< std::vector<double> > & y
     pcur = 0;
 
     // Get dimensions
+    n_par = 4; // number of parameters in model function f
     m_t1 = t1.size(); // number of data pairs
     mrows=y1.size();
     ncols=y1[0].size();

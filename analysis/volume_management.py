@@ -58,6 +58,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Number of ROIs
         self.num_roi = 0
 
+        #T10 image
+        self.T10 = None
+
         # Current position of the cross hair
         self.cim_pos = [0, 0, 0, 0]
 
@@ -70,6 +73,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def get_overlay(self):
         return self.overlay
 
+    def get_T10(self):
+        return self.T10
+
     def get_image_shape(self):
         return self.image.shape
 
@@ -78,6 +84,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_image(self, x):
         self.image = x
+
+    def set_T10(self, x):
+        self.T10 = x
 
     def set_overlay(self, choice1, ovreg):
         """
@@ -143,6 +152,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)
         print("Image range: ", self.img_range)
+
+        print("Temp: Creation of T10")
+        T10 = np.ones(self.img_dims[:3])
+        self.set_T10(T10)
 
     def load_roi(self, file1):
         """

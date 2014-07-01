@@ -35,19 +35,17 @@ class PharmaWidget(QtGui.QWidget):
 
         #Inputs
         p1 = QtGui.QLabel('R1')
-        p1in = QtGui.QLineEdit('3.7', self)
+        self.valR1 = QtGui.QLineEdit('3.7', self)
         p2 = QtGui.QLabel('R2')
-        p2in = QtGui.QLineEdit('4.8', self)
+        self.valR2 = QtGui.QLineEdit('4.8', self)
         p3 = QtGui.QLabel('Flip Angle')
-        p3in = QtGui.QLineEdit('12.0', self)
+        self.valFA = QtGui.QLineEdit('12.0', self)
         p4 = QtGui.QLabel('TR (s)')
-        p4in = QtGui.QLineEdit('4.108', self)
+        self.valTR = QtGui.QLineEdit('4.108', self)
         p5 = QtGui.QLabel('TE (s)')
-        p5in = QtGui.QLineEdit('1.832', self)
+        self.valTE = QtGui.QLineEdit('1.832', self)
         p6 = QtGui.QLabel('delta T (s)')
-        p6in = QtGui.QLineEdit('12', self)
-        p7 = QtGui.QLabel('T10 (s)')
-        p7in = QtGui.QLineEdit('1.0', self)
+        self.valDelT = QtGui.QLineEdit('12', self)
 
         # AIF
         # Select plot color
@@ -71,19 +69,17 @@ class PharmaWidget(QtGui.QWidget):
         # Inputs
         l02 = QtGui.QGridLayout()
         l02.addWidget(p1, 0, 0)
-        l02.addWidget(p1in, 0, 1)
+        l02.addWidget(self.valR1, 0, 1)
         l02.addWidget(p2, 1, 0)
-        l02.addWidget(p2in, 1, 1)
+        l02.addWidget(self.valR2, 1, 1)
         l02.addWidget(p3, 2, 0)
-        l02.addWidget(p3in, 2, 1)
+        l02.addWidget(self.valFA, 2, 1)
         l02.addWidget(p4, 3, 0)
-        l02.addWidget(p4in, 3, 1)
+        l02.addWidget(self.valTR, 3, 1)
         l02.addWidget(p5, 4, 0)
-        l02.addWidget(p5in, 4, 1)
+        l02.addWidget(self.valTE, 4, 1)
         l02.addWidget(p6, 5, 0)
-        l02.addWidget(p6in, 5, 1)
-        l02.addWidget(p7, 6, 0)
-        l02.addWidget(p7in, 6, 1)
+        l02.addWidget(self.valDelT, 5, 1)
 
         f02 = QGroupBoxB()
         f02.setTitle('Parameters')
@@ -123,65 +119,106 @@ class PharmaWidget(QtGui.QWidget):
     def init_multiproc(self):
         # Set up the background process
         self.queue = multiprocessing.Queue()
-        self.pool = multiprocessing.Pool(processes=4, initializer=pool_init, initargs=(self.queue,))
+        self.pool = multiprocessing.Pool(processes=2, initializer=pool_init, initargs=(self.queue,))
 
     def start_task(self):
+        """
+        Start running the PK modelling on button click
+        """
         self.timer.start(1000)
 
-        self.pool.apply_async(func=compute, args=(1,))
+        # get volumes to process
+        img1 = self.ivm.get_image()
+        roi1 = self.ivm.get_roi()
+        t101 = self.ivm.get_T10()
+
+        # Extract the text from the line edit options
+        R1 = float(self.valR1.text())
+        R2 = float(self.valR2.text())
+        DelT = float(self.valDelT.text())
+        TR = float(self.valTR.text())
+        TE = float(self.valTE.text())
+        FA = float(self.valFA.text())
+
+        # start separate processor
+        self.result = self.pool.apply_async(func=run_pk, args=(img1, roi1, t101, R1, R2, DelT, TR, TE, FA))
+        #self.pool.apply_async(func=compute, args=(1,))
+
+        # set the progress value
         self.prog_gen.setValue(0)
 
+        # get outputs
+
     def CheckProg(self):
+
+        """
+        Check the progress regularly and update volumes when progress reaches 100%
+        """
         if self.queue.empty():
                 return
+
         # unpack the queue
         num_row, progress = self.queue.get()
         self.prog_gen.setValue(progress)
 
 
-def compute(num_row):
-    print("worker started at %d" % num_row)
-    random_number = 10
-    for second in range(random_number):
-        progress = float(second) / float(random_number) * 100
-        compute.queue.put((num_row, progress,))
-        time.sleep(1)
+        if progress == 100:
+            # Stop checking once progress reaches 100%
+            self.timer.stop()
 
-    # put in the queue
-    compute.queue.put((num_row, 100))
+            #TODO check this
+            var1 = self.result.get()
+            None
 
 
-def pool_init(queue):
-    # see http://stackoverflow.com/a/3843313/852994
-    # In python every function is an object so this is a quick and dirty way of adding a variable
-    # to a function for easy access later. Prob better to create a class out of compute?
-    compute.queue = queue
+#
+# def compute(num_row):
+#     print("worker started at %d" % num_row)
+#     random_number = 10
+#     for second in range(random_number):
+#         progress = float(second) / float(random_number) * 100
+#         compute.queue.put((num_row, progress,))
+#         time.sleep(1)
+#
+#     # put in the queue
+#     compute.queue.put((num_row, 100))
+#
+#
+# def pool_init_test(queue):
+#     # see http://stackoverflow.com/a/3843313/852994
+#     # In python every function is an object so this is a quick and dirty way of adding a variable
+#     # to a function for easy access later. Prob better to create a class out of compute?
+#     compute.queue = queue
 
 
-def run_pk(img1, t10, r1, r2, delt, tr1, te1):
+def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
 
     """
     Simple function interface to run the c++ pk modelling code
     Run from a multiprocess call
     """
-    print("worker started")
 
-
-    T10 = np.ones(img1.shape[:3])
+    print("pk modelling worker started")
 
     baseline1 = np.mean(img1[:, :, :, :3], axis=-1)
+    # Normalisation of the image (put normalised image in the volume management part)
     img1 = img1 / (np.tile(np.expand_dims(baseline1, axis=-1), (1, 1, img1.shape[-1])) + 0.001) - 1
 
     # Convert to list of enhancing voxels
     img1vec = np.reshape(img1, (-1, img1.shape[-1]))
-    T10vec = np.reshape(T10, (-1))
+    T10vec = np.reshape(t10, (-1))
+    roi1vec = np.reshape(roi1, (-1))
+
+    # Make sure the type is correct
+    img1vec = np.array(img1vec, dtype=np.double)
+    T10vec = np.array(T10vec, dtype=np.double)
+    roi1vec = np.array(roi1vec, dtype=bool)
 
     t1 = np.arange(0, img1.shape[-1])*delt
-    t1 = t1 /60.0
+    t1 = t1/60.0
 
     Dose = 0.1
 
-    dce_flip_angle = 12.0
     dce_TR = tr1/1000.0
     dce_TE = te1/1000.0
 
@@ -190,15 +227,15 @@ def run_pk(img1, t10, r1, r2, delt, tr1, te1):
 
     AIFin = [2.65, 1.51, 22.40, 0.23, 0]
 
+    print("subset")
+    # Subset within the ROI and
+    img1sub = img1vec[roi1vec, :]
+    T10sub = T10vec[roi1vec]
 
-    # Subset
-    #img1sub = np.ascontiguousarray(np.array(img1vec[:11410, :], dtype=np.double))
-    #T10sub = np.ascontiguousarray(T10vec[:11410], dtype=np.double)
-    #t1 = np.ascontiguousarray(t1, dtype=np.double)
-
-    # Subset
-    img1sub = np.ascontiguousarray(img1vec)
-    T10sub = np.ascontiguousarray(T10vec)
+    print("contiguous")
+    # contiguous array
+    img1sub = np.ascontiguousarray(img1sub)
+    T10sub = np.ascontiguousarray(T10sub)
     t1 = np.ascontiguousarray(t1)
 
     Pkclass = PyPk(t1, img1sub, T10sub)
@@ -206,18 +243,74 @@ def run_pk(img1, t10, r1, r2, delt, tr1, te1):
     Pkclass.set_AIF(AIFin)
     Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
 
+    # Initialise fitting
     Pkclass.rinit(1)
 
-    #TODO Loop and update queue with progress
+    # Iteratively process 5000 points at a time
+    # (this can be performed as a multiprocess soon)
 
-    x = Pkclass.run(5000)
-    print(x)
-    x = Pkclass.run(5000)
-    print(x)
+    size_step = 5000
+    size_tot = img1sub.shape[0]
+    steps1 = np.around(size_tot/size_step)
+    num_row = 1.0  # Just a placeholder for the meanwhile
+
+    print("Number of steps: ", steps1)
+    for ii in range(int(steps1)):
+        progress = float(ii) / float(steps1) * 100
+        print(progress)
+
+        run_pk.queue.put((num_row, progress))
+        time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
+        x = Pkclass.run(5000)
+        print(x)
+
+    print("Done")
+
+    # random_number = 10
+    # for second in range(random_number):
+    #     progress = float(second) / float(random_number) * 100
+    #     run_pk.queue.put((num_row, progress,))
+    #     time.sleep(1)
 
     # Get outputs
     res1 = np.array(Pkclass.get_residual())
     fcurve1 = np.array(Pkclass.get_fitted_curve())
     params2 = np.array(Pkclass.get_parameters())
 
+    #Params: Ktrans, ve, offset, vp
+
+    Ktrans1 = np.zeros((img1vec.shape[0]))
+    Ktrans1[roi1vec] = params2[:, 0]
+
+    ve1 = np.zeros((img1vec.shape[0]))
+    ve1[roi1vec] = params2[:, 1]
+
+    offset1 = np.zeros((img1vec.shape[0]))
+    offset1[roi1vec] = params2[:, 2]
+
+    vp1 = np.zeros((img1vec.shape[0]))
+    vp1[roi1vec] = params2[:, 3]
+
+    estimated_curve1 = np.zeros(img1vec.shape)
+    estimated_curve1[roi1vec, :] = fcurve1
+
+    residual1 = np.zeros((img1vec.shape[0]))
+    residual1[roi1vec] = res1
+
+    # Convert to list of enhancing voxels
+    Ktrans1vol = np.reshape(Ktrans1, (img1.shape[:-1]))
+
+    run_pk.queue.put((num_row, 100))
+    time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
+    return Ktrans1vol
+
+
     #TODO Convert to 3D and 4D volumes
+    #TODO Send the volumes to the volume management object
+
+
+def pool_init(queue):
+    # see http://stackoverflow.com/a/3843313/852994
+    # In python every function is an object so this is a quick and dirty way of adding a variable
+    # to a function for easy access later. Prob better to create a class out of compute?
+    run_pk.queue = queue

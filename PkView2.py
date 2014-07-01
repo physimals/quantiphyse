@@ -29,6 +29,28 @@ import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np
 
+"""
+class DragAction(QtGui.QAction):
+
+    def __init__(self, icon, text, parent):
+        super(DragAction, self).__init__(icon, text, parent)
+
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, e):
+
+        if e.mimData().hasFormat('text/plain'):
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+
+        #TODO currently just testing for the main image
+        self.mw1.ivm.load_image(e)
+        self.mw1.ivl1.load_image()
+        self.mw1.update_slider_range()
+"""
 
 class QGroupBoxClick(QtGui.QGroupBox):
 
@@ -74,6 +96,7 @@ class MainWidge1(QtGui.QWidget):
 
         # Pharmacokinetic modelling widget
         self.sw3 = PharmaWidget()
+        self.sw3.add_image_management(self.ivm)
 
         # Gif creation widget
         self.sw4 = ImageExportWidget()
@@ -353,7 +376,6 @@ class MainWin1(QtGui.QMainWindow):
         console_action.setStatusTip('Run a console for advanced interaction')
         console_action.triggered.connect(self.show_console)
 
-
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         overlayMenu = menubar.addMenu('&Analysis')
@@ -392,7 +414,7 @@ class MainWin1(QtGui.QMainWindow):
         """
 
         # Places that the console has access to
-        namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm}
+        namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm, 'self': self}
         text = (
             """
             ****** PkView Console ******
