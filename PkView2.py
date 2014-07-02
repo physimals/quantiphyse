@@ -106,8 +106,14 @@ class MainWidge1(QtGui.QWidget):
         #Connect colormap choice, alpha
         self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
         self.sw2.sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
+
+        #Connecting toggle buttons
         self.sw2.cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
         self.sw2.cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
+
+        self.sw2.sig_emit_reset.connect(self.ivl1.update_overlay)
+
+        self.sw3.sig_emit_reset.connect(self.ivl1.update_overlay)
 
         #Connect image export widget
         self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)

@@ -45,7 +45,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Type of the current overlay
         self.overlay_label = None
         # List of possible overlays that can be loaded
-        self.overlay_label_all = ['loaded', 'ktrans', 'kep', 've', 'vp']
+        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual']
 
         # All overlays
         self.overlay_all = {}
@@ -90,7 +90,13 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_overlay(self, choice1, ovreg):
         """
+
         Set an overlay for storage
+
+        Choices:
+
+        ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual']
+
         """
 
         if (ovreg.shape != self.img_dims[:3]) or (len(ovreg.shape) > 3):
@@ -110,7 +116,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_current_overlay(self, choice1, broadcast_change=True):
         """
+
         Set the current overlay
+
         """
 
         if choice1 in self.overlay_label_all and choice1 in self.overlay_all.keys():
@@ -126,6 +134,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def load_image(self, image_file1):
         """
+
         Loading nifti image
 
         self.img: variable storing numpy volume
@@ -159,8 +168,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def load_roi(self, file1):
         """
+
         Loads and checks roi image
         Initialise viewing windows
+
         """
 
         if self.image.shape[0] == 1:
@@ -192,7 +203,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def load_ovreg(self, file1):
         """
+
         Loads and checks Overlay region image
+
         """
 
         if self.image.shape[0] == 1:
@@ -217,7 +230,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     @staticmethod
     def _remove_nans(image1):
         """
+
         Function to check for and remove nans from images
+
         """
 
         nan1 = np.isnan(image1)

@@ -19,6 +19,9 @@ class PharmaWidget(QtGui.QWidget):
         - Multiprocessing
     """
 
+    #emit reset command
+    sig_emit_reset = QtCore.Signal(bool)
+
     def __init__(self):
         super(PharmaWidget, self).__init__()
         self.init_multiproc()
@@ -161,34 +164,20 @@ class PharmaWidget(QtGui.QWidget):
         num_row, progress = self.queue.get()
         self.prog_gen.setValue(progress)
 
-
         if progress == 100:
             # Stop checking once progress reaches 100%
             self.timer.stop()
 
-            #TODO check this
+            # Get results from the process
             var1 = self.result.get()
-            None
 
-
-#
-# def compute(num_row):
-#     print("worker started at %d" % num_row)
-#     random_number = 10
-#     for second in range(random_number):
-#         progress = float(second) / float(random_number) * 100
-#         compute.queue.put((num_row, progress,))
-#         time.sleep(1)
-#
-#     # put in the queue
-#     compute.queue.put((num_row, 100))
-#
-#
-# def pool_init_test(queue):
-#     # see http://stackoverflow.com/a/3843313/852994
-#     # In python every function is an object so this is a quick and dirty way of adding a variable
-#     # to a function for easy access later. Prob better to create a class out of compute?
-#     compute.queue = queue
+            # Pass overlay maps to the volume management
+            self.ivm.set_overlay(choice1='Ktrans', ovreg=var1[0])
+            self.ivm.set_overlay(choice1='ve', ovreg=var1[1])
+            self.ivm.set_overlay(choice1='offset', ovreg=var1[2])
+            self.ivm.set_overlay(choice1='vp', ovreg=var1[3])
+            self.ivm.set_current_overlay(choice1='Ktrans')
+            self.sig_emit_reset.emit(1)
 
 
 def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
@@ -299,10 +288,15 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
 
     # Convert to list of enhancing voxels
     Ktrans1vol = np.reshape(Ktrans1, (img1.shape[:-1]))
+    ve1vol = np.reshape(ve1, (img1.shape[:-1]))
+    offset1vol = np.reshape(offset1, (img1.shape[:-1]))
+    vp1vol = np.reshape(vp1, (img1.shape[:-1]))
 
+    # final update to progress bar
     run_pk.queue.put((num_row, 100))
     time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-    return Ktrans1vol
+
+    return Ktrans1vol, ve1vol, offset1vol, vp1vol
 
 
     #TODO Convert to 3D and 4D volumes

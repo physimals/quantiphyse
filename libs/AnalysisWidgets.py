@@ -234,6 +234,7 @@ class SECurve(QtGui.QWidget):
 
 
 class ColorOverlay1(QtGui.QWidget):
+
     """
     Color overlay interaction
     """
@@ -243,6 +244,8 @@ class ColorOverlay1(QtGui.QWidget):
     sig_choose_cmap = QtCore.Signal(str)
     #emit alpha value
     sig_set_alpha = QtCore.Signal(int)
+    #emit reset command
+    sig_emit_reset = QtCore.Signal(bool)
 
     def __init__(self):
         super(ColorOverlay1, self).__init__()
@@ -462,6 +465,7 @@ class ColorOverlay1(QtGui.QWidget):
     @QtCore.Slot(str)
     def emit_volume(self, choice1):
         self.ivm.set_current_overlay(choice1, broadcast_change=False)
+        self.sig_emit_reset.emit(1)
 
     @QtCore.Slot(int)
     def emit_alpha(self, val1):

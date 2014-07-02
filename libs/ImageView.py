@@ -17,8 +17,8 @@ from pyqtgraph.exporters.ImageExporter import ImageExporter
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
-#TODO subclass HistogramLUTItem for the greyscale image as
-#TODO well so that it signals any change in the range causing an update.
+#TODO subclass HistogramLUTItem
+# for the greyscale image so that it signals any change in the range causing an update.
 
 
 # class HistogramLUTItemOverlay(pg.HistogramLUTItem):
@@ -478,7 +478,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
-        self.options['ColorMap'] = 'jet' # default. Can choose any matplotlib colormap
+        self.options['ColorMap'] = 'jet'  # default. Can choose any matplotlib colormap
         self.options['UseROI'] = 1
 
         #Initialise the colormap
@@ -638,8 +638,15 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Set the range of the overlay map
         """
         #TODO
-
         None
+
+    @QtCore.Slot(bool)
+    def update_overlay(self, x):
+        """
+        Update any changes to the overlay and view
+        """
+        if x == 1:
+            self.load_ovreg()
 
     @QtCore.Slot(str)
     def set_colormap(self, text):
