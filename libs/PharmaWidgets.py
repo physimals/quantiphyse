@@ -12,7 +12,7 @@ from analysis.pkmodel_cpp.pk import PyPk
 class PharmaWidget(QtGui.QWidget):
 
     """
-    Widget for generating pharmacokinetics
+    Widget for generating Pharmacokinetics
     Bass class
         - GUI framework
         - Buttons
@@ -52,11 +52,14 @@ class PharmaWidget(QtGui.QWidget):
 
         # AIF
         # Select plot color
-        combo = QtGui.QComboBox(self)
-        combo.addItem("Clinical : Orton AIF (3rd model)")
-        combo.addItem("Preclinical : Biexponential model (Heilmann)")
-        #combo.activated[str].connect(self.emit_cchoice)
-        #combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
+        self.combo = QtGui.QComboBox(self)
+        self.combo.addItem("Clinical: Toft / OrtonAIF (3rd) with offset")
+        self.combo.addItem("Clinical: Toft / OrtonAIF (3rd) no offset")
+        self.combo.addItem("Preclinical: Toft / BiexpAIF (Heilmann)")
+        self.combo.addItem("Preclinical: Ext Toft / BiexpAIF (Heilmann)")
+
+        #self.combo.activated[str].connect(self.emit_cchoice)
+        #self.combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
         #                 "Allows visualisation of multiple enhancement curves of different colours")
 
         #LAYOUTS
@@ -94,11 +97,11 @@ class PharmaWidget(QtGui.QWidget):
 
         l04 = QtGui.QHBoxLayout()
         l04.addWidget(QtGui.QLabel('AIF choice'))
-        l04.addWidget(combo)
+        l04.addWidget(self.combo)
         l04.addStretch(1)
 
         f03 = QGroupBoxB()
-        f03.setTitle('AIF options')
+        f03.setTitle('Pharmacokinetic model choice')
         f03.setLayout(l04)
 
         l0 = QtGui.QVBoxLayout()
@@ -114,28 +117,36 @@ class PharmaWidget(QtGui.QWidget):
         self.timer.timeout.connect(self.CheckProg)
 
     def add_image_management(self, image_vol_management):
+
         """
         Adding image management
         """
+
         self.ivm = image_vol_management
 
     def init_multiproc(self):
+
         # Set up the background process
+
         self.queue = multiprocessing.Queue()
         self.pool = multiprocessing.Pool(processes=2, initializer=pool_init, initargs=(self.queue,))
 
     def start_task(self):
+
         """
         Start running the PK modelling on button click
         """
+
         self.timer.start(1000)
 
         # get volumes to process
+
         img1 = self.ivm.get_image()
         roi1 = self.ivm.get_roi()
         t101 = self.ivm.get_T10()
 
         # Extract the text from the line edit options
+
         R1 = float(self.valR1.text())
         R2 = float(self.valR2.text())
         DelT = float(self.valDelT.text())
@@ -143,8 +154,12 @@ class PharmaWidget(QtGui.QWidget):
         TE = float(self.valTE.text())
         FA = float(self.valFA.text())
 
+        # getting model choice from list
+        model_choice = self.combo.currentIndex() + 1
+
         # start separate processor
-        self.result = self.pool.apply_async(func=run_pk, args=(img1, roi1, t101, R1, R2, DelT, TR, TE, FA))
+        self.result = self.pool.apply_async(func=run_pk, args=(img1, roi1, t101, R1, R2, DelT, TR, TE, FA,
+                                                               model_choice))
         #self.pool.apply_async(func=compute, args=(1,))
 
         # set the progress value
@@ -157,6 +172,7 @@ class PharmaWidget(QtGui.QWidget):
         """
         Check the progress regularly and update volumes when progress reaches 100%
         """
+
         if self.queue.empty():
                 return
 
@@ -174,13 +190,14 @@ class PharmaWidget(QtGui.QWidget):
             # Pass overlay maps to the volume management
             self.ivm.set_overlay(choice1='Ktrans', ovreg=var1[0])
             self.ivm.set_overlay(choice1='ve', ovreg=var1[1])
-            self.ivm.set_overlay(choice1='offset', ovreg=var1[2])
-            self.ivm.set_overlay(choice1='vp', ovreg=var1[3])
+            self.ivm.set_overlay(choice1='kep', ovreg=var1[2])
+            self.ivm.set_overlay(choice1='offset', ovreg=var1[3])
+            self.ivm.set_overlay(choice1='vp', ovreg=var1[4])
             self.ivm.set_current_overlay(choice1='Ktrans')
             self.sig_emit_reset.emit(1)
 
 
-def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
+def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle, model_choice):
 
     """
     Simple function interface to run the c++ pk modelling code
@@ -214,8 +231,6 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
     ub = [10, 1, 0.5, 0.5]
     lb = [0, 0.05, -0.5, 0]
 
-    AIFin = [2.65, 1.51, 22.40, 0.23, 0]
-
     print("subset")
     # Subset within the ROI and
     img1sub = img1vec[roi1vec, :]
@@ -229,11 +244,10 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
 
     Pkclass = PyPk(t1, img1sub, T10sub)
     Pkclass.set_bounds(ub, lb)
-    Pkclass.set_AIF(AIFin)
     Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
 
     # Initialise fitting
-    Pkclass.rinit(1)
+    Pkclass.rinit(model_choice)
 
     # Iteratively process 5000 points at a time
     # (this can be performed as a multiprocess soon)
@@ -255,12 +269,6 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
 
     print("Done")
 
-    # random_number = 10
-    # for second in range(random_number):
-    #     progress = float(second) / float(random_number) * 100
-    #     run_pk.queue.put((num_row, progress,))
-    #     time.sleep(1)
-
     # Get outputs
     res1 = np.array(Pkclass.get_residual())
     fcurve1 = np.array(Pkclass.get_fitted_curve())
@@ -269,10 +277,16 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
     #Params: Ktrans, ve, offset, vp
 
     Ktrans1 = np.zeros((img1vec.shape[0]))
-    Ktrans1[roi1vec] = params2[:, 0]
+    Ktrans1[roi1vec] = params2[:, 0] * (params2[:, 0] < 2.0) + 2 * (params2[:, 0] > 2.0)
 
     ve1 = np.zeros((img1vec.shape[0]))
-    ve1[roi1vec] = params2[:, 1]
+    ve1[roi1vec] = params2[:, 1] * (params2[:, 1] < 2.0) + 2 * (params2[:, 1] > 2.0)
+
+    kep1p = params2[:, 0] / (params2[:, 1] + 0.001)
+    kep1p[np.logical_or(np.isnan(kep1p), np.isinf(kep1p))] = 0
+    kep1p *= (kep1p > 0)
+    kep1 = np.zeros((img1vec.shape[0]))
+    kep1[roi1vec] = kep1p * (kep1p < 2.0) + 2 * (kep1p > 2.0)
 
     offset1 = np.zeros((img1vec.shape[0]))
     offset1[roi1vec] = params2[:, 2]
@@ -291,13 +305,13 @@ def run_pk(img1, roi1, t10, r1, r2, delt, tr1, te1, dce_flip_angle):
     ve1vol = np.reshape(ve1, (img1.shape[:-1]))
     offset1vol = np.reshape(offset1, (img1.shape[:-1]))
     vp1vol = np.reshape(vp1, (img1.shape[:-1]))
+    kep1vol = np.reshape(kep1, (img1.shape[:-1]))
 
     # final update to progress bar
     run_pk.queue.put((num_row, 100))
     time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
 
-    return Ktrans1vol, ve1vol, offset1vol, vp1vol
-
+    return Ktrans1vol, ve1vol, kep1vol, offset1vol, vp1vol
 
     #TODO Convert to 3D and 4D volumes
     #TODO Send the volumes to the volume management object

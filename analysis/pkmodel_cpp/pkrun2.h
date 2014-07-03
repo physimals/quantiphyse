@@ -75,8 +75,6 @@ public:
 
     void set_bounds(vector<double> & ub1, vector<double> & lb1);
 
-    void set_AIF(vector<double> & AIFin);
-
     void set_parameters(double R1in, double R2in, double dce_flip_anglein, double dce_TRin, double dce_TEin, double Dosein);
 
     // run the pk model

@@ -14,7 +14,6 @@ cdef extern from "pkrun2.h" namespace "pkmodellingspace":
   cdef cppclass Pkrun2:
         Pkrun2(vector[double] &, vector[vector[double]] &, vector[double] &) except +
         void set_bounds(vector[double] & ub1, vector[double] & lb1)
-        void set_AIF(vector[double] & AIFin)
         void set_parameters(double R1in, double R2in, double dce_flip_anglein,
                             double dce_TRin, double dce_TEin, double Dosein)
         void rinit(int model1)
@@ -32,8 +31,6 @@ cdef class PyPk:
         del self.thisptr
     def set_bounds(self, ub1, lb1):
         self.thisptr.set_bounds(ub1, lb1)
-    def set_AIF(self, AIFin):
-        self.thisptr.set_AIF(AIFin)
     def set_parameters(self, R1in, R2in, dce_flip_anglein, dce_TRin, dce_TEin, Dosein):
         self.thisptr.set_parameters(R1in, R2in, dce_flip_anglein, dce_TRin, dce_TEin, Dosein)
     def rinit(self, model1):

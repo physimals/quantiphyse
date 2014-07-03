@@ -30,7 +30,6 @@ Pkrun2::Pkrun2(std::vector<double> & tt1, std::vector< std::vector<double> > & y
             t[ii]=t1.at(ii);
         }
 
-
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Output arrays ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // Initilising output vectors by setting all values to -1
@@ -73,21 +72,6 @@ void Pkrun2::set_bounds(vector<double> & ub1, vector<double> & lb1)
     lb[0]= lb1.at(0); lb[1]=lb1.at(1); lb[2]=lb1.at(2); lb[3]=lb1.at(3);
 }
 
-void Pkrun2::set_AIF(vector<double> & AIF1)
-{
-    if (AIF1.size() !=5)
-    {
-        cout << "Inputs have incorrect length \n";
-    }
-    else
-    {
-        cout << " Correct AIF length \n";
-    }
-
-    //~~~~~~~~~~~~~~~~~~~~~~~~ Convert standard arrays ~~~~~~~~~~~~~~~~~~
-    for (ii=0; ii<5; ii++)
-        AIF[ii]=AIF1.at(ii);
-}
 
 void Pkrun2::set_parameters(double R1in, double R2in, double dce_flip_anglein, double dce_TRin, double dce_TEin, double Dosein)
 {
@@ -105,23 +89,29 @@ void Pkrun2::set_parameters(double R1in, double R2in, double dce_flip_anglein, d
 void Pkrun2::rinit(int model1)
 {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~Pass all the data to the optimizer object ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Set the AIF and model type
 
     if (model1 ==1)
     {
-        cout << "Orton with offset \n";
+        cout << "Orton with offset (Clinical) \n";
+        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=0;
     }
     else if (model1 ==2)
     {
-        cout << "Weinmann with offset \n";
+        cout << "Orton without offset (Clinical) \n";
+        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=0;
     }
     else if (model1 ==3)
     {
-        cout << "Orton without offset \n";
+        cout << "Weinmann with offset (Pre-clinical) \n";
+        AIF[0]=0; AIF[1]=0; AIF[2]=0; AIF[3]=0; AIF[4]=0;
     }
     else if (model1 ==4)
     {
-        cout << "Weinmann with offset and vp \n";
+        cout << "Weinmann with offset and vp (Pre-clinical) \n";
+        AIF[0]=0; AIF[1]=0; AIF[2]=0; AIF[3]=0; AIF[4]=0;
     }
+
 
     OTofts.set_data(n_par, R1, R2, dce_TR, dce_TE, dce_flip_angle, AIF, m_t1, Dose);
 
@@ -134,8 +124,6 @@ void Pkrun2::rinit(int model1)
     3) Orton without Offset
     4) Weinmann with offset and vp
     */
-
-
 
 }
 

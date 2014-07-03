@@ -52,6 +52,7 @@ class DragAction(QtGui.QAction):
         self.mw1.update_slider_range()
 """
 
+
 class QGroupBoxClick(QtGui.QGroupBox):
 
     """
