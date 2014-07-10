@@ -173,7 +173,7 @@ class MainWidge1(QtGui.QWidget):
         self.sld4.valueChanged[int].connect(lab_p4.setNum)
 
         #Layout
-        # Box of buttons
+        # Group box buttons
         gBox = QtGui.QGroupBox("Image and ROI options")
         gBoxlay = QtGui.QVBoxLayout()
         gBoxlay.addWidget(cb1)
@@ -184,7 +184,7 @@ class MainWidge1(QtGui.QWidget):
         gBox.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
                            "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
-        # Slider layout
+        # Group box: sliders
         gBox2 = QtGui.QGroupBox("Navigation Sliders")
         gBoxlay2 = QtGui.QGridLayout()
         gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
@@ -356,6 +356,12 @@ class MainWin1(QtGui.QMainWindow):
         load_ovreg_action.setStatusTip('Load color overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
+        #File --> Load Overlay Select
+        load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'),
+                                             '&Load Overlay Select', self)
+        load_ovregsel_action.setStatusTip('Load color overlay and select specific type')
+        load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
+
         #File --> Settings
         #TODO
 
@@ -393,6 +399,7 @@ class MainWin1(QtGui.QMainWindow):
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
         file_menu.addAction(load_ovreg_action)
+        file_menu.addAction(load_ovregsel_action)
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
@@ -450,10 +457,9 @@ class MainWin1(QtGui.QMainWindow):
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
 
-        self.default_directory = self.get_dir(fname)
-
         #check if file is returned
         if fname != '':
+            self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_image(fname)
             self.mw1.ivl1.load_image()
             self.mw1.update_slider_range()
@@ -468,10 +474,10 @@ class MainWin1(QtGui.QMainWindow):
         if fname is None:
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-        self.default_directory = self.get_dir(fname)
 
         #check if file is returned
         if fname != '':
+            self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_roi(fname)
             self.mw1.ivl1.load_roi()
         else:
@@ -485,11 +491,33 @@ class MainWin1(QtGui.QMainWindow):
         if fname is None:
             #Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-        self.default_directory = self.get_dir(fname)
 
         #check if file is returned
         if fname != '':
+            self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_ovreg(fname)
+            self.mw1.ivl1.load_ovreg()
+        else:
+            print('Warning: No file selected')
+
+    def show_ovregsel_load_dialog(self, fname=None, ftype=None):
+        """
+        Dialog for loading an overlay and specifying the type of overlay
+        @fname: allows a file name to be passed in automatically
+        @ftype: allows overlay type to be passed automatically
+        """
+        if fname is None:
+            # Show file select widget
+            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+
+        if ftype is None:
+            ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+                                                   ['T10', 'Ktrans', 'kep', 've'])
+
+        # check if file is returned
+        if fname != '':
+            self.default_directory = self.get_dir(fname)
+            self.mw1.ivm.load_ovreg(fname, ftype)
             self.mw1.ivl1.load_ovreg()
         else:
             print('Warning: No file selected')

@@ -45,7 +45,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Type of the current overlay
         self.overlay_label = None
         # List of possible overlays that can be loaded
-        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual']
+        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10']
 
         # All overlays
         self.overlay_all = {}
@@ -57,9 +57,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi_file1 = None
         # Number of ROIs
         self.num_roi = 0
-
-        #T10 image
-        self.T10 = None
 
         # Current position of the cross hair
         self.cim_pos = [0, 0, 0, 0]
@@ -74,7 +71,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         return self.overlay
 
     def get_T10(self):
-        return self.T10
+
+        if 'T10' in self.overlay_all:
+            return self.overlay_all['T10']
+        else:
+            return None
 
     def get_image_shape(self):
         return self.image.shape
@@ -95,7 +96,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         Choices:
 
-        ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual']
+        ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10']
 
         """
 
@@ -162,10 +163,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         print("Voxel size: ", self.voxel_size)
         print("Image range: ", self.img_range)
 
-        print("Temp: Creation of T10")
-        T10 = np.ones(self.img_dims[:3])
-        self.set_T10(T10)
-
     def load_roi(self, file1):
         """
 
@@ -201,7 +198,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         else:
             self.num_roi += 1
 
-    def load_ovreg(self, file1):
+    def load_ovreg(self, file1, type1='loaded'):
         """
 
         Loads and checks Overlay region image
@@ -222,10 +219,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         overlay_load = self._remove_nans(overlay_load)
 
         # add the loaded overlay
-        self.set_overlay('loaded', overlay_load)
+        self.set_overlay(type1, overlay_load)
 
         # set the loaded overlay to be the current overlay
-        self.set_current_overlay('loaded')
+        self.set_current_overlay(type1)
 
     @staticmethod
     def _remove_nans(image1):

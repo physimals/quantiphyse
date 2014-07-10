@@ -137,6 +137,25 @@ class PharmaWidget(QtGui.QWidget):
         Start running the PK modelling on button click
         """
 
+        # Check that pkmodelling can be run
+        if self.ivm.get_image() is None:
+            m1 = QtGui.QMessageBox()
+            m1.setText("The image doesn't exist! Please load before running Pk modelling")
+            m1.exec_()
+            return
+
+        if self.ivm.get_roi() is None:
+            m1 = QtGui.QMessageBox()
+            m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
+            m1.exec_()
+            return
+
+        if self.ivm.get_T10() is None:
+            m1 = QtGui.QMessageBox()
+            m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
+            m1.exec_()
+            return
+
         self.timer.start(1000)
 
         # get volumes to process
