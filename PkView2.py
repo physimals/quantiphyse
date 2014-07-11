@@ -76,6 +76,13 @@ class MainWidge1(QtGui.QWidget):
     def __init__(self):
         super(MainWidge1, self).__init__()
 
+        # get the default color
+        color1 = self.palette().color(QtGui.QPalette.Background)
+        colorvec = [color1.red(), color1.green(), color1.blue()]
+        # set the default color for pg
+        pg.setConfigOption('background', [242, 241, 240])
+        pg.setConfigOption('foreground', 'k')
+
         # Loading data management object
         self.ivm = ImageVolumeManagement()
 
@@ -244,6 +251,8 @@ class MainWidge1(QtGui.QWidget):
         # Signals to connect widget
         self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
         self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+
+
 
     # update slider range
     def update_slider_range(self):

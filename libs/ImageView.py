@@ -15,8 +15,7 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
-pg.setConfigOption('background', 'w')
-pg.setConfigOption('foreground', 'k')
+
 
 #TODO subclass HistogramLUTItem
 # for the greyscale image so that it signals any change in the range causing an update.
@@ -49,6 +48,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     def __init__(self):
         super(ImageViewLayout, self).__init__()
 
+        # Access the underlying central widget in the GraphicsLayoutWidget
+        # https://github.com/robertsj/poropy/blob/master/pyqtgraph/widgets/GraphicsLayoutWidget.py
+        self.ci.setBorder(pg.mkPen((220, 220, 220), width=2.0))
+
         # volume management for the images
         self.ivm = None
 
@@ -65,42 +68,42 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.pts1 = []
 
         ##initialise layout (3 view boxes each containing an image item)
-        self.addLabel('Axis 1')
+        self.addLabel('Axis 1', row=0, col=0)
 
         if not self.options['one_view']:
             self.nextCol()
-            self.addLabel('Axis 2')
+            self.addLabel('Axis 2', row=0, col=2)
             self.nextRow()
         else:
             axwin = pg.GraphicsLayoutWidget()
             self.view2 = axwin.addViewBox(name="view2")
             self.view3 = axwin.addViewBox(name="view3")
 
-        self.view1 = self.addViewBox(name="view1", colspan=2, rowspan=1)
+        self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1)
         self.view1.setAspectLocked(True)
         self.imgwin1 = pg.ImageItem(border='k')
         self.view1.addItem(self.imgwin1)
         if not self.options['one_view']:
-            self.view2 = self.addViewBox(name="view2", colspan=2, rowspan=1)
+            self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1)
         self.view2.setAspectLocked(True)
         self.imgwin2 = pg.ImageItem(border='k')
         self.view2.addItem(self.imgwin2)
+
+        #Cross hairs added to each viewbox
+        # Adding a histogram LUT
+        self.h1 = pg.HistogramLUTItem(fillHistogram=False)
+        self.addItem(self.h1, row=1, col=4)
+        self.h1.setImageItem(self.imgwin1)
 
         #set a new row in the graphics layout widget
         if not self.options['one_view']:
             self.nextRow()
             self.addLabel('Axis 3')
             self.nextRow()
-            self.view3 = self.addViewBox(name="view3", colspan=2, rowspan=1)
+            self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1)
         self.view3.setAspectLocked(True)
         self.imgwin3 = pg.ImageItem(border='k')
         self.view3.addItem(self.imgwin3)
-
-        #Cross hairs added to each viewbox
-        # Adding a histogram LUT
-        self.h1 = pg.HistogramLUTItem(fillHistogram=False)
-        self.addItem(self.h1)
-        self.h1.setImageItem(self.imgwin1)
 
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
         self.hline1 = pg.InfiniteLine(angle=0, movable=False)
@@ -122,6 +125,13 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.hline3.setVisible(False)
         self.view3.addItem(self.vline3, ignoreBounds=True)
         self.view3.addItem(self.hline3, ignoreBounds=True)
+
+        self.ci.layout.setColumnStretchFactor(0, 4)
+        self.ci.layout.setColumnStretchFactor(1, 4)
+        self.ci.layout.setColumnStretchFactor(2, 4)
+        self.ci.layout.setColumnStretchFactor(3, 4)
+        self.ci.layout.setColumnStretchFactor(4, 1)
+        self.ci.layout.setColumnMaximumWidth(4, 100)
 
     def add_image_management(self, image_vol_management):
         """
@@ -504,7 +514,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         #self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
-        self.view4 = self.addViewBox(lockAspect=True, colspan=1, rowspan=1)
+        self.l2 = self.addLayout(row=3, col=4, colspan=1, rowspan=1)
+        self.view4 = self.l2.addViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
 
     def load_ovreg(self):
         """
@@ -530,9 +541,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgcolbar1 = pg.ImageItem(border='k')
             self.view4.addItem(self.imgcolbar1)
             self.axcol = pg.AxisItem('right')
-            self.addItem(self.axcol)
+            self.l2.addItem(self.axcol)
 
         self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
+        self.view4.setXRange(0, 100, padding=0)
+        self.view4.setYRange(0, 1000, padding=0)
         self.axcol.setRange(self.ov_range_orig[0], self.ov_range_orig[1])
 
         self.imgwin1c.setLevels(self.ov_range)
