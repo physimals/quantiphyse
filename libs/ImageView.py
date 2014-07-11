@@ -5,9 +5,10 @@ matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 #from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #import matplotlib.pyplot as plt
+
 from matplotlib import cm
 from PySide import QtCore
-
+import warnings
 import nibabel as nib
 import numpy as np
 
@@ -64,11 +65,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.pts1 = []
 
         ##initialise layout (3 view boxes each containing an image item)
-        self.addLabel('Axial')
+        self.addLabel('Axis 1')
 
         if not self.options['one_view']:
             self.nextCol()
-            self.addLabel('Sagittal')
+            self.addLabel('Axis 2')
             self.nextRow()
         else:
             axwin = pg.GraphicsLayoutWidget()
@@ -88,7 +89,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #set a new row in the graphics layout widget
         if not self.options['one_view']:
             self.nextRow()
-            self.addLabel('Coronal')
+            self.addLabel('Axis 3')
             self.nextRow()
             self.view3 = self.addViewBox(name="view3", colspan=2, rowspan=1)
         self.view3.setAspectLocked(True)
@@ -96,7 +97,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.view3.addItem(self.imgwin3)
 
         #Cross hairs added to each viewbox
-
         # Adding a histogram LUT
         self.h1 = pg.HistogramLUTItem(fillHistogram=False)
         self.addItem(self.h1)
@@ -136,32 +136,49 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self._update_view()
 
     def __mouse_pos(self):
+
         """
         Capture positions of the 3 views on mouse press and update cim_pos
         """
-        # existing stuff
-        #super(ImageViewLayout, self).mousePressEvent(event)
-        #print(self.lastMousePos)
+        ishp = self.ivm.get_image_shape()
 
+        # Check if in View1
         if self.view1.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 1:", self.imgwin1.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin1.mapFromScene(self.lastMousePos)
-            self.ivm.cim_pos[0] = mouse_point.x()
-            self.ivm.cim_pos[1] = mouse_point.y()
+            mspt0 = mouse_point.x()
+            mspt1 = mouse_point.y()
+            if (mspt0 < ishp[0]) and (mspt1 < ishp[1]):
+                self.ivm.cim_pos[0] = mspt0
+                self.ivm.cim_pos[1] = mspt1
+            else:
+                warnings.warn('Out of bounds')
             print(self.ivm.cim_pos)
 
+        # Check if in View 2
         elif self.view2.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 2:", self.imgwin2.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin2.mapFromScene(self.lastMousePos)
-            self.ivm.cim_pos[0] = mouse_point.x()
-            self.ivm.cim_pos[2] = mouse_point.y()
+            mspt0 = mouse_point.x()
+            mspt1 = mouse_point.y()
+            if (mspt0 < ishp[0]) and (mspt1 < ishp[2]):
+                self.ivm.cim_pos[0] = mspt0
+                self.ivm.cim_pos[2] = mspt1
+            else:
+                warnings.warn('Out of bounds')
             print(self.ivm.cim_pos)
 
+        # Check if in view 3
         elif self.view3.sceneBoundingRect().contains(self.lastMousePos):
             print("Image position 3:", self.imgwin3.mapFromScene(self.lastMousePos))
             mouse_point = self.imgwin3.mapFromScene(self.lastMousePos)
-            self.ivm.cim_pos[1] = mouse_point.x()
-            self.ivm.cim_pos[2] = mouse_point.y()
+            mspt0 = mouse_point.x()
+            mspt1 = mouse_point.y()
+            if (mspt0 < ishp[1]) and (mspt1 < ishp[2]):
+                self.ivm.cim_pos[1] = mspt0
+                self.ivm.cim_pos[2] = mspt1
+            else:
+                warnings.warn('Out of bounds')
             print(self.ivm.cim_pos)
 
     def __update_crosshairs(self):
