@@ -8,7 +8,6 @@ Benjamin Irving
 #TODO 1) Drag and drop file volumes into a volume window
 
 from __future__ import division, unicode_literals, absolute_import, print_function
-
 import matplotlib
 matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -21,7 +20,7 @@ import argparse
 # My libs
 from libs.ImageView import ImageViewColorOverlay
 from libs.AnalysisWidgets import SECurve, ColorOverlay1
-from libs.PharmaWidgets import PharmaWidget
+from libs.PharmaWidgets import PharmaWidget, PharmaView
 from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
@@ -96,6 +95,9 @@ class MainWidge1(QtGui.QWidget):
 
         # Loading widgets
         self.sw1 = SECurve()
+
+        #Pharmaview is not initialised by default
+        self.sw5 = None
 
         # Color overlay widget
         self.sw2 = ColorOverlay1()
@@ -252,8 +254,6 @@ class MainWidge1(QtGui.QWidget):
         self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
         self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
 
-
-
     # update slider range
     def update_slider_range(self):
         #set slider range
@@ -296,6 +296,17 @@ class MainWidge1(QtGui.QWidget):
     # Connect widget
     def show_ic(self):
         index = self.qtab1.addTab(self.sw4, "Image Export")
+        print(index)
+        self.qtab1.setCurrentIndex(index)
+
+    def show_pw(self):
+
+        # Initialise if it is not already initialised
+        if self.sw5 is None:
+            self.sw5 = PharmaView()
+            self.ivl1.sig_mouse.connect(self.sw5.sig_mouse)
+
+        index = self.qtab1.addTab(self.sw5, "PharmaViewCompare")
         print(index)
         self.qtab1.setCurrentIndex(index)
 
@@ -385,9 +396,15 @@ class MainWin1(QtGui.QMainWindow):
         se_action.setStatusTip('Plot SE of a voxel')
         se_action.triggered.connect(self.mw1.show_se)
 
+        # Widgets --> Image export
         ic_action = QtGui.QAction('&ImageExport', self)
         ic_action.setStatusTip('Export images from the GUI')
         ic_action.triggered.connect(self.mw1.show_ic)
+
+        # Widgets --> PharmaView
+        pw_action = QtGui.QAction('&PharmCurveView', self)
+        pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
+        pw_action.triggered.connect(self.mw1.show_pw)
 
         #Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
@@ -413,6 +430,7 @@ class MainWin1(QtGui.QMainWindow):
 
         widget_menu.addAction(se_action)
         widget_menu.addAction(ic_action)
+        widget_menu.addAction(pw_action)
 
         help_menu.addAction(help_action)
 

@@ -471,4 +471,3 @@ class ColorOverlay1(QtGui.QWidget):
     def emit_alpha(self, val1):
         self.sig_set_alpha.emit(val1)
 
-

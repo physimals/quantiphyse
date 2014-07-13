@@ -16,19 +16,8 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
 
-
 #TODO subclass HistogramLUTItem
 # for the greyscale image so that it signals any change in the range causing an update.
-
-
-# class HistogramLUTItemOverlay(pg.HistogramLUTItem):
-#
-#     def __init__(self, fillHistogram=True):
-#         super(HistogramLUTItemOverlay, self).__init__(fillHistogram=fillHistogram)
-#         self.gradient.loadPreset('thermal')
-#
-#     def setColorMap(self, cm1):
-#         self.gradient.setColorMap(cm1)
 
 
 class ImageViewLayout(pg.GraphicsLayoutWidget, object):
