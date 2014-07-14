@@ -4,7 +4,7 @@ import numpy as np
 import pyqtgraph as pg
 from scipy.interpolate import UnivariateSpline
 
-import multiprocessing, multiprocessing.pool
+import multiprocessing,multiprocessing.pool
 import time
 
 from libs.AnalysisWidgets import QGroupBoxB
@@ -235,11 +235,12 @@ class PharmaWidget(QtGui.QWidget):
 
             ve1 = np.zeros((roi1v.shape[0]))
             ve1[roi1v] = var1[2][:, 1] * (var1[2][:, 1] < 2.0) + 2 * (var1[2][:, 1] > 2.0)
+            ve1 *= (ve1 > 0)
 
             kep1p = Ktrans1 / (ve1 + 0.001)
-            #kep1p[np.logical_or(np.isnan(kep1p), np.isinf(kep1p))] = 0
-            #kep1p *= (kep1p > 0)
-            kep1 = kep1p * (kep1p < 2.0) + 2 * (kep1p > 2.0)
+            kep1p[np.logical_or(np.isnan(kep1p), np.isinf(kep1p))] = 0
+            kep1p *= (kep1p > 0)
+            kep1 = kep1p * (kep1p < 2.0) + 2 * (kep1p >= 2.0)
 
             offset1 = np.zeros((roi1v.shape[0]))
             offset1[roi1v] = var1[2][:, 2]
