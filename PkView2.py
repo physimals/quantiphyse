@@ -410,6 +410,7 @@ class MainWin1(QtGui.QMainWindow):
         #Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
         help_action.setStatusTip('See online help file')
+        help_action.triggered.connect(self.click_link)
 
         # Advanced --> Python Console
         console_action = QtGui.QAction('&Console', self)
@@ -418,10 +419,9 @@ class MainWin1(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
-        overlayMenu = menubar.addMenu('&Analysis')
         widget_menu = menubar.addMenu('&Widgets')
-        help_menu = menubar.addMenu('&Help')
         advanced_menu = menubar.addMenu('&Advanced')
+        help_menu = menubar.addMenu('&Help')
 
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
@@ -445,6 +445,9 @@ class MainWin1(QtGui.QMainWindow):
 
         # extra info displayed in the status bar
         self.statusBar()
+
+    def click_link(self):
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/benjaminirving/PkView_help_files", QtCore.QUrl.TolerantMode))
 
     def show_console(self):
         """
