@@ -2,7 +2,6 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 from PySide import QtCore, QtGui
 import numpy as np
 import pyqtgraph as pg
-from scipy.interpolate import UnivariateSpline
 
 import multiprocessing,multiprocessing.pool
 import time
@@ -248,8 +247,8 @@ class PharmaWidget(QtGui.QWidget):
             vp1 = np.zeros((roi1v.shape[0]))
             vp1[roi1v] = var1[2][:, 3]
 
-            #estimated_curve1 = np.zeros(img1vec.shape)
-            #estimated_curve1[roi1v, :] = var1[1]
+            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.img_dims[-1]))
+            estimated_curve1[roi1v, :] = var1[1]
 
             residual1 = np.zeros((roi1v.shape[0]))
             residual1[roi1v] = var1[0]
@@ -260,6 +259,7 @@ class PharmaWidget(QtGui.QWidget):
             offset1vol = np.reshape(offset1, (self.ivm.img_dims[:-1]))
             vp1vol = np.reshape(vp1, (self.ivm.img_dims[:-1]))
             kep1vol = np.reshape(kep1, (self.ivm.img_dims[:-1]))
+            estimated1vol = np.reshape(estimated_curve1, self.ivm.img_dims)
 
             # Pass overlay maps to the volume management
             self.ivm.set_overlay(choice1='Ktrans', ovreg=Ktrans1vol)
@@ -267,6 +267,7 @@ class PharmaWidget(QtGui.QWidget):
             self.ivm.set_overlay(choice1='kep', ovreg=kep1vol)
             self.ivm.set_overlay(choice1='offset', ovreg=offset1vol)
             self.ivm.set_overlay(choice1='vp', ovreg=vp1vol)
+            self.ivm.set_estimated(estimated1vol)
             self.ivm.set_current_overlay(choice1='Ktrans')
             self.sig_emit_reset.emit(1)
 
@@ -367,7 +368,6 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
-
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
         l02.addWidget(self.text1)
@@ -392,9 +392,19 @@ class PharmaView(QtGui.QWidget):
         self.setLayout(l1)
 
         # initial plot colour
-        self.plot_color = (200, 200, 200)
+        self.plot_color = (255, 0, 0)
+        self.plot_color2 = (0, 255, 0)
 
-    def _plot(self, values1):
+        self.ivm = None
+        self.curve1 = None
+
+    def add_image_management(self, image_vol_management):
+        """
+        Adding image management
+        """
+        self.ivm = image_vol_management
+
+    def _plot(self, values1, values1est):
 
         """
         Plot the curve / curves
@@ -403,26 +413,26 @@ class PharmaView(QtGui.QWidget):
         self.win1.setVisible(True)
 
         values1 = np.array(values1, dtype=np.double)
-        values2 = np.copy(values1)
 
         # Setting x-values
         xres = float(self.text1.text())
         xx = xres * np.arange(len(values1))
 
-        if self.values2_mean is None:
-            self.values2_mean = np.zeros((1, len(xx)))
-
         if self.cb3.isChecked() is True:
             m1 = np.mean(values1[:3])
             values1 = values1 / m1 - 1
-            values2 = np.copy(values1)
 
         # Plotting using single or multiple plots
         if self.curve1 is None:
             self.curve1 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
             self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
-        self.curve2.setData(xx, values2, pen=self.plot_color)
+            self.curve3 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+            self.curve4 = self.p1.plot(pen=self.plot_color2, width=4.0)
+
+        self.curve2.setData(xx, values1, pen=self.plot_color)
         self.curve1.setData(xx, values1)
+        self.curve4.setData(xx, values1est, pen=self.plot_color2)
+        self.curve3.setData(xx, values1est)
 
         self.p1.setLabel('left', "Signal Enhancement")
         self.p1.setLabel('bottom', "Time", units='s')
@@ -441,14 +451,13 @@ class PharmaView(QtGui.QWidget):
         self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         self.curve1 = None
-        self.curve2 = None
-        self.curve_mean = None
-        self.curve_count = 0
-        self.values2_mean = None
+
 
     @QtCore.Slot(np.ndarray)
     def sig_mouse(self, values1):
         """
         Get signal from mouse click
         """
-        self._plot(values1)
+
+        val, val_est = self.ivm.get_current_enhancement()
+        self._plot(val, val_est)

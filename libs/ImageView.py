@@ -561,7 +561,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         if (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
 
             #Scale ROI
-            #TODO Try and get rid of overlay scaling so that it can be used with a histogramLUT directly
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
             self.ov_range_orig = [np.min(subreg1), np.max(subreg1)]
             self.ovreg = self.ovreg - np.min(subreg1)

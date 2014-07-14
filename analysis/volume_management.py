@@ -45,7 +45,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Type of the current overlay
         self.overlay_label = None
         # List of possible overlays that can be loaded
-        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10']
+        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'estimated']
 
         # All overlays
         self.overlay_all = {}
@@ -57,6 +57,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi_file1 = None
         # Number of ROIs
         self.num_roi = 0
+
+        #Estimated volume from pk modelling
+        self.estimated = None
 
         # Current position of the cross hair
         self.cim_pos = [0, 0, 0, 0]
@@ -80,6 +83,20 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def get_image_shape(self):
         return self.image.shape
 
+    def get_current_enhancement(self):
+        """
+        Return enhancement curve
+        """
+
+        vec_sig = self.image[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+
+        if self.estimated is not None:
+            vec_sig_est = self.estimated[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        else:
+            vec_sig_est = np.zeros(vec_sig.shape)
+
+        return vec_sig, vec_sig_est
+
     def set_roi(self, x):
         self.roi = x
 
@@ -87,7 +104,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.image = x
 
     def set_T10(self, x):
-        self.T10 = x
+        self.overlay_all['T10'] = x
+
+    def set_estimated(self, x):
+        self.estimated = x
 
     def set_overlay(self, choice1, ovreg):
         """

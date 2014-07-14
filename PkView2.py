@@ -304,6 +304,7 @@ class MainWidge1(QtGui.QWidget):
         # Initialise if it is not already initialised
         if self.sw5 is None:
             self.sw5 = PharmaView()
+            self.sw5.add_image_management(self.ivm)
             self.ivl1.sig_mouse.connect(self.sw5.sig_mouse)
 
         index = self.qtab1.addTab(self.sw5, "PharmaViewCompare")
