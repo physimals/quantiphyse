@@ -267,6 +267,7 @@ class PharmaWidget(QtGui.QWidget):
             self.ivm.set_overlay(choice1='kep', ovreg=kep1vol)
             self.ivm.set_overlay(choice1='offset', ovreg=offset1vol)
             self.ivm.set_overlay(choice1='vp', ovreg=vp1vol)
+            # Setting as a separate volume
             self.ivm.set_estimated(estimated1vol)
             self.ivm.set_current_overlay(choice1='Ktrans')
             self.sig_emit_reset.emit(1)
@@ -314,11 +315,13 @@ def run_pk(img1sub, t101sub, r1, r2, delt, tr1, te1, dce_flip_angle, model_choic
     num_row = 1.0  # Just a placeholder for the meanwhile
 
     print("Number of steps: ", steps1)
+    run_pk.queue.put((num_row, 1))
     for ii in range(int(steps1)):
-        progress = float(ii) / float(steps1) * 100
-        print(progress)
+        if ii > 0:
+            progress = float(ii) / float(steps1) * 100
+            print(progress)
+            run_pk.queue.put((num_row, progress))
 
-        run_pk.queue.put((num_row, progress))
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
         x = Pkclass.run(5000)
         print(x)

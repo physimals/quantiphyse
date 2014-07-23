@@ -45,7 +45,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Type of the current overlay
         self.overlay_label = None
         # List of possible overlays that can be loaded
-        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'estimated']
+        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10']
 
         # All overlays
         self.overlay_all = {}
@@ -238,11 +238,17 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         overlay_load = self._remove_nans(overlay_load)
 
-        # add the loaded overlay
-        self.set_overlay(type1, overlay_load)
+        if type1 == 'estimated':
 
-        # set the loaded overlay to be the current overlay
-        self.set_current_overlay(type1)
+            self.set_estimated(overlay_load)
+
+        else:
+
+            # add the loaded overlay
+            self.set_overlay(type1, overlay_load)
+
+            # set the loaded overlay to be the current overlay
+            self.set_current_overlay(type1)
 
     @staticmethod
     def _remove_nans(image1):

@@ -543,13 +543,14 @@ class MainWin1(QtGui.QMainWindow):
 
         if ftype is None:
             ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                   ['T10', 'Ktrans', 'kep', 've'])
+                                                   ['T10', 'Ktrans', 'kep', 've', 'estimated'])
 
         # check if file is returned
         if fname != '':
             self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_ovreg(fname, ftype)
-            self.mw1.ivl1.load_ovreg()
+            if ftype != 'estimated':
+                self.mw1.ivl1.load_ovreg()
         else:
             print('Warning: No file selected')
 
