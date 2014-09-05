@@ -362,23 +362,23 @@ class MainWin1(QtGui.QMainWindow):
     def menu_ui(self):
 
         #File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.png'), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
         #File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
+        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.png'), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         #File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load color overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
         #File --> Load Overlay Select
-        load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'),
+        load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
                                              '&Load Overlay Select', self)
         load_ovregsel_action.setStatusTip('Load color overlay and select specific type')
         load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
@@ -543,7 +543,7 @@ class MainWin1(QtGui.QMainWindow):
 
         if ftype is None:
             ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                   ['T10', 'Ktrans', 'kep', 've', 'estimated'])
+                                                   ['T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves'])
 
         # check if file is returned
         if fname != '':
