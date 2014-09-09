@@ -3,3 +3,4 @@ scipy
 nibabel
 matplotlib
 PySide
+nrrd

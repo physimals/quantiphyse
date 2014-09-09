@@ -1,0 +1,4 @@
+Recent changes
+
+20140905
+Icons changed from svg to png to work with Windows.

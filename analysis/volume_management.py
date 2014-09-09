@@ -9,6 +9,7 @@ from PySide import QtCore
 import nibabel as nib
 import numpy as np
 import warnings
+import nrrd
 
 
 class ImageVolumeManagement(QtCore.QAbstractItemModel):
@@ -28,10 +29,13 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
 
+        self.init()
+
+    def init(self):
         # Main background image
         self.image_file1 = None
         self.image = np.zeros((1, 1, 1))
-        #Current image position and size
+        # Current image position and size
         self.img_dims = self.image.shape
         #Voxel size initialisation
         self.voxel_size = [1.0, 1.0, 1.0]
@@ -96,6 +100,19 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             vec_sig_est = np.zeros(vec_sig.shape)
 
         return vec_sig, vec_sig_est
+
+    def get_overlay_value_curr_pos(self):
+        """
+        Get all the overlay parameters at the current position
+        """
+        # initialise python dictionary
+        overlay_value = {}
+
+        # loop over all loaded overlays and save values in a dictionary
+        for ii in self.overlay_all.keys():
+            overlay_value[ii] = self.overlay_all[ii][self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
+
+        return overlay_value
 
     def set_roi(self, x):
         self.roi = x
@@ -164,17 +181,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
 
         self.image_file1 = image_file1
-        img = nib.load(self.image_file1)
-        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
-        # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-        # memmap has been designed to save space on ram by keeping the array on the disk but does
-        # horrible things with performance, and analysis especially when the data is on the network.
-        self.image = np.asarray(img.get_data())
+        self.image, self.voxel_size = self._load_med_file(self.image_file1)
 
         self.image = self._remove_nans(self.image)
 
         self.img_dims = self.image.shape
-        self.voxel_size = img.get_header().get_zooms()
 
         # 90% of the image range
         self.img_range = [self.image.min(), 0.5*self.image.max()]
@@ -197,12 +208,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         #Setting ROI data
         self.roi_file1 = file1
-        roi = nib.load(self.roi_file1)
-        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
-        # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-        # memmap has been designed to save space on ram by keeping the array on the disk but does
-        # horrible things with performance, and analysis especially when the data is on the network.
-        self.roi = np.asarray(roi.get_data())
+        self.roi, voxel_size = self._load_med_file(self.roi_file1)
 
         self.roi = self._remove_nans(self.roi)
 
@@ -210,8 +216,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi_dims = self.roi.shape
 
         if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
-            print("First 3 Dimensions of the ROI must be the same as the image, "
-                  "and ROI must be 3D")
+            warnings.warn("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
             self.roi = None
             self.roi_dims = None
 
@@ -231,14 +236,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         #Setting Overlay region data
         self.ovreg_file1 = file1
-        ovreg = nib.load(self.ovreg_file1)
-        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
-        # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-        overlay_load = np.asarray(ovreg.get_data())
+
+        overlay_load, self.voxel_size = self._load_med_file(self.ovreg_file1)
 
         overlay_load = self._remove_nans(overlay_load)
 
-        if type1 == 'estimated':
+        if type1 == 'model_curves':
 
             self.set_estimated(overlay_load)
 
@@ -249,6 +252,39 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
             # set the loaded overlay to be the current overlay
             self.set_current_overlay(type1)
+
+    @staticmethod
+    def _load_med_file(image_location):
+
+        ii = image_location.find('.')
+        ext1 = image_location[ii+1:]
+
+        if ext1 == 'nii':
+
+            # if the file is a nifti
+            image = nib.load(image_location)
+            # NB: np.asarray appears to convert to an array instead of a numpy memmap.
+            # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
+            # memmap has been designed to save space on ram by keeping the array on the disk but does
+            # horrible things with performance, and analysis especially when the data is on the network.
+            image1 = np.asarray(image.get_data())
+
+            voxel_size = image.get_header().get_zooms()
+
+        elif ext1 == 'nrrd':
+
+            #else if the file is a nrrd
+            image1, options1 = nrrd.read(image_location)
+            voxel_size = [0, 0, 0]
+
+        else:
+
+            image1 = None
+            voxel_size = None
+
+        # otherwise return 0
+
+        return image1, voxel_size
 
     @staticmethod
     def _remove_nans(image1):

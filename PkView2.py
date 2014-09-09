@@ -484,12 +484,31 @@ class MainWin1(QtGui.QMainWindow):
         Dialog for loading a file
         @fname: allows a file name to be passed in automatically
         """
+
+
         if fname is None:
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
 
-        #check if file is returned
+        # check if file is returned
         if fname != '':
+
+            if self.mw1.ivm.image_file1 is not None:
+                # Checking if data already exists
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("A volume has already been loaded")
+                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+
+                ret = msgBox.exec_()
+
+                if ret == QtGui.QMessageBox.Ok:
+                    print("Clearing data")
+                    self.mw1.ivm.init()
+                else:
+                    return
+
             self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_image(fname)
             self.mw1.ivl1.load_image()

@@ -371,6 +371,13 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
+        self.tabmod1 = QtGui.QStandardItemModel()
+
+        self.tab1 = QtGui.QTableView()
+        self.tab1.resizeColumnsToContents()
+        self.tab1.setModel(self.tabmod1)
+        self.tab1.setVisible(True)
+
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
         l02.addWidget(self.text1)
@@ -388,9 +395,17 @@ class PharmaView(QtGui.QWidget):
         l05.addWidget(g01)
         l05.addStretch()
 
+        l06 = QtGui.QVBoxLayout()
+        l06.addWidget(self.tab1)
+
+        g02 = QGroupBoxB()
+        g02.setLayout(l06)
+        g02.setTitle('Current parameters')
+
         l1 = QtGui.QVBoxLayout()
         l1.addWidget(self.win1)
         l1.addLayout(l05)
+        l1.addWidget(g02)
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -400,6 +415,20 @@ class PharmaView(QtGui.QWidget):
 
         self.ivm = None
         self.curve1 = None
+
+    def _update_table(self):
+
+        """
+        Set the overlay parameter values in the table based on the current point clicked
+        """
+
+        self.tab1.setVisible(True)
+
+        overlay_vals = self.ivm.get_overlay_value_curr_pos()
+
+        for ii, ov1 in enumerate(overlay_vals.keys()):
+            self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ov1))
+            self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ov1], 10))))
 
     def add_image_management(self, image_vol_management):
         """
@@ -455,12 +484,13 @@ class PharmaView(QtGui.QWidget):
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         self.curve1 = None
 
-
     @QtCore.Slot(np.ndarray)
     def sig_mouse(self, values1):
+
         """
         Get signal from mouse click
         """
 
         val, val_est = self.ivm.get_current_enhancement()
         self._plot(val, val_est)
+        self._update_table()
