@@ -8,14 +8,18 @@ Benjamin Irving
 #TODO 1) Drag and drop file volumes into a volume window
 
 from __future__ import division, unicode_literals, absolute_import, print_function
-import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4'] = 'PySide'
+
+#import matplotlib
+#matplotlib.use('Qt4Agg')
+#matplotlib.rcParams['backend.qt4'] = 'PySide'
 
 import sys
 import os
 from PySide import QtCore, QtGui
 import argparse
+import pyqtgraph as pg
+import pyqtgraph.console
+import numpy as np
 
 # My libs
 from libs.ImageView import ImageViewColorOverlay
@@ -25,9 +29,6 @@ from libs.PharmaWidgets import PharmaWidget, PharmaView
 from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
-import pyqtgraph as pg
-import pyqtgraph.console
-import numpy as np
 
 """
 class DragAction(QtGui.QAction):

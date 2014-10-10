@@ -7,8 +7,10 @@ import numpy as np
 from analysis.kmeans import KMeans
 
 
-# subclassing QGroupBoxB for nice border
 class QGroupBoxB(QtGui.QGroupBox):
+    """
+    Subclassing QGroupBox for a nice border
+    """
 
     def __init__(self):
         super(QGroupBoxB, self).__init__()
@@ -99,7 +101,6 @@ class CurveClusteringWidget(QtGui.QWidget):
         """
         Adding image management
         """
-
         self.ivm = image_vol_management
 
     def run_clustering(self):
@@ -154,27 +155,30 @@ class CurveClusteringWidget(QtGui.QWidget):
         """
         self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Cluster representative curves")
+        self.p1.setLabel('left', "Signal Enhancement")
+        self.p1.setLabel('bottom', "Temporal position")
 
     def _plot(self):
+        """
+        Plot the 4 cluster curves
+        :return:
+        """
+        # Clear graph
+        self.reset_graph()
+        curve1 = []
 
-            self.reset_graph()
+        xx = np.arange(self.label1_cent.shape[1])
+        num_clus = self.label1_cent.shape[0]
 
-            curve1 = []
-            xx = np.arange(self.label1_cent.shape[1])
-            num_clus = self.label1_cent.shape[0]
+        lut = self.ivm.cmap
+        lut_sec = np.around(lut.shape[0]/(num_clus-1))
 
-            lut = self.ivm.cmap
-            lut_sec = np.around(lut.shape[0]/(num_clus-1))
+        # Plotting using single or multiple plots
+        for ii in range(num_clus):
+            if ii < num_clus-1:
+                pen1 = lut[ii * lut_sec, :3]
+            else:
+                pen1 = lut[-1, :3]
 
-            # Plotting using single or multiple plots
-            for ii in range(num_clus):
-                if ii < num_clus-1:
-                    pen1 = lut[ii * lut_sec, :3]
-                else:
-                    pen1 = lut[-1, :3]
-
-                curve1.append(self.p1.plot(pen=pen1, width=8.0))
-                curve1[ii].setData(xx, self.label1_cent[ii, :])
-
-            self.p1.setLabel('left', "Signal Enhancement")
-            self.p1.setLabel('bottom', "Temporal position")
+            curve1.append(self.p1.plot(pen=pen1, width=8.0))
+            curve1[ii].setData(xx, self.label1_cent[ii, :])
