@@ -18,7 +18,7 @@ class QGroupBoxB(QtGui.QGroupBox):
 
 
 class SECurve(QtGui.QWidget):
-    
+
     """
     Side widgets for plotting SE curves
     """
