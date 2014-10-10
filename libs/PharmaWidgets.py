@@ -141,12 +141,14 @@ class PharmaWidget(QtGui.QWidget):
         # Check that pkmodelling can be run
         if self.ivm.get_image() is None:
             m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
             m1.setText("The image doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
 
         if self.ivm.get_roi() is None:
             m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
@@ -196,7 +198,7 @@ class PharmaWidget(QtGui.QWidget):
         T101sub = T101vec[roi1vec]
         baseline1sub = baseline1[roi1vec]
 
-        # Normalisation of the image (put normalised image in the volume management part)
+        # Normalisation of the image
         img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor

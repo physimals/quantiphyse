@@ -499,7 +499,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         #Initialise the colormap
         self.ovreg_lut = None
-        self.set_default_colormap_matplotlib()
+
         #self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
@@ -510,6 +510,10 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Adds overlay to image viewer
         """
+
+        # Initilise lut colormap
+        self.set_default_colormap_matplotlib()
+
 
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
@@ -699,10 +703,14 @@ class ImageViewColorOverlay(ImageViewOverlay):
         lut = [[int(255*rgb1) for rgb1 in cmap1(ii)[:3]] for ii in xrange(256)]
         self.ovreg_lut = np.array(lut, dtype=np.ubyte)
 
+        # add transparency
         alpha1 = np.ones((self.ovreg_lut.shape[0], 1))
         alpha1 *= 255
         alpha1[0] = 0
         self.ovreg_lut = np.hstack((self.ovreg_lut, alpha1))
+
+        # Save the lut to the volume management system for easy transfer between widgets
+        self.ivm.set_cmap(self.ovreg_lut)
 
     def set_default_colormap_manual(self):
         """
@@ -717,6 +725,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         self.ovreg_lut = map1.getLookupTable(0, 1.0, 1000)
         self.ovreg_lut[0, 3] = 0
+
+        # Save the lut to the volume management system for easy transfer between widgets
+        self.ivm.set_cmap(self.ovreg_lut)
 
 
 

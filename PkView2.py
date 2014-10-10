@@ -20,6 +20,7 @@ import argparse
 # My libs
 from libs.ImageView import ImageViewColorOverlay
 from libs.AnalysisWidgets import SECurve, ColorOverlay1
+from libs.ClusteringWidgets import CurveClusteringWidget
 from libs.PharmaWidgets import PharmaWidget, PharmaView
 from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
@@ -72,8 +73,10 @@ class MainWidge1(QtGui.QWidget):
 
     """
 
-    def __init__(self):
+    def __init__(self, local_file_path):
         super(MainWidge1, self).__init__()
+
+        self.local_file_path = local_file_path
 
         # get the default color
         color1 = self.palette().color(QtGui.QPalette.Background)
@@ -94,7 +97,7 @@ class MainWidge1(QtGui.QWidget):
         self.ivl1.add_image_management(self.ivm)
 
         # Loading widgets
-        self.sw1 = SECurve()
+        self.sw1 = SECurve(self.local_file_path)
 
         #Pharmaview is not initialised by default
         self.sw5 = None
@@ -112,6 +115,10 @@ class MainWidge1(QtGui.QWidget):
         self.sw4 = ImageExportWidget()
         self.sw4.add_image_management(self.ivm)
 
+        # Clustering widget
+        self.sw_cc = CurveClusteringWidget()
+        self.sw_cc.add_image_management(self.ivm)
+
         # Connect widgets
         #Connect colormap choice, alpha
         self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
@@ -128,6 +135,10 @@ class MainWidge1(QtGui.QWidget):
         #Connect image export widget
         self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)
         self.sw4.sig_cap_image.connect(self.ivl1.capture_view_as_image)
+
+        #Connect reset from clustering widget
+        self.sw_cc.sig_emit_reset.connect(self.ivl1.update_overlay)
+
 
         #Connecting widget signals
         #1) Plotting data on mouse image click
@@ -165,9 +176,9 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1.setTabsClosable(True)
         self.qtab1.setMovable(True)
         #Widgets
-        self.qtab1.addTab(self.sw1, "Voxel analysis")
-        self.qtab1.addTab(self.sw2, "Color overlay")
-        self.qtab1.addTab(self.sw3, "Pharmacokinetics")
+        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), "Voxel analysis")
+        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.png'), "Overlay options")
+        #self.qtab1.addTab(self.sw3, "Pharmacokinetics")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
 
@@ -289,7 +300,7 @@ class MainWidge1(QtGui.QWidget):
 
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.sw1, "Voxel analysis")
+        index = self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), "Voxel analysis")
         print(index)
         self.qtab1.setCurrentIndex(index)
 
@@ -297,6 +308,15 @@ class MainWidge1(QtGui.QWidget):
     def show_ic(self):
         index = self.qtab1.addTab(self.sw4, "Image Export")
         print(index)
+        self.qtab1.setCurrentIndex(index)
+
+    def show_pk(self):
+        index = self.qtab1.addTab(self.sw3, "Pharmacokinetics")
+        self.qtab1.setCurrentIndex(index)
+
+    def show_cc(self):
+        index = self.qtab1.addTab(self.sw_cc, QtGui.QIcon(self.local_file_path + '/icons/clustering.png'),
+                                  "CurveClustering", )
         self.qtab1.setCurrentIndex(index)
 
     def show_pw(self):
@@ -321,8 +341,19 @@ class MainWin1(QtGui.QMainWindow):
     def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None):
         super(MainWin1, self).__init__()
 
+        # Patch for if file is frozen
+        if hasattr(sys, 'frozen'):
+            # if frozen
+            self.local_file_path = os.path.dirname(sys.executable)
+        else:
+            self.local_file_path = os.path.dirname(__file__)
+
+        if self.local_file_path == "":
+            print("Reverting to current directory as base")
+            self.local_file_path = os.getcwd()
+
         #Load the main widget
-        self.mw1 = MainWidge1()
+        self.mw1 = MainWidge1(self.local_file_path)
 
         self.toolbar = None
         self.default_directory ='/home'
@@ -332,17 +363,7 @@ class MainWin1(QtGui.QMainWindow):
         self.roi_dir_in = roi_dir_in
         self.overlay_dir_in = overlay_dir_in
 
-        # Patch for if file is frozen
-        if hasattr(sys, 'frozen'):
-            # if frozen
-            self.local_file_path = os.path.dirname(sys.executable)
-        else:
-            self.local_file_path = os.path.dirname(__file__)
 
-        if self.local_file_path == "":
-
-            print("Reverting to current directory as base")
-            self.local_file_path = os.getcwd()
 
         #initialise the whole UI
         self.init_ui()
@@ -374,13 +395,13 @@ class MainWin1(QtGui.QMainWindow):
 
         #File --> Load Overlay
         load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Load Overlay', self)
-        load_ovreg_action.setStatusTip('Load color overlay')
+        load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
         #File --> Load Overlay Select
         load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
                                              '&Load Overlay Select', self)
-        load_ovregsel_action.setStatusTip('Load color overlay and select specific type')
+        load_ovregsel_action.setStatusTip('Load specific type of overlay')
         load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
 
         #File --> Settings
@@ -393,7 +414,7 @@ class MainWin1(QtGui.QMainWindow):
         exit_action.triggered.connect(self.close)
 
         # Widgets --> SE curve
-        se_action = QtGui.QAction('&SEcuve', self)
+        se_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), '&SEcuve', self)
         se_action.setStatusTip('Plot SE of a voxel')
         se_action.triggered.connect(self.mw1.show_se)
 
@@ -402,10 +423,20 @@ class MainWin1(QtGui.QMainWindow):
         ic_action.setStatusTip('Export images from the GUI')
         ic_action.triggered.connect(self.mw1.show_ic)
 
+        #Widgets --> Pharmacokinetics
+        pk_action = QtGui.QAction('&Pharmacokinetics', self)
+        pk_action.setStatusTip('Run pharmacokinetic analysis')
+        pk_action.triggered.connect(self.mw1.show_pk)
+
         # Widgets --> PharmaView
         pw_action = QtGui.QAction('&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
         pw_action.triggered.connect(self.mw1.show_pw)
+
+        # Widgets --> CurveClustering
+        cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.png'), '&CurveClustering', self)
+        cc_action.setStatusTip('Cluster curves in a ROI of interest')
+        cc_action.triggered.connect(self.mw1.show_cc)
 
         #Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
@@ -431,7 +462,9 @@ class MainWin1(QtGui.QMainWindow):
 
         widget_menu.addAction(se_action)
         widget_menu.addAction(ic_action)
+        widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
+        widget_menu.addAction(cc_action)
 
         help_menu.addAction(help_action)
 

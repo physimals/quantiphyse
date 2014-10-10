@@ -18,6 +18,7 @@ class QGroupBoxB(QtGui.QGroupBox):
 
 
 class SECurve(QtGui.QWidget):
+    
     """
     Side widgets for plotting SE curves
     """
@@ -25,8 +26,11 @@ class SECurve(QtGui.QWidget):
     sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
 
-    def __init__(self):
+    def __init__(self, local_file_path):
         super(SECurve, self).__init__()
+
+        #Local file path
+        self.local_file_path = local_file_path
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
@@ -51,7 +55,8 @@ class SECurve(QtGui.QWidget):
         self.cb4 = QtGui.QCheckBox('Show mean', self)
 
         #Clear curves button
-        b1 = QtGui.QPushButton('Clear curves', self)
+        b1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/clear.png'), '', self)
+        b1.setToolTip("Clear curves")
         b1.clicked.connect(self.reset_graph)
 
 

@@ -32,6 +32,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.init()
 
     def init(self):
+        """
+        Initilises all the volumes.
+        Allows reinitialisation when loading a new image.
+        """
         # Main background image
         self.image_file1 = None
         self.image = np.zeros((1, 1, 1))
@@ -67,6 +71,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         # Current position of the cross hair
         self.cim_pos = [0, 0, 0, 0]
+
+        # Current color map
+        self.cmap = None
 
     def get_roi(self):
         return self.roi
@@ -252,6 +259,15 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
             # set the loaded overlay to be the current overlay
             self.set_current_overlay(type1)
+
+
+    def set_cmap(self, cmap):
+        """
+        Saves the current colormap
+        """
+
+        self.cmap = cmap
+
 
     @staticmethod
     def _load_med_file(image_location):
