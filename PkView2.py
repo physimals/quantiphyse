@@ -165,11 +165,13 @@ class MainWidge1(QtGui.QWidget):
 
         #CheckBox
         cb1 = QtGui.QCheckBox('Show ROI', self)
-        cb1.toggle()
         cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
+        #cb1.toggle()
         cb2 = QtGui.QCheckBox('Show ROI contour', self)
+        cb2.toggle()
         cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
         cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
+        cb3.toggle()
         cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
 
         # Tabbed Widget

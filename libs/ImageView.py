@@ -15,9 +15,6 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
 
-#TODO subclass HistogramLUTItem
-# for the greyscale image so that it signals any change in the range causing an update.
-
 
 class ImageMed(pg.ImageItem, object):
     """
@@ -29,10 +26,10 @@ class ImageMed(pg.ImageItem, object):
 
     def wheelEvent(self, event):
         """
-
-        Subclassed to removed scroll to zoom and instead trigger a scroll through the volume
-
+        Subclassed to remove scroll to zoom from pg.ImageItem
+        and instead trigger a scroll through the volume
         """
+
         print(1)
 
 
@@ -387,8 +384,8 @@ class ImageViewOverlay(ImageViewLayout):
         self.cont3 = []
 
         # Viewing options as a dictionary
-        self.options['ShowOverlay'] = 1
-        self.options['ShowOverlayContour'] = False
+        self.options['ShowOverlay'] = 0
+        self.options['ShowOverlayContour'] = True
         self.options['roi_outline_width'] = 3.0
 
         # ROI pens
