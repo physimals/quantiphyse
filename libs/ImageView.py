@@ -9,7 +9,6 @@ matplotlib.rcParams['backend.qt4'] = 'PySide'
 from matplotlib import cm
 from PySide import QtCore
 import warnings
-import nibabel as nib
 import numpy as np
 
 import pyqtgraph as pg
@@ -18,6 +17,23 @@ from pyqtgraph.exporters.ImageExporter import ImageExporter
 
 #TODO subclass HistogramLUTItem
 # for the greyscale image so that it signals any change in the range causing an update.
+
+
+class ImageMed(pg.ImageItem, object):
+    """
+    Subclassing ImageItem in order to change the wheeEvent action
+    """
+
+    def __init__(self, border):
+        super(ImageMed, self).__init__(border=border)
+
+    def wheelEvent(self, event):
+        """
+
+        Subclassed to removed scroll to zoom and instead trigger a scroll through the volume
+
+        """
+        print(1)
 
 
 class ImageViewLayout(pg.GraphicsLayoutWidget, object):
@@ -70,12 +86,12 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1)
         self.view1.setAspectLocked(True)
-        self.imgwin1 = pg.ImageItem(border='k')
+        self.imgwin1 = ImageMed(border='k')
         self.view1.addItem(self.imgwin1)
         if not self.options['one_view']:
             self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1)
         self.view2.setAspectLocked(True)
-        self.imgwin2 = pg.ImageItem(border='k')
+        self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
 
         #Cross hairs added to each viewbox
@@ -91,7 +107,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.nextRow()
             self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1)
         self.view3.setAspectLocked(True)
-        self.imgwin3 = pg.ImageItem(border='k')
+        self.imgwin3 = ImageMed(border='k')
         self.view3.addItem(self.imgwin3)
 
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
@@ -397,9 +413,9 @@ class ImageViewOverlay(ImageViewLayout):
             return
 
         # Initialises viewer if it hasn't been initialised before
-        self.imgwin1b.append(pg.ImageItem(border='k'))
-        self.imgwin2b.append(pg.ImageItem(border='k'))
-        self.imgwin3b.append(pg.ImageItem(border='k'))
+        self.imgwin1b.append(ImageMed(border='k'))
+        self.imgwin2b.append(ImageMed(border='k'))
+        self.imgwin3b.append(ImageMed(border='k'))
         self.view1.addItem(self.imgwin1b[self.ivm.num_roi-1])
         self.view2.addItem(self.imgwin2b[self.ivm.num_roi-1])
         self.view3.addItem(self.imgwin3b[self.ivm.num_roi-1])
@@ -524,9 +540,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if self.imgwin1c is None:
             # Initialises viewer if it hasn't been initialised before
-            self.imgwin1c = pg.ImageItem(border='k')
-            self.imgwin2c = pg.ImageItem(border='k')
-            self.imgwin3c = pg.ImageItem(border='k')
+            self.imgwin1c = ImageMed(border='k')
+            self.imgwin2c = ImageMed(border='k')
+            self.imgwin3c = ImageMed(border='k')
             self.view1.addItem(self.imgwin1c)
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)

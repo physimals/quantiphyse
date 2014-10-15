@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 from PySide import QtCore, QtGui
+from QtInherit.QtSubclass import QGroupBoxB
 
 
 class ImageExportWidget(QtGui.QWidget):

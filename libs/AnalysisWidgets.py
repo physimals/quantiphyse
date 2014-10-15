@@ -6,15 +6,7 @@ import pyqtgraph as pg
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-
-# subclassing QGroupBoxB for nice border
-class QGroupBoxB(QtGui.QGroupBox):
-
-    def __init__(self):
-        super(QGroupBoxB, self).__init__()
-
-        self.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
-                           "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
+from QtInherit.QtSubclass import QGroupBoxB
 
 
 class SECurve(QtGui.QWidget):

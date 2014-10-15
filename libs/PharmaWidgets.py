@@ -6,7 +6,7 @@ import pyqtgraph as pg
 import multiprocessing,multiprocessing.pool
 import time
 
-from libs.AnalysisWidgets import QGroupBoxB
+from QtInherit.QtSubclass import QGroupBoxB
 from analysis.pkmodel_cpp.pk import PyPk
 
 
