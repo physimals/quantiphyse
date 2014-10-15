@@ -1,8 +1,7 @@
 PkView
 ======
-
 Viewer for 3D/4D data and Pk modelling
-
+Benjamin Irving
 
 ### Dependencies:
 Python 2.7
