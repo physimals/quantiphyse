@@ -3,6 +3,8 @@ PkView
 Viewer for 3D/4D data and Pk modelling
 Benjamin Irving
 
+![alt text](icons/Screenshot1.png "Screenshot")
+
 ### Dependencies:
 Python 2.7
 
