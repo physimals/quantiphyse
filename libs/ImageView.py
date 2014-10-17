@@ -50,6 +50,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
     # Signals (moving out of init means that the signal is shared by
     # each instance. Just how Qt appears to be set up)
+    #signalling a mouse click
     sig_mouse = QtCore.Signal(np.ndarray)
 
     # Signals when the mouse is scrolling
@@ -116,21 +117,27 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.view3.addItem(self.imgwin3)
 
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
+        self.vline1.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.hline1 = pg.InfiniteLine(angle=0, movable=False)
+        self.hline1.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.vline1.setVisible(False)
         self.hline1.setVisible(False)
         self.view1.addItem(self.vline1, ignoreBounds=True)
         self.view1.addItem(self.hline1, ignoreBounds=True)
 
         self.vline2 = pg.InfiniteLine(angle=90, movable=False)
+        self.vline2.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.hline2 = pg.InfiniteLine(angle=0, movable=False)
+        self.hline2.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.vline2.setVisible(False)
         self.hline2.setVisible(False)
         self.view2.addItem(self.vline2, ignoreBounds=True)
         self.view2.addItem(self.hline2, ignoreBounds=True)
 
         self.vline3 = pg.InfiniteLine(angle=90, movable=False)
+        self.vline3.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.hline3 = pg.InfiniteLine(angle=0, movable=False)
+        self.hline3.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.vline3.setVisible(False)
         self.hline3.setVisible(False)
         self.view3.addItem(self.vline3, ignoreBounds=True)
@@ -142,6 +149,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.ci.layout.setColumnStretchFactor(3, 4)
         self.ci.layout.setColumnStretchFactor(4, 1)
         self.ci.layout.setColumnMaximumWidth(4, 100)
+
+        # Setting the background color of the various views to be black
+        self.view1.setBackgroundColor([0, 0, 0])
+        self.view2.setBackgroundColor([0, 0, 0])
+        self.view3.setBackgroundColor([0, 0, 0])
 
         # Connecting scroll wheel to stepping through the volume
         self.imgwin1.sig_mouse_wheel.connect(self.step_axis1)
@@ -266,6 +278,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
     @QtCore.Slot(int)
     def step_axis3(self, value):
+        """
+        Stepping through the axis when the scroll wheel is triggered
+        """
         self.ivm.cim_pos[0] += value
         self._update_view()
         # signal that the mouse is scrolling
@@ -273,6 +288,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
     @QtCore.Slot(int)
     def step_axis2(self, value):
+        """
+        Stepping through the axis when the scroll wheel is triggered
+        """
         self.ivm.cim_pos[1] += value
         self._update_view()
         # signal that the mouse is scrolling
@@ -280,6 +298,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
     @QtCore.Slot(int)
     def step_axis1(self, value):
+        """
+        Stepping through the axis when the scroll wheel is triggered
+        """
         self.ivm.cim_pos[2] += value
         self._update_view()
         # signal that the mouse is scrolling
@@ -445,9 +466,9 @@ class ImageViewOverlay(ImageViewLayout):
             return
 
         # Initialises viewer if it hasn't been initialised before
-        self.imgwin1b.append(ImageMed(border='k'))
-        self.imgwin2b.append(ImageMed(border='k'))
-        self.imgwin3b.append(ImageMed(border='k'))
+        self.imgwin1b.append(pg.ImageItem(border='k'))
+        self.imgwin2b.append(pg.ImageItem(border='k'))
+        self.imgwin3b.append(pg.ImageItem(border='k'))
         self.view1.addItem(self.imgwin1b[self.ivm.num_roi-1])
         self.view2.addItem(self.imgwin2b[self.ivm.num_roi-1])
         self.view3.addItem(self.imgwin3b[self.ivm.num_roi-1])
@@ -572,9 +593,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if self.imgwin1c is None:
             # Initialises viewer if it hasn't been initialised before
-            self.imgwin1c = ImageMed(border='k')
-            self.imgwin2c = ImageMed(border='k')
-            self.imgwin3c = ImageMed(border='k')
+            self.imgwin1c = pg.ImageItem(border='k')
+            self.imgwin2c = pg.ImageItem(border='k')
+            self.imgwin3c = pg.ImageItem(border='k')
             self.view1.addItem(self.imgwin1c)
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)
