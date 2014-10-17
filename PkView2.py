@@ -241,7 +241,7 @@ class MainWidge1(QtGui.QWidget):
 
         # Viewing window layout + buttons
         # Add a horizontal splitter between image viewer and buttons below
-        grid_box = QGroupBoxClick("Viewer")
+        grid_box = QGroupBoxClick()
         grid_box.sig_click.connect(self.mpe)
         grid = QtGui.QVBoxLayout()
         splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)

@@ -69,8 +69,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #ViewerOptions
         self.options = {}
 
-        #For creating screenshots. single large window
-        self.options['one_view'] = False
         # Automatically adjust threshold for each view
         # If false then use the same threshold for the entire volume
         self.options['view_thresh'] = False
@@ -78,24 +76,13 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #empty array for arrows
         self.pts1 = []
 
-        ##initialise layout (3 view boxes each containing an image item)
-        self.addLabel('Axis 1', row=0, col=0)
-
-        if not self.options['one_view']:
-            self.nextCol()
-            self.addLabel('Axis 2', row=0, col=2)
-            self.nextRow()
-        else:
-            axwin = pg.GraphicsLayoutWidget()
-            self.view2 = axwin.addViewBox(name="view2")
-            self.view3 = axwin.addViewBox(name="view3")
-
-        self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1)
+        self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1,
+                                     border=pg.mkPen((0, 0, 255), width=3.0))
         self.view1.setAspectLocked(True)
         self.imgwin1 = ImageMed(border='k')
         self.view1.addItem(self.imgwin1)
-        if not self.options['one_view']:
-            self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1)
+        self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1,
+                                     border=pg.mkPen((0, 0, 255), width=3.0))
         self.view2.setAspectLocked(True)
         self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
@@ -106,12 +93,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.addItem(self.h1, row=1, col=4)
         self.h1.setImageItem(self.imgwin1)
 
-        #set a new row in the graphics layout widget
-        if not self.options['one_view']:
-            self.nextRow()
-            self.addLabel('Axis 3')
-            self.nextRow()
-            self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1)
+        self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1,
+                                     border=pg.mkPen((0, 0, 255), width=3.0))
         self.view3.setAspectLocked(True)
         self.imgwin3 = ImageMed(border='k')
         self.view3.addItem(self.imgwin3)
