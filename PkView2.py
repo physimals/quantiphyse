@@ -5,8 +5,6 @@ Benjamin Irving
 
 """
 
-#TODO 1) Drag and drop file volumes into a volume window
-
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 #import matplotlib

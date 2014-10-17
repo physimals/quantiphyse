@@ -39,6 +39,8 @@ LGPL
 ## Scipy
 BSD
 
-## Levmar
-Convert Levmar to Minpack (lmder function) if want to release without source code
+## Lmfit
+(http://apps.jcns.fz-juelich.de/doku/sc/lmfit)
+
+FreeBSD
 
