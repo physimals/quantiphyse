@@ -21,16 +21,21 @@ class ImageMed(pg.ImageItem, object):
     Subclassing ImageItem in order to change the wheeEvent action
     """
 
+    sig_mouse_wheel = QtCore.Signal(int)
+
     def __init__(self, border):
         super(ImageMed, self).__init__(border=border)
 
     def wheelEvent(self, event):
+
         """
         Subclassed to remove scroll to zoom from pg.ImageItem
         and instead trigger a scroll through the volume
         """
 
-        print(1)
+        # defines whether the change is negative or positive scroll
+        chnge1 = int(event.delta()/120)
+        self.sig_mouse_wheel.emit(chnge1)
 
 
 class ImageViewLayout(pg.GraphicsLayoutWidget, object):
@@ -46,6 +51,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     # Signals (moving out of init means that the signal is shared by
     # each instance. Just how Qt appears to be set up)
     sig_mouse = QtCore.Signal(np.ndarray)
+
+    # Signals when the mouse is scrolling
+    sig_mouse_scroll = QtCore.Signal(bool)
 
     def __init__(self):
         super(ImageViewLayout, self).__init__()
@@ -135,6 +143,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.ci.layout.setColumnStretchFactor(4, 1)
         self.ci.layout.setColumnMaximumWidth(4, 100)
 
+        # Connecting scroll wheel to stepping through the volume
+        self.imgwin1.sig_mouse_wheel.connect(self.step_axis1)
+        self.imgwin2.sig_mouse_wheel.connect(self.step_axis2)
+        self.imgwin3.sig_mouse_wheel.connect(self.step_axis3)
+
     def add_image_management(self, image_vol_management):
         """
         Adding image management
@@ -165,7 +178,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
                 self.ivm.cim_pos[1] = mspt1
             else:
                 warnings.warn('Out of bounds')
-            print(self.ivm.cim_pos)
 
         # Check if in View 2
         elif self.view2.sceneBoundingRect().contains(self.lastMousePos):
@@ -178,7 +190,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
                 self.ivm.cim_pos[2] = mspt1
             else:
                 warnings.warn('Out of bounds')
-            print(self.ivm.cim_pos)
 
         # Check if in view 3
         elif self.view3.sceneBoundingRect().contains(self.lastMousePos):
@@ -191,7 +202,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
                 self.ivm.cim_pos[2] = mspt1
             else:
                 warnings.warn('Out of bounds')
-            print(self.ivm.cim_pos)
 
     def __update_crosshairs(self):
         """
@@ -254,9 +264,34 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         # Update the view
         self._update_view()
 
+    @QtCore.Slot(int)
+    def step_axis3(self, value):
+        self.ivm.cim_pos[0] += value
+        self._update_view()
+        # signal that the mouse is scrolling
+        self.sig_mouse_scroll.emit(1)
+
+    @QtCore.Slot(int)
+    def step_axis2(self, value):
+        self.ivm.cim_pos[1] += value
+        self._update_view()
+        # signal that the mouse is scrolling
+        self.sig_mouse_scroll.emit(1)
+
+    @QtCore.Slot(int)
+    def step_axis1(self, value):
+        self.ivm.cim_pos[2] += value
+        self._update_view()
+        # signal that the mouse is scrolling
+        self.sig_mouse_scroll.emit(1)
+
     # Create an image from one of the windows
     @QtCore.Slot(int, str)
     def capture_view_as_image(self, window, outputfile):
+        """
+        Export an image based
+        """
+
         # exporting image using pyqtgraph
         if window == 1:
             expimg = self.imgwin1

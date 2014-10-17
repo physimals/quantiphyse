@@ -268,6 +268,8 @@ class MainWidge1(QtGui.QWidget):
         self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
         self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
 
+        self.ivl1.sig_mouse_scroll.connect(self.slider_scroll_mouse)
+
     # update slider range
     def update_slider_range(self):
         #set slider range
@@ -290,6 +292,13 @@ class MainWidge1(QtGui.QWidget):
         #trigger update of image
         self.ivl1.mouse_click_connect(event)
 
+        #update slider positions
+        self.sld1.setValue(self.ivm.cim_pos[2])
+        self.sld2.setValue(self.ivm.cim_pos[1])
+        self.sld3.setValue(self.ivm.cim_pos[0])
+
+    @QtCore.Slot(bool)
+    def slider_scroll_mouse(self, value):
         #update slider positions
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[1])
