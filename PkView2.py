@@ -1,11 +1,11 @@
 #!/usr/bin/env python
+from __future__ import division, unicode_literals, absolute_import, print_function
+
 
 """
 Benjamin Irving
 
 """
-
-from __future__ import division, unicode_literals, absolute_import, print_function
 
 #import matplotlib
 #matplotlib.use('Qt4Agg')
