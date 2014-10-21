@@ -351,6 +351,7 @@ class MainWidge1(QtGui.QWidget):
             self.sw_rw.add_image_management(self.ivm)
             self.sw_rw.sig_set_annotation.connect(self.ivl1.enable_drawing)
             self.sw_rw.sig_save_annotation.connect(self.ivl1.save_overlay)
+            self.sw_rw.sig_emit_reset.connect(self.ivl1.update_overlay)
 
         index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
         print(index)
