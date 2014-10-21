@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-
 """
 Benjamin Irving
-
 """
 
 #import matplotlib
@@ -27,6 +25,7 @@ from libs.PharmaWidgets import PharmaWidget, PharmaView
 from libs.ExperimentalWidgets import ImageExportWidget
 from analysis.volume_management import ImageVolumeManagement
 from analysis.overlay_analysis import OverlayAnalyis
+from annotation.AnnotWidgets import RandomWalkerWidget
 
 """
 class DragAction(QtGui.QAction):
@@ -117,6 +116,9 @@ class MainWidge1(QtGui.QWidget):
         # Clustering widget
         self.sw_cc = CurveClusteringWidget()
         self.sw_cc.add_image_management(self.ivm)
+
+        # Random Walker
+        self.sw_rw = None
 
         # Connect widgets
         #Connect colormap choice, alpha
@@ -341,6 +343,19 @@ class MainWidge1(QtGui.QWidget):
         print(index)
         self.qtab1.setCurrentIndex(index)
 
+    def show_rw(self):
+
+        # Initialise if it is not already initialised
+        if self.sw_rw is None:
+            self.sw_rw = RandomWalkerWidget()
+            self.sw_rw.add_image_management(self.ivm)
+            self.sw_rw.sig_set_annotation.connect(self.ivl1.enable_drawing)
+            self.sw_rw.sig_save_annotation.connect(self.ivl1.save_overlay)
+
+        index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
+        print(index)
+        self.qtab1.setCurrentIndex(index)
+
 
 class MainWin1(QtGui.QMainWindow):
     """
@@ -408,6 +423,11 @@ class MainWin1(QtGui.QMainWindow):
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
+        #File --> Create Annotation
+        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Annotation', self)
+        annot_ovreg_action.setStatusTip('Annotation')
+        annot_ovreg_action.triggered.connect(self.show_annot_load_dialog)
+
         #File --> Load Overlay Select
         load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
                                              '&Load Overlay Select', self)
@@ -443,6 +463,11 @@ class MainWin1(QtGui.QMainWindow):
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
         pw_action.triggered.connect(self.mw1.show_pw)
 
+        # Widgets --> RandomWalker
+        rw_action = QtGui.QAction('&RandomWalker', self)
+        rw_action.setStatusTip('RandomWalker')
+        rw_action.triggered.connect(self.mw1.show_rw)
+
         # Widgets --> CurveClustering
         cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.png'), '&CurveClustering', self)
         cc_action.setStatusTip('Cluster curves in a ROI of interest')
@@ -468,12 +493,15 @@ class MainWin1(QtGui.QMainWindow):
         file_menu.addAction(load_roi_action)
         file_menu.addAction(load_ovreg_action)
         file_menu.addAction(load_ovregsel_action)
+        file_menu.addAction(annot_ovreg_action)
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
+        widget_menu.addAction(rw_action)
+
         widget_menu.addAction(cc_action)
 
         help_menu.addAction(help_action)
@@ -558,6 +586,15 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.update_slider_range()
         else:
             print('Warning: No file selected')
+
+    def show_annot_load_dialog(self, fname=None):
+        """
+        Annotation dialog
+        """
+
+        self.mw1.ivm.set_blank_annotation()
+        self.mw1.ivl1.load_ovreg()
+        self.mw1.ivl1.enable_drawing(True)
 
     def show_roi_load_dialog(self, fname=None):
         """
@@ -651,7 +688,5 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     ex = MainWin1(args.image, args.roi, args.overlay)
     sys.exit(app.exec_())
-
-
 
 

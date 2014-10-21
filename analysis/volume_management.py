@@ -22,8 +22,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     Note that the correct QT Model/View structure has not been set up but is intended in future
     """
 
-    #Signalse
+    # Signals
     sig_current_overlay = QtCore.Signal(str)
+    # Signal all overlays
     sig_all_overlays = QtCore.Signal(list)
 
     def __init__(self):
@@ -53,7 +54,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Type of the current overlay
         self.overlay_label = None
         # List of possible overlays that can be loaded
-        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10']
+        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation']
 
         # All overlays
         self.overlay_all = {}
@@ -132,6 +133,25 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_estimated(self, x):
         self.estimated = x
+
+    def set_blank_annotation(self):
+        """
+        - Initialise the annotation overlay
+        - Set the annotation overlay to be the current overlay
+        """
+        if self.image is not None:
+            self.overlay_all['annotation'] = np.zeros(self.image.shape[:-1])
+
+            #little hack to normalise the image from 0 to 10 by listing possible labels in the corner
+            for ii in range(11):
+                self.overlay_all['annotation'][0, ii] = ii
+        else:
+            print("Please load an image first")
+
+        #update overlay list
+        self.sig_all_overlays.emit(self.overlay_all.keys())
+        #set current overlay
+        self.set_current_overlay('annotation', broadcast_change=True)
 
     def set_overlay(self, choice1, ovreg):
         """
@@ -260,14 +280,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             # set the loaded overlay to be the current overlay
             self.set_current_overlay(type1)
 
-
     def set_cmap(self, cmap):
         """
         Saves the current colormap
         """
 
         self.cmap = cmap
-
 
     @staticmethod
     def _load_med_file(image_location):

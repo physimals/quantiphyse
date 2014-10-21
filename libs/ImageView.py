@@ -621,7 +621,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
             #self.ovreg = self.ovreg - np.min(subreg1)
             #self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
-            #Set transparency around ROI
             self.ovreg[np.logical_not(self.ivm.roi)] = -0.01 * (self.ov_range_orig[1] - self.ov_range_orig[0]) + self.ov_range_orig[0]
 
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
@@ -661,6 +660,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
         self.imgwin3c.setLevels(self.ov_range)
+
+        print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
 
 
     #Slot to toggle whether the overlay is seen or not
@@ -783,17 +784,30 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Save the lut to the volume management system for easy transfer between widgets
         self.ivm.set_cmap(self.ovreg_lut)
 
-    def enable_drawing(self, state):
+    @QtCore.Slot(int)
+    def enable_drawing(self, color1=1):
 
+        """
+        Allow drawing on annotation in all three views
+        """
+
+        ## # start drawing with 3x3 brush
+        kern = np.array([[color1]])
+        self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+        self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+        self.imgwin3c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+
+        self.view1.setAspectLocked(True)
+        self.view2.setAspectLocked(True)
+        self.view3.setAspectLocked(True)
+
+    @QtCore.Slot(bool)
+    def save_overlay(self, state):
+        """
+        Save the edited annotation back to the volume management
+        """
         if state:
-            ## # start drawing with 3x3 brush
-            kern = np.array([[1]])
-            self.imgwin1c.setDrawKernel(kern, mask=kern, center=(1, 1), mode='add')
-            self.imgwin1c.setLevels([1,2])
-            self.view1.setAspectLocked(True)
-
-        else:
-            None
+            self.ivm.set_overlay('annotation', self.ovreg)
 
 
 
