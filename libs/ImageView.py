@@ -155,7 +155,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])
         self._update_view()
 
-    def __mouse_pos(self):
+    def _mouse_pos(self):
 
         """
         Capture positions of the 3 views on mouse press and update cim_pos
@@ -340,7 +340,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         2) update the view
         3) emit signal of current position data
         """
-        self.__mouse_pos()
+        self._mouse_pos()
         self._update_view()
 
         #Signal emit current enhancement curve to widget
@@ -566,7 +566,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Initilise lut colormap
         self.set_default_colormap_matplotlib()
 
-
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
@@ -619,19 +618,19 @@ class ImageViewColorOverlay(ImageViewOverlay):
             #Scale ROI
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
             self.ov_range_orig = [np.min(subreg1), np.max(subreg1)]
-            self.ovreg = self.ovreg - np.min(subreg1)
-            self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
+            #self.ovreg = self.ovreg - np.min(subreg1)
+            #self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
             #Set transparency around ROI
-            self.ovreg[np.logical_not(self.ivm.roi)] = -0.01
+            self.ovreg[np.logical_not(self.ivm.roi)] = -0.01 * (self.ov_range_orig[1] - self.ov_range_orig[0]) + self.ov_range_orig[0]
 
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
         else:
             #Normalisation
             self.ov_range_orig = [np.min(self.ovreg), np.max(self.ovreg)]
-            self.ovreg = self.ovreg - np.min(self.ovreg)
-            self.ovreg = self.ovreg / np.max(self.ovreg)
+            #self.ovreg = self.ovreg - np.min(self.ovreg)
+            #self.ovreg = self.ovreg / np.max(self.ovreg)
 
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
@@ -655,6 +654,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], lut=self.ovreg_lut)
             self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], lut=self.ovreg_lut)
             self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], lut=self.ovreg_lut)
+
+            #print('hi')
+            #self.ovreg[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2]] = 2
 
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
@@ -781,9 +783,17 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Save the lut to the volume management system for easy transfer between widgets
         self.ivm.set_cmap(self.ovreg_lut)
 
+    def enable_drawing(self, state):
 
+        if state:
+            ## # start drawing with 3x3 brush
+            kern = np.array([[1]])
+            self.imgwin1c.setDrawKernel(kern, mask=kern, center=(1, 1), mode='add')
+            self.imgwin1c.setLevels([1,2])
+            self.view1.setAspectLocked(True)
 
-
+        else:
+            None
 
 
 
