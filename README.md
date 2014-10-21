@@ -16,6 +16,8 @@ Python 2.7
 - nibabel
 - pyqtgraph
 - Cython
+- scikit-image
+- scikit-learn
 
 
 ### Overview
