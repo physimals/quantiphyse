@@ -424,10 +424,12 @@ class MainWin1(QtGui.QMainWindow):
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
 
-        #File --> Create Annotation
-        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Annotation', self)
-        annot_ovreg_action.setStatusTip('Annotation')
-        annot_ovreg_action.triggered.connect(self.show_annot_load_dialog)
+        #File --> Save Overlay
+        save_ovreg_action = QtGui.QAction('&Save Current Overlay', self)
+        save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
+        save_ovreg_action.triggered.connect(self.show_ovreg_save_dialog)
+        save_ovreg_action.setShortcut('Ctrl+S')
+
 
         #File --> Load Overlay Select
         load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
@@ -474,6 +476,12 @@ class MainWin1(QtGui.QMainWindow):
         cc_action.setStatusTip('Cluster curves in a ROI of interest')
         cc_action.triggered.connect(self.mw1.show_cc)
 
+        #Wigets --> Create Annotation
+        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Enable Annotation', self)
+        annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
+        annot_ovreg_action.setCheckable(True)
+        annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
+
         #Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
         help_action.setStatusTip('See online help file')
@@ -494,7 +502,7 @@ class MainWin1(QtGui.QMainWindow):
         file_menu.addAction(load_roi_action)
         file_menu.addAction(load_ovreg_action)
         file_menu.addAction(load_ovregsel_action)
-        file_menu.addAction(annot_ovreg_action)
+        file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
         widget_menu.addAction(se_action)
@@ -502,6 +510,7 @@ class MainWin1(QtGui.QMainWindow):
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
         widget_menu.addAction(rw_action)
+        widget_menu.addAction(annot_ovreg_action)
 
         widget_menu.addAction(cc_action)
 
@@ -588,14 +597,17 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
-    def show_annot_load_dialog(self, fname=None):
+    def show_annot_load_dialog(self, checked):
         """
         Annotation dialog
         """
 
-        self.mw1.ivm.set_blank_annotation()
-        self.mw1.ivl1.load_ovreg()
-        self.mw1.ivl1.enable_drawing(True)
+        if checked:
+            self.mw1.ivm.set_blank_annotation()
+            self.mw1.ivl1.load_ovreg()
+            self.mw1.ivl1.enable_drawing(color1=1)
+        else:
+            self.mw1.ivl1.enable_drawing(color1=0)
 
     def show_roi_load_dialog(self, fname=None):
         """
@@ -651,6 +663,41 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.ivm.load_ovreg(fname, ftype)
             if ftype != 'estimated':
                 self.mw1.ivl1.load_ovreg()
+        else:
+            print('Warning: No file selected')
+
+    def show_ovreg_save_dialog(self):
+        """
+        Dialog for saving an overlay as a nifti file
+
+        """
+
+        #ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+        #                                           ['T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+        #                                            'segmentation', 'annotation'])
+
+        fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
+
+        # check if file is returned
+        if fname != '':
+
+            if os.path.exists(fname):
+                # Checking if data already exists
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("File already exists")
+                msgBox.setInformativeText("Do you want to replace this volume?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
+
+                ret = msgBox.exec_()
+
+                if ret == QtGui.QMessageBox.Ok:
+                    print("Clearing data")
+                else:
+                    return
+
+            #self.default_directory = self.get_dir(fname)
+            self.mw1.ivm.save_ovreg(fname, 'current')
         else:
             print('Warning: No file selected')
 

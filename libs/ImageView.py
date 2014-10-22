@@ -791,15 +791,30 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Allow drawing on annotation in all three views
         """
 
-        ## # start drawing with 3x3 brush
-        kern = np.array([[color1]])
-        self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-        self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-        self.imgwin3c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+        if color1 != 0:
 
-        self.view1.setAspectLocked(True)
-        self.view2.setAspectLocked(True)
-        self.view3.setAspectLocked(True)
+            ## # start drawing with 3x3 brush
+            kern = np.array([[color1]])
+            self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+            self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+            self.imgwin3c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+
+            self.view1.setAspectLocked(True)
+            self.view2.setAspectLocked(True)
+            self.view3.setAspectLocked(True)
+
+        else:
+
+            self.imgwin1c.setDrawKernel(kernel=None)
+            self.imgwin2c.setDrawKernel(kernel=None)
+            self.imgwin3c.setDrawKernel(kernel=None)
+
+            self.view1.setAspectLocked(False)
+            self.view2.setAspectLocked(False)
+            self.view3.setAspectLocked(False)
+
+            # Save overlay to annotation when stopped annotating
+            self.save_overlay(True)
 
     @QtCore.Slot(bool)
     def save_overlay(self, state):

@@ -209,7 +209,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
 
         self.image_file1 = image_file1
-        self.image, self.voxel_size = self._load_med_file(self.image_file1)
+        self.image, self.voxel_size, self.hdr = self._load_med_file(self.image_file1)
 
         self.image = self._remove_nans(self.image)
 
@@ -236,7 +236,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         #Setting ROI data
         self.roi_file1 = file1
-        self.roi, voxel_size = self._load_med_file(self.roi_file1)
+        self.roi, voxel_size, _ = self._load_med_file(self.roi_file1)
 
         self.roi = self._remove_nans(self.roi)
 
@@ -257,29 +257,46 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Loads and checks Overlay region image
 
         """
-
         if self.image.shape[0] == 1:
             print("Please load an image first")
             return
 
         #Setting Overlay region data
         self.ovreg_file1 = file1
-
-        overlay_load, self.voxel_size = self._load_med_file(self.ovreg_file1)
-
+        overlay_load, self.voxel_size, _ = self._load_med_file(self.ovreg_file1)
         overlay_load = self._remove_nans(overlay_load)
 
         if type1 == 'model_curves':
-
             self.set_estimated(overlay_load)
 
         else:
-
             # add the loaded overlay
             self.set_overlay(type1, overlay_load)
-
             # set the loaded overlay to be the current overlay
             self.set_current_overlay(type1)
+
+    def save_ovreg(self, file1, type1):
+        """
+        Save an overlay as a nifti file
+        """
+
+        if type1 == 'current':
+            data1 = self.overlay
+        else:
+            data1 = self.overlay_all[type1]
+
+        # get header
+        header1 = self.hdr
+
+        # modify header
+        shp1 = header1.get_data_shape()
+        header1.set_data_shape(shp1[:-1])
+        header1.set_data_dtype(data1.dtype)
+
+        # Save the current overlay or save a specific overlay
+        img1 = nib.Nifti1Image(data1, header1.get_base_affine(), header=header1)
+        # Save image
+        img1.to_filename(file1)
 
     def set_cmap(self, cmap):
         """
@@ -306,20 +323,24 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
             voxel_size = image.get_header().get_zooms()
 
+            hdr = image.get_header()
+
         elif ext1 == 'nrrd':
 
             #else if the file is a nrrd
             image1, options1 = nrrd.read(image_location)
             voxel_size = [0, 0, 0]
+            hdr = None
 
         else:
 
             image1 = None
             voxel_size = None
+            hdr = None
 
         # otherwise return 0
 
-        return image1, voxel_size
+        return image1, voxel_size, hdr
 
     @staticmethod
     def _remove_nans(image1):
