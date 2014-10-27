@@ -424,7 +424,7 @@ class ImageViewOverlay(ImageViewLayout):
 
         # Viewing options as a dictionary
         self.options['ShowOverlay'] = 0
-        self.options['ShowOverlayContour'] = True
+        self.options['ShowOverlayContour'] = False
         self.options['roi_outline_width'] = 3.0
 
         # ROI pens
@@ -590,7 +590,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
         self.view4.setXRange(0, 100, padding=0)
         self.view4.setYRange(0, 1000, padding=0)
-        self.axcol.setRange(self.ov_range_orig[0], self.ov_range_orig[1])
+        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
 
         self.imgwin1c.setLevels(self.ov_range)
         self.imgwin2c.setLevels(self.ov_range)
@@ -618,19 +618,13 @@ class ImageViewColorOverlay(ImageViewOverlay):
             #Scale ROI
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
             self.ov_range_orig = [np.min(subreg1), np.max(subreg1)]
-            #self.ovreg = self.ovreg - np.min(subreg1)
-            #self.ovreg = self.ovreg / np.max(subreg1 - np.min(subreg1))
 
+            #Regions that are not part of the ROI
             self.ovreg[np.logical_not(self.ivm.roi)] = -0.01 * (self.ov_range_orig[1] - self.ov_range_orig[0]) + self.ov_range_orig[0]
 
-            self.ov_range = [self.ovreg.min(), self.ovreg.max()]
+            self.ov_range = self.ov_range_orig
 
         else:
-            #Normalisation
-            self.ov_range_orig = [np.min(self.ovreg), np.max(self.ovreg)]
-            #self.ovreg = self.ovreg - np.min(self.ovreg)
-            #self.ovreg = self.ovreg / np.max(self.ovreg)
-
             self.ov_range = [self.ovreg.min(), self.ovreg.max()]
 
     def _update_view(self):
