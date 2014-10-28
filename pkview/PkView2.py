@@ -18,14 +18,14 @@ import pyqtgraph.console
 import numpy as np
 
 # My libs
-from libs.ImageView import ImageViewColorOverlay
-from libs.AnalysisWidgets import SECurve, ColorOverlay1
-from libs.ClusteringWidgets import CurveClusteringWidget
-from libs.PharmaWidgets import PharmaWidget, PharmaView
-from libs.ExperimentalWidgets import ImageExportWidget
-from analysis.volume_management import ImageVolumeManagement
-from analysis.overlay_analysis import OverlayAnalyis
-from annotation.AnnotWidgets import RandomWalkerWidget
+from pkview.libs.ImageView import ImageViewColorOverlay
+from pkview.libs.AnalysisWidgets import SECurve, ColorOverlay1
+from pkview.libs.ClusteringWidgets import CurveClusteringWidget
+from pkview.libs.PharmaWidgets import PharmaWidget, PharmaView
+from pkview.libs.ExperimentalWidgets import ImageExportWidget
+from pkview.analysis.volume_management import ImageVolumeManagement
+from pkview.analysis.overlay_analysis import OverlayAnalyis
+from pkview.annotation.AnnotWidgets import RandomWalkerWidget
 
 """
 class DragAction(QtGui.QAction):
