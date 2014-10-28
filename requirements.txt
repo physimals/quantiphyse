@@ -4,3 +4,4 @@ nibabel
 matplotlib
 PySide
 nrrd
+Cython

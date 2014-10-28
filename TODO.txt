@@ -1,1 +1,0 @@
-1) Need to sort out setup.py in a similar way to scikit image so that it automatically links all setup.py files in the package
