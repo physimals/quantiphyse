@@ -5,6 +5,14 @@
 # To build cython libraries
 # Use: python setup.py build_ext --inplace
 
+#installing on the system
+python setup.py install
+then run
+pkviewer.py from the terminal
+
+# creating a deb file. Doesn't work yet with images
+python setup.py --command-packages=stdeb.command bdist_deb
+
 
 """
 
@@ -16,13 +24,9 @@ from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from distutils.extension import Extension
 
-#TODO cython doesn't seem to work from outside the folder?
-
 Description = """/
 PkView
 """
-
-#TODO pyqtgraph provides a good example
 
 # Compiling the Cython extensions
 extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
@@ -46,9 +50,21 @@ setup(name='PKView',
       author='Benjamin Irving',
       author_email='benjamin.irving@eng.ox.ac.uk',
       url='www.birving.com',
-      packages=['pkview'],
+      packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.annotation', 'pkview.libs',
+                'pkview.analysis.pkmodel_cpp', 'pkview.icons'],
+      include_package_data = True,
+      data_files = [('pkview/icons/', ['pkview/icons/picture.png',
+                                       'pkview/icons/pencil.png',
+                                       'pkview/icons/clear.png',
+                                       'pkview/icons/edit.png',
+                                       'pkview/icons/clustering.png',
+                                       'pkview/icons/main_icon.png',
+                                       'pkview/icons/flag.png',
+                                       'pkview/icons/voxel.png'])],
+      #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
+      install_requires=['scikit-image', 'scikit-learn', 'Cython'],
       classifiers=["Programming Language :: Python :: 2.7"],
-      ext_modules=cythonize([extensions], language="c++")
+      ext_modules=cythonize([extensions], language="c++"),
+      scripts=["pkviewer2.py"]
 )
-
 

@@ -1,4 +1,11 @@
 Recent changes
 
+20141028
+Improved overall layout
+Changed structure of code to be more consistent with other projects
+Needed to install version of pyqtgraph from github
+setup.py now includes on the Cython compiling as well
+cx_Freeze seems to be broken
+
 20140905
 Icons changed from svg to png to work with Windows.
