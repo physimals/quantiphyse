@@ -422,7 +422,7 @@ class MainWin1(QtGui.QMainWindow):
         #File --> Load Overlay
         load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load overlay')
-        load_ovreg_action.triggered.connect(self.show_ovreg_load_dialog)
+        load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
         #File --> Save Overlay
         save_ovreg_action = QtGui.QAction('&Save Current Overlay', self)
@@ -431,11 +431,11 @@ class MainWin1(QtGui.QMainWindow):
         save_ovreg_action.setShortcut('Ctrl+S')
 
 
-        #File --> Load Overlay Select
-        load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
-                                             '&Load Overlay Select', self)
-        load_ovregsel_action.setStatusTip('Load specific type of overlay')
-        load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
+        # #File --> Load Overlay Select
+        # load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
+        #                                      '&Load Overlay Select', self)
+        # load_ovregsel_action.setStatusTip('Load specific type of overlay')
+        # load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
 
         #File --> Settings
         #TODO
@@ -501,7 +501,7 @@ class MainWin1(QtGui.QMainWindow):
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
         file_menu.addAction(load_ovreg_action)
-        file_menu.addAction(load_ovregsel_action)
+        # file_menu.addAction(load_ovregsel_action)
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
@@ -626,22 +626,22 @@ class MainWin1(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
-    def show_ovreg_load_dialog(self, fname=None):
-        """
-        Dialog for loading a file
-        @fname: allows a file name to be passed in automatically
-        """
-        if fname is None:
-            #Show file select widget
-            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-
-        #check if file is returned
-        if fname != '':
-            self.default_directory = self.get_dir(fname)
-            self.mw1.ivm.load_ovreg(fname)
-            self.mw1.ivl1.load_ovreg()
-        else:
-            print('Warning: No file selected')
+    # def show_ovreg_load_dialog(self, fname=None):
+    #     """
+    #     Dialog for loading a file
+    #     @fname: allows a file name to be passed in automatically
+    #     """
+    #     if fname is None:
+    #         #Show file select widget
+    #         fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+    #
+    #     #check if file is returned
+    #     if fname != '':
+    #         self.default_directory = self.get_dir(fname)
+    #         self.mw1.ivm.load_ovreg(fname)
+    #         self.mw1.ivl1.load_ovreg()
+    #     else:
+    #         print('Warning: No file selected')
 
     def show_ovregsel_load_dialog(self, fname=None, ftype=None):
         """
@@ -653,12 +653,13 @@ class MainWin1(QtGui.QMainWindow):
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
 
-        if ftype is None:
-            ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                   ['T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves'])
-
         # check if file is returned
         if fname != '':
+
+            if ftype is None:
+                ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves'])
+
             self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_ovreg(fname, ftype)
             if ftype != 'estimated':
