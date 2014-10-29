@@ -14,8 +14,9 @@ from cx_Freeze import setup, Executable
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 
-buildOptions = dict(packages=['scipy', 'sklearn', 'skimage', 'pyqtgraph', 'numpy'], excludes=['PyQt4', 'Tkinter'],
+buildOptions = dict(packages=['scipy', 'skimage', 'pyqtgraph'], excludes=['PyQt4', 'Tkinter'],
                     include_files=['pkview/icons'])
+# removed sklearn and numpy from includes... should still work
 
 import sys
 base = 'Win32GUI' if sys.platform == 'win32' else None

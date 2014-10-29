@@ -607,7 +607,7 @@ class MainWin1(QtGui.QMainWindow):
             self.mw1.ivl1.load_ovreg()
             self.mw1.ivl1.enable_drawing(color1=1)
         else:
-            self.mw1.ivl1.enable_drawing(color1=0)
+            self.mw1.ivl1.enable_drawing(color1=-1)
 
     def show_roi_load_dialog(self, fname=None):
         """
