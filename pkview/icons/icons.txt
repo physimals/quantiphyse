@@ -1,0 +1,6 @@
+Where the icons come from and licences
+
+
+http://icomoon.io/app/#/select
+
+FontAwesome
