@@ -62,7 +62,7 @@ setup(name='PKView',
                                        'pkview/icons/flag.png',
                                        'pkview/icons/voxel.png'])],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
-      install_requires=['scikit-image', 'scikit-learn', 'Cython'],
+      install_requires=['scikit-image', 'scikit-learn', 'numpy', 'scipy', 'pyqtgraph'],
       classifiers=["Programming Language :: Python :: 2.7"],
       ext_modules=cythonize([extensions], language="c++"),
       scripts=["pkviewer2.py"]

@@ -16,11 +16,14 @@ import sys
 base = 'Win32GUI' if sys.platform == 'win32' else None
 
 executables = [
-    Executable('pkview/pkviewer.py', base=base)
+    Executable('pkviewer2.py', base=base)
 ]
 
-setup(name='PkView',
-      version='0.1',
-      description='Pk viewing and analysis',
+setup(name='PKView',
+      version='0.13',
+      description='pCT and DCE-MRI viewer and analysis tool',
+      author='Benjamin Irving',
+      author_email='benjamin.irving@eng.ox.ac.uk',
+      url='www.birving.com',
       options=dict(build_exe=buildOptions),
       executables=executables)

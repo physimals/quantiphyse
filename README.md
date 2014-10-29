@@ -25,13 +25,9 @@ Python 2.7
 
 ### Installation
 
-This GUI now uses c++ and cython code for the pharmacokinetic modelling. Therefore, compilation of some of the libraries
-is required before running. 
-
-run the following steps:
 ```bash
-cd analysis/pkmodel_cpp
-python setup.py build_ext --inplace
+sudo apt-get install numpy scipy build-essentials pip
+
 ```
 
 ### Usage
