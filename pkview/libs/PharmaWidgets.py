@@ -52,8 +52,10 @@ class PharmaWidget(QtGui.QWidget):
         self.valDelT = QtGui.QLineEdit('12', self)
         p7 = QtGui.QLabel('Estimated Injection time (s)')
         self.valInjT = QtGui.QLineEdit('30', self)
-        p8 = QtGui.QLabel('Ktrans/kep upper threshold')
-        self.thresh1 = QtGui.QLineEdit('2', self)
+        p8 = QtGui.QLabel('Ktrans/kep percentile threshold')
+        self.thresh1 = QtGui.QLineEdit('98', self)
+        p9 = QtGui.QLabel('Dose (mM/kg) (preclinical only)')
+        self.valDose = QtGui.QLineEdit('0.6', self)
 
         # AIF
         # Select plot color
@@ -95,6 +97,8 @@ class PharmaWidget(QtGui.QWidget):
         l02.addWidget(self.valInjT, 6, 1)
         l02.addWidget(p8, 7, 0)
         l02.addWidget(self.thresh1, 7, 1)
+        l02.addWidget(p9, 8, 0)
+        l02.addWidget(self.valDose, 8, 1)
 
         f02 = QGroupBoxB()
         f02.setTitle('Parameters')
@@ -185,6 +189,7 @@ class PharmaWidget(QtGui.QWidget):
         TE = float(self.valTE.text())
         FA = float(self.valFA.text())
         self.thresh1val= float(self.thresh1.text())
+        Dose = float(self.valDose.text())
 
         # getting model choice from list
         model_choice = self.combo.currentIndex() + 1
@@ -212,7 +217,7 @@ class PharmaWidget(QtGui.QWidget):
         img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor
-        self.result = self.pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA,
+        self.result = self.pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose,
                                                                model_choice))
         # set the progress value
         self.prog_gen.setValue(0)
@@ -274,8 +279,10 @@ class PharmaWidget(QtGui.QWidget):
             estimated1vol = np.reshape(estimated_curve1, self.ivm.img_dims)
 
             #thresholding according to upper limit
-            Ktrans1vol[Ktrans1vol > self.thresh1val] = self.thresh1val
-            kep1vol[kep1vol > self.thresh1val] = self.thresh1val
+            p = np.percentile(Ktrans1vol, self.thresh1val)
+            Ktrans1vol[Ktrans1vol > p] = p
+            p = np.percentile(kep1vol, self.thresh1val)
+            kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
             self.ivm.set_overlay(choice1='Ktrans', ovreg=Ktrans1vol)
@@ -289,7 +296,7 @@ class PharmaWidget(QtGui.QWidget):
             self.sig_emit_reset.emit(1)
 
 
-def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, model_choice):
+def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 
     """
     Simple function interface to run the c++ pk modelling code
@@ -304,7 +311,7 @@ def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, model
 
     injtmins = injt/60.0
 
-    Dose = 0.1
+    Dose = dose
 
     # conversion to seconds
     dce_TR = tr1/1000.0

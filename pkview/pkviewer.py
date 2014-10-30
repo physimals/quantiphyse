@@ -321,7 +321,7 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.sw3, "Pharmacokinetics")
+        index = self.qtab1.addTab(self.sw3, QtGui.QIcon(self.local_file_path + '/icons/pk.png'), "Pharmacokinetics")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
@@ -400,7 +400,7 @@ class MainWin1(QtGui.QMainWindow):
     def init_ui(self):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
-        self.setWindowTitle("PkViewer")
+        self.setWindowTitle("PkViewer 0.13 - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
 
         self.menu_ui()
@@ -457,7 +457,7 @@ class MainWin1(QtGui.QMainWindow):
         ic_action.triggered.connect(self.mw1.show_ic)
 
         #Widgets --> Pharmacokinetics
-        pk_action = QtGui.QAction('&Pharmacokinetics', self)
+        pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.png'), '&Pharmacokinetics', self)
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 

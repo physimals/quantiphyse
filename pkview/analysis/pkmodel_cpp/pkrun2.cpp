@@ -1,4 +1,10 @@
+/*
 
+Main class and interface for running the Pk modelling
+
+Benjamin Irving
+
+*/
 
 #include "pkrun2.h"
 
