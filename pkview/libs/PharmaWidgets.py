@@ -42,14 +42,16 @@ class PharmaWidget(QtGui.QWidget):
         self.valR1 = QtGui.QLineEdit('3.7', self)
         p2 = QtGui.QLabel('R2')
         self.valR2 = QtGui.QLineEdit('4.8', self)
-        p3 = QtGui.QLabel('Flip Angle')
+        p3 = QtGui.QLabel('Flip Angle (degrees)')
         self.valFA = QtGui.QLineEdit('12.0', self)
-        p4 = QtGui.QLabel('TR (s)')
+        p4 = QtGui.QLabel('TR (ms)')
         self.valTR = QtGui.QLineEdit('4.108', self)
-        p5 = QtGui.QLabel('TE (s)')
+        p5 = QtGui.QLabel('TE (ms)')
         self.valTE = QtGui.QLineEdit('1.832', self)
         p6 = QtGui.QLabel('delta T (s)')
         self.valDelT = QtGui.QLineEdit('12', self)
+        p7 = QtGui.QLabel('Estimated Injection time (s)')
+        self.valInjT = QtGui.QLineEdit('30', self)
 
         # AIF
         # Select plot color
@@ -87,6 +89,8 @@ class PharmaWidget(QtGui.QWidget):
         l02.addWidget(self.valTE, 4, 1)
         l02.addWidget(p6, 5, 0)
         l02.addWidget(self.valDelT, 5, 1)
+        l02.addWidget(p7, 6, 0)
+        l02.addWidget(self.valInjT, 6, 1)
 
         f02 = QGroupBoxB()
         f02.setTitle('Parameters')
@@ -172,6 +176,7 @@ class PharmaWidget(QtGui.QWidget):
         R1 = float(self.valR1.text())
         R2 = float(self.valR2.text())
         DelT = float(self.valDelT.text())
+        InjT = float(self.valInjT.text())
         TR = float(self.valTR.text())
         TE = float(self.valTE.text())
         FA = float(self.valFA.text())
@@ -202,7 +207,7 @@ class PharmaWidget(QtGui.QWidget):
         img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor
-        self.result = self.pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, TR, TE, FA,
+        self.result = self.pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA,
                                                                model_choice))
         # set the progress value
         self.prog_gen.setValue(0)
@@ -275,7 +280,7 @@ class PharmaWidget(QtGui.QWidget):
             self.sig_emit_reset.emit(1)
 
 
-def run_pk(img1sub, t101sub, r1, r2, delt, tr1, te1, dce_flip_angle, model_choice):
+def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, model_choice):
 
     """
     Simple function interface to run the c++ pk modelling code
@@ -285,13 +290,18 @@ def run_pk(img1sub, t101sub, r1, r2, delt, tr1, te1, dce_flip_angle, model_choic
     print("pk modelling worker started")
 
     t1 = np.arange(0, img1sub.shape[-1])*delt
+    # conversion to minutes
     t1 = t1/60.0
+
+    injtmins = injt/60.0
 
     Dose = 0.1
 
+    # conversion to seconds
     dce_TR = tr1/1000.0
     dce_TE = te1/1000.0
 
+    #specify variable upper bounds and lower bounds
     ub = [10, 1, 0.5, 0.5]
     lb = [0, 0.05, -0.5, 0]
 
@@ -306,16 +316,18 @@ def run_pk(img1sub, t101sub, r1, r2, delt, tr1, te1, dce_flip_angle, model_choic
     Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
 
     # Initialise fitting
-    Pkclass.rinit(model_choice)
+    # Choose model type and injection time
+    Pkclass.rinit(model_choice, injtmins)
 
     # Iteratively process 5000 points at a time
     # (this can be performed as a multiprocess soon)
 
-    size_step = 5000
+    size_step = np.around(img1sub.shape[0]/5)
     size_tot = img1sub.shape[0]
     steps1 = np.around(size_tot/size_step)
     num_row = 1.0  # Just a placeholder for the meanwhile
 
+    print("Number of voxels per step: ", size_step)
     print("Number of steps: ", steps1)
     run_pk.queue.put((num_row, 1))
     for ii in range(int(steps1)):
@@ -325,7 +337,7 @@ def run_pk(img1sub, t101sub, r1, r2, delt, tr1, te1, dce_flip_angle, model_choic
             run_pk.queue.put((num_row, progress))
 
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-        x = Pkclass.run(5000)
+        x = Pkclass.run(size_step)
         print(x)
 
     print("Done")

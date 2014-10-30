@@ -78,7 +78,7 @@ public:
     void set_parameters(double R1in, double R2in, double dce_flip_anglein, double dce_TRin, double dce_TEin, double Dosein);
 
     // run the pk model
-    void rinit(int model1);
+    void rinit(int model1, double injtmins);
 
     double run(int pause1);
 

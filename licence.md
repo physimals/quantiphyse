@@ -3,6 +3,10 @@ Main licence
 
 *Currently a work in progress*
 
+The correct form of licencing is still being decided. This software should currently be treated as "in house" experimental software and permission is 
+required from the author for any redistribution of the source code, software or binary. 
+
+
 # Included libraries
 
 ## Pyqtgraph

@@ -86,7 +86,7 @@ void Pkrun2::set_parameters(double R1in, double R2in, double dce_flip_anglein, d
 }
 
 
-void Pkrun2::rinit(int model1)
+void Pkrun2::rinit(int model1, double injtmins)
 {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~Pass all the data to the optimizer object ~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Set the AIF and model type
@@ -94,24 +94,23 @@ void Pkrun2::rinit(int model1)
     if (model1 ==1)
     {
         cout << "Orton with offset (Clinical) \n";
-        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=0;
+        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=injtmins;
     }
     else if (model1 ==2)
     {
         cout << "Orton without offset (Clinical) \n";
-        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=0;
+        AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=injtmins;
     }
     else if (model1 ==3)
     {
         cout << "Weinmann with offset (Pre-clinical) \n";
-        AIF[0]=0; AIF[1]=0; AIF[2]=0; AIF[3]=0; AIF[4]=0;
+        AIF[0]=9.2; AIF[1]=4.2; AIF[2]=2.3; AIF[3]=0.05; AIF[4]=injtmins;
     }
     else if (model1 ==4)
     {
         cout << "Weinmann with offset and vp (Pre-clinical) \n";
-        AIF[0]=0; AIF[1]=0; AIF[2]=0; AIF[3]=0; AIF[4]=0;
+        AIF[0]=9.2; AIF[1]=4.2; AIF[2]=2.3; AIF[3]=0.05; AIF[4]=injtmins;
     }
-
 
     OTofts.set_data(n_par, R1, R2, dce_TR, dce_TE, dce_flip_angle, AIF, m_t1, Dose);
 
@@ -120,8 +119,8 @@ void Pkrun2::rinit(int model1)
 
     /*
     1) Orton with Offset
-    2) Weinmann with offset
-    3) Orton without Offset
+    2) Orton without Offset
+    3) Weinmann with offset
     4) Weinmann with offset and vp
     */
 

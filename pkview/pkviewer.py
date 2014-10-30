@@ -658,7 +658,8 @@ class MainWin1(QtGui.QMainWindow):
 
             if ftype is None:
                 ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves'])
+                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+                                                        'annotation'])
 
             self.default_directory = self.get_dir(fname)
             self.mw1.ivm.load_ovreg(fname, ftype)
