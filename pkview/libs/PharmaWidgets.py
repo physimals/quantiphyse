@@ -52,6 +52,8 @@ class PharmaWidget(QtGui.QWidget):
         self.valDelT = QtGui.QLineEdit('12', self)
         p7 = QtGui.QLabel('Estimated Injection time (s)')
         self.valInjT = QtGui.QLineEdit('30', self)
+        p8 = QtGui.QLabel('Ktrans/kep upper threshold')
+        self.thresh1 = QtGui.QLineEdit('2', self)
 
         # AIF
         # Select plot color
@@ -91,6 +93,8 @@ class PharmaWidget(QtGui.QWidget):
         l02.addWidget(self.valDelT, 5, 1)
         l02.addWidget(p7, 6, 0)
         l02.addWidget(self.valInjT, 6, 1)
+        l02.addWidget(p8, 7, 0)
+        l02.addWidget(self.thresh1, 7, 1)
 
         f02 = QGroupBoxB()
         f02.setTitle('Parameters')
@@ -180,6 +184,7 @@ class PharmaWidget(QtGui.QWidget):
         TR = float(self.valTR.text())
         TE = float(self.valTE.text())
         FA = float(self.valFA.text())
+        self.thresh1val= float(self.thresh1.text())
 
         # getting model choice from list
         model_choice = self.combo.currentIndex() + 1
@@ -267,6 +272,10 @@ class PharmaWidget(QtGui.QWidget):
             vp1vol = np.reshape(vp1, (self.ivm.img_dims[:-1]))
             kep1vol = np.reshape(kep1, (self.ivm.img_dims[:-1]))
             estimated1vol = np.reshape(estimated_curve1, self.ivm.img_dims)
+
+            #thresholding according to upper limit
+            Ktrans1vol[Ktrans1vol > self.thresh1val] = self.thresh1val
+            kep1vol[kep1vol > self.thresh1val] = self.thresh1val
 
             # Pass overlay maps to the volume management
             self.ivm.set_overlay(choice1='Ktrans', ovreg=Ktrans1vol)
