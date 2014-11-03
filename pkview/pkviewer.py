@@ -683,21 +683,6 @@ class MainWin1(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            if os.path.exists(fname):
-                # Checking if data already exists
-                msgBox = QtGui.QMessageBox()
-                msgBox.setText("File already exists")
-                msgBox.setInformativeText("Do you want to replace this volume?")
-                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
-
-                ret = msgBox.exec_()
-
-                if ret == QtGui.QMessageBox.Ok:
-                    print("Clearing data")
-                else:
-                    return
-
             #self.default_directory = self.get_dir(fname)
             self.mw1.ivm.save_ovreg(fname, 'current')
         else:

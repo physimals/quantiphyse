@@ -90,9 +90,10 @@ class RandomWalkerWidget(QtGui.QWidget):
             annot1[0, ii] = 0
 
         if len(self.ivm.image.shape) > 3:
+            # Use voxel size correctly
             voxels = [self.ivm.voxel_size[0] / self.ivm.voxel_size[0],
-                      self.ivm.voxel_size[1] / self.ivm.voxel_size[0],
-                      self.ivm.voxel_size[2] / self.ivm.voxel_size[0]]
+                      self.ivm.voxel_size[0] / self.ivm.voxel_size[1],
+                      self.ivm.voxel_size[0] / self.ivm.voxel_size[2]]
 
             #reducing to pca modes
             print("Running PCA")
