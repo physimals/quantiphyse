@@ -13,9 +13,10 @@ if __name__ == '__main__':
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
+    parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     args = parser.parse_args()
 
 
     app = QtGui.QApplication(sys.argv)
-    ex = MainWin1(args.image, args.roi, args.overlay)
+    ex = MainWin1(args.image, args.roi, args.overlay, args.overlaytype)
     sys.exit(app.exec_())

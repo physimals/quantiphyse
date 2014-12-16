@@ -362,7 +362,7 @@ class MainWin1(QtGui.QMainWindow):
     Only purpose is to put the menu, menu bar etc decorations around the main window
     Also initialises the open file menus
     """
-    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None):
+    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
         super(MainWin1, self).__init__()
 
         # Patch for if file is frozen
@@ -388,6 +388,7 @@ class MainWin1(QtGui.QMainWindow):
         self.image_dir_in = image_dir_in
         self.roi_dir_in = roi_dir_in
         self.overlay_dir_in = overlay_dir_in
+        self.overlay_type_in = overlay_type_in
 
 
 
@@ -698,7 +699,7 @@ class MainWin1(QtGui.QMainWindow):
         if self.roi_dir_in is not None:
             self.show_roi_load_dialog(fname=self.roi_dir_in)
         if self.overlay_dir_in is not None:
-            self.show_ovreg_load_dialog(fname=self.overlay_dir_in)
+            self.show_ovregsel_load_dialog(fname=self.overlay_dir_in, ftype=self.overlay_type_in)
 
     @staticmethod
     def get_dir(str1):

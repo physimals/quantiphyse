@@ -16,4 +16,4 @@ echo $DIRECTORY1
 echo $DIRECTORY2
 
 #load itk-snap images
-python PkView2.py --image $DIRECTORY1/dceMRI.nii --roi $DIRECTORY1/ROImind2.nii --overlay $DIRECTORY2/$MAP.nii &
+python pkviewer2.py --image $DIRECTORY1/dceMRI.nii --roi $DIRECTORY1/ROImind.nii --overlay $DIRECTORY2/$MAP.nii &
