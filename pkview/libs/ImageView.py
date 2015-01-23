@@ -613,7 +613,13 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Convert to numpy double
         self.ovreg = np.array(self.ovreg, dtype=np.double)
 
-        if (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
+        if self.ivm.ovreg_dims == 4:
+
+            print('RGB or RGBa array')
+            #TODO currently a place holder
+            self.ov_range = [0, 1]
+
+        elif (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
 
             #Scale ROI
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
@@ -641,23 +647,33 @@ class ImageViewColorOverlay(ImageViewOverlay):
             return
 
         if (self.ivm.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
+
             self.imgwin1c.setImage(np.zeros((1, 1)))
             self.imgwin2c.setImage(np.zeros((1, 1)))
             self.imgwin3c.setImage(np.zeros((1, 1)))
+
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
+
+        elif self.ivm.ovreg_dims == 4:
+            #RGB or RGBA image
+
+            self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2], :])
+            self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :, :])
+            self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :, :])
+
         else:
+
             self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], lut=self.ovreg_lut)
             self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], lut=self.ovreg_lut)
             self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], lut=self.ovreg_lut)
 
-            #print('hi')
-            #self.ovreg[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2]] = 2
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
 
-        self.imgwin1c.setLevels(self.ov_range)
-        self.imgwin2c.setLevels(self.ov_range)
-        self.imgwin3c.setLevels(self.ov_range)
-
-        print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
-
+        #print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
 
     #Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
