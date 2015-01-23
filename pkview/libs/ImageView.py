@@ -169,8 +169,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (mspt0 < ishp[0]) and (mspt1 < ishp[1]):
-                self.ivm.cim_pos[0] = mspt0
-                self.ivm.cim_pos[1] = mspt1
+                self.ivm.cim_pos[0] = round(mspt0)
+                self.ivm.cim_pos[1] = round(mspt1)
             else:
                 warnings.warn('Out of bounds')
 
@@ -181,8 +181,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (mspt0 < ishp[0]) and (mspt1 < ishp[2]):
-                self.ivm.cim_pos[0] = mspt0
-                self.ivm.cim_pos[2] = mspt1
+                self.ivm.cim_pos[0] = round(mspt0)
+                self.ivm.cim_pos[2] = round(mspt1)
             else:
                 warnings.warn('Out of bounds')
 
@@ -193,8 +193,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (mspt0 < ishp[1]) and (mspt1 < ishp[2]):
-                self.ivm.cim_pos[1] = mspt0
-                self.ivm.cim_pos[2] = mspt1
+                self.ivm.cim_pos[1] = round(mspt0)
+                self.ivm.cim_pos[2] = round(mspt1)
             else:
                 warnings.warn('Out of bounds')
 
@@ -225,6 +225,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
 
         if len(self.ivm.img_dims) == 3:
+
             self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2]])
             self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :])
             self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :])
@@ -234,7 +235,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]])
             self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]])
             self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]])
+
         else:
+
             print("Image does not have 3 or 4 dimensions")
 
         self.__update_crosshairs()
@@ -587,14 +590,17 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.axcol = pg.AxisItem('right')
             self.l2.addItem(self.axcol)
 
-        self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
+        if len(self.ivm.ovreg_dims) < 4:
+            self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
+
         self.view4.setXRange(0, 100, padding=0)
         self.view4.setYRange(0, 1000, padding=0)
         self.axcol.setRange(self.ov_range[0], self.ov_range[1])
 
-        self.imgwin1c.setLevels(self.ov_range)
-        self.imgwin2c.setLevels(self.ov_range)
-        self.imgwin3c.setLevels(self.ov_range)
+        if len(self.ivm.ovreg_dims) < 4:
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
 
         self._update_view()
 
@@ -656,12 +662,12 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin2c.setLevels(self.ov_range)
             self.imgwin3c.setLevels(self.ov_range)
 
-        elif self.ivm.ovreg_dims == 4:
+        elif len(self.ivm.ovreg_dims) == 4:
             #RGB or RGBA image
 
-            self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2], :])
-            self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :, :])
-            self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :, :])
+            self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]))
+            self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]))
+            self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]))
 
         else:
 
@@ -711,14 +717,20 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Set the transparency
         """
 
-        # Changing colormap
-        self.ovreg_lut[:, 3] = state
-        self.ovreg_lut[0, 3] = 0
+        if self.ivm.ovreg_dims < 4:
 
-        self.imgwin1c.setLookupTable(self.ovreg_lut)
-        self.imgwin2c.setLookupTable(self.ovreg_lut)
-        self.imgwin3c.setLookupTable(self.ovreg_lut)
-        self.imgcolbar1.setLookupTable(self.ovreg_lut)
+            # Changing colormap
+            self.ovreg_lut[:, 3] = state
+            self.ovreg_lut[0, 3] = 0
+
+            self.imgwin1c.setLookupTable(self.ovreg_lut)
+            self.imgwin2c.setLookupTable(self.ovreg_lut)
+            self.imgwin3c.setLookupTable(self.ovreg_lut)
+            self.imgcolbar1.setLookupTable(self.ovreg_lut)
+
+        else:
+
+            print("Can't set transparency because RGB")
 
     @QtCore.Slot()
     def set_overlay_range(self, state):
@@ -741,19 +753,25 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Choose a colormap for the overlay
         """
-        #TODO change the functionality to use the builtin HistogramLUTItem colormaps
-        # Subclass HistogramLUTITtem to signal changes in the colormap etc
 
-        self.options['ColorMap'] = text
+        if len(self.ivm.ovreg_dims) < 4:
 
-        # update colormap
-        self.set_default_colormap_matplotlib()
+            #TODO change the functionality to use the builtin HistogramLUTItem colormaps
+            # Subclass HistogramLUTITtem to signal changes in the colormap etc
 
-        # set colormap
-        self.imgwin1c.setLookupTable(self.ovreg_lut)
-        self.imgwin2c.setLookupTable(self.ovreg_lut)
-        self.imgwin3c.setLookupTable(self.ovreg_lut)
-        self.imgcolbar1.setLookupTable(self.ovreg_lut)
+            self.options['ColorMap'] = text
+
+            # update colormap
+            self.set_default_colormap_matplotlib()
+
+            # set colormap
+            self.imgwin1c.setLookupTable(self.ovreg_lut)
+            self.imgwin2c.setLookupTable(self.ovreg_lut)
+            self.imgwin3c.setLookupTable(self.ovreg_lut)
+            self.imgcolbar1.setLookupTable(self.ovreg_lut)
+
+        else:
+            print("Can't set colormap because RGB")
 
     def set_default_colormap_matplotlib(self):
 

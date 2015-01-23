@@ -72,7 +72,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.estimated = None
 
         # Current position of the cross hair
-        self.cim_pos = [0, 0, 0, 0]
+        self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         # Current color map
         self.cmap = None
@@ -165,9 +165,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         """
 
-        if (ovreg.shape != self.img_dims[:3]) or (len(ovreg.shape) > 3):
+        if (ovreg.shape[:3] != self.img_dims[:3]) or (len(ovreg.shape) > 4):
             print("First 3 Dimensions of the overlay region must be the same as the image, "
-                  "and overlay region must be 3D")
+                  "and overlay region must be 3D (or 4D for RGBa images)")
             return
 
         if choice1 not in self.overlay_label_all:
