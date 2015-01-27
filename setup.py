@@ -8,7 +8,7 @@
 #installing on the system
 python setup.py install
 then run
-pkviewer.py from the terminal
+pkviewer2 from the terminal
 
 # creating a deb file. Doesn't work yet with images
 python setup.py --command-packages=stdeb.command bdist_deb
@@ -52,7 +52,7 @@ setup(name='PKView',
       url='www.birving.com',
       packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.annotation', 'pkview.libs',
                 'pkview.analysis.pkmodel_cpp', 'pkview.icons'],
-      include_package_data = True,
+      include_package_data=True,
       data_files=[('pkview/icons/', ['pkview/icons/picture.png',
                                        'pkview/icons/pencil.png',
                                        'pkview/icons/clear.png',
@@ -65,6 +65,5 @@ setup(name='PKView',
       install_requires=['scikit-image', 'scikit-learn', 'numpy', 'scipy', 'pyqtgraph'],
       classifiers=["Programming Language :: Python :: 2.7"],
       ext_modules=cythonize([extensions], language="c++"),
-      scripts=["pkviewer2.py"]
-)
+      scripts=["pkviewer2"])
 

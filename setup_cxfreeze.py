@@ -22,7 +22,7 @@ import sys
 base = 'Win32GUI' if sys.platform == 'win32' else None
 
 executables = [
-    Executable('pkviewer2.py', base=base)
+    Executable('pkviewer2', base=base)
 ]
 
 setup(name='PKView',
