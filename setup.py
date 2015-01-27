@@ -5,6 +5,12 @@
 # To build cython libraries
 # Use: python setup.py build_ext --inplace
 
+#remove existing installation
+pip uninstall PKView
+
+#Gemfury repository
+sudo pip install PKView --extra-index-url https://pypi.fury.io/CgC8MN8cE6hedVSt5EmK/benjaminirving/
+
 #installing on the system
 python setup.py install
 then run
@@ -44,7 +50,7 @@ extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.14',
+      version='0.141',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
