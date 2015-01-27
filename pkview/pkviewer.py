@@ -401,7 +401,7 @@ class MainWin1(QtGui.QMainWindow):
     def init_ui(self):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
-        self.setWindowTitle("PkViewer 0.13 - Benjamin Irving")
+        self.setWindowTitle("PkViewer 0.14 - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
 
         self.menu_ui()

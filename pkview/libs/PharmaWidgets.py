@@ -401,6 +401,11 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
+        # input temporal resolution
+        self.text2 = QtGui.QLineEdit('5', self)
+        self.text2.returnPressed.connect(self.replot_graph)
+
+
         self.tabmod1 = QtGui.QStandardItemModel()
 
         self.tab1 = QtGui.QTableView()
@@ -410,11 +415,17 @@ class PharmaView(QtGui.QWidget):
 
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
-        l02.addWidget(self.text1)
         l02.addStretch(1)
+        l02.addWidget(self.text1)
+
+        l03 = QtGui.QHBoxLayout()
+        l03.addWidget(QtGui.QLabel("Normalise Frames"))
+        l03.addStretch(1)
+        l03.addWidget(self.text2)
 
         l04 = QtGui.QVBoxLayout()
         l04.addLayout(l02)
+        l04.addLayout(l03)
         l04.addWidget(self.cb3)
 
         g01 = QGroupBoxB()
@@ -480,8 +491,10 @@ class PharmaView(QtGui.QWidget):
         xres = float(self.text1.text())
         xx = xres * np.arange(len(values1))
 
+        frames1 = int(self.text2.text())
+
         if self.cb3.isChecked() is True:
-            m1 = np.mean(values1[:3])
+            m1 = np.mean(values1[:frames1])
             values1 = values1 / m1 - 1
 
         # Plotting using single or multiple plots
