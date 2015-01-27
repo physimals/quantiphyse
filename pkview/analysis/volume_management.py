@@ -28,15 +28,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     sig_all_overlays = QtCore.Signal(list)
 
     def __init__(self):
-        super(ImageVolumeManagement, self).__init__()
 
-        self.init()
-
-    def init(self):
         """
         Initilises all the volumes.
         Allows reinitialisation when loading a new image.
         """
+
+        super(ImageVolumeManagement, self).__init__()
+
         # Main background image
         self.image_file1 = None
         self.image = np.zeros((1, 1, 1))
@@ -277,7 +276,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def save_ovreg(self, file1, type1):
         """
+
         Save an overlay as a nifti file
+
         """
 
         if type1 == 'current':
