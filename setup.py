@@ -5,6 +5,11 @@
 # To build cython libraries
 # Use: python setup.py build_ext --inplace
 
+
+# Build distribution
+python setup.py sdist
+python setup.py bdist_wheel
+
 #remove existing installation
 pip uninstall PKView
 
@@ -18,6 +23,14 @@ pkviewer2 from the terminal
 
 # creating a deb file. Doesn't work yet with images
 python setup.py --command-packages=stdeb.command bdist_deb
+
+Note:
+# Build a directory of wheels for pyramid and all its dependencies
+pip wheel --wheel-dir=/tmp/wheelhouse pyramid
+# Install from cached wheels
+pip install --use-wheel --no-index --find-links=/tmp/wheelhouse pyramid
+# Install from cached wheels remotely
+pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ pyramid
 
 
 """
@@ -50,7 +63,7 @@ extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.141',
+      version='0.142',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
@@ -68,7 +81,8 @@ setup(name='PKView',
                                        'pkview/icons/flag.png',
                                        'pkview/icons/voxel.png'])],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
-      install_requires=['scikit-image', 'scikit-learn', 'numpy', 'scipy', 'pyqtgraph', 'nrrd', 'Cython'],
+      install_requires=['six', 'numpy', 'scipy', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
+                        'pynrrd', 'Cython', 'matplotlib'],
       classifiers=["Programming Language :: Python :: 2.7",
                    "Development Status:: 3 - Alpha",
                    'Programming Language :: Python',

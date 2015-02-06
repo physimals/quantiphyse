@@ -28,14 +28,15 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     sig_all_overlays = QtCore.Signal(list)
 
     def __init__(self):
-
-        """
-        Initilises all the volumes.
-        Allows reinitialisation when loading a new image.
-        """
-
         super(ImageVolumeManagement, self).__init__()
 
+        self.init()
+
+    def init(self):
+        """
+        Initilises all the volumes.
+        *** NB Allows reinitialisation when loading a new image ***
+        """
         # Main background image
         self.image_file1 = None
         self.image = np.zeros((1, 1, 1))

@@ -68,6 +68,7 @@ private:
 public:
 
     // Constructor
+    // Missing a std:: in declaration
     Pkrun2(std::vector<double> & t1, vector< std::vector<double> > & y1, std::vector<double> & T101in);
 
     // Destructor

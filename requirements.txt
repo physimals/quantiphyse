@@ -1,7 +1,8 @@
+six
+pynrrd
 numpy
 scipy
 nibabel
 matplotlib
 PySide
-nrrd
 Cython

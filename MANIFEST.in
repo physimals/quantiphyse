@@ -1,3 +1,1 @@
-
-recursive-include pkview *.py *.ui *.m README *.txt *.png
-global-exclude *.cpp
+recursive-include pkview *.py *.ui *.m README *.txt *.png *.cpp *.h
