@@ -2,5 +2,6 @@
 
 data/
 deb_dist/
+dist/
 build/
 *~

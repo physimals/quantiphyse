@@ -1,8 +1,5 @@
 six
 pynrrd
-numpy
-scipy
 nibabel
 matplotlib
-PySide
 Cython
