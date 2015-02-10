@@ -155,7 +155,7 @@ class MainWidge1(QtGui.QWidget):
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
         self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.update_slider_range()
+        #self.update_slider_range()
 
         #connect sliders to ivl1
         self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
@@ -401,7 +401,7 @@ class MainWin1(QtGui.QMainWindow):
     def init_ui(self):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
-        self.setWindowTitle("PkViewer 0.141 - Benjamin Irving")
+        self.setWindowTitle("PkViewer - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
 
         self.menu_ui()

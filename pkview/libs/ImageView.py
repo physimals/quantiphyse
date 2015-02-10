@@ -160,7 +160,11 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
         Capture positions of the 3 views on mouse press and update cim_pos
         """
+
         ishp = self.ivm.get_image_shape()
+
+        if ishp is None:
+            return
 
         # Check if in View1
         if self.view1.sceneBoundingRect().contains(self.lastMousePos):
@@ -168,7 +172,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mouse_point = self.imgwin1.mapFromScene(self.lastMousePos)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
-            if (mspt0 < ishp[0]) and (mspt1 < ishp[1]):
+            if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[1]):
                 self.ivm.cim_pos[0] = round(mspt0)
                 self.ivm.cim_pos[1] = round(mspt1)
             else:
@@ -180,7 +184,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mouse_point = self.imgwin2.mapFromScene(self.lastMousePos)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
-            if (mspt0 < ishp[0]) and (mspt1 < ishp[2]):
+            if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[2]):
                 self.ivm.cim_pos[0] = round(mspt0)
                 self.ivm.cim_pos[2] = round(mspt1)
             else:
@@ -192,7 +196,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             mouse_point = self.imgwin3.mapFromScene(self.lastMousePos)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
-            if (mspt0 < ishp[1]) and (mspt1 < ishp[2]):
+            if (round(mspt0) < ishp[1]) and (round(mspt1) < ishp[2]):
                 self.ivm.cim_pos[1] = round(mspt0)
                 self.ivm.cim_pos[2] = round(mspt1)
             else:
@@ -223,6 +227,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
         Update the image viewer to account for the new position
         """
+        if self.ivm.image is None:
+            return
 
         if len(self.ivm.img_dims) == 3:
 
@@ -343,6 +349,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         2) update the view
         3) emit signal of current position data
         """
+
+        if self.ivm.image is None:
+            return
+
         self._mouse_pos()
         self._update_view()
 
@@ -754,24 +764,23 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Choose a colormap for the overlay
         """
 
-        if len(self.ivm.ovreg_dims) < 4:
+        #TODO change the functionality to use the builtin HistogramLUTItem colormaps
+        # Subclass HistogramLUTIT tem to signal changes in the colormap etc
 
-            #TODO change the functionality to use the builtin HistogramLUTItem colormaps
-            # Subclass HistogramLUTITtem to signal changes in the colormap etc
+        self.options['ColorMap'] = text
 
-            self.options['ColorMap'] = text
+        # update colormap
+        self.set_default_colormap_matplotlib()
 
-            # update colormap
-            self.set_default_colormap_matplotlib()
-
-            # set colormap
-            self.imgwin1c.setLookupTable(self.ovreg_lut)
-            self.imgwin2c.setLookupTable(self.ovreg_lut)
-            self.imgwin3c.setLookupTable(self.ovreg_lut)
-            self.imgcolbar1.setLookupTable(self.ovreg_lut)
+        if self.ivm.image is not None and len(self.ivm.ovreg_dims) < 4:
+                # set colormap
+                self.imgwin1c.setLookupTable(self.ovreg_lut)
+                self.imgwin2c.setLookupTable(self.ovreg_lut)
+                self.imgwin3c.setLookupTable(self.ovreg_lut)
+                self.imgcolbar1.setLookupTable(self.ovreg_lut)
 
         else:
-            print("Can't set colormap because RGB")
+            print("Can't update colormap on image because RGB or not loaded")
 
     def set_default_colormap_matplotlib(self):
 

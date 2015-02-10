@@ -1,0 +1,13 @@
+pkview (0.15.0) precise; urgency=low
+
+  * fixes to try and always catch any user facing option
+
+ -- benjamin <engs1170@ENGS-20971>  Tue, 10 Feb 2015 16:38:04 +0000
+
+pkview (0.14.3) unstable; urgency=medium
+
+  * First debian package
+  * Number of fixes
+  * RGB visualisation
+
+ -- benjamin <benjamin@bob>  Sat, 07 Feb 2015 19:30:45 +0000

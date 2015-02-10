@@ -39,9 +39,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         # Main background image
         self.image_file1 = None
-        self.image = np.zeros((1, 1, 1))
+        self.image = None #np.zeros((1, 1, 1))
         # Current image position and size
-        self.img_dims = self.image.shape
+        self.img_dims = None #self.image.shape
         #Voxel size initialisation
         self.voxel_size = [1.0, 1.0, 1.0]
         # Range of image
@@ -94,7 +94,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             return None
 
     def get_image_shape(self):
-        return self.image.shape
+        if self.image is None:
+            return None
+        else:
+            return self.image.shape
 
     def get_current_enhancement(self):
         """

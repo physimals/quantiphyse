@@ -3,3 +3,11 @@ pynrrd
 nibabel
 matplotlib
 Cython
+pyqtgraph
+scikit-learn
+scikit-image
+pyparsing
+mock
+nose
+python-dateutil
+pytz

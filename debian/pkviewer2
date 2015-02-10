@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/share/python/pkview/bin/python /usr/share/python/pkview/bin/pkviewer2

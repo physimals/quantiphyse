@@ -436,6 +436,15 @@ class ColorOverlay1(QtGui.QWidget):
         (temporary location before moving analysis into a separate framework)
         """
 
+        # Check that pkmodelling can be run
+        if self.ivm.get_roi() is None:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("Histogram")
+            m1.setText("Histogram requires a ROI")
+            m1.exec_()
+            return
+
+
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
