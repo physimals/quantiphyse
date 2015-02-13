@@ -723,11 +723,12 @@ class ImageViewColorOverlay(ImageViewOverlay):
     #Slot to change overlay transparency
     @QtCore.Slot(int)
     def set_overlay_alpha(self, state):
+
         """
         Set the transparency
         """
 
-        if self.ivm.ovreg_dims < 4:
+        if len(self.ivm.ovreg_dims) < 4:
 
             # Changing colormap
             self.ovreg_lut[:, 3] = state
