@@ -740,7 +740,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgcolbar1.setLookupTable(self.ovreg_lut)
 
         else:
-
             print("Can't set transparency because RGB")
 
     @QtCore.Slot()
