@@ -14,7 +14,7 @@ class ImageExportWidget(QtGui.QWidget):
         super(ImageExportWidget, self).__init__()
 
         #Clear curves button
-        b1 = QtGui.QPushButton('Generate images', self)
+        b1 = QtGui.QPushButton('Generate temporal animation', self)
         b1.clicked.connect(self.run_time_window_capture)
 
         l1 = QtGui.QVBoxLayout()
@@ -39,9 +39,12 @@ class ImageExportWidget(QtGui.QWidget):
 
         if imshape is None:
             warnings.warn('Image is not loaded')
+            return
 
         # Choose a folder to save images
         fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
+        if fname == '':
+            return
 
         for ii in range(imshape[-1]):
             print("Frame number:", ii)
