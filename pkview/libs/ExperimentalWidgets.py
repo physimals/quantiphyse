@@ -44,13 +44,9 @@ class ImageExportWidget(QtGui.QWidget):
         fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
 
         for ii in range(imshape[-1]):
-            print(ii)
-
+            print("Frame number:", ii)
             self.sig_set_temp.emit(ii)
-
-            #TODO Allow manual choice of a save directory
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
-            print('Warning: Currently exporting to a preset directory in the code.')
             self.sig_cap_image.emit(1, output_name)
 
 
