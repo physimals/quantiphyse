@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 from PySide import QtCore, QtGui
 from pkview.QtInherit.QtSubclass import QGroupBoxB
+import warnings
 
 
 class ImageExportWidget(QtGui.QWidget):
@@ -36,13 +37,19 @@ class ImageExportWidget(QtGui.QWidget):
         """
         imshape = self.ivm.get_image_shape()
 
+        if imshape is None:
+            warnings.warn('Image is not loaded')
+
+        # Choose a folder to save images
+        fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
+
         for ii in range(imshape[-1]):
             print(ii)
 
             self.sig_set_temp.emit(ii)
 
             #TODO Allow manual choice of a save directory
-            output_name = '/local/engs1170/Test_image/' + str(ii).zfill(3) + '.png'
+            output_name = fname + '/' + str(ii).zfill(3) + '.png'
             print('Warning: Currently exporting to a preset directory in the code.')
             self.sig_cap_image.emit(1, output_name)
 
