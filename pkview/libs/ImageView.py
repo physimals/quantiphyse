@@ -323,21 +323,41 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     # Slots for sliders and mouse
     @QtCore.Slot(int)
     def slider_connect1(self, value):
+
+        if self.ivm.cim_pos[2] == value:
+            # don't do any updating if the values are the same
+            return
+
         self.ivm.cim_pos[2] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect2(self, value):
+
+        if self.ivm.cim_pos[1] == value:
+            # don't do any updating if the values are the same
+            return
+
         self.ivm.cim_pos[1] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect3(self, value):
+
+        if self.ivm.cim_pos[0] == value:
+            # don't do any updating if the values are the same
+            return
+
         self.ivm.cim_pos[0] = value
         self._update_view()
 
     @QtCore.Slot(int)
     def slider_connect4(self, value):
+
+        if self.ivm.cim_pos[3] == value:
+            # don't do any updating if the values are the same
+            return
+
         self.ivm.cim_pos[3] = value
         self._update_view()
 
