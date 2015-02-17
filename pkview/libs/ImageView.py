@@ -202,6 +202,14 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             else:
                 warnings.warn('Out of bounds')
 
+        #self.ivm.cim_pos[self.ivm.cim_pos > ishp] = ishp[self.ivm.cim_pos > ishp]
+
+        # stops it going below zeros
+        self.ivm.cim_pos[0] *= (self.ivm.cim_pos[0] > 0)
+        self.ivm.cim_pos[1] *= (self.ivm.cim_pos[1] > 0)
+        self.ivm.cim_pos[2] *= (self.ivm.cim_pos[2] > 0)
+
+
     def __update_crosshairs(self):
         """
         update cross hair positions based on cim_pos
@@ -249,10 +257,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.__update_crosshairs()
 
         if not self.options['view_thresh']:
-            # self.imgwin1.setLevels(self.ivm.img_range)
-            # self.imgwin2.setLevels(self.ivm.img_range)
-            # self.imgwin3.setLevels(self.ivm.img_range)
-
             self.ivm.img_range = self.h1.getLevels()
             self.imgwin1.setLevels(self.ivm.img_range)
             self.imgwin2.setLevels(self.ivm.img_range)
@@ -273,6 +277,13 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
         Stepping through the axis when the scroll wheel is triggered
         """
+
+        if self.ivm.cim_pos[0]+value >= self.ivm.img_dims[0]:
+            return
+
+        if self.ivm.cim_pos[0]+value < 0:
+            return
+
         self.ivm.cim_pos[0] += value
         self._update_view()
         # signal that the mouse is scrolling
@@ -283,6 +294,12 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
         Stepping through the axis when the scroll wheel is triggered
         """
+        if self.ivm.cim_pos[1]+value >= self.ivm.img_dims[1]:
+            return
+
+        if self.ivm.cim_pos[1]+value < 0:
+            return
+
         self.ivm.cim_pos[1] += value
         self._update_view()
         # signal that the mouse is scrolling
@@ -293,6 +310,13 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         """
         Stepping through the axis when the scroll wheel is triggered
         """
+
+        if self.ivm.cim_pos[2]+value >= self.ivm.img_dims[2]:
+            return
+
+        if self.ivm.cim_pos[2]+value < 0:
+            return
+
         self.ivm.cim_pos[2] += value
         self._update_view()
         # signal that the mouse is scrolling

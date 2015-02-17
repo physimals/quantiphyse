@@ -71,7 +71,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         #Estimated volume from pk modelling
         self.estimated = None
 
-        # Current position of the cross hair
+        # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         # Current color map
