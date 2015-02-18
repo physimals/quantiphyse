@@ -1,16 +1,16 @@
-pkview (0.15.1) precise; urgency=low
+pkview (v0.15.1) precise; urgency=low
 
   * Bug fixes to force user to stay within the image bounds
 
- -- benjamin <engs1170@ENGS-20971>  Wed, 18 Feb 2015 11:00:00 +0000
+ -- benjamin <engs1170@ENGS-20971>  Wed, 18 Feb 2015 11:17:02 +0000
 
-pkview (0.15.0) precise; urgency=low
+pkview (v0.15.0) precise; urgency=low
 
   * fixes to try and always catch any user facing option
 
  -- benjamin <engs1170@ENGS-20971>  Tue, 10 Feb 2015 16:38:04 +0000
 
-pkview (0.14.3) unstable; urgency=medium
+pkview (v0.14.3) unstable; urgency=medium
 
   * First debian package
   * Number of fixes
