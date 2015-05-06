@@ -1,3 +1,10 @@
+"""
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
+"""
+
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 from PySide import QtCore, QtGui

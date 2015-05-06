@@ -1,3 +1,10 @@
+"""
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
+"""
+
 from __future__ import print_function, division
 
 from PySide import QtCore, QtGui

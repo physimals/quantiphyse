@@ -1,3 +1,10 @@
+"""
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
+"""
+
 # Cython interface file for wrapping the object
 
 import numpy as np

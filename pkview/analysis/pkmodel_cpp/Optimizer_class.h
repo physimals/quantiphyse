@@ -1,3 +1,11 @@
+/*
+
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
+*/
+
 #ifndef OPTMIZER_CLASS_H
 #define OPTIMIZER_CLASS_H
 

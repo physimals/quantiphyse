@@ -1,9 +1,12 @@
-#!/usr/bin/env python
-from __future__ import division, unicode_literals, print_function
+"""
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 """
-Benjamin Irving
-"""
+
+#!/usr/bin/env python
+from __future__ import division, unicode_literals, print_function
 
 #import matplotlib
 #matplotlib.use('Qt4Agg')

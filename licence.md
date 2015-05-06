@@ -6,6 +6,10 @@ Main licence
 The correct form of licencing is still being decided. This software should currently be treated as "in house" experimental software and permission is 
 required from the author for any redistribution of the source code, software or binary. 
 
+Contributers:
+
+Benjamin Irving (benjamin.irving@eng.ox.ac.uk)
+
 
 # Included libraries
 

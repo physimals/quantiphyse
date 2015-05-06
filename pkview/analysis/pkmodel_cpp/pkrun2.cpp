@@ -2,7 +2,9 @@
 
 Main class and interface for running the Pk modelling
 
-Benjamin Irving
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 */
 

@@ -1,5 +1,8 @@
 """
 
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
 Library for simple analysis of the overlay parameters
 
 Benjamin Irving

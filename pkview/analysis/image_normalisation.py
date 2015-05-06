@@ -1,5 +1,9 @@
-
 """
+
+Author: Benjamin Irving (benjamin.irv@gmail.com)
+Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+
+
 Module for normalising the image prior to features extraction
 """
 from __future__ import division, print_function
