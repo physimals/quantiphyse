@@ -22,7 +22,6 @@ Python 2.7
 
 ### Overview
 
-
 ### Installation
 
 1) Install dependencies
@@ -52,5 +51,6 @@ See:
 https://github.com/benjaminirving/PkView_help_files
 for usage
 
+Note that this software is currently tested and built in a virtualenv to use the latest dependencies and may not work with older python libraries
 
 
