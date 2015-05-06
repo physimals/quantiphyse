@@ -25,9 +25,16 @@ Python 2.7
 
 ### Installation
 
+1) Install dependencies
 ```bash
 sudo apt-get install numpy scipy build-essentials pip
+```
 
+2) Install required python libraries
+
+3) Build c++/Cython code
+```bash
+python setup.py build_ext --inplace
 ```
 
 ### Usage
