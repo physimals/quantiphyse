@@ -33,12 +33,12 @@ sudo apt-get install numpy scipy build-essentials pip
 ### Usage
 
 ``` bash
-python PkView2.py
+python pkviewer2.py
 ```
 or
 
 ``` bash
-./PkView2.py
+./pkviewer2
 ```
 
 See:
