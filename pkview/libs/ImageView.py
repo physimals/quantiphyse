@@ -79,6 +79,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         # Automatically adjust threshold for each view
         # If false then use the same threshold for the entire volume
         self.options['view_thresh'] = False
+        self.options['show_crosshairs'] = False
 
         #empty array for arrows
         self.pts1 = []
@@ -94,7 +95,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
 
-        #Cross hairs added to each viewbox
         # Adding a histogram LUT
         self.h1 = pg.HistogramLUTItem(fillHistogram=False)
         self.addItem(self.h1, row=1, col=4)
@@ -216,7 +216,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.ivm.cim_pos[1] *= (self.ivm.cim_pos[1] > 0)
         self.ivm.cim_pos[2] *= (self.ivm.cim_pos[2] > 0)
 
-
     def __update_crosshairs(self):
         """
         update cross hair positions based on cim_pos
@@ -225,18 +224,29 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         self.vline1.setPos(self.ivm.cim_pos[0])
         self.hline1.setPos(self.ivm.cim_pos[1])
-        self.vline1.setVisible(True)
-        self.hline1.setVisible(True)
+
         #
         self.vline2.setPos(self.ivm.cim_pos[0])
         self.hline2.setPos(self.ivm.cim_pos[2])
-        self.vline2.setVisible(True)
-        self.hline2.setVisible(True)
+
         #
         self.vline3.setPos(self.ivm.cim_pos[1])
         self.hline3.setPos(self.ivm.cim_pos[2])
-        self.vline3.setVisible(True)
-        self.hline3.setVisible(True)
+
+        if self.options["show_crosshairs"]:
+            self.vline1.setVisible(True)
+            self.hline1.setVisible(True)
+            self.vline2.setVisible(True)
+            self.hline2.setVisible(True)
+            self.vline3.setVisible(True)
+            self.hline3.setVisible(True)
+        else:
+            self.vline1.setVisible(False)
+            self.hline1.setVisible(False)
+            self.vline2.setVisible(False)
+            self.hline2.setVisible(False)
+            self.vline3.setVisible(False)
+            self.hline3.setVisible(False)
 
     def _update_view(self):
         """
@@ -393,7 +403,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self._update_view()
 
     @QtCore.Slot(int)
-    def mouse_click_connect(self, value):
+    def mouse_click_connect(self, event):
         """
         On mouse click:
         1) get the current position on the image,

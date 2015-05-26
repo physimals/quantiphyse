@@ -64,7 +64,10 @@ class QGroupBoxClick(QtGui.QGroupBox):
 
     # Mouse clicked on widget
     def mousePressEvent(self, event):
-        self.sig_click.emit(1)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sig_click.emit(1)
+        # elif event.button() == QtCore.Qt.RightButton:
+        #     self.sig_click.emit(2)
 
 
 class MainWidge1(QtGui.QWidget):
