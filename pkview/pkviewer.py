@@ -4,6 +4,7 @@ Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 Main script that initialises the widget
+and does lots of other stuffs
 """
 
 #!/usr/bin/env python
