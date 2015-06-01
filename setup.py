@@ -34,6 +34,7 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 
 
 """
+import numpy
 
 try:
     from setuptools import setup
@@ -58,7 +59,9 @@ extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
                                 'pkview/analysis/pkmodel_cpp/ToftsWeinOffsetVp.cpp',
                                 'pkview/analysis/pkmodel_cpp/lmlib/lmcurve.cpp',
                                 'pkview/analysis/pkmodel_cpp/lmlib/lmmin.cpp'],
-                       include_dirs=['pkview/analysis/pkmodel_cpp/lmlib/', 'pkview/analysis/pkmodel_cpp/'],
+                       include_dirs=['pkview/analysis/pkmodel_cpp/lmlib/',
+                                     'pkview/analysis/pkmodel_cpp/',
+                                     numpy.get_include()],
                        language="c++")
 # setup parameters
 setup(name='PKView',
