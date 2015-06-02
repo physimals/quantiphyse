@@ -3,7 +3,6 @@
 Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
-Adding more of an explanation
 """
 
 #!/usr/bin/env python
