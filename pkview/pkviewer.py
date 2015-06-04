@@ -48,10 +48,13 @@ class DragAction(QtGui.QAction):
     def dropEvent(self, e):
 
         #TODO currently just testing for the main image
-        self.mw1.ivm.load_image(e)
-        self.mw1.ivl1.load_image()
-        self.mw1.update_slider_range()
+
 """
+
+def get_dir(str1):
+    ind1 = str1.rfind('/')
+    dir1 = str1[:ind1]
+    return dir1
 
 
 class QGroupBoxClick(QtGui.QGroupBox):
@@ -146,10 +149,10 @@ class MainWidge1(QtGui.QWidget):
         #Connect reset from clustering widget
         self.sw_cc.sig_emit_reset.connect(self.ivl1.update_overlay)
 
-
         #Connecting widget signals
         #1) Plotting data on mouse image click
         self.ivl1.sig_mouse.connect(self.sw1.sig_mouse)
+        self.ivl1.sig_dropped.connect(self.drag_drop_dialog)
 
         # InitUI
         #Sliders
@@ -360,6 +363,52 @@ class MainWidge1(QtGui.QWidget):
         index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
         print(index)
         self.qtab1.setCurrentIndex(index)
+
+    @QtCore.Slot(str)
+    def drag_drop_dialog(self, fname):
+        """
+        Dialog for loading an overlay and specifying the type of overlay
+        @fname: allows a file name to be passed in automatically
+        """
+
+        ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+                                               ['DCE', 'ROI', 'loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+                                                'annotation'])
+        self.default_directory = get_dir(fname)
+
+        # Loading overlays
+        if ftype != 'DCE' and ftype != 'ROI':
+            self.ivm.load_ovreg(fname, ftype)
+            if ftype != 'estimation':
+                self.ivl1.load_ovreg()
+
+        # Loading main image
+        elif ftype == 'DCE':
+            if self.ivm.image_file1 is not None:
+
+                # Checking if data already exists
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("A volume has already been loaded")
+                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+
+                ret = msgBox.exec_()
+
+                if ret == QtGui.QMessageBox.Ok:
+                    print("Clearing data")
+                    self.ivm.init()
+                else:
+                    return
+
+            self.ivm.load_image(fname)
+            self.ivl1.load_image()
+            self.update_slider_range()
+
+        # Loading ROI
+        elif ftype == 'ROI':
+            self.ivm.load_roi(fname)
+            self.ivl1.load_roi()
 
 
 class MainWin1(QtGui.QMainWindow):
@@ -595,7 +644,7 @@ class MainWin1(QtGui.QMainWindow):
                 else:
                     return
 
-            self.default_directory = self.get_dir(fname)
+            self.default_directory = get_dir(fname)
             self.mw1.ivm.load_image(fname)
             self.mw1.ivl1.load_image()
             self.mw1.update_slider_range()
@@ -625,28 +674,11 @@ class MainWin1(QtGui.QMainWindow):
 
         #check if file is returned
         if fname != '':
-            self.default_directory = self.get_dir(fname)
+            self.default_directory = get_dir(fname)
             self.mw1.ivm.load_roi(fname)
             self.mw1.ivl1.load_roi()
         else:
             print('Warning: No file selected')
-
-    # def show_ovreg_load_dialog(self, fname=None):
-    #     """
-    #     Dialog for loading a file
-    #     @fname: allows a file name to be passed in automatically
-    #     """
-    #     if fname is None:
-    #         #Show file select widget
-    #         fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-    #
-    #     #check if file is returned
-    #     if fname != '':
-    #         self.default_directory = self.get_dir(fname)
-    #         self.mw1.ivm.load_ovreg(fname)
-    #         self.mw1.ivl1.load_ovreg()
-    #     else:
-    #         print('Warning: No file selected')
 
     def show_ovregsel_load_dialog(self, fname=None, ftype=None):
         """
@@ -666,7 +698,7 @@ class MainWin1(QtGui.QMainWindow):
                                                        ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
                                                         'annotation'])
 
-            self.default_directory = self.get_dir(fname)
+            self.default_directory = get_dir(fname)
             self.mw1.ivm.load_ovreg(fname, ftype)
             if ftype != 'estimated':
                 self.mw1.ivl1.load_ovreg()
@@ -688,14 +720,14 @@ class MainWin1(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            #self.default_directory = self.get_dir(fname)
+            #self.default_directory = get_dir(fname)
             self.mw1.ivm.save_ovreg(fname, 'current')
         else:
             print('Warning: No file selected')
 
     def auto_load_files(self):
         """
-        Check to see if any input directories have been passed for auto loading and loads those images
+        Check to see if any input directories have been passed from the terminal for auto loading and loads those images
         """
 
         if self.image_dir_in is not None:
@@ -705,11 +737,7 @@ class MainWin1(QtGui.QMainWindow):
         if self.overlay_dir_in is not None:
             self.show_ovregsel_load_dialog(fname=self.overlay_dir_in, ftype=self.overlay_type_in)
 
-    @staticmethod
-    def get_dir(str1):
-        ind1 = str1.rfind('/')
-        dir1 = str1[:ind1]
-        return dir1
+
 
 
 
