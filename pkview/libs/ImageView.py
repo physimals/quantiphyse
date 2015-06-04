@@ -150,6 +150,19 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin2.sig_mouse_wheel.connect(self.step_axis2)
         self.imgwin3.sig_mouse_wheel.connect(self.step_axis3)
 
+    def dragEnterEvent(self, e):
+        e.accept()
+        print(e)
+        None
+
+    def dragMoveEvent(self, e):
+        print(e)
+        None
+
+    def dropEvent(self, e):
+        e.accept()
+        print(e)
+
     def add_image_management(self, image_vol_management):
         """
         Adding image management

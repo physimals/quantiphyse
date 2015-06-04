@@ -396,8 +396,6 @@ class MainWin1(QtGui.QMainWindow):
         self.overlay_dir_in = overlay_dir_in
         self.overlay_type_in = overlay_type_in
 
-
-
         #initialise the whole UI
         self.init_ui()
 
