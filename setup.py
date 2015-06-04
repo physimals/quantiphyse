@@ -5,16 +5,13 @@
 # To build cython libraries
 # Use: python setup.py build_ext --inplace
 
-
 # Build distribution
 python setup.py sdist
+# Create a wheel
 python setup.py bdist_wheel
 
 #remove existing installation
 pip uninstall PKView
-
-#Gemfury repository
-sudo pip install PKView --extra-index-url https://pypi.fury.io/CgC8MN8cE6hedVSt5EmK/benjaminirving/
 
 #installing on the system
 python setup.py install

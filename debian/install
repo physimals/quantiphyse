@@ -1,1 +1,6 @@
+# install bash script to usr/bin
+# usr/local/bin seems to only be for self compiled stuff
 debian/pkviewer2 usr/bin
+# Copy application file and icon
+debian/PKView.desktop usr/share/applications
+debian/pkviewer2.png usr/share/icons/hicolor/48x48/apps

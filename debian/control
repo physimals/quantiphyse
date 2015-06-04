@@ -2,7 +2,7 @@ Source: pkview
 Section: python
 Priority: extra
 Maintainer: Benjamin Irving <stuff@birving.com>
-Build-Depends: debhelper (>= 9), python, dh-virtualenv (>= 0.8), libblas-dev, liblapack-dev, cmake, python-all-dev
+Build-Depends: debhelper (>= 9), python, dh-virtualenv (>= 0.8), libblas-dev, liblapack-dev, cmake, python-all-dev, libatlas-base-dev
 Standards-Version: 3.9.5
 
 Package: pkview
