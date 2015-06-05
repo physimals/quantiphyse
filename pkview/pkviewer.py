@@ -7,14 +7,9 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, print_function
 
-#import matplotlib
-#matplotlib.use('Qt4Agg')
-#matplotlib.rcParams['backend.qt4'] = 'PySide'
-
 import sys
 import os
 from PySide import QtCore, QtGui
-import argparse
 import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np

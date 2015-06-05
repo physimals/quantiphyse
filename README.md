@@ -21,7 +21,6 @@ Python 2.7
 - scikit-image
 - scikit-learn
 
-
 ### Overview
 
 ### Recommendation
@@ -59,4 +58,54 @@ for usage
 ### Notes
 - This software is currently tested and built in a virtualenv to use the latest dependencies and may not work with older python libraries
 
+##Advanced
+### 1) Setting up a virtualenv system
 
+```
+sudo apt-get install python-virtualenv     # Installing virtualenv library
+mkdir python-vm # make a directory to store the virtualenv
+cd ~/python-vm
+virtualenv pyvm # Create a vm named pyvm
+source ~/python-vm/pyvm/bin/activate #start the vim
+```
+
+Deactivating the vm
+
+```
+deactivate
+```
+
+Installing python libraries in the vm (make sure system libraries in 2) are installed)
+```
+pip install --upgrade pip
+pip install --upgrade setuptools
+pip install distribute
+pip install numpy
+pip install scipy
+pip install -r requirements.txt
+pip install PySide
+```
+
+### 2) System libraries required for pip install of dependencies in a virtualenv
+libffi-dev
+libssl-dev
+pip install requests[security]
+
+numpy / scitkit-learn / scipy
+gfortran
+libatlas-base-dev
+libblas-dev
+liblapack-dev
+python-all-dev
+
+matplotlib
+libfreetype6-dev
+libfreetype6
+libpng12-dev
+libpng12
+
+PySide
+qt4-qmake
+shiboken
+libshiboken-dev
+libqt4-dev
