@@ -24,6 +24,9 @@ Python 2.7
 
 ### Overview
 
+### Recommendation
+I recommend using a virtualenv with pip so that the latest libraries are used. 
+
 ### Installation
 
 1) Install dependencies
@@ -31,7 +34,7 @@ Python 2.7
 sudo apt-get install numpy scipy build-essentials pip
 ```
 
-2) Install required python libraries
+2) Install required python libraries using pip
 
 3) Build c++/Cython code
 ```bash
@@ -41,7 +44,7 @@ python setup.py build_ext --inplace
 ### Usage
 
 ``` bash
-python pkviewer2.py
+python pkviewer2
 ```
 or
 
