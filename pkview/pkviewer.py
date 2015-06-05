@@ -5,7 +5,6 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 """
 
-#!/usr/bin/env python
 from __future__ import division, unicode_literals, print_function
 
 #import matplotlib
@@ -30,28 +29,13 @@ from pkview.analysis.volume_management import ImageVolumeManagement
 from pkview.analysis.overlay_analysis import OverlayAnalyis
 from pkview.annotation.AnnotWidgets import RandomWalkerWidget
 
-"""
-class DragAction(QtGui.QAction):
-
-    def __init__(self, icon, text, parent):
-        super(DragAction, self).__init__(icon, text, parent)
-
-        self.setAcceptDrops(True)
-
-    def dragEnterEvent(self, e):
-
-        if e.mimData().hasFormat('text/plain'):
-            e.accept()
-        else:
-            e.ignore()
-
-    def dropEvent(self, e):
-
-        #TODO currently just testing for the main image
-
-"""
 
 def get_dir(str1):
+    """
+    Parse a file name to extract just the directory
+    :param str1:
+    :return:
+    """
     ind1 = str1.rfind('/')
     dir1 = str1[:ind1]
     return dir1
@@ -185,10 +169,12 @@ class MainWidge1(QtGui.QWidget):
         self.qtab1 = QtGui.QTabWidget()
         self.qtab1.setTabsClosable(True)
         self.qtab1.setMovable(True)
-        #Widgets
+        #Set the icon size of the tabs
+        self.qtab1.setIconSize(QtCore.QSize(16, 16))
+
+        #Widgets added to tabs on the right hand side
         self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), "Voxel analysis")
         self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.png'), "Overlay options")
-        #self.qtab1.addTab(self.sw3, "Pharmacokinetics")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
 
@@ -412,11 +398,18 @@ class MainWidge1(QtGui.QWidget):
 
 
 class MainWin1(QtGui.QMainWindow):
+
     """
     Overall window framework
-    Only purpose is to put the menu, menu bar etc decorations around the main window
-    Also initialises the open file menus
+
+    Steps:
+    1) Loads the main widget (mw1) - this is where all the interesting stuff happends
+    2) Gets any input directories that are passed from the terminal
+    3) Initialises the GUI, menus, and toolbar
+    3) Loads any files that are passed from the terminal
+
     """
+
     def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
         super(MainWin1, self).__init__()
 
@@ -433,7 +426,7 @@ class MainWin1(QtGui.QMainWindow):
 
         print(self.local_file_path)
 
-        #Load the main widget
+        # Load the main widget
         self.mw1 = MainWidge1(self.local_file_path)
 
         self.toolbar = None
@@ -445,13 +438,17 @@ class MainWin1(QtGui.QMainWindow):
         self.overlay_dir_in = overlay_dir_in
         self.overlay_type_in = overlay_type_in
 
-        #initialise the whole UI
+        # initialise the whole UI
         self.init_ui()
 
-        #autoload any files that have been passed from the command line
+        # autoload any files that have been passed from the command line
         self.auto_load_files()
 
     def init_ui(self):
+        """
+        Called during init. Sets the size and title of the overall GUI
+        :return:
+        """
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
@@ -461,6 +458,10 @@ class MainWin1(QtGui.QMainWindow):
         self.show()
 
     def menu_ui(self):
+        """
+        Set up the file menu system and the toolbar at the top
+        :return:
+        """
 
         #File --> Load Image
         load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.png'), '&Load Image Volume', self)
@@ -483,16 +484,6 @@ class MainWin1(QtGui.QMainWindow):
         save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
         save_ovreg_action.triggered.connect(self.show_ovreg_save_dialog)
         save_ovreg_action.setShortcut('Ctrl+S')
-
-
-        # #File --> Load Overlay Select
-        # load_ovregsel_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'),
-        #                                      '&Load Overlay Select', self)
-        # load_ovregsel_action.setStatusTip('Load specific type of overlay')
-        # load_ovregsel_action.triggered.connect(self.show_ovregsel_load_dialog)
-
-        #File --> Settings
-        #TODO
 
         #File --> Exit
         exit_action = QtGui.QAction('&Exit', self)
@@ -572,7 +563,7 @@ class MainWin1(QtGui.QMainWindow):
 
         advanced_menu.addAction(console_action)
 
-        #Toolbar
+        # Toolbar
         self.toolbar = self.addToolBar('Load Image')
         self.toolbar.addAction(load_action)
         self.toolbar.addAction(load_roi_action)
@@ -581,9 +572,16 @@ class MainWin1(QtGui.QMainWindow):
         # extra info displayed in the status bar
         self.statusBar()
 
+    @QtCore.Slot()
     def click_link(self):
+        """
+        Provide a clickable link to help files
+
+        :return:
+        """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/benjaminirving/PkView_help_files", QtCore.QUrl.TolerantMode))
 
+    @QtCore.Slot()
     def show_console(self):
         """
 
@@ -614,12 +612,13 @@ class MainWin1(QtGui.QMainWindow):
         self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
         self.con1.show()
 
+    # Dialogs
+
     def show_image_load_dialog(self, fname=None):
         """
         Dialog for loading a file
         @fname: allows a file name to be passed in automatically
         """
-
 
         if fname is None:
             # Show file select widget
@@ -710,10 +709,6 @@ class MainWin1(QtGui.QMainWindow):
         Dialog for saving an overlay as a nifti file
 
         """
-
-        #ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-        #                                           ['T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
-        #                                            'segmentation', 'annotation'])
 
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
 
