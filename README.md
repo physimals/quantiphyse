@@ -61,7 +61,7 @@ for usage
 ##Advanced
 ### 1) Setting up a virtualenv system
 
-```
+```bash
 sudo apt-get install python-virtualenv     # Installing virtualenv library
 mkdir python-vm # make a directory to store the virtualenv
 cd ~/python-vm
@@ -71,12 +71,12 @@ source ~/python-vm/pyvm/bin/activate #start the vim
 
 Deactivating the vm
 
-```
+```bash
 deactivate
 ```
 
 Installing python libraries in the vm (make sure system libraries in 2) are installed)
-```
+```bash
 pip install --upgrade pip
 pip install --upgrade setuptools
 pip install distribute
