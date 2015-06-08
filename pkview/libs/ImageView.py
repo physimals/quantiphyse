@@ -180,12 +180,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             for url in e.mimeData().urls():
                 fname.append(str(url.toLocalFile()))
             print(fname)
-
+            # Signal that a file has been dropped
             self.sig_dropped.emit(fname[0])
 
-            # self.ivm.load_image(e)
-            # self.load_image()
-            # self.mw1.update_slider_range()
         else:
             e.ignore()
 
@@ -545,7 +542,6 @@ class ImageViewOverlay(ImageViewLayout):
                        pg.mkPen((0, 255, 0), width=self.options['roi_outline_width']),
                        pg.mkPen((0, 0, 255), width=self.options['roi_outline_width'])]
 
-
         # Setting up ROI viewing parameters
         pos = np.array([0.0, 1.0])
         color = np.array([[0, 0, 0, 0], [255, 0, 0, 90]], dtype=np.ubyte)
@@ -607,7 +603,7 @@ class ImageViewOverlay(ImageViewLayout):
                 self.cont2[ii].setData(None)
                 self.cont3[ii].setData(None)
 
-    #Slot to toggle whether the overlay is seen or not
+    # Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
     def toggle_roi_view(self, state):
 
@@ -662,10 +658,10 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.options['ColorMap'] = 'jet'  # default. Can choose any matplotlib colormap
         self.options['UseROI'] = 1
 
-        #Initialise the colormap
+        # Initialise the colormap
         self.ovreg_lut = None
 
-        #self.set_default_colormap_manual()
+        # self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
         self.l2 = self.addLayout(row=3, col=4, colspan=1, rowspan=1)
@@ -737,11 +733,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         elif (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
 
-            #Scale ROI
+            # Scale ROI
             subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
             self.ov_range_orig = [np.min(subreg1), np.max(subreg1)]
 
-            #Regions that are not part of the ROI
+            # Regions that are not part of the ROI
             self.ovreg[np.logical_not(self.ivm.roi)] = -0.01 * (self.ov_range_orig[1] - self.ov_range_orig[0]) + self.ov_range_orig[0]
 
             # ov_range using the -1 values as well to properly scale the data
@@ -759,7 +755,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         super(ImageViewColorOverlay, self)._update_view()
 
         if self.imgwin1c is None:
-            #If an overlay hasn't been added then return
+            # If an overlay hasn't been added then return
             return
 
         if (self.ivm.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
@@ -773,7 +769,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin3c.setLevels(self.ov_range)
 
         elif len(self.ivm.ovreg_dims) == 4:
-            #RGB or RGBA image
+            # RGB or RGBA image
 
             self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]))
             self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]))
@@ -789,9 +785,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin2c.setLevels(self.ov_range)
             self.imgwin3c.setLevels(self.ov_range)
 
-        #print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
+        # print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
 
-    #Slot to toggle whether the overlay is seen or not
+    # Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
     def toggle_roi_lim(self, state):
 
@@ -820,7 +816,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         self._update_view()
 
-    #Slot to change overlay transparency
+    # Slot to change overlay transparency
     @QtCore.Slot(int)
     def set_overlay_alpha(self, state):
 
@@ -931,7 +927,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if color1 != -1:
 
-            ## # start drawing with 3x3 brush
+            # start drawing with 3x3 brush
             kern = np.array([[color1]])
             self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
             self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')

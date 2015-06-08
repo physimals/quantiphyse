@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+Start up script
+
+This just acts to intialise a Qt application and pass any terminal arguments into the PKView application
+"""
+
 from __future__ import division, unicode_literals, print_function
 
 import argparse
@@ -21,6 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     args = parser.parse_args()
 
+    # Initialise the PKView application
     app = QtGui.QApplication(sys.argv)
+    # Pass arguments from the terminal (if any) into the main application
     ex = MainWin1(args.image, args.roi, args.overlay, args.overlaytype)
     sys.exit(app.exec_())

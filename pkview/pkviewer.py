@@ -398,8 +398,8 @@ class MainWin1(QtGui.QMainWindow):
     Overall window framework
 
     Steps:
-    1) Loads the main widget (mw1) - this is where all the interesting stuff happends
-    2) Gets any input directories that are passed from the terminal
+    1) Loads the main widget (mw1) - this is where all the interesting stuff happens
+    2) Accepts any input directories that are passed from the terminal
     3) Initialises the GUI, menus, and toolbar
     3) Loads any files that are passed from the terminal
 

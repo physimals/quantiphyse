@@ -87,25 +87,42 @@ pip install PySide
 ```
 
 ### 2) System libraries required for pip install of dependencies in a virtualenv
+
 libffi-dev
+
 libssl-dev
+
 pip install requests[security]
 
-numpy / scitkit-learn / scipy
+**numpy / scitkit-learn / scipy**
+
 gfortran
+
 libatlas-base-dev
+
 libblas-dev
+
 liblapack-dev
+
 python-all-dev
 
-matplotlib
+**matplotlib**
+
 libfreetype6-dev
+
 libfreetype6
+
 libpng12-dev
+
 libpng12
 
-PySide
+
+**PySide**
+
 qt4-qmake
+
 shiboken
+
 libshiboken-dev
+
 libqt4-dev
