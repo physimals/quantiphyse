@@ -9,7 +9,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, print_function
 
-from PySide import QtCore
+from PySide import QtCore, QtGui
 import nibabel as nib
 import numpy as np
 import warnings
@@ -251,7 +251,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi_dims = self.roi.shape
 
         if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
+
             warnings.warn("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
+
+            # Checking if data already exists
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
+            ret = msgBox.exec_()
+
             self.roi = None
             self.roi_dims = None
 
