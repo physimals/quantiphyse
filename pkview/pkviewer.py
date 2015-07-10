@@ -213,8 +213,8 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
         #Widgets added to tabs on the right hand side
-        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), "Voxel analysis")
-        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.png'), "Overlay options")
+        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
+        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
         #signal
         self.qtab1.tabCloseRequested.connect(self.on_tab_close)
 
@@ -345,7 +345,7 @@ class MainWindowWidget(QtGui.QWidget):
 
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), "Voxel analysis")
+        index = self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
         print(index)
         self.qtab1.setCurrentIndex(index)
 
@@ -356,11 +356,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.sw3, QtGui.QIcon(self.local_file_path + '/icons/pk.png'), "Pharmacokinetics")
+        index = self.qtab1.addTab(self.sw3, QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pharmacokinetics")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
-        index = self.qtab1.addTab(self.sw_cc, QtGui.QIcon(self.local_file_path + '/icons/clustering.png'),
+        index = self.qtab1.addTab(self.sw_cc, QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
                                   "CurveClustering", )
         self.qtab1.setCurrentIndex(index)
 
@@ -445,20 +445,21 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         self.sig_dropped.connect(self.drag_drop_dialog)
 
-        self.setUnifiedTitleAndToolBarOnMac(True)
-
     def init_ui(self):
         """
         Called during init. Sets the size and title of the overall GUI
         :return:
         """
-        self.setGeometry(100, 100, 1000, 500)
+        #self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
 
         self.menu_ui()
         self.show()
+
+        # OSx specific enhancments
+        self.setUnifiedTitleAndToolBarOnMac(True)
 
     def menu_ui(self):
         """
@@ -467,18 +468,18 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
 
         #File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.png'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
         #File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.png'), '&Load ROI', self)
+        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         #File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
@@ -495,7 +496,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         exit_action.triggered.connect(self.close)
 
         # Widgets --> SE curve
-        se_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/voxel.png'), '&SEcuve', self)
+        se_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), '&SEcuve', self)
         se_action.setStatusTip('Plot SE of a voxel')
         se_action.triggered.connect(self.mw1.show_se)
 
@@ -505,7 +506,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         ic_action.triggered.connect(self.mw1.show_ic)
 
         #Widgets --> Pharmacokinetics
-        pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.png'), '&Pharmacokinetics', self)
+        pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Pharmacokinetics', self)
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 
@@ -520,12 +521,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         rw_action.triggered.connect(self.mw1.show_rw)
 
         # Widgets --> CurveClustering
-        cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.png'), '&CurveClustering', self)
+        cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
         cc_action.setStatusTip('Cluster curves in a ROI of interest')
         cc_action.triggered.connect(self.mw1.show_cc)
 
         #Wigets --> Create Annotation
-        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.png'), '&Enable Annotation', self)
+        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
         annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
         annot_ovreg_action.setCheckable(True)
         annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
@@ -568,6 +569,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Toolbar
         self.toolbar = self.addToolBar('Load Image')
+        self.setIconSize(QtCore.QSize(20, 20))
         self.toolbar.addAction(load_action)
         self.toolbar.addAction(load_roi_action)
         self.toolbar.addAction(load_ovreg_action)
