@@ -11,6 +11,8 @@ import sys
 import os
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
+# making sure that the native system is used even on osx
+QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
 import pyqtgraph.console
 import numpy as np
 
