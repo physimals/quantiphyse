@@ -896,6 +896,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         alpha1 = np.ones((self.ovreg_lut.shape[0], 1))
         alpha1 *= 255
         alpha1[0] = 0
+        # alpha1[1] = 0
+        # alpha1[2] = 0
         self.ovreg_lut = np.hstack((self.ovreg_lut, alpha1))
 
         # Save the lut to the volume management system for easy transfer between widgets
