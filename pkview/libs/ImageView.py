@@ -8,8 +8,8 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4'] = 'PySide'
+#matplotlib.use('Qt4Agg')
+#matplotlib.rcParams['backend.qt4'] = 'PySide'
 #from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #import matplotlib.pyplot as plt
 

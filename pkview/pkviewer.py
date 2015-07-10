@@ -450,7 +450,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Called during init. Sets the size and title of the overall GUI
         :return:
         """
-        #self.setGeometry(100, 100, 1000, 500)
+        self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
