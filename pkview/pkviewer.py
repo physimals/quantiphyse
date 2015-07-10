@@ -52,7 +52,53 @@ class QGroupBoxClick(QtGui.QGroupBox):
         #     self.sig_click.emit(2)
 
 
-class MainWidge1(QtGui.QWidget):
+class DragOptions(QtGui.QDialog):
+    """
+    Interface for dealing with drag and drop
+    """
+
+    def __init__(self, parent=None):
+        super(DragOptions, self).__init__(parent)
+        self.setWindowTitle("Image Type")
+
+        self.button1 = QtGui.QPushButton("DCE")
+        self.button2 = QtGui.QPushButton("ROI")
+        self.button3 = QtGui.QPushButton("OVERLAY")
+
+        layout = QtGui.QHBoxLayout()
+        layout.addWidget(self.button1)
+        layout.addWidget(self.button2)
+        layout.addWidget(self.button3)
+
+        self.setLayout(layout)
+
+        self.but = 0
+
+        self.button1.clicked.connect(self.b1)
+        self.button2.clicked.connect(self.b2)
+        self.button3.clicked.connect(self.b3)
+
+    def b1(self):
+        self.but = "DCE"
+        self.accept()
+
+    def b2(self):
+        self.but = "ROI"
+        self.accept()
+
+    def b3(self):
+        self.but = "OVERLAY"
+        self.accept()
+
+    @staticmethod
+    def getImageChoice(parent=None):
+
+        dialog = DragOptions(parent)
+        result = dialog.exec_()
+        return dialog.but, result == QtGui.QDialog.Accepted
+
+
+class MainWindowWidget(QtGui.QWidget):
 
     """
     Main widget where most of the control should happen
@@ -60,7 +106,7 @@ class MainWidge1(QtGui.QWidget):
     """
 
     def __init__(self, local_file_path):
-        super(MainWidge1, self).__init__()
+        super(MainWindowWidget, self).__init__()
 
         self.local_file_path = local_file_path
 
@@ -352,23 +398,17 @@ class MainWidge1(QtGui.QWidget):
         @fname: allows a file name to be passed in automatically
         """
 
-        bd = QtGui.QDialogButtonBox()
-        b1 = QtGui.QPushButton(self)
-        b2 = QtGui.QPushButton(self)
-        b3 = QtGui.QPushButton(self)
-        bd.addButton(b1)
-        bd.addButton(b2)
-        bd.addButton(b3)
+        ftype, ok = DragOptions.getImageChoice(self)
 
-
-        ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                               ['DCE', 'ROI', 'loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
-                                                'model_curves', 'annotation'])
         self.default_directory = get_dir(fname)
 
         # Loading overlays
         if ftype != 'DCE' and ftype != 'ROI':
-            self.ivm.load_ovreg(fname, ftype)
+
+            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
+                                                     'model_curves', 'annotation'])
+            self.ivm.load_ovreg(fname, ftype2)
             if ftype != 'estimation':
                 self.ivl1.load_ovreg()
 
@@ -401,7 +441,7 @@ class MainWidge1(QtGui.QWidget):
             self.ivl1.load_roi()
 
 
-class MainWin1(QtGui.QMainWindow):
+class WindowAndDecorators(QtGui.QMainWindow):
 
     """
     Overall window framework
@@ -415,7 +455,7 @@ class MainWin1(QtGui.QMainWindow):
     """
 
     def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
-        super(MainWin1, self).__init__()
+        super(WindowAndDecorators, self).__init__()
 
         # Patch for if file is frozen
         if hasattr(sys, 'frozen'):
@@ -431,7 +471,7 @@ class MainWin1(QtGui.QMainWindow):
         print(self.local_file_path)
 
         # Load the main widget
-        self.mw1 = MainWidge1(self.local_file_path)
+        self.mw1 = MainWindowWidget(self.local_file_path)
 
         self.toolbar = None
         self.default_directory ='/home'
