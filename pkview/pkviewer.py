@@ -352,9 +352,18 @@ class MainWidge1(QtGui.QWidget):
         @fname: allows a file name to be passed in automatically
         """
 
+        bd = QtGui.QDialogButtonBox()
+        b1 = QtGui.QPushButton(self)
+        b2 = QtGui.QPushButton(self)
+        b3 = QtGui.QPushButton(self)
+        bd.addButton(b1)
+        bd.addButton(b2)
+        bd.addButton(b3)
+
+
         ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                               ['DCE', 'ROI', 'loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
-                                                'annotation'])
+                                               ['DCE', 'ROI', 'loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
+                                                'model_curves', 'annotation'])
         self.default_directory = get_dir(fname)
 
         # Loading overlays
