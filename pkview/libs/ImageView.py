@@ -63,9 +63,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     # Signals when the mouse is scrolling
     sig_mouse_scroll = QtCore.Signal(bool)
 
-    #File dropped
-    sig_dropped = QtCore.Signal(str)
-
     def __init__(self):
         super(ImageViewLayout, self).__init__()
 
@@ -152,39 +149,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin1.sig_mouse_wheel.connect(self.step_axis1)
         self.imgwin2.sig_mouse_wheel.connect(self.step_axis2)
         self.imgwin3.sig_mouse_wheel.connect(self.step_axis3)
-
-    def dragEnterEvent(self, e):
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    def dragMoveEvent(self, e):
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    def dropEvent(self, e):
-        """
-        Drop files directly onto the widget
-
-        File locations are stored in fname
-        :param e:
-        :return:
-        """
-        if e.mimeData().hasUrls:
-            e.setDropAction(QtCore.Qt.CopyAction)
-            e.accept()
-            fname = []
-            for url in e.mimeData().urls():
-                fname.append(str(url.toLocalFile()))
-            print(fname)
-            # Signal that a file has been dropped
-            self.sig_dropped.emit(fname[0])
-
-        else:
-            e.ignore()
 
     def add_image_management(self, image_vol_management):
         """

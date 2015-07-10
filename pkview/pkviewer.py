@@ -177,7 +177,6 @@ class MainWindowWidget(QtGui.QWidget):
         #Connecting widget signals
         #1) Plotting data on mouse image click
         self.ivl1.sig_mouse.connect(self.sw1.sig_mouse)
-        self.ivl1.sig_dropped.connect(self.drag_drop_dialog)
 
         # InitUI
         #Sliders
@@ -391,58 +390,6 @@ class MainWindowWidget(QtGui.QWidget):
         print(index)
         self.qtab1.setCurrentIndex(index)
 
-    @QtCore.Slot(str)
-    def drag_drop_dialog(self, fname):
-        """
-        Dialog for loading an overlay and specifying the type of overlay
-        @fname: allows a file name to be passed in automatically
-        """
-
-        ftype, ok = DragOptions.getImageChoice(self)
-
-        if not ok:
-            return
-
-        self.default_directory = get_dir(fname)
-
-        # Loading overlays
-        if ftype != 'DCE' and ftype != 'ROI':
-
-            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
-                                                     'model_curves', 'annotation'])
-            self.ivm.load_ovreg(fname, ftype2)
-            if ftype != 'estimation':
-                self.ivl1.load_ovreg()
-
-        # Loading main image
-        elif ftype == 'DCE':
-            if self.ivm.image_file1 is not None:
-
-                # Checking if data already exists
-                msgBox = QtGui.QMessageBox()
-                msgBox.setText("A volume has already been loaded")
-                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-
-                ret = msgBox.exec_()
-
-                if ret == QtGui.QMessageBox.Ok:
-                    print("Clearing data")
-                    self.ivm.init()
-                else:
-                    return
-
-            self.ivm.load_image(fname)
-            self.ivl1.load_image()
-            self.update_slider_range()
-
-        # Loading ROI
-        elif ftype == 'ROI':
-            self.ivm.load_roi(fname)
-            self.ivl1.load_roi()
-
 
 class WindowAndDecorators(QtGui.QMainWindow):
 
@@ -457,8 +404,13 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
     """
 
+    #File dropped
+    sig_dropped = QtCore.Signal(str)
+
     def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
         super(WindowAndDecorators, self).__init__()
+
+        self.setAcceptDrops(True)
 
         # Patch for if file is frozen
         if hasattr(sys, 'frozen'):
@@ -490,6 +442,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # autoload any files that have been passed from the command line
         self.auto_load_files()
+
+        self.sig_dropped.connect(self.drag_drop_dialog)
 
     def init_ui(self):
         """
@@ -618,6 +572,40 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # extra info displayed in the status bar
         self.statusBar()
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e):
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        """
+        Drop files directly onto the widget
+
+        File locations are stored in fname
+        :param e:
+        :return:
+        """
+        if e.mimeData().hasUrls:
+            e.setDropAction(QtCore.Qt.CopyAction)
+            e.accept()
+            fname = []
+            for url in e.mimeData().urls():
+                fname.append(str(url.toLocalFile()))
+            print(fname)
+            # Signal that a file has been dropped
+            self.sig_dropped.emit(fname[0])
+
+        else:
+            e.ignore()
+
 
     @QtCore.Slot()
     def click_link(self):
@@ -766,6 +754,58 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.mw1.ivm.save_ovreg(fname, 'current')
         else:
             print('Warning: No file selected')
+
+    @QtCore.Slot(str)
+    def drag_drop_dialog(self, fname):
+        """
+        Dialog for loading an overlay and specifying the type of overlay
+        @fname: allows a file name to be passed in automatically
+        """
+
+        ftype, ok = DragOptions.getImageChoice(self)
+
+        if not ok:
+            return
+
+        self.default_directory = get_dir(fname)
+
+        # Loading overlays
+        if ftype != 'DCE' and ftype != 'ROI':
+
+            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
+                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
+                                                     'model_curves', 'annotation'])
+            self.mw1.ivm.load_ovreg(fname, ftype2)
+            if ftype != 'estimation':
+                self.mw1.ivl1.load_ovreg()
+
+        # Loading main image
+        elif ftype == 'DCE':
+            if self.mw1.ivm.image_file1 is not None:
+
+                # Checking if data already exists
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("A volume has already been loaded")
+                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+
+                ret = msgBox.exec_()
+
+                if ret == QtGui.QMessageBox.Ok:
+                    print("Clearing data")
+                    self.mw1.ivm.init()
+                else:
+                    return
+
+            self.mw1.ivm.load_image(fname)
+            self.mw1.ivl1.load_image()
+            self.mw1.update_slider_range()
+
+        # Loading ROI
+        elif ftype == 'ROI':
+            self.mw1.ivm.load_roi(fname)
+            self.mw1.ivl1.load_roi()
 
     def auto_load_files(self):
         """
