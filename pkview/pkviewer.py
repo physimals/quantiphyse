@@ -400,6 +400,9 @@ class MainWindowWidget(QtGui.QWidget):
 
         ftype, ok = DragOptions.getImageChoice(self)
 
+        if not ok:
+            return
+
         self.default_directory = get_dir(fname)
 
         # Loading overlays
