@@ -445,6 +445,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         self.sig_dropped.connect(self.drag_drop_dialog)
 
+        self.setUnifiedTitleAndToolBarOnMac(True)
+
     def init_ui(self):
         """
         Called during init. Sets the size and title of the overall GUI
