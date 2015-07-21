@@ -79,7 +79,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         # Automatically adjust threshold for each view
         # If false then use the same threshold for the entire volume
         self.options['view_thresh'] = False
-        self.options['show_crosshairs'] = False
+        self.options['show_crosshairs'] = True
 
         #empty array for arrows
         self.pts1 = []

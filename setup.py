@@ -2,32 +2,32 @@
 
 """
 
-# To build cython libraries
-# Use: python setup.py build_ext --inplace
 
-# Build distribution
-python setup.py sdist
-# Create a wheel
+# Easiest option
+# To build cython libraries in the current location
+# Use: python setup.py build_ext --inplace
+# run using ./pkviewer2
+
+# Options 1: Create a wheel
 python setup.py bdist_wheel
 
 #remove existing installation
 pip uninstall PKView
 
-#installing on the system
+# Option 2: installing directly on the system
 python setup.py install
 then run
 pkviewer2 from the terminal
 
-# creating a deb file. Doesn't work yet with images
-python setup.py --command-packages=stdeb.command bdist_deb
-
-Note:
-# Build a directory of wheels for pyramid and all its dependencies
+# Option 3: Build a directory of wheels for pyramid and all its dependencies
 pip wheel --wheel-dir=/tmp/wheelhouse pyramid
 # Install from cached wheels
 pip install --use-wheel --no-index --find-links=/tmp/wheelhouse pyramid
 # Install from cached wheels remotely
 pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ pyramid
+
+# Option 4: Build a .deb
+
 
 
 """
@@ -63,7 +63,7 @@ extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.143',
+      version='0.15.3',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
