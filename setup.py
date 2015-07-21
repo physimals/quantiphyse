@@ -33,10 +33,7 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 """
 import numpy
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from distutils.extension import Extension
@@ -72,14 +69,19 @@ setup(name='PKView',
       packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.annotation', 'pkview.libs',
                 'pkview.analysis.pkmodel_cpp', 'pkview.icons'],
       include_package_data=True,
-      data_files=[('pkview/icons/', ['pkview/icons/picture.png',
-                                       'pkview/icons/pencil.png',
-                                       'pkview/icons/clear.png',
-                                       'pkview/icons/edit.png',
-                                       'pkview/icons/clustering.png',
-                                       'pkview/icons/main_icon.png',
-                                       'pkview/icons/flag.png',
-                                       'pkview/icons/voxel.png'])],
+      data_files=[('pkview/icons/', ['pkview/icons/picture.svg',
+                                     'pkview/icons/pencil.svg',
+                                     'pkview/icons/clear.svg',
+                                     'pkview/icons/edit.svg',
+                                     'pkview/icons/clustering.svg',
+                                     'pkview/icons/main_icon.png',
+                                     'pkview/icons/voxel.svg',
+                                     'pkview/icons/picture.png',
+                                     'pkview/icons/pencil.png',
+                                     'pkview/icons/clear.png',
+                                     'pkview/icons/edit.png',
+                                     'pkview/icons/clustering.png',
+                                     'pkview/icons/voxel.png'])],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
       install_requires=['six', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
                         'pynrrd', 'Cython', 'matplotlib', 'mock', 'nose', 'python-dateutil', 'pytz'],

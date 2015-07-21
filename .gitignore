@@ -5,5 +5,4 @@ deb_dist/
 dist/
 build/
 debian/pkview
-debian/source
 *~
