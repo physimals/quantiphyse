@@ -5,4 +5,4 @@ debian/pkviewer2 usr/bin
 debian/PKView.desktop usr/share/applications
 debian/pkviewer2.png usr/share/icons/hicolor/48x48/apps
 # copy icons
-pkview/icons/ usr/share/python/pkview/icons
+# pkview/icons/ usr/share/python/pkview/icons
