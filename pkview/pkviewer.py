@@ -12,6 +12,7 @@ import os
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 # making sure that the native system is used even on osx
+QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
 import pyqtgraph.console
 import numpy as np
 
@@ -565,11 +566,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         advanced_menu.addAction(console_action)
 
         # Toolbar
-        self.toolbar = self.addToolBar('Load Image')
-        self.setIconSize(QtCore.QSize(20, 20))
-        self.toolbar.addAction(load_action)
-        self.toolbar.addAction(load_roi_action)
-        self.toolbar.addAction(load_ovreg_action)
+        # self.toolbar = self.addToolBar('Load Image')
+        # self.setIconSize(QtCore.QSize(20, 20))
+        # self.toolbar.addAction(load_action)
+        # self.toolbar.addAction(load_roi_action)
+        # self.toolbar.addAction(load_ovreg_action)
 
         # extra info displayed in the status bar
         self.statusBar()
