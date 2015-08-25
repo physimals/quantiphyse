@@ -1,3 +1,10 @@
+pkview (0.15.3) trusty; urgency=medium
+
+  * Improved drag and drop
+  * Bug fixes
+
+ -- benjamin <engs1170@engs-20971>  Tue, 21 Jul 2015 11:02:06 +0100
+
 pkview (0.15.2) trusty; urgency=medium
 
   * Experimental drag and drop added

@@ -14,7 +14,7 @@
    height="32"
    viewBox="0 0 34 32"
    id="svg2"
-   inkscape:version="0.48.3.1 r9886"
+   inkscape:version="0.48.4 r9939"
    sodipodi:docname="picture.svg">
   <metadata
      id="metadata10">
@@ -50,7 +50,7 @@
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <rect
-     style="fill:none;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:none;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
      id="rect2987"
      width="29.09341"
      height="26.991787"
@@ -58,19 +58,19 @@
      y="2.5552359"
      ry="2.1431227" />
   <path
-     style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     style="fill:none;stroke:#999999;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      d="m 13.135408,19.343987 4.218671,-7.574432 4.506307,7.957947"
      id="path2999"
      inkscape:connector-curvature="0"
      sodipodi:nodetypes="ccc" />
   <path
-     style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     style="fill:none;stroke:#999999;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      d="M 17.354077,13.207739 17.258198,7.8725024"
      id="path3001"
      inkscape:connector-curvature="0" />
   <path
      sodipodi:type="arc"
-     style="fill:#000000;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:#999999;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
      id="path2997-2"
      sodipodi:cx="14.477712"
      sodipodi:cy="16.994955"
@@ -83,7 +83,7 @@
      transform="matrix(-1,0,0,0.87938467,38.351555,2.2677771)" />
   <path
      sodipodi:type="arc"
-     style="fill:#000000;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:#999999;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
      id="path2997-2-1"
      sodipodi:cx="14.477712"
      sodipodi:cy="16.994955"
