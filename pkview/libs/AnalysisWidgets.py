@@ -55,7 +55,7 @@ class SECurve(QtGui.QWidget):
         self.cb4 = QtGui.QCheckBox('Show mean', self)
 
         #Clear curves button
-        b1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/clear.png'), '', self)
+        b1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/clear.svg'), '', self)
         b1.setToolTip("Clear curves")
         b1.clicked.connect(self.reset_graph)
 
