@@ -12,7 +12,6 @@ import os
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 # making sure that the native system is used even on osx
-QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
 import pyqtgraph.console
 import numpy as np
 
@@ -116,8 +115,8 @@ class MainWindowWidget(QtGui.QWidget):
         color1 = self.palette().color(QtGui.QPalette.Background)
         colorvec = [color1.red(), color1.green(), color1.blue()]
         # set the default color for pg
-        pg.setConfigOption('background', [242, 241, 240])
-        pg.setConfigOption('foreground', 'k')
+        # pg.setConfigOption('background', [242, 241, 240])
+        # pg.setConfigOption('foreground', 'k')
 
         # Loading data management object
         self.ivm = ImageVolumeManagement()
@@ -239,8 +238,6 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay.addWidget(cb3)
         gBoxlay.addStretch(1)
         gBox.setLayout(gBoxlay)
-        gBox.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
-                           "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
         # Group box: sliders
         gBox2 = QtGui.QGroupBox("Navigation Sliders")
@@ -261,8 +258,6 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.setColumnStretch(1, 2)
 
         gBox2.setLayout(gBoxlay2)
-        gBox2.setStyleSheet("QGroupBox{border:2px solid gray;border-radius:5px;margin-top: 1ex;} "
-                            "QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}")
 
         # All buttons layout
         gBox_all = QtGui.QGroupBox()
@@ -611,7 +606,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         else:
             e.ignore()
-
 
     @QtCore.Slot()
     def click_link(self):

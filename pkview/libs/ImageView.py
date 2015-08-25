@@ -66,10 +66,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
     def __init__(self):
         super(ImageViewLayout, self).__init__()
 
-        # Access the underlying central widget in the GraphicsLayoutWidget
-        # https://github.com/robertsj/poropy/blob/master/pyqtgraph/widgets/GraphicsLayoutWidget.py
-        self.ci.setBorder(pg.mkPen((220, 220, 220), width=2.0))
-
         # volume management for the images
         self.ivm = None
 
@@ -85,13 +81,15 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.pts1 = []
 
         self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1,
-                                     border=pg.mkPen((0, 0, 255), width=3.0))
+                                     border=pg.mkPen((50, 50, 50), width=3.0))
         self.view1.setAspectLocked(True)
+        # self.view1.setVisible(False)
         self.imgwin1 = ImageMed(border='k')
         self.view1.addItem(self.imgwin1)
         self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1,
-                                     border=pg.mkPen((0, 0, 255), width=3.0))
+                                     border=pg.mkPen((50, 50, 50), width=3.0))
         self.view2.setAspectLocked(True)
+        # self.view2.setVisible(False)
         self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
 
@@ -101,8 +99,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.h1.setImageItem(self.imgwin1)
 
         self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1,
-                                     border=pg.mkPen((0, 0, 255), width=3.0))
+                                     border=pg.mkPen((50, 50, 50), width=3.0))
         self.view3.setAspectLocked(True)
+        # self.view3.setVisible(False)
         self.imgwin3 = ImageMed(border='k')
         self.view3.addItem(self.imgwin3)
 
@@ -150,13 +149,18 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin2.sig_mouse_wheel.connect(self.step_axis2)
         self.imgwin3.sig_mouse_wheel.connect(self.step_axis3)
 
+        self.setBackground(background=None)
+
     def add_image_management(self, image_vol_management):
-        """
+        """cim_pos
         Adding image management
         """
         self.ivm = image_vol_management
 
     def load_image(self):
+        self.view1.setVisible(True)
+        self.view2.setVisible(True)
+        self.view3.setVisible(True)
 
         # update view
         self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])

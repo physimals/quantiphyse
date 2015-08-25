@@ -29,6 +29,13 @@ if __name__ == '__main__':
 
     # Initialise the PKView application
     app = QtGui.QApplication(sys.argv)
+    app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
+    app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
+
+    stFile = "darkorange.stylesheet"
+    with open(stFile, "r") as fs:
+        app.setStyleSheet(fs.read())
+
     # Pass arguments from the terminal (if any) into the main application
     ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
     sys.exit(app.exec_())
