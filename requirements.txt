@@ -11,3 +11,5 @@ mock
 nose
 python-dateutil
 pytz
+scipy
+PySide
