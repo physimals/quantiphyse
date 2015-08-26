@@ -408,6 +408,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
     sig_dropped = QtCore.Signal(str)
 
     def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
+
         super(WindowAndDecorators, self).__init__()
 
         self.setAcceptDrops(True)
@@ -424,6 +425,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.local_file_path = os.getcwd()
 
         print(self.local_file_path)
+
+        # Load style sheet
+        stFile = self.local_file_path + "/resources/darkorange.stylesheet"
+        with open(stFile, "r") as fs:
+            self.setStyleSheet(fs.read())
 
         # Load the main widget
         self.mw1 = MainWindowWidget(self.local_file_path)

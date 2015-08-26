@@ -7,6 +7,7 @@ Benjamin Irving
 
 ![alt text](images/Screenshot1.png "Screenshot")
 
+
 ### Dependencies:
 Python 2.7
 
@@ -20,6 +21,7 @@ Python 2.7
 - Cython
 - scikit-image
 - scikit-learn
+- scipy
 
 ### Overview
 
@@ -126,3 +128,13 @@ shiboken
 libshiboken-dev
 
 libqt4-dev
+
+
+### 3) Resource file
+
+The resource file is compiled by
+
+pyside-rcc resource -o resource.py
+
+This is then imported at the beginning of the app so that the program can find the resources. 
+

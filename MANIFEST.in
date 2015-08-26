@@ -1,1 +1,1 @@
-recursive-include pkview *.py *.ui *.m README *.txt *.png *.cpp *.h *.svg
+recursive-include pkview *.py *.ui *.m README *.txt *.png *.cpp *.h *.svg *.stylesheet
