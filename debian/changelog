@@ -1,3 +1,13 @@
+pkview (0.16) trusty; urgency=medium
+
+  * Improved interface
+  * Improved drag and drop
+  * Added a dark theme 
+  * Fix appearance on OSx (note that drag and drop is still not working for OSx)
+  * Organised files so that c++ source is separate
+
+ -- benjamin <engs1170@engs-20971>  Wed, 26 Aug 2015 12:03:31 +0100
+
 pkview (0.15.3) trusty; urgency=medium
 
   * Improved drag and drop
