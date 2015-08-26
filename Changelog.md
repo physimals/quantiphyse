@@ -1,3 +1,9 @@
+pkview (0.15.*) trusty; urgency=low
+
+ * Added dark theme
+ * Improved drag and drop (not that this doesn't work properly on OSx due to Qt4 issue)
+ 
+
 pkview (0.15.2) trusty; urgency=medium
 
   * Experimental drag and drop added
