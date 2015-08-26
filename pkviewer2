@@ -12,6 +12,7 @@ import argparse
 from PySide import QtGui
 from pkview.pkviewer import WindowAndDecorators
 import sys
+import resource
 
 if __name__ == '__main__':
 
