@@ -43,18 +43,18 @@ PkView
 """
 
 # Compiling the Cython extensions
-extensions = Extension("pkview/analysis/pkmodel_cpp/pk",
-                       sources=['pkview/analysis/pkmodel_cpp/pk.pyx',
-                                'pkview/analysis/pkmodel_cpp/Optimizer_class.cpp',
-                                'pkview/analysis/pkmodel_cpp/pkrun2.cpp',
-                                'pkview/analysis/pkmodel_cpp/ToftsOrton.cpp',
-                                'pkview/analysis/pkmodel_cpp/ToftsOrtonOffset.cpp',
-                                'pkview/analysis/pkmodel_cpp/ToftsWeinOffset.cpp',
-                                'pkview/analysis/pkmodel_cpp/ToftsWeinOffsetVp.cpp',
-                                'pkview/analysis/pkmodel_cpp/lmlib/lmcurve.cpp',
-                                'pkview/analysis/pkmodel_cpp/lmlib/lmmin.cpp'],
-                       include_dirs=['pkview/analysis/pkmodel_cpp/lmlib/',
-                                     'pkview/analysis/pkmodel_cpp/',
+extensions = Extension("pkview/analysis/pk_model",
+                       sources=['pkview/analysis/pk_model.pyx',
+                                'src/Optimizer_class.cpp',
+                                'src/pkrun2.cpp',
+                                'src/ToftsOrton.cpp',
+                                'src/ToftsOrtonOffset.cpp',
+                                'src/ToftsWeinOffset.cpp',
+                                'src/ToftsWeinOffsetVp.cpp',
+                                'src/lmlib/lmcurve.cpp',
+                                'src/lmlib/lmmin.cpp'],
+                       include_dirs=['src/lmlib/',
+                                     'src/',
                                      numpy.get_include()],
                        language="c++")
 # setup parameters

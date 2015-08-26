@@ -6,15 +6,16 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
+import multiprocessing
+import multiprocessing.pool
+import time
+
 from PySide import QtCore, QtGui
 import numpy as np
 import pyqtgraph as pg
 
-import multiprocessing,multiprocessing.pool
-import time
-
 from pkview.QtInherit.QtSubclass import QGroupBoxB
-from pkview.analysis.pkmodel_cpp.pk import PyPk
+from pkview.analysis.pk_model import PyPk
 
 
 class PharmaWidget(QtGui.QWidget):
