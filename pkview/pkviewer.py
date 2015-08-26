@@ -44,12 +44,12 @@ class QGroupBoxClick(QtGui.QGroupBox):
     Subclassing QGroupBox to detect clicks and signal click
     """
 
-    sig_click = QtCore.Signal(int)
+    sig_click = QtCore.Signal(QtGui.QMouseEvent)
 
     # Mouse clicked on widget
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
-            self.sig_click.emit(1)
+            self.sig_click.emit(event)
         # elif event.button() == QtCore.Qt.RightButton:
         #     self.sig_click.emit(2)
 

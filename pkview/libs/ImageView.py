@@ -14,7 +14,7 @@ import matplotlib
 #import matplotlib.pyplot as plt
 
 from matplotlib import cm
-from PySide import QtCore
+from PySide import QtCore, QtGui
 import warnings
 import numpy as np
 
@@ -45,7 +45,8 @@ class ImageMed(pg.ImageItem, object):
         self.sig_mouse_wheel.emit(chnge1)
 
 
-class ImageViewLayout(pg.GraphicsLayoutWidget, object):
+# TODO use QGraphicsView instread?
+class ImageViewLayout(QtGui.QWidget, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
@@ -80,14 +81,16 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         #empty array for arrows
         self.pts1 = []
 
-        self.view1 = self.addViewBox(name="view1", row=1, col=0, colspan=2, rowspan=1,
-                                     border=pg.mkPen((50, 50, 50), width=3.0))
+        self.win1 = pg.GraphicsView()
+        self.win2 = pg.GraphicsView()
+        self.win3 = pg.GraphicsView()
+
+        self.view1 = pg.ViewBox(name="view1", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view1.setAspectLocked(True)
         # self.view1.setVisible(False)
         self.imgwin1 = ImageMed(border='k')
         self.view1.addItem(self.imgwin1)
-        self.view2 = self.addViewBox(name="view2", row=1, col=2,  colspan=2, rowspan=1,
-                                     border=pg.mkPen((50, 50, 50), width=3.0))
+        self.view2 = pg.ViewBox(name="view2", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view2.setAspectLocked(True)
         # self.view2.setVisible(False)
         self.imgwin2 = ImageMed(border='k')
@@ -95,11 +98,10 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
 
         # Adding a histogram LUT
         self.h1 = pg.HistogramLUTItem(fillHistogram=False)
-        self.addItem(self.h1, row=1, col=4)
+#        self.addItem(self.h1, row=1, col=4)
         self.h1.setImageItem(self.imgwin1)
 
-        self.view3 = self.addViewBox(name="view3", row=3, col=0, colspan=2, rowspan=1,
-                                     border=pg.mkPen((50, 50, 50), width=3.0))
+        self.view3 = pg.ViewBox(name="view3", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view3.setAspectLocked(True)
         # self.view3.setVisible(False)
         self.imgwin3 = ImageMed(border='k')
@@ -132,13 +134,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.view3.addItem(self.vline3, ignoreBounds=True)
         self.view3.addItem(self.hline3, ignoreBounds=True)
 
-        self.ci.layout.setColumnStretchFactor(0, 4)
-        self.ci.layout.setColumnStretchFactor(1, 4)
-        self.ci.layout.setColumnStretchFactor(2, 4)
-        self.ci.layout.setColumnStretchFactor(3, 4)
-        self.ci.layout.setColumnStretchFactor(4, 1)
-        self.ci.layout.setColumnMaximumWidth(4, 100)
-
         # Setting the background color of the various views to be black
         self.view1.setBackgroundColor([0, 0, 0])
         self.view2.setBackgroundColor([0, 0, 0])
@@ -149,10 +144,19 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.imgwin2.sig_mouse_wheel.connect(self.step_axis2)
         self.imgwin3.sig_mouse_wheel.connect(self.step_axis3)
 
-        self.setBackground(background=None)
+        self.win1.setCentralItem(self.view1)
+        self.win2.setCentralItem(self.view2)
+        self.win3.setCentralItem(self.view3)
+
+        grid1 = QtGui.QGridLayout()
+
+        grid1.addWidget(self.win1, 1, 0)
+        grid1.addWidget(self.win2, 1, 1)
+        grid1.addWidget(self.win3, 3, 0)
+        self.setLayout(grid1)
 
     def add_image_management(self, image_vol_management):
-        """cim_pos
+        """
         Adding image management
         """
         self.ivm = image_vol_management
@@ -166,7 +170,7 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])
         self._update_view()
 
-    def _mouse_pos(self):
+    def _mouse_pos(self, pt):
 
         """
         Capture positions of the 3 views on mouse press and update cim_pos
@@ -178,9 +182,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             return
 
         # Check if in View1
-        if self.view1.sceneBoundingRect().contains(self.lastMousePos):
-            print("Image position 1:", self.imgwin1.mapFromScene(self.lastMousePos))
-            mouse_point = self.imgwin1.mapFromScene(self.lastMousePos)
+        if self.view1.sceneBoundingRect().contains(pt):
+            print("Image position 1:", self.imgwin1.mapFromScene(pt))
+            mouse_point = self.imgwin1.mapFromScene(pt)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[1]):
@@ -190,9 +194,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
                 warnings.warn('Out of bounds')
 
         # Check if in View 2
-        elif self.view2.sceneBoundingRect().contains(self.lastMousePos):
-            print("Image position 2:", self.imgwin2.mapFromScene(self.lastMousePos))
-            mouse_point = self.imgwin2.mapFromScene(self.lastMousePos)
+        elif self.view2.sceneBoundingRect().contains(pt):
+            print("Image position 2:", self.imgwin2.mapFromScene(pt))
+            mouse_point = self.imgwin2.mapFromScene(pt)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[2]):
@@ -202,9 +206,9 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
                 warnings.warn('Out of bounds')
 
         # Check if in view 3
-        elif self.view3.sceneBoundingRect().contains(self.lastMousePos):
-            print("Image position 3:", self.imgwin3.mapFromScene(self.lastMousePos))
-            mouse_point = self.imgwin3.mapFromScene(self.lastMousePos)
+        elif self.view3.sceneBoundingRect().contains(pt):
+            print("Image position 3:", self.imgwin3.mapFromScene(pt))
+            mouse_point = self.imgwin3.mapFromScene(pt)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
             if (round(mspt0) < ishp[1]) and (round(mspt1) < ishp[2]):
@@ -418,7 +422,8 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
         if self.ivm.image is None:
             return
 
-        self._mouse_pos()
+        pt = QtCore.QPoint(event.pos())
+        self._mouse_pos(pt)
         self._update_view()
 
         #Signal emit current enhancement curve to widget
@@ -632,8 +637,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
-        self.l2 = self.addLayout(row=3, col=4, colspan=1, rowspan=1)
-        self.view4 = self.l2.addViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
+        # self.l2 = self.addLayout(row=3, col=4, colspan=1, rowspan=1)
+        # self.view4 = self.l2.addViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
 
     def load_ovreg(self):
         """
