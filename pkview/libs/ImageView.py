@@ -46,7 +46,7 @@ class ImageMed(pg.ImageItem, object):
 
 
 # TODO use QGraphicsView instread?
-class ImageViewLayout(QtGui.QWidget, object):
+class ImageViewLayout(QtGui.QGraphicsView, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
@@ -183,7 +183,7 @@ class ImageViewLayout(QtGui.QWidget, object):
 
         # Check if in View1
         if self.view1.sceneBoundingRect().contains(pt):
-            print("Image position 1:", self.imgwin1.mapFromScene(pt))
+            print("Image position 1:", self.imgwin1.mapFromView(pt))
             mouse_point = self.imgwin1.mapFromScene(pt)
             mspt0 = mouse_point.x()
             mspt1 = mouse_point.y()
