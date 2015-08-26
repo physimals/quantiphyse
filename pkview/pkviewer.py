@@ -12,11 +12,15 @@ import os
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
-# making sure that the native system is used even on osx
-QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
-
 import pyqtgraph.console
 import numpy as np
+import platform
+
+op_sys = platform.system()
+if op_sys == 'Darwin':
+    from Foundation import NSURL
+    QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
+
 
 # My libs
 from pkview.libs.ImageView import ImageViewColorOverlay
@@ -610,8 +614,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
             # TODO Issue with drag and drop for OSx here.
             # TODO Need to find a better way or move up to Qt5
             for url in e.mimeData().urls():
-                fname.append(str(url.toLocalFile()))
-            print(fname)
+                if op_sys == 'Darwin':
+                    filep = str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
+                    fname.append(filep)
+                else:
+                    fname.append(str(url.toLocalFile()))
+                print(fname)
             # Signal that a file has been dropped
             self.sig_dropped.emit(fname[0])
 
