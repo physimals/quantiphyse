@@ -38,22 +38,6 @@ def get_dir(str1):
     return dir1
 
 
-class QGroupBoxClick(QtGui.QGroupBox):
-
-    """
-    Subclassing QGroupBox to detect clicks and signal click
-    """
-
-    sig_click = QtCore.Signal(int)
-
-    # Mouse clicked on widget
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self.sig_click.emit(1)
-        # elif event.button() == QtCore.Qt.RightButton:
-        #     self.sig_click.emit(2)
-
-
 class DragOptions(QtGui.QDialog):
     """
     Interface for dealing with drag and drop
@@ -115,9 +99,7 @@ class MainWindowWidget(QtGui.QWidget):
         # get the default color
         color1 = self.palette().color(QtGui.QPalette.Background)
         colorvec = [color1.red(), color1.green(), color1.blue()]
-        # set the default color for pg
-        # pg.setConfigOption('background', [242, 241, 240])
-        # pg.setConfigOption('foreground', 'k')
+
 
         # Loading data management object
         self.ivm = ImageVolumeManagement()
@@ -132,6 +114,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Loading widgets
         self.sw1 = SECurve(self.local_file_path)
+        self.sw1.add_image_management(self.ivm)
 
         #Pharmaview is not initialised by default
         self.sw5 = None
@@ -178,7 +161,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         #Connecting widget signals
         #1) Plotting data on mouse image click
-        self.ivl1.sig_mouse.connect(self.sw1.sig_mouse)
+        self.ivl1.sig_mouse_click.connect(self.sw1.sig_mouse)
 
         # InitUI
         #Sliders
@@ -272,8 +255,8 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Viewing window layout + buttons
         # Add a horizontal splitter between image viewer and buttons below
-        grid_box = QGroupBoxClick()
-        grid_box.sig_click.connect(self.mpe)
+        grid_box = QtGui.QGroupBox()
+        # grid_box.sig_click.connect(self.mpe)
         grid = QtGui.QVBoxLayout()
         splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(self.ivl1)
@@ -288,7 +271,7 @@ class MainWindowWidget(QtGui.QWidget):
         splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter1.addWidget(grid_box)
         splitter1.addWidget(self.qtab1)
-        splitter1.setStretchFactor(0, 2)
+        splitter1.setStretchFactor(0, 4)
         splitter1.setStretchFactor(1, 1)
         hbox.addWidget(splitter1)
 
@@ -313,20 +296,6 @@ class MainWindowWidget(QtGui.QWidget):
         else:
             self.sld4.setRange(0, 0)
 
-    # Mouse clicked on widget
-    @QtCore.Slot(int)
-    def mpe(self, event):
-        """
-        Provides a pathway to updating mouse points
-        """
-
-        #trigger update of image
-        self.ivl1.mouse_click_connect(event)
-
-        #update slider positions
-        self.sld1.setValue(self.ivm.cim_pos[2])
-        self.sld2.setValue(self.ivm.cim_pos[1])
-        self.sld3.setValue(self.ivm.cim_pos[0])
 
     @QtCore.Slot(bool)
     def slider_scroll_mouse(self, value):
@@ -368,7 +337,7 @@ class MainWindowWidget(QtGui.QWidget):
         if self.sw5 is None:
             self.sw5 = PharmaView()
             self.sw5.add_image_management(self.ivm)
-            self.ivl1.sig_mouse.connect(self.sw5.sig_mouse)
+            self.ivl1.sig_mouse_click.connect(self.sw5.sig_mouse)
 
         index = self.qtab1.addTab(self.sw5, "PharmaViewCompare")
         print(index)
