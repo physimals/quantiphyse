@@ -29,6 +29,7 @@ class ImageMed(pg.ImageItem, object):
     """
 
     sig_mouse_wheel = QtCore.Signal(int)
+    sig_click = QtCore.Signal(QtGui.QMouseEvent)
 
     def __init__(self, border):
         super(ImageMed, self).__init__(border=border)
@@ -43,6 +44,12 @@ class ImageMed(pg.ImageItem, object):
         # defines whether the change is negative or positive scroll
         chnge1 = int(event.delta()/120)
         self.sig_mouse_wheel.emit(chnge1)
+
+    # Mouse clicked on widget
+    def mousePressEvent(self, event):
+        super(ImageMed, self).mousePressEvent(event)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sig_click.emit(event)
 
 
 # TODO use QGraphicsView instread?
@@ -155,6 +162,10 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         grid1.addWidget(self.win3, 3, 0)
         self.setLayout(grid1)
 
+        self.imgwin1.sig_click.connect(self._mouse_pos_view1)
+        self.imgwin2.sig_click.connect(self._mouse_pos_view2)
+        self.imgwin3.sig_click.connect(self._mouse_pos_view3)
+
     def add_image_management(self, image_vol_management):
         """
         Adding image management
@@ -170,59 +181,44 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])
         self._update_view()
 
-    def _mouse_pos(self, pt):
-
+    @QtCore.Slot()
+    def _mouse_pos_view1(self, event):
         """
-        Capture positions of the 3 views on mouse press and update cim_pos
+        Capture mouse click events from window 1
         """
+        mspt0 = event.pos().x()
+        mspt1 = event.pos().y()
+        self.ivm.cim_pos[0] = round(mspt0)
+        self.ivm.cim_pos[1] = round(mspt1)
 
-        ishp = self.ivm.get_image_shape()
+        self.sig_mouse_scroll.emit(1)
+        self.mouse_click_connect()
 
-        if ishp is None:
-            return
+    @QtCore.Slot()
+    def _mouse_pos_view2(self, event):
+        """
+        Capture mouse click events from window 2
+        """
+        mspt0 = event.pos().x()
+        mspt1 = event.pos().y()
+        self.ivm.cim_pos[0] = round(mspt0)
+        self.ivm.cim_pos[2] = round(mspt1)
 
-        # Check if in View1
-        if self.view1.sceneBoundingRect().contains(pt):
-            print("Image position 1:", self.imgwin1.mapFromView(pt))
-            mouse_point = self.imgwin1.mapFromScene(pt)
-            mspt0 = mouse_point.x()
-            mspt1 = mouse_point.y()
-            if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[1]):
-                self.ivm.cim_pos[0] = round(mspt0)
-                self.ivm.cim_pos[1] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
+        self.sig_mouse_scroll.emit(1)
+        self.mouse_click_connect()
 
-        # Check if in View 2
-        elif self.view2.sceneBoundingRect().contains(pt):
-            print("Image position 2:", self.imgwin2.mapFromScene(pt))
-            mouse_point = self.imgwin2.mapFromScene(pt)
-            mspt0 = mouse_point.x()
-            mspt1 = mouse_point.y()
-            if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[2]):
-                self.ivm.cim_pos[0] = round(mspt0)
-                self.ivm.cim_pos[2] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
+    @QtCore.Slot()
+    def _mouse_pos_view3(self, event):
+        """
+        Capture mouse click events from window 3
+        """
+        mspt0 = event.pos().x()
+        mspt1 = event.pos().y()
+        self.ivm.cim_pos[1] = round(mspt0)
+        self.ivm.cim_pos[2] = round(mspt1)
 
-        # Check if in view 3
-        elif self.view3.sceneBoundingRect().contains(pt):
-            print("Image position 3:", self.imgwin3.mapFromScene(pt))
-            mouse_point = self.imgwin3.mapFromScene(pt)
-            mspt0 = mouse_point.x()
-            mspt1 = mouse_point.y()
-            if (round(mspt0) < ishp[1]) and (round(mspt1) < ishp[2]):
-                self.ivm.cim_pos[1] = round(mspt0)
-                self.ivm.cim_pos[2] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
-
-        #self.ivm.cim_pos[self.ivm.cim_pos > ishp] = ishp[self.ivm.cim_pos > ishp]
-
-        # stops it going below zeros
-        self.ivm.cim_pos[0] *= (self.ivm.cim_pos[0] > 0)
-        self.ivm.cim_pos[1] *= (self.ivm.cim_pos[1] > 0)
-        self.ivm.cim_pos[2] *= (self.ivm.cim_pos[2] > 0)
+        self.sig_mouse_scroll.emit(1)
+        self.mouse_click_connect()
 
     def __update_crosshairs(self):
         """
@@ -410,20 +406,11 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ivm.cim_pos[3] = value
         self._update_view()
 
-    @QtCore.Slot(int)
-    def mouse_click_connect(self, event):
-        """
-        On mouse click:
-        1) get the current position on the image,
-        2) update the view
-        3) emit signal of current position data
-        """
+    def mouse_click_connect(self):
 
         if self.ivm.image is None:
             return
 
-        pt = QtCore.QPoint(event.pos())
-        self._mouse_pos(pt)
         self._update_view()
 
         #Signal emit current enhancement curve to widget
@@ -435,10 +422,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         else:
             vec_sig = None
             print("Image is not 3D or 4D")
-
         self.sig_mouse.emit(vec_sig)
-
-        #self.add_arrow_current_pos()
 
     @QtCore.Slot()
     def set_arrow_color(self, c):
