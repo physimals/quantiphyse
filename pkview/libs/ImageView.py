@@ -23,8 +23,9 @@ class ImageMed(pg.ImageItem, object):
     """
     Subclassing ImageItem in order to change the wheeEvent action
     """
-
+    # General signal that the mouse has been interacted with (used to be just for the wheel)
     sig_mouse_wheel = QtCore.Signal(int)
+    # Signal that the mouse has been clicked in the image
     sig_click = QtCore.Signal(QtGui.QMouseEvent)
 
     def __init__(self, border):
@@ -60,7 +61,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
     # Signals (moving out of init means that the signal is shared by
     # each instance. Just how Qt appears to be set up)
-    #signalling a mouse click
+
+    # signalling a mouse click
     sig_mouse_click = QtCore.Signal(bool)
 
     # Signals when the mouse is scrolling
