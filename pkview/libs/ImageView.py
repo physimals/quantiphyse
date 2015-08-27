@@ -186,8 +186,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[1]):
                 self.ivm.cim_pos[0] = round(mspt0)
                 self.ivm.cim_pos[1] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
 
         # Check if in View 2
         elif self.view2.sceneBoundingRect().contains(self.lastMousePos):
@@ -198,8 +196,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             if (round(mspt0) < ishp[0]) and (round(mspt1) < ishp[2]):
                 self.ivm.cim_pos[0] = round(mspt0)
                 self.ivm.cim_pos[2] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
 
         # Check if in view 3
         elif self.view3.sceneBoundingRect().contains(self.lastMousePos):
@@ -210,10 +206,6 @@ class ImageViewLayout(pg.GraphicsLayoutWidget, object):
             if (round(mspt0) < ishp[1]) and (round(mspt1) < ishp[2]):
                 self.ivm.cim_pos[1] = round(mspt0)
                 self.ivm.cim_pos[2] = round(mspt1)
-            else:
-                warnings.warn('Out of bounds')
-
-        #self.ivm.cim_pos[self.ivm.cim_pos > ishp] = ishp[self.ivm.cim_pos > ishp]
 
         # stops it going below zeros
         self.ivm.cim_pos[0] *= (self.ivm.cim_pos[0] > 0)
