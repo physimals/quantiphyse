@@ -48,7 +48,7 @@ class ImageMed(pg.ImageItem, object):
             self.sig_click.emit(event)
 
 
-class ImageViewLayout(QtGui.QWidget, object):
+class ImageViewLayout(QtGui.QGraphicsView, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
