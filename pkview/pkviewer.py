@@ -580,10 +580,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
             e.setDropAction(QtCore.Qt.CopyAction)
             e.accept()
             fname = []
-            # TODO Issue with drag and drop for OSx here.
-            # TODO Need to find a better way or move up to Qt5
             for url in e.mimeData().urls():
                 if op_sys == 'Darwin':
+                    # OSx specific changes to allow drag and drop
                     filep = str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
                     fname.append(filep)
                 else:
