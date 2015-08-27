@@ -17,9 +17,16 @@ import numpy as np
 import platform
 
 op_sys = platform.system()
+# OSx specific Changes
 if op_sys == 'Darwin':
     from Foundation import NSURL
-    QtGui.QApplication.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
+    QtGui.QApplication.setGraphicsSystem('native')
+
+# Linux specific changes
+# None currently
+
+# Windows specific changes
+# None currently
 
 
 # My libs
