@@ -8,10 +8,6 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import matplotlib
-#matplotlib.use('Qt4Agg')
-#matplotlib.rcParams['backend.qt4'] = 'PySide'
-#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-#import matplotlib.pyplot as plt
 
 from matplotlib import cm
 from PySide import QtCore, QtGui
@@ -52,8 +48,7 @@ class ImageMed(pg.ImageItem, object):
             self.sig_click.emit(event)
 
 
-# TODO use QGraphicsView instread?
-class ImageViewLayout(QtGui.QGraphicsView, object):
+class ImageViewLayout(QtGui.QWidget, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
@@ -66,7 +61,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
     # Signals (moving out of init means that the signal is shared by
     # each instance. Just how Qt appears to be set up)
     #signalling a mouse click
-    sig_mouse = QtCore.Signal(np.ndarray)
+    sig_mouse_click = QtCore.Signal(bool)
 
     # Signals when the mouse is scrolling
     sig_mouse_scroll = QtCore.Signal(bool)
@@ -91,6 +86,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.win1 = pg.GraphicsView()
         self.win2 = pg.GraphicsView()
         self.win3 = pg.GraphicsView()
+        self.winhist = pg.GraphicsView()
 
         self.view1 = pg.ViewBox(name="view1", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view1.setAspectLocked(True)
@@ -105,7 +101,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         # Adding a histogram LUT
         self.h1 = pg.HistogramLUTItem(fillHistogram=False)
-#        self.addItem(self.h1, row=1, col=4)
         self.h1.setImageItem(self.imgwin1)
 
         self.view3 = pg.ViewBox(name="view3", border=pg.mkPen((0, 0, 255), width=3.0))
@@ -154,13 +149,22 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.win1.setCentralItem(self.view1)
         self.win2.setCentralItem(self.view2)
         self.win3.setCentralItem(self.view3)
+        self.winhist.setBackground(background=None)
+        self.winhist.setCentralItem(self.h1)
 
-        grid1 = QtGui.QGridLayout()
+        self.grid1 = QtGui.QGridLayout()
 
-        grid1.addWidget(self.win1, 1, 0)
-        grid1.addWidget(self.win2, 1, 1)
-        grid1.addWidget(self.win3, 3, 0)
-        self.setLayout(grid1)
+        self.grid1.addWidget(self.win1, 0, 0)
+        self.grid1.addWidget(self.win2, 0, 1)
+        self.grid1.addWidget(self.win3, 2, 0)
+        self.grid1.addWidget(self.winhist, 0, 2, 2, 2)
+
+        self.grid1.setColumnStretch(0, 6)
+        self.grid1.setColumnStretch(1, 6)
+        self.grid1.setColumnStretch(2, 1)
+        self.grid1.setColumnStretch(3, 1)
+
+        self.setLayout(self.grid1)
 
         self.imgwin1.sig_click.connect(self._mouse_pos_view1)
         self.imgwin2.sig_click.connect(self._mouse_pos_view2)
@@ -192,7 +196,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ivm.cim_pos[1] = round(mspt1)
 
         self.sig_mouse_scroll.emit(1)
-        self.mouse_click_connect()
+        self.sig_mouse_click.emit(1)
+        self._update_view()
 
     @QtCore.Slot()
     def _mouse_pos_view2(self, event):
@@ -205,7 +210,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ivm.cim_pos[2] = round(mspt1)
 
         self.sig_mouse_scroll.emit(1)
-        self.mouse_click_connect()
+        self.sig_mouse_click.emit(1)
+        self._update_view()
 
     @QtCore.Slot()
     def _mouse_pos_view3(self, event):
@@ -218,7 +224,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ivm.cim_pos[2] = round(mspt1)
 
         self.sig_mouse_scroll.emit(1)
-        self.mouse_click_connect()
+        self.sig_mouse_click.emit(1)
+        self._update_view()
 
     def __update_crosshairs(self):
         """
@@ -405,24 +412,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.ivm.cim_pos[3] = value
         self._update_view()
-
-    def mouse_click_connect(self):
-
-        if self.ivm.image is None:
-            return
-
-        self._update_view()
-
-        #Signal emit current enhancement curve to widget
-        if len(self.ivm.img_dims) == 3:
-            print("3D image so just calculating cross image profile")
-            vec_sig = self.ivm.image[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
-        elif len(self.ivm.img_dims) == 4:
-            vec_sig = self.ivm.image[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
-        else:
-            vec_sig = None
-            print("Image is not 3D or 4D")
-        self.sig_mouse.emit(vec_sig)
 
     @QtCore.Slot()
     def set_arrow_color(self, c):
@@ -621,8 +610,19 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # self.set_default_colormap_manual()
         self.ov_range = [0.0, 1.0]
 
-        # self.l2 = self.addLayout(row=3, col=4, colspan=1, rowspan=1)
-        # self.view4 = self.l2.addViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
+        self.win4 = pg.GraphicsView()
+        self.win5 = pg.GraphicsView()
+        self.win4.setBackground(background=None)
+        self.win5.setBackground(background=None)
+        self.view4 = pg.ViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
+        self.view5 = pg.ViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
+        self.win4.setCentralItem(self.view4)
+        # self.win5.setCentralItem(self.view5)
+        # self.l2 = QtGui.QHBoxLayout()
+        # self.l2.addWidget(self.win4)
+
+        self.grid1.addWidget(self.win4, 2, 2)
+        self.grid1.addWidget(self.win5, 2, 3)
 
     def load_ovreg(self):
         """
@@ -651,7 +651,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgcolbar1 = pg.ImageItem(border='k')
             self.view4.addItem(self.imgcolbar1)
             self.axcol = pg.AxisItem('right')
-            self.l2.addItem(self.axcol)
+            self.win5.setCentralItem(self.axcol)
 
         if len(self.ivm.ovreg_dims) < 4:
             self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)

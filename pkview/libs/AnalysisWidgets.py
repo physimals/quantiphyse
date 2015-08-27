@@ -123,6 +123,14 @@ class SECurve(QtGui.QWidget):
         # initial plot colour
         self.plot_color = (200, 200, 200)
 
+        self.ivm = None
+
+    def add_image_management(self, image_vol_management):
+        """
+        Adding image management
+        """
+        self.ivm = image_vol_management
+
     def _plot(self, values1):
 
         """
@@ -214,10 +222,22 @@ class SECurve(QtGui.QWidget):
 
     @QtCore.Slot(np.ndarray)
     def sig_mouse(self, values1):
+
         """
         Get signal from mouse click
         """
-        self._plot(values1)
+
+        #Signal emit current enhancement curve to widget
+        if len(self.ivm.img_dims) == 3:
+            print("3D image so just calculating cross image profile")
+            vec_sig = self.ivm.image[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
+        elif len(self.ivm.img_dims) == 4:
+            vec_sig = self.ivm.image[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
+        else:
+            vec_sig = None
+            print("Image is not 3D or 4D")
+
+        self._plot(vec_sig)
 
     @QtCore.Slot(str)
     def emit_cchoice(self, text):

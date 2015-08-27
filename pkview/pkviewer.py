@@ -114,6 +114,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Loading widgets
         self.sw1 = SECurve(self.local_file_path)
+        self.sw1.add_image_management(self.ivm)
 
         #Pharmaview is not initialised by default
         self.sw5 = None
@@ -160,7 +161,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         #Connecting widget signals
         #1) Plotting data on mouse image click
-        self.ivl1.sig_mouse.connect(self.sw1.sig_mouse)
+        self.ivl1.sig_mouse_click.connect(self.sw1.sig_mouse)
 
         # InitUI
         #Sliders
@@ -270,7 +271,7 @@ class MainWindowWidget(QtGui.QWidget):
         splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter1.addWidget(grid_box)
         splitter1.addWidget(self.qtab1)
-        splitter1.setStretchFactor(0, 2)
+        splitter1.setStretchFactor(0, 4)
         splitter1.setStretchFactor(1, 1)
         hbox.addWidget(splitter1)
 
@@ -336,7 +337,7 @@ class MainWindowWidget(QtGui.QWidget):
         if self.sw5 is None:
             self.sw5 = PharmaView()
             self.sw5.add_image_management(self.ivm)
-            self.ivl1.sig_mouse.connect(self.sw5.sig_mouse)
+            self.ivl1.sig_mouse_click.connect(self.sw5.sig_mouse)
 
         index = self.qtab1.addTab(self.sw5, "PharmaViewCompare")
         print(index)
