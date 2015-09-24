@@ -103,3 +103,6 @@ setup(name='PKView',
       ext_modules=cythonize([extensions], language="c++"),
       scripts=["pkviewer2"])
 
+# TODO apparently it's now recommended to use entry points instread of scripts
+# TODO see: https://pythonhosted.org/setuptools/setuptools.html#automatic-script-creation
+

@@ -309,7 +309,6 @@ class MainWindowWidget(QtGui.QWidget):
         else:
             self.sld4.setRange(0, 0)
 
-
     @QtCore.Slot(bool)
     def slider_scroll_mouse(self, value):
         #update slider positions
