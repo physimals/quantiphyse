@@ -60,7 +60,7 @@ extensions = Extension("pkview/analysis/pk_model",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.16',
+      version='0.17',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
