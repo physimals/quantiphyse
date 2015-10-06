@@ -1,3 +1,10 @@
+pkview (0.17ubuntu1) trusty; urgency=medium
+
+  * New viewing window that is much less dependent on pyqtgraph and works with the fundamentals of qt instead 
+  * Allows easier future development and more flexibility when it comes to resizing windows.
+
+ -- benjamin <engs1170@engs-20971>  Tue, 06 Oct 2015 15:40:48 +0100
+
 pkview (0.16) trusty; urgency=medium
 
   * Improved interface
