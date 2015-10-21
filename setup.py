@@ -101,7 +101,9 @@ setup(name='PKView',
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
       ext_modules=cythonize([extensions], language="c++"),
-      scripts=["pkviewer2"])
+      entry_points={
+          'gui_scripts': ['pkview2 = pkview.pkviewer:main']
+      })
 
 # TODO apparently it's now recommended to use entry points instread of scripts
 # TODO see: https://pythonhosted.org/setuptools/setuptools.html#automatic-script-creation

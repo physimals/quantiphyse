@@ -15,6 +15,7 @@ import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np
 import platform
+import argparse
 
 op_sys = platform.system()
 # OSx specific Changes
@@ -813,6 +814,30 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.show_ovregsel_load_dialog(fname=self.overlay_dir_in, ftype=self.overlay_type_in)
 
 
+def main():
+
+    """
+    Parse any input arguments and run the application
+    """
+
+    # Parse input arguments to pass info to GUI
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
+    parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
+    parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
+    parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
+    args = parser.parse_args()
+
+    # Initialise the PKView application
+    app = QtGui.QApplication(sys.argv)
+    app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
+    # app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
+
+    # Pass arguments from the terminal (if any) into the main application
+    ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
+    sys.exit(app.exec_())
 
 
+if __name__ == '__main__':
+    main()
 
