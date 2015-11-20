@@ -36,7 +36,7 @@ import numpy
 from setuptools import setup
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
-from distutils.extension import Extension
+from setuptools.extension import Extension
 
 Description = """/
 PkView
