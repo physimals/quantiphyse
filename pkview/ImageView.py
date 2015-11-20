@@ -92,12 +92,11 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.view1 = pg.ViewBox(name="view1", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view1.setAspectLocked(True)
-        # self.view1.setVisible(False)
         self.imgwin1 = ImageMed(border='k')
         self.view1.addItem(self.imgwin1)
+
         self.view2 = pg.ViewBox(name="view2", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view2.setAspectLocked(True)
-        # self.view2.setVisible(False)
         self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
 
@@ -107,7 +106,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.view3 = pg.ViewBox(name="view3", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view3.setAspectLocked(True)
-        # self.view3.setVisible(False)
         self.imgwin3 = ImageMed(border='k')
         self.view3.addItem(self.imgwin3)
 
@@ -447,7 +445,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
     @QtCore.Slot()
     def toggle_dimscale(self, state):
-        #toggles whether voxel scaling is used
+        """
+        toggles whether voxel scaling is used
+        """
 
         if state == QtCore.Qt.Checked:
             self.view1.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[1]))

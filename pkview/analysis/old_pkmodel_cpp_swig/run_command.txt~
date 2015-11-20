@@ -1,3 +1,0 @@
-swig -c++ -python -o pk_wrap.cpp pk.i
-gcc -Ilmlib -fPIC $(python-config --includes) -c pk_wrap.cpp pk.cpp Optimizer_class.cpp ToftsOrton.cpp ToftsOrtonOffset.cpp ToftsWeinOffset.cpp ToftsWeinOffsetVp.cpp lmlib/lmcurve.cpp lmlib/lmmin.cpp
-g++ -shared pk_wrap.o pk.o Optimizer_class.o -o _pk.so

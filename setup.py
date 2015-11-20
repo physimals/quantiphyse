@@ -60,13 +60,13 @@ extensions = Extension("pkview/analysis/pk_model",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.16',
+      version='0.17',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
       author_email='benjamin.irving@eng.ox.ac.uk',
       url='www.birving.com',
-      packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.annotation', 'pkview.libs',
+      packages=['pkview', 'pkview.subclassing_of_qt_fns', 'pkview.analysis', 'pkview.annotation', 'pkview.widgets',
                 'pkview.analysis', 'pkview.icons', 'pkview.resources'],
       include_package_data=True,
       data_files=[('pkview/icons/', ['pkview/icons/picture.svg',
@@ -101,7 +101,9 @@ setup(name='PKView',
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
       ext_modules=cythonize([extensions], language="c++"),
-      scripts=["pkviewer2"])
+      entry_points={
+          'gui_scripts': ['pkview2 = pkview.pkviewer:main']
+      })
 
 # TODO apparently it's now recommended to use entry points instread of scripts
 # TODO see: https://pythonhosted.org/setuptools/setuptools.html#automatic-script-creation

@@ -13,7 +13,7 @@ import numpy as np
 
 from pkview.analysis.kmeans import KMeans
 
-from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 
 
 class CurveClusteringWidget(QtGui.QWidget):

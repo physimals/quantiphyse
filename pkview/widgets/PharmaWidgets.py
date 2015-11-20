@@ -14,7 +14,7 @@ from PySide import QtCore, QtGui
 import numpy as np
 import pyqtgraph as pg
 
-from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
 
 
@@ -546,3 +546,5 @@ class PharmaView(QtGui.QWidget):
         val, val_est = self.ivm.get_current_enhancement()
         self._plot(val, val_est)
         self._update_table()
+
+
