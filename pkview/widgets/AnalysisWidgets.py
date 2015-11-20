@@ -13,7 +13,7 @@ import pyqtgraph as pg
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 
 
 class SECurve(QtGui.QWidget):

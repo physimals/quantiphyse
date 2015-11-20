@@ -9,7 +9,7 @@ from __future__ import division, print_function, unicode_literals, absolute_impo
 
 from PySide import QtCore, QtGui
 import numpy as np
-from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 from pkview.analysis.feat_pca import PcaFeatReduce
 
 from skimage.segmentation import random_walker

@@ -151,6 +151,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.win3.setCentralItem(self.view3)
         self.winhist.setBackground(background=None)
         self.winhist.setCentralItem(self.h1)
+        # self.win3.setVisible(False)
 
         self.grid1 = QtGui.QGridLayout()
 

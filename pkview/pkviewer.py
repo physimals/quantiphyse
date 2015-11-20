@@ -7,15 +7,25 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
+# My widgets
+from pkview.ImageView import ImageViewColorOverlay
+from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
+from .widgets.ClusteringWidgets import CurveClusteringWidget
+from .widgets.PharmaWidgets import PharmaWidget, PharmaView
+from .widgets.ExperimentalWidgets import ImageExportWidget
+from .volumes.volume_management import ImageVolumeManagement
+from .analysis.overlay_analysis import OverlayAnalyis
+from pkview.widgets.AnnotWidgets import RandomWalkerWidget
+
 import sys
 import os
-from PySide import QtCore, QtGui
-import pyqtgraph as pg
-
-import pyqtgraph.console
-import numpy as np
 import platform
 import argparse
+
+from PySide import QtCore, QtGui
+import pyqtgraph as pg
+import pyqtgraph.console
+import numpy as np
 
 op_sys = platform.system()
 # OSx specific Changes
@@ -28,17 +38,6 @@ if op_sys == 'Darwin':
 
 # Windows specific changes
 # None currently
-
-
-# My libs
-from .libs.ImageView import ImageViewColorOverlay
-from .libs.AnalysisWidgets import SECurve, ColorOverlay1
-from .libs.ClusteringWidgets import CurveClusteringWidget
-from .libs.PharmaWidgets import PharmaWidget, PharmaView
-from .libs.ExperimentalWidgets import ImageExportWidget
-from .analysis.volume_management import ImageVolumeManagement
-from .analysis.overlay_analysis import OverlayAnalyis
-from .annotation.AnnotWidgets import RandomWalkerWidget
 
 
 def get_dir(str1):
@@ -110,11 +109,6 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.local_file_path = local_file_path
 
-        # get the default color
-        color1 = self.palette().color(QtGui.QPalette.Background)
-        colorvec = [color1.red(), color1.green(), color1.blue()]
-
-
         # Loading data management object
         self.ivm = ImageVolumeManagement()
 
@@ -122,15 +116,19 @@ class MainWindowWidget(QtGui.QWidget):
         self.ia = OverlayAnalyis()
         self.ia.add_image_management(self.ivm)
 
-        #loading ImageView
+        # loading ImageView
         self.ivl1 = ImageViewColorOverlay()
         self.ivl1.add_image_management(self.ivm)
+        self.ivl1.sig_mouse_scroll.connect(self.slider_scroll_mouse)
 
         # Loading widgets
         self.sw1 = SECurve(self.local_file_path)
         self.sw1.add_image_management(self.ivm)
+        # Signals to connect widget
+        self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
+        self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
 
-        #Pharmaview is not initialised by default
+        # Pharmaview is not initialised by default
         self.sw5 = None
 
         # Color overlay widget
@@ -154,11 +152,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.sw_rw = None
 
         # Connect widgets
-        #Connect colormap choice, alpha
+        # Connect colormap choice, alpha
         self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
         self.sw2.sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
 
-        #Connecting toggle buttons
+        # Connecting toggle buttons
         self.sw2.cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
         self.sw2.cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
@@ -166,19 +164,21 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.sw3.sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        #Connect image export widget
+        # Connect image export widget
         self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)
         self.sw4.sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
-        #Connect reset from clustering widget
+        # Connect reset from clustering widget
         self.sw_cc.sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        #Connecting widget signals
-        #1) Plotting data on mouse image click
+        self.initTabs()
+
+        # Connecting widget signals
+        # 1) Plotting data on mouse image click
         self.ivl1.sig_mouse_click.connect(self.sw1.sig_mouse)
 
         # InitUI
-        #Sliders
+        # Sliders
         self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
@@ -187,15 +187,15 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
         self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
-        #self.update_slider_range()
+        # self.update_slider_range()
 
-        #connect sliders to ivl1
+        # connect sliders to ivl1
         self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
         self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
         self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
         self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
 
-        #CheckBox
+        # CheckBox
         cb1 = QtGui.QCheckBox('Show ROI', self)
         cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
         cb1.toggle()
@@ -204,20 +204,8 @@ class MainWindowWidget(QtGui.QWidget):
         cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
         cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
 
-        # Tabbed Widget
-        self.qtab1 = QtGui.QTabWidget()
-        self.qtab1.setTabsClosable(True)
-        self.qtab1.setMovable(True)
-        #Set the icon size of the tabs
-        self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
-        #Widgets added to tabs on the right hand side
-        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
-        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
-        #signal
-        self.qtab1.tabCloseRequested.connect(self.on_tab_close)
-
-        #Position Label and connect to slider
+        # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
         self.sld1.valueChanged[int].connect(lab_p1.setNum)
         lab_p2 = QtGui.QLabel('0')
@@ -227,7 +215,7 @@ class MainWindowWidget(QtGui.QWidget):
         lab_p4 = QtGui.QLabel('0')
         self.sld4.valueChanged[int].connect(lab_p4.setNum)
 
-        #Layout
+        # Layout
         # Group box buttons
         gBox = QtGui.QGroupBox("Image and ROI options")
         gBoxlay = QtGui.QVBoxLayout()
@@ -292,15 +280,31 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
-        # Signals to connect widget
-        self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
-        self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+    def initTabs(self):
 
-        self.ivl1.sig_mouse_scroll.connect(self.slider_scroll_mouse)
+        """
+        Initialise the tab widget
+
+        Returns:
+
+        """
+
+        # Tabbed Widget
+        self.qtab1 = QtGui.QTabWidget()
+        self.qtab1.setTabsClosable(True)
+        self.qtab1.setMovable(True)
+        # Set the icon size of the tabs
+        self.qtab1.setIconSize(QtCore.QSize(16, 16))
+
+        # Widgets added to tabs on the right hand side
+        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
+        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
+        # signal
+        self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
 
     # update slider range
     def update_slider_range(self):
-        #set slider range
+        # set slider range
         self.sld1.setRange(0, self.ivm.img_dims[2]-1)
         self.sld2.setRange(0, self.ivm.img_dims[1]-1)
         self.sld3.setRange(0, self.ivm.img_dims[0]-1)
@@ -312,16 +316,10 @@ class MainWindowWidget(QtGui.QWidget):
 
     @QtCore.Slot(bool)
     def slider_scroll_mouse(self, value):
-        #update slider positions
+        # update slider positions
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[1])
         self.sld3.setValue(self.ivm.cim_pos[0])
-
-    # Handles closing of tabs
-    def on_tab_close(self, value):
-        self.qtab1.removeTab(value)
-
-        #TODO delete object if tab closed? Create object if menu item clicked?
 
     # Connect widget
     def show_se(self):
@@ -453,29 +451,29 @@ class WindowAndDecorators(QtGui.QMainWindow):
         :return:
         """
 
-        #File --> Load Image
+        # File --> Load Image
         load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
-        #File --> Load ROI
+        # File --> Load ROI
         load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
-        #File --> Load Overlay
+        # File --> Load Overlay
         load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
-        #File --> Save Overlay
+        # File --> Save Overlay
         save_ovreg_action = QtGui.QAction('&Save Current Overlay', self)
         save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
         save_ovreg_action.triggered.connect(self.show_ovreg_save_dialog)
         save_ovreg_action.setShortcut('Ctrl+S')
 
-        #File --> Exit
+        # File --> Exit
         exit_action = QtGui.QAction('&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.setStatusTip('Exit Application')
@@ -491,7 +489,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         ic_action.setStatusTip('Export images from the GUI')
         ic_action.triggered.connect(self.mw1.show_ic)
 
-        #Widgets --> Pharmacokinetics
+        # Widgets --> Pharmacokinetics
         pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Pharmacokinetics', self)
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
@@ -511,13 +509,13 @@ class WindowAndDecorators(QtGui.QMainWindow):
         cc_action.setStatusTip('Cluster curves in a ROI of interest')
         cc_action.triggered.connect(self.mw1.show_cc)
 
-        #Wigets --> Create Annotation
+        # Wigets --> Create Annotation
         annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
         annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
         annot_ovreg_action.setCheckable(True)
         annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
 
-        #Help -- > Online help
+        # Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
         help_action.setStatusTip('See online help file')
         help_action.triggered.connect(self.click_link)
@@ -700,7 +698,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
 
-        #check if file is returned
+         #check if file is returned
         if fname != '':
             self.default_directory = get_dir(fname)
             self.mw1.ivm.load_roi(fname)
@@ -744,7 +742,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            #self.default_directory = get_dir(fname)
+            # self.default_directory = get_dir(fname)
             self.mw1.ivm.save_ovreg(fname, 'current')
         else:
             print('Warning: No file selected')
