@@ -13,6 +13,7 @@ from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.ExperimentalWidgets import ImageExportWidget
+from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from pkview.widgets.AnnotWidgets import RandomWalkerWidget
@@ -148,6 +149,8 @@ class MainWindowWidget(QtGui.QWidget):
         self.sw_cc = CurveClusteringWidget()
         self.sw_cc.add_image_management(self.ivm)
 
+        self.sw_over = OverviewWidget(self.local_file_path)
+
         # Random Walker
         self.sw_rw = None
 
@@ -170,6 +173,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Connect reset from clustering widget
         self.sw_cc.sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.sw_cc.add_image_management(self.ivm)
 
         self.initTabs()
 
@@ -263,7 +267,7 @@ class MainWindowWidget(QtGui.QWidget):
         splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(self.ivl1)
         splitter2.addWidget(gBox_all)
-        splitter2.setStretchFactor(0, 3)
+        splitter2.setStretchFactor(0, 5)
         splitter2.setStretchFactor(1, 1)
         grid.addWidget(splitter2)
         grid_box.setLayout(grid)
@@ -297,6 +301,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
         # Widgets added to tabs on the right hand side
+        self.qtab1.addTab(self.sw_over, "Overview")
         self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
         self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
         # signal

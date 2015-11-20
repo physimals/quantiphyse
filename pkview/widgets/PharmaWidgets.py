@@ -546,3 +546,5 @@ class PharmaView(QtGui.QWidget):
         val, val_est = self.ivm.get_current_enhancement()
         self._plot(val, val_est)
         self._update_table()
+
+
