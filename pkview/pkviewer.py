@@ -150,6 +150,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.sw_cc.add_image_management(self.ivm)
 
         self.sw_over = OverviewWidget(self.local_file_path)
+        self.sw_over.add_image_management(self.ivm)
 
         # Random Walker
         self.sw_rw = None
