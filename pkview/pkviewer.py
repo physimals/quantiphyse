@@ -168,6 +168,8 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.sw3.sig_emit_reset.connect(self.ivl1.update_overlay)
 
+        self.sw_over.l1.sig_emit_reset.connect(self.ivl1.update_overlay)
+
         # Connect image export widget
         self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)
         self.sw4.sig_cap_image.connect(self.ivl1.capture_view_as_image)
