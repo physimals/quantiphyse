@@ -114,6 +114,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.ivm = ImageVolumeManagement()
 
         # Loading image analysis
+
         self.ia = OverlayAnalyis()
         self.ia.add_image_management(self.ivm)
 
@@ -122,67 +123,70 @@ class MainWindowWidget(QtGui.QWidget):
         self.ivl1.add_image_management(self.ivm)
         self.ivl1.sig_mouse_scroll.connect(self.slider_scroll_mouse)
 
-        # Loading widgets
-        self.sw1 = SECurve(self.local_file_path)
-        self.sw1.add_image_management(self.ivm)
+        # ~~~~~~~~~~~~ Widgets ~~~~~~~~~~~~~~~~~~~~
+        self.wid = {}
+
+        # Signal Enhancement
+        self.wid["SigEn"] = [SECurve(self.local_file_path), '/icons/voxel.svg', 'Voxel analysis']
+        self.wid["SigEn"][0].add_image_management(self.ivm)
         # Signals to connect widget
-        self.sw1.sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
-        self.sw1.sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+        self.wid["SigEn"][0].sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
+        self.wid["SigEn"][0].sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
 
         # Pharmaview is not initialised by default
-        self.sw5 = None
+        self.wid["PView"] = [None, 'a', 'b']
 
         # Color overlay widget
-        self.sw2 = ColorOverlay1()
-        self.sw2.add_analysis(self.ia)
-        self.sw2.add_image_management(self.ivm)
+        self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
+        self.wid["ColOv"][0].add_analysis(self.ia)
+        self.wid["ColOv"][0].add_image_management(self.ivm)
 
         # Pharmacokinetic modelling widget
-        self.sw3 = PharmaWidget()
-        self.sw3.add_image_management(self.ivm)
+        self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
+        self.wid["PAna"][0].add_image_management(self.ivm)
 
         # Gif creation widget
-        self.sw4 = ImageExportWidget()
-        self.sw4.add_image_management(self.ivm)
+        self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
+        self.wid["ImExp"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.sw_cc = CurveClusteringWidget()
-        self.sw_cc.add_image_management(self.ivm)
+        self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
+        self.wid["Clus"][0].add_image_management(self.ivm)
 
-        self.sw_over = OverviewWidget(self.local_file_path)
-        self.sw_over.add_image_management(self.ivm)
+        self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
+        self.wid["Overview"][0].add_image_management(self.ivm)
 
         # Random Walker
         # self.sw_rw = None
 
         # Connect widgets
         # Connect colormap choice, alpha
-        self.sw2.sig_choose_cmap.connect(self.ivl1.set_colormap)
-        self.sw2.sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
+        self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
+        self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
 
         # Connecting toggle buttons
-        self.sw2.cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
-        self.sw2.cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
+        self.wid["ColOv"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
+        self.wid["ColOv"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
-        self.sw2.sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        self.sw3.sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        self.sw_over.l1.sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
 
         # Connect image export widget
-        self.sw4.sig_set_temp.connect(self.ivl1.set_temporal_position)
-        self.sw4.sig_cap_image.connect(self.ivl1.capture_view_as_image)
+        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
+        self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
         # Connect reset from clustering widget
-        self.sw_cc.sig_emit_reset.connect(self.ivl1.update_overlay)
-        self.sw_cc.add_image_management(self.ivm)
+        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["Clus"][0].add_image_management(self.ivm)
 
         self.initTabs()
 
         # Connecting widget signals
         # 1) Plotting data on mouse image click
-        self.ivl1.sig_mouse_click.connect(self.sw1.sig_mouse)
+        self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
 
         # InitUI
         # Sliders
@@ -304,9 +308,9 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
         # Widgets added to tabs on the right hand side
-        self.qtab1.addTab(self.sw_over, "Overview")
-        self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
-        self.qtab1.addTab(self.sw2, QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
+        self.qtab1.addTab(self.wid["Overview"][0], "Overview")
+        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
+        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
         # signal
         self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
 
@@ -329,58 +333,41 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld2.setValue(self.ivm.cim_pos[1])
         self.sld3.setValue(self.ivm.cim_pos[0])
 
+    # Connect to a widget
+    def show_widget(self, wname):
+        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(self.local_file_path + self.wid[wname][1]), self.wid[wname][2])
+        self.qtab1.setCurrentIndex(index)
+
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.sw1, QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
-        print(index)
+        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
     def show_ic(self):
-        index = self.qtab1.addTab(self.sw4, "Image Export")
-        print(index)
+        index = self.qtab1.addTab(self.wid["ImExp"][0], "Image Export")
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.sw3, QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pharmacokinetics")
+        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pharmacokinetics")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
-        index = self.qtab1.addTab(self.sw_cc, QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
+        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
                                   "CurveClustering", )
         self.qtab1.setCurrentIndex(index)
 
     def show_pw(self):
 
         # Initialise if it is not already initialised
-        if self.sw5 is None:
-            self.sw5 = PharmaView()
-            self.sw5.add_image_management(self.ivm)
-            self.ivl1.sig_mouse_click.connect(self.sw5.sig_mouse)
+        if self.wid["PView"][0] is None:
+            self.wid["PView"][0] = PharmaView()
+            self.wid["PView"][0].add_image_management(self.ivm)
+            self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
 
-        index = self.qtab1.addTab(self.sw5, "PharmaViewCompare")
+        index = self.qtab1.addTab(self.wid["PView"][0], "PharmaViewCompare")
         print(index)
         self.qtab1.setCurrentIndex(index)
-
-    # def show_rw(self):
-    #
-    #     # Initialise if it is not already initialised
-    #     if self.sw_rw is None:
-    #         self.sw_rw = RandomWalkerWidget()
-    #         self.sw_rw.add_image_management(self.ivm)
-    #         self.sw_rw.sig_set_annotation.connect(self.ivl1.enable_drawing)
-    #         self.sw_rw.sig_save_annotation.connect(self.ivl1.save_overlay)
-    #         self.sw_rw.sig_emit_reset.connect(self.ivl1.update_overlay)
-    #
-    #     index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
-    #     print(index)
-    #     self.qtab1.setCurrentIndex(index)
-
-# class AnaTabs(QtGui.QTabWidget):
-#
-#     def __init__(self):
-#         super(AnaTabs, self).__init__()
-#
 
 
 class WindowAndDecorators(QtGui.QMainWindow):
@@ -496,6 +483,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # Widgets --> SE curve
         se_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), '&SEcuve', self)
         se_action.setStatusTip('Plot SE of a voxel')
+        # se_action.setData("SigEn")
         se_action.triggered.connect(self.mw1.show_se)
 
         # Widgets --> Image export

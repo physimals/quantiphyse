@@ -3,6 +3,8 @@ from PySide import QtGui, QtCore
 
 
 class OverviewWidget(QtGui.QWidget):
+    #
+    sig_show_se = QtCore.Signal()
 
     def __init__(self, local_file_path):
         super(OverviewWidget, self).__init__()
@@ -20,7 +22,7 @@ class OverviewWidget(QtGui.QWidget):
         # w1.clicked.connect()
 
         # List for volume management
-        t1 = QtGui.QLabel("Volume management")
+        t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget()
 
         layout.addWidget(w1)
@@ -40,6 +42,7 @@ class OverviewWidget(QtGui.QWidget):
         self.ivm.sig_all_overlays.connect(self.update_overlays)
 
         self.l1.add_image_management(self.ivm)
+
 
     @QtCore.Slot(list)
     def update_overlays(self, list1):
