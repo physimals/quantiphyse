@@ -301,13 +301,6 @@ class ColorOverlay1(QtGui.QWidget):
         combo.setToolTip("The colormaps available for visualising the overlay")
         combo.activated[str].connect(self.emit_cmap)
 
-        # combo for choosing overlay volume
-        self.combo2 = QtGui.QComboBox(self)
-        self.combo2.setToolTip("The overlays that have currently been loaded or generated")
-        self.combo2.activated[str].connect(self.emit_volume)
-        # current list of choices
-        self.combo2_all = []
-
         # Take a local region mean to reduce noise
         self.cb1 = QtGui.QCheckBox('Show overlay', self)
         self.cb1.toggle()
@@ -345,12 +338,7 @@ class ColorOverlay1(QtGui.QWidget):
         l03.addWidget(butgen2)
         l03.addStretch(1)
 
-        l04 = QtGui.QHBoxLayout()
-        l04.addWidget(QtGui.QLabel("Available Overlays         "))
-        l04.addWidget(self.combo2)
-
         l05 = QtGui.QVBoxLayout()
-        l05.addLayout(l04)
         l05.addLayout(l00)
         l05.addLayout(l01)
         l05.addWidget(self.cb1)
@@ -405,32 +393,6 @@ class ColorOverlay1(QtGui.QWidget):
         Adding image management
         """
         self.ivm = image_vol_management
-
-        #listen to volume management changes
-        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
-        self.ivm.sig_all_overlays.connect(self.update_overlays)
-
-    @QtCore.Slot(list)
-    def update_overlays(self, list1):
-
-        """
-        Adds additional overlay volumes to the combo list
-        """
-
-        for ii in list1:
-            if ii not in self.combo2_all:
-                self.combo2_all.append(ii)
-                self.combo2.addItem(ii)
-
-    @QtCore.Slot(str)
-    def update_current_overlay(self, str1):
-
-        if str1 in self.combo2_all:
-            ind1 = self.combo2_all.index(str1)
-            self.combo2.setCurrentIndex(ind1)
-
-        else:
-            print("Warning: This option does not exist")
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -497,11 +459,6 @@ class ColorOverlay1(QtGui.QWidget):
     @QtCore.Slot(str)
     def emit_cmap(self, text):
         self.sig_choose_cmap.emit(text)
-
-    @QtCore.Slot(str)
-    def emit_volume(self, choice1):
-        self.ivm.set_current_overlay(choice1, broadcast_change=False)
-        self.sig_emit_reset.emit(1)
 
     @QtCore.Slot(int)
     def emit_alpha(self, val1):
