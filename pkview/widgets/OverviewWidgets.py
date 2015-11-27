@@ -13,19 +13,73 @@ class OverviewWidget(QtGui.QWidget):
 
         layout = QtGui.QVBoxLayout()
 
-        w1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
-                               "Voxel analysis \n ...", self)
+        t0 = QtGui.QLabel("Analysis Options")
 
         # Option 1
-        w1.setStyleSheet('QPushButton {icon-size: 60px; background-color: #323232}')
+        w1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Voxel analysis \n ...", self)
+        w1.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
         w1.setToolTip("Voxel analysis\n test")
         # w1.clicked.connect()
+
+
+        # Option 2
+        w2 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                           "Overlay Options \n ...", self)
+        w2.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w2.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
+        # Option 3
+        w3 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Curve Clustering \n ...", self)
+        w3.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w3.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
+        # Option 4
+        w4a = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "T10 \n ...", self)
+        w4a.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w4a.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
+
+        # Option 4
+        w4 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Pharmacokinetics \n ...", self)
+        w4.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w4.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
+        # Option 5
+        w5 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Supervoxel clustering and analysis \n ...", self)
+        w5.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w5.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
+        # Option 6
+        w6 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Clustering \n ...", self)
+        w6.setStyleSheet('QPushButton {icon-size: 20px; background-color: #323232}')
+        w6.setToolTip("Voxel analysis\n test")
+        # w1.clicked.connect()
+
 
         # List for volume management
         t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget()
 
+        layout.addWidget(t0)
         layout.addWidget(w1)
+        layout.addWidget(w2)
+        layout.addWidget(w3)
+        layout.addWidget(w4a)
+        layout.addWidget(w4)
+        layout.addWidget(w5)
+        layout.addWidget(w6)
+
         layout.addWidget(t1)
         layout.addWidget(self.l1)
 
