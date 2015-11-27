@@ -11,9 +11,11 @@ class OverviewWidget(QtGui.QWidget):
 
         layout = QtGui.QVBoxLayout()
 
-        w1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "", self)
+        w1 = QtGui.QPushButton(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'),
+                               "Voxel analysis \n ...", self)
 
-        w1.setStyleSheet('QPushButton {icon-size: 80px; background-color: #323232}')
+        # Option 1
+        w1.setStyleSheet('QPushButton {icon-size: 60px; background-color: #323232}')
         w1.setToolTip("Voxel analysis\n test")
         # w1.clicked.connect()
 

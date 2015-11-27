@@ -16,7 +16,7 @@ from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
-from pkview.widgets.AnnotWidgets import RandomWalkerWidget
+# from pkview.widgets.AnnotWidgets import RandomWalkerWidget
 
 import sys
 import os
@@ -153,7 +153,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.sw_over.add_image_management(self.ivm)
 
         # Random Walker
-        self.sw_rw = None
+        # self.sw_rw = None
 
         # Connect widgets
         # Connect colormap choice, alpha
@@ -362,19 +362,25 @@ class MainWindowWidget(QtGui.QWidget):
         print(index)
         self.qtab1.setCurrentIndex(index)
 
-    def show_rw(self):
+    # def show_rw(self):
+    #
+    #     # Initialise if it is not already initialised
+    #     if self.sw_rw is None:
+    #         self.sw_rw = RandomWalkerWidget()
+    #         self.sw_rw.add_image_management(self.ivm)
+    #         self.sw_rw.sig_set_annotation.connect(self.ivl1.enable_drawing)
+    #         self.sw_rw.sig_save_annotation.connect(self.ivl1.save_overlay)
+    #         self.sw_rw.sig_emit_reset.connect(self.ivl1.update_overlay)
+    #
+    #     index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
+    #     print(index)
+    #     self.qtab1.setCurrentIndex(index)
 
-        # Initialise if it is not already initialised
-        if self.sw_rw is None:
-            self.sw_rw = RandomWalkerWidget()
-            self.sw_rw.add_image_management(self.ivm)
-            self.sw_rw.sig_set_annotation.connect(self.ivl1.enable_drawing)
-            self.sw_rw.sig_save_annotation.connect(self.ivl1.save_overlay)
-            self.sw_rw.sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        index = self.qtab1.addTab(self.sw_rw, "RandomWalker")
-        print(index)
-        self.qtab1.setCurrentIndex(index)
+# class AnaTabs(QtGui.QTabWidget):
+#
+#     def __init__(self):
+#         super(AnaTabs, self).__init__()
+#
 
 
 class WindowAndDecorators(QtGui.QMainWindow):
@@ -508,9 +514,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pw_action.triggered.connect(self.mw1.show_pw)
 
         # Widgets --> RandomWalker
-        rw_action = QtGui.QAction('&RandomWalker', self)
-        rw_action.setStatusTip('RandomWalker')
-        rw_action.triggered.connect(self.mw1.show_rw)
+        # rw_action = QtGui.QAction('&RandomWalker', self)
+        # rw_action.setStatusTip('RandomWalker')
+        # rw_action.triggered.connect(self.mw1.show_rw)
 
         # Widgets --> CurveClustering
         cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
@@ -518,10 +524,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
         cc_action.triggered.connect(self.mw1.show_cc)
 
         # Wigets --> Create Annotation
-        annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
-        annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
-        annot_ovreg_action.setCheckable(True)
-        annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
+        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
+        # annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
+        # annot_ovreg_action.setCheckable(True)
+        # annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
 
         # Help -- > Online help
         help_action = QtGui.QAction('&Online Help', self)
@@ -550,8 +556,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
-        widget_menu.addAction(rw_action)
-        widget_menu.addAction(annot_ovreg_action)
+        # widget_menu.addAction(rw_action)
+        # widget_menu.addAction(annot_ovreg_action)
 
         widget_menu.addAction(cc_action)
 
@@ -685,17 +691,17 @@ class WindowAndDecorators(QtGui.QMainWindow):
         else:
             print('Warning: No file selected')
 
-    def show_annot_load_dialog(self, checked):
-        """
-        Annotation dialog
-        """
-
-        if checked:
-            self.mw1.ivm.set_blank_annotation()
-            self.mw1.ivl1.load_ovreg()
-            self.mw1.ivl1.enable_drawing(color1=1)
-        else:
-            self.mw1.ivl1.enable_drawing(color1=-1)
+    # def show_annot_load_dialog(self, checked):
+    #     """
+    #     Annotation dialog
+    #     """
+    #
+    #     if checked:
+    #         self.mw1.ivm.set_blank_annotation()
+    #         self.mw1.ivl1.load_ovreg()
+    #         self.mw1.ivl1.enable_drawing(color1=1)
+    #     else:
+    #         self.mw1.ivl1.enable_drawing(color1=-1)
 
     def show_roi_load_dialog(self, fname=None):
         """
