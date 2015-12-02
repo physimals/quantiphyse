@@ -57,9 +57,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.ovreg_file1 = None
         # Type of the current overlay
         self.overlay_label = None
-        # List of possible overlays that can be loaded
+
+        # List of default overlays that can be loaded
         self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation',
-                                  'segmentation']
+                                  'segmentation', 'clustering']
 
         # All overlays
         self.overlay_all = {}
