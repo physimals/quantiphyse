@@ -247,6 +247,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         self.roi = self._remove_nans(self.roi)
 
+        # patch to fix roi loading when a different type.
+        self.roi = self.roi.astype(np.float64)
+
         self.roi_all.append(self.roi)
         self.roi_dims = self.roi.shape
 

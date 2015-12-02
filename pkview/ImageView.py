@@ -494,12 +494,47 @@ class ImageViewOverlay(ImageViewLayout):
         pos = np.array([0.0, 1.0])
         color = np.array([[0, 0, 0, 0], [255, 0, 0, 90]], dtype=np.ubyte)
         map1 = pg.ColorMap(pos, color)
-        self.roilut = map1.getLookupTable(0.0, 1.0, 256)
+
+        # ROI lut
+        self.set_roi_colormap_matplotlib()
+        # self.roilut = map1.getLookupTable(0.0, 1.0, 256)
+
+    def set_roi_colormap_matplotlib(self):
+
+        """
+        Use default colormaps from matplotlib.
+
+        First value out of the 255 range is set to be transparent. This needs to maybe be defined in a slightly better
+        way to avoid scaling issue.
+        """
+
+        cmap1 = getattr(cm, 'jet')
+
+        lut = [[int(255*rgb1) for rgb1 in cmap1(ii)[:3]] for ii in xrange(256)]
+        self.roilut = np.array(lut, dtype=np.ubyte)
+
+        # add transparency
+        alpha1 = np.ones((self.roilut.shape[0], 1))
+        alpha1 *= 150
+        alpha1[0] = 0
+        # alpha1[1] = 0
+        # alpha1[2] = 0
+        self.roilut = np.hstack((self.roilut, alpha1))
+
+        # Save the lut to the volume management system for easy transfer between widgets
+        # self.ivm.set_cmap_roi(self.roilut)
 
     def load_roi(self):
         """
-        Adds roi to viewer
+
+        Adds ROI overlay to viewer
+
+        Notes:
+        This currently supports both a single overlay (with multiple labels)
+        or multiple binary overlays, which be problematic later on.
         """
+
+        # TODO : See above...
 
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
@@ -509,10 +544,14 @@ class ImageViewOverlay(ImageViewLayout):
         self.imgwin1b.append(pg.ImageItem(border='k'))
         self.imgwin2b.append(pg.ImageItem(border='k'))
         self.imgwin3b.append(pg.ImageItem(border='k'))
+
+        self.roi_levels = [self.ivm.roi.min(), self.ivm.roi.max()]
+
         self.view1.addItem(self.imgwin1b[self.ivm.num_roi-1])
         self.view2.addItem(self.imgwin2b[self.ivm.num_roi-1])
         self.view3.addItem(self.imgwin3b[self.ivm.num_roi-1])
 
+        # Initialises contour plotting
         self.cont1.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
         self.cont2.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
         self.cont3.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
@@ -523,13 +562,19 @@ class ImageViewOverlay(ImageViewLayout):
         self._update_view()
 
     def _update_view(self):
+        """
+        Update the images
+
+        Returns:
+
+        """
         super(ImageViewOverlay, self)._update_view()
 
         if self.ivm.num_roi == 0:
-            #If an overlay hasn't been added then return
+            # If an overlay hasn't been added then return
             return
 
-        #Loop over each volume
+        # Loop over each volume
         for ii in range(self.ivm.num_roi):
 
             if (self.ivm.roi_dims is None) or (self.options['ShowOverlay'] == 0):
@@ -538,9 +583,18 @@ class ImageViewOverlay(ImageViewLayout):
                 self.imgwin3b[ii].setImage(np.zeros((1, 1)))
 
             else:
-                self.imgwin1b[ii].setImage(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]], lut=self.roilut)
-                self.imgwin2b[ii].setImage(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :], lut=self.roilut)
-                self.imgwin3b[ii].setImage(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :], lut=self.roilut)
+                self.imgwin1b[ii].setImage(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]],
+                                           lut=self.roilut,
+                                           autoLevels=False,
+                                           levels=self.roi_levels)
+                self.imgwin2b[ii].setImage(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :],
+                                           lut=self.roilut,
+                                           autoLevels=False,
+                                           levels=self.roi_levels)
+                self.imgwin3b[ii].setImage(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :],
+                                           lut=self.roilut,
+                                           autoLevels=False,
+                                           levels=self.roi_levels)
 
             if self.options['ShowOverlayContour']:
                 self.cont1[ii].setData(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]])
@@ -559,6 +613,7 @@ class ImageViewOverlay(ImageViewLayout):
             self.options['ShowOverlay'] = 1
         else:
             self.options['ShowOverlay'] = 0
+
         self._update_view()
 
     @QtCore.Slot()
@@ -579,7 +634,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
     Interactions should include:
     1) Show / hide
     2) Alpha
-    3) colormap (future)
+    3) colormap
 
     Inherits from ImageViewOverlay
     - this is the image view class that allows a ROI to be set
@@ -862,55 +917,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Save the lut to the volume management system for easy transfer between widgets
         self.ivm.set_cmap(self.ovreg_lut)
 
-    def set_default_colormap_manual(self):
-        """
-        Manually create a colormap
-        """
-
-        # Setting up overlay region viewing parameters
-        ovreg_color = np.array([[0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]],
-                               dtype=np.ubyte)
-        ovreg_pos = np.array([0.0, 0.33, 0.66, 1.0])
-        map1 = pg.ColorMap(ovreg_pos, ovreg_color)
-
-        self.ovreg_lut = map1.getLookupTable(0, 1.0, 1000)
-        self.ovreg_lut[0, 3] = 0
-
-        # Save the lut to the volume management system for easy transfer between widgets
-        self.ivm.set_cmap(self.ovreg_lut)
-
-    @QtCore.Slot(int)
-    def enable_drawing(self, color1=1):
-
-        """
-        Allow drawing on annotation in all three views
-        """
-
-        if color1 != -1:
-
-            # start drawing with 3x3 brush
-            kern = np.array([[color1]])
-            self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-            self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-            self.imgwin3c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-
-            self.view1.setAspectLocked(True)
-            self.view2.setAspectLocked(True)
-            self.view3.setAspectLocked(True)
-
-        else:
-
-            self.imgwin1c.setDrawKernel(kernel=None)
-            self.imgwin2c.setDrawKernel(kernel=None)
-            self.imgwin3c.setDrawKernel(kernel=None)
-
-            self.view1.setAspectLocked(False)
-            self.view2.setAspectLocked(False)
-            self.view3.setAspectLocked(False)
-
-            # Save overlay to annotation when stopped annotating
-            self.save_overlay(True)
-
     @QtCore.Slot(bool)
     def save_overlay(self, state):
         """
@@ -918,6 +924,59 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         if state:
             self.ivm.set_overlay('annotation', self.ovreg)
+
+    # def set_default_colormap_manual(self):
+    #     """
+    #     Manually create a colormap
+    #     """
+    #
+    #     # Setting up overlay region viewing parameters
+    #     ovreg_color = np.array([[0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]],
+    #                            dtype=np.ubyte)
+    #     ovreg_pos = np.array([0.0, 0.33, 0.66, 1.0])
+    #     map1 = pg.ColorMap(ovreg_pos, ovreg_color)
+    #
+    #     self.ovreg_lut = map1.getLookupTable(0, 1.0, 1000)
+    #     self.ovreg_lut[0, 3] = 0
+    #
+    #     # Save the lut to the volume management system for easy transfer between widgets
+    #     self.ivm.set_cmap(self.ovreg_lut)
+
+
+
+    # @QtCore.Slot(int)
+    # def enable_drawing(self, color1=1):
+    #
+    #     """
+    #     Allow drawing on annotation in all three views
+    #     """
+    #
+    #     if color1 != -1:
+    #
+    #         # start drawing with 3x3 brush
+    #         kern = np.array([[color1]])
+    #         self.imgwin1c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+    #         self.imgwin2c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+    #         self.imgwin3c.setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
+    #
+    #         self.view1.setAspectLocked(True)
+    #         self.view2.setAspectLocked(True)
+    #         self.view3.setAspectLocked(True)
+    #
+    #     else:
+    #
+    #         self.imgwin1c.setDrawKernel(kernel=None)
+    #         self.imgwin2c.setDrawKernel(kernel=None)
+    #         self.imgwin3c.setDrawKernel(kernel=None)
+    #
+    #         self.view1.setAspectLocked(False)
+    #         self.view2.setAspectLocked(False)
+    #         self.view3.setAspectLocked(False)
+    #
+    #         # Save overlay to annotation when stopped annotating
+    #         self.save_overlay(True)
+
+
 
 
 
