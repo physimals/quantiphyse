@@ -66,7 +66,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         # ROI image
         self.roi = None
-        self.roi_all = []  # All rois
         self.roi_dims = None
         self.roi_file1 = None
         # Number of ROIs
@@ -250,7 +249,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # patch to fix roi loading when a different type.
         self.roi = self.roi.astype(np.float64)
 
-        self.roi_all.append(self.roi)
         self.roi_dims = self.roi.shape
 
         if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
