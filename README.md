@@ -45,12 +45,12 @@ python setup.py build_ext --inplace
 ### Usage
 
 ``` bash
-python pkviewer2
+python pkviewer2.py
 ```
 or
 
 ``` bash
-./pkviewer2
+./pkviewer2.py
 ```
 
 See:
