@@ -135,8 +135,8 @@ class CurveClusteringWidget(QtGui.QWidget):
         #self.km.plot(slice1=30)
         label1, self.label1_cent = self.km.get_label_image()
 
-        self.ivm.set_overlay(choice1='loaded', ovreg=label1)
-        self.ivm.set_current_overlay(choice1='loaded')
+        self.ivm.set_overlay(choice1='clusters', ovreg=label1, force=True)
+        self.ivm.set_current_overlay(choice1='clusters')
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
 

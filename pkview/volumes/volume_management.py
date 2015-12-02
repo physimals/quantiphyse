@@ -149,18 +149,18 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if self.image is not None:
             self.overlay_all['annotation'] = np.zeros(self.image.shape[:3])
 
-            #little hack to normalise the image from 0 to 10 by listing possible labels in the corner
+            # little hack to normalise the image from 0 to 10 by listing possible labels in the corner
             for ii in range(11):
                 self.overlay_all['annotation'][0, ii] = ii
         else:
             print("Please load an image first")
 
-        #update overlay list
+        # update overlay list
         self.sig_all_overlays.emit(self.overlay_all.keys())
-        #set current overlay
+        # set current overlay
         self.set_current_overlay('annotation', broadcast_change=True)
 
-    def set_overlay(self, choice1, ovreg):
+    def set_overlay(self, choice1, ovreg, force=False):
         """
 
         Set an overlay for storage
@@ -176,7 +176,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
                   "and overlay region must be 3D (or 4D for RGBa images)")
             return
 
-        if choice1 not in self.overlay_label_all:
+        if (choice1 not in self.overlay_label_all) and (force is False):
             print("Warning: Label choice is incorrect")
             return
 
@@ -193,7 +193,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         """
 
-        if choice1 in self.overlay_label_all and choice1 in self.overlay_all.keys():
+        if choice1 in self.overlay_all.keys():
             self.overlay_label = choice1
             self.overlay = self.overlay_all[choice1]
             self.ovreg_dims = self.overlay.shape
