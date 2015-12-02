@@ -597,9 +597,16 @@ class ImageViewOverlay(ImageViewLayout):
                                            levels=self.roi_levels)
 
             if self.options['ShowOverlayContour']:
-                self.cont1[ii].setData(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]])
-                self.cont2[ii].setData(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :])
-                self.cont3[ii].setData(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :])
+                i1 = self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]] > 1.0
+                i2 = self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :] > 1.0
+                i3 = self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :] > 1.0
+                i1 = i1.astype(np.uint8)
+                i2 = i2.astype(np.uint8)
+                i3 = i3.astype(np.uint8)
+
+                self.cont1[ii].setData(i1)
+                self.cont2[ii].setData(i2)
+                self.cont3[ii].setData(i3)
             else:
                 self.cont1[ii].setData(None)
                 self.cont2[ii].setData(None)
