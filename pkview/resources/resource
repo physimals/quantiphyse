@@ -1,7 +1,7 @@
 <RCC>
   <qresource>
-    <file>pkview/icons/checkbox.png</file>
-    <file alias="down_arrow.png">pkview/icons/down_arrow.png</file>
-    <file>pkview/icons/handle.png</file>
+    <file>checkbox.png</file>
+    <file alias="down_arrow.png">down_arrow.png</file>
+    <file>handle.png</file>
   </qresource>
 </RCC>
