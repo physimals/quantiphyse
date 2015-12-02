@@ -30,6 +30,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         #self.setStatusTip("Click points on the 4D volume to see time curve")
 
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Cluster representative curves")
 
         #Run clustering button
@@ -47,7 +48,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         # Number of PCA modes
         self.combo2 = QtGui.QSpinBox(self)
         self.combo2.setRange(1, 10)
-        self.combo2.setValue(5)
+        self.combo2.setValue(3)
         # self.combo.activated[str].connect(self.emit_cchoice)
         self.combo2.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")

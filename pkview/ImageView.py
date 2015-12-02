@@ -5,6 +5,8 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 """
 
+# TODO remove display of mutliple ROIs at once and instead select the ROIs
+
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import matplotlib
@@ -471,14 +473,14 @@ class ImageViewOverlay(ImageViewLayout):
         super(ImageViewOverlay, self).__init__()
 
         # ROI Image windows
-        self.imgwin1b = []
-        self.imgwin2b = []
-        self.imgwin3b = []
+        self.imgwin1b = None
+        self.imgwin2b = None
+        self.imgwin3b = None
 
         # Contour
-        self.cont1 = []
-        self.cont2 = []
-        self.cont3 = []
+        self.cont1 = None
+        self.cont2 = None
+        self.cont3 = None
 
         # Viewing options as a dictionary
         self.options['ShowOverlay'] = 0
@@ -531,33 +533,31 @@ class ImageViewOverlay(ImageViewLayout):
 
         Notes:
         This currently supports both a single overlay (with multiple labels)
-        or multiple binary overlays, which be problematic later on.
-        """
 
-        # TODO : See above...
+        """
 
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
 
         # Initialises viewer if it hasn't been initialised before
-        self.imgwin1b.append(pg.ImageItem(border='k'))
-        self.imgwin2b.append(pg.ImageItem(border='k'))
-        self.imgwin3b.append(pg.ImageItem(border='k'))
+        self.imgwin1b = pg.ImageItem(border='k')
+        self.imgwin2b = pg.ImageItem(border='k')
+        self.imgwin3b = pg.ImageItem(border='k')
 
         self.roi_levels = [self.ivm.roi.min(), self.ivm.roi.max()]
 
-        self.view1.addItem(self.imgwin1b[self.ivm.num_roi-1])
-        self.view2.addItem(self.imgwin2b[self.ivm.num_roi-1])
-        self.view3.addItem(self.imgwin3b[self.ivm.num_roi-1])
+        self.view1.addItem(self.imgwin1b)
+        self.view2.addItem(self.imgwin2b)
+        self.view3.addItem(self.imgwin3b)
 
         # Initialises contour plotting
-        self.cont1.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
-        self.cont2.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
-        self.cont3.append(pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1]))
-        self.view1.addItem(self.cont1[self.ivm.num_roi-1])
-        self.view2.addItem(self.cont2[self.ivm.num_roi-1])
-        self.view3.addItem(self.cont3[self.ivm.num_roi-1])
+        self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+        self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+        self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+        self.view1.addItem(self.cont1)
+        self.view2.addItem(self.cont2)
+        self.view3.addItem(self.cont3)
 
         self._update_view()
 
@@ -575,42 +575,41 @@ class ImageViewOverlay(ImageViewLayout):
             return
 
         # Loop over each volume
-        for ii in range(self.ivm.num_roi):
 
-            if (self.ivm.roi_dims is None) or (self.options['ShowOverlay'] == 0):
-                self.imgwin1b[ii].setImage(np.zeros((1, 1)))
-                self.imgwin2b[ii].setImage(np.zeros((1, 1)))
-                self.imgwin3b[ii].setImage(np.zeros((1, 1)))
+        if (self.ivm.roi_dims is None) or (self.options['ShowOverlay'] == 0):
+            self.imgwin1b.setImage(np.zeros((1, 1)))
+            self.imgwin2b.setImage(np.zeros((1, 1)))
+            self.imgwin3b.setImage(np.zeros((1, 1)))
 
-            else:
-                self.imgwin1b[ii].setImage(self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]],
-                                           lut=self.roilut,
-                                           autoLevels=False,
-                                           levels=self.roi_levels)
-                self.imgwin2b[ii].setImage(self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :],
-                                           lut=self.roilut,
-                                           autoLevels=False,
-                                           levels=self.roi_levels)
-                self.imgwin3b[ii].setImage(self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :],
-                                           lut=self.roilut,
-                                           autoLevels=False,
-                                           levels=self.roi_levels)
+        else:
+            self.imgwin1b.setImage(self.ivm.roi[:, :, self.ivm.cim_pos[2]],
+                                       lut=self.roilut,
+                                       autoLevels=False,
+                                       levels=self.roi_levels)
+            self.imgwin2b.setImage(self.ivm.roi[:, self.ivm.cim_pos[1], :],
+                                       lut=self.roilut,
+                                       autoLevels=False,
+                                       levels=self.roi_levels)
+            self.imgwin3b.setImage(self.ivm.roi[self.ivm.cim_pos[0], :, :],
+                                       lut=self.roilut,
+                                       autoLevels=False,
+                                       levels=self.roi_levels)
 
-            if self.options['ShowOverlayContour']:
-                i1 = self.ivm.roi_all[ii][:, :, self.ivm.cim_pos[2]] > 1.0
-                i2 = self.ivm.roi_all[ii][:, self.ivm.cim_pos[1], :] > 1.0
-                i3 = self.ivm.roi_all[ii][self.ivm.cim_pos[0], :, :] > 1.0
-                i1 = i1.astype(np.uint8)
-                i2 = i2.astype(np.uint8)
-                i3 = i3.astype(np.uint8)
+        if self.options['ShowOverlayContour']:
+            i1 = self.ivm.roi[:, :, self.ivm.cim_pos[2]] > 1.0
+            i2 = self.ivm.roi[:, self.ivm.cim_pos[1], :] > 1.0
+            i3 = self.ivm.roi[self.ivm.cim_pos[0], :, :] > 1.0
+            i1 = i1.astype(np.uint8)
+            i2 = i2.astype(np.uint8)
+            i3 = i3.astype(np.uint8)
 
-                self.cont1[ii].setData(i1)
-                self.cont2[ii].setData(i2)
-                self.cont3[ii].setData(i3)
-            else:
-                self.cont1[ii].setData(None)
-                self.cont2[ii].setData(None)
-                self.cont3[ii].setData(None)
+            self.cont1.setData(i1)
+            self.cont2.setData(i2)
+            self.cont3.setData(i3)
+        else:
+            self.cont1.setData(None)
+            self.cont2.setData(None)
+            self.cont3.setData(None)
 
     # Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
