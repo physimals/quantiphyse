@@ -15,6 +15,7 @@ from pkview.analysis.kmeans import KMeans
 
 from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 
+#TODO Hide other buttons until the clustering is performed.
 
 class CurveClusteringWidget(QtGui.QWidget):
     """
