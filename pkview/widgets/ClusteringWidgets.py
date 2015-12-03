@@ -196,8 +196,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         self._generate_cluster_means()
 
         xx = np.arange(self.label1_cent.shape[1])
-        num_clus_orig = len(self.labs_un_orig) - 1
 
+        # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
+        num_clus_orig = len(self.labs_un_orig) - 1
         lut = self.ivm.cmap
         lut_sec = np.around(lut.shape[0]/(num_clus_orig-1))
 
