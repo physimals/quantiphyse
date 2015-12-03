@@ -60,6 +60,7 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         space1 = QtGui.QLabel('')
 
+        # Options
         l01 = QtGui.QHBoxLayout()
         l01.addWidget(QtGui.QLabel('Number of clusters:'))
         l01.addWidget(self.combo)
@@ -82,10 +83,35 @@ class CurveClusteringWidget(QtGui.QWidget):
         l05.addLayout(l03)
         l05.addWidget(g01)
 
+        # Merge options
+
+        self.b2 = QtGui.QPushButton('Merge', self)
+        self.b2.clicked.connect(self.run_merge)
+
+        t1 = QtGui.QLabel('Merge region ')
+        self.val_m1 = QtGui.QLineEdit('1', self)
+        t2 = QtGui.QLabel(' with ')
+        self.val_m2 = QtGui.QLineEdit('2', self)
+
+        l_merge = QtGui.QHBoxLayout()
+        l_merge.addWidget(self.b2)
+        l_merge.addWidget(t1)
+        l_merge.addWidget(self.val_m1)
+        l_merge.addWidget(t2)
+        l_merge.addWidget(self.val_m2)
+
+        g_merge = QGroupBoxB()
+        g_merge.setLayout(l_merge)
+        g_merge.setTitle('Editing')
+
+        # Statistic
+
+        # Outer layout
         l1 = QtGui.QVBoxLayout()
         l1.addLayout(l05)
         l1.addWidget(space1)
         l1.addWidget(self.win1)
+        l1.addWidget(g_merge)
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -133,9 +159,10 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
 
         #self.km.plot(slice1=30)
-        label1, self.label1_cent = self.km.get_label_image()
+        self.label1, self.label1_cent = self.km.get_label_image()
+        self.labs_un_orig = np.unique(self.label1)
 
-        self.ivm.set_overlay(choice1='clusters', ovreg=label1, force=True)
+        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
         self.ivm.set_current_overlay(choice1='clusters')
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
@@ -158,25 +185,101 @@ class CurveClusteringWidget(QtGui.QWidget):
 
     def _plot(self):
         """
-        Plot the 4 cluster curves
+        Plot the cluster curves
         :return:
         """
         # Clear graph
         self.reset_graph()
         curve1 = []
 
+        # generate the cluster means
+        self._generate_cluster_means()
+
         xx = np.arange(self.label1_cent.shape[1])
-        num_clus = self.label1_cent.shape[0]
+        num_clus_orig = len(self.labs_un_orig) - 1
 
         lut = self.ivm.cmap
-        lut_sec = np.around(lut.shape[0]/(num_clus-1))
+        lut_sec = np.around(lut.shape[0]/(num_clus_orig-1))
+
+        le1 = self.p1.addLegend()
 
         # Plotting using single or multiple plots
-        for ii in range(num_clus):
-            if ii < num_clus-1:
-                pen1 = lut[ii * lut_sec, :3]
+        for ii in self.labs_un:
+
+            if np.sum(self.label1_cent[ii, :]) == 0:
+                continue
+
+            if ii < self.labs_un.max():
+                pen1 = lut[(ii-1) * lut_sec, :3]
             else:
                 pen1 = lut[-1, :3]
 
-            curve1.append(self.p1.plot(pen=pen1, width=8.0))
-            curve1[ii].setData(xx, self.label1_cent[ii, :])
+            name1 = "Region " + str(int(ii))
+            curve1.append(self.p1.plot(pen=pen1, width=8.0, name=name1))
+            curve1[-1].setData(xx, self.label1_cent[ii, :])
+
+            # le1.addItem(curve1[ii], name1)
+
+    def _generate_cluster_means(self):
+
+        """
+        Generate the mean curves for each cluster
+        Returns:
+
+        """
+        nimage = np.zeros(self.ivm.get_image().shape)
+        nimage[self.km.region1] = self.km.voxel_se
+
+        self.labs_un = np.unique(self.label1)
+        self.label1_cent = np.zeros((self.labs_un.max()+1, nimage.shape[-1]))
+
+        cc = 0
+        for ii in self.labs_un:
+            if ii == 0:
+                continue
+
+            mean1 = np.median(nimage[self.label1 == ii], axis=0)
+            self.label1_cent[ii, :] = mean1
+
+
+
+    def run_merge(self):
+        """
+
+        Returns:
+
+        """
+
+        m1 = int(self.val_m1.text())
+        m2 = int(self.val_m2.text())
+
+        # relabel
+        self.label1[self.label1 == m1] = m2
+
+        # signal the change
+        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
+        self.ivm.set_current_overlay(choice1='clusters')
+        self.sig_emit_reset.emit(1)
+
+        # replot
+
+        self._plot()
+
+        print("Merged")
+
+
+
+    def calculate_proportions(self):
+        """
+
+        Returns:
+
+        """
+
+        # slice 1
+        # slice 2
+        # slice 3
+
+        None
+
+
