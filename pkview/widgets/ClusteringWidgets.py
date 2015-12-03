@@ -102,9 +102,23 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         g_merge = QGroupBoxB()
         g_merge.setLayout(l_merge)
-        g_merge.setTitle('Editing')
+        g_merge.setTitle('Editing regions')
 
-        # Statistic
+        # Statistics
+
+        l_stats = QtGui.QHBoxLayout()
+        # l_stats.addWidget(self.b2)
+        # l_stats.addWidget(t1)
+        # l_stats.addWidget(self.val_m1)
+        # l_stats.addWidget(t2)
+        # l_stats.addWidget(self.val_m2)
+
+        g_stats = QGroupBoxB()
+        g_stats.setLayout(l_stats)
+        g_stats.setTitle('Voxel count')
+
+        self.b3 = QtGui.QPushButton('Use clusters as ROIs', self)
+        self.b3.clicked.connect(self.convert_to_roi)
 
         # Outer layout
         l1 = QtGui.QVBoxLayout()
@@ -112,6 +126,8 @@ class CurveClusteringWidget(QtGui.QWidget):
         l1.addWidget(space1)
         l1.addWidget(self.win1)
         l1.addWidget(g_merge)
+        l1.addWidget(g_stats)
+        l1.addWidget(self.b3)
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -281,6 +297,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         # slice 2
         # slice 3
 
+        None
+
+    def convert_to_roi(self):
         None
 
 
