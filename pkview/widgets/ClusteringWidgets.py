@@ -122,19 +122,11 @@ class CurveClusteringWidget(QtGui.QWidget):
         l_stats = QtGui.QHBoxLayout()
         l_stats.addWidget(self.b_stat)
         l_stats.addWidget(self.tab1)
-        # l_stats.addWidget(t1)
-        # l_stats.addWidget(self.val_m1)
-        # l_stats.addWidget(t2)
-        # l_stats.addWidget(self.val_m2)
 
         self.g_stats = QGroupBoxB()
         self.g_stats.setLayout(l_stats)
         self.g_stats.setTitle('Voxel count')
         self.g_stats.setVisible(False)
-
-        self.b3 = QtGui.QPushButton('Use clusters as ROIs', self)
-        self.b3.clicked.connect(self.convert_to_roi)
-        self.b3.setVisible(False)
 
         # Outer layout
         l1 = QtGui.QVBoxLayout()
@@ -144,7 +136,6 @@ class CurveClusteringWidget(QtGui.QWidget):
         l1.addWidget(self.b4)
         l1.addWidget(self.g_merge)
         l1.addWidget(self.g_stats)
-        l1.addWidget(self.b3)
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -337,16 +328,6 @@ class CurveClusteringWidget(QtGui.QWidget):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
             self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(self.voxel_count_slice[cc]))))
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(self.voxel_count[cc]))))
-
-    @QtCore.Slot()
-    def convert_to_roi(self):
-        """
-        Set the overlay as an ROI
-
-        Returns:
-
-        """
-        self.ivm.set_roi(self.label1)
         
     def show_options(self):
         if self.g_merge.isVisible():

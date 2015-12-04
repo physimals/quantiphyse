@@ -541,25 +541,26 @@ class ImageViewOverlay(ImageViewLayout):
             print("Please load an image first")
             return
 
-        # Initialises viewer if it hasn't been initialised before
-        self.imgwin1b = pg.ImageItem(border='k')
-        self.imgwin2b = pg.ImageItem(border='k')
-        self.imgwin3b = pg.ImageItem(border='k')
+        if self.imgwin1b is None:
+
+            # Initialises viewer if it hasn't been initialised before
+            self.imgwin1b = pg.ImageItem(border='k')
+            self.imgwin2b = pg.ImageItem(border='k')
+            self.imgwin3b = pg.ImageItem(border='k')
+
+            self.view1.addItem(self.imgwin1b)
+            self.view2.addItem(self.imgwin2b)
+            self.view3.addItem(self.imgwin3b)
+
+            # Initialises contour plotting
+            self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+            self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+            self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+            self.view1.addItem(self.cont1)
+            self.view2.addItem(self.cont2)
+            self.view3.addItem(self.cont3)
 
         self.roi_levels = [self.ivm.roi.min(), self.ivm.roi.max()]
-
-        self.view1.addItem(self.imgwin1b)
-        self.view2.addItem(self.imgwin2b)
-        self.view3.addItem(self.imgwin3b)
-
-        # Initialises contour plotting
-        self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
-        self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
-        self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
-        self.view1.addItem(self.cont1)
-        self.view2.addItem(self.cont2)
-        self.view3.addItem(self.cont3)
-
         self._update_view()
 
     def _update_view(self):
