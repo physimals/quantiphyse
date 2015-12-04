@@ -821,6 +821,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.options['UseROI'] = 0
 
         self._process_overlay()
+        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
         self._update_view()
 
     @QtCore.Slot()

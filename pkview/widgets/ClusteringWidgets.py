@@ -83,6 +83,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         l05 = QtGui.QHBoxLayout()
         l05.addLayout(l03)
         l05.addWidget(g01)
+        
+        self.b4 = QtGui.QPushButton('Advanced options', self)
+        self.b4.clicked.connect(self.show_options)
 
         # Merge options
 
@@ -101,33 +104,46 @@ class CurveClusteringWidget(QtGui.QWidget):
         l_merge.addWidget(t2)
         l_merge.addWidget(self.val_m2)
 
-        g_merge = QGroupBoxB()
-        g_merge.setLayout(l_merge)
-        g_merge.setTitle('Editing regions')
+        self.g_merge = QGroupBoxB()
+        self.g_merge.setLayout(l_merge)
+        self.g_merge.setTitle('Editing regions')
+        self.g_merge.setVisible(False)
 
         # Statistics
 
+        self.b_stat = QtGui.QPushButton('Run', self)
+        self.b_stat.clicked.connect(self.generate_voxel_stats)
+
+        self.tabmod1 = QtGui.QStandardItemModel()
+        self.tab1 = QtGui.QTableView()
+        self.tab1.resizeColumnsToContents()
+        self.tab1.setModel(self.tabmod1)
+
         l_stats = QtGui.QHBoxLayout()
-        # l_stats.addWidget(self.b2)
+        l_stats.addWidget(self.b_stat)
+        l_stats.addWidget(self.tab1)
         # l_stats.addWidget(t1)
         # l_stats.addWidget(self.val_m1)
         # l_stats.addWidget(t2)
         # l_stats.addWidget(self.val_m2)
 
-        g_stats = QGroupBoxB()
-        g_stats.setLayout(l_stats)
-        g_stats.setTitle('Voxel count')
+        self.g_stats = QGroupBoxB()
+        self.g_stats.setLayout(l_stats)
+        self.g_stats.setTitle('Voxel count')
+        self.g_stats.setVisible(False)
 
         self.b3 = QtGui.QPushButton('Use clusters as ROIs', self)
         self.b3.clicked.connect(self.convert_to_roi)
+        self.b3.setVisible(False)
 
         # Outer layout
         l1 = QtGui.QVBoxLayout()
         l1.addLayout(l05)
         l1.addWidget(space1)
         l1.addWidget(self.win1)
-        l1.addWidget(g_merge)
-        l1.addWidget(g_stats)
+        l1.addWidget(self.b4)
+        l1.addWidget(self.g_merge)
+        l1.addWidget(self.g_stats)
         l1.addWidget(self.b3)
         l1.addStretch(1)
         self.setLayout(l1)
@@ -136,6 +152,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         # Volume management widget
         self.ivm = None
         self.km = None
+
+        self.voxel_count_slice = []
+        self.voxel_count = []
 
     def add_image_management(self, image_vol_management):
 
@@ -282,20 +301,62 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         print("Merged")
 
-    def calculate_proportions(self):
+    def calculate_voxel_count(self):
         """
 
         Returns:
 
         """
+        self.voxel_count_slice = []
+        self.voxel_count = []
 
-        # slice 1
-        # slice 2
-        # slice 3
+        for ii in self.labs_un:
+            # Slice 1 count
+            self.voxel_count_slice.append(np.sum(self.label1[:, :, self.ivm.cim_pos[2]] == ii))
 
-        None
+            # Volume count
+            self.voxel_count.append(np.sum(self.label1 == ii))
 
+
+    @QtCore.Slot()
+    def generate_voxel_stats(self):
+        """
+        Some initial analysis
+        (temporary location before moving analysis into a separate framework)
+        """
+
+        # get analysis
+        self.calculate_voxel_count()
+        self.tabmod1.clear()
+
+        self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
+        self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
+
+        for cc, ii in enumerate(self.labs_un):
+
+            self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
+            self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(self.voxel_count_slice[cc]))))
+            self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(self.voxel_count[cc]))))
+
+    @QtCore.Slot()
     def convert_to_roi(self):
-        None
+        """
+        Set the overlay as an ROI
+
+        Returns:
+
+        """
+        self.ivm.set_roi(self.label1)
+        
+    def show_options(self):
+        if self.g_merge.isVisible():
+            self.g_merge.setVisible(False)
+            self.g_stats.setVisible(False)
+            self.b3.setVisible(False)
+        else:
+            self.g_merge.setVisible(True)
+            self.g_stats.setVisible(True)
+            self.b3.setVisible(True)
+        
 
 
