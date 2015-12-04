@@ -177,7 +177,7 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         #self.km.plot(slice1=30)
         self.label1, self.label1_cent = self.km.get_label_image()
-        self.labs_un_orig = np.unique(self.label1)
+        # self.labs_un_orig = np.unique(self.label1)
 
         self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
         self.ivm.set_current_overlay(choice1='clusters')
@@ -215,9 +215,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         xx = np.arange(self.label1_cent.shape[1])
 
         # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
-        num_clus_orig = len(self.labs_un_orig) - 1
+        num_clus = (self.labs_un.max())
         lut = self.ivm.cmap
-        lut_sec = np.around(lut.shape[0]/(num_clus_orig-1))
+        lut_sec = np.around(lut.shape[0]/num_clus)
 
         le1 = self.p1.addLegend()
 
@@ -228,7 +228,7 @@ class CurveClusteringWidget(QtGui.QWidget):
                 continue
 
             if ii < self.labs_un.max():
-                pen1 = lut[(ii-1) * lut_sec, :3]
+                pen1 = lut[ii * lut_sec, :3]
             else:
                 pen1 = lut[-1, :3]
 
@@ -249,17 +249,14 @@ class CurveClusteringWidget(QtGui.QWidget):
         nimage[self.km.region1] = self.km.voxel_se
 
         self.labs_un = np.unique(self.label1)
+        self.labs_un = self.labs_un[self.labs_un != 0]
         self.label1_cent = np.zeros((self.labs_un.max()+1, nimage.shape[-1]))
 
         cc = 0
         for ii in self.labs_un:
-            if ii == 0:
-                continue
 
             mean1 = np.median(nimage[self.label1 == ii], axis=0)
             self.label1_cent[ii, :] = mean1
-
-
 
     def run_merge(self):
         """
@@ -284,8 +281,6 @@ class CurveClusteringWidget(QtGui.QWidget):
         self._plot()
 
         print("Merged")
-
-
 
     def calculate_proportions(self):
         """

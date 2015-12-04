@@ -307,7 +307,7 @@ class ColorOverlay1(QtGui.QWidget):
 
         # Take a local region mean to reduce noise
         self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
-        self.cb2.toggle()
+        # self.cb2.toggle()
 
         self.tabmod1 = QtGui.QStandardItemModel()
 

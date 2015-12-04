@@ -665,7 +665,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
         self.options['ColorMap'] = 'jet'  # default. Can choose any matplotlib colormap
-        self.options['UseROI'] = 1
+        self.options['UseROI'] = 0
 
         # Initialise the colormap
         self.ovreg_lut = None
