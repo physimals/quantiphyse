@@ -494,10 +494,11 @@ class ImageViewOverlay(ImageViewLayout):
 
         # Setting up ROI viewing parameters
         pos = np.array([0.0, 1.0])
-        color = np.array([[0, 0, 0, 0], [255, 0, 0, 90]], dtype=np.ubyte)
-        map1 = pg.ColorMap(pos, color)
+        # color = np.array([[0, 0, 0, 0], [255, 0, 0, 90]], dtype=np.ubyte)
+        # map1 = pg.ColorMap(pos, color)
 
         # ROI lut
+        # TODO set the colormap
         self.set_roi_colormap_matplotlib()
         # self.roilut = map1.getLookupTable(0.0, 1.0, 256)
 
