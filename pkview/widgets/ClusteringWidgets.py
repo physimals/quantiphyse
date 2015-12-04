@@ -333,11 +333,9 @@ class CurveClusteringWidget(QtGui.QWidget):
         if self.g_merge.isVisible():
             self.g_merge.setVisible(False)
             self.g_stats.setVisible(False)
-            self.b3.setVisible(False)
         else:
             self.g_merge.setVisible(True)
             self.g_stats.setVisible(True)
-            self.b3.setVisible(True)
-        
+
 
 

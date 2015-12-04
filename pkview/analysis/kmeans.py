@@ -89,8 +89,8 @@ class KMeans:
             c1 = self.voxel_se[self.label_vector == ii + 1]
             self.cluster_centers_[ii, :] = c1.mean(axis=0)
 
-        #TODO Function just left as inpiration for how to map colors
-        #Mapping plot colors to rgba
+        # Function just left as inpiration for how to map colors
+        # Mapping plot colors to rgba
         # map1 = plt.cm.ScalarMappable(cmap=plt.cm.jet)
         # clrs1 = map1.to_rgba(range(0, int(self.label_image.max()) + 1))
 
