@@ -17,24 +17,25 @@ from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 
 #TODO Hide other buttons until the clustering is performed.
 
+
 class CurveClusteringWidget(QtGui.QWidget):
     """
     Widget for clustering the tumour into various regions
     """
 
-    #emit reset command
+    # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
     def __init__(self):
         super(CurveClusteringWidget, self).__init__()
 
-        #self.setStatusTip("Click points on the 4D volume to see time curve")
+        # self.setStatusTip("Click points on the 4D volume to see time curve")
 
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Cluster representative curves")
 
-        #Run clustering button
+        # Run clustering button
         self.b1 = QtGui.QPushButton('Run', self)
         self.b1.clicked.connect(self.run_clustering)
 
@@ -42,7 +43,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.combo = QtGui.QSpinBox(self)
         self.combo.setRange(2, 20)
         self.combo.setValue(4)
-        #self.combo.activated[str].connect(self.emit_cchoice)
+        # self.combo.activated[str].connect(self.emit_cchoice)
         self.combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
 
@@ -53,7 +54,6 @@ class CurveClusteringWidget(QtGui.QWidget):
         # self.combo.activated[str].connect(self.emit_cchoice)
         self.combo2.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
-
 
         l03 = QtGui.QHBoxLayout()
         l03.addWidget(self.b1)
@@ -185,7 +185,7 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
 
-        #self.km.plot(slice1=30)
+        # self.km.plot(slice1=30)
         self.label1, self.label1_cent = self.km.get_label_image()
         # self.labs_un_orig = np.unique(self.label1)
 
