@@ -1,3 +1,36 @@
+pkview (0.18.4ubuntu3) trusty; urgency=medium
+
+  * networkx
+
+ -- benjamin <engs1170@engs-20971>  Mon, 07 Dec 2015 13:56:53 +0000
+
+pkview (0.18.3ubuntu2) trusty; urgency=medium
+
+  * specificy matplotlib version to ignore new dependencies
+
+ -- benjamin <engs1170@engs-20971>  Mon, 07 Dec 2015 13:33:50 +0000
+
+pkview (0.18.2ubuntu1) trusty; urgency=medium
+
+  * add funcsigs for mock dependency
+
+ -- benjamin <engs1170@engs-20971>  Mon, 07 Dec 2015 13:07:58 +0000
+
+pkview (0.18.1) trusty; urgency=medium
+
+  * add pbr dependency
+
+ -- benjamin <engs1170@engs-20971>  Mon, 07 Dec 2015 12:46:13 +0000
+
+pkview (0.18ubuntu2) trusty; urgency=medium
+
+  * Improvements to clustering method for Jamie
+  * Start of a new overview panel for release. Currently a work in progress. 
+  * Removal of unused functionality to polish the good stuff. 
+  * This is a intermediatory release. The next one should be a properly polished release. 
+
+ -- benjamin <engs1170@engs-20971>  Mon, 07 Dec 2015 11:15:05 +0000
+
 pkview (0.17ubuntu1) trusty; urgency=medium
 
   * New viewing window that is much less dependent on pyqtgraph and works with the fundamentals of qt instead 

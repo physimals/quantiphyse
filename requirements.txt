@@ -1,7 +1,7 @@
 six
 pynrrd
 nibabel
-matplotlib
+matplotlib==1.4.3
 Cython
 pyqtgraph
 scikit-learn
@@ -11,3 +11,6 @@ mock
 nose
 python-dateutil
 pytz
+pbr
+funcsigs
+networkx

@@ -30,3 +30,8 @@ for ii in range(1, 9):
     nifti.update_header()
     fname_out = base_dir + pat + '/PRE/dceMRI/nifti/' + pat + '_pre_VOI_dilate.nii'
     nifti.to_filename(fname_out)
+
+    nifti = nib.Nifti1Image(img1_binary, h1.get_best_affine(), header=h1)
+    nifti.update_header()
+    fname_out = base_dir + pat + '/PRE/dceMRI/nifti/' + pat + '_pre_VOI_singlelab.nii'
+    nifti.to_filename(fname_out)
