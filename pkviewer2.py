@@ -9,8 +9,5 @@ from inside pkview/resources
 
 from pkview import pkviewer
 
-# required to use resources in theme
-from pkview.resources import resource
-
 pkviewer.main()
 

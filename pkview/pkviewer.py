@@ -7,6 +7,9 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
+# required to use resources in theme
+from pkview.resources import resource
+
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
@@ -16,7 +19,6 @@ from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
-# from pkview.widgets.AnnotWidgets import RandomWalkerWidget
 
 import sys
 import os
