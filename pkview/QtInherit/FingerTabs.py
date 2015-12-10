@@ -1,10 +1,11 @@
 # Updated so a PyQT4 Designer TabWidget can be promoted to a FingerTabWidget
 
 from PySide import QtGui, QtCore
- 
+
+
 class FingerTabBarWidget(QtGui.QTabBar):
     def __init__(self, parent=None, *args, **kwargs):
-        self.tabSize = QtCore.QSize(kwargs.pop('width',100), kwargs.pop('height',25))
+        self.tabSize = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
         QtGui.QTabBar.__init__(self, parent, *args, **kwargs)
                  
     def paintEvent(self, event):
@@ -16,10 +17,13 @@ class FingerTabBarWidget(QtGui.QTabBar):
             tabRect = self.tabRect(index)
             tabRect.moveLeft(10)
             painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)
-            painter.drawText(tabRect, QtCore.Qt.AlignVCenter |\
-                             QtCore.Qt.TextDontClip, \
-                             self.tabText(index));
+            painter.drawText(tabRect, QtCore.Qt.AlignVCenter |
+                             QtCore.Qt.AlignHCenter,
+                             self.tabText(index))
+            painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
+                                   self.tabIcon(index).pixmap(20, 20))
         painter.end()
+
     def tabSizeHint(self,index):
         return self.tabSize
 

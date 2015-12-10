@@ -314,9 +314,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
         # Widgets added to tabs on the right hand side
-        self.qtab1.addTab(self.wid["Overview"][0], "Overview")
+        self.qtab1.addTab(self.wid["Overview"][0], "Volumes")
         self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
+        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
+
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
         self.qtab1.setTabPosition(QtGui.QTabWidget.West)
@@ -361,7 +363,7 @@ class MainWindowWidget(QtGui.QWidget):
 
     def show_cc(self):
         index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
-                                  "CurveClustering", )
+                                  "Curve\n Cluster", )
         self.qtab1.setCurrentIndex(index)
 
     def show_pw(self):
@@ -372,7 +374,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.wid["PView"][0].add_image_management(self.ivm)
             self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
 
-        index = self.qtab1.addTab(self.wid["PView"][0], "PharmaViewCompare")
+        index = self.qtab1.addTab(self.wid["PView"][0], "Pharma \n View")
         print(index)
         self.qtab1.setCurrentIndex(index)
 
