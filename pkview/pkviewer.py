@@ -14,6 +14,7 @@ from pkview.resources import resource
 from pkview.ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
+from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -155,6 +156,10 @@ class MainWindowWidget(QtGui.QWidget):
         # Clustering widget
         self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
+
+       # Clustering widget
+        self.wid["ClusOv"] = [OvCurveClusteringWidget(), 'a', 'b']
+        self.wid["ClusOv"][0].add_image_management(self.ivm)
 
         self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
         self.wid["Overview"][0].add_image_management(self.ivm)
@@ -318,6 +323,8 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
+        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Over\n cluster")
+
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
