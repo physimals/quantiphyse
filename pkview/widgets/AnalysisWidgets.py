@@ -403,6 +403,9 @@ class ColorOverlay1(QtGui.QWidget):
 
         self.tab1.setVisible(True)
 
+        # Clear the previous labels
+        self.tabmod1.clear()
+
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
