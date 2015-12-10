@@ -358,7 +358,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pharmacokinetics")
+        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
@@ -374,7 +374,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.wid["PView"][0].add_image_management(self.ivm)
             self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
 
-        index = self.qtab1.addTab(self.wid["PView"][0], "Pharma \n View")
+        index = self.qtab1.addTab(self.wid["PView"][0], "Pharma\n View")
         print(index)
         self.qtab1.setCurrentIndex(index)
 

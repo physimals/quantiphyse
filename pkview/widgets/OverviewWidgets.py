@@ -17,9 +17,14 @@ class OverviewWidget(QtGui.QWidget):
         t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget()
 
+        # List for volume management
+        # t2 = QtGui.QLabel("Current overlays")
+        # self.l2 = CaseWidget()
+
 
         layout.addWidget(t1)
         layout.addWidget(self.l1)
+        layout.addStretch()
 
         self.setLayout(layout)
 
