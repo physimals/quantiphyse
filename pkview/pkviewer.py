@@ -19,6 +19,7 @@ from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
+from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
 import sys
 import os
@@ -304,17 +305,21 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Tabbed Widget
         self.qtab1 = QtGui.QTabWidget()
-        self.qtab1.setTabsClosable(True)
-        self.qtab1.setMovable(True)
+        # add finger tabs
+        self.qtab1.setTabBar(FingerTabBarWidget(width=100, height=50))
+
+        self.qtab1.setTabsClosable(False)
+        self.qtab1.setMovable(False)
         # Set the icon size of the tabs
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
         # Widgets added to tabs on the right hand side
         self.qtab1.addTab(self.wid["Overview"][0], "Overview")
-        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
-        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay options")
+        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
+        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
         # signal
-        self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
+        # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
+        self.qtab1.setTabPosition(QtGui.QTabWidget.West)
 
     # update slider range
     def update_slider_range(self):
