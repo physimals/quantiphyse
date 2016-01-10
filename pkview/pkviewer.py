@@ -411,8 +411,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if self.local_file_path == "":
             print("Reverting to current directory as base")
             self.local_file_path = os.getcwd()
-
-        print(self.local_file_path)
+        print("Local directory: ", self.local_file_path)
 
         # Load style sheet
         stFile = self.local_file_path + "/resources/darkorange.stylesheet"

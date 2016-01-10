@@ -65,10 +65,12 @@ setup(name='PKView',
       app=['pkviewer2.py'],
       version='0.17',
       options = {"py2app": {
-                          "includes": ['sklearn.utils.lgamma',
+                          'includes': ['sklearn.utils.lgamma',
                                        'sklearn.neighbors.typedefs',
                                        'sklearn.utils.sparsetools._graph_validation',
-                                       'sklearn.utils.weight_vector']
+                                       'sklearn.utils.weight_vector'],
+                         # 'iconfile':'pkview/icons/main_icon.icns',
+                         'qt_plugins': 'imageformats',
                          }
       },
       description='pCT and DCE-MRI viewer and analysis tool',
