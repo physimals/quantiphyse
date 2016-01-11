@@ -28,9 +28,9 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 
 # Option 4: Build a .deb
 
-# Experimental
+# Option 5: py2app on OSx
+Still not working completely. Try using a custom virtualenv
 
-pex nii2dcm -c nii2dcm -o cnii2dcm -v
 
 """
 import numpy
@@ -62,7 +62,17 @@ extensions = Extension("pkview/analysis/pk_model",
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
+      app=['pkviewer2.py'],
       version='0.17',
+      options = {"py2app": {
+                          'includes': ['sklearn.utils.lgamma',
+                                       'sklearn.neighbors.typedefs',
+                                       'sklearn.utils.sparsetools._graph_validation',
+                                       'sklearn.utils.weight_vector'],
+                         # 'iconfile':'pkview/icons/main_icon.icns',
+                         'qt_plugins': 'imageformats',
+                         }
+      },
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
@@ -87,9 +97,9 @@ setup(name='PKView',
                   ('pkview/resources/', ['pkview/resources/darkorange.stylesheet'])
                   ],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
-      setup_requires=['Cython', 'sphinx'],
+      setup_requires=['py2app', 'Cython'],
       install_requires=['six', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
-                        'pynrrd', 'matplotlib', 'mock', 'nose', 'python-dateutil', 'pytz'],
+      'pynrrd', 'matplotlib', 'mock', 'nose', 'python-dateutil', 'pytz', 'numpy', 'scipy'],
       #install_requires=['six', 'numpy', 'scipy', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
       #                  'pynrrd', 'Cython', 'matplotlib', 'PySide'],
       classifiers=["Programming Language :: Python :: 2.7",
@@ -104,8 +114,5 @@ setup(name='PKView',
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
       ext_modules=cythonize([extensions], language="c++"),
-      entry_points={
-          'gui_scripts': ['pkview2 = pkview.pkviewer:main'],
-          'console_scripts': ['pkview2 = pkview.pkviewer:main']
-      })
+      )
 

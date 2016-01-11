@@ -409,18 +409,26 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         self.setAcceptDrops(True)
 
-        # Patch for if file is frozen
+        # Patch for if file is frozen (packaged apps)
         if hasattr(sys, 'frozen'):
             # if frozen
-            self.local_file_path = os.path.dirname(sys.executable)
+            print(sys.frozen)
+            if sys.frozen == 'macosx_app':
+                self.local_file_path = os.getcwd() + '/pkview'
+            else:
+                self.local_file_path = os.path.dirname(sys.executable)
+
+        # Running from a script
         else:
             self.local_file_path = os.path.dirname(__file__)
 
+        # Use local working directory otherwise
         if self.local_file_path == "":
             print("Reverting to current directory as base")
             self.local_file_path = os.getcwd()
 
-        print(self.local_file_path)
+        # Print directory
+        print("Local directory: ", self.local_file_path)
 
         # Load style sheet
         stFile = self.local_file_path + "/resources/darkorange.stylesheet"
