@@ -267,13 +267,15 @@ class ColorOverlay1(QtGui.QWidget):
     Color overlay interaction
     """
 
-    #Signals
-    #emit colormap choice
+    # Signals
+    # emit colormap choice
     sig_choose_cmap = QtCore.Signal(str)
-    #emit alpha value
+    # emit alpha value
     sig_set_alpha = QtCore.Signal(int)
-    #emit reset command
+    # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
+    # emit a change in range
+    sig_range_change = QtCore.Signal(int)
 
     def __init__(self):
         super(ColorOverlay1, self).__init__()
@@ -309,6 +311,24 @@ class ColorOverlay1(QtGui.QWidget):
         self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
         # self.cb2.toggle()
 
+        self.ov_min = QtGui.QDoubleSpinBox(self)
+        self.ov_min.setDecimals(2)
+        self.ov_min.setSingleStep(0.1)
+        self.ov_min.valueChanged.connect(self.emit_ov_range_change)
+        self.ov_min.setToolTip("Overlay minimum threshold")
+        self.ov_min.setMinimum(-100)
+        self.ov_max = QtGui.QDoubleSpinBox(self)
+        self.ov_max.setDecimals(2)
+        self.ov_max.setSingleStep(0.1)
+        self.ov_max.setMaximum(100)
+        self.ov_max.valueChanged.connect(self.emit_ov_range_change)
+        self.ov_max.setToolTip("Overlay minimum threshold")
+        lovrange = QtGui.QHBoxLayout()
+        lovrange.addWidget(QtGui.QLabel("Overlay min: "))
+        lovrange.addWidget(self.ov_min)
+        lovrange.addWidget(QtGui.QLabel("    Overlay max: "))
+        lovrange.addWidget(self.ov_max)
+
         self.tabmod1 = QtGui.QStandardItemModel()
 
         self.tab1 = QtGui.QTableView()
@@ -341,6 +361,7 @@ class ColorOverlay1(QtGui.QWidget):
         l05 = QtGui.QVBoxLayout()
         l05.addLayout(l00)
         l05.addLayout(l01)
+        l05.addLayout(lovrange)
         l05.addWidget(self.cb1)
         l05.addWidget(self.cb2)
 
@@ -393,6 +414,10 @@ class ColorOverlay1(QtGui.QWidget):
         Adding image management
         """
         self.ivm = image_vol_management
+
+        # Min and max set for overlay choice
+        self.ov_min.setValue(self.ivm.ov_range[0])
+        self.ov_max.setValue(self.ivm.ov_range[1])
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -466,4 +491,9 @@ class ColorOverlay1(QtGui.QWidget):
     @QtCore.Slot(int)
     def emit_alpha(self, val1):
         self.sig_set_alpha.emit(val1)
+
+    @QtCore.Slot(int)
+    def emit_ov_range_change(self, val1):
+        self.ivm.ov_range = [self.ov_min.value(), self.ov_max.value()]
+        self.sig_range_change.emit(val1)
 

@@ -62,6 +62,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation',
                                   'segmentation', 'clustering']
 
+        # Current overlay range
+        self.ov_range = [0.0, 1.0]
+
         # All overlays
         self.overlay_all = {}
 

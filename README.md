@@ -136,5 +136,8 @@ The resource file is compiled by
 
 pyside-rcc resource -o resource.py
 
+For python 3
+pyside-rcc resource -o resource.py -py3
+
 This is then imported at the beginning of the app so that the program can find the resources. 
 

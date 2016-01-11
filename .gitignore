@@ -7,6 +7,6 @@ build/
 debian/pkview
 .eggs/
 /pkview/analysis/pk_model.cpp
-/pkview/analysis/pk_model.so
 *.sh
+*.so
 *~

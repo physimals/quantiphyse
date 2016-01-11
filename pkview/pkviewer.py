@@ -168,9 +168,10 @@ class MainWindowWidget(QtGui.QWidget):
         # self.sw_rw = None
 
         # Connect widgets
-        # Connect colormap choice, alpha
+        # Connect colormap choice, alpha and colormap range
         self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
         self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
+        self.wid["ColOv"][0].sig_range_change.connect(self.ivl1.set_overlay_range)
 
         # Connecting toggle buttons
         self.wid["ColOv"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
