@@ -141,7 +141,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PView"] = [None, 'a', 'b']
 
         # Color overlay widget
-        self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
+        self.wid["ColOv"] = [ColorOverlay1(self.local_file_path), 'a', 'b']
         self.wid["ColOv"][0].add_analysis(self.ia)
         self.wid["ColOv"][0].add_image_management(self.ivm)
 
@@ -172,12 +172,12 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
         self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
         self.wid["ColOv"][0].sig_range_change.connect(self.ivl1.set_overlay_range)
+        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         # Connecting toggle buttons
-        self.wid["ColOv"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
-        self.wid["ColOv"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
+        self.wid["Overview"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
+        self.wid["Overview"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
-        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 

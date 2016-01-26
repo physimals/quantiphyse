@@ -1,6 +1,7 @@
-from __future__ import print_function, division
-from PySide import QtGui, QtCore
+from __future__ import print_function, division, absolute_import
 
+from PySide import QtGui, QtCore
+from ..QtInherit import HelpButton
 
 class OverviewWidget(QtGui.QWidget):
     #
@@ -14,17 +15,40 @@ class OverviewWidget(QtGui.QWidget):
         layout = QtGui.QVBoxLayout()
 
         # List for volume management
+        tb = QtGui.QLabel("<font size=50> PKView </font> \n")
+
+        pixmap = QtGui.QPixmap(self.local_file_path + "/icons/main_icon.png")
+        pixmap = pixmap.scaled(35, 35, QtCore.Qt.KeepAspectRatio)
+        lpic = QtGui.QLabel(self)
+        lpic.setPixmap(pixmap)
+
+        b1 = HelpButton(self, self.local_file_path)
+        l03 = QtGui.QHBoxLayout()
+        l03.addWidget(lpic)
+        l03.addWidget(tb)
+        l03.addStretch(1)
+        l03.addWidget(b1)
+
+        ta = QtGui.QLabel("The GUI enables loading of an DCE-MRI \n volume, ROI and mulitiple overlays. \n"
+                          "use help (?) buttons for more online information on \n each widget. \n")
+
         t1 = QtGui.QLabel("Current overlays")
-        self.l1 = CaseWidget()
+        self.l1 = CaseWidget(self)
 
-        # List for volume management
-        # t2 = QtGui.QLabel("Current overlays")
-        # self.l2 = CaseWidget()
+        self.cb1 = QtGui.QCheckBox('Show overlay', self)
+        self.cb1.toggle()
 
+        # Take a local region mean to reduce noise
+        self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
+        # self.cb2.toggle()
 
+        layout.addLayout(l03)
+        layout.addWidget(ta)
+        layout.addStretch()
         layout.addWidget(t1)
         layout.addWidget(self.l1)
-        layout.addStretch()
+        layout.addWidget(self.cb1)
+        layout.addWidget(self.cb2)
 
         self.setLayout(layout)
 
@@ -58,8 +82,8 @@ class CaseWidget(QtGui.QListWidget):
     # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self):
-        super(CaseWidget, self).__init__()
+    def __init__(self, parent):
+        super(CaseWidget, self).__init__(parent)
 
         self.list_current = []
 

@@ -5,7 +5,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 """
 
-from __future__ import division, unicode_literals, print_function
+from __future__ import division, unicode_literals, print_function, absolute_import
 
 from PySide import QtCore, QtGui
 
@@ -14,6 +14,7 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 
 from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
+from ..QtInherit import HelpButton
 
 
 class SECurve(QtGui.QWidget):
@@ -32,6 +33,11 @@ class SECurve(QtGui.QWidget):
         self.local_file_path = local_file_path
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
+
+        bhelp = HelpButton(self, self.local_file_path)
+        lhelp = QtGui.QHBoxLayout()
+        lhelp.addStretch(1)
+        lhelp.addWidget(bhelp)
 
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setVisible(True)
@@ -113,6 +119,7 @@ class SECurve(QtGui.QWidget):
         l05.addStretch()
 
         l1 = QtGui.QVBoxLayout()
+        l1.addLayout(lhelp)
         l1.addLayout(l03)
         l1.addWidget(self.win1)
         l1.addWidget(space1)
@@ -277,10 +284,17 @@ class ColorOverlay1(QtGui.QWidget):
     # emit a change in range
     sig_range_change = QtCore.Signal(int)
 
-    def __init__(self):
+    def __init__(self, local_file_path):
         super(ColorOverlay1, self).__init__()
 
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
+
+        self.local_file_path = local_file_path
+
+        bhelp = HelpButton(self, self.local_file_path)
+        lhelp = QtGui.QHBoxLayout()
+        lhelp.addStretch(1)
+        lhelp.addWidget(bhelp)
 
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setVisible(False)
@@ -302,14 +316,6 @@ class ColorOverlay1(QtGui.QWidget):
         combo.addItem("gist_heat")
         combo.setToolTip("The colormaps available for visualising the overlay")
         combo.activated[str].connect(self.emit_cmap)
-
-        # Take a local region mean to reduce noise
-        self.cb1 = QtGui.QCheckBox('Show overlay', self)
-        self.cb1.toggle()
-
-        # Take a local region mean to reduce noise
-        self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
-        # self.cb2.toggle()
 
         self.ov_min = QtGui.QDoubleSpinBox(self)
         self.ov_min.setDecimals(2)
@@ -362,8 +368,8 @@ class ColorOverlay1(QtGui.QWidget):
         l05.addLayout(l00)
         l05.addLayout(l01)
         l05.addLayout(lovrange)
-        l05.addWidget(self.cb1)
-        l05.addWidget(self.cb2)
+        # l05.addWidget(self.cb1)
+        # l05.addWidget(self.cb2)
 
         l06 = QtGui.QHBoxLayout()
         l06.addLayout(l05)
@@ -392,6 +398,7 @@ class ColorOverlay1(QtGui.QWidget):
         f03.setLayout(l08)
 
         l1 = QtGui.QVBoxLayout()
+        l1.addLayout(lhelp)
         l1.addWidget(f01)
         l1.addWidget(QtGui.QLabel(""))
         l1.addWidget(f03)
