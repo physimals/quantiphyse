@@ -34,8 +34,10 @@ class SECurve(QtGui.QWidget):
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
+        title1 = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
         bhelp = HelpButton(self, self.local_file_path)
         lhelp = QtGui.QHBoxLayout()
+        lhelp.addWidget(title1)
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
@@ -291,8 +293,10 @@ class ColorOverlay1(QtGui.QWidget):
 
         self.local_file_path = local_file_path
 
+        title1 = QtGui.QLabel("<font size=5> Overlay options and statistics </font>")
         bhelp = HelpButton(self, self.local_file_path)
         lhelp = QtGui.QHBoxLayout()
+        lhelp.addWidget(title1)
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
