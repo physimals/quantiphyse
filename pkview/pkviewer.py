@@ -324,7 +324,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
-        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Over\n cluster")
+        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
 
 
         # signal
@@ -505,12 +505,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
-        # Widgets --> SE curve
-        se_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), '&SEcuve', self)
-        se_action.setStatusTip('Plot SE of a voxel')
-        # se_action.setData("SigEn")
-        se_action.triggered.connect(self.mw1.show_se)
-
         # Widgets --> Image export
         ic_action = QtGui.QAction('&ImageExport', self)
         ic_action.setStatusTip('Export images from the GUI')
@@ -532,9 +526,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # rw_action.triggered.connect(self.mw1.show_rw)
 
         # Widgets --> CurveClustering
-        cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
-        cc_action.setStatusTip('Cluster curves in a ROI of interest')
-        cc_action.triggered.connect(self.mw1.show_cc)
+        # cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
+        # cc_action.setStatusTip('Cluster curves in a ROI of interest')
+        # cc_action.triggered.connect(self.mw1.show_cc)
 
         # Wigets --> Create Annotation
         # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
@@ -554,7 +548,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
-        widget_menu = menubar.addMenu('&Widgets')
+        widget_menu = menubar.addMenu('&Additional Widgets')
         advanced_menu = menubar.addMenu('&Advanced')
         help_menu = menubar.addMenu('&Help')
 
@@ -565,14 +559,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
-        widget_menu.addAction(se_action)
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
 
-        widget_menu.addAction(cc_action)
 
         help_menu.addAction(help_action)
 
