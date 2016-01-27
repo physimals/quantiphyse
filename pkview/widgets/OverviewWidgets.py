@@ -30,8 +30,11 @@ class OverviewWidget(QtGui.QWidget):
         l03.addStretch(1)
         l03.addWidget(b1)
 
-        ta = QtGui.QLabel("The GUI enables loading of an DCE-MRI \n volume, ROI and mulitiple overlays. \n"
-                          "use help (?) buttons for more online information on \n each widget. \n")
+        ta = QtGui.QLabel("The GUI enables analysis of a DCE-MRI volume, ROI and multiple overlays "
+                          "with pharmacokinetic modelling, subregion analysis and statistics included. "
+                          "Use help (?) buttons for more online information on each widget and the entire GUI. "
+                          "(Benjamin Irving 2016)")
+        ta.setWordWrap(True)
 
         t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget(self)
