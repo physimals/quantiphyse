@@ -87,9 +87,11 @@ public:
 
     void set_parameters(double R1in, double R2in, double dce_flip_anglein, double dce_TRin, double dce_TEin, double Dosein);
 
+    // calculate the Contrast to noise ratio for each voxel
+    void calculate_CNR();
+
     // run the pk model
     void rinit(int model1, double injtmins);
-
     double run(int pause1);
 
     const vector<vector<double> > get_parameters();

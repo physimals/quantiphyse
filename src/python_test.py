@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pk import PyPk
+from pkview.analysis.pk_model import PyPk
 
 folder1 = "/local/engs1170/Dropbox/BioMedIA1/Code/9_GUI/data/"
 #folder1 = "/home/benjamin/Dropbox/BioMedIA1/Code/9_GUI/data/"

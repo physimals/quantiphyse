@@ -93,6 +93,11 @@ void Pkrun2::set_parameters(double R1in, double R2in, double dce_flip_anglein, d
 
 }
 
+// Calculate the contrast to noise ratio of the data
+void Pkrun2::calculate_CNR()
+{
+// TODO : calculate the CNR and return it as a volume
+}
 
 void Pkrun2::rinit(int model1, double injtmins)
 {
