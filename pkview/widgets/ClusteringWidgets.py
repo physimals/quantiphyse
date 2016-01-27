@@ -11,9 +11,10 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import numpy as np
 
-from pkview.analysis.kmeans import KMeans
+from pkview.analysis.kmeans import KMeansPCA
 
 from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
+from pkview.QtInherit import HelpButton
 
 #TODO Hide other buttons until the clustering is performed.
 
@@ -26,8 +27,18 @@ class CurveClusteringWidget(QtGui.QWidget):
     # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self):
+    def __init__(self, local_file_path):
         super(CurveClusteringWidget, self).__init__()
+
+        self.local_file_path = local_file_path
+
+        # self.setStatusTip("Click points on the 4D volume to see time curve")
+        title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
+        bhelp = HelpButton(self, self.local_file_path)
+        lhelp = QtGui.QHBoxLayout()
+        lhelp.addWidget(title1)
+        lhelp.addStretch(1)
+        lhelp.addWidget(bhelp)
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
 
@@ -130,6 +141,7 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         # Outer layout
         l1 = QtGui.QVBoxLayout()
+        l1.addLayout(lhelp)
         l1.addLayout(l05)
         l1.addWidget(space1)
         l1.addWidget(self.win1)
@@ -181,7 +193,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         img1 = self.ivm.get_image()
         roi1 = self.ivm.get_roi()
 
-        self.km = KMeans(img1, region1=roi1)
+        self.km = KMeansPCA(img1, region1=roi1)
 
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
 

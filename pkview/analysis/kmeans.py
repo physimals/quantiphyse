@@ -13,7 +13,67 @@ import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
 
-class KMeans:
+class KMeans3D:
+    """
+
+    """
+
+    def __init__(self, img1, region1=None, invert_roi=0, labels1=None):
+        """
+
+        @param img1: image region
+        @param n_clusters:  number of k-means clusters to generate
+        @param region1: region of interest to cluster
+        @param invert_roi:
+        @param normdata:
+        @param labels1: (Optional) separate clustering of different regions
+        """
+
+        self.img1 = np.array(img1, dtype=np.float32)
+
+        # ROI to process
+        if region1 is None:
+            self.region1 = np.ones(self.img1.shape[0:-1], dtype=bool)
+        elif invert_roi == 1:
+            self.region1 = np.logical_not(region1)
+        else:
+            self.region1 = np.array(region1, dtype=np.bool)
+
+        self.voxel_se = self.img1[self.region1]
+        self.voxel_se = self.voxel_se[:, np.newaxis]
+
+        # Labels for the region
+        if labels1 is None:
+            # if no labels are given then all are set to 1
+            self.labels1 = np.ones(self.voxel_se.shape[0], dtype=np.int)
+        else:
+            self.labels1 = labels1[self.region1]
+
+        self.n_clusters = None
+        self.cluster_centers_ = None
+        self.label_image = np.zeros_like(img1, dtype=np.int)
+        self.label1_range = None
+
+    def run_single(self, n_clusters):
+        self.n_clusters = n_clusters
+        kmeans = cl.KMeans(init='k-means++', n_clusters=self.n_clusters, n_init=10, n_jobs=2)
+        kmeans.fit(self.voxel_se)
+
+        # label image
+        self.label_image[self.region1] = kmeans.labels_ + 1
+        self.label_vector = kmeans.labels_ + 1
+
+        # find mean cluster curves
+        self.cluster_centers_ = np.zeros((self.n_clusters, self.img1.shape[-1]))
+        for ii in range(self.n_clusters):
+            c1 = self.voxel_se[self.label_vector == ii + 1]
+            self.cluster_centers_[ii, :] = c1.mean(axis=0)
+
+    def get_label_image(self):
+        return self.label_image, self.cluster_centers_
+
+
+class KMeansPCA:
     """
     This class just implements KMeans for a 2D or 3D image
     """

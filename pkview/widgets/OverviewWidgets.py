@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 
+
 class OverviewWidget(QtGui.QWidget):
     #
     sig_show_se = QtCore.Signal()

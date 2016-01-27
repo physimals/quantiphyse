@@ -154,11 +154,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ImExp"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
+        self.wid["Clus"] = [CurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
 
        # Clustering widget
-        self.wid["ClusOv"] = [OvCurveClusteringWidget(), 'a', 'b']
+        self.wid["ClusOv"] = [OvCurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["ClusOv"][0].add_image_management(self.ivm)
 
         self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
