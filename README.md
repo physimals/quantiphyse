@@ -160,7 +160,9 @@ pip install -r requirements.txt
 pip install PySide
 ```
 
-## 3) Resource file
+## Additional notes:
+
+### Resource file
 
 The resource file is compiled by
 
