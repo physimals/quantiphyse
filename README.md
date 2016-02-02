@@ -19,17 +19,20 @@ Key features:
 - Quantification of parameters within subregions of the tumour
 - Python console to interact with the loaded data and analysis (advanced users)
 
+See:
+https://github.com/benjaminirving/PkView_help_files
+for usage. *This documentation is very out of date and needs updating*
+
 ![alt text](images/Screenshot2.png "Screenshot")
 
 ![alt text](images/Screenshot1.png "Screenshot")
 
 ## Recommendation
-The easiest method of installation is to request a .deb, .app or .exe file. This files will be made available in the
+The easiest method of installation is to request a .deb, .app or .exe file. These files will be made available in the
 repository soon. 
 
-See:
-https://github.com/benjaminirving/PkView_help_files
-for usage. *This documentation is very out of data and needs updating*
+Alternatively, the GUI can be run from the source. See guides below for setting up Ubuntu or OSx. This GUI also works
+under windows. 
 
 ## Running from source
 Tested on Ubuntu 14.04 and OSx 10.11. Although it runs on Windows, Ubuntu and OSx.
