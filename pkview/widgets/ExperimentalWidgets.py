@@ -7,9 +7,9 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import print_function, division
 
-from PySide import QtCore, QtGui
-from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 import warnings
+
+from PySide import QtCore, QtGui
 
 
 class ImageExportWidget(QtGui.QWidget):

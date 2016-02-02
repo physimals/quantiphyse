@@ -7,13 +7,12 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
-from PySide import QtCore, QtGui
-
-import pyqtgraph as pg
 import numpy as np
+import pyqtgraph as pg
+from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
+from pkview.QtInherit.QtSubclass import QGroupBoxB
 from ..QtInherit import HelpButton
 
 

@@ -6,15 +6,16 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
+
 import multiprocessing
 import multiprocessing.pool
 import time
 
-from PySide import QtCore, QtGui
 import numpy as np
 import pyqtgraph as pg
+from PySide import QtCore, QtGui
 
-from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
+from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
 
 

@@ -7,14 +7,13 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-from PySide import QtCore, QtGui
-import pyqtgraph as pg
 import numpy as np
+import pyqtgraph as pg
+from PySide import QtCore, QtGui
 
-from pkview.analysis.kmeans import KMeansPCA
-
-from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
 from pkview.QtInherit import HelpButton
+from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.analysis.kmeans import KMeansPCA
 
 #TODO Hide other buttons until the clustering is performed.
 

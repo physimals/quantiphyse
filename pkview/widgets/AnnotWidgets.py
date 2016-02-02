@@ -7,12 +7,11 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, print_function, unicode_literals, absolute_import
 
-from PySide import QtCore, QtGui
 import numpy as np
-from pkview.subclassing_of_qt_fns.QtSubclass import QGroupBoxB
-from pkview.analysis.feat_pca import PcaFeatReduce
-
+from PySide import QtCore, QtGui
 from skimage.segmentation import random_walker
+
+from pkview.analysis.feat_pca import PcaFeatReduce
 
 
 class RandomWalkerWidget(QtGui.QWidget):
