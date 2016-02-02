@@ -2,7 +2,7 @@ PkView
 ======
 Viewer for 3D/4D data and Pk modelling
 
-Contributers:
+Contributors:
 
 Benjamin Irving
 
