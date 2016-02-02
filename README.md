@@ -71,6 +71,8 @@ brew install python
 
 ```bash
 # Install dependencies
+pip install -U pip
+pip install -U setuptools
 pip install numpy 
 pip install scipy
 pip install -r requirements.txt
