@@ -62,6 +62,7 @@ already installed.
 
 2) Install python
 ```bash
+brew update
 brew install python
 ```
 
