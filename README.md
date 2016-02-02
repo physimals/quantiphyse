@@ -5,14 +5,44 @@ Viewer for 3D/4D data and Pk modelling
 Contributers:
 Benjamin Irving
 
+## Overview
+This viewer provides tools for modelling and analysis of DCE-MRI scans. 
+
+Key features:
+- 4D DCE-MRI images can be loaded and viewed from nifti images
+- Signal enhancement curves can be visualised and analysed
+- Pharmacokinetic modelling
+- Visualisation of model fitting quality
+- Visualisation of parameter maps
+- Clustering of a region based on the perfusion curves
+- Clustering of a region based on a parameter map
+- Quantification of parameters within subregions of the tumour
+- Python console to interact with the loaded data and analysis (advanced users)
+
+![alt text](images/Screenshot2.png "Screenshot")
+
 ![alt text](images/Screenshot1.png "Screenshot")
 
+## Recommendation
+The easiest method of installation is to request a .deb, .app or .exe file. This files will be made available in the
+repository soon. 
 
-### Dependencies:
-Python 2.7
+If running the source, I recommend using a virtualenv with pip so that the latest libraries are used. 
 
-#### Python libraries:
+See:
+https://github.com/benjaminirving/PkView_help_files
+for usage
 
+
+
+
+## Running from source
+Tested on Ubuntu 14.04 and OSx 10.11. Although it runs on Windows, Ubuntu and OSx.
+
+Dependencies:
+Python 2.7 or python 3.4
+
+Python libraries:
 - PySide
 - matplotlib
 - numpy 
@@ -23,16 +53,11 @@ Python 2.7
 - scikit-learn
 - scipy
 
-### Overview
-
-### Recommendation
-I recommend using a virtualenv with pip so that the latest libraries are used. 
-
-### Installation
+## Ubuntu 14.04 (NB: this guide is still a work in progress)
 
 1) Install dependencies
 ```bash
-sudo apt-get install numpy scipy build-essentials pip
+sudo apt-get install build-essentials pip python-all-dev numpy scipy
 ```
 
 2) Install required python libraries using pip
@@ -42,7 +67,7 @@ sudo apt-get install numpy scipy build-essentials pip
 python setup.py build_ext --inplace
 ```
 
-### Usage
+4)
 
 ``` bash
 python pkviewer2.py
@@ -53,18 +78,16 @@ or
 ./pkviewer2.py
 ```
 
-See:
-https://github.com/benjaminirving/PkView_help_files
-for usage
 
-### Notes
-- This software is currently tested and built in a virtualenv to use the latest dependencies and may not work with older python libraries
-
-##Advanced
 ### 1) Setting up a virtualenv system
 
+For ubuntu 14-04
 ```bash
 sudo apt-get install python-virtualenv     # Installing virtualenv library
+```
+For osx 
+
+```bash
 mkdir python-vm # make a directory to store the virtualenv
 cd ~/python-vm
 virtualenv pyvm # Create a vm named pyvm
@@ -88,7 +111,7 @@ pip install -r requirements.txt
 pip install PySide
 ```
 
-### 2) System libraries required for pip install of dependencies in a virtualenv
+#### 2) System libraries required for pip install of dependencies in a virtualenv (Ubuntu 14.04)
 
 libffi-dev
 
@@ -118,7 +141,6 @@ libpng12-dev
 
 libpng12
 
-
 **PySide**
 
 qt4-qmake
@@ -128,6 +150,9 @@ shiboken
 libshiboken-dev
 
 libqt4-dev
+
+
+## OSx 10.11 (NB: this guide is still a work in progress)
 
 
 ### 3) Resource file
