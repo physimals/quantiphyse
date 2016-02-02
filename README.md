@@ -54,6 +54,33 @@ Python libraries:
 ## OSx 10.11 (NB: this guide is still a work in progress)
 ### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
 
+For OSx it is recommended that you don't use the system version of python so that libraries can be updated without
+affecting the underlying system. 
+
+1) Homebrew is ideal for running a separate version of python. Install homebrew from http://brew.sh/ if it's not 
+already installed. 
+
+2) Install python
+```bash
+brew install python
+```
+
+2) git clone this repository
+
+3) cd into the directory
+
+```bash
+# Install dependencies
+pip install numpy 
+pip install scipy
+pip install -r requirements.txt
+pip install PySide
+```
+
+4) Run the script
+```bash
+python pkviewer2.py
+```
 
 ## Ubuntu 14.04 
 ### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
