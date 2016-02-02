@@ -51,7 +51,7 @@ Python libraries:
 - scipy
 
 
-## OSx 10.11 (NB: this guide is still a work in progress)
+## OSx 10.11
 ### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
 
 For OSx it is recommended that you don't use the system version of python so that libraries can be updated without
