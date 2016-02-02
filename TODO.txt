@@ -1,3 +1,0 @@
-1) Make a quick load option
-2) Add dose option to the pK modelling
-Fix dose to 0.6 for preclinical cases.
