@@ -33,9 +33,6 @@ See:
 https://github.com/benjaminirving/PkView_help_files
 for usage. *This documentation is very out of data and needs updating*
 
-
-
-
 ## Running from source
 Tested on Ubuntu 14.04 and OSx 10.11. Although it runs on Windows, Ubuntu and OSx.
 
@@ -53,11 +50,19 @@ Python libraries:
 - scikit-learn
 - scipy
 
-## Ubuntu 14.04 (NB: this guide is still a work in progress)
+
+## OSx 10.11 (NB: this guide is still a work in progress)
+### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
+
+
+## Ubuntu 14.04 
+### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
+
+### Option 1: Using a system python. Libraries may be out of date and option 2 is recommended. 
 
 1) Install dependencies
 ```bash
-sudo apt-get install build-essentials pip python-all-dev numpy scipy
+sudo apt-get install build-essentials pip python-all-dev numpy scipy python-pyside
 ```
 
 2) Install required python libraries using pip
@@ -79,18 +84,19 @@ or
 ```
 
 
-### 1) Setting up a virtualenv system
+### Option 2: Using a python virtualenv
 
-For ubuntu 14-04
+Creating a vm (see https://virtualenv.readthedocs.org/en/latest/)
+
 ```bash
 sudo apt-get install python-virtualenv     # Installing virtualenv library
-```
-For osx 
-
-```bash
 mkdir python-vm # make a directory to store the virtualenv
 cd ~/python-vm
 virtualenv pyvm # Create a vm named pyvm
+```
+
+Activating the vm
+```
 source ~/python-vm/pyvm/bin/activate #start the vim
 ```
 
@@ -100,65 +106,29 @@ Deactivating the vm
 deactivate
 ```
 
+Make sure dependencies are installed
+```bash
+sudo apt-get install libffi-dev libssl-dev
+sudo apt-get install gfortran libatlas-base-dev libblas-dev liblapack-dev python-all-dev
+sudo apt-get install libfreetype6-dev libfreetype6 libpng12-dev libpng12 qt4-qmake shiboken libshiboken-dev libqt4-dev
+```
+
 Installing python libraries in the vm (make sure system libraries in 2) are installed)
 ```bash
+pip install requests[security]
 pip install --upgrade pip
 pip install --upgrade setuptools
-pip install distribute
 pip install numpy
 pip install scipy
 pip install -r requirements.txt
 pip install PySide
 ```
 
-#### 2) System libraries required for pip install of dependencies in a virtualenv (Ubuntu 14.04)
-
-libffi-dev
-
-libssl-dev
-
-pip install requests[security]
-
-**numpy / scitkit-learn / scipy**
-
-gfortran
-
-libatlas-base-dev
-
-libblas-dev
-
-liblapack-dev
-
-python-all-dev
-
-**matplotlib**
-
-libfreetype6-dev
-
-libfreetype6
-
-libpng12-dev
-
-libpng12
-
-**PySide**
-
-qt4-qmake
-
-shiboken
-
-libshiboken-dev
-
-libqt4-dev
-
-
-## OSx 10.11 (NB: this guide is still a work in progress)
-
-
-### 3) Resource file
+## 3) Resource file
 
 The resource file is compiled by
 
+For python 2
 pyside-rcc resource -o resource.py
 
 For python 3
