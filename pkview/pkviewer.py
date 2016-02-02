@@ -6,9 +6,14 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
+import sys
 
-# required to use resources in theme
-from pkview.resources import resource
+# required to use resources in theme. Check if 2 or 3.
+if (sys.version_info > (3, 0)):
+    from pkview.resources import resource_py2
+else:
+    from pkview.resources import resource_py3
+
 
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
