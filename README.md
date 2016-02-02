@@ -31,7 +31,7 @@ If running the source, I recommend using a virtualenv with pip so that the lates
 
 See:
 https://github.com/benjaminirving/PkView_help_files
-for usage
+for usage. *This documentation is very out of data and needs updating*
 
 
 
