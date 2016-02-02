@@ -27,8 +27,6 @@ Key features:
 The easiest method of installation is to request a .deb, .app or .exe file. This files will be made available in the
 repository soon. 
 
-If running the source, I recommend using a virtualenv with pip so that the latest libraries are used. 
-
 See:
 https://github.com/benjaminirving/PkView_help_files
 for usage. *This documentation is very out of data and needs updating*
@@ -52,7 +50,7 @@ Python libraries:
 
 
 ## OSx 10.11
-### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
+*NB: this guide is still a work in progress. Please let me know if something doesn't work*
 
 For OSx it is recommended that you don't use the system version of python so that libraries can be updated without
 affecting the underlying system. 
@@ -86,7 +84,7 @@ python pkviewer2.py
 ```
 
 ## Ubuntu 14.04 
-### (NB: this guide is still a work in progress. Please let me know if something doesn't work)
+*NB: this guide is still a work in progress. Please let me know if something doesn't work*
 
 ### Option 1: Using a system python. Libraries may be out of date and option 2 is recommended. 
 
