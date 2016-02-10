@@ -1,0 +1,22 @@
+# Lists the configuration for running DCE-MRI from the command line
+
+Files:
+  DCE:       /data1/Results/2_pk_RIT_motioncor/RIT005/DCE.nii
+  T10:        /data1/Results/2_pk_RIT_motioncor/RIT005/T10.nii
+  ROI:       /data1/Results/2_pk_RIT_motioncor/RIT005/seg.nii
+  Out:
+
+Param:
+  flip_angle: 0.0022
+  TR:         0.0045
+  TE:         12
+  T:          17
+  R1:         3.7
+  R2:         4.8
+  v1thresh:   99.8
+  InjT:       5
+
+Configuration:
+  model_choice: 1
+
+

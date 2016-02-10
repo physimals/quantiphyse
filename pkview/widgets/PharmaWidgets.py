@@ -310,6 +310,22 @@ def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose,
     """
     Simple function interface to run the c++ pk modelling code
     Run from a multiprocess call
+
+    Args:
+        img1sub:
+        t101sub:
+        r1:
+        r2:
+        delt:
+        injt:
+        tr1:
+        te1:
+        dce_flip_angle:
+        dose:
+        model_choice:
+
+    Returns:
+
     """
 
     print("pk modelling worker started")
