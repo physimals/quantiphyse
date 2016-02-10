@@ -374,12 +374,12 @@ def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose,
     for ii in range(int(steps1)):
         if ii > 0:
             progress = float(ii) / float(steps1) * 100
-            print(progress)
+            # print(progress)
             run_pk.queue.put((num_row, progress))
 
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
         x = Pkclass.run(size_step)
-        print(x)
+        # print(x)
 
     print("Done")
 

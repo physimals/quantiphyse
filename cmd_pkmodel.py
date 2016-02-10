@@ -39,7 +39,8 @@ def save_file(file1, hdr, data1):
 
 
 # Load config from yaml
-c1 = yaml_loader('config.yaml')
+c1 = yaml_loader('cmd_pkconfig.yaml')
+c1 = c1['RIT005']
 
 queue = multiprocessing.Queue()
 pool = multiprocessing.Pool(processes=2, initializer=pool_init, initargs=(queue,))
@@ -110,7 +111,11 @@ roi1v = np.array(roi1vec, dtype=bool)
 
 #Params: Ktrans, ve, offset, vp
 Ktrans1 = np.zeros((roi1v.shape[0]))
-Ktrans1[roi1v] = var1[2][:, 0] * (var1[2][:, 0] < 2.0) + 2 * (var1[2][:, 0] > 2.0)
+
+ktemp = var1[2]
+ktemp[ktemp < 0] = 0
+ktemp[ktemp > 2] = 2
+Ktrans1[roi1v] = ktemp
 
 ve1 = np.zeros((roi1v.shape[0]))
 ve1[roi1v] = var1[2][:, 1] * (var1[2][:, 1] < 2.0) + 2 * (var1[2][:, 1] > 2.0)
@@ -142,12 +147,14 @@ kep1vol = np.reshape(kep1, (img_dims[:-1]))
 estimated1vol = np.reshape(estimated_curve1, img_dims)
 
 # thresholding according to upper limit
-p = np.percentile(Ktrans1vol, thresh1val)
-Ktrans1vol[Ktrans1vol > p] = p
-p = np.percentile(kep1vol, thresh1val)
-kep1vol[kep1vol > p] = p
+# p = np.percentile(Ktrans1vol, thresh1val)
+# Ktrans1vol[Ktrans1vol > p] = p
+# p = np.percentile(kep1vol, thresh1val)
+# kep1vol[kep1vol > p] = p
 
 print("Saving File")
 save_file('Ktrans.nii', hdr, Ktrans1vol)
+save_file('model_curves.nii', hdr, estimated1vol)
+
 
 
