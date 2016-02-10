@@ -9,7 +9,7 @@ TODO:
 
 - Just use as a viewer for supervoxels. Possible add script later on
 
-- idea:
+# idea:
 
 - Use this viewer to view subregions in my bag of words approach
 - release this viewer with that paper
