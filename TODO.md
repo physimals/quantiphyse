@@ -13,3 +13,4 @@ TODO:
 
 - Use this viewer to view subregions in my bag of words approach
 - release this viewer with that paper
+- possibly also show subregions for these words and pk maps of the subregions for effect
