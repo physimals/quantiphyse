@@ -11,4 +11,5 @@ TODO:
 
 - idea:
 
-Use this viewer to view subregions in my bag of words approach
+- Use this viewer to view subregions in my bag of words approach
+- release this viewer with that paper
