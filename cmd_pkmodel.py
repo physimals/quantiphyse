@@ -112,9 +112,9 @@ roi1v = np.array(roi1vec, dtype=bool)
 #Params: Ktrans, ve, offset, vp
 Ktrans1 = np.zeros((roi1v.shape[0]))
 
-ktemp = var1[2]
-ktemp[ktemp < 0] = 0
-ktemp[ktemp > 2] = 2
+ktemp = var1[2][:, 0]
+ktemp[ktemp < 0] = 0.0
+ktemp[ktemp > 2] = 2.0
 Ktrans1[roi1v] = ktemp
 
 ve1 = np.zeros((roi1v.shape[0]))
