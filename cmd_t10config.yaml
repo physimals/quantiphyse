@@ -2,6 +2,12 @@
 # This name can be anything but must be unique for each patient
 RIT005:
   Files:
-    FA3: /
-    FA9: /
-    FA12: /
+    -
+      File:
+      FA:
+    -
+      File:
+      FA:
+    -
+      File:
+      FA:
