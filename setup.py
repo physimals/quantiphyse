@@ -45,20 +45,30 @@ PkView
 """
 
 # Compiling the Cython extensions
-extensions = Extension("pkview/analysis/pk_model",
-                       sources=['pkview/analysis/pk_model.pyx',
-                                'src/pkmodelling/Optimizer_class.cpp',
-                                'src/pkmodelling/pkrun2.cpp',
-                                'src/pkmodelling/ToftsOrton.cpp',
-                                'src/pkmodelling/ToftsOrtonOffset.cpp',
-                                'src/pkmodelling/ToftsWeinOffset.cpp',
-                                'src/pkmodelling/ToftsWeinOffsetVp.cpp',
-                                'src/pkmodelling/lmlib/lmcurve.cpp',
-                                'src/pkmodelling/lmlib/lmmin.cpp'],
-                       include_dirs=['src/pkmodelling/lmlib/',
-                                     'src/pkmodelling/',
-                                     numpy.get_include()],
-                       language="c++")
+ext1 = Extension("pkview/analysis/pk_model",
+                 sources=['pkview/analysis/pk_model.pyx',
+                          'src/pkmodelling/Optimizer_class.cpp',
+                          'src/pkmodelling/pkrun2.cpp',
+                          'src/pkmodelling/ToftsOrton.cpp',
+                          'src/pkmodelling/ToftsOrtonOffset.cpp',
+                          'src/pkmodelling/ToftsWeinOffset.cpp',
+                          'src/pkmodelling/ToftsWeinOffsetVp.cpp',
+                          'src/pkmodelling/lmlib/lmcurve.cpp',
+                          'src/pkmodelling/lmlib/lmmin.cpp'],
+                 include_dirs=['src/pkmodelling/lmlib/',
+                               'src/pkmodelling/',
+                               numpy.get_include()],
+                 language="c++")
+
+ext2 = Extension("pkview/analysis/t1_model",
+                 sources=['pkview/analysis/t1_model.pyx',
+                          'src/T10/linear_regression.cpp',
+                          'src/T10/T10_calculation.cpp'],
+                 include_dirs=['src/T10',
+                               numpy.get_include()],
+                 language="c++",
+                 extra_compile_args=['-std=c++11'])
+
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
@@ -103,7 +113,7 @@ setup(name='PKView',
                    "Intended Audience :: End Users/Desktop",
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
-      ext_modules=cythonize([extensions], language="c++"),
+      ext_modules=cythonize([ext1, ext2]),
       entry_points={
           'gui_scripts': ['pkview2 = pkview.pkviewer:main'],
           'console_scripts': ['pkview2 = pkview.pkviewer:main']

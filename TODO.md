@@ -10,7 +10,6 @@ TODO:
 - ...
 - Profit?
 
-
 - Just use as a viewer for supervoxels. Possible add script later on
 
 # idea:
