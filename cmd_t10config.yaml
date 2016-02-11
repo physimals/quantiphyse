@@ -1,7 +1,8 @@
 
 # This name can be anything but must be unique for each patient
+
 RIT005:
-  Files:
+  FAfiles:
     -
       File:
       FA:
@@ -11,3 +12,6 @@ RIT005:
     -
       File:
       FA:
+
+  Settings:
+    Output_file: /
