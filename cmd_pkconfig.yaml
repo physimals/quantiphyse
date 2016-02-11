@@ -2,6 +2,7 @@
 # (c) Benjamin Irving (2016)
 
 RIT005:
+
   Name:
 
   Files:
@@ -19,7 +20,9 @@ RIT005:
       R1:         3.7
       R2:         4.8
       v1thresh:   99.8
+      # Approximate injection time
       InjT:       5
+      # Smoothing of the PK maps
       Smoothing:  1 # TODO
 
   Configuration:
