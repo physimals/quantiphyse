@@ -2,11 +2,13 @@
 
 RIT005:
   Name:
+
   Files:
       DCE:       /data1/Results/2_pk_RIT_motioncor/RIT005/DCE.nii
       T10:        /data1/Results/2_pk_RIT_motioncor/RIT005/T10.nii
       ROI:       /data1/Results/2_pk_RIT_motioncor/RIT005/seg.nii
-      Out:
+
+  Output_folder:  /data1/Results/2_pk_RIT_motioncor/RIT005/test/ # TODO
 
   Param:
       flip_angle: 12
@@ -17,6 +19,7 @@ RIT005:
       R2:         4.8
       v1thresh:   99.8
       InjT:       5
+      Smoothing:  1 # TODO
 
   Configuration:
       model_choice: 1
