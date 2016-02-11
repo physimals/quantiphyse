@@ -6,6 +6,9 @@ TODO:
 - Add smoothing for the maps
 - Add T10 calculation command line script
 - Update documentation and links from help buttons
+- add tests for pkmodelling and T10 mapping
+- ...
+- Profit?
 
 
 - Just use as a viewer for supervoxels. Possible add script later on
