@@ -1,4 +1,5 @@
 # Lists the configuration for running DCE-MRI from the command line
+# (c) Benjamin Irving (2016)
 
 RIT005:
   Name:

@@ -1,3 +1,7 @@
+# Running DCE-MRI from the command line
+# (c) Benjamin Irving (2016)
+
+
 from __future__ import division, print_function
 
 import multiprocessing
