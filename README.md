@@ -24,6 +24,15 @@ Key features:
 - Quantification of parameters within subregions of the tumour
 - Python console to interact with the loaded data and analysis (advanced users)
 
+## Key files
+
+**pkviewer2.py**: Run the GUI and perform analysis
+
+**cmd_pkmodel.py**: Run pkmodelling from the command line (config file *cmd_pkconfig.yaml*)
+
+**cmd_t10.py**: Run T10 mapping from the command line (config file *cmd_t10config.yaml*)
+
+
 See:
 https://github.com/benjaminirving/PkView_help_files
 for usage. *This documentation is very out of date and needs updating*
