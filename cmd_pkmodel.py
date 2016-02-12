@@ -8,16 +8,10 @@ import multiprocessing
 import multiprocessing.pool
 import time
 import numpy as np
-import yaml
 import nibabel as nib
 
+from pkview.utils import yaml_loader, save_file
 from pkview.widgets.PharmaWidgets import run_pk
-
-
-def yaml_loader(filepath):
-    with open(filepath, "r") as fd:
-        data = yaml.load(fd)
-    return data
 
 
 def pool_init(queue):
@@ -25,21 +19,6 @@ def pool_init(queue):
     # In python every function is an object so this is a quick and dirty way of adding a variable
     # to a function for easy access later. Prob better to create a class out of compute?
     run_pk.queue = queue
-
-
-def save_file(file1, hdr, data1):
-    # get header
-    header1 = hdr
-
-    # modify header
-    shp1 = header1.get_data_shape()
-    header1.set_data_shape(shp1[:-1])
-    header1.set_data_dtype(data1.dtype)
-
-    # Save the current overlay or save a specific overlay
-    img1 = nib.Nifti1Image(data1, header1.get_base_affine(), header=header1)
-    # Save image
-    img1.to_filename(file1)
 
 
 # Load config from yaml

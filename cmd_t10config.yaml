@@ -2,16 +2,23 @@
 # This name can be anything but must be unique for each patient
 
 RIT005:
-  FAfiles:
+
+  Folder:   /netshares/mvlprojects6/Registration_Data/RIT_Data2_ben/Nifti/RIT005/PRE/
+
+  Files:
     -
-      File:
-      FA:
+      File:   fa3_aligned.nii
+      FA:     3
     -
-      File:
-      FA:
+      File:   fa9_aligned.nii
+      FA:     9
     -
-      File:
-      FA:
+      File:   fa12_aligned.nii
+      FA:     12
+    -
+      File:   fa15_aligned.nii
+      FA:     15
 
   Settings:
-    Output_file: /
+    TR:           0.0035
+    Out_file_path: T10.nii

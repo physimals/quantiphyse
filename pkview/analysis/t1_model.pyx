@@ -32,8 +32,8 @@ def t10_map(fa_vols, fa, TR):
 
     shp1 = fa_vols[0].shape
 
-    for ii in fa_vols:
-        fa_vols2.append(np.ascontiguousarray(fa_vols.flatten()))
+    for fa1 in fa_vols:
+        fa_vols2.append(np.ascontiguousarray(fa1.flatten()))
 
     T10array = T10mapping(fa_vols2, fa, TR)
 
