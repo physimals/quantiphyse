@@ -2,9 +2,9 @@ TODO:
 ====
 
 - Fix PK modelling cmd line script (done)
+- Add T10 calculation command line script (done)
 - Add CNR restriction option to PK modelling
 - Add smoothing for the maps
-- Add T10 calculation command line script
 - Update documentation and links from help buttons
 - add tests for pkmodelling and T10 mapping
 - ...
