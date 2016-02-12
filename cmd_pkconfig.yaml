@@ -13,19 +13,25 @@ RIT005:
   Output_folder:  /data1/Results/2_pk_RIT_motioncor/RIT005/test/ # TODO
 
   Param:
-      flip_angle: 12
-      TR:         4.5
-      TE:         2.2
-      T:          17
+      flip_angle: 12    # degrees
+      TR:         4.5   # ms
+      TE:         2.2   # ms
+      T:          17    # temporal resolution (s)
       R1:         3.7
       R2:         4.8
       v1thresh:   99.8
-      # Approximate injection time
+      # Approximate injection time (number of slices)
       InjT:       5
       # Smoothing of the PK maps
       Smoothing:  1 # TODO
 
   Configuration:
       model_choice: 1
+
+#  Model descriptions:
+#  Model 1: Orton with offset (Clinical) - Recommended model for clinical
+#  Model 2: Orton without offset (Clinical)
+#  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
+#  Model 4: Weinmann with offset and vp (Pre-clinical)
 
 

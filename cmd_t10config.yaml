@@ -20,5 +20,5 @@ RIT005:
       FA:     15
 
   Settings:
-    TR:           0.0035
+    TR:           0.0035  # seconds (s)
     Out_file_path: T10.nii
