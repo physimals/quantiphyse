@@ -1,6 +1,11 @@
-# Running DCE-MRI from the command line
-# (c) Benjamin Irving (2016)
+"""
 
+Script for running pkmodelling based on cmd_pkconfig.yaml settings
+
+Running DCE-MRI from the command line
+(c) Benjamin Irving (2016)
+
+"""
 
 from __future__ import division, print_function
 
