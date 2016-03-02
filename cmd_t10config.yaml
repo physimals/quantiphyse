@@ -1,6 +1,9 @@
 
-# This name can be anything but must be unique for each patient
+# Config file for running T10 modelling
+#
+#
 
+# This name can be anything but must be unique for each patient
 RIT005:
 
   Folder:   /netshares/mvlprojects6/Registration_Data/RIT_Data2_ben/Nifti/RIT005/PRE/

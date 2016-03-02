@@ -1,3 +1,10 @@
+pkview (0.20.0ubuntu4) trusty; urgency=medium
+
+  * preparing for a full release
+  * ...
+
+ -- benjamin <engs1170@engs-20971>  Mon, 29 Feb 2016 14:34:28 +0000
+
 pkview (0.18.4ubuntu4) trusty; urgency=medium
 
   * move import of resources to fix issue in packaged version
