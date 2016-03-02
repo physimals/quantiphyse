@@ -13,7 +13,7 @@ TODO
 - ...
 - Profit?
 
-- Just use as a viewer for supervoxels. Possible add script later on
+- Just use as a viewer for supervoxels. Possibly add script later on
 
 # idea:
 
