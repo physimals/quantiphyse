@@ -29,7 +29,8 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 # Option 4: Build a .deb
 
 # Option 5: py2app on OSx
-Still not working completely. Try using a custom virtualenv
+- use virtualenv python27_pkviewpackage...
+python setup_py2app.py py2app 
 
 # Experimental
 pex nii2dcm -c nii2dcm -o cnii2dcm -v
