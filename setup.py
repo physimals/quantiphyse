@@ -115,7 +115,7 @@ setup(name='PKView',
                    "Intended Audience :: End Users/Desktop",
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
-      ext_modules=cythonize([extensions], language="c++"),
+      ext_modules=cythonize(extensions),
       entry_points={
           'gui_scripts': ['pkview2 = pkview.pkviewer:main'],
           'console_scripts': ['pkview2 = pkview.pkviewer:main']

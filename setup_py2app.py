@@ -125,6 +125,6 @@ setup(name='PKView',
                    "Intended Audience :: End Users/Desktop",
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
-      ext_modules=cythonize([extensions], language="c++"),
+      ext_modules=cythonize(extensions),
       )
 
