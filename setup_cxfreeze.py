@@ -86,16 +86,12 @@ extensions = [ext1, ext2]
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 
-buildOptions = dict(packages=['scipy', 'sklearn', 'skimage', 'pyqtgraph'], excludes=['PyQt4', 'Tkinter'],
+build_exe_options = dict(packages=['scipy', 'sklearn', 'skimage', 'pyqtgraph'], excludes=['PyQt4', 'Tkinter'],
                     include_files=['pkview/icons'])
 # removed sklearn and numpy from includes... should still work
 
 import sys
 base = 'Win32GUI' if sys.platform == 'win32' else None
-
-executables = [
-    Executable('pkviewer2', base=base)
-]
 
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
@@ -106,5 +102,5 @@ setup(name='PKView',
       author_email='benjamin.irving@eng.ox.ac.uk',
       url='www.birving.com',
       ext_modules=cythonize(extensions),
-      options=dict(build_exe=buildOptions),
-      executables=executables)
+      options={"build_exe": build_exe_options},
+      executables=[Executable('pkviewer2', base=base)])
