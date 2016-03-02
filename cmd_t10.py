@@ -16,7 +16,7 @@ from pkview.analysis.t1_model import t10_map
 c1 = yaml_loader('cmd_t10config.yaml')
 
 # Just running on a single patient for the meanwhile
-c1 = c1['RIT005']
+c1 = c1['EG1']
 
 fa_vols = []
 fa_angles = []

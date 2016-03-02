@@ -34,6 +34,14 @@ Still not working completely. Try using a custom virtualenv
 # Experimental
 pex nii2dcm -c nii2dcm -o cnii2dcm -v
 
+Setup.py for cx_freeze
+
+Run:
+python setup_cxfreeze.py build
+
+issues:
+currently saves the icons in the wrong folder and needs to be manually moved
+
 """
 import numpy
 
