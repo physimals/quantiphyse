@@ -6,6 +6,9 @@
 #define INC_25_T10_CALCULATION_T10_CALCULATION_H
 
 #include <vector>
+
+typedef unsigned long ulong;
+
 //
 //
 // fa - flip angles (radians)

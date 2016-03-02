@@ -1,4 +1,6 @@
-TODO:
+
+
+TODO
 ====
 
 - Fix PK modelling cmd line script (done)
@@ -7,6 +9,7 @@ TODO:
 - Add smoothing for the maps
 - Update documentation and links from help buttons
 - add tests for pkmodelling and T10 mapping
+- use TravisCI to build for ubuntu and osx
 - ...
 - Profit?
 
