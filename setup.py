@@ -28,8 +28,10 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 
 # Option 4: Build a .deb
 
-# Experimental
+# Option 5: py2app on OSx
+Still not working completely. Try using a custom virtualenv
 
+# Experimental
 pex nii2dcm -c nii2dcm -o cnii2dcm -v
 
 """
@@ -69,6 +71,8 @@ ext2 = Extension("pkview/analysis/t1_model",
                  language="c++",
                  extra_compile_args=['-std=c++11'])
 
+extensions = [ext1, ext2]
+
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
@@ -97,11 +101,9 @@ setup(name='PKView',
                   ('pkview/resources/', ['pkview/resources/darkorange.stylesheet'])
                   ],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
-      setup_requires=['Cython', 'sphinx'],
+      setup_requires=['Cython'],
       install_requires=['six', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
-                        'pynrrd', 'matplotlib', 'mock', 'nose', 'python-dateutil', 'pytz'],
-      #install_requires=['six', 'numpy', 'scipy', 'nibabel', 'scikit-image', 'scikit-learn', 'pyqtgraph',
-      #                  'pynrrd', 'Cython', 'matplotlib', 'PySide'],
+                        'pynrrd', 'matplotlib', 'mock', 'nose', 'python-dateutil', 'pytz', 'numpy', 'scipy'],
       classifiers=["Programming Language :: Python :: 2.7",
                    "Development Status:: 3 - Alpha",
                    'Programming Language :: Python',
@@ -113,7 +115,7 @@ setup(name='PKView',
                    "Intended Audience :: End Users/Desktop",
                    "Topic :: Scientific/Engineering :: Bio-Informatics",
                    ],
-      ext_modules=cythonize([ext1, ext2]),
+      ext_modules=cythonize([extensions], language="c++"),
       entry_points={
           'gui_scripts': ['pkview2 = pkview.pkviewer:main'],
           'console_scripts': ['pkview2 = pkview.pkviewer:main']
