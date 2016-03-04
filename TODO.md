@@ -24,6 +24,8 @@ TODO
 
 # windows exe issues
 
+- disable T10 mapping on windows because uses c++11 code that's not supported with python 2.7
+                - use python 3.5 once pyside (pyside 2) has support for this. 
 - downgraded setuptools to 19.2 on windows
 - manually copy mkl files from 
 C:\Users\engs1170\AppData\Local\Continuum\Anaconda2\Library\bin
