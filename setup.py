@@ -55,7 +55,7 @@ PkView
 """
 
 # Compiling the Cython extensions
-ext1 = Extension("pkview/analysis/pk_model",
+ext1 = Extension("pkview.analysis.pk_model",
                  sources=['pkview/analysis/pk_model.pyx',
                           'src/pkmodelling/Optimizer_class.cpp',
                           'src/pkmodelling/pkrun2.cpp',
@@ -70,7 +70,7 @@ ext1 = Extension("pkview/analysis/pk_model",
                                numpy.get_include()],
                  language="c++")
 
-ext2 = Extension("pkview/analysis/t1_model",
+ext2 = Extension("pkview.analysis.t1_model",
                  sources=['pkview/analysis/t1_model.pyx',
                           'src/T10/linear_regression.cpp',
                           'src/T10/T10_calculation.cpp'],
