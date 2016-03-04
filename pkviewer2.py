@@ -7,7 +7,7 @@ $ pyside-rcc resource -o resource.py
 from inside pkview/resources
 """
 
-from pkview import pkviewer
-
-pkviewer.main()
+if __name__ == '__main__':
+    from pkview import pkviewer
+    pkviewer.main()
 
