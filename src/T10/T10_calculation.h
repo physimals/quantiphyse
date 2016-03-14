@@ -9,10 +9,17 @@
 
 typedef unsigned long ulong;
 
+typedef std::vector< std::vector<double> > & dd;
+typedef std::vector<double> & d;
+
 //
 //
 // fa - flip angles (radians)
-std::vector<double> T10mapping( std::vector< std::vector<double> > & favols, std::vector<double> & fa, double TR = 1);
+// Without AFI calculation
+std::vector<double> T10mapping( dd favols, d fa, double TR = 1.0);
+
+// With AFI calculation
+std::vector<double> T10mapping( dd favols, d fa, double TR, dd afivols, double fa_afi,  d TR_afi);
 
 
 #endif //INC_25_T10_CALCULATION_T10_CALCULATION_H
