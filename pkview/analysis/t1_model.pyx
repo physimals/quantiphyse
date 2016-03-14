@@ -29,7 +29,6 @@ def t10_map(fa_vols, fa, TR, afi_vols=None, fa_afi=None, TR_afi=None):
 
     """
 
-
     fa_vols2 = []
     shp1 = fa_vols[0].shape
 
@@ -40,7 +39,6 @@ def t10_map(fa_vols, fa, TR, afi_vols=None, fa_afi=None, TR_afi=None):
         T10array = T10mapping(fa_vols2, fa, TR)
 
     else:
-
         afi_vols2 = []
 
         for afi1 in afi_vols:

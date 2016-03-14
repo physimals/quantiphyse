@@ -13,23 +13,37 @@ from pkview.utils import yaml_loader, save_file
 from pkview.analysis.t1_model import t10_map
 
 # Load config from yaml
-c1 = yaml_loader('cmd_t10config.yaml')
+c1 = yaml_loader('cmd_t10config_preclinical.yaml')
 
-# Just running on a single patient for the meanwhile
+# TODO Just running on a single patient for the meanwhile
 c1 = c1['EG1']
 
 fa_vols = []
-fa_angles = []
+afi_vols = []
 
-for fa1 in c1['Files']:
+img = nib.load(c1['Folder'] + c1['Files']['fa_vol'])
+hdr = img.get_header()
+img1 = img.get_data()
 
-    img = nib.load(c1['Folder'] + fa1['File'])
-    hdr = img.get_header()
-    fa_vols.append(img.get_data())
-    fa_angles.append(fa1['FA'])
+print("Loading files")
+for ii in range(len(c1['Settings']['FA'])):
+    # Need to convert it to a list of volumes to be consistent with clinical data
+    fa_vols.append(img1[:, :, :, ii])
+fa_angles = c1['Settings']['FA']
 
-T10 = t10_map(fa_vols, fa_angles, TR=c1['Settings']['TR'])
+img = nib.load(c1['Folder'] + c1['Files']['afi_vol'])
+img1 = img.get_data()
 
+for ii in range(len(c1['Settings']['TR_afi'])):
+    # Need to convert it to a list of volumes to be consistent with clinical data
+    afi_vols.append(img1[:, :, :, ii])
+afi_angles = c1['Settings']['FA_afi']
+
+print("Beginning conversion")
+T10 = t10_map(fa_vols, fa_angles, TR=c1['Settings']['TR'],
+              afi_vols=afi_vols, fa_afi=afi_angles, TR_afi=c1['Settings']['TR_afi'])
+
+print("Saving T10")
 save_file(c1['Settings']['Out_file_path'], hdr, T10)
 
 

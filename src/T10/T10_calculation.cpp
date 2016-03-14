@@ -71,6 +71,8 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
     for (int ii=0; ii < num_voxels; ii++){
 
+        cout << ii << endl;
+
         // n = TR2/ TR1
         n = TR2 / TR1;
 
