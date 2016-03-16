@@ -858,7 +858,10 @@ def main():
     parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     args = parser.parse_args()
 
+    # Check whether any batch processing arguments have been called
+
     if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None):
+        # Initialise main GUI
 
         # Initialise the PKView application
         app = QtGui.QApplication(sys.argv)
