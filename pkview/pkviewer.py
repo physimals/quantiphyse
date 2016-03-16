@@ -8,6 +8,9 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 from __future__ import division, unicode_literals, print_function, absolute_import
 import sys
 
+from .utils.cmd_pkmodel import pkbatch
+from .utils.cmd_t10 import t10_preclinical, t10
+
 # required to use resources in theme. Check if 2 or 3.
 if (sys.version_info > (3, 0)):
     from pkview.resources import resource_py2
@@ -842,23 +845,41 @@ def main():
     Parse any input arguments and run the application
     """
 
+    # current_folder = args_in.pop(0)
+
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
+    parser.add_argument('--T10afibatch', help='Run batch T10 processing from a yaml file', default=None, type=str)
+    parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
+    parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
     parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     args = parser.parse_args()
 
-    # Initialise the PKView application
-    app = QtGui.QApplication(sys.argv)
-    app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
-    # app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
+    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None):
 
-    # Pass arguments from the terminal (if any) into the main application
-    ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
-    sys.exit(app.exec_())
+        # Initialise the PKView application
+        app = QtGui.QApplication(sys.argv)
+        app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
+        # app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
 
+        # Pass arguments from the terminal (if any) into the main application
+        ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
+        sys.exit(app.exec_())
+
+    elif (args.T10batch is not None):
+        # Run T10 batch processing from a yaml file
+        t10(args.T10batch)
+
+    elif (args.T10afibatch is not None):
+        # Run T10 and afi batch processing from a yaml file
+        t10_preclinical(args.T10afibatch)
+
+    else:
+        # Run pk modelling from a yaml file.
+        pkbatch(args.PKbatch)
 
 if __name__ == '__main__':
     main()

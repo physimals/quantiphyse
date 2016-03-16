@@ -11,6 +11,7 @@ import multiprocessing
 
 if __name__ == '__main__':
     # Enable multiprocessing on windows frozen binaries
+    # Does nothing on other systems
     multiprocessing.freeze_support()
 
     from pkview import pkviewer
