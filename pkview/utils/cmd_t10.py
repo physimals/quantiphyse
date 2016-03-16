@@ -19,6 +19,7 @@ def t10(yaml_file):
     # Load config from yaml
     c1_main = yaml_loader(yaml_file)
 
+    # Loop over each case
     for ii in c1_main.keys():
 
         print(ii)
@@ -45,7 +46,9 @@ def t10_preclinical(yaml_file):
     # Load config from yaml
     c1_main = yaml_loader(yaml_file)
 
+    # Loop over each case
     for ii in c1_main.keys():
+
         print(ii)
         c1 = c1_main[ii]
 
