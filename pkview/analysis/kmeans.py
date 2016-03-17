@@ -99,24 +99,24 @@ class KMeansPCA:
         else:
             self.region1 = np.array(region1, dtype=np.bool)
 
-        #self.img1 = self.img1 * np.tile(np.expand_dims(self.region1, axis=-1), (1, 1, self.img1.shape[-1]))
+        # self.img1 = self.img1 * np.tile(np.expand_dims(self.region1, axis=-1), (1, 1, self.img1.shape[-1]))
         self.voxel_se = self.img1[self.region1]
 
         baseline1 = np.mean(self.img1[:, :, :, :3], axis=-1)
-        #baseline1 = np.reshape(baseline1, (-1))
+        # baseline1 = np.reshape(baseline1, (-1))
         baseline1sub = baseline1[self.region1]
 
         # Normalisation of the image
         self.voxel_se = self.voxel_se / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, self.img1.shape[-1])) + 0.001) - 1
 
-        #Labels for the region
+        # Labels for the region
         if labels1 is None:
-            #if no labels are given then all are set to 1
+            # if no labels are given then all are set to 1
             self.labels1 = np.ones(self.voxel_se.shape[0], dtype=np.int)
         else:
             self.labels1 = labels1[self.region1]
 
-        #self.voxel_se = np.reshape(self.img1, (-1, self.img1.shape[-1]))
+        # self.voxel_se = np.reshape(self.img1, (-1, self.img1.shape[-1]))
         self.n_clusters = None
 
         self.reduced_data = None
@@ -133,7 +133,7 @@ class KMeansPCA:
         @return:
         """
         self.n_clusters = n_clusters
-        #Outputs
+        # Outputs
         self.label_image = np.zeros(self.region1.shape)
         self.cluster_centers_ = np.zeros((self.n_clusters, self.img1.shape[-1]))
 
@@ -157,7 +157,8 @@ class KMeansPCA:
     def get_label_image(self):
         """
         Returns the label centres and mean enhancement curves of clusters
-        @return:
+        @return: label_image:
+                cluster_centers_:
         """
         return self.label_image, self.cluster_centers_
 
@@ -174,9 +175,10 @@ class KMeansPCA:
         start1 = time.time()
 
         if reduction is 'none':
+
             kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=6)
             kmeans.fit(voxel_se)
-            #self.cluster_centers_ = kmeans.cluster_centers_
+            # self.cluster_centers_ = kmeans.cluster_centers_
 
         else:
             print("Using PCA dimensionality reduction")
@@ -193,9 +195,10 @@ class KMeansPCA:
                                                       (reduced_data.shape[0], 1))
 
             kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=6)
+            # kmeans = cl.AgglomerativeClustering(n_clusters=n_clusters)
             kmeans.fit(reduced_data)
             # converting the cluster centres back into the image feature space
-            #self.cluster_centers_ = pca.inverse_transform(kmeans.cluster_centers_)
+            # self.cluster_centers_ = pca.inverse_transform(kmeans.cluster_centers_)
 
         print("Elapsed time: ", (time.time() - start1))
 

@@ -10,13 +10,11 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
+from sklearn.metrics import pairwise
 
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeansPCA
-
-#TODO Hide other buttons until the clustering is performed.
-
 
 class CurveClusteringWidget(QtGui.QWidget):
     """
@@ -102,10 +100,15 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.b2 = QtGui.QPushButton('Merge', self)
         self.b2.clicked.connect(self.run_merge)
 
+        self.b2b = QtGui.QPushButton('AutoMerge', self)
+        self.b2b.clicked.connect(self.run_automerge)
+
         t1 = QtGui.QLabel('Merge region ')
         self.val_m1 = QtGui.QLineEdit('1', self)
         t2 = QtGui.QLabel(' with ')
         self.val_m2 = QtGui.QLineEdit('2', self)
+
+        l_mergev = QtGui.QVBoxLayout()
 
         l_merge = QtGui.QHBoxLayout()
         l_merge.addWidget(self.b2)
@@ -114,8 +117,15 @@ class CurveClusteringWidget(QtGui.QWidget):
         l_merge.addWidget(t2)
         l_merge.addWidget(self.val_m2)
 
+        l_merge2 = QtGui.QHBoxLayout()
+        l_merge2.addWidget(self.b2b)
+        l_merge2.addStretch()
+
+        l_mergev.addLayout(l_merge)
+        l_mergev.addLayout(l_merge2)
+
         self.g_merge = QGroupBoxB()
-        self.g_merge.setLayout(l_merge)
+        self.g_merge.setLayout(l_mergev)
         self.g_merge.setTitle('Editing regions')
         self.g_merge.setVisible(False)
 
@@ -279,16 +289,7 @@ class CurveClusteringWidget(QtGui.QWidget):
             mean1 = np.median(nimage[self.label1 == ii], axis=0)
             self.label1_cent[ii, :] = mean1
 
-    def run_merge(self):
-        """
-
-        Returns:
-
-        """
-
-        m1 = int(self.val_m1.text())
-        m2 = int(self.val_m2.text())
-
+    def merge1(self, m1, m2):
         # relabel
         self.label1[self.label1 == m1] = m2
 
@@ -302,6 +303,30 @@ class CurveClusteringWidget(QtGui.QWidget):
         self._plot()
 
         print("Merged")
+
+
+    def run_merge(self):
+        """
+
+        Returns:
+
+        """
+
+        m1 = int(self.val_m1.text())
+        m2 = int(self.val_m2.text())
+        self.merge1(m1, m2)
+
+    def run_automerge(self):
+
+        # Use PCA features or true curves?
+
+        # Mean features from each cluster
+
+        # Distance matrix between features
+        distmat = pairwise.euclidean_distances(self.label1_cent[1:])
+        distmat[distmat == 0] = np.inf
+        loc1 = np.where(distmat == distmat.min())[0] + 1
+        self.merge1(loc1[0], loc1[1])
 
     def calculate_voxel_count(self):
         """
