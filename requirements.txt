@@ -6,10 +6,10 @@ Cython
 pyqtgraph
 scikit-learn
 pyparsing
-mock
 nose
 python-dateutil
 pytz
 pbr
 funcsigs
 networkx
+pyaml
