@@ -25,8 +25,23 @@ Key features:
 - Python console to interact with the loaded data and analysis (advanced users)
 
 See:
-https://github.com/benjaminirving/PkView_help_files
-for usage. *This documentation is very out of date and needs updating*
+https://github.com/benjaminirving/PkView_help_files for usage.
+
+## Installation
+The easiest method of installation is to run the exe or deb files for Windows and Ubuntu (OSx coming soon). 
+
+See Release 0.20 under tags.  Consider this alpha software. Contributions and improvements to the code and 
+documentation are welcome. 
+
+For windows, unzip the file and run the pkviewer executable. There are a large number of files so it's easiest to add
+the program to the launcher once run once. 
+
+Alternatively, the GUI can be run from the source. See guides below for setting up Ubuntu or OSx. 
+
+![alt text](images/Screenshot2.png "Screenshot")
+
+![alt text](images/Screenshot1.png "Screenshot")
+
 
 ## Key files
 
@@ -35,18 +50,6 @@ for usage. *This documentation is very out of date and needs updating*
 **cmd_pkmodel.py**: Run pkmodelling from the command line (config file *cmd_pkconfig.yaml*)
 
 **cmd_t10.py**: Run T10 mapping from the command line (config file *cmd_t10config.yaml*)
-
-
-![alt text](images/Screenshot2.png "Screenshot")
-
-![alt text](images/Screenshot1.png "Screenshot")
-
-## Recommendation
-The easiest method of installation is to request a .deb, .app or .exe file. These files will be made available in the
-repository soon. 
-
-Alternatively, the GUI can be run from the source. See guides below for setting up Ubuntu or OSx. This GUI also works
-under windows. 
 
 ## Running from source
 Tested on Ubuntu 14.04 and OSx 10.11. Although it runs on Windows, Ubuntu and OSx.
@@ -64,6 +67,7 @@ Python libraries:
 - scikit-image
 - scikit-learn
 - scipy
+
 
 
 ## OSx 10.11
@@ -154,7 +158,7 @@ deactivate
 Make sure dependencies are installed
 ```bash
 sudo apt-get install libffi-dev libssl-dev
-sudo apt-get install gfortran libatlas-base-dev libblas-dev liblapack-dev python-all-dev
+sudo apt-get install gfortran libatlas-base-dev libblas-dev liblapack-dev python-all-dev cmake
 sudo apt-get install libfreetype6-dev libfreetype6 libpng12-dev libpng12 qt4-qmake shiboken libshiboken-dev libqt4-dev
 ```
 
