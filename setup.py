@@ -44,6 +44,7 @@ currently saves the icons in the wrong folder and needs to be manually moved
 
 """
 import numpy
+import platform
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -79,7 +80,12 @@ ext2 = Extension("pkview.analysis.t1_model",
                  language="c++",
                  extra_compile_args=['-std=c++11'])
 
-extensions = [ext1, ext2]
+
+# TODO exclude T10 mapping for windows due to lack of c++11 support
+if platform.system() == 'Windows':
+    extensions = [ext1]
+else:
+    extensions = [ext1, ext2]
 
 # setup parameters
 setup(name='PKView',
