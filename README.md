@@ -25,7 +25,7 @@ Key features:
 - Python console to interact with the loaded data and analysis (advanced users)
 
 See:
-https://github.com/benjaminirving/PkView_help_files for usage.
+[http://pkview.readthedocs.org/en/latest/](http://pkview.readthedocs.org/en/latest/) for usage.
 
 ## Installation
 The easiest method of installation is to run the exe or deb files for Windows and Ubuntu (OSx coming soon). 
