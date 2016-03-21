@@ -299,11 +299,8 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.sig_emit_reset.emit(1)
 
         # replot
-
         self._plot()
-
         print("Merged")
-
 
     def run_merge(self):
         """
@@ -327,13 +324,14 @@ class CurveClusteringWidget(QtGui.QWidget):
         distmat[distmat == 0] = np.inf
         loc1 = np.where(distmat == distmat.min())[0] + 1
         self.merge1(loc1[0], loc1[1])
+        self.label1_cent[loc1[0]][0] = -1E6
 
     def calculate_voxel_count(self):
-        """
 
+        """
         Returns:
-
         """
+
         self.voxel_count_slice = []
         self.voxel_count = []
 
