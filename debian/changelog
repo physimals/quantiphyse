@@ -1,3 +1,27 @@
+pkview (0.24.0ubuntu8) trusty; urgency=medium
+
+  * test
+
+ -- benjamin <engs1170@engs-20971>  Mon, 21 Mar 2016 15:48:39 +0000
+
+pkview (0.23.0ubuntu7) trusty; urgency=medium
+
+  * add dependencies
+
+ -- benjamin <engs1170@engs-20971>  Mon, 21 Mar 2016 13:29:44 +0000
+
+pkview (0.22.0ubuntu6) trusty; urgency=medium
+
+  * fix dependency issue
+
+ -- benjamin <engs1170@engs-20971>  Mon, 21 Mar 2016 13:20:23 +0000
+
+pkview (0.21.0ubuntu5) trusty; urgency=medium
+
+  * add auto merge for cluster
+
+ -- benjamin <engs1170@engs-20971>  Mon, 21 Mar 2016 12:57:33 +0000
+
 pkview (0.20.0ubuntu4) trusty; urgency=medium
 
   * preparing for a full release

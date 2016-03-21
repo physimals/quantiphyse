@@ -6,7 +6,16 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
+
 import sys
+import os
+import platform
+import argparse
+
+from PySide import QtCore, QtGui
+import pyqtgraph as pg
+import pyqtgraph.console
+import numpy as np
 
 from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_t10 import t10_preclinical, t10
@@ -29,16 +38,6 @@ from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
-
-import sys
-import os
-import platform
-import argparse
-
-from PySide import QtCore, QtGui
-import pyqtgraph as pg
-import pyqtgraph.console
-import numpy as np
 
 op_sys = platform.system()
 # OSx specific Changes
@@ -857,6 +856,8 @@ def main():
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
     parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     args = parser.parse_args()
+
+    print(pg.systemInfo())
 
     # Check whether any batch processing arguments have been called
 

@@ -13,3 +13,4 @@ pbr
 funcsigs
 networkx
 pyaml
+PyYAML
