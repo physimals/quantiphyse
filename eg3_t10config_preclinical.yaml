@@ -5,17 +5,17 @@
 
 # This name can be anything but must be unique for each patient
 EG1:
-  Folder: /mnt/ibme/Ben-Thais-Jola_examples/Ben/c1/
+  Folder: /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/
 
   Files:
-      fa_vol:         Lungs_vfa3d.nii
-      afi_vol:        Lungs_afi3d.nii
-      Out_file_path:  /mnt/ibme/Ben-Thais-Jola_examples/Ben/c1/T10_test2.nii
+      fa_vol:         C91R2_vfa.nii
+      afi_vol:        C91R2_afi.nii
+      Out_file_path:  /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/T10_test2.nii
 
   Settings:
-    FA:      [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.1, 3.7, 4.4, 5.2, 6.1, 7.0, 8.0] #degrees
-    TR:      0.0035         # seconds (s)
-    TR_afi:  [20, 100]      # seconds (s)
-    FA_afi:  60              # degrees
+    FA:      [1,  1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.7, 3.1, 3.7, 4.4, 5.2, 6.1, 7, 8] #degrees
+    TR:      0.0014         # seconds (s)
+    TR_afi:  [10, 100]      # seconds (s)
+    FA_afi:  64             # degrees
 
 

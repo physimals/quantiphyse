@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <complex>
 
 using namespace std;
 
@@ -63,6 +64,7 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
     double TR1 = TR_afi.at(0);
     double TR2 = TR_afi.at(1);
     double n, r, alpha;
+    complex<double> alphac;
     vector<double> K(num_voxels, 0);
 
     // Flip angle in radiation
@@ -71,20 +73,24 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
     for (int ii=0; ii < num_voxels; ii++){
 
-        cout << ii << endl;
+//        cout << ii << endl;
 
         // n = TR2/ TR1
         n = TR2 / TR1;
 
         // r = Signal2/Signal1
-        r = afivols[0][ii] / afivols[1][ii];
+        r = afivols[1][ii] / afivols[0][ii];
 
         // Eq 6 of Ref 1
-        alpha = acos((r*n - 1) / (n-r));
+        complex<double> cmpl ((r*n - 1) / (n-r), 0);
+        alphac = acos(cmpl);
+        alpha = alphac.real();
 
         // Ration of actual flip angle and angle
         // This correction is applied to the flip angles of the T10 calculation
         K[ii] = alpha/flip_angle;
+
+//        cout << "k: " << K[ii] << endl;
     }
 
     return K;
@@ -140,18 +146,14 @@ vector<double> T10mapping( dd favols, d fa, double TR, dd afivols, double fa_afi
     // AFI calculation
     vector<double> k = afimapping(afivols, fa_afi, TR_afi);
 
-
-    // Convert flip angles to radians
-    cout << "Converting flip angles to radians \n";
-    int cc = 0;
-    for (double ii : fa) {
-        fa_rad[cc] = (ii * k.at(cc) * (M_PI/180));
-        cc++;
-    }
-
     cout << "t10 calculation for " << num_voxels << " voxels \n";
     // Loop through all voxels
     for (int jj=0; jj < num_voxels; jj++){
+
+        for (int ii =0; ii < num_fa; ii++) {
+        // TODO Bug in k
+            fa_rad[ii] = (fa[ii] * k.at(jj) * (M_PI/180));
+        }
 
         // Store value at each fa
         for (int kk=0; kk < num_fa; kk++){

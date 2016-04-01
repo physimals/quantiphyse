@@ -3,8 +3,8 @@
 block_cipher = None
 
 added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources')]
-bin_files = [ ( 'C:\Users\\engs1170\\AppData\\Local\\Continuum\\Anaconda2\\Library\\bin\\mkl_avx.dll', 'mkl_avx.dll' ), 
-              ('C:\\Users\\engs1170\\AppData\\Local\\Continuum\\Anaconda2\\Library\\bin\\mkl_def.dll', 'mkl_def.dll' )]
+bin_files = [ ( 'C:\\Users\\engs1170\\AppData\\Local\\Continuum\\Anaconda2\\Library\\bin\\mkl_avx.dll', 'dlls' ),
+              ('C:\\Users\\engs1170\\AppData\\Local\\Continuum\\Anaconda2\\Library\\bin\\mkl_def.dll', 'dlls' )]
 
 
 

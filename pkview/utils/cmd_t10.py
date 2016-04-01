@@ -22,7 +22,7 @@ def t10(yaml_file):
     # Loop over each case
     for ii in c1_main.keys():
 
-        print(ii)
+        # print(ii)
         # Just running on a single patient for the meanwhile
         c1 = c1_main[ii]
 
@@ -78,7 +78,7 @@ def t10_preclinical(yaml_file):
                       afi_vols=afi_vols, fa_afi=afi_angles, TR_afi=c1['Settings']['TR_afi'])
 
         print("Saving T10")
-        save_file(c1['Settings']['Out_file_path'], hdr, T10)
+        save_file(c1['Files']['Out_file_path'], hdr, T10)
 
 
 

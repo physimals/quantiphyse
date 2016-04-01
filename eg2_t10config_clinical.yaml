@@ -5,9 +5,7 @@
 
 # This name can be anything but must be unique for each patient
 EG1:
-
   Folder:   /netshares/mvlprojects6/Registration_Data/RIT_Data2_ben/Nifti/RIT005/PRE/
-
   Files:
     -
       File:   fa3_aligned.nii
