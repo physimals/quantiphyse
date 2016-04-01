@@ -151,7 +151,6 @@ vector<double> T10mapping( dd favols, d fa, double TR, dd afivols, double fa_afi
     for (int jj=0; jj < num_voxels; jj++){
 
         for (int ii =0; ii < num_fa; ii++) {
-        // TODO Bug in k
             fa_rad[ii] = (fa[ii] * k.at(jj) * (M_PI/180));
         }
 
