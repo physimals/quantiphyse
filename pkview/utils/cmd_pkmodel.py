@@ -14,6 +14,7 @@ import multiprocessing.pool
 import time
 import numpy as np
 import nibabel as nib
+import os
 
 from pkview.utils import yaml_loader, save_file
 from pkview.widgets.PharmaWidgets import run_pk
@@ -61,7 +62,11 @@ def pkbatch(yaml_file):
         TE = c1['Param']['TE']
         FA = c1['Param']['flip_angle']
         thresh1val = c1['Param']['v1thresh']
-        Dose = 0
+
+        if 'Dose' in c1['Param']:
+            Dose = c1['Param']['Dose']
+        else:
+            Dose = 0
 
         # getting model choice from list
         model_choice = c1['Configuration']['model_choice']
@@ -147,8 +152,13 @@ def pkbatch(yaml_file):
         # kep1vol[kep1vol > p] = p
 
         print("Saving File")
-        save_file('Ktrans.nii', hdr, Ktrans1vol)
-        save_file('model_curves.nii', hdr, estimated1vol)
+
+        if not os.path.exists(c1['Output_folder']):
+            os.makedirs(c1['Output_folder'])
+
+        save_file(c1['Output_folder'] + 'kep.nii', hdr, kep1vol)
+        save_file(c1['Output_folder'] + 'Ktrans.nii', hdr, Ktrans1vol)
+        save_file(c1['Output_folder'] + 'model_curves.nii', hdr, estimated1vol)
 
 
 

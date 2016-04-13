@@ -1,0 +1,38 @@
+# Lists the configuration for running DCE-MRI from the command line
+# (c) Benjamin Irving (2016)
+
+EG1:
+
+  Name:
+
+  Files:
+      DCE:       /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/C91R2_dcex110_gd11.nii
+      T10:       /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/T10_corr.nii
+      ROI:       /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/Seg.nii
+
+  Output_folder:  /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/test/
+
+  Param:
+      flip_angle: 3    # degrees
+      TR:         1.4   # ms
+      TE:         1.0   # ms # Currently not required
+      T:          9    # temporal resolution (s)
+      R1:         3.9
+      R2:         4.8  # Currently not required
+      v1thresh:   99.8 # Percentile threshold to remove outliers for visualisation
+      # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
+      InjT:       90
+      # Smoothing of the PK maps
+      Smoothing:  1 # TODO
+      Dose:       0.6 # mM/kg #Gadolinium dose
+
+  Configuration:
+      model_choice: 3
+
+#  Model descriptions:
+#  Model 1: Orton with offset (Clinical) - Recommended model for clinical
+#  Model 2: Orton without offset (Clinical)
+#  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
+#  Model 4: Weinmann with offset and vp (Pre-clinical)
+
+
