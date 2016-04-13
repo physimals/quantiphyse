@@ -10,6 +10,9 @@ Run T10 calculation from VFA images
 
 
 import nibabel as nib
+from scipy.ndimage.filters import gaussian_filter
+import numpy as np
+
 from pkview.utils import yaml_loader, save_file
 from pkview.analysis.t1_model import t10_map
 
@@ -76,6 +79,14 @@ def t10_preclinical(yaml_file):
         print("Beginning conversion")
         T10 = t10_map(fa_vols, fa_angles, TR=c1['Settings']['TR'],
                       afi_vols=afi_vols, fa_afi=afi_angles, TR_afi=c1['Settings']['TR_afi'])
+
+        if c1['Files']['mask'] is not None:
+            mask = nib.load(c1['Folder'] + c1['Files']['mask'])
+            T10[np.logical_not(mask.get_data())] = 0
+
+        if c1['Settings']['smooth']:
+            print("Smoothing map")
+            T10 = gaussian_filter(T10, sigma=0.5, truncate=3)
 
         print("Saving T10")
         save_file(c1['Files']['Out_file_path'], hdr, T10)

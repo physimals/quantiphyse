@@ -11,11 +11,15 @@ EG1:
       fa_vol:         C91R2_vfa.nii
       afi_vol:        C91R2_afi.nii
       Out_file_path:  /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/T10_test2.nii
+      mask:       Auto_Mask.nii   #None if a mask is not used
+
+      # TODO: Option to run this in a defined mask
 
   Settings:
     FA:      [1,  1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.7, 3.1, 3.7, 4.4, 5.2, 6.1, 7, 8] #degrees
     TR:      0.0014         # seconds (s)
     TR_afi:  [10, 100]      # seconds (s)
     FA_afi:  64             # degrees
+    smooth:  True           # apply gaussian smoothing to the map
 
 
