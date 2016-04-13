@@ -11,7 +11,7 @@ EG1:
       fa_vol:         C91R2_vfa.nii
       afi_vol:        C91R2_afi.nii
       Out_file_path:  /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/T10_test2.nii
-      mask:       Auto_Mask.nii   #None if a mask is not used
+      mask:       Auto_Mask.nii   # None if a mask is not used
 
       # TODO: Option to run this in a defined mask
 
