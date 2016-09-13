@@ -62,7 +62,7 @@ class OverviewWidget(QtGui.QWidget):
         """
         self.ivm = image_vol_management
 
-        #listen to volume management changes
+        # listen to volume management changes
         self.ivm.sig_current_overlay.connect(self.update_current_overlay)
         self.ivm.sig_all_overlays.connect(self.update_overlays)
 
