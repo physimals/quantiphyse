@@ -37,6 +37,7 @@ from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
+from .widgets.ExampleWidgets import ExampleWidget1
 
 op_sys = platform.system()
 # OSx specific Changes
@@ -165,17 +166,22 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["Clus"] = [CurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
 
-       # Clustering widget
+        # Clustering widget
         self.wid["ClusOv"] = [OvCurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["ClusOv"][0].add_image_management(self.ivm)
 
+        # Overview widget
         self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
         self.wid["Overview"][0].add_image_management(self.ivm)
+
+        # Example widget
+        self.wid["Example"] = [ExampleWidget1(self.local_file_path), 'a', 'b']
+        self.wid["Example"][0].add_image_management(self.ivm)
 
         # Random Walker
         # self.sw_rw = None
 
-        # Connect widgets
+        # Connect Signal and Slots for widgets
         # Connect colormap choice, alpha and colormap range
         self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
         self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
@@ -185,7 +191,6 @@ class MainWindowWidget(QtGui.QWidget):
         # Connecting toggle buttons
         self.wid["Overview"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
         self.wid["Overview"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
-
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
@@ -197,7 +202,9 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Connect reset from clustering widget
         self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-        self.wid["Clus"][0].add_image_management(self.ivm)
+
+        # Connect example widget to update overlay
+        self.wid["Example"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         self.initTabs()
 
@@ -333,6 +340,8 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
+        self.qtab1.addTab(self.wid["Example"][0], "Example\n widget")
+
 
 
         # signal
