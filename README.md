@@ -175,6 +175,11 @@ pip install PySide
 
 ## Additional notes:
 
+### Class diagram
+
+![alt text](images/class_diagram.svg "Screenshot")
+
+
 ### Resource file
 
 The resource file is compiled by

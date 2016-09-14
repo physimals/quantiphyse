@@ -1,0 +1,727 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="drawing-1.svg">
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="370.57513"
+     inkscape:cy="673.05315"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="931"
+     inkscape:window-height="1148"
+     inkscape:window-x="1977"
+     inkscape:window-y="24"
+     inkscape:window-maximized="0" />
+  <defs
+     id="defs4">
+    <marker
+       style="overflow:visible"
+       id="Arrow1Mstart"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mstart">
+      <path
+         transform="scale(0.4) translate(10,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path3843" />
+    </marker>
+    <marker
+       style="overflow:visible;"
+       id="Arrow1Mend"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mend">
+      <path
+         transform="scale(0.4) rotate(180) translate(10,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path3846" />
+    </marker>
+    <marker
+       style="overflow:visible;"
+       id="Arrow1Lend"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path3840" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow1MstartE"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1MstartE">
+      <path
+         transform="scale(0.4) translate(10,0)"
+         style="stroke:#ff00ff;stroke-width:1.0pt;fill:#ff00ff;fill-rule:evenodd"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path4848" />
+    </marker>
+    <marker
+       style="overflow:visible;"
+       id="Arrow1MendP"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1MendP">
+      <path
+         transform="scale(0.4) rotate(180) translate(10,0)"
+         style="stroke:#ff00ff;stroke-width:1.0pt;fill:#ff00ff;fill-rule:evenodd"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path4851" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow1Mstartl"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mstartl">
+      <path
+         transform="scale(0.4) translate(10,0)"
+         style="stroke:#ff00ff;stroke-width:1.0pt;fill:#ff00ff;fill-rule:evenodd"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path4854" />
+    </marker>
+    <marker
+       style="overflow:visible;"
+       id="Arrow1Mendv"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mendv">
+      <path
+         transform="scale(0.4) rotate(180) translate(10,0)"
+         style="stroke:#ff00ff;stroke-width:1.0pt;fill:#ff00ff;fill-rule:evenodd"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path4857" />
+    </marker>
+  </defs>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
+    <text
+       sodipodi:linespacing="125%"
+       id="text2985"
+       y="664.20624"
+       x="38.496895"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-weight:bold"
+         id="tspan2989"
+         y="664.20624"
+         x="38.496895"
+         sodipodi:role="line">ImageViewColorOverlay</tspan><tspan
+         id="tspan2993"
+         y="674.92841"
+         x="38.496895"
+         sodipodi:role="line">pkview.ImageView</tspan><tspan
+         id="tspan3077"
+         y="685.65063"
+         x="38.496895"
+         sodipodi:role="line" /><tspan
+         id="tspan3081"
+         y="696.3728"
+         x="38.496895"
+         sodipodi:role="line"
+         style="font-weight:bold"><tspan
+   style="font-style:italic"
+   id="tspan5079">Signals</tspan>:</tspan><tspan
+         id="tspan3089"
+         y="707.09503"
+         x="38.496895"
+         sodipodi:role="line"><tspan
+   id="tspan3091"
+   style="font-style:italic">sig_mouse_click_connect</tspan>: signal where the user has clicked on the image</tspan><tspan
+         id="tspan3087"
+         y="717.8172"
+         x="38.496895"
+         sodipodi:role="line" /><tspan
+         id="tspan3085"
+         y="728.53943"
+         x="38.496895"
+         sodipodi:role="line"
+         style="font-style:italic;font-weight:bold">Methods:</tspan><tspan
+         id="tspan3079"
+         y="739.2616"
+         x="38.496895"
+         sodipodi:role="line"><tspan
+   id="tspan3093"
+   style="font-style:italic">update_overlay</tspan>: resets the overlay</tspan><tspan
+         id="tspan3083"
+         y="749.98376"
+         x="38.496895"
+         sodipodi:role="line" /></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text2995"
+       y="419.32941"
+       x="59.467655"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-weight:bold"
+         y="419.32941"
+         x="59.467655"
+         id="tspan2997"
+         sodipodi:role="line">ImageVolumeManagement</tspan><tspan
+         id="tspan2999"
+         y="430.05161"
+         x="59.467655"
+         sodipodi:role="line">pkview.volumes.volume_management</tspan><tspan
+         id="tspan3057"
+         y="440.7738"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3059"
+         y="451.496"
+         x="59.467655"
+         sodipodi:role="line"
+         style="font-style:italic;font-weight:bold">Signals:</tspan><tspan
+         id="tspan3063"
+         y="462.21817"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   id="tspan3095"
+   style="font-style:italic">sig_current_overlay</tspan>: Recieve  current overlays</tspan><tspan
+         id="tspan3067"
+         y="472.94037"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   id="tspan3097"
+   style="font-style:italic">sig_all_overlays</tspan>: Recieve updated list of all overlays</tspan><tspan
+         id="tspan3065"
+         y="483.66257"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3061"
+         y="494.38477"
+         x="59.467655"
+         sodipodi:role="line"
+         style="font-style:italic;font-weight:bold">Methods:</tspan><tspan
+         id="tspan3062"
+         y="505.10696"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   style="font-style:italic"
+   id="tspan5049">get_image</tspan>: return the 4D image</tspan><tspan
+         id="tspan3066"
+         y="515.82916"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   style="font-style:italic"
+   id="tspan5051">get_roi</tspan>: return the ROI</tspan><tspan
+         id="tspan3068"
+         y="526.55133"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   style="font-style:italic"
+   id="tspan5053">get_overlay</tspan>: return the current overlay image</tspan><tspan
+         id="tspan3064"
+         y="537.27356"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3073"
+         y="547.99579"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   id="tspan3099"
+   style="font-style:italic">set_overlay</tspan>: save a new overlay</tspan><tspan
+         id="tspan3075"
+         y="558.71796"
+         x="59.467655"
+         sodipodi:role="line"><tspan
+   id="tspan3101"
+   style="font-style:italic">set_current_overlay</tspan>: specify the visible overlay</tspan><tspan
+         id="tspan3071"
+         y="569.44012"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3069"
+         y="580.16235"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3001"
+         y="590.88452"
+         x="59.467655"
+         sodipodi:role="line" /><tspan
+         id="tspan3055"
+         y="601.60675"
+         x="59.467655"
+         sodipodi:role="line" /></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3007"
+       y="261.36481"
+       x="314.35239"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-weight:bold"
+         y="261.36481"
+         x="314.35239"
+         id="tspan3009"
+         sodipodi:role="line">WindowAndDecorators</tspan><tspan
+         id="tspan3011"
+         style="font-weight:normal"
+         y="272.08701"
+         x="314.35239"
+         sodipodi:role="line">Location: /pkview/pkviewer.py</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3007-3"
+       y="333.70123"
+       x="313.31699"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-weight:bold"
+         y="333.70123"
+         x="313.31699"
+         id="tspan3009-6"
+         sodipodi:role="line">MainWindowWidget</tspan><tspan
+         id="tspan3011-7"
+         style="font-weight:normal"
+         y="344.42343"
+         x="313.31699"
+         sodipodi:role="line">Location: /pkview/pkviewer.py</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text2996"
+       y="383.38812"
+       x="524.65698"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-weight:bold"
+         y="383.38812"
+         x="524.65698"
+         id="tspan2998"
+         sodipodi:role="line">Widgets</tspan><tspan
+         id="tspan3000"
+         y="394.11032"
+         x="524.65698"
+         sodipodi:role="line" /><tspan
+         id="tspan3002"
+         y="404.83252"
+         x="524.65698"
+         sodipodi:role="line" /></text>
+    <rect
+       ry="0"
+       y="247.43988"
+       x="307.66843"
+       height="36.761806"
+       width="139.24927"
+       id="rect3004"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="318.87201"
+       x="308.91757"
+       height="36.761806"
+       width="139.24927"
+       id="rect3004-3"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="405.8132"
+       x="44.280472"
+       height="160.99956"
+       width="245.37529"
+       id="rect3004-6"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="650.82013"
+       x="34.217216"
+       height="98.611351"
+       width="326.83939"
+       id="rect3004-7"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3011"
+       y="411.86768"
+       x="532.60205"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="411.86768"
+         x="532.60205"
+         id="tspan3013"
+         sodipodi:role="line">SECurve</tspan><tspan
+         id="tspan3015"
+         y="422.58987"
+         x="532.60205"
+         sodipodi:role="line">pkview.widgets.AnalysisWidgets</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3017"
+       y="459.78357"
+       x="534.92554"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="459.78357"
+         x="534.92554"
+         id="tspan3019"
+         sodipodi:role="line">ColorOverlay1</tspan><tspan
+         id="tspan3021"
+         y="470.50577"
+         x="534.92554"
+         sodipodi:role="line">pkview.widgets.AnalysisWidgets</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3023"
+       y="504.67529"
+       x="534.96515"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="504.67529"
+         x="534.96515"
+         id="tspan3025"
+         sodipodi:role="line">CurveClusteringWidget</tspan><tspan
+         id="tspan3027"
+         y="515.39746"
+         x="534.96515"
+         sodipodi:role="line">pkview.Cwdgets.ClusteringWidgets</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3029"
+       y="545.5968"
+       x="526.37158"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="545.5968"
+         x="526.37158"
+         id="tspan3031"
+         sodipodi:role="line">OvCurveClusteringWidget</tspan><tspan
+         id="tspan3033"
+         y="556.31897"
+         x="526.37158"
+         sodipodi:role="line">pkview.widgets.OvClusteringWidgets</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3035"
+       y="584.927"
+       x="528.71887"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="584.927"
+         x="528.71887"
+         id="tspan3037"
+         sodipodi:role="line">OverviewWidget</tspan><tspan
+         id="tspan3041"
+         y="595.64917"
+         x="528.71887"
+         sodipodi:role="line">pkview.widgets.OverviewWidgets</tspan><tspan
+         id="tspan3039"
+         y="606.3714"
+         x="528.71887"
+         sodipodi:role="line" /></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3043"
+       y="633.63068"
+       x="531.71143"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="633.63068"
+         x="531.71143"
+         id="tspan3045"
+         sodipodi:role="line">PharmaWidget</tspan><tspan
+         id="tspan3047"
+         y="644.35284"
+         x="531.71143"
+         sodipodi:role="line">pkview.widgets.PharmaWidgets</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3049"
+       y="677.91669"
+       x="530.94745"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="677.91669"
+         x="530.94745"
+         id="tspan3051"
+         sodipodi:role="line">PharmaView</tspan><tspan
+         id="tspan3053"
+         y="688.63885"
+         x="530.94745"
+         sodipodi:role="line">pkview.widgets.PharamWidgets</tspan></text>
+    <rect
+       ry="0"
+       y="397.49014"
+       x="525.27155"
+       height="36.632149"
+       width="155.66159"
+       id="rect3004-3-3"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="447.00522"
+       x="527.59509"
+       height="36.632149"
+       width="155.66158"
+       id="rect3004-3-6"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="491.1015"
+       x="525.31128"
+       height="36.520943"
+       width="170.51691"
+       id="rect3004-3-7"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="532.04675"
+       x="524.57104"
+       height="36.520943"
+       width="170.51691"
+       id="rect3004-3-5"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="573.7702"
+       x="525.39679"
+       height="36.492542"
+       width="174.42709"
+       id="rect3004-3-35"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="616.9541"
+       x="525.23273"
+       height="36.50386"
+       width="172.86298"
+       id="rect3004-3-62"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       ry="0"
+       y="665.17877"
+       x="525.25653"
+       height="36.503864"
+       width="172.86298"
+       id="rect3004-3-9"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       y="367.25058"
+       x="511.56577"
+       height="403.67511"
+       width="195.90044"
+       id="rect3163"
+       style="fill:#ff0000;fill-opacity:0;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:5.15890157, 2.57945079;stroke-dashoffset:0" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3163"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3004-3"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path3167"
+       d="M 396.85481,355.63382 511.56577,470.7726"
+       style="fill:none;stroke:#000000;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3004-3"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3004"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path3937"
+       d="m 377.61449,284.20169 0.60629,34.67032"
+       style="fill:none;stroke:#000000;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3004-6"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3004-3"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path3939"
+       d="M 352.45257,355.63382 281.22855,405.8132"
+       style="fill:none;stroke:#000000;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3004-7"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3004-3"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path3941"
+       d="M 369.37866,355.63382 222.21758,650.82013"
+       style="fill:none;stroke:#000000;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3004-6"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3163"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path4463"
+       d="M 511.56577,550.7673 289.65576,509.26076"
+       style="fill:#ff0000;stroke:#ff00ff;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:none;marker-end:url(#Arrow1MendP)" />
+    <path
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#rect3004-7"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#rect3163"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path4465"
+       d="M 511.56577,600.2506 352.61506,650.82013"
+       style="fill:#ff0000;stroke:#ff00ff;stroke-width:1.94948983;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstartl);marker-end:url(#Arrow1Mendv)" />
+    <rect
+       ry="0"
+       y="713.72345"
+       x="524.23724"
+       height="36.503864"
+       width="172.86298"
+       id="rect3004-3-9-3"
+       style="fill:#ffff00;fill-opacity:1;stroke:#0080ff;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       xml:space="preserve"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="535.04828"
+       y="727.2254"
+       id="text5073"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5075"
+         x="535.04828"
+         y="727.2254">ExampleWidget1</tspan><tspan
+         sodipodi:role="line"
+         x="535.04828"
+         y="737.94757"
+         id="tspan3106">pkview.widgets.ExampleWidgets</tspan><tspan
+         sodipodi:role="line"
+         x="535.04828"
+         y="748.6698"
+         id="tspan5077" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="187.50456"
+       y="719.33936"
+       id="text5081"
+       sodipodi:linespacing="125%"
+       transform="matrix(0.95664245,-0.29126488,0.29126488,0.95664245,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan5083"
+         x="187.50456"
+         y="719.33936">Signal /Slot interaction</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="438.93726"
+       y="435.41452"
+       id="text5085"
+       sodipodi:linespacing="125%"
+       transform="matrix(0.9806043,0.19599799,-0.19599799,0.9806043,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan5087"
+         x="438.93726"
+         y="435.41452">Direct call of the class</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="168.32359"
+       y="139.91478"
+       id="text5283"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5285"
+         x="168.32359"
+         y="139.91478"
+         style="font-size:27.29285812px">Rough class interaction diagram</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.57775497px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="345.44867"
+       y="204.52643"
+       id="text5287"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5289"
+         x="345.44867"
+         y="204.52643">pkviewer2.py</tspan></text>
+    <rect
+       style="fill:#ff0000;fill-opacity:0;stroke:#000080;stroke-width:2.33938766;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect5291"
+       width="132.56531"
+       height="42.331779"
+       x="312.02884"
+       y="181.13255" />
+    <text
+       xml:space="preserve"
+       style="font-size:10px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="516.18793"
+       y="298.78839"
+       id="text3108"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3110"
+         x="516.18793"
+         y="298.78839" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:22px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="483.8631"
+       y="301.81885"
+       id="text3112"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3114"
+         x="483.8631"
+         y="301.81885"
+         style="font-size:10px">Note that MainWindowWidget initialised</tspan><tspan
+         sodipodi:role="line"
+         x="483.8631"
+         y="314.31885"
+         style="font-size:10px"
+         id="tspan3116">all the widgets and sets up the signal</tspan><tspan
+         sodipodi:role="line"
+         x="483.8631"
+         y="326.81885"
+         style="font-size:10px"
+         id="tspan3118">slot interactions</tspan></text>
+  </g>
+</svg>
