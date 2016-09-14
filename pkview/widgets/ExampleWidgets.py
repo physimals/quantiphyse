@@ -3,6 +3,11 @@
 Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
+This files provides examples (currently 1) of how to implement widgets that provide
+additional funcitonality to the core GUI. This could be process, visualisations or graphs.
+
+Widgets are added to a tabbed sidebar on the right of the GUI
+
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
@@ -10,16 +15,13 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
-from sklearn.metrics import pairwise
 
 from pkview.QtInherit import HelpButton
-from pkview.QtInherit.QtSubclass import QGroupBoxB
-from pkview.analysis.kmeans import KMeansPCA
 
 
 class ExampleWidget1(QtGui.QWidget):
     """
-    Widget for clustering the tumour into various regions
+    Widget for setting a threshold to the image data inside the ROI. This is saved as an overlay.
     """
 
     # emit reset command t
