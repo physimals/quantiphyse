@@ -874,6 +874,14 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         if x == 1:
             self.load_ovreg()
+            
+    @QtCore.Slot(bool)
+    def update_roi(self, x):
+        """
+        Update any changes to the overlay and view
+        """
+        if x == 1:
+            self._update_view()
 
     @QtCore.Slot(str)
     def set_colormap(self, text):

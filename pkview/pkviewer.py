@@ -32,6 +32,7 @@ from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
+from .widgets.FabberWidgets import FabberWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
@@ -157,6 +158,10 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
         self.wid["PAna"][0].add_image_management(self.ivm)
 
+        # Fabber modelling widget
+        self.wid["Fab"] = [FabberWidget(), 'a', 'b']
+        self.wid["Fab"][0].add_image_management(self.ivm)
+
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
         self.wid["ImExp"][0].add_image_management(self.ivm)
@@ -165,7 +170,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["Clus"] = [CurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
 
-       # Clustering widget
+        # Clustering widget
         self.wid["ClusOv"] = [OvCurveClusteringWidget(self.local_file_path), 'a', 'b']
         self.wid["ClusOv"][0].add_image_management(self.ivm)
 
@@ -189,7 +194,10 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
+        self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
+
         self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
 
         # Connect image export widget
         self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
@@ -376,6 +384,10 @@ class MainWindowWidget(QtGui.QWidget):
     def show_pk(self):
         index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
         self.qtab1.setCurrentIndex(index)
+    
+    def show_fab(self):
+        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Fabber")
+        self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
         index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
@@ -523,6 +535,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 
+        # Widgets --> Fabber
+        fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Fabber', self)
+        fab_action.setStatusTip('Run fabber model fitting')
+        fab_action.triggered.connect(self.mw1.show_fab)
+
         # Widgets --> PharmaView
         pw_action = QtGui.QAction('&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
@@ -569,6 +586,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
+        widget_menu.addAction(fab_action)
         widget_menu.addAction(pw_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)

@@ -38,6 +38,8 @@ class OverviewWidget(QtGui.QWidget):
 
         t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget(self)
+        t2 = QtGui.QLabel("Current ROIs")
+        self.l2 = RoiWidget(self)
 
         self.cb1 = QtGui.QCheckBox('Show overlay', self)
         self.cb1.toggle()
@@ -51,6 +53,8 @@ class OverviewWidget(QtGui.QWidget):
         layout.addStretch()
         layout.addWidget(t1)
         layout.addWidget(self.l1)
+        layout.addWidget(t2)
+        layout.addWidget(self.l2)
         layout.addWidget(self.cb1)
         layout.addWidget(self.cb2)
 
@@ -66,8 +70,11 @@ class OverviewWidget(QtGui.QWidget):
         self.ivm.sig_current_overlay.connect(self.update_current_overlay)
         self.ivm.sig_all_overlays.connect(self.update_overlays)
 
-        self.l1.add_image_management(self.ivm)
+        self.ivm.sig_current_roi.connect(self.update_current_roi)
+        self.ivm.sig_all_rois.connect(self.update_rois)
 
+        self.l1.add_image_management(self.ivm)
+        self.l2.add_image_management(self.ivm)
 
     @QtCore.Slot(list)
     def update_overlays(self, list1):
@@ -75,8 +82,15 @@ class OverviewWidget(QtGui.QWidget):
 
     @QtCore.Slot(str)
     def update_current_overlay(self, str1):
-        self.l1.update_current_overlay(str1)
+        self.l1.update_current(str1)
 
+    @QtCore.Slot(list)
+    def update_rois(self, list1):
+        self.l2.update_list(list1)
+
+    @QtCore.Slot(str)
+    def update_current_roi(self, str1):
+        self.l2.update_current(str1)
 
 class CaseWidget(QtGui.QListWidget):
     """
@@ -88,51 +102,91 @@ class CaseWidget(QtGui.QListWidget):
 
     def __init__(self, parent):
         super(CaseWidget, self).__init__(parent)
-
         self.list_current = []
-
         self.ivm = None
-
         self.currentItemChanged.connect(self.emit_volume)
 
     def add_image_management(self, image_volume_management):
-
         self.ivm = image_volume_management
 
     def update_list(self, list1):
         """
-
         Args:
             list1:
-
         Returns:
-
         """
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
                 self.addItem(ii)
 
-    def update_current_overlay(self, str1):
+    def update_current(self, str1):
+        """
+        Get the current item
+        Args:
+            str1:
+        Returns:
+        """
+        if str1 in self.list_current:
+            ind1 = self.list_current.index(str1)
+            self.setCurrentItem(self.item(ind1))
+        else:
+            print("Warning: This option does not exist")
+
+    @QtCore.Slot()
+    def emit_volume(self, choice1, choice1_prev):
+        self.ivm.set_current_overlay(choice1.text(), broadcast_change=False)
+        self.sig_emit_reset.emit(1)
+
+class RoiWidget(QtGui.QListWidget):
+    """
+    Class to handle the organisation of the loaded ROIs
+    """
+
+    # emit reset command
+    sig_emit_reset = QtCore.Signal(bool)
+
+    def __init__(self, parent):
+        super(RoiWidget, self).__init__(parent)
+        self.list_current = []
+        self.ivm = None
+        self.currentItemChanged.connect(self.emit_volume)
+
+    def add_image_management(self, image_volume_management):
+        self.ivm = image_volume_management
+
+    def update_list(self, list1):
+        """
+        Args:
+            list1:
+
+        Returns:
+        """
+        print("Update list: ", list1)
+        for ii in list1:
+            if ii not in self.list_current:
+                self.list_current.append(ii)
+                self.addItem(ii)
+
+    def update_current(self, str1):
         """
         Get the current item
         Args:
             str1:
 
         Returns:
-
         """
+        print("Set current to" + str1)
         if str1 in self.list_current:
             ind1 = self.list_current.index(str1)
             self.setCurrentItem(self.item(ind1))
-
         else:
             print("Warning: This option does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-
-        self.ivm.set_current_overlay(choice1.text(), broadcast_change=False)
+        print("Setting current to: " + choice1.text())
+        self.ivm.set_current_roi(choice1.text(), broadcast_change=False)
         self.sig_emit_reset.emit(1)
 
 

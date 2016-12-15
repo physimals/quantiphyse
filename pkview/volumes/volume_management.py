@@ -30,7 +30,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     sig_current_overlay = QtCore.Signal(str)
     # Signal all overlays
     sig_all_overlays = QtCore.Signal(list)
-
+    sig_current_roi = QtCore.Signal(str)
+    sig_all_rois = QtCore.Signal(list)
+    
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
 
@@ -68,11 +70,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # All overlays
         self.overlay_all = {}
 
-        # ROI image
+        # Current ROI image
         self.roi = None
         self.roi_dims = None
         self.roi_file1 = None
         # Number of ROIs
+        self.rois = {}
         self.num_roi = 0
 
         #Estimated volume from pk modelling
@@ -245,17 +248,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             return
 
         #Setting ROI data
-        self.roi_file1 = file1
-        self.roi, voxel_size, _ = self._load_med_file(self.roi_file1)
-
-        self.roi = self._remove_nans(self.roi)
+        roi, voxel_size, _ = self._load_med_file(file1)
+        roi = self._remove_nans(roi)
 
         # patch to fix roi loading when a different type.
-        self.roi = self.roi.astype(np.float64)
+        roi = roi.astype(np.float64)
 
-        self.roi_dims = self.roi.shape
-
-        if (self.roi_dims != self.img_dims[:3]) or (len(self.roi_dims) > 3):
+        dims = roi.shape
+        if (dims != self.img_dims[:3]) or (len(dims) > 3):
 
             warnings.warn("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
 
@@ -263,12 +263,22 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             msgBox = QtGui.QMessageBox()
             msgBox.setText("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
             ret = msgBox.exec_()
-
-            self.roi = None
-            self.roi_dims = None
-
         else:
+            self.rois[file1] = roi
             self.num_roi += 1
+            self.sig_all_rois.emit(self.rois.keys())  
+            self.set_current_roi(file1)      
+
+    def set_current_roi(self, roi_file, broadcast_change=True):
+        """ 
+        Set the current ROI to the specified file.
+        """
+        print("Setting current ROI to: " + roi_file)
+        self.roi_file1 = roi_file
+        self.roi = self.rois[roi_file]
+        self.roi_dims = self.roi.shape
+        if broadcast_change:
+            self.sig_current_roi.emit(roi_file)        
 
     def load_ovreg(self, file1, type1='loaded'):
         """
@@ -327,12 +337,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     @staticmethod
     def _load_med_file(image_location):
-
-        ii = image_location.find('.')
-        ext1 = image_location[ii+1:]
-
-        if ext1 == 'nii':
-
+        if image_location.endswith(".nii") or image_location.endswith(".nii.gz"):
             # if the file is a nifti
             image = nib.load(image_location)
             # NB: np.asarray appears to convert to an array instead of a numpy memmap.
@@ -345,15 +350,13 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
             hdr = image.get_header()
 
-        elif ext1 == 'nrrd':
-
+        elif image_location.endswith(".nrrd"):
             #else if the file is a nrrd
             image1, options1 = nrrd.read(image_location)
             voxel_size = [0, 0, 0]
             hdr = None
 
         else:
-
             image1 = None
             voxel_size = None
             hdr = None
