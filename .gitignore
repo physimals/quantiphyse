@@ -10,3 +10,7 @@ debian/pkview
 *.sh
 *.so
 *~
+PKView.egg-info
+debian/debhelper-build-stamp
+pkview/analysis/t1_model.cpp
+*.pyc
