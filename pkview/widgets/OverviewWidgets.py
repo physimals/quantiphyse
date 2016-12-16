@@ -162,7 +162,6 @@ class RoiWidget(QtGui.QListWidget):
 
         Returns:
         """
-        print("Update list: ", list1)
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
@@ -176,7 +175,6 @@ class RoiWidget(QtGui.QListWidget):
 
         Returns:
         """
-        print("Set current to" + str1)
         if str1 in self.list_current:
             ind1 = self.list_current.index(str1)
             self.setCurrentItem(self.item(ind1))
@@ -185,7 +183,6 @@ class RoiWidget(QtGui.QListWidget):
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        print("Setting current to: " + choice1.text())
         self.ivm.set_current_roi(choice1.text(), broadcast_change=False)
         self.sig_emit_reset.emit(1)
 
