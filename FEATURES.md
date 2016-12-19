@@ -7,13 +7,17 @@ in the [Pkview documents](http://pkview.readthedocs.io/en/latest/).
 
 ## Visualisation
 
- - Axial, coronal and sagittal views
+ - Axial, coronal and sagittal linked views
  - ROI overlay
  - Overlay maps for the entire image or constrained to the ROI
  - Switching between multiple overlays
  - Dynamic signal enhancment visualisation
  - individual voxel curve analysis
  - Multivoxel curve analysis
+ - Contrast and brightness adjustment
+ - Zooming using right mouse button
+ - Scrolling through volume using mouse wheel
+ - Exporting a window as a jpg or a number of other image formats
  
 ## IO
 
@@ -62,7 +66,7 @@ so that it can be used for regional analysis
 !["overlay statistics"](images/feat/overlay_statistics.jpg)
 
 
-### T1 widget
+### 4) T1 widget
 - Create a T1 widget that generates a T1 map from a series of variable flip angle images
 - The code is implemented in PKView for command line use and must just be integrated as a widget
 - The current command line version passes a yaml configuration file as an argument
@@ -77,20 +81,28 @@ PKView --T10afibatch eg3_t10config_preclinical.yaml
 PKView --T10afibatch eg2_t10config_clinical.yaml
 ```
 - These yaml arguments can be integrated into a widget
-- Code:
-		- Python wrapper code is found in `pkview/analysis`
-		- c++ analysis code is found in `src/` 
+- Code:  
+		- Python wrapper code is found in `pkview/analysis`  
+		- c++ analysis code is found in `src/`  
 
-### Test PK modelling and T10 modelling   
+### 5) Testing of PK modelling and T10 modelling   
 - The PK and T10 modelling in the widget require further testing (Ben TODO)
 - Steps
 		- Include example publicly available test dataset
 		- Include automated c++ (googletest) tests for the code to validation
 
-### Migration of PySide2 when released.
+### 6) Migration of PySide2 when released.
 - The current implementation uses PySide which is based on Qt4
 - Update to PySide2 when released which uses Qt5
 - Will provide support for HiDPI screens and proper scaling in OSx
+
+### 7) Add semiquantitative measures
+- Area under the curve
+- Enhancing fraction
+
+### 8) Support Jola with integration of texture analysis widget
+
+# Release roadmap
 
 # Publications
 
