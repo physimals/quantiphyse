@@ -191,7 +191,6 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["Overview"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
         self.wid["Overview"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
-
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
@@ -204,7 +203,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
         # Connect reset from clustering widget
-        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_roi)
         self.wid["Clus"][0].add_image_management(self.ivm)
 
         self.initTabs()

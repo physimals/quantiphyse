@@ -27,10 +27,17 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """
 
     # Signals
+
+    # Change to current overlay
     sig_current_overlay = QtCore.Signal(str)
-    # Signal all overlays
+
+    # Change to set of overlays (e.g. new one added)
     sig_all_overlays = QtCore.Signal(list)
+
+    # Change to current ROI
     sig_current_roi = QtCore.Signal(str)
+
+    # Change to set of ROIs (e.g. new one added)
     sig_all_rois = QtCore.Signal(list)
     
     def __init__(self):
@@ -57,26 +64,26 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.overlay = None
         self.ovreg_dims = None
         self.ovreg_file1 = None
-        # Type of the current overlay
+        # Type of the current overlay (i.e. name as a string)
         self.overlay_label = None
 
-        # List of default overlays that can be loaded
+        # List of known overlay typesthat can be loaded
         self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation',
                                   'segmentation', 'clustering']
 
         # Current overlay range
         self.ov_range = [0.0, 1.0]
 
-        # All overlays
+        # All overlays. Map from name to data array
         self.overlay_all = {}
 
         # Current ROI image
         self.roi = None
         self.roi_dims = None
         self.roi_file1 = None
-        # Number of ROIs
+
+        # All ROIs. Map from name to data array
         self.rois = {}
-        self.num_roi = 0
 
         #Estimated volume from pk modelling
         self.estimated = None
@@ -97,7 +104,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         return self.overlay
 
     def get_T10(self):
-
         if 'T10' in self.overlay_all:
             return self.overlay_all['T10']
         else:
@@ -249,10 +255,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         #Setting ROI data
         roi, voxel_size, _ = self._load_med_file(file1)
-        roi = self._remove_nans(roi)
-
-        # patch to fix roi loading when a different type.
-        roi = roi.astype(np.float64)
 
         dims = roi.shape
         if (dims != self.img_dims[:3]) or (len(dims) > 3):
@@ -264,11 +266,17 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             msgBox.setText("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
             ret = msgBox.exec_()
         else:
-            self.rois[file1] = roi
-            self.num_roi += 1
-            self.sig_all_rois.emit(self.rois.keys())  
-            self.set_current_roi(file1)      
+            self.add_roi(name=file1, img=roi, make_current=True)
 
+    def add_roi(self, name, img, make_current):
+        img = self._remove_nans(img)
+        # patch to fix roi loading when a different type.
+        img = img.astype(np.float64)
+        self.rois[name] = img
+        self.sig_all_rois.emit(self.rois.keys())
+        if make_current: 
+            self.set_current_roi(name)
+              
     def set_current_roi(self, roi_file, broadcast_change=True):
         """ 
         Set the current ROI to the specified file.
@@ -300,7 +308,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         else:
             # add the loaded overlay
-            self.set_overlay(type1, overlay_load)
+            self.set_overlay(type1, overlay_load, force=True)
             # set the loaded overlay to be the current overlay
             self.set_current_overlay(type1)
 

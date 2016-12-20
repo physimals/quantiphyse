@@ -553,9 +553,9 @@ class ImageViewOverlay(ImageViewLayout):
             self.view3.addItem(self.imgwin3b)
 
             # Initialises contour plotting
-            self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
-            self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
-            self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[self.ivm.num_roi-1])
+            self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
+            self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
+            self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
             self.view1.addItem(self.cont1)
             self.view2.addItem(self.cont2)
             self.view3.addItem(self.cont3)
@@ -572,7 +572,7 @@ class ImageViewOverlay(ImageViewLayout):
         """
         super(ImageViewOverlay, self)._update_view()
 
-        if self.ivm.num_roi == 0:
+        if len(self.ivm.rois) == 0:
             # If an overlay hasn't been added then return
             return
 
@@ -598,9 +598,9 @@ class ImageViewOverlay(ImageViewLayout):
                                        levels=self.roi_levels)
 
         if self.options['ShowOverlayContour']:
-            i1 = self.ivm.roi[:, :, self.ivm.cim_pos[2]] > 1.0
-            i2 = self.ivm.roi[:, self.ivm.cim_pos[1], :] > 1.0
-            i3 = self.ivm.roi[self.ivm.cim_pos[0], :, :] > 1.0
+            i1 = self.ivm.roi[:, :, self.ivm.cim_pos[2]] >= 1.0
+            i2 = self.ivm.roi[:, self.ivm.cim_pos[1], :] >= 1.0
+            i3 = self.ivm.roi[self.ivm.cim_pos[0], :, :] >= 1.0
             i1 = i1.astype(np.uint8)
             i2 = i2.astype(np.uint8)
             i3 = i3.astype(np.uint8)
@@ -881,7 +881,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Update any changes to the overlay and view
         """
         if x == 1:
-            self._update_view()
+            self.set_default_colormap_matplotlib()
+            self.load_roi()
 
     @QtCore.Slot(str)
     def set_colormap(self, text):
