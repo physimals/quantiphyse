@@ -15,6 +15,11 @@ import numpy as np
 import warnings
 import nrrd
 
+class Roi:
+    def __init__(self, name, data, file=None):
+        self.file = file
+        self.name = name
+        self.data = data
 
 class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """
@@ -94,20 +99,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current color map
         self.cmap = None
 
-    def get_roi(self):
-        return self.roi
-
     def get_image(self):
         return self.image
-
-    def get_overlay(self):
-        return self.overlay
-
-    def get_T10(self):
-        if 'T10' in self.overlay_all:
-            return self.overlay_all['T10']
-        else:
-            return None
 
     def get_image_shape(self):
         if self.image is None:
@@ -142,14 +135,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         return overlay_value
 
-    def set_roi(self, x):
-        self.roi = x
-
     def set_image(self, x):
         self.image = x
-
-    def set_T10(self, x):
-        self.overlay_all['T10'] = x
 
     def set_estimated(self, x):
         self.estimated = x
@@ -173,7 +160,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # set current overlay
         self.set_current_overlay('annotation', broadcast_change=True)
 
-    def set_overlay(self, choice1, ovreg, force=False):
+    def set_overlay(self, name, data, force=False):
         """
 
         Set an overlay for storage
@@ -184,28 +171,37 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         """
 
-        if (ovreg.shape[:3] != self.img_dims[:3]) or (len(ovreg.shape) > 4):
+        if (data.shape[:3] != self.img_dims[:3]) or (len(data.shape) > 4):
             print("First 3 Dimensions of the overlay region must be the same as the image, "
                   "and overlay region must be 3D (or 4D for RGBa images)")
             return
 
-        if (choice1 not in self.overlay_label_all) and (force is False):
+        if (name not in self.overlay_label_all) and (force is False):
             print("Warning: Label choice is incorrect")
             return
 
-        self.overlay_all[choice1] = ovreg
-        self.overlay_label = choice1
+        self.overlay_all[name] = data
+        self.overlay_label = name
 
         # emit all overlays (QtCore)
         self.sig_all_overlays.emit(self.overlay_all.keys())
 
+    def get_current_overlay(self):
+        return self.overlay
+
+    def get_T10(self):
+        if 'T10' in self.overlay_all:
+            return self.overlay_all['T10']
+        else:
+            return None
+
+    def set_T10(self, x):
+        self.overlay_all['T10'] = x
+
     def set_current_overlay(self, choice1, broadcast_change=True):
         """
-
         Set the current overlay
-
         """
-
         if choice1 in self.overlay_all.keys():
             self.overlay_label = choice1
             self.overlay = self.overlay_all[choice1]
@@ -243,35 +239,43 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def load_roi(self, file1):
         """
-
         Loads and checks roi image
-        Initialise viewing windows
-
         """
-
         if self.image.shape[0] == 1:
             print("Please load an image first")
             return
 
-        #Setting ROI data
         roi, voxel_size, _ = self._load_med_file(file1)
+        print (roi.min(), roi.max())
+        if roi.min() < 0 or roi.max() > 255:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("ROI must contain values between 0 and 255")
+            msgBox.exec_()
+            return
 
         dims = roi.shape
         if (dims != self.img_dims[:3]) or (len(dims) > 3):
-
             warnings.warn("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
 
             # Checking if data already exists
             msgBox = QtGui.QMessageBox()
             msgBox.setText("First 3 Dimensions of the ROI must be the same as the image, and ROI must be 3D")
-            ret = msgBox.exec_()
-        else:
-            self.add_roi(name=file1, img=roi, make_current=True)
+            msgBox.exec_()
+            return
+
+        if not np.equal(np.mod(roi, 1), 0).any():
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("WARNING: ROI contains non-integer values. These will be truncated to integers")
+            msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            if msgBox.exec_() == QMessageBox.Cancel:
+                return
+
+        self.add_roi(name=file1, img=roi, make_current=True)
 
     def add_roi(self, name, img, make_current):
         img = self._remove_nans(img)
         # patch to fix roi loading when a different type.
-        img = img.astype(np.float64)
+        img = img.astype(np.int8)
         self.rois[name] = img
         self.sig_all_rois.emit(self.rois.keys())
         if make_current: 
@@ -281,12 +285,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """ 
         Set the current ROI to the specified file.
         """
-        print("Setting current ROI to: " + roi_file)
         self.roi_file1 = roi_file
         self.roi = self.rois[roi_file]
         self.roi_dims = self.roi.shape
         if broadcast_change:
             self.sig_current_roi.emit(roi_file)        
+
+    def get_current_roi(self):
+        return self.roi
 
     def load_ovreg(self, file1, type1='loaded'):
         """

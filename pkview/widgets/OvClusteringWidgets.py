@@ -156,7 +156,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        if self.ivm.get_roi() is None:
+        if self.ivm.get_current_roi() is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load.")
@@ -167,8 +167,8 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.get_overlay()
-        roi1 = self.ivm.get_roi()
+        img1 = self.ivm.get_current_overlay()
+        roi1 = self.ivm.get_current_roi()
 
         self.km = KMeans3D(img1, region1=roi1)
 

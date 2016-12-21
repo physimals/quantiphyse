@@ -520,7 +520,7 @@ class ColorOverlay1(QtGui.QWidget):
         """
 
         # Check that pkmodelling can be run
-        if (self.ivm.get_roi() is None) or (self.ivm.get_overlay() is None):
+        if (self.ivm.get_current_roi() is None) or (self.ivm.get_current_overlay() is None):
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("Histogram")
             m1.setText("Histogram requires a ROI and overlay to be loaded")

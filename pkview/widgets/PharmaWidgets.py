@@ -167,7 +167,7 @@ class PharmaWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        if self.ivm.get_roi() is None:
+        if self.ivm.get_current_roi() is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
@@ -185,7 +185,7 @@ class PharmaWidget(QtGui.QWidget):
         # get volumes to process
 
         img1 = self.ivm.get_image()
-        roi1 = self.ivm.get_roi()
+        roi1 = self.ivm.get_current_roi()
         t101 = self.ivm.get_T10()
 
         # Extract the text from the line edit options
@@ -294,14 +294,14 @@ class PharmaWidget(QtGui.QWidget):
             kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
-            self.ivm.set_overlay(choice1='Ktrans', ovreg=Ktrans1vol)
-            self.ivm.set_overlay(choice1='ve', ovreg=ve1vol)
-            self.ivm.set_overlay(choice1='kep', ovreg=kep1vol)
-            self.ivm.set_overlay(choice1='offset', ovreg=offset1vol)
-            self.ivm.set_overlay(choice1='vp', ovreg=vp1vol)
+            self.ivm.set_overlay(name='Ktrans', ovreg=Ktrans1vol)
+            self.ivm.set_overlay(name='ve', ovreg=ve1vol)
+            self.ivm.set_overlay(name='kep', ovreg=kep1vol)
+            self.ivm.set_overlay(name='offset', ovreg=offset1vol)
+            self.ivm.set_overlay(name='vp', ovreg=vp1vol)
             # Setting as a separate volume
             self.ivm.set_estimated(estimated1vol)
-            self.ivm.set_current_overlay(choice1='Ktrans')
+            self.ivm.set_current_overlay('Ktrans')
             self.sig_emit_reset.emit(1)
 
 
