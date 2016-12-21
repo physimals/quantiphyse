@@ -176,8 +176,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
 
         self.label1, self.label1_cent = self.km.get_label_image()
 
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(name="Overlay clusters", img=self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
 
@@ -220,8 +219,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(name="clusters", img=self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
         print("Merged")
 

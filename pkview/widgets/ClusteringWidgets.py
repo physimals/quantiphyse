@@ -203,15 +203,13 @@ class CurveClusteringWidget(QtGui.QWidget):
         roi1 = self.ivm.get_roi()
 
         self.km = KMeansPCA(img1, region1=roi1)
-
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
 
         # self.km.plot(slice1=30)
         self.label1, self.label1_cent = self.km.get_label_image()
         # self.labs_un_orig = np.unique(self.label1)
 
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(name="clusters", img=self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
 
@@ -294,13 +292,11 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(name='Curve clusters', img=self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
 
         # replot
         self._plot()
-        print("Merged")
 
     def run_merge(self):
         """
