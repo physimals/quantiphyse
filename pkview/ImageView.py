@@ -477,10 +477,10 @@ class ImageViewOverlay(ImageViewLayout):
         self.imgwin2b = None
         self.imgwin3b = None
 
-        # Contour
-        self.cont1 = None
-        self.cont2 = None
-        self.cont3 = None
+        # Contours
+        self.cont1 = []
+        self.cont2 = []
+        self.cont3 = []
 
         # Viewing options as a dictionary
         self.options['ShowOverlay'] = 0
@@ -552,16 +552,21 @@ class ImageViewOverlay(ImageViewLayout):
             self.view2.addItem(self.imgwin2b)
             self.view3.addItem(self.imgwin3b)
 
-            # Initialises contour plotting
-            self.cont1 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
-            self.cont2 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
-            self.cont3 = pg.IsocurveItem(level=1.0, pen=self.roipen[0])
-            self.view1.addItem(self.cont1)
-            self.view2.addItem(self.cont2)
-            self.view3.addItem(self.cont3)
-
         self.roi_levels = [self.ivm.roi.min(), self.ivm.roi.max()]
         self._update_view()
+
+    def _iso_prepare(self, arr, val):
+        return arr == val
+        out = arr.copy()
+        for row in range(len(arr)):
+            for col in range(len(arr[0])):
+                if arr[row, col] == val:
+                    out[row, col] = 1
+                if arr[row, col] > val:
+                    out[row, col] = 2
+                if arr[row, col] < val:
+                    out[row, col] = 2
+        return out
 
     def _update_view(self):
         """
@@ -597,21 +602,52 @@ class ImageViewOverlay(ImageViewLayout):
                                        autoLevels=False,
                                        levels=self.roi_levels)
 
+        n = 0
         if self.options['ShowOverlayContour']:
-            i1 = self.ivm.roi[:, :, self.ivm.cim_pos[2]] >= 1.0
-            i2 = self.ivm.roi[:, self.ivm.cim_pos[1], :] >= 1.0
-            i3 = self.ivm.roi[self.ivm.cim_pos[0], :, :] >= 1.0
-            i1 = i1.astype(np.uint8)
-            i2 = i2.astype(np.uint8)
-            i3 = i3.astype(np.uint8)
+            # Get slice of ROI for each viewing window and convert to float
+            # for isosurface routine
+            i1 = self.ivm.roi[:, :, self.ivm.cim_pos[2]]
+            i2 = self.ivm.roi[:, self.ivm.cim_pos[1], :]
+            i3 = self.ivm.roi[self.ivm.cim_pos[0], :, :]
 
-            self.cont1.setData(i1)
-            self.cont2.setData(i2)
-            self.cont3.setData(i3)
-        else:
-            self.cont1.setData(None)
-            self.cont2.setData(None)
-            self.cont3.setData(None)
+            # Update data and level for existing contour items, and create new ones
+            # if we need them
+            n_conts = len(self.cont1)
+            create_new = False
+            for val in np.unique(self.ivm.roi):
+                lutval = (255*float(val))/self.ivm.roi.max()
+                if val != 0:
+                    if n == n_conts:
+                        create_new = True
+
+                    if create_new:
+                        self.cont1.append(pg.IsocurveItem())
+                        self.cont2.append(pg.IsocurveItem())
+                        self.cont3.append(pg.IsocurveItem())
+                        self.view1.addItem(self.cont1[n])
+                        self.view2.addItem(self.cont2[n])
+                        self.view3.addItem(self.cont3[n])
+
+                    d = self._iso_prepare(i1, val)
+                    self.cont1[n].setData(d)
+                    self.cont1[n].setLevel(1)
+                    self.cont1[n].setPen(pg.mkPen(self.roilut[lutval][:3], width=self.options['roi_outline_width']))
+                    d = self._iso_prepare(i2, val)
+                    self.cont2[n].setData(d)
+                    self.cont2[n].setLevel(1)
+                    self.cont2[n].setPen(pg.mkPen(self.roilut[lutval][:3], width=self.options['roi_outline_width']))
+                    d = self._iso_prepare(i3, val)
+                    self.cont3[n].setData(d)
+                    self.cont3[n].setLevel(1)
+                    self.cont3[n].setPen(pg.mkPen(self.roilut[lutval][:3], width=self.options['roi_outline_width']))
+                    n += 1
+
+        # Set data to None for any existing contour items that we are not using
+        # right now FIXME should we delete these?
+        for idx in range(n, len(self.cont1)):
+            self.cont1[idx].setData(None)
+            self.cont2[idx].setData(None)
+            self.cont3[idx].setData(None)
 
     # Slot to toggle whether the overlay is seen or not
     @QtCore.Slot()
