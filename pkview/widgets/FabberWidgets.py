@@ -29,6 +29,50 @@ from pyfab.model import FabberRunData
 from pyfab.ui import ModelOptionsDialog, MatrixEditDialog
 from pyfab.fabber import FabberLib
 
+# Current overlays list from the IVM object. Global so that all the ImageOptionView instances
+# can see what overlays to offer as options
+CURRENT_OVERLAYS = []
+
+class ImageOptionView(OptionView):
+    def __init__(self, opt, **kwargs):
+        OptionView.__init__(self, opt, **kwargs)
+        self.combo = QtGui.QComboBox()
+        self.combo.currentIndexChanged.connect(self.changed)
+        self.update_list()
+        self.widgets.append(self.combo)
+        #self.hbox = QHBoxLayout()
+        #self.hbox.addWidget(self.edit)
+        #self.btn = QPushButton("Choose")
+        #self.hbox.addWidget(self.btn)
+        #self.widgets.append(self.btn)
+        #self.btn.clicked.connect(self.choose_file)
+
+    def update_list(self):
+        global CURRENT_OVERLAYS
+        current = self.combo.currentText()
+        self.combo.clear()
+        for ov in CURRENT_OVERLAYS:
+            self.combo.addItem(ov)
+        idx = self.combo.findText(current)
+        self.combo.setCurrentIndex(idx)
+
+    def changed(self):
+        # Note that this signal is triggered when the widget
+        # is enabled/disabled and when overlays are added/removed
+        # from the list
+        if self.combo.isEnabled():
+            self.fab.set_option(self.key, self.combo.currentText())
+
+    def do_update(self):
+        OptionView.do_update(self)
+        if self.fab.options.has_key(self.key):
+            idx = self.combo.findText(self.fab.options[self.key])
+            self.combo.setCurrentIndex(idx)
+
+    def add(self, grid, row):
+        OptionView.add(self, grid, row)
+        grid.addWidget(self.combo, row, 1)
+
 class FabberWidget(QtGui.QWidget):
 
     """
@@ -44,47 +88,51 @@ class FabberWidget(QtGui.QWidget):
 
     def __init__(self):
         super(FabberWidget, self).__init__()
-#        self.init_multiproc()
 
         self.ivm = None
 
         # Options box
         grid = QtGui.QGridLayout()
         
-        grid.addWidget(QtGui.QLabel("Executable"), 1, 0)
-        self.execEdit = QtGui.QLineEdit(self)
-        grid.addWidget(self.execEdit, 1, 1)
-        self.execChangeBtn = QtGui.QPushButton('Change', self)
-        grid.addWidget(self.execChangeBtn, 1, 2)
-        
-        grid.addWidget(QtGui.QLabel("Forward model"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Fabber core library"), 1, 0)
+        self.libEdit = QtGui.QLineEdit(self)
+        grid.addWidget(self.libEdit, 1, 1)
+        self.libChangeBtn = QtGui.QPushButton('Change', self)
+        grid.addWidget(self.libChangeBtn, 1, 2)
+
+        grid.addWidget(QtGui.QLabel("Fabber models library"), 2, 0)
+        self.modellibEdit = QtGui.QLineEdit(self)
+        grid.addWidget(self.modellibEdit, 2, 1)
+        self.modellibChangeBtn = QtGui.QPushButton('Change', self)
+        grid.addWidget(self.modellibChangeBtn, 2, 2)
+
+        grid.addWidget(QtGui.QLabel("Forward model"), 3, 0)
         self.modelCombo = QtGui.QComboBox(self)
-        grid.addWidget(self.modelCombo, 2, 1)
+        grid.addWidget(self.modelCombo, 3, 1)
         self.modelOptionsBtn = QtGui.QPushButton('Options', self)
-        grid.addWidget(self.modelOptionsBtn, 2, 2)
+        grid.addWidget(self.modelOptionsBtn, 3, 2)
         
-        grid.addWidget(QtGui.QLabel("Inference method"), 3, 0)
+        grid.addWidget(QtGui.QLabel("Inference method"), 4, 0)
         self.methodCombo = QtGui.QComboBox(self)
-        grid.addWidget(self.methodCombo, 3, 1)
+        grid.addWidget(self.methodCombo, 4, 1)
         self.methodOptionsBtn = QtGui.QPushButton('Options', self)
-        grid.addWidget(self.methodOptionsBtn, 3, 2)
+        grid.addWidget(self.methodOptionsBtn, 4, 2)
         
-        grid.addWidget(QtGui.QLabel("General Options"), 4, 0)
+        grid.addWidget(QtGui.QLabel("General Options"), 5, 0)
         self.generalOptionsBtn = QtGui.QPushButton('Edit', self)
-        grid.addWidget(self.generalOptionsBtn, 4, 2)
+        grid.addWidget(self.generalOptionsBtn, 5, 2)
         
         optionsBox = QGroupBoxB()
         optionsBox.setTitle('Fabber Model Fitting')
         optionsBox.setLayout(grid)
         
         # Run box
-        
-	runHbox = QtGui.QHBoxLayout()
-	
+        runHbox = QtGui.QHBoxLayout()
+
         runBtn = QtGui.QPushButton('Run modelling', self)
         runBtn.clicked.connect(self.start_task)
-	runHbox.addWidget(runBtn)
-	
+        runHbox.addWidget(runBtn)
+
         self.progress = QtGui.QProgressBar(self)
         self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
         runHbox.addWidget(self.progress)
@@ -102,27 +150,32 @@ class FabberWidget(QtGui.QWidget):
 
         self.setLayout(mainVbox)
 
-        # Check for updates from the process
-#        self.timer = QtCore.QTimer()
-#        self.timer.timeout.connect(self.CheckProg)
-		
-	self.fabdata = FabberImageData()
-	
-	self.views = [
-          self.fabdata,
-          ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
-	  ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn, mat_dialog=MatrixEditDialog()),
-	  ComponentOptionsView("method", "Inference method", dialog=ModelOptionsDialog(), btn=self.methodOptionsBtn, mat_dialog=MatrixEditDialog()),
-	  OptionsView(dialog=ModelOptionsDialog(), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog()),	
-	  ExecView(execChangeBtn=self.execChangeBtn, execEdit=self.execEdit),
-	]
-		
-	self.new()
-	#self.openBtn.clicked.connect(self.open)
-	#self.newBtn.clicked.connect(self.new)
+        # Register our custom view to handle image options
+        OPT_VIEW["IMAGE"] = ImageOptionView
+        OPT_VIEW["TIMESERIES"] = ImageOptionView
+
+        # Keep references to the option dialogs so we can update any image option views as overlays change
+        self.modelOpts = ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn,
+                             mat_dialog=MatrixEditDialog())
+        self.methodOpts = ComponentOptionsView("method", "Inference method", dialog=ModelOptionsDialog(), btn=self.methodOptionsBtn,
+                             mat_dialog=MatrixEditDialog())
+        self.generalOpts = OptionsView(dialog=ModelOptionsDialog(), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog())
+
+        self.views = [
+            ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
+            self.modelOpts, self.methodOpts, self.generalOpts,
+            ChooseFileView("fabber", changeBtn=self.libChangeBtn, edit=self.libEdit),
+            ChooseFileView("loadmodels", changeBtn=self.modellibChangeBtn, edit=self.modellibEdit),
+        ]
+
+        self.generalOpts.ignore("output", "data", "mask", "data<n>", "overwrite", "method", "model", "help",
+                                "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names")
+        self.new()
+        self.fab.set_option("fabber", "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so")
+        self.fab.set_option("save-mean")
 
     def add_views(self):	
-	for view in self.views: self.fab.add_view(view)
+        for view in self.views: self.fab.add_view(view)
 
     def refresh(self, fab):
         self.fab = fab
@@ -137,72 +190,62 @@ class FabberWidget(QtGui.QWidget):
         if filename: self.refresh(FabberRunData(filename))
 		
     def add_image_management(self, image_vol_management):
-
         """
         Adding image management
         """
-
         self.ivm = image_vol_management
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
-    def init_multiproc(self):
-	pass
-        # Set up the background process
-
-#        self.queue = multiprocessing.Queue()
-#        self.pool = multiprocessing.Pool(processes=2, initializer=pool_init, initargs=(self.queue,))
+    def overlays_changed(self, overlays):
+        """
+        Update image data views
+        """
+        global CURRENT_OVERLAYS
+        CURRENT_OVERLAYS = overlays
+        for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
+            for view in dialog.views.values():
+                if isinstance(view, ImageOptionView):
+                    view.update_list()
 
     def start_task(self):
         """
         Start running the PK modelling on button click
         """
-        # Check that pkmodelling can be run
-        if self.ivm.get_image() is None:
+        img = self.ivm.get_image()
+        roi = self.ivm.get_current_roi()
+
+        if img is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The image doesn't exist! Please load before running Fabber modelling")
             m1.exec_()
             return
 
-        if self.ivm.get_roi() is None:
+        if roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load before running Fabber modelling")
+            m1.setText("The ROI doesn't exist! Please load before running Fabber modelling")
             m1.exec_()
             return
 
-#        if self.ivm.get_T10() is None:
-#            m1 = QtGui.QMessageBox()
-#            m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
-#            m1.exec_()
-#            return
+        s = img.shape
+        lib = FabberLib(self.fab, lib=self.fab.options["fabber"])
+        data = {"data" : img}
+        # Pass in overlays - FIXME should only pass in those that are being used!
+        for ov in CURRENT_OVERLAYS:
+            data[ov] = self.ivm.overlay_all[ov]
 
-#        self.timer.start(1000)
-
-        # get volumes to process
-
-        img1 = self.ivm.get_image()
-        roi1 = self.ivm.get_roi()
-#        t101 = self.ivm.get_T10()
-
-        lib = FabberLib()
-        self.fab.clear_option("data")
-        self.fab.clear_option("mask")
-        
-#        self.fab.set_option("data", self.ivm.image_file1)
-#        if roi1 is not None:
-#            self.fab.set_option("mask", self.ivm.roi_file1)
-        
-        ret, data, log, err = lib.run(self.fab.options, img1, roi1, {}, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
-        print(log)
+        run = lib.run_with_data(s[0], s[1], s[2], roi, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
+        print(run.log)
         
         first = True
-        for key, item in data.items():
+        for key, item in run.data.items():
             print(key, item.shape)
             if len(item.shape) == 3:
                 print("overlay")
-                self.ivm.set_overlay(choice1=key, ovreg=item, force=True)
+                self.ivm.set_overlay(name=key, data=item, force=True)
                 if first: 
-                    self.ivm.set_current_overlay(choice1=key)
+                    self.ivm.set_current_overlay(key)
                     first = False
             elif key.lower() == "modelfit":
                 print("modelfit")
