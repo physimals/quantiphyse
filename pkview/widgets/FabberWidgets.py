@@ -19,10 +19,9 @@ from PySide import QtCore, QtGui
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
 
-# FIXME FSLDIR
 import sys, os
-sys.path.append("%s/lib/python/" % os.environ["HOME"])
-print("Appended %s/lib/python/" % os.environ["HOME"])
+sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
+print("Appended %s/lib/python/" % os.environ["FSLDIR"])
 from pyfab.views import *
 from pyfab.imagedata import FabberImageData
 from pyfab.model import FabberRunData
@@ -34,18 +33,16 @@ from pyfab.fabber import FabberLib
 CURRENT_OVERLAYS = []
 
 class ImageOptionView(OptionView):
+    """
+    OptionView subclass which allows image options to be chosen
+    from the current list of overlays
+    """
     def __init__(self, opt, **kwargs):
         OptionView.__init__(self, opt, **kwargs)
         self.combo = QtGui.QComboBox()
         self.combo.currentIndexChanged.connect(self.changed)
         self.update_list()
         self.widgets.append(self.combo)
-        #self.hbox = QHBoxLayout()
-        #self.hbox.addWidget(self.edit)
-        #self.btn = QPushButton("Choose")
-        #self.hbox.addWidget(self.btn)
-        #self.widgets.append(self.btn)
-        #self.btn.clicked.connect(self.choose_file)
 
     def update_list(self):
         global CURRENT_OVERLAYS
