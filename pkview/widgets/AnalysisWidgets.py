@@ -374,11 +374,39 @@ class ColorOverlay1(QtGui.QWidget):
         l02ss.addStretch(1)
 
         l03 = QtGui.QHBoxLayout()
+
         butgen2 = QtGui.QPushButton("Generate")
         butgen2.setToolTip("Generate a histogram of the overlay values in each ROI")
         butgen2.clicked.connect(self.generate_histogram)
         l03.addWidget(butgen2)
         l03.addStretch(1)
+
+        nbinsLabel = QtGui.QLabel("Number of bins")
+        l03.addWidget(nbinsLabel)
+
+        self.nbinsSpin = QtGui.QSpinBox()
+        self.nbinsSpin.setMaximum(100)
+        self.nbinsSpin.setMinimum(5)
+        self.nbinsSpin.setValue(30)
+        l03.addWidget(self.nbinsSpin)
+
+        minLabel = QtGui.QLabel("Min value")
+        l03.addWidget(minLabel)
+
+        self.minSpin = QtGui.QSpinBox()
+        # Silly numbers for max and min because seems to be no way to have
+        # a spin box without a range
+        self.minSpin.setMaximum(100000000)
+        self.minSpin.setMinimum(-100000000)
+        l03.addWidget(self.minSpin)
+
+        maxLabel = QtGui.QLabel("Max value")
+        l03.addWidget(maxLabel)
+
+        self.maxSpin = QtGui.QSpinBox()
+        self.maxSpin.setMaximum(100000000)
+        self.maxSpin.setMinimum(-100000000)
+        l03.addWidget(self.maxSpin)
 
         l05 = QtGui.QVBoxLayout()
         l05.addLayout(l00)
@@ -404,7 +432,7 @@ class ColorOverlay1(QtGui.QWidget):
         f02 = QGroupBoxB()
         f02.setTitle('Overlay Histogram')
         f02.setLayout(l07)
-        f02.setVisible(False)
+        f02.setVisible(True)
 
         l08 = QtGui.QVBoxLayout()
         l08.addLayout(l02)
@@ -444,15 +472,35 @@ class ColorOverlay1(QtGui.QWidget):
         """
         self.ia = image_analysis
 
+    def update_spin_minmax(self, spin, range):
+        spin.setMinimum(range[0])
+        spin.setMaximum(range[1])
+
+    def reset_spins(self):
+        # Min and max set for overlay choice
+        ov_range = self.ivm.ov_range
+
+        self.update_spin_minmax(self.ov_min, ov_range)
+        self.update_spin_minmax(self.ov_max, ov_range)
+
+        self.ov_min.setValue(ov_range[0])
+        self.ov_max.setValue(ov_range[1])
+        self.minSpin.setValue(ov_range[0])
+        self.maxSpin.setValue(ov_range[1])
+
     def add_image_management(self, image_vol_management):
         """
         Adding image management
         """
         self.ivm = image_vol_management
+        self.ivm.sig_current_overlay.connect(self.overlay_changed)
+        self.reset_spins()
 
-        # Min and max set for overlay choice
-        self.ov_min.setValue(self.ivm.ov_range[0])
-        self.ov_max.setValue(self.ivm.ov_range[1])
+    def overlay_changed(self, overlay):
+        """
+        Update image data views
+        """
+        self.reset_spins()
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -528,15 +576,22 @@ class ColorOverlay1(QtGui.QWidget):
             return
 
         # get analysis from analysis object
-        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+        bins = self.nbinsSpin.value()
+        hist_range = (self.minSpin.value(), self.maxSpin.value())
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats(hist_bins=bins, hist_range=hist_range)
 
         self.win1.setVisible(True)
         self.win1.removeItem(self.plt1)
         self.plt1 = self.win1.addPlot(title="")
 
         for ii in range(len(stats1['mean'])):
-            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, fillLevel=0, brush=(0, 0, 255, 255),
-                                     pen=(0, 0, 0))
+            # FIXME This is basically duplicated from ImageView - not ideal
+            val = roi_labels[ii]
+            lutval = (255 * float(val)) / max(roi_labels)
+            pencol = self.ivm.roi_cmap[lutval]
+            pencol[3] = 150
+            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, brush=pg.mkBrush(pencol),
+                                     fillLevel=0, pen=pg.mkPen((255, 255, 255)))
             self.plt1.addItem(curve)
 
     def __plot(self, values1):

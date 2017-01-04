@@ -29,7 +29,7 @@ class OverlayAnalyis(object):
         """
         self.ivm = image_volume_management
 
-    def get_roi_stats(self):
+    def get_roi_stats(self, hist_bins=20, hist_range=None):
         """
         Return:
         @m1 mean for each ROI
@@ -61,7 +61,7 @@ class OverlayAnalyis(object):
             stat1['std'].append(np.std(vroi1))
             stat1['max'].append(np.max(vroi1))
             stat1['min'].append(np.min(vroi1))
-            y, x = np.histogram(vroi1, bins=20)
+            y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
             hist1.append(y)
             hist1x.append(x)
 
