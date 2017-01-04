@@ -135,7 +135,7 @@ class CaseWidget(QtGui.QListWidget):
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_overlay(choice1.text(), broadcast_change=False)
+        self.ivm.set_current_overlay(choice1.text(), broadcast_change=True)
         self.sig_emit_reset.emit(1)
 
 class RoiWidget(QtGui.QListWidget):
@@ -183,7 +183,7 @@ class RoiWidget(QtGui.QListWidget):
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_roi(choice1.text(), broadcast_change=False)
+        self.ivm.set_current_roi(choice1.text(), broadcast_change=True)
         self.sig_emit_reset.emit(1)
 
 

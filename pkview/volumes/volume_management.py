@@ -15,11 +15,58 @@ import numpy as np
 import warnings
 import nrrd
 
+
 class Roi:
     def __init__(self, name, data, file=None):
         self.file = file
         self.name = name
         self.data = data
+        self.regions = np.unique(self.data)
+        self.regions[self.regions > 0]
+        print("ROI: Regions", self.regions)
+        self.lut = self.get_lut()
+        print("ROI: LUT=", self.lut)
+
+    def get_pencol(self, region):
+        """
+        Get an RGB pen colour for a given region
+        """
+        return self.lut[region][:3]
+
+    def get_lut(self):
+        """
+        Get the colour look up table for the ROI.
+        """
+        cmap = getattr(cm, 'jet')
+
+        mx = max(self.regions)
+        lut = [[int(255 * rgb1) for rgb1 in cmap(255*float(v)/mx)[:3]] for v in range(mx)]
+        lut = np.array(lut, dtype=np.ubyte)
+
+        # add transparency
+        alpha1 = np.ones((lut.shape[0], 1))
+        alpha1 *= 150
+        alpha1[0] = 0
+        lut = np.hstack((lut, alpha1))
+        return lut
+
+class Overlay:
+    def __init__(self, name, data, file=None):
+        self.file = file
+        self.name = name
+        self.data = data
+        self.range = [np.min(self.data), np.max(self.data)]
+        self.data_roi = data
+        self.range_roi = self.range
+
+    def add_roi(self, roi):
+        # Get data inside the ROI
+        self.data_roi = self.data[np.array(roi.data, dtype=bool)]
+        self.range_roi = [np.min(self.data_roi), np.max(self.data_roi)]
+
+        # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
+        self.data_roi[np.logical_not(roi.data)] = -0.01 * (self.range_roi[1] - self.range_roi[0]) + \
+                                                  self.range_roi[0]
 
 class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """
@@ -44,7 +91,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     # Change to set of ROIs (e.g. new one added)
     sig_all_rois = QtCore.Signal(list)
-    
+
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
 
@@ -57,27 +104,28 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         # Main background image
         self.image_file1 = None
-        self.image = None #np.zeros((1, 1, 1))
+        self.image = None  # np.zeros((1, 1, 1))
         # Current image position and size
-        self.img_dims = None #self.image.shape
-        #Voxel size initialisation
+        self.img_dims = None  # self.image.shape
+        # Voxel size initialisation
         self.voxel_size = [1.0, 1.0, 1.0]
         # Range of image
         self.img_range = [0, 1]
 
         # Current overlay
         self.overlay = None
+        self.overlay_roi = None
         self.ovreg_dims = None
         self.ovreg_file1 = None
         # Type of the current overlay (i.e. name as a string)
         self.overlay_label = None
+        # Current overlay range
+        self.ov_range = [0.0, 1.0]
+        self.ov_range_roi = [0.0, 1.0]
 
         # List of known overlay typesthat can be loaded
         self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation',
                                   'segmentation', 'clustering']
-
-        # Current overlay range
-        self.ov_range = [0.0, 1.0]
 
         # All overlays. Map from name to data array
         self.overlay_all = {}
@@ -90,14 +138,15 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # All ROIs. Map from name to data array
         self.rois = {}
 
-        #Estimated volume from pk modelling
+        # Estimated volume from pk modelling
         self.estimated = None
 
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
-        # Current color map
+        # Current color maps
         self.cmap = None
+        self.roi_cmap = None
 
     def get_image(self):
         return self.image
@@ -206,6 +255,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             self.overlay_label = choice1
             self.overlay = self.overlay_all[choice1]
             self.ovreg_dims = self.overlay.shape
+            self.ov_range = [np.min(self.overlay), np.max(self.overlay)]
+            self.update_overlay_roi()
         else:
             print("Warning: Label choice is incorrect")
 
@@ -231,7 +282,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.img_dims = self.image.shape
 
         # 90% of the image range
-        self.img_range = [self.image.min(), 0.5*self.image.max()]
+        self.img_range = [self.image.min(), 0.5 * self.image.max()]
 
         print("Image dimensions: ", self.img_dims)
         print("Voxel size: ", self.voxel_size)
@@ -246,7 +297,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             return
 
         roi, voxel_size, _ = self._load_med_file(file1)
-        print (roi.min(), roi.max())
+        print(roi.min(), roi.max())
         if roi.min() < 0 or roi.max() > 255:
             msgBox = QtGui.QMessageBox()
             msgBox.setText("ROI must contain values between 0 and 255")
@@ -278,9 +329,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         img = img.astype(np.int8)
         self.rois[name] = img
         self.sig_all_rois.emit(self.rois.keys())
-        if make_current: 
+        if make_current:
             self.set_current_roi(name)
-              
+
     def set_current_roi(self, roi_file, broadcast_change=True):
         """ 
         Set the current ROI to the specified file.
@@ -288,11 +339,35 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi_file1 = roi_file
         self.roi = self.rois[roi_file]
         self.roi_dims = self.roi.shape
+        self.roi_range = [np.min(self.roi), np.max(self.roi)]
+        print("Setting roi range", self.roi_range)
+
+        if self.overlay is not None:
+            self.update_overlay_roi()
+
         if broadcast_change:
-            self.sig_current_roi.emit(roi_file)        
+            self.sig_current_roi.emit(roi_file)
 
     def get_current_roi(self):
         return self.roi
+
+    def update_overlay_roi(self):
+        """
+        Update the copy of the current overlay data
+        within the ROI
+        """
+        # Get data inside the ROI
+        self.overlay_roi = np.copy(self.overlay)
+
+        if self.roi is not None:
+            within_roi = self.overlay_roi[np.array(self.roi, dtype=bool)]
+            self.ov_range_roi = [np.min(within_roi), np.max(within_roi)]
+
+            # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
+            print(self.overlay_roi.shape, self.overlay.shape, self.roi.shape)
+            self.overlay_roi[np.logical_not(self.roi)] = -0.01 * (self.roi_range[1] - self.roi_range[0]) + self.roi_range[0]
+        else:
+            self.ov_range_roi = self.ov_range
 
     def load_ovreg(self, file1, type1='loaded'):
         """
@@ -304,7 +379,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             print("Please load an image first")
             return
 
-        #Setting Overlay region data
+        # Setting Overlay region data
         self.ovreg_file1 = file1
         overlay_load, self.voxel_size, _ = self._load_med_file(self.ovreg_file1)
         overlay_load = self._remove_nans(overlay_load)
@@ -349,6 +424,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         self.cmap = cmap
 
+    def set_cmap_roi(self, cmap):
+        """
+        Saves the current ROI colormap
+        """
+        self.roi_cmap = cmap
+
     @staticmethod
     def _load_med_file(image_location):
         if image_location.endswith(".nii") or image_location.endswith(".nii.gz"):
@@ -365,7 +446,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             hdr = image.get_header()
 
         elif image_location.endswith(".nrrd"):
-            #else if the file is a nrrd
+            # else if the file is a nrrd
             image1, options1 = nrrd.read(image_location)
             voxel_size = [0, 0, 0]
             hdr = None
@@ -394,11 +475,3 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             image1[nan1] = 0
 
         return image1
-
-
-
-
-
-
-
-

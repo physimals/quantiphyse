@@ -20,7 +20,6 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
 
-
 class ImageMed(pg.ImageItem, object):
     """
     Subclassing ImageItem in order to change the wheeEvent action
@@ -177,6 +176,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         Adding image management
         """
         self.ivm = image_vol_management
+        self.ivm.set_cmap_roi(self.roilut)
 
     def load_image(self):
         self.view1.setVisible(True)
@@ -510,7 +510,6 @@ class ImageViewOverlay(ImageViewLayout):
         First value out of the 255 range is set to be transparent. This needs to maybe be defined in a slightly better
         way to avoid scaling issue.
         """
-
         cmap1 = getattr(cm, 'jet')
 
         lut = [[int(255*rgb1) for rgb1 in cmap1(ii)[:3]] for ii in xrange(256)]
@@ -523,9 +522,6 @@ class ImageViewOverlay(ImageViewLayout):
         # alpha1[1] = 0
         # alpha1[2] = 0
         self.roilut = np.hstack((self.roilut, alpha1))
-
-        # Save the lut to the volume management system for easy transfer between widgets
-        # self.ivm.set_cmap_roi(self.roilut)
 
     def load_roi(self):
         """
@@ -669,7 +665,6 @@ class ImageViewOverlay(ImageViewLayout):
             self.options['ShowOverlayContour'] = False
         self._update_view()
 
-
 class ImageViewColorOverlay(ImageViewOverlay):
     """
     This class adds the ability to have a 3D color image overlay
@@ -759,17 +754,17 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         self.view4.setXRange(0, 100, padding=0)
         self.view4.setYRange(0, 1000, padding=0)
-        self.axcol.setRange(self.ivm.ov_range[0], self.ivm.ov_range[1])
+        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
 
         if len(self.ivm.ovreg_dims) < 4:
-            self.imgwin1c.setLevels(self.ivm.ov_range)
-            self.imgwin2c.setLevels(self.ivm.ov_range)
-            self.imgwin3c.setLevels(self.ivm.ov_range)
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
 
         self._update_view()
 
     def _create_colorbar(self):
-        c1 = np.linspace(self.ivm.ov_range[0], self.ivm.ov_range[1], 1000)
+        c1 = np.linspace(self.ov_range[0], self.ov_range[1], 1000)
         c1 = np.expand_dims(c1, axis=0)
         self.colbar1 = np.tile(c1, (100, 1))
 
@@ -777,29 +772,18 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Processes overlay for visualisation on viewer
         """
-
-        self.ovreg = np.copy(self.ivm.overlay)
-
-        # Convert to numpy double
-        self.ovreg = np.array(self.ovreg, dtype=np.double)
-
         if self.ivm.ovreg_dims == 4:
             print('RGB or RGBa array')
             # TODO currently a place holder
-            self.ivm.ov_range = [0, 1]
+            self.ov_range = [0, 1]
         elif (self.ivm.roi is not None) and (self.options['UseROI'] == 1):
-            # Scale ROI
-            subreg1 = self.ovreg[np.array(self.ivm.roi, dtype=bool)]
-            # Manually choose overlay range
+            self.ovreg = self.ivm.overlay_roi
             if not set_range:
-                self.ivm.ov_range = [np.min(subreg1), np.max(subreg1)]
-            # Regions that are not part of the ROI
-            self.ovreg[np.logical_not(self.ivm.roi)] = -0.01 * (self.ivm.ov_range[1] - self.ivm.ov_range[0]) + self.ivm.ov_range[0]
-            # ov_range using the -1 values as well to properly scale the data
+                self.ov_range = self.ivm.ov_range_roi
         else:
-            # Manually choose overlay range
+            self.ovreg = self.ivm.overlay
             if not set_range:
-                self.ivm.ov_range = [self.ovreg.min(), self.ovreg.max()]
+                self.ov_range = self.ivm.ov_range
 
     def _update_view(self):
 
@@ -819,9 +803,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin2c.setImage(np.zeros((1, 1)))
             self.imgwin3c.setImage(np.zeros((1, 1)))
 
-            self.imgwin1c.setLevels(self.ivm.ov_range)
-            self.imgwin2c.setLevels(self.ivm.ov_range)
-            self.imgwin3c.setLevels(self.ivm.ov_range)
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
 
         elif len(self.ivm.ovreg_dims) == 4:
             # RGB or RGBA image
@@ -836,9 +820,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], lut=self.ovreg_lut)
             self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], lut=self.ovreg_lut)
 
-            self.imgwin1c.setLevels(self.ivm.ov_range)
-            self.imgwin2c.setLevels(self.ivm.ov_range)
-            self.imgwin3c.setLevels(self.ivm.ov_range)
+            self.imgwin1c.setLevels(self.ov_range)
+            self.imgwin2c.setLevels(self.ov_range)
+            self.imgwin3c.setLevels(self.ov_range)
 
         # print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
 
@@ -856,7 +840,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.options['UseROI'] = 0
 
         self._process_overlay()
-        self.axcol.setRange(self.ivm.ov_range[0], self.ivm.ov_range[1])
+        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
         self._update_view()
 
     @QtCore.Slot()
@@ -900,8 +884,10 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Set the range of the overlay map
         """
         self._process_overlay(set_range=True)
-        self.axcol.setRange(self.ivm.ov_range[0], self.ivm.ov_range[1])
-        self._update_view()
+        # Hack, this signal is triggered before load_ovreg so axes might not exist
+        if self.axcol is not None:
+            self.axcol.setRange(self.ov_range[0], self.ov_range[1])
+            self._update_view()
 
     @QtCore.Slot(bool)
     def update_overlay(self, x):
