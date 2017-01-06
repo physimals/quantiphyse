@@ -51,9 +51,9 @@ if op_sys == 'Darwin':
 
 # Windows specific changes
 from .utils.cmd_pkmodel import pkbatch
+from .utils.cmd_perfslic import perfslic
 if op_sys != 'Windows':
     from .utils.cmd_t10 import t10_preclinical, t10
-
 
 def get_dir(str1):
     """
@@ -876,6 +876,7 @@ def main():
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
     parser.add_argument('--T10afibatch', help='Run batch T10 processing from a yaml file', default=None, type=str)
+    parser.add_argument('--slicbatch', help='Run batch SLIC supervoxel processing from a yaml file', default=None, type=str)
     parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
@@ -888,7 +889,7 @@ def main():
 
     # Check whether any batch processing arguments have been called
 
-    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None):
+    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
         # Initialise main GUI
 
         # Initialise the PKView application
@@ -912,6 +913,11 @@ def main():
             warnings.warn('Windows is not supported for T10 mapping')
         # Run T10 and afi batch processing from a yaml file
         t10_preclinical(args.T10afibatch)
+
+    elif (args.slicbatch is not None):
+        if op_sys == 'Windows':
+            warnings.warn('Windows is not supported for SLIC batch')
+        perfslic(args.slicbatch)
 
     else:
         # Run pk modelling from a yaml file.
