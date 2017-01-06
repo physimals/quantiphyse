@@ -34,6 +34,7 @@ from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 #from .widgets.FabberWidgets import FabberWidget
 #from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
@@ -166,6 +167,10 @@ class MainWindowWidget(QtGui.QWidget):
         # T10 widget
         #self.wid["T10"] = [T10Widget(), 'a', 'b']
         #self.wid["T10"][0].add_image_management(self.ivm)
+
+        # Supervoxels widget
+        self.wid["slic"] = [PerfSlicWidget(), 'a', 'b']
+        self.wid["slic"][0].add_image_management(self.ivm)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
@@ -345,6 +350,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
+        self.qtab1.addTab(self.wid["slic"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Supervoxels")
         #self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "T10")
 
         # signal
