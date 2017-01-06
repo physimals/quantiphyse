@@ -32,7 +32,7 @@ from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
-#from .widgets.FabberWidgets import FabberWidget
+from .widgets.FabberWidgets import FabberWidget
 #from .widgets.T10Widgets import T10Widget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -160,8 +160,8 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PAna"][0].add_image_management(self.ivm)
 
         # Fabber modelling widget
-        #self.wid["Fab"] = [FabberWidget(), 'a', 'b']
-        #self.wid["Fab"][0].add_image_management(self.ivm)
+        self.wid["Fab"] = [FabberWidget(), 'a', 'b']
+        self.wid["Fab"][0].add_image_management(self.ivm)
 
         # T10 widget
         #self.wid["T10"] = [T10Widget(), 'a', 'b']
@@ -198,7 +198,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        #self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
+        self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
         self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
@@ -389,9 +389,9 @@ class MainWindowWidget(QtGui.QWidget):
         index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
         self.qtab1.setCurrentIndex(index)
     
-    #def show_fab(self):
-    #    index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Fabber")
-    #    self.qtab1.setCurrentIndex(index)
+    def show_fab(self):
+        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Fabber")
+        self.qtab1.setCurrentIndex(index)
 
     #def show_t10(self):
     #    index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "T10")
@@ -544,9 +544,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pk_action.triggered.connect(self.mw1.show_pk)
 
         # Widgets --> Fabber
-        #fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Fabber', self)
-        #fab_action.setStatusTip('Run fabber model fitting')
-        #fab_action.triggered.connect(self.mw1.show_fab)
+        fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Fabber', self)
+        fab_action.setStatusTip('Run fabber model fitting')
+        fab_action.triggered.connect(self.mw1.show_fab)
 
         # Widgets --> PharmaView
         pw_action = QtGui.QAction('&PharmCurveView', self)
@@ -594,7 +594,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
-        #widget_menu.addAction(fab_action)
+        widget_menu.addAction(fab_action)
         widget_menu.addAction(pw_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
