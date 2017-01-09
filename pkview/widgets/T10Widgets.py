@@ -23,16 +23,19 @@ class NumberInput(QtGui.QHBoxLayout):
     def changed(self):
         try:
             self.val = float(self.edit.text())
-            print(self.text, self.val)
+            self.valid = True
         except:
-            self.gen.setEnabled(False)
-            QtGui.QMessageBox.warning(self, "Invalid value", "%s must be a number" % self.text, QtGui.QMessageBox.Close)
+            self.valid = False
+            QtGui.QMessageBox.warning(None, "Invalid value", "%s must be a number" % self.text, QtGui.QMessageBox.Close)
+            self.edit.setFocus()
+            self.edit.selectAll()
 
 class SourceImageList(QtGui.QVBoxLayout):
-    def __init__(self, header_text):
+    def __init__(self, header_text, val_range=None):
         super(SourceImageList, self).__init__()
 
         self.header_text = header_text
+        self.val_range = val_range
         self.dir = None
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(2)
@@ -79,7 +82,7 @@ class SourceImageList(QtGui.QVBoxLayout):
         return data.shape
 
     def load_image(self, filename):
-        # Try to guess the angle from the filename - if it ends in a number, go with that
+        # Try to guess the value from the filename - if it ends in a number, go with that
         self.dir, name = os.path.split(filename)
         name = name.split(".")[0]
         print(name)
@@ -94,11 +97,15 @@ class SourceImageList(QtGui.QVBoxLayout):
             text, result = QtGui.QInputDialog.getText(None, "Enter value", "Enter %s" % self.header_text, text=guess)
             if result:
                 try:
-                    fa = float(text)
-                    self.table.insertRow(0)
-                    self.table.setItem(0, 0, QtGui.QTableWidgetItem(filename))
-                    self.table.setItem(0, 1, QtGui.QTableWidgetItem(text))
-                    break
+                    val = float(text)
+                    if self.val_range and (val < self.val_range[0] or val > self.val_range[1]):
+                        QtGui.QMessageBox.warning(None, "Invalid value", "Must be in range %s" % str(self.val_range),
+                                                  QtGui.QMessageBox.Close)
+                    else:
+                        self.table.insertRow(0)
+                        self.table.setItem(0, 0, QtGui.QTableWidgetItem(filename))
+                        self.table.setItem(0, 1, QtGui.QTableWidgetItem(text))
+                        break
                 except:
                     QtGui.QMessageBox.warning(None, "Invalid value", "Must be a number", QtGui.QMessageBox.Close)
             else:
@@ -130,6 +137,11 @@ class SourceImageList(QtGui.QVBoxLayout):
                 break
 
     def add(self):
+        if self.ivm.img_dims is None:
+            QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T10 map",
+                                      QtGui.QMessageBox.Close)
+            return
+
         filename, junk = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
         if filename:
             dims = self.check_file(filename)
@@ -178,7 +190,7 @@ class T10Widget(QtGui.QWidget):
 
         fabox = QtGui.QGroupBox()
         fabox.setTitle("Flip angle images")
-        self.fatable = SourceImageList("Flip angle")
+        self.fatable = SourceImageList("Flip angle", val_range=[0, 90])
         fabox.setLayout(self.fatable)
         self.trinp = NumberInput("TR", 4.108)
         self.fatable.addLayout(self.trinp)
@@ -241,6 +253,12 @@ class T10Widget(QtGui.QWidget):
     def generate(self):
         if self.ivm.img_dims is None:
             QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T10 map", QtGui.QMessageBox.Close)
+            return
+        elif not self.trinp.valid:
+            QtGui.QMessageBox.warning(self, "Invalid TR", "TR value is invalid", QtGui.QMessageBox.Close)
+            return
+        elif self.preclin.isChecked() and not self.fainp.valid:
+            QtGui.QMessageBox.warning(self, "Invalid FA", "FA value for B0 correction is invalid", QtGui.QMessageBox.Close)
             return
 
         fa_vols, fa_angles = self.fatable.get_images()
