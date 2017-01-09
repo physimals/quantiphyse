@@ -222,6 +222,9 @@ class MainWindowWidget(QtGui.QWidget):
         # 1) Plotting data on mouse image click
         self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
 
+        # Choosing supervoxels for ROI
+        self.ivl1.sig_mouse_click.connect(self.wid["slic"][0].sig_mouse_click)
+
         # InitUI
         # Sliders
         self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
