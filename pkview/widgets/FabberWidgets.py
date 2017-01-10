@@ -225,30 +225,33 @@ class FabberWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        s = img.shape
-        lib = FabberLib(self.fab, lib=self.fab.options["fabber"])
+        self.fab.dump(sys.stdout)
+        lib = FabberLib(rundata=self.fab)
         data = {"data" : img}
         # Pass in overlays - FIXME should only pass in those that are being used!
         for ov in CURRENT_OVERLAYS:
             data[ov] = self.ivm.overlay_all[ov]
 
-        run = lib.run_with_data(s[0], s[1], s[2], roi, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
-        print(run.log)
-        
-        first = True
-        for key, item in run.data.items():
-            print(key, item.shape)
-            if len(item.shape) == 3:
-                print("overlay")
-                self.ivm.set_overlay(name=key, data=item, force=True)
-                if first: 
-                    self.ivm.set_current_overlay(key)
-                    first = False
-            elif key.lower() == "modelfit":
-                print("modelfit")
-                self.ivm.set_estimated(item)
-                
-        self.sig_emit_reset.emit(1)
+        try:
+            run = lib.run_with_data(self.fab, roi, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
+            print(run.log)
+            first = True
+            for key, item in run.data.items():
+                print(key, item.shape)
+                if len(item.shape) == 3:
+                    print("overlay")
+                    self.ivm.set_overlay(name=key, data=item, force=True)
+                    if first:
+                        self.ivm.set_current_overlay(key)
+                        first = False
+                elif key.lower() == "modelfit":
+                    print("modelfit")
+                    self.ivm.set_estimated(item)
+
+            self.sig_emit_reset.emit(1)
+        except:
+            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run", QtGui.QMessageBox.Close)
+
 
         
 
