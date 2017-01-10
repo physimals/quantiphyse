@@ -171,6 +171,36 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.imgwin2.sig_click.connect(self._mouse_pos_view2)
         self.imgwin3.sig_click.connect(self._mouse_pos_view3)
 
+        self.roisel = pg.PolyLineROI([])
+        self.roipts = []
+        self.roi_lasso = 0
+
+    def start_roi_lasso(self):
+        self.roipts = []
+        self.roi_lasso = -1
+
+    def stop_roi_lasso(self, ovname):
+        ovl = self.ivm.overlay_all[ovname]
+        ret = None
+        view = None
+        if self.roi_lasso == 1:
+            data = ovl[:, :, self.ivm.cim_pos[2]]
+            ret = self.roisel.getArrayRegion(data, self.imgwin1)
+            view = self.view1
+        elif self.roi_lasso == 2:
+            data = ovl[:, self.ivm.cim_pos[1], :]
+            ret = self.roisel.getArrayRegion(data, self.imgwin2)
+            view = self.view2
+        elif self.roi_lasso == 3:
+            data = ovl[self.ivm.cim_pos[0], :, :]
+            ret = self.roisel.getArrayRegion(data, self.imgwin3)
+            view = self.view3
+        self.roi_lasso = 0
+        if view:
+            self.roisel.clearPoints()
+            view.removeItem(self.roisel)
+        return ret
+
     def add_image_management(self, image_vol_management):
         """
         Adding image management
@@ -192,10 +222,19 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         """
         Capture mouse click events from window 1
         """
+
         mspt0 = event.pos().x()
         mspt1 = event.pos().y()
         self.ivm.cim_pos[0] = round(mspt0)
         self.ivm.cim_pos[1] = round(mspt1)
+
+        if self.roi_lasso == -1:
+            self.view1.addItem(self.roisel)
+            self.roi_lasso = 1
+
+        if self.roi_lasso == 1:
+            self.roipts.append([mspt0, mspt1])
+            self.roisel.setPoints(self.roipts)
 
         self.sig_mouse_scroll.emit(1)
         self.sig_mouse_click.emit(1)
@@ -211,6 +250,14 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ivm.cim_pos[0] = round(mspt0)
         self.ivm.cim_pos[2] = round(mspt1)
 
+        if self.roi_lasso == -1:
+            self.view2.addItem(self.roisel)
+            self.roi_lasso = 2
+
+        if self.roi_lasso == 2:
+            self.roipts.append([mspt0, mspt1])
+            self.roisel.setPoints(self.roipts)
+
         self.sig_mouse_scroll.emit(1)
         self.sig_mouse_click.emit(1)
         self._update_view()
@@ -224,6 +271,14 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         mspt1 = event.pos().y()
         self.ivm.cim_pos[1] = round(mspt0)
         self.ivm.cim_pos[2] = round(mspt1)
+
+        if self.roi_lasso == -1:
+            self.view3.addItem(self.roisel)
+            self.roi_lasso = 3
+
+        if self.roi_lasso == 3:
+            self.roipts.append([mspt0, mspt1])
+            self.roisel.setPoints(self.roipts)
 
         self.sig_mouse_scroll.emit(1)
         self.sig_mouse_click.emit(1)

@@ -171,6 +171,7 @@ class MainWindowWidget(QtGui.QWidget):
         # Supervoxels widget
         self.wid["slic"] = [PerfSlicWidget(), 'a', 'b']
         self.wid["slic"][0].add_image_management(self.ivm)
+        self.wid["slic"][0].add_image_view(self.ivl1)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']

@@ -54,7 +54,7 @@ class PerfSlicWidget(QtGui.QWidget):
         self.pick_btn = QtGui.QPushButton("Start");
         self.pick_btn.clicked.connect(self.pick_clicked)
         grid.addWidget(self.pick_btn, 0, 1)
-        grid.addWidget(QtGui.QLabel("Freehand tool"), 1, 0)
+        grid.addWidget(QtGui.QLabel("Rubber band tool"), 1, 0)
         self.freehand_btn = QtGui.QPushButton("Start");
         self.freehand_btn.clicked.connect(self.freehand_clicked)
         grid.addWidget(self.freehand_btn, 1, 1)
@@ -72,10 +72,10 @@ class PerfSlicWidget(QtGui.QWidget):
         self.roibox.setEnabled(False)
 
     def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
         self.ivm = image_vol_management
+
+    def add_image_view(self, ivl):
+        self.ivl = ivl
 
     def generate(self):
         img = self.ivm.get_image()
@@ -97,7 +97,8 @@ class PerfSlicWidget(QtGui.QWidget):
         ps1.feature_extraction(n_components=ncomp)
         print("Extracting supervoxels...")
         segments = ps1.supervoxel_extraction(compactness=comp, segment_size=ss)
-        ovl = np.array(segments, dtype=np.int)
+        # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
+        ovl = np.array(segments, dtype=np.int) + 1
 
         self.ivm.set_overlay(name="supervoxels", data=ovl, force=True)
         self.ivm.set_current_overlay("supervoxels")
@@ -114,17 +115,47 @@ class PerfSlicWidget(QtGui.QWidget):
         if self.pick_btn.text() == "Start":
             self.pick_btn.setText("Stop")
             self.picking_roi = True
+            if self.freehand_roi:
+                self.freehand_btn.setText("Start")
+                self.freehand_roi = False
+                self.ivl.stop_roi_lasso("supervoxels")
         elif self.pick_btn.text() == "Stop":
             self.picking_roi = False
             self.pick_btn.setText("Start")
+
+    def closest(self, num, collection):
+        return min(collection, key=lambda x: abs(x - num))
 
     def freehand_clicked(self):
         if self.freehand_btn.text() == "Start":
             self.freehand_btn.setText("Stop")
             self.freehand_roi = True
+            self.ivl.start_roi_lasso()
+            if self.picking_roi:
+                self.pick_btn.setText("Start")
+                self.picking_roi = False
         elif self.freehand_btn.text() == "Stop":
             self.freehand_roi = False
             self.freehand_btn.setText("Start")
+            # PyQtGraph's ROI selection tool does interpolation
+            # so we get slightly odd results when applied to
+            # and integer overlay like 'supervoxels'
+            #
+            # This code first figures out what integer svoxels
+            # were in the selection, then replaces non-integer
+            # values in the selection with the closest supervoxel
+            # integer (note that this is NOT the closest integer!
+            sel = self.ivl.stop_roi_lasso("supervoxels")
+            svoxels = [v for v in np.unique(sel) if v == int(v)]
+            f = np.vectorize(lambda x: self.closest(x, svoxels))
+            sel = f(sel)
+            print(sel)
+            ovl = self.ivm.overlay_all["supervoxels"]
+            for val in svoxels:
+                self.roi = self.roi | np.where(ovl == val, 1, 0)
+                self.roi_regions.add(val)
+            self.roi_hist.append(svoxels)
+            self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
 
     def roi_reset(self):
         self.roi = np.zeros(self.ivm.img_dims[:3], dtype=np.int8)
@@ -134,6 +165,7 @@ class PerfSlicWidget(QtGui.QWidget):
         self.freehand_roi = False
         self.pick_btn.setText("Start")
         self.freehand_btn.setText("Start")
+        self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
 
     def roi_undo(self):
         last_change = self.roi_hist[-1]
@@ -151,10 +183,12 @@ class PerfSlicWidget(QtGui.QWidget):
         self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
 
     def sig_mouse_click(self, values):
+        pos = self.ivm.cim_pos[:3]
+        ovl = self.ivm.overlay_all["supervoxels"]
+        val = ovl[pos[0], pos[1], pos[2]]
+        print(val)
         if self.picking_roi:
-            pos = self.ivm.cim_pos[:3]
-            ovl = self.ivm.overlay_all["supervoxels"]
-            val = ovl[pos[0], pos[1], pos[2]]
+
             if val in self.roi_regions:
                 self.roi = self.roi & np.where(ovl == val, 0, 1)
                 self.roi_hist.append([-val])
@@ -164,5 +198,6 @@ class PerfSlicWidget(QtGui.QWidget):
                 self.roi_hist.append([val])
                 self.roi_regions.add(val)
             self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
-
+        if self.freehand_roi:
+            pass
 
