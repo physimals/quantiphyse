@@ -390,7 +390,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
     
     def show_fab(self):
-        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Fabber")
+        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/fabber.svg'), "Fabber")
         self.qtab1.setCurrentIndex(index)
 
     #def show_t10(self):
@@ -544,7 +544,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pk_action.triggered.connect(self.mw1.show_pk)
 
         # Widgets --> Fabber
-        fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Fabber', self)
+        fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/fabber.svg'), '&Fabber', self)
         fab_action.setStatusTip('Run fabber model fitting')
         fab_action.triggered.connect(self.mw1.show_fab)
 
