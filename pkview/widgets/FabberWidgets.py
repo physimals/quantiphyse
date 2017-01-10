@@ -25,7 +25,7 @@ print("Appended %s/lib/python/" % os.environ["FSLDIR"])
 from pyfab.views import *
 from pyfab.imagedata import FabberImageData
 from pyfab.model import FabberRunData
-from pyfab.ui import ModelOptionsDialog, MatrixEditDialog
+from pyfab.ui import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
 from pyfab.fabber import FabberLib
 
 # Current overlays list from the IVM object. Global so that all the ImageOptionView instances
@@ -58,7 +58,7 @@ class ImageOptionView(OptionView):
         # is enabled/disabled and when overlays are added/removed
         # from the list
         if self.combo.isEnabled():
-            self.fab.set_option(self.key, self.combo.currentText())
+            self.fab[self.key] = self.combo.currentText()
 
     def do_update(self):
         OptionView.do_update(self)
@@ -89,8 +89,11 @@ class FabberWidget(QtGui.QWidget):
         self.ivm = None
 
         # Options box
+        optionsBox = QGroupBoxB()
+        optionsBox.setTitle('Fabber Model Fitting')
         grid = QtGui.QGridLayout()
-        
+        optionsBox.setLayout(grid)
+
         grid.addWidget(QtGui.QLabel("Fabber core library"), 1, 0)
         self.libEdit = QtGui.QLineEdit(self)
         grid.addWidget(self.libEdit, 1, 1)
@@ -118,33 +121,54 @@ class FabberWidget(QtGui.QWidget):
         grid.addWidget(QtGui.QLabel("General Options"), 5, 0)
         self.generalOptionsBtn = QtGui.QPushButton('Edit', self)
         grid.addWidget(self.generalOptionsBtn, 5, 2)
-        
-        optionsBox = QGroupBoxB()
-        optionsBox.setTitle('Fabber Model Fitting')
-        optionsBox.setLayout(grid)
-        
+
         # Run box
-        runHbox = QtGui.QHBoxLayout()
-
-        runBtn = QtGui.QPushButton('Run modelling', self)
-        runBtn.clicked.connect(self.start_task)
-        runHbox.addWidget(runBtn)
-
-        self.progress = QtGui.QProgressBar(self)
-        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
-        runHbox.addWidget(self.progress)
-        
         runBox = QGroupBoxB()
         runBox.setTitle('Running')
-        runBox.setLayout(runHbox)
- 
-        # Main layout 
-        
+        vbox = QtGui.QVBoxLayout()
+        runBox.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        runBtn = QtGui.QPushButton('Run modelling', self)
+        runBtn.clicked.connect(self.start_task)
+        hbox.addWidget(runBtn)
+        self.progress = QtGui.QProgressBar(self)
+        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
+        hbox.addWidget(self.progress)
+        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn.clicked.connect(self.view_log)
+        self.logBtn.setEnabled(False)
+        hbox.addWidget(self.logBtn)
+        vbox.addLayout(hbox)
+
+        # Load/save box
+        fileBox = QGroupBoxB()
+        fileBox.setTitle('Load/Save options')
+        vbox = QtGui.QVBoxLayout()
+        fileBox.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("Filename"))
+        self.fileEdit = QtGui.QLineEdit()
+        self.fileEdit.setReadOnly(True)
+        hbox.addWidget(self.fileEdit)
+        btn = QtGui.QPushButton("Open")
+        btn.clicked.connect(self.open_file)
+        hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Save")
+        btn.clicked.connect(self.save_file)
+        hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Save As")
+        btn.clicked.connect(self.save_as_file)
+        hbox.addWidget(btn)
+        vbox.addLayout(hbox)
+
+        # Main layout
         mainVbox = QtGui.QVBoxLayout()
         mainVbox.addWidget(optionsBox)
         mainVbox.addWidget(runBox)
+        mainVbox.addWidget(fileBox)
         mainVbox.addStretch()
-
         self.setLayout(mainVbox)
 
         # Register our custom view to handle image options
@@ -166,26 +190,35 @@ class FabberWidget(QtGui.QWidget):
         ]
 
         self.generalOpts.ignore("output", "data", "mask", "data<n>", "overwrite", "method", "model", "help",
-                                "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names")
-        self.new()
-        self.fab.set_option("fabber", "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so")
-        self.fab.set_option("save-mean")
+                                "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
+                                "loadmodels")
+        self.fab = FabberRunData()
+        self.fab["fabber"] = "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"
+        self.fab["save-mean"] = ""
+        self.reset()
 
-    def add_views(self):	
+    def save_file(self):
+        self.fab.save()
+
+    def save_as_file(self):
+        # fixme choose file name
+        # fixme overwrite
+        # fixme clone data
+        fname = QFileDialog.getSaveFileName()[0]
+        self.fab.set_file(fname)
+        self.fab.save()
+        self.fileEdit.setText(fname)
+
+    def open_file(self):
+        filename = QFileDialog.getOpenFileName()[0]
+        if filename:
+            self.fileEdit.setText(filename)
+            self.fab = FabberRunData(filename)
+            self.reset()
+
+    def reset(self):
         for view in self.views: self.fab.add_view(view)
 
-    def refresh(self, fab):
-        self.fab = fab
-        self.add_views()
-
-    def new(self):
-        # fixme unsaved changes
-        self.refresh(FabberRunData())
-	
-    def open(self):
-        filename = QFileDialog.getOpenFileName()[0]
-        if filename: self.refresh(FabberRunData(filename))
-		
     def add_image_management(self, image_vol_management):
         """
         Adding image management
@@ -233,11 +266,11 @@ class FabberWidget(QtGui.QWidget):
             data[ov] = self.ivm.overlay_all[ov]
 
         try:
-            run = lib.run_with_data(self.fab, roi, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
-            print(run.log)
+            self.run = lib.run_with_data(self.fab, data, roi)
+            self.logBtn.setEnabled(True)
             first = True
-            for key, item in run.data.items():
-                print(key, item.shape)
+            for key, item in self.run.data.items():
+                print(key)
                 if len(item.shape) == 3:
                     print("overlay")
                     self.ivm.set_overlay(name=key, data=item, force=True)
@@ -247,10 +280,15 @@ class FabberWidget(QtGui.QWidget):
                 elif key.lower() == "modelfit":
                     print("modelfit")
                     self.ivm.set_estimated(item)
-
             self.sig_emit_reset.emit(1)
-        except:
-            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run", QtGui.QMessageBox.Close)
+        except Exception, e:
+            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run: " + repr(e), QtGui.QMessageBox.Close)
+
+    def view_log(self):
+        print("View log")
+        self.logview = LogViewerDialog(log=self.run.log)
+        self.logview.show()
+        self.logview.raise_()
 
 
         
