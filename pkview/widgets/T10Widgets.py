@@ -4,6 +4,7 @@ import numpy as np
 
 from PySide import QtGui
 import nibabel as nib
+from scipy.ndimage.filters import gaussian_filter
 
 from pkview.analysis.t1_model import t10_map
 
@@ -19,6 +20,7 @@ class NumberInput(QtGui.QHBoxLayout):
         self.addWidget(self.edit)
         self.edit.editingFinished.connect(self.changed)
         self.addStretch(1)
+        self.valid = True
 
     def changed(self):
         try:
@@ -192,7 +194,7 @@ class T10Widget(QtGui.QWidget):
         fabox.setTitle("Flip angle images")
         self.fatable = SourceImageList("Flip angle", val_range=[0, 90])
         fabox.setLayout(self.fatable)
-        self.trinp = NumberInput("TR", 4.108)
+        self.trinp = NumberInput("TR (ms)", 4.108)
         self.fatable.addLayout(self.trinp)
         layout.addWidget(fabox)
 
@@ -204,7 +206,7 @@ class T10Widget(QtGui.QWidget):
         self.preclinGroup = QtGui.QGroupBox("")
         self.preclinGroup.setTitle("B0 correction")
         self.preclinGroup.setVisible(False)
-        self.trtable = SourceImageList("TR (s)")
+        self.trtable = SourceImageList("TR (ms)")
         self.preclinGroup.setLayout(self.trtable)
         self.fainp = NumberInput("Flip angle (AFI)", 64)
         self.trtable.addLayout(self.fainp)
@@ -273,7 +275,7 @@ class T10Widget(QtGui.QWidget):
             T10 = t10_map(fa_vols, fa_angles, TR=tr,
                       afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)
             if self.smooth.isChecked():
-                print("Smoothing map")
+                # FIXME do we need UI for these parameters?
                 T10 = gaussian_filter(T10, sigma=0.5, truncate=3)
         else:
             T10 = t10_map(fa_vols, fa_angles, TR=tr)
