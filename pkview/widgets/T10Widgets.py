@@ -210,8 +210,31 @@ class T10Widget(QtGui.QWidget):
         self.preclinGroup.setLayout(self.trtable)
         self.fainp = NumberInput("Flip angle (AFI)", 64)
         self.trtable.addLayout(self.fainp)
-        self.smooth = QtGui.QCheckBox("Smooth")
-        self.trtable.addWidget(self.smooth)
+
+        hbox = QtGui.QHBoxLayout()
+        self.smooth = QtGui.QCheckBox("Gaussian smoothing: ")
+        self.smooth.stateChanged.connect(self.smooth_changed)
+        hbox.addWidget(self.smooth)
+        hbox.addWidget(QtGui.QLabel("sigma"))
+        self.sigma = QtGui.QDoubleSpinBox()
+        self.sigma.setValue(0.5)
+        self.sigma.setMinimum(0)
+        self.sigma.setSingleStep(0.1)
+        self.sigma.setDecimals(2)
+        hbox.addWidget(self.sigma)
+        self.trtable.addLayout(hbox)
+        hbox.addWidget(QtGui.QLabel(", truncate at"))
+        self.truncate = QtGui.QDoubleSpinBox()
+        self.truncate.setValue(3)
+        self.truncate.setMinimum(0)
+        self.truncate.setSingleStep(0.1)
+        self.truncate.setDecimals(1)
+        hbox.addWidget(self.truncate)
+        hbox.addWidget(QtGui.QLabel("st.devs"))
+        self.smooth_changed()
+        hbox.addStretch(1)
+        self.trtable.addLayout(hbox)
+
         layout.addWidget(self.preclinGroup)
 
         hbox = QtGui.QHBoxLayout()
@@ -245,6 +268,10 @@ class T10Widget(QtGui.QWidget):
         self.fatable.ivm = self.ivm
         self.trtable.ivm = self.ivm
 
+    def smooth_changed(self):
+        self.sigma.setEnabled(self.smooth.isChecked())
+        self.truncate.setEnabled(self.smooth.isChecked())
+
     def preclin_changed(self):
         self.preclinGroup.setVisible(self.preclin.isChecked())
 
@@ -264,6 +291,7 @@ class T10Widget(QtGui.QWidget):
             return
 
         fa_vols, fa_angles = self.fatable.get_images()
+
         # TR is expected in seconds but UI asks for it in ms
         tr = self.trinp.val / 1000
         print(tr, fa_angles)
@@ -271,12 +299,11 @@ class T10Widget(QtGui.QWidget):
         if self.preclin.isChecked():
             afi_vols, afi_trs = self.trtable.get_images()
             fa_afi = self.fainp.val
-            print(fa_afi, afi_vols, afi_trs)
+            print(fa_afi, afi_trs)
             T10 = t10_map(fa_vols, fa_angles, TR=tr,
                       afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)
             if self.smooth.isChecked():
-                # FIXME do we need UI for these parameters?
-                T10 = gaussian_filter(T10, sigma=0.5, truncate=3)
+                T10 = gaussian_filter(T10, sigma=self.sigma.value(), truncate=self.truncate.value())
         else:
             T10 = t10_map(fa_vols, fa_angles, TR=tr)
 
