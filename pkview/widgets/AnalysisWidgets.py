@@ -299,9 +299,9 @@ class ColorOverlay1(QtGui.QWidget):
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
-        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1 = pg.GraphicsWindow()
         self.win1.setVisible(False)
-        self.plt1 = self.win1.addPlot(title="Signal enhancement curve")
+        self.plt1 = self.win1.addPlot(title="Overlay histogram")
 
         # Analysis and volume management objects
         self.ia = None
@@ -362,9 +362,14 @@ class ColorOverlay1(QtGui.QWidget):
         l02 = QtGui.QHBoxLayout()
         self.butgen = QtGui.QPushButton("Show")
         self.butgen.setToolTip("Show standard statistics for the overlay values in each ROI")
-        self.butgen.clicked.connect(self.generate_overlay_stats)
-        #buthide = QtGui.QPushButton("Hide")
-        #buthide.clicked.connect(self.hide_overlay_stats)
+        self.butgen.clicked.connect(self.show_overlay_stats)
+
+        regenHbox3 = QtGui.QHBoxLayout()
+        self.regenBtn3 = QtGui.QPushButton("Recalculate")
+        self.regenBtn3.clicked.connect(self.generate_overlay_stats)
+        regenHbox3.addWidget(self.regenBtn3)
+        regenHbox3.addStretch(1)
+        self.regenBtn3.setVisible(False)
 
         l02.addWidget(self.butgen)
         #l02.addWidget(buthide)
@@ -373,9 +378,14 @@ class ColorOverlay1(QtGui.QWidget):
         l02ss = QtGui.QHBoxLayout()
         self.butgenss = QtGui.QPushButton("Show")
         self.butgenss.setToolTip("Show standard statistics for the current slice")
-        self.butgenss.clicked.connect(self.generate_overlay_stats_current_slice)
-        #buthidess = QtGui.QPushButton("Hide")
-        #buthidess.clicked.connect(self.hide_overlay_stats_current_slice)
+        self.butgenss.clicked.connect(self.show_overlay_stats_current_slice)
+
+        regenHbox2 = QtGui.QHBoxLayout()
+        self.regenBtn2 = QtGui.QPushButton("Recalculate")
+        self.regenBtn2.clicked.connect(self.generate_overlay_stats_current_slice)
+        regenHbox2.addWidget(self.regenBtn2)
+        regenHbox2.addStretch(1)
+        self.regenBtn2.setVisible(False)
 
         l02ss.addWidget(self.butgenss)
         #l02ss.addWidget(buthidess)
@@ -385,9 +395,14 @@ class ColorOverlay1(QtGui.QWidget):
 
         self.butgen2 = QtGui.QPushButton("Show")
         self.butgen2.setToolTip("Show a histogram of the overlay values in each ROI")
-        self.butgen2.clicked.connect(self.generate_histogram)
-        #buthide2 = QtGui.QPushButton("Hide")
-        #buthide2.clicked.connect(self.hide_histogram)
+        self.butgen2.clicked.connect(self.show_histogram)
+
+        regenHbox = QtGui.QHBoxLayout()
+        self.regenBtn = QtGui.QPushButton("Recalculate")
+        self.regenBtn.clicked.connect(self.generate_histogram)
+        regenHbox.addWidget(self.regenBtn)
+        regenHbox.addStretch(1)
+        self.regenBtn.setVisible(False)
 
         l03.addWidget(self.butgen2)
         #l03.addWidget(buthide2)
@@ -438,6 +453,7 @@ class ColorOverlay1(QtGui.QWidget):
         l07 = QtGui.QVBoxLayout()
         l07.addLayout(l03)
         l07.addWidget(self.win1)
+        l07.addLayout(regenHbox)
         l07.addStretch(1)
 
         # Hide histogram for the meanwhile
@@ -449,6 +465,7 @@ class ColorOverlay1(QtGui.QWidget):
         l08 = QtGui.QVBoxLayout()
         l08.addLayout(l02)
         l08.addWidget(self.tab1)
+        l08.addLayout(regenHbox3)
         l08.addStretch(1)
 
         f03 = QGroupBoxB()
@@ -458,6 +475,7 @@ class ColorOverlay1(QtGui.QWidget):
         l08ss = QtGui.QVBoxLayout()
         l08ss.addLayout(l02ss)
         l08ss.addWidget(self.tab1ss)
+        l08ss.addLayout(regenHbox2)
         l08ss.addStretch(1)
 
         f03ss = QGroupBoxB()
@@ -474,14 +492,27 @@ class ColorOverlay1(QtGui.QWidget):
         l1.addStretch(1)
         self.setLayout(l1)
 
-    def hide_overlay_stats(self):
-        self.tab1.setVisible(False)
+    def show_overlay_stats(self):
+        if self.tab1.isVisible():
+            self.tab1.setVisible(False)
+            self.regenBtn3.setVisible(False)
+            self.butgen.setText("Show")
+        else:
+            self.generate_overlay_stats()
+            self.tab1.setVisible(True)
+            self.regenBtn3.setVisible(True)
+            self.butgen.setText("Hide")
 
-    def hide_overlay_stats_current_slice(self):
-        self.tab1ss.setVisible(False)
-
-    def hide_histogram(self):
-        self.win1.setVisible(False)
+    def show_overlay_stats_current_slice(self):
+        if self.tab1ss.isVisible():
+            self.tab1ss.setVisible(False)
+            self.regenBtn2.setVisible(False)
+            self.butgenss.setText("Show")
+        else:
+            self.generate_overlay_stats_current_slice()
+            self.tab1ss.setVisible(True)
+            self.regenBtn2.setVisible(True)
+            self.butgenss.setText("Hide")
 
     def add_analysis(self, image_analysis):
         """
@@ -521,109 +552,84 @@ class ColorOverlay1(QtGui.QWidget):
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
-        """
-        Some initial analysis
-        (temporary location before moving analysis into a separate framework)
-        """
-        if self.tab1.isVisible():
-            self.tab1.setVisible(False)
-            self.butgen.setText("Show")
-        else:
-            self.tab1.setVisible(True)
-            self.butgen.setText("Hide")
+        # Clear the previous labels
+        self.tabmod1.clear()
 
-            # Clear the previous labels
-            self.tabmod1.clear()
+        # get analysis from analysis object
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
-            # get analysis from analysis object
-            stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+        self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
+        self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
+        self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        self.tabmod1.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
+        self.tabmod1.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
-            self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-            self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-            self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-            self.tabmod1.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-            self.tabmod1.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-            for ii in range(len(stats1['mean'])):
-                self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-                self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-                self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-                self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-                self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-                self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+        for ii in range(len(stats1['mean'])):
+            self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
+            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
+            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
+            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
+            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
+            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
 
     @QtCore.Slot()
     def generate_overlay_stats_current_slice(self):
-        """
-        Some initial analysis
-        (temporary location before moving analysis into a separate framework)
-        """
+        # Clear the previous labels
+        self.tabmod1ss.clear()
 
-        if self.tab1ss.isVisible():
-            self.tab1ss.setVisible(False)
-            self.butgenss.setText("Show")
+        # get analysis from analysis object
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss()
+
+        self.tabmod1ss.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
+        self.tabmod1ss.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
+        self.tabmod1ss.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        self.tabmod1ss.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
+        self.tabmod1ss.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
+
+        for ii in range(len(stats1['mean'])):
+            self.tabmod1ss.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
+            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
+            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
+            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
+            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
+            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+
+    def show_histogram(self):
+        if self.win1.isVisible():
+            self.win1.setVisible(False)
+            self.regenBtn.setVisible(False)
+            self.butgen2.setText("Show")
         else:
-            self.tab1ss.setVisible(True)
-            self.butgenss.setText("Hide")
-
-            # Clear the previous labels
-            self.tabmod1ss.clear()
-
-            # get analysis from analysis object
-            stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss()
-
-            self.tabmod1ss.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-            self.tabmod1ss.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-            self.tabmod1ss.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-            self.tabmod1ss.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-            self.tabmod1ss.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-            for ii in range(len(stats1['mean'])):
-                self.tabmod1ss.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-                self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-                self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-                self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-                self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-                self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+            self.generate_histogram()
+            self.win1.setVisible(True)
+            self.regenBtn.setVisible(True)
+            self.butgen2.setText("Hide")
 
     @QtCore.Slot()
     def generate_histogram(self):
-        """
-        Some initial analysis
-        (temporary location before moving analysis into a separate framework)
-        """
+        if (self.ivm.get_current_roi() is None) or (self.ivm.get_current_overlay() is None):
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("Histogram")
+            m1.setText("Histogram requires a ROI and overlay to be loaded")
+            m1.exec_()
+            return
 
-        if self.win1.isVisible():
-            self.win1.setVisible(False)
-            self.butgen2.setText("Show")
-        else:
+        # get analysis from analysis object
+        bins = self.nbinsSpin.value()
+        hist_range = (self.minSpin.value(), self.maxSpin.value())
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats(hist_bins=bins, hist_range=hist_range)
 
-            if (self.ivm.get_current_roi() is None) or (self.ivm.get_current_overlay() is None):
-                m1 = QtGui.QMessageBox()
-                m1.setWindowTitle("Histogram")
-                m1.setText("Histogram requires a ROI and overlay to be loaded")
-                m1.exec_()
-                return
+        self.win1.removeItem(self.plt1)
+        self.plt1 = self.win1.addPlot(title="")
 
-            self.win1.setVisible(True)
-            self.butgen2.setText("Hide")
-
-            # get analysis from analysis object
-            bins = self.nbinsSpin.value()
-            hist_range = (self.minSpin.value(), self.maxSpin.value())
-            stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats(hist_bins=bins, hist_range=hist_range)
-
-            self.win1.removeItem(self.plt1)
-            self.plt1 = self.win1.addPlot(title="")
-
-            for ii in range(len(stats1['mean'])):
-                # FIXME This is basically duplicated from ImageView - not ideal
-                val = roi_labels[ii]
-                lutval = (255 * float(val)) / max(roi_labels)
-                pencol = self.ivm.roi_cmap[lutval]
-                pencol[3] = 150
-                curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
-                self.plt1.addItem(curve)
+        for ii in range(len(stats1['mean'])):
+            # FIXME This is basically duplicated from ImageView - not ideal
+            val = roi_labels[ii]
+            lutval = (255 * float(val)) / max(roi_labels)
+            pencol = self.ivm.roi_cmap[lutval]
+            pencol[3] = 150
+            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
+            self.plt1.addItem(curve)
 
     def __plot(self, values1):
         self.curve.setData(values1)
