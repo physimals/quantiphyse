@@ -15,10 +15,71 @@ from matplotlib import cm
 from PySide import QtCore, QtGui
 import warnings
 import numpy as np
+import weakref
 
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
+
+class MultiImageHistogramWidget(pg.HistogramLUTWidget):
+    def __init__(self, *args, **kwargs):
+        super(MultiImageHistogramWidget, self).__init__(*args, **kwargs)
+        self.imgs = []
+        self.sigLevelChangeFinished.connect(self.levels_changed)
+        self.sigLevelsChanged.connect(self.levels_changed)
+        self.sigLookupTableChanged.connect(self.lut_changed)
+        self.alpha = 255
+
+    def setSourceData(self, arr):
+        """
+        Set the source data for the histogram widget. This is likely to be a
+        3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
+        methods to extract a histogram
+        """
+        self.region.setRegion([np.min(arr), np.max(arr)])
+        fdim = 1
+        for dim in arr.shape[1:]:
+            fdim *= dim
+        newarr = arr.reshape(arr.shape[0], fdim)
+        ii = pg.ImageItem(newarr)
+        h = ii.getHistogram()
+        if h[0] is None: return
+        self.plot.setData(*h)
+
+    def setAlpha(self, alpha):
+        self.alpha = alpha
+        self.lut = None
+        self.lut_changed()
+
+    def setGradientName(self, name):
+        self.gradient.loadPreset(name)
+
+    def getImageLut(self, img):
+        lut = self.getLookupTable(img, alpha=True)
+
+        for row in lut[1:]:
+            row[3] = self.alpha
+
+        lut[0][3] = 0
+        self.lut = lut
+        return lut
+
+    def addImageItem(self, img):
+        self.imgs.append(weakref.ref(img))
+        img.setLookupTable(self.getImageLut)  ## send function pointer, not the result
+        img.setLevels(self.region.getRegion())
+
+    def levels_changed(self):
+        for img in self.imgs:
+            if img() is not None:
+                print("mih: setting levels")
+                img().setLevels(self.region.getRegion())
+
+    def lut_changed(self):
+        for img in self.imgs:
+            if img() is not None:
+                print("setting lut for img")
+                img().setLookupTable(self.getImageLut, update=True)  ## send function pointer, not the result
 
 class ImageMed(pg.ImageItem, object):
     """
@@ -89,7 +150,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.win1 = pg.GraphicsView()
         self.win2 = pg.GraphicsView()
         self.win3 = pg.GraphicsView()
-        self.winhist = pg.GraphicsView()
+        #self.winhist = pg.GraphicsView()
 
         self.view1 = pg.ViewBox(name="view1", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view1.setAspectLocked(True)
@@ -101,14 +162,16 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.imgwin2 = ImageMed(border='k')
         self.view2.addItem(self.imgwin2)
 
-        # Adding a histogram LUT
-        self.h1 = pg.HistogramLUTItem(fillHistogram=False)
-        self.h1.setImageItem(self.imgwin1)
-
         self.view3 = pg.ViewBox(name="view3", border=pg.mkPen((0, 0, 255), width=3.0))
         self.view3.setAspectLocked(True)
         self.imgwin3 = ImageMed(border='k')
         self.view3.addItem(self.imgwin3)
+
+        # Adding a histogram LUT
+        self.h1 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h1.addImageItem(self.imgwin1)
+        self.h1.addImageItem(self.imgwin2)
+        self.h1.addImageItem(self.imgwin3)
 
         self.vline1 = pg.InfiniteLine(angle=90, movable=False)
         self.vline1.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
@@ -150,20 +213,19 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.win1.setCentralItem(self.view1)
         self.win2.setCentralItem(self.view2)
         self.win3.setCentralItem(self.view3)
-        self.winhist.setBackground(background=None)
-        self.winhist.setCentralItem(self.h1)
+        self.h1.setBackground(background=None)
+        #self.winhist.setCentralItem(self.h1)
 
         self.grid1 = QtGui.QGridLayout()
 
         self.grid1.addWidget(self.win1, 0, 0)
         self.grid1.addWidget(self.win2, 0, 1)
         self.grid1.addWidget(self.win3, 2, 0)
-        self.grid1.addWidget(self.winhist, 0, 2, 2, 2)
+        self.grid1.addWidget(self.h1, 0, 2)
 
         self.grid1.setColumnStretch(0, 6)
         self.grid1.setColumnStretch(1, 6)
-        self.grid1.setColumnStretch(2, 1)
-        self.grid1.setColumnStretch(3, 1)
+        self.grid1.setColumnStretch(2, 3)
 
         self.setLayout(self.grid1)
 
@@ -184,7 +246,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.view3.setVisible(True)
 
         # update view
-        self.h1.setLevels(self.ivm.img_range[0], self.ivm.img_range[1])
+        self.h1.setSourceData(self.ivm.image)
         self._update_view()
 
     @QtCore.Slot()
@@ -270,15 +332,15 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         if len(self.ivm.img_dims) == 3:
 
-            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2]])
-            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :])
-            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :])
+            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2]], autoLevels=False)
+            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :], autoLevels=False)
+            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :], autoLevels=False)
 
         elif len(self.ivm.img_dims) == 4:
 
-            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]])
-            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]])
-            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]])
+            self.imgwin1.setImage(self.ivm.image[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]], autoLevels=False)
+            self.imgwin2.setImage(self.ivm.image[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]], autoLevels=False)
+            self.imgwin3.setImage(self.ivm.image[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]], autoLevels=False)
 
         else:
 
@@ -286,11 +348,11 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.__update_crosshairs()
 
-        if not self.options['view_thresh']:
-            self.ivm.img_range = self.h1.getLevels()
-            self.imgwin1.setLevels(self.ivm.img_range)
-            self.imgwin2.setLevels(self.ivm.img_range)
-            self.imgwin3.setLevels(self.ivm.img_range)
+        #if not self.options['view_thresh']:
+        #    self.ivm.img_range = self.h1.getLevels()
+        #    self.imgwin1.setLevels(self.ivm.img_range)
+        #    self.imgwin2.setLevels(self.ivm.img_range)
+        #    self.imgwin3.setLevels(self.ivm.img_range)
 
     # Set the 3D position of the cross hairs
     @QtCore.Slot(int)
@@ -692,48 +754,25 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.ovreg = None
 
         # Histogram
-        self.h2 = None
-        self.axcol = None
+        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h2.setBackground(background=None)
+        self.h2.setGradientName("spectrum")
+        self.grid1.addWidget(self.h2, 2, 2)
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
         self.options['ColorMap'] = 'jet'  # default. Can choose any matplotlib colormap
         self.options['UseROI'] = 0
 
-        # Initialise the colormap
-        self.ovreg_lut = None
-
-        # self.set_default_colormap_manual()
-        # self.ivm.ov_range = [0.0, 1.0]
-
-        self.win4 = pg.GraphicsView()
-        self.win5 = pg.GraphicsView()
-        self.win4.setBackground(background=None)
-        self.win5.setBackground(background=None)
-        self.view4 = pg.ViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
-        self.view5 = pg.ViewBox(lockAspect=False, enableMouse=False, enableMenu=False)
-        self.win4.setCentralItem(self.view4)
-        # self.win5.setCentralItem(self.view5)
-        # self.l2 = QtGui.QHBoxLayout()
-        # self.l2.addWidget(self.win4)
-
-        self.grid1.addWidget(self.win4, 2, 2)
-        self.grid1.addWidget(self.win5, 2, 3)
-
     def load_ovreg(self):
         """
         Adds overlay to image viewer
         """
-
-        # Initilise lut colormap
-        self.set_default_colormap_matplotlib()
-
         if self.ivm.image.shape[0] == 1:
             print("Please load an image first")
             return
 
         self._process_overlay()
-        self._create_colorbar()
 
         if self.imgwin1c is None:
             # Initialises viewer if it hasn't been initialised before
@@ -744,29 +783,11 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.view2.addItem(self.imgwin2c)
             self.view3.addItem(self.imgwin3c)
 
-            self.imgcolbar1 = pg.ImageItem(border='k')
-            self.view4.addItem(self.imgcolbar1)
-            self.axcol = pg.AxisItem('right')
-            self.win5.setCentralItem(self.axcol)
-
-        if len(self.ivm.ovreg_dims) < 4:
-            self.imgcolbar1.setImage(self.colbar1, lut=self.ovreg_lut)
-
-        self.view4.setXRange(0, 100, padding=0)
-        self.view4.setYRange(0, 1000, padding=0)
-        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
-
-        if len(self.ivm.ovreg_dims) < 4:
-            self.imgwin1c.setLevels(self.ov_range)
-            self.imgwin2c.setLevels(self.ov_range)
-            self.imgwin3c.setLevels(self.ov_range)
+            self.h2.addImageItem(self.imgwin1c)
+            self.h2.addImageItem(self.imgwin2c)
+            self.h2.addImageItem(self.imgwin3c)
 
         self._update_view()
-
-    def _create_colorbar(self):
-        c1 = np.linspace(self.ov_range[0], self.ov_range[1], 1000)
-        c1 = np.expand_dims(c1, axis=0)
-        self.colbar1 = np.tile(c1, (100, 1))
 
     def _process_overlay(self, set_range=False):
         """
@@ -785,12 +806,12 @@ class ImageViewColorOverlay(ImageViewOverlay):
             if not set_range:
                 self.ov_range = self.ivm.ov_range
 
-    def _update_view(self):
+        self.h2.setSourceData(self.ovreg)
 
+    def _update_view(self):
         """
         Updates the viewing windows
         """
-
         super(ImageViewColorOverlay, self)._update_view()
 
         if self.imgwin1c is None:
@@ -799,95 +820,40 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if (self.ivm.ovreg_dims is None) or (self.options['ShowColorOverlay'] == 0):
 
-            self.imgwin1c.setImage(np.zeros((1, 1)))
-            self.imgwin2c.setImage(np.zeros((1, 1)))
-            self.imgwin3c.setImage(np.zeros((1, 1)))
-
-            self.imgwin1c.setLevels(self.ov_range)
-            self.imgwin2c.setLevels(self.ov_range)
-            self.imgwin3c.setLevels(self.ov_range)
+            self.imgwin1c.setImage(np.zeros((1, 1)), autoLevels=False)
+            self.imgwin2c.setImage(np.zeros((1, 1)), autoLevels=False)
+            self.imgwin3c.setImage(np.zeros((1, 1)), autoLevels=False)
 
         elif len(self.ivm.ovreg_dims) == 4:
             # RGB or RGBA image
 
-            self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]))
-            self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]))
-            self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]))
+            self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
+            self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]), autoLevels=False)
+            self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
 
         else:
 
-            self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], lut=self.ovreg_lut)
-            self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], lut=self.ovreg_lut)
-            self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], lut=self.ovreg_lut)
+            self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], autoLevels=False)
+            self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], autoLevels=False)
+            self.imgwin3c.setImage(self.ovreg[self.ivm.cim_pos[0], :, :], autoLevels=False)
 
-            self.imgwin1c.setLevels(self.ov_range)
-            self.imgwin2c.setLevels(self.ov_range)
-            self.imgwin3c.setLevels(self.ov_range)
-
-        # print(np.max(self.ovreg[1:-1, 1:-1, 1:-1]))
-
-    # Slot to toggle whether the overlay is seen or not
-    @QtCore.Slot()
-    def toggle_roi_lim(self, state):
-
-        """
-        Slot to limit overlay to ROI
-        """
-
-        if state == QtCore.Qt.Checked:
-            self.options['UseROI'] = 1
-        else:
-            self.options['UseROI'] = 0
-
-        self._process_overlay()
-        self.axcol.setRange(self.ov_range[0], self.ov_range[1])
-        self._update_view()
-
-    @QtCore.Slot()
-    def toggle_ovreg_view(self, state):
+    def set_overlay_view(self, view=True, roiOnly=False):
         """
         Slot to show or hide overlay
         """
+        self.options['ShowColorOverlay'] = view
+        self.options['UseROI'] = roiOnly
 
-        if state == QtCore.Qt.Checked:
-            self.options['ShowColorOverlay'] = 1
-        else:
-            self.options['ShowColorOverlay'] = 0
-
+        self._process_overlay()
         self._update_view()
 
     # Slot to change overlay transparency
     @QtCore.Slot(int)
-    def set_overlay_alpha(self, state):
-
+    def set_overlay_alpha(self, alpha):
         """
         Set the transparency
         """
-
-        if len(self.ivm.ovreg_dims) < 4:
-
-            # Changing colormap
-            self.ovreg_lut[:, 3] = state
-            self.ovreg_lut[0, 3] = 0
-
-            self.imgwin1c.setLookupTable(self.ovreg_lut)
-            self.imgwin2c.setLookupTable(self.ovreg_lut)
-            self.imgwin3c.setLookupTable(self.ovreg_lut)
-            self.imgcolbar1.setLookupTable(self.ovreg_lut)
-
-        else:
-            print("Can't set transparency because RGB")
-
-    @QtCore.Slot()
-    def set_overlay_range(self, val1):
-        """
-        Set the range of the overlay map
-        """
-        self._process_overlay(set_range=True)
-        # Hack, this signal is triggered before load_ovreg so axes might not exist
-        if self.axcol is not None:
-            self.axcol.setRange(self.ov_range[0], self.ov_range[1])
-            self._update_view()
+        self.h2.setAlpha(alpha)
 
     @QtCore.Slot(bool)
     def update_overlay(self, x):
@@ -903,57 +869,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Update any changes to the overlay and view
         """
         if x == 1:
-            self.set_default_colormap_matplotlib()
             self.load_roi()
-
-    @QtCore.Slot(str)
-    def set_colormap(self, text):
-        """
-        Choose a colormap for the overlay
-        """
-
-        #TODO change the functionality to use the builtin HistogramLUTItem colormaps
-        # Subclass HistogramLUTIT tem to signal changes in the colormap etc
-
-        self.options['ColorMap'] = text
-
-        # update colormap
-        self.set_default_colormap_matplotlib()
-
-        if self.ivm.image is not None and len(self.ivm.ovreg_dims) < 4:
-                # set colormap
-                self.imgwin1c.setLookupTable(self.ovreg_lut)
-                self.imgwin2c.setLookupTable(self.ovreg_lut)
-                self.imgwin3c.setLookupTable(self.ovreg_lut)
-                self.imgcolbar1.setLookupTable(self.ovreg_lut)
-
-        else:
-            print("Can't update colormap on image because RGB or not loaded")
-
-    def set_default_colormap_matplotlib(self):
-
-        """
-        Use default colormaps from matplotlib.
-
-        First value out of the 255 range is set to be transparent. This needs to maybe be defined in a slightly better
-        way to avoid scaling issue.
-        """
-
-        cmap1 = getattr(cm, self.options['ColorMap'])
-
-        lut = [[int(255*rgb1) for rgb1 in cmap1(ii)[:3]] for ii in xrange(256)]
-        self.ovreg_lut = np.array(lut, dtype=np.ubyte)
-
-        # add transparency
-        alpha1 = np.ones((self.ovreg_lut.shape[0], 1))
-        alpha1 *= 255
-        alpha1[0] = 0
-        # alpha1[1] = 0
-        # alpha1[2] = 0
-        self.ovreg_lut = np.hstack((self.ovreg_lut, alpha1))
-
-        # Save the lut to the volume management system for easy transfer between widgets
-        self.ivm.set_cmap(self.ovreg_lut)
 
     @QtCore.Slot(bool)
     def save_overlay(self, state):
@@ -962,25 +878,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         if state:
             self.ivm.set_overlay('annotation', self.ovreg)
-
-    # def set_default_colormap_manual(self):
-    #     """
-    #     Manually create a colormap
-    #     """
-    #
-    #     # Setting up overlay region viewing parameters
-    #     ovreg_color = np.array([[0, 0, 255, 255], [0, 255, 0, 255], [255, 255, 0, 255], [255, 0, 0, 255]],
-    #                            dtype=np.ubyte)
-    #     ovreg_pos = np.array([0.0, 0.33, 0.66, 1.0])
-    #     map1 = pg.ColorMap(ovreg_pos, ovreg_color)
-    #
-    #     self.ovreg_lut = map1.getLookupTable(0, 1.0, 1000)
-    #     self.ovreg_lut[0, 3] = 0
-    #
-    #     # Save the lut to the volume management system for easy transfer between widgets
-    #     self.ivm.set_cmap(self.ovreg_lut)
-
-
 
     # @QtCore.Slot(int)
     # def enable_drawing(self, color1=1):

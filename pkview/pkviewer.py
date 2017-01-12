@@ -187,14 +187,7 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Connect widgets
         # Connect colormap choice, alpha and colormap range
-        self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
-        self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
-        self.wid["ColOv"][0].sig_range_change.connect(self.ivl1.set_overlay_range)
         self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        # Connecting toggle buttons
-        self.wid["Overview"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
-        self.wid["Overview"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
@@ -244,7 +237,6 @@ class MainWindowWidget(QtGui.QWidget):
         cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
         cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
 
-
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
         self.sld1.valueChanged[int].connect(lab_p1.setNum)
@@ -257,16 +249,15 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Layout
         # Group box buttons
-        gBox = QtGui.QGroupBox("Image and ROI options")
+        gBox = QtGui.QGroupBox("ROI")
         gBoxlay = QtGui.QVBoxLayout()
         gBoxlay.addWidget(cb1)
         gBoxlay.addWidget(cb2)
-        gBoxlay.addWidget(cb3)
         gBoxlay.addStretch(1)
         gBox.setLayout(gBoxlay)
 
         # Group box: sliders
-        gBox2 = QtGui.QGroupBox("Navigation Sliders")
+        gBox2 = QtGui.QGroupBox("Navigation")
         gBoxlay2 = QtGui.QGridLayout()
         gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
         gBoxlay2.addWidget(self.sld1, 0, 1)
@@ -280,19 +271,38 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
         gBoxlay2.addWidget(self.sld4, 3, 1)
         gBoxlay2.addWidget(lab_p4, 3, 2)
+        gBoxlay2.addWidget(cb3, 4, 0, 1, 2)
         gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
-
         gBox2.setLayout(gBoxlay2)
 
+        gBox3 = QtGui.QGroupBox("Overlay")
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("View"), 0, 0)
+        self.ov_view_combo = QtGui.QComboBox()
+        self.ov_view_combo.addItem("All")
+        self.ov_view_combo.addItem("Only in ROI")
+        self.ov_view_combo.addItem("None")
+        self.ov_view_combo.currentIndexChanged.connect(self.ov_view_changed)
+        grid.addWidget(self.ov_view_combo, 0, 1)
+        grid.addWidget(QtGui.QLabel("Transparency"), 1, 0)
+        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        sld1.setRange(0, 255)
+        sld1.setValue(255)
+        sld1.valueChanged.connect(self.ivl1.set_overlay_alpha)
+        grid.addWidget(sld1, 1, 1)
+        grid.setRowStretch(2, 1)
+        gBox3.setLayout(grid)
+
         # All buttons layout
-        gBox_all = QtGui.QGroupBox()
+        gBox_all = QtGui.QWidget()
         gBoxlay_all = QtGui.QHBoxLayout()
         gBoxlay_all.addWidget(gBox2)
-        gBoxlay_all.addStretch(1)
         gBoxlay_all.addWidget(gBox)
-        gBoxlay_all.setStretch(0, 2)
-        gBoxlay_all.setStretch(2, 1)
+        gBoxlay_all.addWidget(gBox3)
+        #gBoxlay_all.setStretch(0, 2)
+        #gBoxlay_all.setStretch(2, 1)
         gBox_all.setLayout(gBoxlay_all)
 
         # Viewing window layout + buttons
@@ -320,6 +330,12 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
+    def ov_view_changed(self, idx):
+        print(idx)
+        view = idx in (0, 1)
+        roiOnly = (idx == 1)
+        self.ivl1.set_overlay_view(view, roiOnly)
+
     def initTabs(self):
 
         """
@@ -342,7 +358,7 @@ class MainWindowWidget(QtGui.QWidget):
         # Widgets added to tabs on the right hand side
         self.qtab1.addTab(self.wid["Overview"][0], "Volumes")
         self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
-        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
+        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n statistics")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
         #self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "T10")

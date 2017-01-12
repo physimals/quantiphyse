@@ -363,7 +363,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             within_roi = self.overlay_roi[np.array(self.roi, dtype=bool)]
             self.ov_range_roi = [np.min(within_roi), np.max(within_roi)]
             # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
-            self.overlay_roi[np.logical_not(self.roi)] = -0.01 * (self.ov_range_roi[1] - self.ov_range_roi[0]) + self.ov_range_roi[0]
+            self.overlay_roi_fillvalue = -0.01 * (self.ov_range_roi[1] - self.ov_range_roi[0]) + self.ov_range_roi[0]
+            self.overlay_roi[np.logical_not(self.roi)] = self.overlay_roi_fillvalue
         else:
             self.ov_range_roi = self.ov_range
 
