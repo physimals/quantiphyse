@@ -622,8 +622,7 @@ class ColorOverlay1(QtGui.QWidget):
                 lutval = (255 * float(val)) / max(roi_labels)
                 pencol = self.ivm.roi_cmap[lutval]
                 pencol[3] = 150
-                curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, brush=pg.mkBrush(pencol),
-                                         fillLevel=0, pen=pg.mkPen((255, 255, 255)))
+                curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
                 self.plt1.addItem(curve)
 
     def __plot(self, values1):
