@@ -223,9 +223,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.grid1.addWidget(self.win3, 2, 0)
         self.grid1.addWidget(self.h1, 0, 2)
 
-        self.grid1.setColumnStretch(0, 6)
-        self.grid1.setColumnStretch(1, 6)
-        self.grid1.setColumnStretch(2, 3)
+        self.grid1.setColumnStretch(0, 3)
+        self.grid1.setColumnStretch(1, 3)
+        self.grid1.setColumnStretch(2, 1)
 
         self.setLayout(self.grid1)
 
