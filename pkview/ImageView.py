@@ -44,6 +44,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         ii = pg.ImageItem(newarr)
         h = ii.getHistogram()
         if h[0] is None: return
+        print("Setting image histogram for data with shape %s" % str(arr.shape))
         self.plot.setData(*h)
 
     def setAlpha(self, alpha):
@@ -66,20 +67,18 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
 
     def addImageItem(self, img):
         self.imgs.append(weakref.ref(img))
-        img.setLookupTable(self.getImageLut)  ## send function pointer, not the result
+        img.setLookupTable(self.getImageLut)
         img.setLevels(self.region.getRegion())
 
     def levels_changed(self):
         for img in self.imgs:
             if img() is not None:
-                print("mih: setting levels")
                 img().setLevels(self.region.getRegion())
 
     def lut_changed(self):
         for img in self.imgs:
             if img() is not None:
-                print("setting lut for img")
-                img().setLookupTable(self.getImageLut, update=True)  ## send function pointer, not the result
+                img().setLookupTable(self.getImageLut, update=True)
 
 class ImageMed(pg.ImageItem, object):
     """
@@ -89,6 +88,7 @@ class ImageMed(pg.ImageItem, object):
     sig_mouse_wheel = QtCore.Signal(int)
     # Signal that the mouse has been clicked in the image
     sig_click = QtCore.Signal(QtGui.QMouseEvent)
+    sig_doubleClick = QtCore.Signal(QtGui.QMouseEvent)
 
     def __init__(self, border):
         super(ImageMed, self).__init__(border=border)
@@ -110,6 +110,11 @@ class ImageMed(pg.ImageItem, object):
         if event.button() == QtCore.Qt.LeftButton:
             self.sig_click.emit(event)
 
+    # Mouse double clicked on widget
+    def mouseDoubleClickEvent(self, event):
+        super(ImageMed, self).mouseDoubleClickEvent(event)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sig_doubleClick.emit(event)
 
 class ImageViewLayout(QtGui.QGraphicsView, object):
     """
@@ -146,6 +151,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         #empty array for arrows
         self.pts1 = []
+        self.sizeScaling = False
 
         self.win1 = pg.GraphicsView()
         self.win2 = pg.GraphicsView()
@@ -218,20 +224,62 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.grid1 = QtGui.QGridLayout()
 
-        self.grid1.addWidget(self.win1, 0, 0)
+        self.grid1.addWidget(self.win1, 0, 0,)
         self.grid1.addWidget(self.win2, 0, 1)
-        self.grid1.addWidget(self.win3, 2, 0)
+        self.grid1.addWidget(self.win3, 1, 0)
         self.grid1.addWidget(self.h1, 0, 2)
 
         self.grid1.setColumnStretch(0, 3)
         self.grid1.setColumnStretch(1, 3)
         self.grid1.setColumnStretch(2, 1)
+        self.grid1.setRowStretch(0, 1)
+        self.grid1.setRowStretch(1, 1)
 
         self.setLayout(self.grid1)
 
         self.imgwin1.sig_click.connect(self._mouse_pos_view1)
         self.imgwin2.sig_click.connect(self._mouse_pos_view2)
         self.imgwin3.sig_click.connect(self._mouse_pos_view3)
+
+        self.imgwin1.sig_doubleClick.connect(self.expand_view1)
+        self.imgwin2.sig_doubleClick.connect(self.expand_view2)
+        self.imgwin3.sig_doubleClick.connect(self.expand_view3)
+
+    def expand_view1(self):
+        if self.win2.isVisible():
+            self.win2.setVisible(False)
+            self.win3.setVisible(False)
+            self.grid1.addWidget(self.win1, 0, 0, 2, 2)
+        else:
+            self.grid1.addWidget(self.win1, 0, 0)
+            self.grid1.addWidget(self.win2, 0, 1)
+            self.grid1.addWidget(self.win3, 1, 0)
+            self.win2.setVisible(True)
+            self.win3.setVisible(True)
+
+    def expand_view2(self):
+        if self.win1.isVisible():
+            self.win1.setVisible(False)
+            self.win3.setVisible(False)
+            self.grid1.addWidget(self.win2, 0, 0, 2, 2)
+        else:
+            self.grid1.addWidget(self.win1, 0, 0)
+            self.grid1.addWidget(self.win2, 0, 1)
+            self.grid1.addWidget(self.win3, 1, 0)
+            self.win1.setVisible(True)
+            self.win3.setVisible(True)
+
+    def expand_view3(self):
+        if self.win2.isVisible():
+            self.win2.setVisible(False)
+            self.win1.setVisible(False)
+            self.grid1.addWidget(self.win3, 0, 0, 2, 2)
+        else:
+            self.grid1.addWidget(self.win1, 0, 0)
+            self.grid1.addWidget(self.win2, 0, 1)
+            self.grid1.addWidget(self.win3, 1, 0)
+            self.win2.setVisible(True)
+            self.win1.setVisible(True)
 
     def add_image_management(self, image_vol_management):
         """
@@ -508,16 +556,17 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.pts1 = []
 
     @QtCore.Slot()
-    def toggle_dimscale(self, state):
+    def toggle_dimscale(self):
         """
         toggles whether voxel scaling is used
         """
-
-        if state == QtCore.Qt.Checked:
+        if not self.sizeScaling:
+            self.sizeScaling = True
             self.view1.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[1]))
             self.view2.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[2]))
             self.view3.setAspectLocked(True, ratio=(self.ivm.voxel_size[1] / self.ivm.voxel_size[2]))
         else:
+            self.sizeScaling = False
             self.view1.setAspectLocked(True, ratio=1)
             self.view2.setAspectLocked(True, ratio=1)
             self.view3.setAspectLocked(True, ratio=1)
@@ -757,7 +806,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.h2 = MultiImageHistogramWidget(fillHistogram=False)
         self.h2.setBackground(background=None)
         self.h2.setGradientName("spectrum")
-        self.grid1.addWidget(self.h2, 2, 2)
+        self.grid1.addWidget(self.h2, 1, 2)
 
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = 1
