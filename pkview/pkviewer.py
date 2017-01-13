@@ -234,8 +234,6 @@ class MainWindowWidget(QtGui.QWidget):
         cb1.toggle()
         cb2 = QtGui.QCheckBox('Show ROI contour', self)
         cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
-        cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
-        cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -271,7 +269,6 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
         gBoxlay2.addWidget(self.sld4, 3, 1)
         gBoxlay2.addWidget(lab_p4, 3, 2)
-        gBoxlay2.addWidget(cb3, 4, 0, 1, 2)
         gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
         gBox2.setLayout(gBoxlay2)
@@ -298,6 +295,13 @@ class MainWindowWidget(QtGui.QWidget):
         # All buttons layout
         gBox_all = QtGui.QWidget()
         gBoxlay_all = QtGui.QHBoxLayout()
+        vbox = QtGui.QVBoxLayout()
+        btn = QtGui.QPushButton()
+        btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/size_scaling.png'))
+        btn.clicked.connect(self.ivl1.toggle_dimscale)
+        vbox.addWidget(btn)
+        vbox.addStretch(1)
+        gBoxlay_all.addLayout(vbox)
         gBoxlay_all.addWidget(gBox2)
         gBoxlay_all.addWidget(gBox)
         gBoxlay_all.addWidget(gBox3)
