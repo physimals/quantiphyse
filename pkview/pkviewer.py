@@ -214,12 +214,16 @@ class MainWindowWidget(QtGui.QWidget):
         # Sliders
         self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld1.setMinimumWidth(100)
         self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld2.setMinimumWidth(100)
         self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld3.setMinimumWidth(100)
         self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld4.setMinimumWidth(100)
         # self.update_slider_range()
 
         # connect sliders to ivl1
@@ -227,13 +231,6 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
         self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
         self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
-
-        # CheckBox
-        cb1 = QtGui.QCheckBox('Show ROI', self)
-        cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
-        cb1.toggle()
-        cb2 = QtGui.QCheckBox('Show ROI contour', self)
-        cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -248,11 +245,30 @@ class MainWindowWidget(QtGui.QWidget):
         # Layout
         # Group box buttons
         gBox = QtGui.QGroupBox("ROI")
-        gBoxlay = QtGui.QVBoxLayout()
-        gBoxlay.addWidget(cb1)
-        gBoxlay.addWidget(cb2)
-        gBoxlay.addStretch(1)
-        gBox.setLayout(gBoxlay)
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
+        self.roi_combo = QtGui.QComboBox()
+        self.roi_combo.currentIndexChanged.connect(self.roi_changed)
+        grid.addWidget(self.roi_combo, 0, 1)
+        self.ivm.sig_current_roi.connect(self.update_current_roi)
+        self.ivm.sig_all_rois.connect(self.update_rois)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.roi_view_combo = QtGui.QComboBox()
+        self.roi_view_combo.addItem("Shaded")
+        self.roi_view_combo.addItem("Contour")
+        self.roi_view_combo.addItem("Both")
+        self.roi_view_combo.addItem("None")
+        self.roi_view_combo.currentIndexChanged.connect(self.roi_view_changed)
+        grid.addWidget(self.roi_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
+        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        sld1.setRange(0, 255)
+        sld1.setValue(255)
+        #sld1.valueChanged.connect(self.ivl1.set_roi_alpha)
+        grid.addWidget(sld1, 2, 1)
+        grid.setRowStretch(3, 1)
+        gBox.setLayout(grid)
 
         # Group box: sliders
         gBox2 = QtGui.QGroupBox("Navigation")
@@ -275,38 +291,45 @@ class MainWindowWidget(QtGui.QWidget):
 
         gBox3 = QtGui.QGroupBox("Overlay")
         grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("View"), 0, 0)
+        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
+        self.overlay_combo = QtGui.QComboBox()
+        self.overlay_combo.currentIndexChanged.connect(self.overlay_changed)
+        grid.addWidget(self.overlay_combo, 0, 1)
+        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
+        self.ivm.sig_all_overlays.connect(self.update_overlays)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.ov_view_combo = QtGui.QComboBox()
         self.ov_view_combo.addItem("All")
         self.ov_view_combo.addItem("Only in ROI")
         self.ov_view_combo.addItem("None")
-        self.ov_view_combo.currentIndexChanged.connect(self.ov_view_changed)
-        grid.addWidget(self.ov_view_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("Transparency"), 1, 0)
+        self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
+        grid.addWidget(self.ov_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
         sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(255)
         sld1.valueChanged.connect(self.ivl1.set_overlay_alpha)
-        grid.addWidget(sld1, 1, 1)
-        grid.setRowStretch(2, 1)
+        grid.addWidget(sld1, 2, 1)
+        grid.setRowStretch(3, 1)
         gBox3.setLayout(grid)
 
         # All buttons layout
         gBox_all = QtGui.QWidget()
         gBoxlay_all = QtGui.QHBoxLayout()
         vbox = QtGui.QVBoxLayout()
-        btn = QtGui.QPushButton()
-        btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/size_scaling.png'))
-        btn.clicked.connect(self.ivl1.toggle_dimscale)
-        vbox.addWidget(btn)
-        vbox.addStretch(1)
+        #btn = QtGui.QPushButton()
+        #btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/size_scaling.png'))
+        #btn.clicked.connect(self.ivl1.toggle_dimscale)
+        #vbox.addWidget(btn)
+        #vbox.addStretch(1)
         gBoxlay_all.addLayout(vbox)
         gBoxlay_all.addWidget(gBox2)
         gBoxlay_all.addWidget(gBox)
         gBoxlay_all.addWidget(gBox3)
-        #gBoxlay_all.setStretch(0, 2)
-        #gBoxlay_all.setStretch(2, 1)
+        gBoxlay_all.setStretch(1, 2)
+        gBoxlay_all.setStretch(2, 1)
+        gBoxlay_all.setStretch(3, 1)
         gBox_all.setLayout(gBoxlay_all)
 
         # Viewing window layout + buttons
@@ -334,11 +357,48 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
-    def ov_view_changed(self, idx):
-        print(idx)
+    def overlay_changed(self, idx):
+        if idx >= 0:
+            ov = self.overlay_combo.itemText(idx)
+            self.ivm.set_current_overlay(ov, broadcast_change=True)
+
+    def update_current_overlay(self, overlay):
+        idx = self.overlay_combo.findText(overlay)
+        if idx != self.overlay_combo.currentIndex():
+            self.overlay_combo.setCurrentIndex(idx)
+
+    def update_overlays(self, overlays):
+        self.overlay_combo.clear()
+        for ov in overlays:
+            self.overlay_combo.addItem(ov)
+        self.update_current_overlay(self.ivm.ovreg_file1)
+
+    def roi_changed(self, idx):
+        if idx >= 0:
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi, broadcast_change=True)
+
+    def update_current_roi(self, roi):
+        idx = self.roi_combo.findText(roi)
+        if idx != self.roi_combo.currentIndex():
+            self.roi_combo.setCurrentIndex(idx)
+
+    def update_rois(self, rois):
+        self.roi_combo.clear()
+        for roi in rois:
+            self.roi_combo.addItem(roi)
+
+        self.update_current_roi(self.ivm.roi_file1)
+
+    def overlay_view_changed(self, idx):
         view = idx in (0, 1)
         roiOnly = (idx == 1)
         self.ivl1.set_overlay_view(view, roiOnly)
+
+    def roi_view_changed(self, idx):
+        shade = idx in (0, 2)
+        contour = idx in (1, 2)
+        self.ivl1.set_roi_view(shade, contour)
 
     def initTabs(self):
 

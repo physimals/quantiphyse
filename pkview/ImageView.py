@@ -44,7 +44,6 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         ii = pg.ImageItem(newarr)
         h = ii.getHistogram()
         if h[0] is None: return
-        print("Setting image histogram for data with shape %s" % str(arr.shape))
         self.plot.setData(*h)
 
     def setAlpha(self, alpha):
@@ -756,25 +755,11 @@ class ImageViewOverlay(ImageViewLayout):
             self.cont2[idx].setData(None)
             self.cont3[idx].setData(None)
 
-    # Slot to toggle whether the overlay is seen or not
-    @QtCore.Slot()
-    def toggle_roi_view(self, state):
-
-        if state == QtCore.Qt.Checked:
-            self.options['ShowOverlay'] = 1
-        else:
-            self.options['ShowOverlay'] = 0
-
+    def set_roi_view(self, shade, contour):
+        self.options['ShowOverlay'] = shade
+        self.options['ShowOverlayContour'] = contour
         self._update_view()
 
-    @QtCore.Slot()
-    def toggle_roi_contour(self, state):
-
-        if state == QtCore.Qt.Checked:
-            self.options['ShowOverlayContour'] = True
-        else:
-            self.options['ShowOverlayContour'] = False
-        self._update_view()
 
 class ImageViewColorOverlay(ImageViewOverlay):
     """
