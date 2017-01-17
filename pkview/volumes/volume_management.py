@@ -15,6 +15,7 @@ import numpy as np
 import warnings
 import nrrd
 
+import os
 
 class Roi:
     def __init__(self, name, data, file=None):
@@ -134,6 +135,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi = None
         self.roi_dims = None
         self.roi_file1 = None
+        self.roi_displayname = None
 
         # All ROIs. Map from name to data array
         self.rois = {}
@@ -337,6 +339,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Set the current ROI to the specified file.
         """
         self.roi_file1 = roi_file
+        self.roi_displayname = os.path.split(roi_file)[1]
         self.roi = self.rois[roi_file]
         self.roi_dims = self.roi.shape
         self.roi_range = [np.min(self.roi), np.max(self.roi)]
@@ -363,7 +366,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             within_roi = self.overlay_roi[np.array(self.roi, dtype=bool)]
             self.ov_range_roi = [np.min(within_roi), np.max(within_roi)]
             # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
-            self.overlay_roi[np.logical_not(self.roi)] = -0.01 * (self.ov_range_roi[1] - self.ov_range_roi[0]) + self.ov_range_roi[0]
+            self.overlay_roi_fillvalue = -0.01 * (self.ov_range_roi[1] - self.ov_range_roi[0]) + self.ov_range_roi[0]
+            self.overlay_roi[np.logical_not(self.roi)] = self.overlay_roi_fillvalue
         else:
             self.ov_range_roi = self.ov_range
 

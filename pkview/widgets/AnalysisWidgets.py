@@ -69,7 +69,6 @@ class SECurve(QtGui.QWidget):
         b1.setToolTip("Clear curves")
         b1.clicked.connect(self.reset_graph)
 
-
         # input temporal resolution
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
@@ -292,7 +291,7 @@ class ColorOverlay1(QtGui.QWidget):
 
         self.local_file_path = local_file_path
 
-        title1 = QtGui.QLabel("<font size=5> Overlay options and statistics </font>")
+        title1 = QtGui.QLabel("<font size=5> Overlay statistics </font>")
         bhelp = HelpButton(self, self.local_file_path)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
@@ -307,37 +306,6 @@ class ColorOverlay1(QtGui.QWidget):
         self.ia = None
         self.ivm = None
 
-        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        sld1.setRange(0, 255)
-        sld1.setValue(255)
-        sld1.valueChanged[int].connect(self.emit_alpha)
-
-        combo = QtGui.QComboBox(self)
-        combo.addItem("jet")
-        combo.addItem("hot")
-        combo.addItem("gist_heat")
-        combo.setToolTip("The colormaps available for visualising the overlay")
-        combo.activated[str].connect(self.emit_cmap)
-
-        self.ov_min = QtGui.QDoubleSpinBox(self)
-        self.ov_min.setDecimals(2)
-        self.ov_min.setSingleStep(0.1)
-        self.ov_min.valueChanged.connect(self.emit_ov_range_change)
-        self.ov_min.setToolTip("Overlay minimum threshold")
-        self.ov_min.setMinimum(-100)
-        self.ov_max = QtGui.QDoubleSpinBox(self)
-        self.ov_max.setDecimals(2)
-        self.ov_max.setSingleStep(0.1)
-        self.ov_max.setMaximum(100)
-        self.ov_max.valueChanged.connect(self.emit_ov_range_change)
-        self.ov_max.setToolTip("Overlay minimum threshold")
-        lovrange = QtGui.QHBoxLayout()
-        lovrange.addWidget(QtGui.QLabel("Overlay min: "))
-        lovrange.addWidget(self.ov_min)
-        lovrange.addWidget(QtGui.QLabel("    Overlay max: "))
-        lovrange.addWidget(self.ov_max)
-
         self.tabmod1 = QtGui.QStandardItemModel()
         self.tabmod1ss = QtGui.QStandardItemModel()
 
@@ -350,14 +318,6 @@ class ColorOverlay1(QtGui.QWidget):
         self.tab1ss.resizeColumnsToContents()
         self.tab1ss.setModel(self.tabmod1ss)
         self.tab1ss.setVisible(False)
-
-        l00 = QtGui.QHBoxLayout()
-        l00.addWidget(QtGui.QLabel("Overlay Transparency"))
-        l00.addWidget(sld1)
-
-        l01 = QtGui.QHBoxLayout()
-        l01.addWidget(QtGui.QLabel("Color Map                        "))
-        l01.addWidget(combo)
 
         l02 = QtGui.QHBoxLayout()
         self.butgen = QtGui.QPushButton("Show")
@@ -435,21 +395,6 @@ class ColorOverlay1(QtGui.QWidget):
         self.maxSpin.setMinimum(-100000000)
         l03.addWidget(self.maxSpin)
 
-        l05 = QtGui.QVBoxLayout()
-        l05.addLayout(l00)
-        l05.addLayout(l01)
-        l05.addLayout(lovrange)
-        # l05.addWidget(self.cb1)
-        # l05.addWidget(self.cb2)
-
-        l06 = QtGui.QHBoxLayout()
-        l06.addLayout(l05)
-        l06.addStretch(1)
-
-        f01 = QGroupBoxB()
-        f01.setTitle('Overlay options')
-        f01.setLayout(l06)
-
         l07 = QtGui.QVBoxLayout()
         l07.addLayout(l03)
         l07.addWidget(self.win1)
@@ -484,7 +429,6 @@ class ColorOverlay1(QtGui.QWidget):
 
         l1 = QtGui.QVBoxLayout()
         l1.addLayout(lhelp)
-        l1.addWidget(f01)
         l1.addWidget(f03)
         l1.addWidget(f03ss)
 
@@ -528,11 +472,6 @@ class ColorOverlay1(QtGui.QWidget):
         # Min and max set for overlay choice
         ov_range = self.ivm.ov_range
 
-        self.update_spin_minmax(self.ov_min, ov_range)
-        self.update_spin_minmax(self.ov_max, ov_range)
-
-        self.ov_min.setValue(ov_range[0])
-        self.ov_max.setValue(ov_range[1])
         self.minSpin.setValue(ov_range[0])
         self.maxSpin.setValue(ov_range[1])
 

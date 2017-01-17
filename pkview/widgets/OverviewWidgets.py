@@ -41,13 +41,6 @@ class OverviewWidget(QtGui.QWidget):
         t2 = QtGui.QLabel("Current ROIs")
         self.l2 = RoiWidget(self)
 
-        self.cb1 = QtGui.QCheckBox('Show overlay', self)
-        self.cb1.toggle()
-
-        # Take a local region mean to reduce noise
-        self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
-        # self.cb2.toggle()
-
         layout.addLayout(l03)
         layout.addWidget(ta)
         layout.addStretch()
@@ -55,8 +48,6 @@ class OverviewWidget(QtGui.QWidget):
         layout.addWidget(self.l1)
         layout.addWidget(t2)
         layout.addWidget(self.l2)
-        layout.addWidget(self.cb1)
-        layout.addWidget(self.cb2)
 
         self.setLayout(layout)
 
