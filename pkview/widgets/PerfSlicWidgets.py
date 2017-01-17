@@ -24,11 +24,13 @@ class PerfSlicWidget(QtGui.QWidget):
     """
     def __init__(self):
         super(PerfSlicWidget, self).__init__()
+        self.picking_roi = False
+        self.freehand_roi = False
 
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtGui.QLabel("<font size=50>Supervoxel Generation</font> \n"))
+        layout.addWidget(QtGui.QLabel("<font size=5>Supervoxel Generation</font> \n"))
 
         hbox = QtGui.QHBoxLayout()
         optbox = QtGui.QGroupBox()
@@ -184,10 +186,9 @@ class PerfSlicWidget(QtGui.QWidget):
 
     def sig_mouse_click(self, values):
         pos = self.ivm.cim_pos[:3]
-        ovl = self.ivm.overlay_all["supervoxels"]
-        val = ovl[pos[0], pos[1], pos[2]]
-        print(val)
         if self.picking_roi:
+            ovl = self.ivm.overlay_all["supervoxels"]
+            val = ovl[pos[0], pos[1], pos[2]]
 
             if val in self.roi_regions:
                 self.roi = self.roi & np.where(ovl == val, 0, 1)
@@ -198,6 +199,5 @@ class PerfSlicWidget(QtGui.QWidget):
                 self.roi_hist.append([val])
                 self.roi_regions.add(val)
             self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
-        if self.freehand_roi:
-            pass
+
 

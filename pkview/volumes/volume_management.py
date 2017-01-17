@@ -343,7 +343,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi = self.rois[roi_file]
         self.roi_dims = self.roi.shape
         self.roi_range = [np.min(self.roi), np.max(self.roi)]
-        print("Setting roi range", self.roi_range)
 
         if self.overlay is not None:
             self.update_overlay_roi()

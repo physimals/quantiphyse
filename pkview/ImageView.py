@@ -248,7 +248,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.roipts = []
         self.roi_lasso = 0
 
-def expand_view1(self):
+    def expand_view1(self):
         if self.win2.isVisible():
             self.win2.setVisible(False)
             self.win3.setVisible(False)

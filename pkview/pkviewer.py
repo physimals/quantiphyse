@@ -32,7 +32,6 @@ from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
-#from .widgets.FabberWidgets import FabberWidget
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
@@ -160,18 +159,14 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
         self.wid["PAna"][0].add_image_management(self.ivm)
 
-        # Fabber modelling widget
-        #self.wid["Fab"] = [FabberWidget(), 'a', 'b']
-        #self.wid["Fab"][0].add_image_management(self.ivm)
-
-        # T10 widget
+        # T10 widget - not visible by default
         self.wid["T10"] = [T10Widget(), 'a', 'b']
         self.wid["T10"][0].add_image_management(self.ivm)
 
-        # Supervoxels widget
-        self.wid["slic"] = [PerfSlicWidget(), 'a', 'b']
-        self.wid["slic"][0].add_image_management(self.ivm)
-        self.wid["slic"][0].add_image_view(self.ivl1)
+        # Supervoxels widget - not visible by default
+        self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
+        self.wid["sv"][0].add_image_management(self.ivm)
+        self.wid["sv"][0].add_image_view(self.ivl1)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
@@ -197,8 +192,6 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        #self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
         self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
         self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
 
@@ -217,7 +210,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
 
         # Choosing supervoxels for ROI
-        self.ivl1.sig_mouse_click.connect(self.wid["slic"][0].sig_mouse_click)
+        self.ivl1.sig_mouse_click.connect(self.wid["sv"][0].sig_mouse_click)
 
         # InitUI
         # Sliders
@@ -446,8 +439,6 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n statistics")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
-        self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "T10")
-        self.qtab1.addTab(self.wid["slic"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Supervoxels")
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
@@ -490,10 +481,14 @@ class MainWindowWidget(QtGui.QWidget):
     def show_pk(self):
         index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
         self.qtab1.setCurrentIndex(index)
-    
-    #def show_fab(self):
-    #    index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Fabber")
-    #    self.qtab1.setCurrentIndex(index)
+
+    def show_t10(self):
+        index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/t10.svg'), "T10")
+        self.qtab1.setCurrentIndex(index)
+
+    def show_sv(self):
+        index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(self.local_file_path + '/icons/sv.svg'), "Super\nvoxels")
+        self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
         index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
@@ -641,10 +636,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 
-        # Widgets --> Fabber
-        #fab_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Fabber', self)
-        #fab_action.setStatusTip('Run fabber model fitting')
-        #fab_action.triggered.connect(self.mw1.show_fab)
+        # Widgets --> T10
+        t10_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/t10.svg'), '&T10', self)
+        t10_action.setStatusTip('T10 Map Generation')
+        t10_action.triggered.connect(self.mw1.show_t10)
+
+        # Widgets --> Supervoxels
+        sv_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/sv.svg'), '&Supervoxels', self)
+        sv_action.setStatusTip('Supervoxel analysis')
+        sv_action.triggered.connect(self.mw1.show_sv)
 
         # Widgets --> PharmaView
         pw_action = QtGui.QAction('&PharmCurveView', self)
@@ -692,8 +692,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
-        #widget_menu.addAction(fab_action)
         widget_menu.addAction(pw_action)
+        widget_menu.addAction(sv_action)
+        widget_menu.addAction(t10_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
 
