@@ -15,6 +15,7 @@ import numpy as np
 import warnings
 import nrrd
 
+import os
 
 class Roi:
     def __init__(self, name, data, file=None):
@@ -134,6 +135,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.roi = None
         self.roi_dims = None
         self.roi_file1 = None
+        self.roi_displayname = None
 
         # All ROIs. Map from name to data array
         self.rois = {}
@@ -337,6 +339,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Set the current ROI to the specified file.
         """
         self.roi_file1 = roi_file
+        self.roi_displayname = os.path.split(roi_file)[1]
         self.roi = self.rois[roi_file]
         self.roi_dims = self.roi.shape
         self.roi_range = [np.min(self.roi), np.max(self.roi)]

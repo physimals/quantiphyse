@@ -318,17 +318,17 @@ class MainWindowWidget(QtGui.QWidget):
         gBox_all = QtGui.QWidget()
         gBoxlay_all = QtGui.QHBoxLayout()
         vbox = QtGui.QVBoxLayout()
-        btn = QtGui.QPushButton()
-        btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/size_scaling.png'))
-        btn.setCheckable(True)
-        btn.toggled.connect(self.ivl1.toggle_dimscale)
-        vbox.addWidget(btn)
+        self.voxel_scaling_btn = QtGui.QPushButton()
+        self.voxel_scaling_btn.setCheckable(True)
+        self.voxel_scaling_btn.toggled.connect(self.toggle_dimscale)
+        self.toggle_dimscale(False)
+        vbox.addWidget(self.voxel_scaling_btn)
         vbox.addStretch(1)
         gBoxlay_all.addLayout(vbox)
         gBoxlay_all.addWidget(gBox2)
         gBoxlay_all.addWidget(gBox)
         gBoxlay_all.addWidget(gBox3)
-        gBoxlay_all.setStretch(1, 2)
+        gBoxlay_all.setStretch(1, 1)
         gBoxlay_all.setStretch(2, 1)
         gBoxlay_all.setStretch(3, 1)
         gBox_all.setLayout(gBoxlay_all)
@@ -358,6 +358,15 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
+    def toggle_dimscale(self, state):
+        if state:
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_off.png'))
+            self.voxel_scaling_btn.setToolTip("Disable voxel size scaling")
+        else:
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_on.png'))
+            self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
+        self.ivl1.toggle_dimscale()
+
     def overlay_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
@@ -373,23 +382,25 @@ class MainWindowWidget(QtGui.QWidget):
         for ov in overlays:
             self.overlay_combo.addItem(ov)
         self.update_current_overlay(self.ivm.ovreg_file1)
+        self.overlay_combo.updateGeometry()
 
     def roi_changed(self, idx):
         if idx >= 0:
-            roi = self.roi_combo.itemText(idx)
+            roi = self.roi_combo.itemData(idx)
             self.ivm.set_current_roi(roi, broadcast_change=True)
 
     def update_current_roi(self, roi):
-        idx = self.roi_combo.findText(roi)
+        idx = self.roi_combo.findText(self.ivm.roi_displayname)
         if idx != self.roi_combo.currentIndex():
             self.roi_combo.setCurrentIndex(idx)
 
     def update_rois(self, rois):
         self.roi_combo.clear()
         for roi in rois:
-            self.roi_combo.addItem(roi)
+            self.roi_combo.addItem(os.path.split(roi)[1], roi)
 
-        self.update_current_roi(self.ivm.roi_file1)
+        self.update_current_roi(self.ivm.roi_displayname)
+        self.roi_combo.updateGeometry()
 
     def overlay_view_changed(self, idx):
         view = idx in (0, 1)
