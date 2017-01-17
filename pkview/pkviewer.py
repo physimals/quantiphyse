@@ -34,6 +34,7 @@ from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 #from .widgets.FabberWidgets import FabberWidget
 from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import ImageVolumeManagement
@@ -51,9 +52,9 @@ if op_sys == 'Darwin':
 
 # Windows specific changes
 from .utils.cmd_pkmodel import pkbatch
+from .utils.cmd_perfslic import perfslic
 if op_sys != 'Windows':
     from .utils.cmd_t10 import t10_preclinical, t10
-
 
 def get_dir(str1):
     """
@@ -167,6 +168,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["T10"] = [T10Widget(), 'a', 'b']
         self.wid["T10"][0].add_image_management(self.ivm)
 
+        # Supervoxels widget
+        self.wid["slic"] = [PerfSlicWidget(), 'a', 'b']
+        self.wid["slic"][0].add_image_management(self.ivm)
+        self.wid["slic"][0].add_image_view(self.ivl1)
+
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
         self.wid["ImExp"][0].add_image_management(self.ivm)
@@ -209,6 +215,9 @@ class MainWindowWidget(QtGui.QWidget):
         # Connecting widget signals
         # 1) Plotting data on mouse image click
         self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
+
+        # Choosing supervoxels for ROI
+        self.ivl1.sig_mouse_click.connect(self.wid["slic"][0].sig_mouse_click)
 
         # InitUI
         # Sliders
@@ -438,6 +447,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
         self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "T10")
+        self.qtab1.addTab(self.wid["slic"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Supervoxels")
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
@@ -964,6 +974,7 @@ def main():
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
     parser.add_argument('--T10afibatch', help='Run batch T10 processing from a yaml file', default=None, type=str)
+    parser.add_argument('--slicbatch', help='Run batch SLIC supervoxel processing from a yaml file', default=None, type=str)
     parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
@@ -976,7 +987,7 @@ def main():
 
     # Check whether any batch processing arguments have been called
 
-    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None):
+    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
         # Initialise main GUI
 
         # Initialise the PKView application
@@ -1000,6 +1011,11 @@ def main():
             warnings.warn('Windows is not supported for T10 mapping')
         # Run T10 and afi batch processing from a yaml file
         t10_preclinical(args.T10afibatch)
+
+    elif (args.slicbatch is not None):
+        if op_sys == 'Windows':
+            warnings.warn('Windows is not supported for SLIC batch')
+        perfslic(args.slicbatch)
 
     else:
         # Run pk modelling from a yaml file.
