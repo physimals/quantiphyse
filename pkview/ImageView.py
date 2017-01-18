@@ -662,10 +662,9 @@ class ImageViewOverlay(ImageViewLayout):
 
         # ROI lut
         # TODO set the colormap
-        self.set_roi_colormap_matplotlib()
-        # self.roilut = map1.getLookupTable(0.0, 1.0, 256)
+        self.set_roi_colormap_matplotlib(150)
 
-    def set_roi_colormap_matplotlib(self):
+    def set_roi_colormap_matplotlib(self, alpha):
 
         """
         Use default colormaps from matplotlib.
@@ -680,7 +679,7 @@ class ImageViewOverlay(ImageViewLayout):
 
         # add transparency
         alpha1 = np.ones((self.roilut.shape[0], 1))
-        alpha1 *= 150
+        alpha1 *= alpha
         alpha1[0] = 0
         # alpha1[1] = 0
         # alpha1[2] = 0
@@ -813,6 +812,15 @@ class ImageViewOverlay(ImageViewLayout):
         self.options['ShowOverlayContour'] = contour
         self._update_view()
 
+    # Slot to change overlay transparency
+    @QtCore.Slot(int)
+    def set_roi_alpha(self, alpha):
+        """
+        Set the ROI transparency
+        """
+        self.set_roi_colormap_matplotlib(alpha)
+        self.ivm.set_cmap_roi(self.roilut)
+        self._update_view()
 
 class ImageViewColorOverlay(ImageViewOverlay):
     """
