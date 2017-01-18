@@ -22,6 +22,12 @@ from pyqtgraph.exporters.ImageExporter import ImageExporter
 # setting defaults for the library
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
+    """
+    A histogram widget which has one array of 'source' data
+    (which it gets the histogram itself and the initial levels from)
+    and multiple image item views which are affected by changes to the
+    levels or LUT
+    """
     def __init__(self, *args, **kwargs):
         super(MultiImageHistogramWidget, self).__init__(*args, **kwargs)
         self.imgs = []
@@ -694,7 +700,7 @@ class ImageViewOverlay(ImageViewLayout):
             # if we need them
             n_conts = len(self.cont1)
             create_new = False
-            for val in self.roi.regions:
+            for val in roi.regions:
                 pencol = roi.get_pencol(val)
                 if val != 0:
                     if n == n_conts:

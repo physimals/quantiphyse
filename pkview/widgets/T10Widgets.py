@@ -7,6 +7,7 @@ import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
 from pkview.analysis.t1_model import t10_map
+from pkview.volumes.volume_management import Overlay, Roi
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):
@@ -72,7 +73,7 @@ class SourceImageList(QtGui.QVBoxLayout):
                                           QtGui.QMessageBox.Close)
                 return []
 
-            if data.shape[:3] != self.ivm.img_dims[:3]:
+            if data.shape[:3] != self.ivm.vol.shape[:3]:
                 QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
                                           QtGui.QMessageBox.Close)
                 return []
@@ -139,7 +140,7 @@ class SourceImageList(QtGui.QVBoxLayout):
                 break
 
     def add(self):
-        if self.ivm.img_dims is None:
+        if self.ivm.vol is None:
             QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T10 map",
                                       QtGui.QMessageBox.Close)
             return
@@ -280,7 +281,7 @@ class T10Widget(QtGui.QWidget):
         self.clampMax.setEnabled(self.clamp.isChecked())
 
     def generate(self):
-        if self.ivm.img_dims is None:
+        if self.ivm.vol is None:
             QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T10 map", QtGui.QMessageBox.Close)
             return
         elif not self.trinp.valid:
@@ -310,5 +311,4 @@ class T10Widget(QtGui.QWidget):
         if self.clamp.isChecked():
             np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)
 
-        self.ivm.set_overlay(name="T10", data=T10, force=True)
-        self.ivm.set_current_overlay("T10")
+        self.ivm.set_overlay(Overlay(name="T10", data=T10), make_current=True)

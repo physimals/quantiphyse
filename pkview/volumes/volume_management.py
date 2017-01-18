@@ -25,11 +25,11 @@ class Volume(object):
         self.data = data
         self.voxel_sizes = None
         self.header = None
-        if self.data and self.fname:
+        if self.data is not None and self.fname is not None:
             raise RuntimeError("Creating volume, given both data and filename!")
-        elif self.fname:
+        elif self.fname is not None:
             self.load()
-        elif not self.data:
+        elif self.data is None:
             raise RuntimeError("Creating volume, must be given either data or filename")
 
         self.shape = self.data.shape
@@ -111,7 +111,7 @@ class Roi(Volume):
         """
         Get an RGB pen colour for a given region
         """
-        return self.get_lut()[255*float(region)/self.range[1]]
+        return self.get_lut()[region]
 
     def get_lut(self, alpha=None):
         """
@@ -340,7 +340,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         # loop over all loaded overlays and save values in a dictionary
         for ii in self.overlays.keys():
-            overlay_value[ii] = self.overlays[ii][self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
+            overlay_value[ii] = self.overlays[ii].data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
 
         return overlay_value
 

@@ -17,7 +17,7 @@ from PySide import QtCore, QtGui
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
-
+from pkview.volumes.volume_management import Overlay, Roi
 
 class PharmaWidget(QtGui.QWidget):
 
@@ -160,7 +160,7 @@ class PharmaWidget(QtGui.QWidget):
         """
 
         # Check that pkmodelling can be run
-        if self.ivm.get_image() is None:
+        if self.ivm.vol is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The image doesn't exist! Please load before running Pk modelling")
@@ -184,9 +184,9 @@ class PharmaWidget(QtGui.QWidget):
 
         # get volumes to process
 
-        img1 = self.ivm.get_image()
-        roi1 = self.ivm.get_current_roi()
-        t101 = self.ivm.get_T10()
+        img1 = self.ivm.vol.data
+        roi1 = self.ivm.get_current_roi().data
+        t101 = self.ivm.get_T10().data
 
         # Extract the text from the line edit options
 
@@ -273,19 +273,19 @@ class PharmaWidget(QtGui.QWidget):
             vp1 = np.zeros((roi1v.shape[0]))
             vp1[roi1v] = var1[2][:, 3]
 
-            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.img_dims[-1]))
+            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.vol.shape[-1]))
             estimated_curve1[roi1v, :] = var1[1]
 
             residual1 = np.zeros((roi1v.shape[0]))
             residual1[roi1v] = var1[0]
 
             # Convert to list of enhancing voxels
-            Ktrans1vol = np.reshape(Ktrans1, (self.ivm.img_dims[:-1]))
-            ve1vol = np.reshape(ve1, (self.ivm.img_dims[:-1]))
-            offset1vol = np.reshape(offset1, (self.ivm.img_dims[:-1]))
-            vp1vol = np.reshape(vp1, (self.ivm.img_dims[:-1]))
-            kep1vol = np.reshape(kep1, (self.ivm.img_dims[:-1]))
-            estimated1vol = np.reshape(estimated_curve1, self.ivm.img_dims)
+            Ktrans1vol = np.reshape(Ktrans1, (self.ivm.vol.shape[:-1]))
+            ve1vol = np.reshape(ve1, (self.ivm.vol.shape[:-1]))
+            offset1vol = np.reshape(offset1, (self.ivm.vol.shape[:-1]))
+            vp1vol = np.reshape(vp1, (self.ivm.vol.shape[:-1]))
+            kep1vol = np.reshape(kep1, (self.ivm.vol.shape[:-1]))
+            estimated1vol = np.reshape(estimated_curve1, self.ivm.vol.shape)
 
             #thresholding according to upper limit
             p = np.percentile(Ktrans1vol, self.thresh1val)
@@ -294,16 +294,13 @@ class PharmaWidget(QtGui.QWidget):
             kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
-            self.ivm.set_overlay(name='Ktrans', ovreg=Ktrans1vol)
-            self.ivm.set_overlay(name='ve', ovreg=ve1vol)
-            self.ivm.set_overlay(name='kep', ovreg=kep1vol)
-            self.ivm.set_overlay(name='offset', ovreg=offset1vol)
-            self.ivm.set_overlay(name='vp', ovreg=vp1vol)
+            self.ivm.set_overlay(Overlay(name='Ktrans', data=Ktrans1vol), make_current=True)
+            self.ivm.set_overlay(Overlay(name='ve', data=ve1vol))
+            self.ivm.set_overlay(Overlay(name='kep', data=kep1vol))
+            self.ivm.set_overlay(Overlay(name='offset', data=offset1vol))
+            self.ivm.set_overlay(Overlay(name='vp', data=vp1vol))
             # Setting as a separate volume
             self.ivm.set_estimated(estimated1vol)
-            self.ivm.set_current_overlay('Ktrans')
-            self.sig_emit_reset.emit(1)
-
 
 def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 

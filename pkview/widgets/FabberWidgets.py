@@ -208,7 +208,7 @@ class FabberWidget(QtGui.QWidget):
         """
         Start running the PK modelling on button click
         """
-        img = self.ivm.get_image()
+        img = self.ivm.vol
         roi = self.ivm.get_current_roi()
 
         if img is None:
@@ -227,12 +227,12 @@ class FabberWidget(QtGui.QWidget):
 
         s = img.shape
         lib = FabberLib(self.fab, lib=self.fab.options["fabber"])
-        data = {"data" : img}
+        data = {"data" : img.data}
         # Pass in overlays - FIXME should only pass in those that are being used!
-        for ov in CURRENT_OVERLAYS:
-            data[ov] = self.ivm.overlay_all[ov]
+        for ov in self.ivm.overlays:
+            data[ov] = self.ivm.overlays[ov]
 
-        run = lib.run_with_data(s[0], s[1], s[2], roi, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
+        run = lib.run_with_data(s[0], s[1], s[2], roi.data, data, ["mean_c0", "mean_c1", "mean_c2", "modelfit"])
         print(run.log)
         
         first = True
@@ -240,10 +240,8 @@ class FabberWidget(QtGui.QWidget):
             print(key, item.shape)
             if len(item.shape) == 3:
                 print("overlay")
-                self.ivm.set_overlay(name=key, data=item, force=True)
-                if first: 
-                    self.ivm.set_current_overlay(key)
-                    first = False
+                self.ivm.add_overlay(Overlay(name=key, data=item, make_current=first))
+                first = False
             elif key.lower() == "modelfit":
                 print("modelfit")
                 self.ivm.set_estimated(item)
