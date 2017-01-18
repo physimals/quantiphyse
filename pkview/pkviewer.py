@@ -186,22 +186,9 @@ class MainWindowWidget(QtGui.QWidget):
         # Random Walker
         # self.sw_rw = None
 
-        # Connect widgets
-        # Connect colormap choice, alpha and colormap range
-        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
-        self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
-
         # Connect image export widget
         self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
         self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
-
-        # Connect reset from clustering widget
-        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_roi)
-        self.wid["Clus"][0].add_image_management(self.ivm)
 
         self.initTabs()
 
@@ -267,7 +254,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(150)
-        sld1.valueChanged.connect(self.ivl1.set_roi_alpha)
+        sld1.valueChanged.connect(self.ivl1.roi_alpha_changed)
         grid.addWidget(sld1, 2, 1)
         grid.setRowStretch(3, 1)
         gBox.setLayout(grid)
@@ -311,7 +298,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(255)
-        sld1.valueChanged.connect(self.ivl1.set_overlay_alpha)
+        sld1.valueChanged.connect(self.ivl1.overlay_alpha_changed)
         grid.addWidget(sld1, 2, 1)
         grid.setRowStretch(3, 1)
         gBox3.setLayout(grid)
@@ -372,7 +359,7 @@ class MainWindowWidget(QtGui.QWidget):
     def overlay_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_overlay(ov, broadcast_change=True)
+            self.ivm.set_current_overlay(ov, signal=True)
 
     def update_current_overlay(self, overlay):
         idx = self.overlay_combo.findText(overlay)
@@ -383,25 +370,25 @@ class MainWindowWidget(QtGui.QWidget):
         self.overlay_combo.clear()
         for ov in overlays:
             self.overlay_combo.addItem(ov)
-        self.update_current_overlay(self.ivm.ovreg_file1)
+        self.update_current_overlay(self.ivm.current_overlay)
         self.overlay_combo.updateGeometry()
 
     def roi_changed(self, idx):
         if idx >= 0:
-            roi = self.roi_combo.itemData(idx)
-            self.ivm.set_current_roi(roi, broadcast_change=True)
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi, signal=True)
 
     def update_current_roi(self, roi):
-        idx = self.roi_combo.findText(self.ivm.roi_displayname)
+        idx = self.roi_combo.findText(self.ivm.current_roi)
         if idx != self.roi_combo.currentIndex():
             self.roi_combo.setCurrentIndex(idx)
 
     def update_rois(self, rois):
         self.roi_combo.clear()
         for roi in rois:
-            self.roi_combo.addItem(os.path.split(roi)[1], roi)
+            self.roi_combo.addItem(roi)
 
-        self.update_current_roi(self.ivm.roi_displayname)
+        self.update_current_roi(self.ivm.current_roi)
         self.roi_combo.updateGeometry()
 
     def overlay_view_changed(self, idx):
@@ -447,12 +434,12 @@ class MainWindowWidget(QtGui.QWidget):
     # update slider range
     def update_slider_range(self):
         # set slider range
-        self.sld1.setRange(0, self.ivm.img_dims[2]-1)
-        self.sld2.setRange(0, self.ivm.img_dims[1]-1)
-        self.sld3.setRange(0, self.ivm.img_dims[0]-1)
+        self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
+        self.sld2.setRange(0, self.ivm.vol.shape[1]-1)
+        self.sld3.setRange(0, self.ivm.vol.shape[0]-1)
 
-        if len(self.ivm.img_dims) == 4:
-            self.sld4.setRange(0, self.ivm.img_dims[3]-1)
+        if self.ivm.vol.ndims == 4:
+            self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
         else:
             self.sld4.setRange(0, 0)
 
@@ -806,7 +793,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
                 msgBox.setText("A volume has already been loaded")
@@ -823,8 +810,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
                     return
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.load_main_volume(fname)
             self.mw1.update_slider_range()
         else:
             print('Warning: No file selected')
@@ -854,7 +840,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if fname != '':
             self.default_directory = get_dir(fname)
             self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
         else:
             print('Warning: No file selected')
 
@@ -877,9 +862,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
                                                         'annotation'])
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_ovreg(fname, ftype)
-            if ftype != 'estimated':
-                self.mw1.ivl1.load_ovreg()
+            self.mw1.ivm.load_overlay(fname, ftype)
         else:
             print('Warning: No file selected')
 
@@ -895,7 +878,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if fname != '':
 
             # self.default_directory = get_dir(fname)
-            self.mw1.ivm.save_ovreg(fname, 'current')
+            self.mw1.ivm.save_overlay(fname, 'current')
         else:
             print('Warning: No file selected')
 
@@ -919,13 +902,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
             ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
                                                     ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
                                                      'model_curves', 'annotation'])
-            self.mw1.ivm.load_ovreg(fname, ftype2)
-            if ftype != 'estimation':
-                self.mw1.ivl1.load_ovreg()
+            self.mw1.ivm.load_overlay(fname, ftype2)
 
         # Loading main image
         elif ftype == 'DCE':
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
 
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
@@ -942,14 +923,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 else:
                     return
 
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.load_main_volume(fname)
             self.mw1.update_slider_range()
 
         # Loading ROI
         elif ftype == 'ROI':
             self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
 
     def auto_load_files(self):
         """

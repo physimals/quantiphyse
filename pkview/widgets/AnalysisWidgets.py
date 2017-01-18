@@ -229,17 +229,15 @@ class SECurve(QtGui.QWidget):
 
     @QtCore.Slot(np.ndarray)
     def sig_mouse(self, values1):
-
         """
         Get signal from mouse click
         """
-
         #Signal emit current enhancement curve to widget
-        if len(self.ivm.img_dims) == 3:
+        if self.ivm.vol.ndims == 3:
             print("3D image so just calculating cross image profile")
-            vec_sig = self.ivm.image[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
-        elif len(self.ivm.img_dims) == 4:
-            vec_sig = self.ivm.image[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
+            vec_sig = self.ivm.vol.data[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
+        elif self.ivm.vol.ndims == 4:
+            vec_sig = self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
         else:
             vec_sig = None
             print("Image is not 3D or 4D")
@@ -266,7 +264,6 @@ class SECurve(QtGui.QWidget):
             cvec = (255, 255, 255)
 
         self.plot_color = cvec
-
 
 class ColorOverlay1(QtGui.QWidget):
 
@@ -470,10 +467,10 @@ class ColorOverlay1(QtGui.QWidget):
 
     def reset_spins(self):
         # Min and max set for overlay choice
-        ov_range = self.ivm.ov_range
-
-        self.minSpin.setValue(ov_range[0])
-        self.maxSpin.setValue(ov_range[1])
+        ov = self.ivm.get_current_overlay()
+        if ov:
+            self.minSpin.setValue(ov.range[0])
+            self.maxSpin.setValue(ov.range[1])
 
     def add_image_management(self, image_vol_management):
         """
@@ -564,9 +561,7 @@ class ColorOverlay1(QtGui.QWidget):
         for ii in range(len(stats1['mean'])):
             # FIXME This is basically duplicated from ImageView - not ideal
             val = roi_labels[ii]
-            lutval = (255 * float(val)) / max(roi_labels)
-            pencol = self.ivm.roi_cmap[lutval]
-            pencol[3] = 150
+            pencol = self.ivm.get_current_roi().get_pencol(val)
             curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
             self.plt1.addItem(curve)
 
@@ -577,16 +572,4 @@ class ColorOverlay1(QtGui.QWidget):
     def sig_mouse(self, values1):
         self.__plot(values1)
 
-    @QtCore.Slot(str)
-    def emit_cmap(self, text):
-        self.sig_choose_cmap.emit(text)
-
-    @QtCore.Slot(int)
-    def emit_alpha(self, val1):
-        self.sig_set_alpha.emit(val1)
-
-    @QtCore.Slot(int)
-    def emit_ov_range_change(self, val1):
-        self.ivm.ov_range = [self.ov_min.value(), self.ov_max.value()]
-        self.sig_range_change.emit(val1)
 
