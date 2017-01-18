@@ -648,7 +648,7 @@ class ImageViewOverlay(ImageViewLayout):
         self.cont3 = []
 
         # Viewing options as a dictionary
-        self.options['ShowOverlay'] = 0
+        self.options['ShowOverlay'] = True
         self.options['ShowOverlayContour'] = False
         self.options['roi_outline_width'] = 3.0
 
@@ -744,7 +744,7 @@ class ImageViewOverlay(ImageViewLayout):
 
         # Loop over each volume
 
-        if (self.ivm.roi_dims is None) or (self.options['ShowOverlay'] == 0):
+        if (self.ivm.roi_dims is None) or (not self.options['ShowOverlay']):
             self.imgwin1b.setImage(np.zeros((1, 1)))
             self.imgwin2b.setImage(np.zeros((1, 1)))
             self.imgwin3b.setImage(np.zeros((1, 1)))
