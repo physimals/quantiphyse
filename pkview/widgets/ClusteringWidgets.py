@@ -258,7 +258,7 @@ class CurveClusteringWidget(QtGui.QWidget):
                 continue
 
             if ii < self.labs_un.max():
-                pen1 = lut[ii * lut_sec, :3]
+                pen1 = lut[int(ii * lut_sec), :3]
             else:
                 pen1 = lut[-1, :3]
 
@@ -278,7 +278,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         nimage = np.zeros(self.ivm.get_image().shape)
         nimage[self.km.region1] = self.km.voxel_se
 
-        self.labs_un = np.unique(self.label1)
+        self.labs_un = np.unique(self.label1).astype(int)
         self.labs_un = self.labs_un[self.labs_un != 0]
         self.label1_cent = np.zeros((self.labs_un.max()+1, nimage.shape[-1]))
 
