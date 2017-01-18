@@ -245,7 +245,8 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
         num_clus = (self.labs_un.max())
-        lut = self.ivm.cmap
+
+        lut = self.ivm.roi_cmap
         lut_sec = np.around(lut.shape[0]/num_clus)
 
         le1 = self.p1.addLegend()
