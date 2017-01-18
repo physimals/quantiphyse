@@ -609,18 +609,16 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         self.pts1 = []
 
-    @QtCore.Slot()
-    def toggle_dimscale(self):
+    def set_size_scaling(self, state):
         """
         toggles whether voxel scaling is used
         """
-        if not self.sizeScaling:
-            self.sizeScaling = True
+        self.sizeScaling = state
+        if self.sizeScaling:
             self.view1.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[1]))
             self.view2.setAspectLocked(True, ratio=(self.ivm.voxel_size[0] / self.ivm.voxel_size[2]))
             self.view3.setAspectLocked(True, ratio=(self.ivm.voxel_size[1] / self.ivm.voxel_size[2]))
         else:
-            self.sizeScaling = False
             self.view1.setAspectLocked(True, ratio=1)
             self.view2.setAspectLocked(True, ratio=1)
             self.view3.setAspectLocked(True, ratio=1)

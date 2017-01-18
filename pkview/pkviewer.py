@@ -322,8 +322,8 @@ class MainWindowWidget(QtGui.QWidget):
         vbox = QtGui.QVBoxLayout()
         self.voxel_scaling_btn = QtGui.QPushButton()
         self.voxel_scaling_btn.setCheckable(True)
-        self.voxel_scaling_btn.toggled.connect(self.toggle_dimscale)
-        self.toggle_dimscale(False)
+        self.voxel_scaling_btn.toggled.connect(self.set_size_scaling)
+        self.set_size_scaling(False)
         vbox.addWidget(self.voxel_scaling_btn)
         vbox.addStretch(1)
         gBoxlay_all.addLayout(vbox)
@@ -360,14 +360,14 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
-    def toggle_dimscale(self, state):
+    def set_size_scaling(self, state):
         if state:
             self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_off.png'))
             self.voxel_scaling_btn.setToolTip("Disable voxel size scaling")
         else:
             self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_on.png'))
             self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
-        self.ivl1.toggle_dimscale()
+        self.ivl1.set_size_scaling(state)
 
     def overlay_changed(self, idx):
         if idx >= 0:
