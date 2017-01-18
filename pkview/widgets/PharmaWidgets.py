@@ -294,11 +294,11 @@ class PharmaWidget(QtGui.QWidget):
             kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
-            self.ivm.set_overlay(name='Ktrans', ovreg=Ktrans1vol)
-            self.ivm.set_overlay(name='ve', ovreg=ve1vol)
-            self.ivm.set_overlay(name='kep', ovreg=kep1vol)
-            self.ivm.set_overlay(name='offset', ovreg=offset1vol)
-            self.ivm.set_overlay(name='vp', ovreg=vp1vol)
+            self.ivm.set_overlay(name='Ktrans', name=Ktrans1vol)
+            self.ivm.set_overlay(name='ve', name=ve1vol)
+            self.ivm.set_overlay(name='kep', name=kep1vol)
+            self.ivm.set_overlay(name='offset', name=offset1vol)
+            self.ivm.set_overlay(name='vp', name=vp1vol)
             # Setting as a separate volume
             self.ivm.set_estimated(estimated1vol)
             self.ivm.set_current_overlay('Ktrans')
