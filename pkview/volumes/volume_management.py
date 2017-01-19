@@ -24,19 +24,29 @@ class Volume(object):
         self.name = name
         self.data = data
         self.voxel_sizes = None
-        self.header = None
+        self.nifti_header = None
         if self.data is not None and self.fname is not None:
             raise RuntimeError("Creating volume, given both data and filename!")
         elif self.fname is not None:
             self.load()
         elif self.data is None:
             raise RuntimeError("Creating volume, must be given either data or filename")
+        self.remove_nans()
 
         self.shape = self.data.shape
         self.ndims = len(self.shape)
         self.range = [np.min(self.data), np.max(self.data)]
         if self.voxel_sizes is None:
             self.voxel_sizes = [1.0, ] * self.ndims
+
+    def save_nifti(self, fname):
+        if self.nifti_header is None:
+            warnings.warn("No NIFTI header information available")
+            img = nib.Nifti1Image(ov.data, np.identity(self.ndims))
+        else:
+            img = nib.Nifti1Image(ov.data, self.nifti_header.get_base_affine(), header=self.nifti_header)
+        img.to_filename(fname)
+        self.fname = fname
 
     def load(self):
         if self.fname.endswith(".nii") or self.fname.endswith(".nii.gz"):
@@ -49,7 +59,7 @@ class Volume(object):
             # horrible things with performance, and analysis especially when the data is on the network.
             self.data = np.asarray(image.get_data())
             self.voxel_sizes = image.get_header().get_zooms()
-            self.header = image.get_header()
+            self.nifti_header = image.get_header()
         elif self.fname.endswith(".nrrd"):
             # else if the file is a nrrd
             self.data = nrrd.read(self.fname)
@@ -58,8 +68,8 @@ class Volume(object):
 
     def check_shape(self, shape):
         ndims = min(self.ndims, len(shape))
-        if (self.shape[:ndims] != shape[:ndims]):
-            raise RuntimeError("First %i Dimensions of the overlay region must be %s" % (ndims, shape[:ndims]))
+        if (list(self.shape[:ndims]) != list(shape[:ndims])):
+            raise RuntimeError("First %i Dimensions of must be %s - they are %s" % (ndims, shape[:ndims], self.shape[:ndims]))
 
     def remove_nans(self):
         """
@@ -83,6 +93,7 @@ class Overlay(Volume):
         within_roi = self.data_roi[np.array(roi.data, dtype=bool)]
         self.range_roi = [np.min(within_roi), np.max(within_roi)]
         # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
+        # FIXME what if range is zero?
         self.roi_fillvalue = -0.01 * (self.range_roi[1] - self.range_roi[0]) + self.range_roi[0]
         self.data_roi[np.logical_not(roi.data)] = self.roi_fillvalue
 
@@ -102,10 +113,10 @@ class Roi(Volume):
         # patch to fix roi loading when a different type.
         self.data = self.data.astype(np.int8)
         self.regions = np.unique(self.data)
-        self.regions[self.regions > 0]
-        print("ROI: Regions", self.regions)
+        self.regions = self.regions[self.regions > 0]
+        #print("ROI: Regions", self.regions)
         self.lut = self.get_lut()
-        print("ROI: LUT=", self.lut)
+        #print("ROI: LUT=", self.lut)
 
     def get_pencol(self, region):
         """
@@ -148,16 +159,16 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     # Signals
 
     # Change to main volume
-    sig_main_volume = QtCore.Signal()
+    sig_main_volume = QtCore.Signal(Volume)
 
     # Change to current overlay
-    sig_current_overlay = QtCore.Signal(str)
+    sig_current_overlay = QtCore.Signal(Overlay)
 
     # Change to set of overlays (e.g. new one added)
     sig_all_overlays = QtCore.Signal(list)
 
     # Change to current ROI
-    sig_current_roi = QtCore.Signal(str)
+    sig_current_roi = QtCore.Signal(Roi)
 
     # Change to set of ROIs (e.g. new one added)
     sig_all_rois = QtCore.Signal(list)
@@ -178,7 +189,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Map from name to overlay object
         self.overlays = {}
 
-        # Name of current overlay
+        # Current overlay object
         self.current_overlay = None
 
         # List of known overlay types that can be loaded
@@ -188,7 +199,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Map from name to ROI object
         self.rois = {}
 
-        # Name of current ROI
+        # Current ROI object
         self.current_roi = None
 
         # Estimated volume from pk modelling
@@ -197,50 +208,31 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
-    def load_main_volume(self, image_file):
-        """
-        Loading main volume
+    def set_main_volume(self, vol):
+        if self.vol is not None:
+            raise RuntimeError("Main volume already loaded")
 
-        self.img: variable storing numpy volume
-        self.img_dims: dimensions of the image
-
-        """
-        self.vol = Volume("main", fname=image_file)
-        self.vol.remove_nans()
+        self.vol = vol
 
         # 90% of the image range
-        # FIXME unclear what the purpose of this is
+        # FIXME unclear what the purpose of this is. If for viewing, should be done on ImageView histogram widget
         #self.img_range = [self.image.min(), 0.5 * self.image.max()]
 
-        print("Image dimensions: ", self.vol.shape)
-        print("Voxel size: ", self.vol.voxel_sizes)
-        print("Image range: ", self.vol.range)
-        self.sig_main_volume.emit()
-
-    def load_overlay(self, ov_file, type='loaded'):
-        """
-        Loads and checks Overlay image
-        """
-        if self.vol is None:
-            raise RuntimeError("Please load a main volume first")
-
-        ov = Overlay(type, fname=ov_file)
-        ov.remove_nans()
-
-        if type == 'model_curves':
-            # FIXME signal?
-            self.estimated = ov
-        else:
-            self.add_overlay(ov, make_current=True, signal=True)
+        self.sig_main_volume.emit(self.vol)
 
     def add_overlay(self, ov, make_current=False, signal=True, std_only=False):
         if self.vol is None:
             raise RuntimeError("Cannot add overlay with no main volume")
 
-        ov.check_shape(self.vol.shape)
-
         if std_only and ov.name not in self.overlay_label_all:
             raise RuntimeError("Overlay name is not a known type")
+
+        ov.check_shape(self.vol.shape)
+        if self.vol.nifti_header is not None:
+            header = self.vol.nifti_header.copy()
+            header.set_data_shape(ov.shape)
+            header.set_data_dtype(ov.data.dtype)
+            ov.nifti_header = header
 
         self.overlays[ov.name] = ov
         if signal:
@@ -250,62 +242,25 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_current_overlay(self, name, signal=True):
         if name in self.overlays:
-            self.current_overlay = name
+            self.current_overlay = self.overlays[name]
             if self.current_roi is not None:
-                self.overlays[name].set_roi(self.rois[self.current_roi])
+                self.current_overlay.set_roi(self.current_roi)
         else:
             raise RuntimeError("set_current_overlay: overlay %s does not exist" % name)
 
         if signal:
-            self.sig_current_overlay.emit(name)
-
-    def get_current_overlay(self):
-        if self.current_overlay is None:
-            return None
-        else:
-            return self.overlays[self.current_overlay]
-
-    def save_overlay(self, name, fname):
-        """
-        Save an overlay as a nifti file
-        """
-
-        if name == 'current':
-            name = self.current_overlay
-
-        if name not in self.overlays:
-            raise RuntimeError("save_overlay: Overlay %s does not exist" % name)
-
-        ov = self.overlays[name]
-
-        # modify main volume header to fit overlay
-        header = self.vol.hdr
-        shp = header.get_data_shape()
-        # FIXME 4D possible?
-        header.set_data_shape(shp[:-1])
-        header.set_data_dtype(ov.data.dtype)
-
-        img = nib.Nifti1Image(ov.data, header.get_base_affine(), header=header)
-        img.to_filename(fname)
-
-    def load_roi(self, roi_file):
-        """
-        Loads and checks roi image
-        """
-        if self.vol is None:
-            raise RuntimeError("Please load a main volume first")
-
-        roi_name = os.path.split(roi_file)[1]
-        roi = Roi(roi_name, fname=roi_file)
-        roi.remove_nans()
-
-        self.add_roi(roi, make_current=True, signal=True)
+            self.sig_current_overlay.emit(self.current_overlay)
 
     def add_roi(self, roi, make_current=False, signal=True):
         if roi.ndims != 3:
             raise RuntimeError("ROI must be 3D")
 
         roi.check_shape(self.vol.shape)
+        if self.vol.nifti_header is not None:
+            header = self.vol.nifti_header.copy()
+            header.set_data_shape(roi.shape)
+            header.set_data_dtype(roi.data.dtype)
+            roi.nifti_header = header
 
         self.rois[roi.name] = roi
 
@@ -316,20 +271,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def set_current_roi(self, name, signal=True):
         if name in self.rois:
-            self.current_roi = name
+            self.current_roi = self.rois[name]
             if self.current_overlay is not None:
-                self.overlays[self.current_overlay].set_roi(self.rois[name])
+                self.current_overlay.set_roi(self.current_roi)
         else:
             raise RuntimeError("set_current_roi: ROI %s does not exist" % name)
 
         if signal:
-            self.sig_current_roi.emit(name)
-
-    def get_current_roi(self):
-        if self.current_roi is None:
-            return None
-        else:
-            return self.rois[self.current_roi]
+            self.sig_current_roi.emit(self.current_roi)
 
     def get_overlay_value_curr_pos(self):
         """
@@ -348,22 +297,24 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         Return enhancement curve
         """
-        vec_sig = self.vol.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        if self.vol is None: raise RuntimeError("No volume loaded")
 
-        if self.estimated is not None:
-            vec_sig_est = self.estimated.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
-        else:
-            vec_sig_est = np.zeros(vec_sig.shape)
+        main_sig = self.vol.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        ovl_sig = {}
 
-        return vec_sig, vec_sig_est
+        for ovl in self.overlays.values():
+            if ovl.ndims == 4:
+                ovl_sig[ovl.name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+
+        return main_sig, ovl_sig
 
     def set_blank_annotation(self):
         """
         - Initialise the annotation overlay
         - Set the annotation overlay to be the current overlay
         """
-        if self.image is not None:
-            ov = Overlay("annotation", np.zeros(self.image.shape[:3]))
+        if self.vol is not None:
+            ov = Overlay("annotation", np.zeros(self.vol.shape[:3]))
             # little hack to normalise the image from 0 to 10 by listing possible labels in the corner
             for ii in range(11):
                 ov.data[0, ii] = ii
@@ -371,9 +322,3 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             self.add_overlay(ov, make_current=True, signal=True)
         else:
             print("Please load an image first")
-
-    def get_T10(self):
-        if 'T10' in self.overlays:
-            return self.overlays['T10']
-        else:
-            return None

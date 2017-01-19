@@ -167,14 +167,14 @@ class PharmaWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        if self.ivm.get_current_roi() is None:
+        if self.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
 
-        if self.ivm.get_T10() is None:
+        if "T10" not in self.ifm.overlays:
             m1 = QtGui.QMessageBox()
             m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
             m1.exec_()
@@ -185,8 +185,8 @@ class PharmaWidget(QtGui.QWidget):
         # get volumes to process
 
         img1 = self.ivm.vol.data
-        roi1 = self.ivm.get_current_roi().data
-        t101 = self.ivm.get_T10().data
+        roi1 = self.ivm.current_roi.data
+        t101 = self.ivm.overlays["T10"].data
 
         # Extract the text from the line edit options
 
@@ -300,7 +300,7 @@ class PharmaWidget(QtGui.QWidget):
             self.ivm.set_overlay(Overlay(name='offset', data=offset1vol))
             self.ivm.set_overlay(Overlay(name='vp', data=vp1vol))
             # Setting as a separate volume
-            self.ivm.set_estimated(estimated1vol)
+            self.ivm.set_overlay(Overlay("Model curves", estimated1vol))
 
 def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 
@@ -556,9 +556,8 @@ class PharmaView(QtGui.QWidget):
         """
         Get signal from mouse click
         """
-
-        val, val_est = self.ivm.get_current_enhancement()
-        self._plot(val, val_est)
+        sig, sig_ovl = self.ivm.get_current_enhancement()
+        self._plot(sig, sig_ovl("Model curves"))
         self._update_table()
 
 

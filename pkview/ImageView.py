@@ -666,8 +666,8 @@ class ImageViewOverlay(ImageViewLayout):
             return
 
         # Loop over each volume
-        roi = self.ivm.get_current_roi()
-        roi_levels = self.ivm.get_current_roi().range
+        roi = self.ivm.current_roi
+        roi_levels = self.ivm.current_roi.range
 
         if roi is None or (not self.options['ShowOverlay']):
             self.imgwin1b.setImage(np.zeros((1, 1)))
@@ -736,7 +736,7 @@ class ImageViewOverlay(ImageViewLayout):
             self.cont3[idx].setData(None)
 
     @QtCore.Slot(bool)
-    def current_roi_changed(self, name):
+    def current_roi_changed(self, roi):
         # Initialises viewer if it hasn't been initialised before
         if self.imgwin1b is None:
             self.imgwin1b = pg.ImageItem(border='k')
@@ -831,7 +831,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         """
         Processes overlay for visualisation on viewer
         """
-        ov = self.ivm.get_current_overlay()
+        ov = self.ivm.current_overlay
         if ov.ndims == 4:
             print('RGB or RGBa array')
             # TODO currently a place holder
@@ -859,7 +859,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin2c.setImage(np.zeros((1, 1)), autoLevels=False)
             self.imgwin3c.setImage(np.zeros((1, 1)), autoLevels=False)
 
-        elif self.ivm.get_current_overlay().ndims == 4:
+        elif self.ivm.current_overlay.ndims == 4:
             # RGB or RGBA image
             # FIXME needs thought
             self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
@@ -886,20 +886,20 @@ class ImageViewColorOverlay(ImageViewOverlay):
         self.h2.setAlpha(alpha)
 
     @QtCore.Slot(bool)
-    def current_overlay_changed(self, name):
+    def current_overlay_changed(self, ov):
         """
         Update the overlay data
         """
         self._overlay_changed()
 
-    @QtCore.Slot(bool)
-    def save_overlay(self, state):
-        """
-        Save the edited annotation back to the volume management
-        """
-        if state:
-            self.ivm.add_overlay('annotation', self.ovreg)
-
+    #@QtCore.Slot(bool)
+    #def save_overlay(self, state):
+    #    """
+    #    Save the edited annotation back to the volume management
+    #    """
+    #    if state:
+    #        self.ivm.add_overlay(Overlay('annotation', data=self.ovreg))
+    #
     # @QtCore.Slot(int)
     # def enable_drawing(self, color1=1):
     #

@@ -209,7 +209,7 @@ class FabberWidget(QtGui.QWidget):
         Start running the PK modelling on button click
         """
         img = self.ivm.vol
-        roi = self.ivm.get_current_roi()
+        roi = self.ivm.current_roi
 
         if img is None:
             m1 = QtGui.QMessageBox()

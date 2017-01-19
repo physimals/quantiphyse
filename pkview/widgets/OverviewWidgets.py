@@ -77,12 +77,12 @@ class CaseWidget(QtGui.QListWidget):
                 self.list_current.append(ii)
                 self.addItem(ii)
 
-    def update_current(self, str1):
-        if str1 in self.list_current:
-            ind1 = self.list_current.index(str1)
+    def update_current(self, ovl):
+        if ovl.name in self.list_current:
+            ind1 = self.list_current.index(ovl.name)
             self.setCurrentItem(self.item(ind1))
         else:
-            print("Warning: This option does not exist")
+            print("Warning: This overlay does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
@@ -109,12 +109,12 @@ class RoiWidget(QtGui.QListWidget):
                 self.list_current.append(ii)
                 self.addItem(ii)
 
-    def update_current(self, str1):
-        if str1 in self.list_current:
-            ind1 = self.list_current.index(str1)
+    def update_current(self, roi):
+        if roi.name in self.list_current:
+            ind1 = self.list_current.index(roi.name)
             self.setCurrentItem(self.item(ind1))
         else:
-            print("Warning: This option does not exist")
+            print("Warning: This ROI does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):

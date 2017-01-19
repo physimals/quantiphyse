@@ -189,7 +189,7 @@ class CurveClusteringWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        if self.ivm.get_current_roi() is None:
+        if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The ROI doesn't exist! Please load.")
@@ -201,7 +201,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.b1.setDisabled(1)
 
         img1 = self.ivm.vol.data
-        roi1 = self.ivm.get_current_roi().data
+        roi1 = self.ivm.current_roi.data
 
         self.km = KMeansPCA(img1, region1=roi1.astype(np.float32))
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())

@@ -36,7 +36,7 @@ from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
-from .volumes.volume_management import ImageVolumeManagement
+from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
@@ -362,7 +362,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.ivm.set_current_overlay(ov, signal=True)
 
     def update_current_overlay(self, overlay):
-        idx = self.overlay_combo.findText(overlay)
+        idx = self.overlay_combo.findText(overlay.name)
         if idx != self.overlay_combo.currentIndex():
             self.overlay_combo.setCurrentIndex(idx)
 
@@ -379,7 +379,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.ivm.set_current_roi(roi, signal=True)
 
     def update_current_roi(self, roi):
-        idx = self.roi_combo.findText(self.ivm.current_roi)
+        idx = self.roi_combo.findText(roi.name)
         if idx != self.roi_combo.currentIndex():
             self.roi_combo.setCurrentIndex(idx)
 
@@ -810,7 +810,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
                     return
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_main_volume(fname)
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
         else:
             print('Warning: No file selected')
@@ -839,7 +842,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
          #check if file is returned
         if fname != '':
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_roi(fname)
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -855,14 +859,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # check if file is returned
         if fname != '':
-
             if ftype is None:
+                # Make default type the filename (without extension) if not specified
+                ftype = os.path.split(fname)[1].split(".", 1)[0]
                 ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+                                                       [ftype, 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
                                                         'annotation'])
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_overlay(fname, ftype)
+            self.mw1.ivm.add_overlay(Overlay(ftype, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -871,14 +876,14 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Dialog for saving an overlay as a nifti file
 
         """
+        if self.mw1.ivm.current_overlay is None:
+            raise RuntimeError("No current overlay")
 
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
 
-        # check if file is returned
         if fname != '':
-
             # self.default_directory = get_dir(fname)
-            self.mw1.ivm.save_overlay(fname, 'current')
+            self.mw1.ivm.current_overlay.save(fname)
         else:
             print('Warning: No file selected')
 
@@ -898,11 +903,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Loading overlays
         if ftype != 'DCE' and ftype != 'ROI':
-
-            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
-                                                     'model_curves', 'annotation'])
-            self.mw1.ivm.load_overlay(fname, ftype2)
+            self.show_ovregsel_load_dialog(fname)
 
         # Loading main image
         elif ftype == 'DCE':
@@ -923,12 +924,16 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 else:
                     return
 
-            self.mw1.ivm.load_main_volume(fname)
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
 
         # Loading ROI
         elif ftype == 'ROI':
-            self.mw1.ivm.load_roi(fname)
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
 
     def auto_load_files(self):
         """

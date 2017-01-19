@@ -44,8 +44,8 @@ class OverlayAnalyis(object):
             roi_labels = np.array([0])
             return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
-        roi = self.ivm.get_current_roi()
-        ovl = self.ivm.get_current_overlay()
+        roi = self.ivm.current_roi
+        ovl = self.ivm.current_overlay
         roi_labels = roi.regions
         roi_labels = roi_labels[roi_labels > 0]
 
@@ -86,8 +86,8 @@ class OverlayAnalyis(object):
 
         slice1 = self.ivm.cim_pos[2]
 
-        roi = self.ivm.get_current_roi()
-        ovl = self.ivm.get_current_overlay()
+        roi = self.ivm.current_roi
+        ovl = self.ivm.current_overlay
         overlay_slice = ovl.data[:, :, slice1]
         roi_slice = roi.data[:, :, slice1]
 

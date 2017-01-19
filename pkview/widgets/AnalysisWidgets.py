@@ -467,7 +467,7 @@ class ColorOverlay1(QtGui.QWidget):
 
     def reset_spins(self):
         # Min and max set for overlay choice
-        ov = self.ivm.get_current_overlay()
+        ov = self.ivm.current_overlay
         if ov:
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
@@ -543,7 +543,7 @@ class ColorOverlay1(QtGui.QWidget):
 
     @QtCore.Slot()
     def generate_histogram(self):
-        if (self.ivm.get_current_roi() is None) or (self.ivm.get_current_overlay() is None):
+        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("Histogram")
             m1.setText("Histogram requires a ROI and overlay to be loaded")
@@ -561,7 +561,7 @@ class ColorOverlay1(QtGui.QWidget):
         for ii in range(len(stats1['mean'])):
             # FIXME This is basically duplicated from ImageView - not ideal
             val = roi_labels[ii]
-            pencol = self.ivm.get_current_roi().get_pencol(val)
+            pencol = self.ivm.current_roi.get_pencol(val)
             curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
             self.plt1.addItem(curve)
 
