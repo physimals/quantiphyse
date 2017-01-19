@@ -90,7 +90,7 @@ class PerfSlicWidget(QtGui.QWidget):
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_size)
+        ps1 = PerfSLIC(img, vox_size, self.ivm.roi)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")
