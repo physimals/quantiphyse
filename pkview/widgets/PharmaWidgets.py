@@ -167,14 +167,14 @@ class PharmaWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        if self.current_roi is None:
+        if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
 
-        if "T10" not in self.ifm.overlays:
+        if "T10" not in self.ivm.overlays:
             m1 = QtGui.QMessageBox()
             m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
             m1.exec_()
@@ -294,13 +294,12 @@ class PharmaWidget(QtGui.QWidget):
             kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
-            self.ivm.set_overlay(Overlay(name='Ktrans', data=Ktrans1vol), make_current=True)
-            self.ivm.set_overlay(Overlay(name='ve', data=ve1vol))
-            self.ivm.set_overlay(Overlay(name='kep', data=kep1vol))
-            self.ivm.set_overlay(Overlay(name='offset', data=offset1vol))
-            self.ivm.set_overlay(Overlay(name='vp', data=vp1vol))
-            # Setting as a separate volume
-            self.ivm.set_overlay(Overlay("Model curves", estimated1vol))
+            self.ivm.add_overlay(Overlay('Ktrans', data=Ktrans1vol), make_current=True)
+            self.ivm.add_overlay(Overlay('ve', data=ve1vol))
+            self.ivm.add_overlay(Overlay('kep', data=kep1vol))
+            self.ivm.add_overlay(Overlay('offset', data=offset1vol))
+            self.ivm.add_overlay(Overlay('vp', data=vp1vol))
+            self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
 
 def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 
@@ -409,7 +408,7 @@ class PharmaView(QtGui.QWidget):
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
-        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1 = pg.GraphicsWindow()
         self.win1.setVisible(True)
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
@@ -427,7 +426,6 @@ class PharmaView(QtGui.QWidget):
         # input temporal resolution
         self.text2 = QtGui.QLineEdit('5', self)
         self.text2.returnPressed.connect(self.replot_graph)
-
 
         self.tabmod1 = QtGui.QStandardItemModel()
 
@@ -470,7 +468,7 @@ class PharmaView(QtGui.QWidget):
         l1.addWidget(self.win1)
         l1.addLayout(l05)
         l1.addWidget(g02)
-        l1.addStretch(1)
+        #l1.addStretch(1)
         self.setLayout(l1)
 
         # initial plot colour
@@ -481,18 +479,15 @@ class PharmaView(QtGui.QWidget):
         self.curve1 = None
 
     def _update_table(self):
-
         """
         Set the overlay parameter values in the table based on the current point clicked
         """
-
         self.tab1.setVisible(True)
-
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
-
-        for ii, ov1 in enumerate(overlay_vals.keys()):
-            self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ov1))
-            self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ov1], 10))))
+        for ii, ovl in enumerate(overlay_vals.keys()):
+            if self.ivm.overlays[ovl].ndims == 3:
+                self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
+                self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
 
     def add_image_management(self, image_vol_management):
         """
@@ -500,7 +495,7 @@ class PharmaView(QtGui.QWidget):
         """
         self.ivm = image_vol_management
 
-    def _plot(self, values1, values1est):
+    def _plot(self, sig, sig_ovl):
 
         """
         Plot the curve / curves
@@ -508,29 +503,28 @@ class PharmaView(QtGui.QWidget):
         #Make window visible and populate
         self.win1.setVisible(True)
 
-        values1 = np.array(values1, dtype=np.double)
+        values = np.array(sig, dtype=np.double)
 
         # Setting x-values
         xres = float(self.text1.text())
-        xx = xres * np.arange(len(values1))
+        xx = xres * np.arange(len(values))
 
         frames1 = int(self.text2.text())
 
         if self.cb3.isChecked() is True:
-            m1 = np.mean(values1[:frames1])
-            values1 = values1 / m1 - 1
+            m1 = np.mean(values[:frames1])
+            values = values / m1 - 1
 
-        # Plotting using single or multiple plots
-        if self.curve1 is None:
-            self.curve1 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
-            self.curve3 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.curve4 = self.p1.plot(pen=self.plot_color2, width=4.0)
+        self.p1.clear()
+        self.curve1 = self.p1.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        self.curve2 = self.p1.plot(xx, values, pen=self.plot_color, width=4.0)
 
-        self.curve2.setData(xx, values1, pen=self.plot_color)
-        self.curve1.setData(xx, values1)
-        self.curve4.setData(xx, values1est, pen=self.plot_color2)
-        self.curve3.setData(xx, values1est)
+        for ovl, sig_values in sig_ovl.items():
+            if self.cb3.isChecked():
+                m = np.mean(sig_values[:frames1])
+                if m > 0: sig_values = sig_values / m - 1
+            self.p1.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+            self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
         self.p1.setLabel('left', "Signal Enhancement")
         self.p1.setLabel('bottom', "Time", units='s')
@@ -557,7 +551,7 @@ class PharmaView(QtGui.QWidget):
         Get signal from mouse click
         """
         sig, sig_ovl = self.ivm.get_current_enhancement()
-        self._plot(sig, sig_ovl("Model curves"))
+        self._plot(sig, sig_ovl)
         self._update_table()
 
 

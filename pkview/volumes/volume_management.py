@@ -90,12 +90,17 @@ class Overlay(Volume):
         # Get data inside the ROI
         self.data_roi = np.copy(self.data)
 
-        within_roi = self.data_roi[np.array(roi.data, dtype=bool)]
+        if self.ndims == 3:
+            roidata = roi.data
+        else:
+            roidata = np.expand_dims(roi.data, 3).repeat(self.shape[3], 3)
+
+        within_roi = self.data_roi[np.array(roidata, dtype=bool)]
         self.range_roi = [np.min(within_roi), np.max(within_roi)]
         # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
         # FIXME what if range is zero?
         self.roi_fillvalue = -0.01 * (self.range_roi[1] - self.range_roi[0]) + self.range_roi[0]
-        self.data_roi[np.logical_not(roi.data)] = self.roi_fillvalue
+        self.data_roi[np.logical_not(roidata)] = self.roi_fillvalue
 
 class Roi(Volume):
     def __init__(self, name, data=None, fname=None):

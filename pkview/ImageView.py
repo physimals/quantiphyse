@@ -832,10 +832,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         Processes overlay for visualisation on viewer
         """
         ov = self.ivm.current_overlay
-        if ov.ndims == 4:
-            print('RGB or RGBa array')
-            # TODO currently a place holder
-        elif (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
+        if (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
             self.ovreg = ov.data_roi
         else:
             self.ovreg = ov.data
@@ -860,11 +857,16 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwin3c.setImage(np.zeros((1, 1)), autoLevels=False)
 
         elif self.ivm.current_overlay.ndims == 4:
-            # RGB or RGBA image
-            # FIXME needs thought
-            self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
-            self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]), autoLevels=False)
-            self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
+            if self.ivm.current_overlay.shape[3] == 3:
+                # RGB or RGBA image
+                self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
+                self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]), autoLevels=False)
+                self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
+            else:
+                # Timeseries
+                self.imgwin1c.setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]]), autoLevels=False)
+                self.imgwin2c.setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]]), autoLevels=False)
+                self.imgwin3c.setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]]), autoLevels=False)
         else:
             self.imgwin1c.setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], autoLevels=False)
             self.imgwin2c.setImage(self.ovreg[:, self.ivm.cim_pos[1], :], autoLevels=False)
