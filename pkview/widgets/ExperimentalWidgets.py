@@ -42,7 +42,7 @@ class ImageExportWidget(QtGui.QWidget):
         """
         Capture 4D changes over time
         """
-        imshape = self.ivm.get_image_shape()
+        imshape = self.ivm.vol.shape
 
         if imshape is None:
             warnings.warn('Image is not loaded')

@@ -160,7 +160,21 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load.")
+            m1.setText("The ROI doesn't exist! Please load.")
+            m1.exec_()
+            return
+
+        if self.ivm.current_overlay is None:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
+            m1.setText("No current overlay selected")
+            m1.exec_()
+            return
+
+        if self.ivm.current_overlay.ndims != 3:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
+            m1.setText("Cannot run clustering on 4d overlays")
             m1.exec_()
             return
 
