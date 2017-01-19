@@ -21,11 +21,10 @@ APP = None
 
 class T10WidgetTest(unittest.TestCase):
 
-    def __init__(self, *args, **kwargs):
-        super(T10WidgetTest, self).__init__(*args, **kwargs)
-        #self.app = QtGui.QApplication(sys.argv)
-
     def setUp(self):
+        global APP
+        if APP is None:
+            APP = QtGui.QApplication(sys.argv)
         self.ivm = ImageVolumeManagement()
         self.w = T10Widget()
         self.w.add_image_management(self.ivm)
@@ -71,5 +70,4 @@ class T10WidgetTest(unittest.TestCase):
    #     self.assertRaises(Exception, self.w.generate)
 
 if __name__ == '__main__':
-    APP = QtGui.QApplication(sys.argv)
     unittest.main()
