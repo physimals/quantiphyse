@@ -3,6 +3,7 @@ import numpy as np
 import skimage.segmentation as seg
 
 from pkview.analysis.perfusionslic import PerfSLIC
+from pkview.analysis.overlay_analysis import OverlayAnalyis
 
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, intonly=False):
@@ -200,4 +201,64 @@ class PerfSlicWidget(QtGui.QWidget):
             self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
         if self.freehand_roi:
             pass
+
+class MeanValuesWidget(QtGui.QWidget):
+    """
+    Convert an overlay + multi-level ROI into mean values overlay
+    """
+    def __init__(self):
+        super(MeanValuesWidget, self).__init__()
+
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(QtGui.QLabel("<font size=50>Generate Mean Values Overlay</font> \n"))
+        desc = QtGui.QLabel("This widget will convert the current overlay into a "
+                            "new overlay in which each ROI region contains the mean "
+                            "value for that region. This is generally only useful for "
+                            "multi-level ROIs such as clusters or supervoxels")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        gbox = QtGui.QGroupBox()
+        gbox.setTitle("Generate mean values overlay")
+
+        vbox = QtGui.QVBoxLayout()
+        gbox.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        b = QtGui.QPushButton('Generate', self)
+        b.clicked.connect(self.generate)
+        hbox.addWidget(b)
+        hbox.addStretch(1)
+        vbox.addLayout(hbox)
+        gbox.setLayout(vbox)
+
+        layout.addWidget(gbox)
+        layout.addStretch(1)
+        self.setLayout(layout)
+
+    def add_image_management(self, image_vol_management):
+        self.ivm = image_vol_management
+
+    def generate(self):
+        roi = self.ivm.roi
+        if roi is None:
+            raise RuntimeError("No ROI defined")
+
+        if self.ivm.overlay is None:
+            raise RuntimeError("No current overlay")
+
+        oa = OverlayAnalyis()
+        oa.add_image_management(self.ivm)
+        stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
+
+        #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
+        ov_name = self.ivm.overlay_label + "_means"
+        ov_data = np.copy(self.ivm.overlay)
+        for region, mean in zip(roi_labels, stat1["mean"]):
+            ov_data[roi == region] = mean
+
+        #ovl = Overlay(ov_name, data=ov_data)
+        #self.ivm.add_overlay(ovl)
+        self.ivm.set_overlay(ov_name, ov_data, force=True)
+
 

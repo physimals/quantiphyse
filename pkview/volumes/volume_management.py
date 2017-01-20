@@ -298,9 +298,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         roi, voxel_size, _ = self._load_med_file(file1)
         print(roi.min(), roi.max())
-        if roi.min() < 0 or roi.max() > 255:
+        if roi.min() < 0 or roi.max() >= 2**32:
             msgBox = QtGui.QMessageBox()
-            msgBox.setText("ROI must contain values between 0 and 255")
+            msgBox.setText("ROI must contain values between 0 and 2^32")
             msgBox.exec_()
             return
 
@@ -326,7 +326,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def add_roi(self, name, img, make_current):
         img = self._remove_nans(img)
         # patch to fix roi loading when a different type.
-        img = img.astype(np.int8)
+        img = img.astype(np.int32)
         self.rois[name] = img
         self.sig_all_rois.emit(self.rois.keys())
         if make_current:
