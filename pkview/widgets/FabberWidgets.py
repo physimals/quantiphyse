@@ -7,6 +7,8 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
+import sys, os
+
 import multiprocessing
 import multiprocessing.pool
 import time
@@ -19,14 +21,18 @@ from PySide import QtCore, QtGui
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
 
-import sys, os
-sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
-print("Appended %s/lib/python/" % os.environ["FSLDIR"])
-from pyfab.views import *
-from pyfab.imagedata import FabberImageData
-from pyfab.model import FabberRunData
-from pyfab.ui import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
-from pyfab.fabber import FabberLib
+if "FSLDIR" in os.environ:
+    sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
+    print("Appended %s/lib/python/" % os.environ["FSLDIR"])
+    from pyfab.views import *
+    from pyfab.imagedata import FabberImageData
+    from pyfab.ui import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
+    from pyfab.fabber import FabberRunData, FabberLib, FabberException
+else:
+    # Stub to prevent startup error - warning will occur if Fabber is used
+    class OptionView:
+        pass
+
 
 # Current overlays list from the IVM object. Global so that all the ImageOptionView instances
 # can see what overlays to offer as options
@@ -56,14 +62,16 @@ class ImageOptionView(OptionView):
     def changed(self):
         # Note that this signal is triggered when the widget
         # is enabled/disabled and when overlays are added/removed
-        # from the list
+        # from the list. So we can't be sure 'fab' is defined
         if self.combo.isEnabled():
-            self.fab[self.key] = self.combo.currentText()
+            if hasattr(self, "rundata"):
+                self.rundata[self.key] = self.combo.currentText()
+            print(self.key)
 
     def do_update(self):
         OptionView.do_update(self)
-        if self.fab.options.has_key(self.key):
-            idx = self.combo.findText(self.fab.options[self.key])
+        if self.key in self.rundata:
+            idx = self.combo.findText(self.rundata[self.key])
             self.combo.setCurrentIndex(idx)
 
     def add(self, grid, row):
@@ -87,6 +95,14 @@ class FabberWidget(QtGui.QWidget):
         super(FabberWidget, self).__init__()
 
         self.ivm = None
+        self.fsldir = os.environ.get("FSLDIR", None)
+
+        mainVbox = QtGui.QVBoxLayout()
+        self.setLayout(mainVbox)
+
+        if not self.fsldir:
+            mainVbox.addWidget(QtGui.QLabel("FSLDIR is not defined. You must install FSL to use Fabber modelling"))
+            return
 
         # Options box
         optionsBox = QGroupBoxB()
@@ -155,21 +171,20 @@ class FabberWidget(QtGui.QWidget):
         btn = QtGui.QPushButton("Open")
         btn.clicked.connect(self.open_file)
         hbox.addWidget(btn)
-        btn = QtGui.QPushButton("Save")
-        btn.clicked.connect(self.save_file)
-        hbox.addWidget(btn)
+        self.saveBtn = QtGui.QPushButton("Save")
+        self.saveBtn.clicked.connect(self.save_file)
+        self.saveBtn.setEnabled(False)
+        hbox.addWidget(self.saveBtn)
         btn = QtGui.QPushButton("Save As")
         btn.clicked.connect(self.save_as_file)
         hbox.addWidget(btn)
         vbox.addLayout(hbox)
 
         # Main layout
-        mainVbox = QtGui.QVBoxLayout()
         mainVbox.addWidget(optionsBox)
         mainVbox.addWidget(runBox)
         mainVbox.addWidget(fileBox)
         mainVbox.addStretch()
-        self.setLayout(mainVbox)
 
         # Register our custom view to handle image options
         OPT_VIEW["IMAGE"] = ImageOptionView
@@ -185,39 +200,43 @@ class FabberWidget(QtGui.QWidget):
         self.views = [
             ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
             self.modelOpts, self.methodOpts, self.generalOpts,
-            ChooseFileView("fabber", changeBtn=self.libChangeBtn, edit=self.libEdit),
-            ChooseFileView("loadmodels", changeBtn=self.modellibChangeBtn, edit=self.modellibEdit),
+            ChooseFileView("fabber", changeBtn=self.libChangeBtn, edit=self.libEdit,
+                           dialogTitle="Choose core library", defaultDir=os.path.join(self.fsldir, "lib")),
+            ChooseFileView("loadmodels", changeBtn=self.modellibChangeBtn, edit=self.modellibEdit,
+                           dialogTitle="Choose model library", defaultDir=os.path.join(self.fsldir, "lib")),
         ]
 
         self.generalOpts.ignore("output", "data", "mask", "data<n>", "overwrite", "method", "model", "help",
                                 "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
                                 "loadmodels")
-        self.fab = FabberRunData()
-        self.fab["fabber"] = "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"
-        self.fab["save-mean"] = ""
+        self.rundata = FabberRunData()
+        self.rundata["fabber"] = "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"
+        self.rundata["save-mean"] = ""
         self.reset()
 
     def save_file(self):
-        self.fab.save()
+        self.rundata.save()
 
     def save_as_file(self):
         # fixme choose file name
         # fixme overwrite
         # fixme clone data
         fname = QFileDialog.getSaveFileName()[0]
-        self.fab.set_file(fname)
-        self.fab.save()
+        self.rundata.set_file(fname)
+        self.rundata.save()
         self.fileEdit.setText(fname)
+        self.saveBtn.setEnabled(True)
 
     def open_file(self):
         filename = QFileDialog.getOpenFileName()[0]
         if filename:
             self.fileEdit.setText(filename)
-            self.fab = FabberRunData(filename)
+            self.rundata = FabberRunData(filename)
+            self.saveBtn.setEnabled(True)
             self.reset()
 
     def reset(self):
-        for view in self.views: self.fab.add_view(view)
+        for view in self.views: self.rundata.add_view(view)
 
     def add_image_management(self, image_vol_management):
         """
@@ -258,34 +277,38 @@ class FabberWidget(QtGui.QWidget):
             m1.exec_()
             return
 
-        self.fab.dump(sys.stdout)
-        lib = FabberLib(rundata=self.fab)
-        data = {"data" : img}
-        # Pass in overlays - FIXME should only pass in those that are being used!
-        for ov in CURRENT_OVERLAYS:
+        self.rundata.dump(sys.stdout)
+
+        # Pass in input data. This is the main image plus any referenced overlays
+        used_overlays = set()
+        for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
+            for view in dialog.views.values():
+                if isinstance(view, ImageOptionView) and view.combo.isEnabled():
+                    used_overlays.add(view.combo.currentText())
+        print(used_overlays)
+
+        data = {"data": img}
+        for ov in used_overlays:
             data[ov] = self.ivm.overlay_all[ov]
 
         try:
-            self.run = lib.run_with_data(self.fab, data, roi)
+            lib = FabberLib(rundata=self.rundata)
+            self.run = lib.run_with_data(self.rundata, data, roi)
             self.logBtn.setEnabled(True)
             first = True
             for key, item in self.run.data.items():
-                print(key)
                 if len(item.shape) == 3:
-                    print("overlay")
                     self.ivm.set_overlay(name=key, data=item, force=True)
                     if first:
                         self.ivm.set_current_overlay(key)
                         first = False
                 elif key.lower() == "modelfit":
-                    print("modelfit")
                     self.ivm.set_estimated(item)
             self.sig_emit_reset.emit(1)
-        except Exception, e:
-            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run: " + repr(e), QtGui.QMessageBox.Close)
+        except FabberException, e:
+            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(e), QtGui.QMessageBox.Close)
 
     def view_log(self):
-        print("View log")
         self.logview = LogViewerDialog(log=self.run.log)
         self.logview.show()
         self.logview.raise_()
