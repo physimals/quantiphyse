@@ -230,7 +230,7 @@ class FabberWidget(QtGui.QWidget):
         self.reset()
 
         self.queue = multiprocessing.Queue()
-        pool = multiprocessing.Pool(1, pool_init, initargs=(self.queue,))
+        self.pool = multiprocessing.Pool(1, pool_init, initargs=(self.queue,))
 
         # Callbacks to update GUI during processing and when finished
         self.timer = QtCore.QTimer()
@@ -244,14 +244,14 @@ class FabberWidget(QtGui.QWidget):
         # fixme choose file name
         # fixme overwrite
         # fixme clone data
-        fname = QFileDialog.getSaveFileName()[0]
+        fname = QtGui.QFileDialog.getSaveFileName()[0]
         self.rundata.set_file(fname)
         self.rundata.save()
         self.fileEdit.setText(fname)
         self.saveBtn.setEnabled(True)
 
     def open_file(self):
-        filename = QFileDialog.getOpenFileName()[0]
+        filename = QtGui.QFileDialog.getOpenFileName()[0]
         if filename:
             self.fileEdit.setText(filename)
             self.rundata = FabberRunData(filename)
