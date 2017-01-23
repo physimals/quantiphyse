@@ -216,9 +216,9 @@ class MainWindowWidget(QtGui.QWidget):
         # self.update_slider_range()
 
         # connect sliders to ivl1
-        self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
-        self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
-        self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
+        self.sld1.valueChanged[int].connect(self.ivl1.slider_connect(0))
+        self.sld2.valueChanged[int].connect(self.ivl1.slider_connect(1))
+        self.sld3.valueChanged[int].connect(self.ivl1.slider_connect(2))
         self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
 
         # Position Label and connect to slider
