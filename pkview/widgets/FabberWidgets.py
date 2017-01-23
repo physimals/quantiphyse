@@ -1,8 +1,6 @@
 """
-
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Author: Martin Craig <martin.craig@eng.ox.ac.uk>
+Copyright (c) 2016-2017 University of Oxford, Martin Craig
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
@@ -33,10 +31,32 @@ else:
     class OptionView:
         pass
 
-
 # Current overlays list from the IVM object. Global so that all the ImageOptionView instances
 # can see what overlays to offer as options
 CURRENT_OVERLAYS = []
+
+def make_fabber_cb(queue):
+    def progress_cb(voxel, nvoxels):
+        if (voxel % 100 == 0) or (voxel == nvoxels):
+            queue.put((voxel, nvoxels))
+
+    return progress_cb
+
+def run_fabber(rundata, data, roi):
+    try:
+        lib = FabberLib(rundata=rundata)
+        run = lib.run_with_data(rundata, data, roi, progress_cb=make_fabber_cb(run_fabber.queue))
+        return True, run
+    except FabberException, e:
+        return False, e
+
+def pool_init(queue):
+    # see http://stackoverflow.com/a/3843313/852994
+    # In python every function is an object so this is a quick and dirty way of adding a variable
+    # to a function for easy access later.
+    # Can't use usual approach (class method or closure) because functions run by multiprocessing
+    # must be picklable and these are not (by default at least)
+    run_fabber.queue = queue
 
 class ImageOptionView(OptionView):
     """
@@ -79,17 +99,12 @@ class ImageOptionView(OptionView):
         grid.addWidget(self.combo, row, 1)
 
 class FabberWidget(QtGui.QWidget):
-
     """
-    Widget for generating running Fabber model fitting
-    Bass class
-        - GUI framework
-        - Buttons
-        - Multiprocessing
+    Widget for running Fabber model fitting
     """
 
-    #emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
+    """ Signal emitted when async Fabber finished"""
+    sig_finished = QtCore.Signal(tuple)
 
     def __init__(self):
         super(FabberWidget, self).__init__()
@@ -145,9 +160,9 @@ class FabberWidget(QtGui.QWidget):
         runBox.setLayout(vbox)
 
         hbox = QtGui.QHBoxLayout()
-        runBtn = QtGui.QPushButton('Run modelling', self)
-        runBtn.clicked.connect(self.start_task)
-        hbox.addWidget(runBtn)
+        self.runBtn = QtGui.QPushButton('Run modelling', self)
+        self.runBtn.clicked.connect(self.start_task)
+        hbox.addWidget(self.runBtn)
         self.progress = QtGui.QProgressBar(self)
         self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
         hbox.addWidget(self.progress)
@@ -213,6 +228,14 @@ class FabberWidget(QtGui.QWidget):
         self.rundata["fabber"] = "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"
         self.rundata["save-mean"] = ""
         self.reset()
+
+        self.queue = multiprocessing.Queue()
+        pool = multiprocessing.Pool(1, pool_init, initargs=(self.queue,))
+
+        # Callbacks to update GUI during processing and when finished
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update_progress)
+        self.sig_finished.connect(self.run_finished_gui)
 
     def save_file(self):
         self.rundata.save()
@@ -291,10 +314,31 @@ class FabberWidget(QtGui.QWidget):
         for ov in used_overlays:
             data[ov] = self.ivm.overlay_all[ov]
 
-        try:
-            lib = FabberLib(rundata=self.rundata)
-            self.run = lib.run_with_data(self.rundata, data, roi)
-            self.logBtn.setEnabled(True)
+        # set the progress value
+        self.progress.setValue(0)
+        self.timer.start(1000)
+
+        # Kind of pointless using a pool at the moment, but leave open possibility of parallel runs
+        # when spatial VB is not in use.
+        self.pool.apply_async(run_fabber, (self.rundata, data, roi), callback=self.run_finished)
+        self.runBtn.setEnabled(False)
+
+    def run_finished(self, result):
+        # Can only update GUI elements from the GUI thread
+        self.sig_finished.emit(result)
+
+    def run_finished_gui(self, result):
+        """
+        Callback called when an async fabber run completes
+
+        result is a tuple. First value is success/not success boolean. Second is either the run or the exception
+        """
+        self.timer.stop()
+        self.update_progress()
+        self.runBtn.setEnabled(True)
+        self.logBtn.setEnabled(result[0])
+        if result[0]:
+            self.run = result[1]
             first = True
             for key, item in self.run.data.items():
                 if len(item.shape) == 3:
@@ -304,15 +348,18 @@ class FabberWidget(QtGui.QWidget):
                         first = False
                 elif key.lower() == "modelfit":
                     self.ivm.set_estimated(item)
-            self.sig_emit_reset.emit(1)
-        except FabberException, e:
-            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(e), QtGui.QMessageBox.Close)
+        else:
+            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(result[1]),
+                                      QtGui.QMessageBox.Close)
+
+    def update_progress(self):
+        if self.queue.empty(): return
+        while not self.queue.empty():
+            v, nv = self.queue.get()
+        percent = 100*float(v)/nv
+        self.progress.setValue(percent)
 
     def view_log(self):
         self.logview = LogViewerDialog(log=self.run.log)
         self.logview.show()
         self.logview.raise_()
-
-
-        
-

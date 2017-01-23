@@ -198,8 +198,6 @@ class MainWindowWidget(QtGui.QWidget):
 
         self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
-        self.wid["Fab"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
         self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
         self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
 
