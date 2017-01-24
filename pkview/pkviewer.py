@@ -36,7 +36,7 @@ from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
-from .volumes.volume_management import ImageVolumeManagement
+from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
@@ -143,9 +143,7 @@ class MainWindowWidget(QtGui.QWidget):
         # Signal Enhancement
         self.wid["SigEn"] = [SECurve(self.local_file_path), '/icons/voxel.svg', 'Voxel analysis']
         self.wid["SigEn"][0].add_image_management(self.ivm)
-        # Signals to connect widget
-        self.wid["SigEn"][0].sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
-        self.wid["SigEn"][0].sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+        self.wid["SigEn"][0].add_image_view(self.ivl1)
 
         # Pharmaview is not initialised by default
         self.wid["PView"] = [None, 'a', 'b']
@@ -186,28 +184,11 @@ class MainWindowWidget(QtGui.QWidget):
         # Random Walker
         # self.sw_rw = None
 
-        # Connect widgets
-        # Connect colormap choice, alpha and colormap range
-        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
-        self.wid["Overview"][0].l2.sig_emit_reset.connect(self.ivl1.update_roi)
-
         # Connect image export widget
-        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
+        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_time_pos)
         self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
-        # Connect reset from clustering widget
-        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_roi)
-        self.wid["Clus"][0].add_image_management(self.ivm)
-
         self.initTabs()
-
-        # Connecting widget signals
-        # 1) Plotting data on mouse image click
-        self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
 
         # Choosing supervoxels for ROI
         self.ivl1.sig_mouse_click.connect(self.wid["sv"][0].sig_mouse_click)
@@ -229,10 +210,10 @@ class MainWindowWidget(QtGui.QWidget):
         # self.update_slider_range()
 
         # connect sliders to ivl1
-        self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
-        self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
-        self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
-        self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
+        self.sld1.valueChanged[int].connect(self.ivl1.set_space_pos(2))
+        self.sld2.valueChanged[int].connect(self.ivl1.set_space_pos(1))
+        self.sld3.valueChanged[int].connect(self.ivl1.set_space_pos(0))
+        self.sld4.valueChanged[int].connect(self.ivl1.set_time_pos)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -267,7 +248,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(150)
-        sld1.valueChanged.connect(self.ivl1.set_roi_alpha)
+        sld1.valueChanged.connect(self.ivl1.roi_alpha_changed)
         grid.addWidget(sld1, 2, 1)
         grid.setRowStretch(3, 1)
         gBox.setLayout(grid)
@@ -311,7 +292,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(255)
-        sld1.valueChanged.connect(self.ivl1.set_overlay_alpha)
+        sld1.valueChanged.connect(self.ivl1.overlay_alpha_changed)
         grid.addWidget(sld1, 2, 1)
         grid.setRowStretch(3, 1)
         gBox3.setLayout(grid)
@@ -372,10 +353,10 @@ class MainWindowWidget(QtGui.QWidget):
     def overlay_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_overlay(ov, broadcast_change=True)
+            self.ivm.set_current_overlay(ov, signal=True)
 
     def update_current_overlay(self, overlay):
-        idx = self.overlay_combo.findText(overlay)
+        idx = self.overlay_combo.findText(overlay.name)
         if idx != self.overlay_combo.currentIndex():
             self.overlay_combo.setCurrentIndex(idx)
 
@@ -383,25 +364,25 @@ class MainWindowWidget(QtGui.QWidget):
         self.overlay_combo.clear()
         for ov in overlays:
             self.overlay_combo.addItem(ov)
-        self.update_current_overlay(self.ivm.ovreg_file1)
+        self.update_current_overlay(self.ivm.current_overlay)
         self.overlay_combo.updateGeometry()
 
     def roi_changed(self, idx):
         if idx >= 0:
-            roi = self.roi_combo.itemData(idx)
-            self.ivm.set_current_roi(roi, broadcast_change=True)
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi, signal=True)
 
     def update_current_roi(self, roi):
-        idx = self.roi_combo.findText(self.ivm.roi_displayname)
+        idx = self.roi_combo.findText(roi.name)
         if idx != self.roi_combo.currentIndex():
             self.roi_combo.setCurrentIndex(idx)
 
     def update_rois(self, rois):
         self.roi_combo.clear()
         for roi in rois:
-            self.roi_combo.addItem(os.path.split(roi)[1], roi)
+            self.roi_combo.addItem(roi)
 
-        self.update_current_roi(self.ivm.roi_displayname)
+        self.update_current_roi(self.ivm.current_roi)
         self.roi_combo.updateGeometry()
 
     def overlay_view_changed(self, idx):
@@ -447,12 +428,12 @@ class MainWindowWidget(QtGui.QWidget):
     # update slider range
     def update_slider_range(self):
         # set slider range
-        self.sld1.setRange(0, self.ivm.img_dims[2]-1)
-        self.sld2.setRange(0, self.ivm.img_dims[1]-1)
-        self.sld3.setRange(0, self.ivm.img_dims[0]-1)
+        self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
+        self.sld2.setRange(0, self.ivm.vol.shape[1]-1)
+        self.sld3.setRange(0, self.ivm.vol.shape[0]-1)
 
-        if len(self.ivm.img_dims) == 4:
-            self.sld4.setRange(0, self.ivm.img_dims[3]-1)
+        if self.ivm.vol.ndims == 4:
+            self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
         else:
             self.sld4.setRange(0, 0)
 
@@ -806,7 +787,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
                 msgBox.setText("A volume has already been loaded")
@@ -823,8 +804,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
                     return
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
         else:
             print('Warning: No file selected')
@@ -853,8 +836,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
          #check if file is returned
         if fname != '':
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -870,16 +853,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # check if file is returned
         if fname != '':
-
             if ftype is None:
+                # Make default type the filename (without extension) if not specified
+                ftype = os.path.split(fname)[1].split(".", 1)[0]
                 ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+                                                       [ftype, 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
                                                         'annotation'])
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_ovreg(fname, ftype)
-            if ftype != 'estimated':
-                self.mw1.ivl1.load_ovreg()
+            self.mw1.ivm.add_overlay(Overlay(ftype, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -888,14 +870,14 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Dialog for saving an overlay as a nifti file
 
         """
+        if self.mw1.ivm.current_overlay is None:
+            raise RuntimeError("No current overlay")
 
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
 
-        # check if file is returned
         if fname != '':
-
             # self.default_directory = get_dir(fname)
-            self.mw1.ivm.save_ovreg(fname, 'current')
+            self.mw1.ivm.current_overlay.save(fname)
         else:
             print('Warning: No file selected')
 
@@ -915,17 +897,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Loading overlays
         if ftype != 'DCE' and ftype != 'ROI':
-
-            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
-                                                     'model_curves', 'annotation'])
-            self.mw1.ivm.load_ovreg(fname, ftype2)
-            if ftype != 'estimation':
-                self.mw1.ivl1.load_ovreg()
+            self.show_ovregsel_load_dialog(fname)
 
         # Loading main image
         elif ftype == 'DCE':
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
 
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
@@ -942,14 +918,16 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 else:
                     return
 
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
 
         # Loading ROI
         elif ftype == 'ROI':
-            self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
 
     def auto_load_files(self):
         """

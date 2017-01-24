@@ -1,6 +1,7 @@
 from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
+from pkview.volumes.volume_management import Overlay, Roi
 
 from pkview.analysis.perfusionslic import PerfSLIC
 
@@ -80,10 +81,10 @@ class PerfSlicWidget(QtGui.QWidget):
         self.ivl = ivl
 
     def generate(self):
-        img = self.ivm.get_image()
-        if img is None:
+        if self.ivm.vol is None:
             QtGui.QMessageBox.warning(self, "No volume loaded", "Load a volume before generating supervoxels", QtGui.QMessageBox.Close)
             return
+        img = self.ivm.vol.data
 
         ncomp = self.n_comp.spin.value()
         comp = self.compactness.spin.value()
@@ -102,8 +103,7 @@ class PerfSlicWidget(QtGui.QWidget):
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         ovl = np.array(segments, dtype=np.int) + 1
 
-        self.ivm.set_overlay(name="supervoxels", data=ovl, force=True)
-        self.ivm.set_current_overlay("supervoxels")
+        self.ivm.add_overlay(Overlay(name="supervoxels", data=ovl), make_current=True)
         self.roibox.setEnabled(True)
         self.roi_reset()
 
@@ -152,26 +152,25 @@ class PerfSlicWidget(QtGui.QWidget):
             f = np.vectorize(lambda x: self.closest(x, svoxels))
             sel = f(sel)
             print(sel)
-            ovl = self.ivm.overlay_all["supervoxels"]
+            ovl = self.ivm.overlays["supervoxels"].data
             for val in svoxels:
                 self.roi = self.roi | np.where(ovl == val, 1, 0)
                 self.roi_regions.add(val)
             self.roi_hist.append(svoxels)
-            self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
+            self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
 
     def roi_reset(self):
-        self.roi = np.zeros(self.ivm.img_dims[:3], dtype=np.int8)
+        self.roi = np.zeros(self.ivm.vol.shape[:3], dtype=np.int8)
         self.roi_hist = []
         self.roi_regions = set()
         self.picking_roi = False
         self.freehand_roi = False
         self.pick_btn.setText("Start")
         self.freehand_btn.setText("Start")
-        self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
 
     def roi_undo(self):
         last_change = self.roi_hist[-1]
-        ovl = self.ivm.overlay_all["supervoxels"]
+        ovl = self.ivm.overlays["supervoxels"].data
         for val in last_change:
             if val < 0:
                 # Undo region removal, i.e. add it back
@@ -182,12 +181,12 @@ class PerfSlicWidget(QtGui.QWidget):
                 self.roi = self.roi & np.where(ovl == val, 0, 1)
                 self.roi_regions.remove(val)
         self.roi_hist = self.roi_hist[:-1]
-        self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
+        self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
 
     def sig_mouse_click(self, values):
         pos = self.ivm.cim_pos[:3]
         if self.picking_roi:
-            ovl = self.ivm.overlay_all["supervoxels"]
+            ovl = self.ivm.overlays["supervoxels"].data
             val = ovl[pos[0], pos[1], pos[2]]
 
             if val in self.roi_regions:
@@ -198,6 +197,6 @@ class PerfSlicWidget(QtGui.QWidget):
                 self.roi = self.roi | np.where(ovl == val, 1, 0)
                 self.roi_hist.append([val])
                 self.roi_regions.add(val)
-            self.ivm.add_roi(name="sv_roi", img=self.roi, make_current=True)
+            self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
 
 

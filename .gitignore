@@ -1,6 +1,5 @@
 # Created by .gitignore support plugin (hsz.mobi)
 .idea/
-data/
 deb_dist/
 dist/
 build/
@@ -14,3 +13,6 @@ PKView.egg-info
 debian/debhelper-build-stamp
 pkview/analysis/t1_model.cpp
 *.pyc
+pkview/analysis/perfusionslic/additional/create_im.c
+pkview/analysis/perfusionslic/additional/processing.cpp
+

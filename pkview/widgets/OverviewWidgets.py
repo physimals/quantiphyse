@@ -3,10 +3,7 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 
-
 class OverviewWidget(QtGui.QWidget):
-    #
-    sig_show_se = QtCore.Signal()
 
     def __init__(self, local_file_path):
         super(OverviewWidget, self).__init__()
@@ -56,41 +53,13 @@ class OverviewWidget(QtGui.QWidget):
         Adding image management
         """
         self.ivm = image_vol_management
-
-        #listen to volume management changes
-        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
-        self.ivm.sig_all_overlays.connect(self.update_overlays)
-
-        self.ivm.sig_current_roi.connect(self.update_current_roi)
-        self.ivm.sig_all_rois.connect(self.update_rois)
-
         self.l1.add_image_management(self.ivm)
         self.l2.add_image_management(self.ivm)
-
-    @QtCore.Slot(list)
-    def update_overlays(self, list1):
-        self.l1.update_list(list1)
-
-    @QtCore.Slot(str)
-    def update_current_overlay(self, str1):
-        self.l1.update_current(str1)
-
-    @QtCore.Slot(list)
-    def update_rois(self, list1):
-        self.l2.update_list(list1)
-
-    @QtCore.Slot(str)
-    def update_current_roi(self, str1):
-        self.l2.update_current(str1)
 
 class CaseWidget(QtGui.QListWidget):
     """
     Class to handle the organisation of the loaded volumes
     """
-
-    # emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
-
     def __init__(self, parent):
         super(CaseWidget, self).__init__(parent)
         self.list_current = []
@@ -99,44 +68,30 @@ class CaseWidget(QtGui.QListWidget):
 
     def add_image_management(self, image_volume_management):
         self.ivm = image_volume_management
+        self.ivm.sig_current_overlay.connect(self.update_current)
+        self.ivm.sig_all_overlays.connect(self.update_list)
 
     def update_list(self, list1):
-        """
-        Args:
-            list1:
-        Returns:
-        """
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
                 self.addItem(ii)
 
-    def update_current(self, str1):
-        """
-        Get the current item
-        Args:
-            str1:
-        Returns:
-        """
-        if str1 in self.list_current:
-            ind1 = self.list_current.index(str1)
+    def update_current(self, ovl):
+        if ovl.name in self.list_current:
+            ind1 = self.list_current.index(ovl.name)
             self.setCurrentItem(self.item(ind1))
         else:
-            print("Warning: This option does not exist")
+            print("Warning: This overlay does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_overlay(choice1.text(), broadcast_change=True)
-        self.sig_emit_reset.emit(1)
+        self.ivm.set_current_overlay(choice1.text(), signal=True)
 
 class RoiWidget(QtGui.QListWidget):
     """
     Class to handle the organisation of the loaded ROIs
     """
-
-    # emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
-
     def __init__(self, parent):
         super(RoiWidget, self).__init__(parent)
         self.list_current = []
@@ -145,37 +100,25 @@ class RoiWidget(QtGui.QListWidget):
 
     def add_image_management(self, image_volume_management):
         self.ivm = image_volume_management
+        self.ivm.sig_current_roi.connect(self.update_current)
+        self.ivm.sig_all_rois.connect(self.update_list)
 
     def update_list(self, list1):
-        """
-        Args:
-            list1:
-
-        Returns:
-        """
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
                 self.addItem(ii)
 
-    def update_current(self, str1):
-        """
-        Get the current item
-        Args:
-            str1:
-
-        Returns:
-        """
-        if str1 in self.list_current:
-            ind1 = self.list_current.index(str1)
+    def update_current(self, roi):
+        if roi.name in self.list_current:
+            ind1 = self.list_current.index(roi.name)
             self.setCurrentItem(self.item(ind1))
         else:
-            print("Warning: This option does not exist")
+            print("Warning: This ROI does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_roi(choice1.text(), broadcast_change=True)
-        self.sig_emit_reset.emit(1)
+        self.ivm.set_current_roi(choice1.text(), signal=True)
 
 
 

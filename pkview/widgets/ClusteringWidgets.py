@@ -15,6 +15,7 @@ from sklearn.metrics import pairwise
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeansPCA
+from pkview.volumes.volume_management import Roi
 
 class CurveClusteringWidget(QtGui.QWidget):
     """
@@ -181,17 +182,17 @@ class CurveClusteringWidget(QtGui.QWidget):
         """
 
         # Check that pkmodelling can be run
-        if self.ivm.get_image() is None:
+        if self.ivm.vol is None:
             m1 = QtGui.QMessageBox()
             m1.setText("The image doesn't exist! Please load.")
             m1.setWindowTitle("PkView")
             m1.exec_()
             return
 
-        if self.ivm.get_current_roi() is None:
+        if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load.")
+            m1.setText("The ROI doesn't exist! Please load.")
             m1.exec_()
             return
 
@@ -199,8 +200,8 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.get_image()
-        roi1 = self.ivm.get_current_roi()
+        img1 = self.ivm.vol.data
+        roi1 = self.ivm.current_roi.data
 
         self.km = KMeansPCA(img1, region1=roi1.astype(np.float32))
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
@@ -209,8 +210,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.label1, self.label1_cent = self.km.get_label_image()
         # self.labs_un_orig = np.unique(self.label1)
 
-        self.ivm.add_roi(name="clusters", img=self.label1, make_current=True)
-        self.sig_emit_reset.emit(1)
+        self.ivm.add_roi(Roi("clusters", data=self.label1), make_current=True)
         # This previous step should generate a color map which can then be used in the following steps.
 
         self._plot()
@@ -237,6 +237,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         # Clear graph
         self.reset_graph()
         curve1 = []
+        roi = self.ivm.rois["clusters"]
 
         # generate the cluster means
         self._generate_cluster_means()
@@ -246,8 +247,6 @@ class CurveClusteringWidget(QtGui.QWidget):
         # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
         num_clus = (self.labs_un.max())
 
-        lut = self.ivm.roi_cmap
-        lut_sec = np.around(lut.shape[0]/num_clus)
 
         le1 = self.p1.addLegend()
 
@@ -257,13 +256,9 @@ class CurveClusteringWidget(QtGui.QWidget):
             if np.sum(self.label1_cent[ii, :]) == 0:
                 continue
 
-            if ii < self.labs_un.max():
-                pen1 = lut[int(ii * lut_sec), :3]
-            else:
-                pen1 = lut[-1, :3]
-
+            pencol = roi.get_pencol(ii)
             name1 = "Region " + str(int(ii))
-            curve1.append(self.p1.plot(pen=pen1, width=8.0, name=name1))
+            curve1.append(self.p1.plot(pen=pencol, width=8.0, name=name1))
             curve1[-1].setData(xx, self.label1_cent[ii, :])
 
             # le1.addItem(curve1[ii], name1)
@@ -275,7 +270,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         Returns:
 
         """
-        nimage = np.zeros(self.ivm.get_image().shape)
+        nimage = np.zeros(self.ivm.vol.shape)
         nimage[self.km.region1] = self.km.voxel_se
 
         self.labs_un = np.unique(self.label1).astype(int)
@@ -293,7 +288,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.add_roi(name='Curve clusters', img=self.label1, make_current=True)
+        self.ivm.add_roi(Roi('Curve clusters', data=self.label1), make_current=True)
         self.sig_emit_reset.emit(1)
 
         # replot
