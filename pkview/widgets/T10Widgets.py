@@ -64,10 +64,8 @@ class SourceImageList(QtGui.QVBoxLayout):
         and must have shape consistent with the main volume
         """
         try:
-            print(filename)
             f = nib.load(filename)
             data = f.get_data()
-            print(data.shape)
             if len(data.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
@@ -88,13 +86,11 @@ class SourceImageList(QtGui.QVBoxLayout):
         # Try to guess the value from the filename - if it ends in a number, go with that
         self.dir, name = os.path.split(filename)
         name = name.split(".")[0]
-        print(name)
         m = re.search(r"(\d+).*$", name)
         if m is not None:
             guess = m.group(1)
         else:
             guess = ""
-        print("Guess: ", guess)
 
         while 1:
             text, result = QtGui.QInputDialog.getText(None, "Enter value", "Enter %s" % self.header_text, text=guess)
@@ -155,10 +151,8 @@ class SourceImageList(QtGui.QVBoxLayout):
 
     def remove(self):
         row = self.table.currentRow()
-        print("Current row: ", row)
         self.table.removeRow(row)
         fa_angles = []
-        print("TR=", self.trval)
 
     def get_images(self):
         vols = []
@@ -166,7 +160,6 @@ class SourceImageList(QtGui.QVBoxLayout):
         for i in range(self.table.rowCount()):
             filename = self.table.item(i, 0).text()
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
-            print(filename, vals)
             img = nib.load(filename)
             vol = img.get_data()
             if len(file_vals) == 1:
@@ -295,12 +288,10 @@ class T10Widget(QtGui.QWidget):
 
         # TR is expected in seconds but UI asks for it in ms
         tr = self.trinp.val / 1000
-        print(tr, fa_angles)
 
         if self.preclin.isChecked():
             afi_vols, afi_trs = self.trtable.get_images()
             fa_afi = self.fainp.val
-            print(fa_afi, afi_trs)
             T10 = t10_map(fa_vols, fa_angles, TR=tr,
                       afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)
             if self.smooth.isChecked():
@@ -311,4 +302,4 @@ class T10Widget(QtGui.QWidget):
         if self.clamp.isChecked():
             np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)
 
-        self.ivm.set_overlay(Overlay(name="T10", data=T10), make_current=True)
+        self.ivm.add_overlay(Overlay(name="T10", data=T10), make_current=True)
