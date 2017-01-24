@@ -278,11 +278,12 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         """
         @QtCore.Slot()
         def mouse_pos(event):
-            mx = round(event.pos().x())
-            my = round(event.pos().y())
+            mx = int(event.pos().x())
+            my = int(event.pos().y())
 
             self.ivm.cim_pos[self.ax_map[i][0]] = mx
             self.ivm.cim_pos[self.ax_map[i][1]] = my
+            #print(self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], self.ivm.cim_pos[3]])
 
             if self.pickmode == PickMode.SINGLE:
                 self.sel = [tuple(self.ivm.cim_pos), ]
@@ -310,7 +311,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         Place an arrow at the current position
         """
         aa = pg.ArrowItem(pen=pen1, brush=pen1)
-        aa.setPos(pos[0], pos[1])
+        aa.setPos(float(pos[0])+0.5, float(pos[1])+0.5)
         self.view[win].addItem(aa)
         self.arrows.append((win, slice, aa))
 
@@ -338,8 +339,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         """
         show = self.options["show_crosshairs"]
         for i in range(3):
-            self.vline[i].setPos(self.ivm.cim_pos[self.ax_map[i][0]])
-            self.hline[i].setPos(self.ivm.cim_pos[self.ax_map[i][1]])
+            self.vline[i].setPos(float(self.ivm.cim_pos[self.ax_map[i][0]])+0.5)
+            self.hline[i].setPos(float(self.ivm.cim_pos[self.ax_map[i][1]])+0.5)
             self.vline[i].setVisible(show)
             self.hline[i].setVisible(show)
 
