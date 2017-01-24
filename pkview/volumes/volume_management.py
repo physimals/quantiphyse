@@ -105,8 +105,8 @@ class Overlay(Volume):
 class Roi(Volume):
     def __init__(self, name, data=None, fname=None):
         super(Roi, self).__init__(name, data, fname)
-        if self.range[0] < 0 or self.range[1] > 255:
-            raise RuntimeError("ROI must contain values between 0 and 255")
+        if self.range[0] < 0 or self.range[1] > 2**32:
+            raise RuntimeError("ROI must contain values between 0 and 2**32")
 
         if not np.equal(np.mod(self.data, 1), 0).any():
             msgBox = QtGui.QMessageBox()
@@ -116,7 +116,7 @@ class Roi(Volume):
                 raise RuntimeError("ROI not loaded")
 
         # patch to fix roi loading when a different type.
-        self.data = self.data.astype(np.int8)
+        self.data = self.data.astype(np.int32)
         self.regions = np.unique(self.data)
         self.regions = self.regions[self.regions > 0]
         #print("ROI: Regions", self.regions)
@@ -136,9 +136,6 @@ class Roi(Volume):
         cmap = getattr(cm, 'jet')
 
         mx = max(self.regions)
-        #print([float(v)/mx for v in range(mx)])
-        #print([cmap(float(v)/mx) for v in range(mx)])
-
         lut = [[int(255 * rgb1) for rgb1 in cmap(float(v)/mx)[:3]] for v in range(mx+1)]
         lut = np.array(lut, dtype=np.ubyte)
 
@@ -160,7 +157,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     Has to inherit from a Qt base class that supports signals
     Note that the correct QT Model/View structure has not been set up but is intended in future
     """
-
     # Signals
 
     # Change to main volume
@@ -180,7 +176,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
-
         self.init()
 
     def init(self):
@@ -207,15 +202,15 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current ROI object
         self.current_roi = None
 
-        # Estimated volume from pk modelling
-        self.estimated = None
-
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
     def set_main_volume(self, vol):
         if self.vol is not None:
             raise RuntimeError("Main volume already loaded")
+
+        if vol.ndims not in (3, 4):
+            raise RuntimeError("Main volume must be 3d or 4d")
 
         self.vol = vol
 
@@ -289,26 +284,27 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         Get all the overlay values at the current position
         """
-        # initialise python dictionary
         overlay_value = {}
 
         # loop over all loaded overlays and save values in a dictionary
-        for ii in self.overlays.keys():
-            overlay_value[ii] = self.overlays[ii].data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
+        for name, ovl in self.overlays.items():
+            if ovl.ndims == 3:
+                overlay_value[name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
 
         return overlay_value
 
     def get_current_enhancement(self):
         """
-        Return enhancement curve
+        Return enhancement curves for all 4D overlays whose 4th dimension matches that of the main volume
         """
         if self.vol is None: raise RuntimeError("No volume loaded")
+        if self.vol.ndims != 4: raise RuntimeError("Main volume is not 4D")
 
         main_sig = self.vol.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         ovl_sig = {}
 
         for ovl in self.overlays.values():
-            if ovl.ndims == 4:
+            if ovl.ndims == 4 and (ovl.shape[3] == self.vol.shape[3]):
                 ovl_sig[ovl.name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, ovl_sig
@@ -318,12 +314,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         - Initialise the annotation overlay
         - Set the annotation overlay to be the current overlay
         """
-        if self.vol is not None:
-            ov = Overlay("annotation", np.zeros(self.vol.shape[:3]))
-            # little hack to normalise the image from 0 to 10 by listing possible labels in the corner
-            for ii in range(11):
-                ov.data[0, ii] = ii
+        if self.vol is None: raise RuntimeError("No volume loaded")
 
-            self.add_overlay(ov, make_current=True, signal=True)
-        else:
-            print("Please load an image first")
+        ov = Overlay("annotation", np.zeros(self.vol.shape[:3]))
+        # little hack to normalise the image from 0 to 10 by listing possible labels in the corner
+        for ii in range(11):
+            ov.data[0, ii] = ii
+
+        self.add_overlay(ov, make_current=True, signal=True)
+
