@@ -13,8 +13,52 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.ImageView import PickMode
 from ..QtInherit import HelpButton
 
+class SEPlot:
+    def __init__(self, sig, **kwargs):
+        self.sig = np.copy(np.array(sig, dtype=np.double))
+        self.pen = kwargs.get("pen", (255, 255, 255))
+        self.symbolBrush = kwargs.get("symbolBrush", (200, 200, 200))
+        self.symbolPen = kwargs.get("symbolPen", "k")
+        self.symbolSize = kwargs.get("symbolSize", 5.0)
+
+        self.line = None
+        self.pts = None
+
+    def plot(self, plotwin, sigenh, smooth, xres):
+        if sigenh:
+            m = np.mean(self.sig[:3])
+            pt_values = self.sig / m - 1
+        else:
+            pt_values = self.sig
+
+        if smooth:
+            wsize = 3
+            cwin1 = np.ones(wsize)/wsize
+            r1 = range(len(pt_values))
+            #tolerance does not scale by data value to scale input
+            s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
+            knots1 = s.get_knots()
+            print("Number of knots in B-spline smoothing: ", len(knots1))
+            line_values = s(r1)*pt_values.max()
+        else:
+            line_values = pt_values
+
+        xx = xres * np.arange(len(pt_values))
+        if self.line is not None:
+            self.remove(plotwin)
+
+        self.line = plotwin.plot(xx, line_values, pen=self.pen, width=4.0)
+        self.pts = plotwin.plot(xx, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
+                                symbolSize=self.symbolSize)
+
+    def remove(self, plotwin):
+        if self.line is not None:
+            plotwin.removeItem(self.line)
+            plotwin.removeItem(self.pts)
+            self.line, self.pts = None, None
 
 class SECurve(QtGui.QWidget):
 
@@ -27,6 +71,9 @@ class SECurve(QtGui.QWidget):
 
     def __init__(self, local_file_path):
         super(SECurve, self).__init__()
+
+        self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
+                       'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
 
         #Local file path
         self.local_file_path = local_file_path
@@ -43,23 +90,23 @@ class SECurve(QtGui.QWidget):
         self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
         self.win1.setVisible(True)
         self.win1.setBackground(background=None)
-        self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.reset_graph()
+        self.p1 = None
 
         # Take a local region mean to reduce noise
         self.cb1 = QtGui.QCheckBox('Smooth curves', self)
-        self.cb1.stateChanged.connect(self.reset_graph)
+        self.cb1.stateChanged.connect(self.replot_graph)
 
         #cb1.toggle()
         self.cb2 = QtGui.QCheckBox('Multiple curves', self)
-        self.cb2.stateChanged.connect(self.reset_graph)
+        self.cb2.stateChanged.connect(self.multi_curves)
 
         #Signal enhancement (normalised)
         self.cb3 = QtGui.QCheckBox('Signal enhancement', self)
-        self.cb3.stateChanged.connect(self.reset_graph)
+        self.cb3.stateChanged.connect(self.replot_graph)
 
         #Show mean
         self.cb4 = QtGui.QCheckBox('Show mean', self)
+        self.cb4.stateChanged.connect(self.replot_graph)
 
         #Clear curves button
         b1icon = QtGui.QIcon(self.local_file_path + '/icons/clear.svg')
@@ -67,22 +114,18 @@ class SECurve(QtGui.QWidget):
         b1.setIcon(b1icon)
         b1.setIconSize(QtCore.QSize(14, 14))
         b1.setToolTip("Clear curves")
-        b1.clicked.connect(self.reset_graph)
+        b1.clicked.connect(self.clear_graph)
 
         # input temporal resolution
         self.text1 = QtGui.QLineEdit('1.0', self)
-        self.text1.returnPressed.connect(self.replot_graph)
+        self.text1.editingFinished.connect(self.replot_graph)
 
         # Select plot color
         combo = QtGui.QComboBox(self)
-        combo.addItem("grey")
-        combo.addItem("red")
-        combo.addItem("blue")
-        combo.addItem("green")
-        combo.addItem("orange")
-        combo.addItem("cyan")
-        combo.addItem("brown")
-        combo.activated[str].connect(self.emit_cchoice)
+        for col in self.colors.keys():
+            combo.addItem(col)
+        combo.setCurrentIndex(combo.findText("grey"))
+        combo.activated[str].connect(self.plot_col_changed)
         combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
 
@@ -127,143 +170,96 @@ class SECurve(QtGui.QWidget):
         l1.addStretch(1)
         self.setLayout(l1)
 
-        # initial plot colour
-        self.plot_color = (200, 200, 200)
-
         self.ivm = None
 
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
+    def add_image_management(self, ivm):
+        self.ivm = ivm
 
-    def _plot(self, values1):
+    def add_image_view(self, ivl):
+        self.ivl = ivl
+        self.ivl.sig_sel_changed.connect(self.sel_changed)
+        self.plot_col_changed("grey")
+        self.clear_graph()
 
-        """
-        Plot the curve / curves
-        """
-        #Make window visible and populate
-        self.win1.setVisible(True)
+    def get_plots_by_color(self, col):
+        return [plt for plt in self.plots.values() if plt.pen == col]
 
-        values1 = np.array(values1, dtype=np.double)
-        values2 = np.copy(values1)
-
-        # Setting x-values
-        xres = float(self.text1.text())
-        xx = xres * np.arange(len(values1))
-
-        if self.values2_mean is None:
-            self.values2_mean = np.zeros((1, len(xx)))
-
-        if self.cb3.isChecked() is True:
-            m1 = np.mean(values1[:3])
-            values1 = values1 / m1 - 1
-            values2 = np.copy(values1)
-
-        if self.cb1.isChecked() is True:
-            wsize = 3
-            cwin1 = np.ones(wsize)/wsize
-
-            r1 = range(len(values1))
-            #tolerance does not scale by data value to scale input
-            s = UnivariateSpline(r1, values1/values1.max(), s=0.1, k=4)
-            knots1 = s.get_knots()
-            print("Number of knots in B-spline smoothing: ", len(knots1))
-            values2 = s(r1)*values1.max()
-
-            #Previous smoothing method using a convolution
-            #values2 = np.convolve(values1, cwin1)
-            #values2 = values2[1:-1]
-
-        # Plotting using single or multiple plots
-        if self.cb2.isChecked() is False:
-            if self.curve1 is None:
-                self.curve1 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-                self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
-            self.curve2.setData(xx, values2, pen=self.plot_color)
-            self.curve1.setData(xx, values1)
-
-        # Multiple plots
-        else:
-            #Signal (add point to image
-            self.sig_add_pnt.emit(self.plot_color)
-
-            self.p1.plot(xx, values2, pen=self.plot_color, width=4.0)
-            self.p1.plot(xx, values1, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-
-            # Plot mean curve as well
-            if self.cb4.isChecked() is True:
-                if self.curve_mean is None:
-                    self.curve_mean = self.p1.plot(pen=(150, 0, 0), symbolBrush=(255, 0, 0), symbolPen='k')
-
-                self.values2_mean[self.curve_count, :] = values2
-                #self.curve_count += 1
-                self.values2_mean = np.append(self.values2_mean, np.expand_dims(values2, axis=0), axis=0)
-                self.curve_mean.setData(xx, np.squeeze(np.mean(self.values2_mean[1:], axis=0)))
-
-        self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', "Time", units='s')
-        #self.p1.setLogMode(x=False, y=False)
+    def update_mean(self):
+        for col in self.colors.values():
+            plts = self.get_plots_by_color(col)
+            if col in self.mean_plots:
+                self.mean_plots[col].remove(self.p1)
+            if len(plts) > 1:
+                mean_values = np.stack([plt.sig for plt in plts], axis=1)
+                mean_values = np.squeeze(np.mean(mean_values, axis=1))
+                plt = SEPlot(mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
+                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+                self.mean_plots[col] = plt
 
     @QtCore.Slot()
     def replot_graph(self):
-        self.reset_graph()
-        #other stuff
+        self.win1.removeItem(self.p1)
+        self.p1 = self.win1.addPlot(title="Signal enhancement curve")
+        for plt in self.plots.values():
+            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+        if self.cb4.isChecked():
+            self.update_mean()
 
     @QtCore.Slot()
-    def reset_graph(self):
+    def clear_graph(self):
         """
         Reset and clear the graph
         """
-        self.win1.removeItem(self.p1)
+        self.win1.setVisible(True)
+        if self.p1 is not None: self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.curve1 = None
-        self.curve2 = None
-        self.curve_mean = None
-        self.curve_count = 0
-        self.values2_mean = None
+        self.p1.setLabel('left', "Signal Enhancement")
+        self.p1.setLabel('bottom', "Time", units='s')
+        self.plots = {}
+        self.mean_plots = {}
+        # Reset the list of picked points
+        if self.ivl.pickmode == PickMode.MULTIPLE:
+            self.ivl.set_pickmode(PickMode.MULTIPLE)
 
-        # Clear points on graph
-        self.sig_clear_pnt.emit(True)
+    @QtCore.Slot()
+    def multi_curves(self, state):
+        if state:
+            self.ivl.set_pickmode(PickMode.MULTIPLE)
+        else:
+            self.ivl.set_pickmode(PickMode.SINGLE)
+            self.clear_graph()
 
     @QtCore.Slot(np.ndarray)
-    def sig_mouse(self, values1):
+    def sel_changed(self, sel):
         """
         Get signal from mouse click
         """
-        #Signal emit current enhancement curve to widget
-        if self.ivm.vol.ndims == 3:
-            print("3D image so just calculating cross image profile")
-            vec_sig = self.ivm.vol.data[self.ivm.cim_pos[0], :, self.ivm.cim_pos[2]]
-        elif self.ivm.vol.ndims == 4:
-            vec_sig = self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], :]
-        else:
-            vec_sig = None
-            print("Image is not 3D or 4D")
+        pickmode, points = sel
+        for point in points:
+            if point not in self.plots:
+                if self.ivm.vol.ndims == 3:
+                    # FIXME this should take into account which window the picked point was from
+                    warnings.warning("3D image so just calculating cross image profile")
+                    sig = self.ivm.vol.data[point[0], :, point[2]]
+                elif self.ivm.vol.ndims == 4:
+                    sig = self.ivm.vol.data[point[0], point[1], point[2], :]
+                else:
+                    warnings.warning("Image is not 3D or 4D")
+                    continue
+                plt = SEPlot(sig, pen=self.ivl.pick_col)
+                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+                self.plots[point] = plt
 
-        self._plot(vec_sig)
+        for point in self.plots.keys():
+            if point not in points:
+                self.plots[point].remove(self.p1)
+                del self.plots[point]
+
+        if self.cb4.isChecked(): self.update_mean()
 
     @QtCore.Slot(str)
-    def emit_cchoice(self, text):
-        if text == 'red':
-            cvec = (255, 0, 0)
-        elif text == 'grey':
-            cvec = (200, 200, 200)
-        elif text == 'green':
-            cvec = (0, 255, 0)
-        elif text == 'blue':
-            cvec = (0, 0, 255)
-        elif text == 'orange':
-            cvec = (255, 140, 0)
-        elif text == 'cyan':
-            cvec = (0, 255, 255)
-        elif text == 'brown':
-            cvec = (139, 69, 19)
-        else:
-            cvec = (255, 255, 255)
-
-        self.plot_color = cvec
+    def plot_col_changed(self, text):
+        self.ivl.pick_col = self.colors.get(text, (255, 255, 255))
 
 class ColorOverlay1(QtGui.QWidget):
 

@@ -143,9 +143,7 @@ class MainWindowWidget(QtGui.QWidget):
         # Signal Enhancement
         self.wid["SigEn"] = [SECurve(self.local_file_path), '/icons/voxel.svg', 'Voxel analysis']
         self.wid["SigEn"][0].add_image_management(self.ivm)
-        # Signals to connect widget
-        self.wid["SigEn"][0].sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
-        self.wid["SigEn"][0].sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+        self.wid["SigEn"][0].add_image_view(self.ivl1)
 
         # Pharmaview is not initialised by default
         self.wid["PView"] = [None, 'a', 'b']
@@ -187,14 +185,10 @@ class MainWindowWidget(QtGui.QWidget):
         # self.sw_rw = None
 
         # Connect image export widget
-        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
+        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_time_pos)
         self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
 
         self.initTabs()
-
-        # Connecting widget signals
-        # 1) Plotting data on mouse image click
-        self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
 
         # Choosing supervoxels for ROI
         self.ivl1.sig_mouse_click.connect(self.wid["sv"][0].sig_mouse_click)
@@ -216,10 +210,10 @@ class MainWindowWidget(QtGui.QWidget):
         # self.update_slider_range()
 
         # connect sliders to ivl1
-        self.sld1.valueChanged[int].connect(self.ivl1.slider_connect(0))
-        self.sld2.valueChanged[int].connect(self.ivl1.slider_connect(1))
-        self.sld3.valueChanged[int].connect(self.ivl1.slider_connect(2))
-        self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
+        self.sld1.valueChanged[int].connect(self.ivl1.set_space_pos(2))
+        self.sld2.valueChanged[int].connect(self.ivl1.set_space_pos(1))
+        self.sld3.valueChanged[int].connect(self.ivl1.set_space_pos(0))
+        self.sld4.valueChanged[int].connect(self.ivl1.set_time_pos)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')

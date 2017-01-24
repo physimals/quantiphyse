@@ -146,8 +146,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
     # Signals when the mouse is scrolling
     sig_mouse_scroll = QtCore.Signal(bool)
 
-    # Signals when the picked points / region have changed
-    sig_pick_changed = QtCore.Signal(tuple)
+    # Signals when the selected points / region have changed
+    sig_sel_changed = QtCore.Signal(tuple)
 
     def __init__(self):
         super(ImageViewLayout, self).__init__()
@@ -228,10 +228,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.setLayout(self.grid1)
 
         self.roisel = pg.PolyLineROI([])
-        self.roipts = []
-        self.roi_lasso = 0
-
-        self.pickmode = PickMode.SINGLE
+        self.arrows = []
+        self.pick_col = (255, 0, 0)
+        self.set_pickmode(PickMode.SINGLE)
 
     def expand_view(self, i):
         def expand():
@@ -249,35 +248,34 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
                 self.win[o2].setVisible(True)
         return expand
 
-    def start_roi_lasso(self):
-        self.roipts = []
-        self.roi_lasso = -1
+    def set_pickmode(self, pickmode):
+        self.pickmode = pickmode
+        self.sel = []
+        self.remove_arrows()
+        self.pick_win = -1
 
-    def stop_roi_lasso(self, ovname):
+    def set_pick_color(self, c):
+        self.pick_col = c
+
+    def get_lasso_roi(self, ovname):
+        if self.pick_win == -1: return
         ovl = self.ivm.overlays[ovname].data
         ret = None
         view = None
-        if self.roi_lasso == 1:
+        if self.pick_win == 0:
             data = ovl[:, :, self.ivm.cim_pos[2]]
-            ret = self.roisel.getArrayRegion(data, self.imgwin[0])
-            view = self.view[0]
-        elif self.roi_lasso == 2:
+        elif self.pick_win == 1:
             data = ovl[:, self.ivm.cim_pos[1], :]
-            ret = self.roisel.getArrayRegion(data, self.imgwin[1])
-            view = self.view[1]
-        elif self.roi_lasso == 3:
+        elif self.pick_win == 2:
             data = ovl[self.ivm.cim_pos[0], :, :]
-            ret = self.roisel.getArrayRegion(data, self.imgwin[2])
-            view = self.view[2]
-        self.roi_lasso = 0
-        if view:
-            self.roisel.clearPoints()
-            view.removeItem(self.roisel)
+        ret = self.roisel.getArrayRegion(data, self.imgwin[i])
+        self.roisel.clearPoints()
+        self.view[i].removeItem(self.roisel)
         return ret
 
     def mouse_pos(self, i):
         """
-        Capture mouse click events from window 1
+        Capture mouse click events for window i
         """
         @QtCore.Slot()
         def mouse_pos(event):
@@ -287,18 +285,53 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             self.ivm.cim_pos[self.ax_map[i][0]] = mx
             self.ivm.cim_pos[self.ax_map[i][1]] = my
 
-            if self.roi_lasso == -1:
-                self.view[i].addItem(self.roisel)
-                self.roi_lasso = i+1
-
-            if self.roi_lasso == i+1:
-                self.roipts.append([mx, my])
-                self.roisel.setPoints(self.roipts)
+            if self.pickmode == PickMode.SINGLE:
+                self.sel = [tuple(self.ivm.cim_pos), ]
+            elif self.pickmode == PickMode.MULTIPLE:
+                self.sel.append(tuple(self.ivm.cim_pos))
+                self.add_arrow(i, (mx, my), self.ivm.cim_pos[self.ax_map[i][2]], self.pick_col)
+            elif self.pickmode == PickMode.LASSO:
+                if self.pick_win == -1:
+                    self.view[i].addItem(self.roisel)
+                    self.pick_win = i
+                elif self.pick_win == i:
+                    self.sel.append((mx, my))
+                    self.roisel.setPoints(self.sel)
+            elif self.pickmode == PickMode.RECT:
+                pass
 
             self.sig_mouse_scroll.emit(1)
             self.sig_mouse_click.emit(1)
+            self.sig_sel_changed.emit((self.pickmode, self.sel))
             self._update_view()
         return mouse_pos
+
+    def add_arrow(self, win, pos, slice, pen1=(255, 0, 0)):
+        """
+        Place an arrow at the current position
+        """
+        aa = pg.ArrowItem(pen=pen1, brush=pen1)
+        aa.setPos(pos[0], pos[1])
+        self.view[win].addItem(aa)
+        self.arrows.append((win, slice, aa))
+
+    def remove_arrows(self):
+        """
+        Remove all the arrows that have been placed
+        """
+        for win, slice, arrow in self.arrows:
+            self.view[win].removeItem(arrow)
+        self.arrows = []
+
+    def update_arrows(self):
+        """
+        Update arrows so only those visible are shown
+        """
+        for win, slice, arrow in self.arrows:
+            if self.ivm.cim_pos[self.ax_map[win][2]] == slice:
+                arrow.show()
+            else:
+                arrow.hide()
 
     def __update_crosshairs(self):
         """
@@ -329,17 +362,24 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         else:
             raise RuntimeError("Main image does not have 3 or 4 dimensions")
 
+        self.update_arrows()
         self.__update_crosshairs()
 
-    # Set the 3D position of the cross hairs
     @QtCore.Slot(int)
-    def set_temporal_position(self, value):
+    def set_time_pos(self, value):
+        if self.ivm.cim_pos[3] != value:
+            # don't do any updating if the values are the same
+            self.ivm.cim_pos[3] = value
+            self._update_view()
 
-        # Set 3D coordinates of the image
-        self.ivm.cim_pos[3] = value
-
-        # Update the view
-        self._update_view()
+    def set_space_pos(self, dim):
+        @QtCore.Slot(int)
+        def set_pos(value):
+            if self.ivm.cim_pos[dim] != value:
+                # don't do any updating if the values are the same
+                self.ivm.cim_pos[dim] = value
+                self._update_view()
+        return set_pos
 
     def step_axis(self, i):
         """
@@ -373,59 +413,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         exporter = ImageExporter(expimg)
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
-
-    # Slots for sliders and mouse
-    def slider_connect(self, i):
-        @QtCore.Slot(int)
-        def slider_connect(value):
-            z = self.ax_map[i][2]
-            if self.ivm.cim_pos[z] == value:
-                # don't do any updating if the values are the same
-                return
-
-            self.ivm.cim_pos[z] = value
-            self._update_view()
-        return slider_connect
-
-    @QtCore.Slot(int)
-    def slider_connect4(self, value):
-
-        if self.ivm.cim_pos[3] == value:
-            # don't do any updating if the values are the same
-            return
-
-        self.ivm.cim_pos[3] = value
-        self._update_view()
-
-    @QtCore.Slot()
-    def set_arrow_color(self, c):
-        pass
-
-    @QtCore.Slot()
-    def add_arrow_current_pos(self, pen1=(255, 0, 0)):
-        """
-        Place an arrow at the current position
-        """
-
-        aa = pg.ArrowItem(pen=pen1, brush=pen1)
-        self.pts1.append(aa)
-        self.pts1[-1].setPos(self.ivm.cim_pos[0], self.ivm.cim_pos[1])
-        self.view[0].addItem(self.pts1[-1])
-
-    @QtCore.Slot()
-    def set_current_arrow(self):
-        #TODO
-        pass
-
-    @QtCore.Slot()
-    def remove_all_arrows(self):
-        """
-        Remove all the arrows that have been places
-        """
-        for ii in range(len(self.pts1)):
-            self.view[0].removeItem(self.pts1[ii])
-
-        self.pts1 = []
 
     @QtCore.Slot()
     def main_volume_changed(self):
@@ -497,7 +484,6 @@ class ImageViewOverlay(ImageViewLayout):
 
         # Loop over each volume
         roi = self.ivm.current_roi
-        roi_levels = self.ivm.current_roi.range
 
         if roi is None or (not self.options['ShowOverlay']):
             self.imgwinb[0].setImage(np.zeros((1, 1)))
@@ -505,6 +491,7 @@ class ImageViewOverlay(ImageViewLayout):
             self.imgwinb[2].setImage(np.zeros((1, 1)))
         else:
             lut = roi.get_lut(self.roi_alpha)
+            roi_levels = self.ivm.current_roi.range
             self.imgwinb[0].setImage(roi.data[:, :, self.ivm.cim_pos[2]],
                                    lut=lut,
                                    autoLevels=False,
