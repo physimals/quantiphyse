@@ -877,7 +877,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         if fname != '':
             # self.default_directory = get_dir(fname)
-            self.mw1.ivm.current_overlay.save(fname)
+            self.mw1.ivm.current_overlay.save_nifti(fname)
         else:
             print('Warning: No file selected')
 

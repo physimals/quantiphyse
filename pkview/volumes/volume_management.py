@@ -42,9 +42,9 @@ class Volume(object):
     def save_nifti(self, fname):
         if self.nifti_header is None:
             warnings.warn("No NIFTI header information available")
-            img = nib.Nifti1Image(ov.data, np.identity(self.ndims))
+            img = nib.Nifti1Image(self.data, np.identity(self.ndims))
         else:
-            img = nib.Nifti1Image(ov.data, self.nifti_header.get_base_affine(), header=self.nifti_header)
+            img = nib.Nifti1Image(self.data, self.nifti_header.get_base_affine(), header=self.nifti_header)
         img.to_filename(fname)
         self.fname = fname
 
@@ -213,6 +213,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             raise RuntimeError("Main volume must be 3d or 4d")
 
         self.vol = vol
+        self.cim_pos = [int(d/2) for d in vol.shape]
+        if vol.ndims == 3: self.cim_pos.append(0);
 
         # 90% of the image range
         # FIXME unclear what the purpose of this is. If for viewing, should be done on ImageView histogram widget
