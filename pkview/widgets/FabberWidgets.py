@@ -19,14 +19,14 @@ from PySide import QtCore, QtGui
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
 
-if "FSLDIR" in os.environ:
+try:
     sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
     print("Appended %s/lib/python/" % os.environ["FSLDIR"])
     from pyfab.views import *
     from pyfab.imagedata import FabberImageData
     from pyfab.ui import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
     from pyfab.fabber import FabberRunData, FabberLib, FabberException
-else:
+except:
     # Stub to prevent startup error - warning will occur if Fabber is used
     class OptionView:
         pass
@@ -109,14 +109,19 @@ class FabberWidget(QtGui.QWidget):
     def __init__(self):
         super(FabberWidget, self).__init__()
 
-        self.ivm = None
-        self.fsldir = os.environ.get("FSLDIR", None)
-
         mainVbox = QtGui.QVBoxLayout()
         self.setLayout(mainVbox)
 
+        self.ivm = None
+        self.fsldir = os.environ.get("FSLDIR", None)
         if not self.fsldir:
             mainVbox.addWidget(QtGui.QLabel("FSLDIR is not defined. You must install FSL to use Fabber modelling"))
+            return
+
+        try:
+            FabberRunData
+        except:
+            mainVbox.addWidget(QtGui.QLabel("Could not load Fabber Python API from '%s'. Fabber modelling disabled" % self.fsldir))
             return
 
         # Options box
@@ -225,7 +230,7 @@ class FabberWidget(QtGui.QWidget):
                                 "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
                                 "loadmodels")
         self.rundata = FabberRunData()
-        self.rundata["fabber"] = "/home/martinc/dev/fabber_core/Debug/libfabbercore_shared.so"
+        self.rundata["fabber"] = os.path.join(self.fsldir, "lib/libfabbercore_shared.so")
         self.rundata["save-mean"] = ""
         self.reset()
 
@@ -308,7 +313,6 @@ class FabberWidget(QtGui.QWidget):
             for view in dialog.views.values():
                 if isinstance(view, ImageOptionView) and view.combo.isEnabled():
                     used_overlays.add(view.combo.currentText())
-        print(used_overlays)
 
         data = {"data": img}
         for ov in used_overlays:
