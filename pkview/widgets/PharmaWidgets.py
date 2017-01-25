@@ -426,8 +426,8 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
-        # input temporal resolution
-        self.text2 = QtGui.QLineEdit('5', self)
+        # input the number of baseline time points
+        self.text2 = QtGui.QLineEdit('3', self)
         self.text2.returnPressed.connect(self.replot_graph)
 
         self.tabmod1 = QtGui.QStandardItemModel()
