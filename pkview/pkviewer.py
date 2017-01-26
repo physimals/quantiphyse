@@ -33,6 +33,7 @@ from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -166,6 +167,10 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
         self.wid["sv"][0].add_image_management(self.ivm)
         self.wid["sv"][0].add_image_view(self.ivl1)
+
+        # Mean value overlay widget
+        self.wid["means"] = [MeanValuesWidget(), 'a', 'b']
+        self.wid["means"][0].add_image_management(self.ivm)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
@@ -436,6 +441,9 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n statistics")
         self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
         self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
+
+        self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Supervoxels")
+        self.qtab1.addTab(self.wid["means"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Mean\nValues")
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)

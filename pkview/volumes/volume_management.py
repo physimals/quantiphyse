@@ -239,6 +239,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.overlays[ov.name] = ov
         if signal:
             self.sig_all_overlays.emit(self.overlays.keys())
+
         if make_current:
             self.set_current_overlay(ov.name, signal)
 
