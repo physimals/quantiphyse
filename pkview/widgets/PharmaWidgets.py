@@ -512,6 +512,7 @@ class PharmaView(QtGui.QWidget):
         frames1 = int(self.text2.text())
 
         if self.cb3.isChecked() is True:
+            # Show signal enhancement for main data, rather than raw values
             m1 = np.mean(values[:frames1])
             values = values / m1 - 1
 
@@ -520,9 +521,6 @@ class PharmaView(QtGui.QWidget):
         self.curve2 = self.p1.plot(xx, values, pen=self.plot_color, width=4.0)
 
         for ovl, sig_values in sig_ovl.items():
-            if self.cb3.isChecked():
-                m = np.mean(sig_values[:frames1])
-                if m > 0: sig_values = sig_values / m - 1
             self.p1.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
             self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
