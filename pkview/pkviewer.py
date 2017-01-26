@@ -50,10 +50,11 @@ if op_sys == 'Darwin':
 # None currently
 
 # Windows specific changes
+# None currently
+
 from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_perfslic import perfslic
-if op_sys != 'Windows':
-    from .utils.cmd_t10 import t10_preclinical, t10
+from .utils.cmd_t10 import t10_preclinical, t10
 
 def get_dir(str1):
     """
@@ -995,20 +996,13 @@ def main():
 
     elif (args.T10batch is not None):
         # Run T10 batch processing from a yaml file
-        if op_sys == 'Windows':
-            warnings.warn('Windows is not supported for T10 mapping')
-
         t10(args.T10batch)
 
     elif (args.T10afibatch is not None):
-        if op_sys == 'Windows':
-            warnings.warn('Windows is not supported for T10 mapping')
         # Run T10 and afi batch processing from a yaml file
         t10_preclinical(args.T10afibatch)
 
     elif (args.slicbatch is not None):
-        if op_sys == 'Windows':
-            warnings.warn('Windows is not supported for SLIC batch')
         perfslic(args.slicbatch)
 
     else:

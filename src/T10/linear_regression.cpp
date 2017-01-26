@@ -17,15 +17,15 @@ double vec_mean(vector<double> x)
 {
     double x_mean = 0;
 
-    for (double m : x) {
-        x_mean += m;
+    for (vector<double>::iterator iter = x.begin(); iter != x.end(); iter++) {
+        x_mean += *iter;
     }
     x_mean = x_mean / x.size();
     return x_mean;
 
 }
 
-tuple<double, double> linreg (vector<double> y, vector<double> x)
+pair<double, double> linreg (vector<double> y, vector<double> x)
 {
     // y_mean, x_mean
     double y_mean, x_mean;
@@ -50,7 +50,7 @@ tuple<double, double> linreg (vector<double> y, vector<double> x)
     b = Sxy/Sx;
     a = y_mean - b * x_mean;
 
-    return make_tuple(a, b);
+    return pair<double, double>(a, b);
 };
 
 //void linreg2 (vector<double> y, vector<double> x, double & a, double & b)

@@ -98,11 +98,7 @@ perfusionslic_extensions = [
               extra_compile_args=["-std=c++11"])
 ]
 
-# TODO exclude T10 mapping for windows due to lack of c++11 support
-if platform.system() == 'Windows':
-    extensions = [ext1]
-else:
-    extensions = [ext1, ext2] + perfusionslic_extensions
+extensions = [ext1, ext2] + perfusionslic_extensions
 
 # setup parameters
 setup(name='PKView',

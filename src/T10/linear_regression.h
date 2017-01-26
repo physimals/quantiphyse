@@ -17,7 +17,7 @@
 //
 // Returns:
 //      tuple (a, b) where a is the intercept and b is the gradient
-std::tuple<double, double> linreg (std::vector<double>, std::vector<double>);
+std::pair<double, double> linreg (std::vector<double>, std::vector<double>);
 
 //void linreg2 (std::vector<double>, std::vector<double>, double&, double&);
 
