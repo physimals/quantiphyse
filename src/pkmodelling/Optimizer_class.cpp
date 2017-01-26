@@ -137,7 +137,9 @@ void OptimizeFunction::RandomInitialisation()
     }
 
     //vp initialisation
-    par[4]=0;
+    if (model1==4){
+        par[3]=0;
+    }
 
     // store initialised parameters separately (for comparison)
     int ii;

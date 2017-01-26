@@ -203,6 +203,8 @@ class PharmaWidget(QtGui.QWidget):
         # getting model choice from list
         model_choice = self.combo.currentIndex() + 1
 
+        # Baseline is currently just using first 3 points for normalisation (document)
+        print("first 3 time points are used for baseline normalisation")
         baseline1 = np.mean(img1[:, :, :, :3], axis=-1)
 
         # Convert to list of enhancing voxels
@@ -216,7 +218,7 @@ class PharmaWidget(QtGui.QWidget):
         T101vec = np.array(T10vec, dtype=np.double)
         roi1vec = np.array(self.roi1vec, dtype=bool)
 
-        print("subset")
+        print("subset of the region within the roi")
         # Subset within the ROI and
         img1sub = img1vec[roi1vec, :]
         T101sub = T101vec[roi1vec]
@@ -300,6 +302,7 @@ class PharmaWidget(QtGui.QWidget):
             self.ivm.add_overlay(Overlay('offset', data=offset1vol))
             self.ivm.add_overlay(Overlay('vp', data=vp1vol))
             self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
+
 
 def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 
@@ -423,8 +426,8 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
-        # input temporal resolution
-        self.text2 = QtGui.QLineEdit('5', self)
+        # input the number of baseline time points
+        self.text2 = QtGui.QLineEdit('3', self)
         self.text2.returnPressed.connect(self.replot_graph)
 
         self.tabmod1 = QtGui.QStandardItemModel()
