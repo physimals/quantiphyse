@@ -58,7 +58,22 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.lut_changed()
 
     def setGradientName(self, name):
-        self.gradient.loadPreset(name)
+        try:
+            self.gradient.loadPreset(name)
+        except KeyError:
+            self.setMatplotlibGradient(name)
+
+    def setMatplotlibGradient(self, name):
+        """
+        Slightly hacky method to copy MatPlotLib gradients to pyqtgraph.
+
+        Is not perfect because Matplotlib specifies gradients in a different way to pyqtgraph
+        (specifically there is a separate list of ticks for R, G and B). So we just sample
+        the colormap at 10 points which is OK for most slowly varying gradients.
+        """
+        cmap = getattr(cm, name)
+        ticks = [(pos, [255 * v for v in cmap(pos)]) for pos in np.linspace(0, 1, 10)]
+        self.gradient.restoreState({'ticks': ticks, 'mode': 'rgb'})
 
     def getImageLut(self, img):
         lut = self.getLookupTable(img, alpha=True)
@@ -600,7 +615,8 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Histogram, which controls colour map and levels
         self.h2 = MultiImageHistogramWidget(fillHistogram=False)
         self.h2.setBackground(background=None)
-        self.h2.setGradientName("spectrum")
+        self.h2.setGradientName("jet")
+
         self.grid1.addWidget(self.h2, 1, 2)
 
         # Viewing options as a dictionary

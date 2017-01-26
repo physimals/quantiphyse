@@ -287,14 +287,25 @@ class MainWindowWidget(QtGui.QWidget):
         self.ov_view_combo.addItem("None")
         self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
         grid.addWidget(self.ov_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
+        self.ov_cmap_combo = QtGui.QComboBox()
+        self.ov_cmap_combo.addItem("jet")
+        self.ov_cmap_combo.addItem("hot")
+        self.ov_cmap_combo.addItem("gist_heat")
+        self.ov_cmap_combo.addItem("flame")
+        self.ov_cmap_combo.addItem("bipolar")
+        self.ov_cmap_combo.addItem("spectrum")
+        self.ov_cmap_combo.currentIndexChanged.connect(self.overlay_cmap_changed)
+        grid.addWidget(self.ov_cmap_combo, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
         sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(255)
         sld1.valueChanged.connect(self.ivl1.overlay_alpha_changed)
-        grid.addWidget(sld1, 2, 1)
-        grid.setRowStretch(3, 1)
+        grid.addWidget(sld1, 3, 1)
+        grid.setRowStretch(4, 1)
         gBox3.setLayout(grid)
 
         # All buttons layout
@@ -394,6 +405,10 @@ class MainWindowWidget(QtGui.QWidget):
         shade = idx in (0, 2)
         contour = idx in (1, 2)
         self.ivl1.set_roi_view(shade, contour)
+
+    def overlay_cmap_changed(self, idx):
+        cmap = self.ov_cmap_combo.itemText(idx)
+        self.ivl1.h2.setGradientName(cmap)
 
     def initTabs(self):
 
