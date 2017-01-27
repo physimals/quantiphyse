@@ -33,6 +33,7 @@ from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -166,6 +167,10 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
         self.wid["sv"][0].add_image_management(self.ivm)
         self.wid["sv"][0].add_image_view(self.ivl1)
+
+        # Mean value overlay widget
+        self.wid["meanvals"] = [MeanValuesWidget(), 'a', 'b']
+        self.wid["meanvals"][0].add_image_management(self.ivm)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
@@ -487,6 +492,10 @@ class MainWindowWidget(QtGui.QWidget):
         index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(self.local_file_path + '/icons/sv.svg'), "Super\nvoxels")
         self.qtab1.setCurrentIndex(index)
 
+    def show_meanvals(self):
+        index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(self.local_file_path + '/icons/meanvals.svg'), "Mean\nvalues")
+        self.qtab1.setCurrentIndex(index)
+
     def show_cc(self):
         index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
                                   "Curve\n Cluster", )
@@ -643,6 +652,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         sv_action.setStatusTip('Supervoxel analysis')
         sv_action.triggered.connect(self.mw1.show_sv)
 
+        # Widgets --> Supervoxels
+        mv_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/meanvals.svg'), '&Mean values overlay', self)
+        mv_action.setStatusTip('Generate overlay of mean values within ROI regions')
+        mv_action.triggered.connect(self.mw1.show_meanvals)
+
         # Widgets --> PharmaView
         pw_action = QtGui.QAction('&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
@@ -691,6 +705,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
         widget_menu.addAction(sv_action)
+        widget_menu.addAction(mv_action)
         widget_menu.addAction(t10_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)

@@ -4,6 +4,7 @@ import skimage.segmentation as seg
 from pkview.volumes.volume_management import Overlay, Roi
 
 from pkview.analysis.perfusionslic import PerfSLIC
+from pkview.analysis.overlay_analysis import OverlayAnalyis
 
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, intonly=False):
@@ -69,7 +70,9 @@ class PerfSlicWidget(QtGui.QWidget):
         grid.addWidget(btn, 2, 1)
         hbox.addWidget(self.roibox)
         hbox.addStretch(1)
-        layout.addLayout(hbox)
+
+        # Disable supervoxel picking for now
+        #layout.addLayout(hbox)
         layout.addStretch(1)
 
         self.roibox.setEnabled(False)
@@ -86,6 +89,10 @@ class PerfSlicWidget(QtGui.QWidget):
             return
         img = self.ivm.vol.data
 
+        if self.ivm.current_roi is None:
+            QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating supervoxels", QtGui.QMessageBox.Close)
+            return
+
         ncomp = self.n_comp.spin.value()
         comp = self.compactness.spin.value()
         ss = self.segment_size.spin.value()
@@ -93,7 +100,7 @@ class PerfSlicWidget(QtGui.QWidget):
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_size)
+        ps1 = PerfSLIC(img, vox_size, self.ivm.current_roi.data)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")
@@ -101,13 +108,13 @@ class PerfSlicWidget(QtGui.QWidget):
         print("Extracting supervoxels...")
         segments = ps1.supervoxel_extraction(compactness=comp, segment_size=ss)
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
-        ovl = np.array(segments, dtype=np.int) + 1
+        svdata = np.array(segments, dtype=np.int) + 1
 
-        self.ivm.add_overlay(Overlay(name="supervoxels", data=ovl), make_current=True)
-        self.roibox.setEnabled(True)
-        self.roi_reset()
+        #self.ivm.add_overlay(Overlay(name="supervoxels", data=svdata), make_current=True)
+        #self.roibox.setEnabled(True)
+        #self.roi_reset()
 
-        #self.ivm.add_roi(name="supervoxels", img=ovl, make_current=True)
+        self.ivm.add_roi(Roi(name="supervoxels", data=svdata), make_current=True)
 
         #bound = seg.find_boundaries(ovl, mode='inner')
         #self.ivm.set_overlay(name="supervoxels", data=bound, force=True)
@@ -198,5 +205,68 @@ class PerfSlicWidget(QtGui.QWidget):
                 self.roi_hist.append([val])
                 self.roi_regions.add(val)
             self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
+
+
+class MeanValuesWidget(QtGui.QWidget):
+    """
+    Convert an overlay + multi-level ROI into mean values overlay
+    """
+    def __init__(self):
+        super(MeanValuesWidget, self).__init__()
+
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(QtGui.QLabel("<font size=50>Generate Mean Values Overlay</font> \n"))
+        desc = QtGui.QLabel("This widget will convert the current overlay into a "
+                            "new overlay in which each ROI region contains the mean "
+                            "value for that region.\n\nThis is generally only useful for "
+                            "multi-level ROIs such as clusters or supervoxels")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        gbox = QtGui.QGroupBox()
+        gbox.setTitle("Generate mean values overlay")
+
+        vbox = QtGui.QVBoxLayout()
+        gbox.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        b = QtGui.QPushButton('Generate', self)
+        b.clicked.connect(self.generate)
+        hbox.addWidget(b)
+        hbox.addStretch(1)
+        vbox.addLayout(hbox)
+        gbox.setLayout(vbox)
+
+        layout.addWidget(gbox)
+        layout.addStretch(1)
+        self.setLayout(layout)
+
+    def add_image_management(self, image_vol_management):
+        self.ivm = image_vol_management
+
+    def generate(self):
+        roi = self.ivm.current_roi
+        if roi is None:
+            QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating a mean values overlay",
+                                      QtGui.QMessageBox.Close)
+            return
+
+        if self.ivm.current_overlay is None:
+            QtGui.QMessageBox.warning(self, "No current overlay", "Load an overlay before generating a mean values overlay",
+                                      QtGui.QMessageBox.Close)
+            return
+
+        oa = OverlayAnalyis()
+        oa.add_image_management(self.ivm)
+        stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
+
+        #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
+        ov_name = self.ivm.current_overlay.name + "_means"
+        ov_data = np.copy(self.ivm.current_overlay.data)
+        for region, mean in zip(roi_labels, stat1["mean"]):
+            ov_data[roi.data == region] = mean
+
+        ovl = Overlay(ov_name, data=ov_data)
+        self.ivm.add_overlay(ovl)
 
 
