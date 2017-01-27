@@ -1,0 +1,10 @@
+
+# Config file for running slic supervoxel extraction
+#
+#
+
+EG5:
+  Folder:   /home/martinc/data/
+  File: test_data.nii.gz
+  Settings:
+    Out_file: mc.nii

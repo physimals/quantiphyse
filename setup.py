@@ -45,6 +45,7 @@ currently saves the icons in the wrong folder and needs to be manually moved
 """
 import numpy
 import platform
+import os
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -98,7 +99,25 @@ perfusionslic_extensions = [
               extra_compile_args=["-std=c++11"])
 ]
 
-extensions = [ext1, ext2] + perfusionslic_extensions
+fsldir = os.environ.get("FSLDIR", "")
+if fsldir:
+  # Compiling the Cython extensions
+  mcflirt = Extension("pkview.analysis.mcflirt",
+                 sources=['pkview/analysis/mcflirt.pyx',
+                          'src/mcflirt/mcflirt.cc',
+                          'src/mcflirt/Globaloptions.cc',
+                          'src/mcflirt/Log.cc'],
+                 include_dirs=['src/mcflirt/',
+                               os.path.join(fsldir, "include"),
+                               os.path.join(fsldir, "extras/include/newmat"),
+                               numpy.get_include()],
+                 libraries=['newimage', 'miscmaths', 'fslio', 'niftiio', 'newmat', 'znz'],
+                 library_dirs=[os.path.join(fsldir, "lib"),os.path.join(fsldir, "extras/lib")],
+                 language="c++")
+else:
+    print("FSLDIR not set - not building MCFLIRT extension")
+
+extensions = [ext1, ext2, mcflirt] + perfusionslic_extensions
 
 # setup parameters
 setup(name='PKView',
