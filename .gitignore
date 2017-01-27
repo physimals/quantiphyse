@@ -13,6 +13,7 @@ PKView.egg-info
 debian/debhelper-build-stamp
 pkview/analysis/t1_model.cpp
 *.pyc
-pkview/analysis/perfusionslic/additional/create_im.c
-pkview/analysis/perfusionslic/additional/processing.cpp
+pkview/analysis/perfusionslic/additional/*.c
+pkview/analysis/perfusionslic/additional/*.cpp
+pkview/analysis/perfusionslic/*.c
 
