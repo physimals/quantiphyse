@@ -206,10 +206,10 @@ int affmat2vector(const Matrix& aff, int n, ColumnVector& params)
    }
    Matrix parambasis(no_params,no_params);
    set_param_basis(parambasis,no_params);
-   float ptol[13];
-   for (int i=1; i<=no_params; i++) { ptol[i] = param_tol(i); }
-  
+
    // the optimisation call
+   //float ptol[13];
+   //for (int i=1; i<=no_params; i++) { ptol[i] = param_tol(i); }
    //powell(params,parambasis,no_params,ptol,no_its, fans, costfunc, itmax);
    fans = MISCMATHS::optimise(params,no_params,param_tol,costfunc,no_its,itmax,
 			      Globaloptions::getInstance().boundguess);
@@ -614,209 +614,21 @@ void fix2D(volume<float>& vol)
    save_volume(sigmavol, globalopts.outputfname+"_sigma");
  }
 
-int exec_main (int argc,char** argv)
-{
-  Tracer tr("main");
-  volume4D<float> timeseries, meanseries;
-  volume<float> refvol, anisorefvol, testvol, meanvol, extrefvol;
-  Globaloptions& globalopts = Globaloptions::getInstance();
-  float current_scale=8.0, new_tolerance=0.8;
-  int mat_index[3];
-  ColumnVector centre(3);
-  vector<Matrix> mat_array0, mat_array1, mat_array2;
-  int mean_cond = 0;
-
-  globalopts.parse_command_line(argc, argv);
-  if (!globalopts. no_reporting) cerr << endl << "McFLIRT v 2.0 - FMRI motion correction" << endl << endl;
-  int original_refvol=globalopts.refnum;
-  if (!globalopts. no_reporting) cerr <<"Reading time series... " << endl;
-  read_volume4D(timeseries, globalopts.inputfname);
-  globalopts.datatype = dtype(globalopts.inputfname);
-  globalopts. no_volumes = timeseries.tsize();
-  
-  for (int vol_count = 0; vol_count < globalopts. no_volumes; vol_count++) {
-    mat_array0.push_back(IdentityMatrix(4));
-    mat_array1.push_back(IdentityMatrix(4));
-    mat_array2.push_back(IdentityMatrix(4));
-  }
-
-  if (globalopts. refnum == -1) globalopts. refnum = globalopts. no_volumes/2;
-
-  for (int mean_its = 0; mean_its < 1 + globalopts. meanvol; mean_its++) {
-    if (globalopts. no_stages>=1) {
-      if (!globalopts. no_reporting) cerr <<"first iteration - 8mm scaling, set tolerance" << endl;
-      new_tolerance=8*0.2*0.5; current_scale=8.0; mat_index[0] = (int) (new_tolerance*current_scale);
-      
-      if (mean_its == 0) {
-        if (globalopts. reffileflag) {
-          read_volume(extrefvol, globalopts. reffilename);
-          anisorefvol = extrefvol;
-          globalopts. refnum = -1;
-        } else {
-	  anisorefvol = timeseries[globalopts. refnum];
-        }
-      } else { //2nd pass - generate mean volume, clear mat_array0
-	meanvol = timeseries[0];
-	meanvol = 0.0;
-	for (int i = 0; i < globalopts. no_volumes; i++){	  
-	  testvol = timeseries[i];
-	  timeseries[i].setextrapolationmethod(extraslice);
-	  timeseries[i].setinterpolationmethod(trilinear);
-	  affine_transform(timeseries[i],testvol,mat_array1[i],1.0);
-	  meanvol = meanvol + testvol;
-	}
-	
-	for (int x = 0; x < meanvol. xsize(); x++)
-	  for (int y = 0; y < meanvol. ysize(); y++)
-	    for (int z = 0; z < meanvol. zsize(); z++)
-	      meanvol(x,y,z) = meanvol(x,y,z)/(float)globalopts. no_volumes;    
-	
-	save_volume(meanvol, globalopts.outputfname + "_mean_reg");
-	
-	anisorefvol = meanvol;
-	globalopts. refnum = -1; // to ensure stopping condition in ::correct subroutine
-	for (int i=0; i < globalopts. no_volumes; i++)
-	  mat_array0[i] = IdentityMatrix(4);
-	mean_cond = 1;
-      }
-      
-      if (!globalopts. no_reporting)  cerr <<"Rescaling reference volume [" << globalopts. refnum << "] to " 
-					   << current_scale << " mm pixels" << endl;
-	
-      refvol = isotropic_resample(anisorefvol,current_scale);
-      
-      fix2D(refvol);
-
-      if (globalopts. edgeflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating contour image for reference volume" << endl;
-	fixed_edge_detect(refvol, 15000);
-	if (!globalopts. no_reporting) cerr <<"Saving contour reference volume... " << endl;
-	save_volume(refvol, "crefvol_"+globalopts.outputfname);
-      } else if (globalopts. gdtflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating gradient image for reference volume" << endl;
-	volume<float> gtempvol = refvol;  gtempvol = gradient(refvol);
-	if (!globalopts. no_reporting) cerr <<"Saving gradient reference volume... " << endl;
-	save_volume(refvol, "grefvol_"+globalopts.outputfname);
-      }
-      
-      globalopts.initmat=IdentityMatrix(globalopts.initmat.Nrows());
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond);
-    } else {
-      for (int i=0; i<globalopts.no_volumes; i++)  mat_array1[i] = mat_array0[i];
-    }
-    
-    if (globalopts. no_stages>=2) {
-      if (!globalopts. no_reporting) cerr <<endl << "second iteration - drop to 4mm scaling" << endl;
-      new_tolerance=4*0.2; current_scale=4.0; mat_index[1] = (int) (new_tolerance*current_scale);
-      
-      if (!globalopts. no_reporting) cerr <<"Rescaling reference volume [" << globalopts. refnum << "] to " 
-					  << current_scale << " mm pixels" << endl;
-      refvol = isotropic_resample(anisorefvol,current_scale);
-      
-      if (globalopts. edgeflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating contour image for reference volume" << endl;
-	fixed_edge_detect(refvol, 15000);  
-	if (!globalopts. no_reporting) cerr <<"Saving contour reference volume... " << endl;
-	save_volume(refvol, "crefvol_"+globalopts.outputfname);
-      } else if (globalopts. gdtflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating gradient image for reference volume" << endl;
-	volume<float> gtempvol = refvol;
-	gtempvol = gradient(refvol);
-	if (!globalopts. no_reporting) cerr <<"Saving gradient reference volume... " << endl;
-	save_volume(refvol, "grefvol_"+globalopts.outputfname);
-      }
-      
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond);
-    } else {
-      for (int i=0; i<globalopts.no_volumes; i++)  mat_array2[i] = mat_array1[i];
-    }
-    
-    
-    if (globalopts. no_stages>=3) {
-      if (!globalopts. no_reporting) cerr << endl << "third iteration - 4mm scaling, eighth tolerance" << endl;
-      new_tolerance = 0.1; mat_index[2] = (int) (new_tolerance*current_scale);
-      
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond);
-    } else {
-      for (int i=0; i<globalopts.no_volumes; i++)  mat_array1[i] = mat_array2[i];
-    }
-  }
-      
-  mean_cond = 0;
-
-  if (globalopts. no_stages>=4) {
-    if (!globalopts. no_reporting) cerr << endl << "fourth iteration - 4mm scaling, eighth tolerance, sinc interpolation" << endl;
-    
-    if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-    if (globalopts.maincostfn == NormCorr)  globalopts.maincostfn = NormCorrSinc;
-    correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond);
-    correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond);
-  } else {
-    for (int i=0; i<globalopts.no_volumes; i++)  mat_array0[i] = mat_array1[i];
-  }
-
-  Matrix init_trans(4,4);
-  if (globalopts.init_transform.size()<1) {
-    init_trans = IdentityMatrix(4);
-  } else {
-    init_trans = read_ascii_matrix(globalopts.init_transform);
-  }
-
-  // interpolate with final transform values
-  for (int i=0; i < globalopts. no_volumes; i++){
-    // initial testvol is used as the reference (for properties like sform)
-    if (globalopts. reffileflag) {
-      testvol = extrefvol; 
-    } else {
-      testvol = timeseries[i];  
-    }
-    if (globalopts. sinc_final) {
-      timeseries[i].setextrapolationmethod(extraslice);
-      timeseries[i].setinterpolationmethod(sinc);
-      affine_transform(timeseries[i],testvol,mat_array0[i]*init_trans,1.0);
-    } else  if (globalopts. nn_final) {
-      timeseries[i].setextrapolationmethod(extraslice);
-      timeseries[i].setinterpolationmethod(nearestneighbour);
-      affine_transform(timeseries[i],testvol,mat_array0[i]*init_trans,1.0);
-    } else  if (globalopts. spline_final) {
-      timeseries[i].setextrapolationmethod(extraslice);
-      timeseries[i].setinterpolationmethod(spline);
-      affine_transform(timeseries[i],testvol,mat_array0[i]*init_trans,1.0);
-    } else {
-      timeseries[i].setextrapolationmethod(extraslice);
-      timeseries[i].setinterpolationmethod(trilinear);
-      affine_transform(timeseries[i],testvol,mat_array0[i]*init_trans,1.0);
-    }
-    timeseries[i] = testvol;
-  }
-
-  if (globalopts. statflag) run_and_save_stats(timeseries);
-  if (globalopts. tmpmatflag) {
-    if ( globalopts.reffileflag ) 
-      decompose_mats(mat_index, mat_array0, extrefvol);
-    else if ( globalopts.meanvol ) 
-      decompose_mats(mat_index, mat_array0, meanvol);
-    else {
-       if (!globalopts. no_reporting) 
-	 cout << "refnum = " << globalopts.refnum << endl << "Original_refvol = " << original_refvol << endl;
-      if (globalopts.refnum<0) 
-	throw(runtime_error("Negative refnum encountered when not in refile/meanvol mode."));
-      decompose_mats(mat_index, mat_array0, timeseries[globalopts. refnum]);
-    }
-  }
-  if (globalopts. costmeas) eval_costs(refvol, timeseries, mat_array0, current_scale);
-  if (!globalopts. no_reporting) cerr << endl << "Saving motion corrected time series... " << endl;
-  timeseries.setDisplayMaximumMinimum(timeseries.max(),timeseries.min());
-  save_volume4D_dtype(timeseries, globalopts.outputfname, globalopts.datatype);
-}
-
-std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
+/**
+ * Run MCFLIRT
+ *
+ * @param vol 4D volume data. Array must be in Fortran order (Column major, i.e. x changes fastest)
+ * @param extent Extent of data in vector of size 4 (nx, ny, nz, nt)
+ * @param voxeldims Voxel dimensions in mm (x, y, z, t)
+ * @param opts Vector of options as they would be passed to the command line, e.g. "--dof", "6", etc.
+ *
+ * This function makes changes to vol *in-place* to avoid allocating large amounts of memory which we would
+ * then need to return. If the caller wants to keep the original data, a copy must be made before calling.
+ * This method works well for Python because we probably need to copy the data anyway in order to put it
+ * into Fortan order.
+ */
+//void mcflirt_run (vector<float> &vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
+void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
 {
   volume4D<float> meanseries;
   volume<float> refvol, anisorefvol, testvol, meanvol, extrefvol;
@@ -837,10 +649,15 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
   argv[2] = strdup("<numpy array>");
   argv[3] = strdup("-out");
   argv[4] = strdup("<numpy array>");
-  for (int i=0; i<opts.size(); i++) {
-    argv[i+5] = strdup(opts[i].c_str()); // FIXME leak
+  for (unsigned int i=0; i<opts.size(); i++) {
+    argv[i+5] = strdup(opts[i].c_str());
   }
   globalopts.parse_command_line(opts.size()+5, argv);
+
+  // Free allocated fake command line options FIXME leak on exception
+  for (unsigned int i=0; i<opts.size()+5; i++) {
+    free(argv[i]);
+  }
 
   if (!globalopts. no_reporting) cerr << endl << "McFLIRT v 2.0 - FMRI motion correction" << endl << endl;
   int original_refvol=globalopts.refnum;
@@ -853,12 +670,16 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
     throw std::runtime_error("Must be 4 voxel dimensions");
   }
   // The volume object will not own the data using this constructor so no need to copy
-  volume4D<float> timeseries(extent[0], extent[1], extent[2], extent[3], &vol[0]);
+  volume4D<float> timeseries(extent[0], extent[1], extent[2], extent[3], vol);
   timeseries.setxdim(voxeldims[0]);
   timeseries.setydim(voxeldims[1]);
   timeseries.setzdim(voxeldims[2]);
   timeseries.setTR(voxeldims[3]);
   globalopts. no_volumes = timeseries.tsize();
+
+  cout << "p1s " << timeseries[0].fbegin() << endl;
+  cout << "data0s " << timeseries(0, 0, 0, 0) << endl;
+  cout << "data1s " << timeseries(0, 0, 0, 1) << endl;
 
   for (int vol_count = 0; vol_count < globalopts. no_volumes; vol_count++) {
     mat_array0.push_back(IdentityMatrix(4));
@@ -932,7 +753,6 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
     } else {
       for (int i=0; i<globalopts.no_volumes; i++)  mat_array1[i] = mat_array0[i];
     }
-
     if (globalopts. no_stages>=2) {
       if (!globalopts. no_reporting) cerr <<endl << "second iteration - drop to 4mm scaling" << endl;
       new_tolerance=4*0.2; current_scale=4.0; mat_index[1] = (int) (new_tolerance*current_scale);
@@ -960,7 +780,6 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
     } else {
       for (int i=0; i<globalopts.no_volumes; i++)  mat_array2[i] = mat_array1[i];
     }
-
 
     if (globalopts. no_stages>=3) {
       if (!globalopts. no_reporting) cerr << endl << "third iteration - 4mm scaling, eighth tolerance" << endl;
@@ -1019,8 +838,10 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
       timeseries[i].setinterpolationmethod(trilinear);
       affine_transform(timeseries[i],testvol,mat_array0[i]*init_trans,1.0);
     }
-    timeseries[i] = testvol;
+    // Make changes inplace to avoid copying.
+    memcpy((void *)timeseries[i].fbegin(), (void *)testvol.fbegin(), extent[0]*extent[1]*extent[2]*sizeof(float));
   }
+
 
   if (globalopts. statflag) run_and_save_stats(timeseries);
   if (globalopts. tmpmatflag) {
@@ -1040,12 +861,7 @@ std::vector<float> mcflirt_run (std::vector<float> &vol, std::vector<int> &exten
   if (!globalopts. no_reporting) cerr << endl << "Saving motion corrected time series... " << endl;
   timeseries.setDisplayMaximumMinimum(timeseries.max(),timeseries.min());
 
-  // Copy each time slice into a vector for returning
-  // FIXME not clear why we can't just return vol since changes are inplace. But it doesn't work...
-  vector<float> retvol;
-  for (int t=0; t<extent[3]; t++) {
-    retvol.insert(retvol.end(), timeseries[t].fbegin(), timeseries[t].fend());
-  }
-
-  return retvol;
+  cout << "p1 " << timeseries[0].fbegin() << endl;
+  cout << "data0 " << timeseries(0, 0, 0, 0) << endl;
+  cout << "data1 " << timeseries(0, 0, 0, 1) << endl;
 }

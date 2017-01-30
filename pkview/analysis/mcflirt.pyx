@@ -3,8 +3,6 @@ Author: Martin Craig <martin.craig@eng.ox.ac.uk>
 Copyright (c) 2017 University of Oxford, Martin Craig
 """
 
-# Cython interface file for wrapping the object
-
 import numpy as np
 cimport numpy as np
 
@@ -12,47 +10,29 @@ from libcpp.vector cimport vector
 from libcpp.string cimport string
 
 cdef extern from "mcflirt.h":
-    vector[float] mcflirt_run (vector[float] &vol, vector[int] &extent, vector[float] &voxeldims, vector[string] &opts)
+    void mcflirt_run (float *vol, vector[int] &extent, vector[float] &voxeldims, vector[string] &opts)
 
-def mcflirt(vol, voxeldims):
-    """
-    Wrapper for the c++ MCFLIRT motion correction function
+def run_mcflirt_c(np.ndarray[np.float32_t, ndim=1, mode="fortran"] mcvol, shape, voxeldims, opts):
+    mcflirt_run(&mcvol[0], shape, voxeldims, opts)
+    print(mcvol[0])
+    print(mcvol[64*64*42])
 
-    Args:
-        vol: Timeseries image
-
-    Returns:
-        new volume
-    """
-
-    if vol is None:
-        raise RuntimeError("Volume data is None")
-    if len(vol.shape) != 4:
-        raise RuntimeError("Volume must be 4D")
-    if len(voxeldims) != 4:
-        raise RuntimeError("Must provide 4 voxel dimensions")
-
-    # FSL volumes use column-major order for some reason (FORTRAN order).
-    # This seems to work as conversion, basically reverse the order of the
-    # axes and then turn to contiguous array and flatten.
-    # Strangely np.asfortranarray() did not work!
-
-    origshape = np.copy(vol.shape)
-    vol = np.moveaxis(vol, -1, 0)
-    vol = np.moveaxis(vol, -1, 1)
-    vol = np.moveaxis(vol, -1, 2)
-
-    shape = vol.shape
-    flatvol = np.ascontiguousarray(vol.flatten())
+def mcflirt(vol, voxeldims, **kwargs):
     opts = ["-report",]
-    mcvol = mcflirt_run(flatvol, origshape, voxeldims, opts)
+    for key, value in kwargs.items():
+        opts.append("-%s" % key)
+        if value is not None and len(value) > 0: opts.append(value)
 
-    # Must remember to change back before returning!
-    mcvol = np.reshape(mcvol, shape)
-    mcvol = np.moveaxis(mcvol, 0, -1)
-    mcvol = np.moveaxis(mcvol, 0, -2)
-    mcvol = np.moveaxis(mcvol, 0, -3)
-    mcvol = np.ascontiguousarray(mcvol)
+    # FSL volumes use data in Fortran order
+    mcvol = vol.flatten(order='F').astype(np.float32)
+
+    run_mcflirt_c(mcvol, vol.shape, voxeldims, opts)
+    print(mcvol[0])
+    print(mcvol[64*64*42])
+
+    mcvol = np.reshape(mcvol, vol.shape, order='F')
+    print(mcvol[0,0,0,0])
+    print(mcvol[0,0,0,1])
 
     return mcvol
 
