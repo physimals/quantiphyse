@@ -7,7 +7,7 @@ class HelpButton(QtGui.QPushButton):
     """
 
     def __init__(self, parent, lfp,
-                 link='https://github.com/benjaminirving/PkView_help_files/blob/master/README.md#pkview-'):
+                 link='http://pkview.readthedocs.io/en/latest/'):
 
         super(HelpButton, self).__init__(parent)
 

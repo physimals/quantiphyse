@@ -29,8 +29,12 @@ class OverviewWidget(QtGui.QWidget):
 
         ta = QtGui.QLabel("The GUI enables analysis of a DCE-MRI volume, ROI and multiple overlays "
                           "with pharmacokinetic modelling, subregion analysis and statistics included. "
-                          "Use help (?) buttons for more online information on each widget and the entire GUI. "
-                          "(Benjamin Irving 2016)")
+                          "Please use help (?) buttons for more online information on each widget and the entire GUI. "
+                          " \n \n"
+                          "Creator: Benjamin Irving (mail@birving.com) \n"
+                          "Contributors: Benjamin Irving, Martin Craig, Michael Chappell"
+                          " \n \n"
+                          "By using the this software you agree to the online licencing and disclaimer (see help)")
         ta.setWordWrap(True)
 
         t1 = QtGui.QLabel("Current overlays")

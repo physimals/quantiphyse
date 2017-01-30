@@ -188,9 +188,9 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
 
     if seed_type == 'nrandom':
 
-        segments_z = np.zeros(n_random_seeds)
-        segments_y = np.zeros(n_random_seeds)
-        segments_x = np.zeros(n_random_seeds)
+        segments_z = np.zeros(n_random_seeds, dtype=int)
+        segments_y = np.zeros(n_random_seeds, dtype=int)
+        segments_x = np.zeros(n_random_seeds, dtype=int)
 
         m_inv = np.copy(mask)
 
@@ -201,9 +201,9 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
 
             mcoords = np.nonzero(dtrans == np.max(dtrans))
 
-            segments_z[ii] = mcoords[2][0]
-            segments_y[ii] = mcoords[1][0]
-            segments_x[ii] = mcoords[0][0]
+            segments_z[ii] = int(mcoords[2][0])
+            segments_y[ii] = int(mcoords[1][0])
+            segments_x[ii] = int(mcoords[0][0])
 
             m_inv[segments_x[ii], segments_y[ii], segments_z[ii]] = False
 
