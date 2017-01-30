@@ -44,7 +44,7 @@ class PerfSlicWidget(QtGui.QWidget):
         self.n_comp = NumericOption("Number of components", grid, 0, minval=1, maxval=3, default=3, intonly=True)
         self.compactness = NumericOption("Compactness", grid, 1, minval=0, maxval=1, default=0.1, intonly=False)
         # self.segment_size = NumericOption("Segment size", grid, 2, minval=1, maxval=10000, default=1000, intonly=True)
-        self.segment_number = NumericOption("Segment size", grid, 2, minval=2, maxval=10000, default=30, intonly=True)
+        self.segment_number = NumericOption("Number of supervoxels", grid, 2, minval=2, maxval=1000, default=20, intonly=True)
 
         btn = QtGui.QPushButton('Generate supervoxels', self)
         btn.clicked.connect(self.generate)
@@ -113,7 +113,7 @@ class PerfSlicWidget(QtGui.QWidget):
         ps1.feature_extraction(n_components=ncomp)
         print("Extracting supervoxels...")
         segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
-                                             recompute_seeds=True, segment_size=sn)
+                                             recompute_seeds=True, n_random_seeds=sn)
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
 
