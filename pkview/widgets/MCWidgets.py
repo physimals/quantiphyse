@@ -65,38 +65,65 @@ class MCFlirtWidget(QtGui.QWidget):
         self.cost_combo = QtGui.QComboBox()
         for name, opt in self.cost_models.items():
             self.cost_combo.addItem(name, opt)
+        self.cost_combo.setCurrentIndex(self.cost_combo.findData("normcorr"))
+
         grid.addWidget(self.cost_combo, 0, 1)
 
         grid.addWidget(QtGui.QLabel("Number of bins"), 1, 0)
-        self.num_bins = QtGui.QLineEdit("256")
+        self.num_bins = QtGui.QSpinBox()
+        self.num_bins.setMinimum(1)
+        self.num_bins.setMaximum(1000)
+        self.num_bins.setValue(256)
         grid.addWidget(self.num_bins, 1, 1)
 
-        grid.addWidget(QtGui.QLabel("Number of transform dofs"), 2, 0)
-        self.num_dofs = QtGui.QLineEdit("6")
+        grid.addWidget(QtGui.QLabel("Number of transform degrees of freedom"), 2, 0)
+        self.num_dofs = QtGui.QSpinBox()
+        self.num_dofs.setMinimum(1)
+        self.num_dofs.setMaximum(10)
+        self.num_dofs.setValue(6)
         grid.addWidget(self.num_dofs, 2, 1)
 
-        grid.addWidget(QtGui.QLabel("Number of reference volume"), 4, 0)
-        self.refvol = QtGui.QLineEdit("0")
+        grid.addWidget(QtGui.QLabel("Time index of reference volume"), 4, 0)
+        self.refvol = QtGui.QSpinBox()
+        self.refvol.setMinimum(0)
         grid.addWidget(self.refvol, 4, 1)
 
         grid.addWidget(QtGui.QLabel("Scaling"), 5, 0)
-        self.scaling = QtGui.QLineEdit("6")
+        self.scaling = QtGui.QDoubleSpinBox()
+        self.scaling.setValue(6.0)
+        self.scaling.setMinimum(0.1)
+        self.scaling.setMaximum(10.0)
+        self.scaling.setSingleStep(0.1)
         grid.addWidget(self.scaling, 5, 1)
 
         grid.addWidget(QtGui.QLabel("Smoothing in cost function"), 6, 0)
-        self.smoothing = QtGui.QLineEdit("1")
+        self.smoothing = QtGui.QDoubleSpinBox()
+        self.smoothing.setValue(1.0)
+        self.smoothing.setMinimum(0.1)
+        self.smoothing.setMaximum(10.0)
+        self.smoothing.setSingleStep(0.1)
         grid.addWidget(self.smoothing, 6, 1)
 
         grid.addWidget(QtGui.QLabel("Scaling factor for rotation\noptimization tolerances"), 7, 0)
-        self.rotation = QtGui.QLineEdit("1")
+        self.rotation = QtGui.QDoubleSpinBox()
+        self.rotation.setValue(1.0)
+        self.rotation.setMinimum(0.1)
+        self.rotation.setMaximum(10.0)
+        self.rotation.setSingleStep(0.1)
         grid.addWidget(self.rotation, 7, 1)
 
         grid.addWidget(QtGui.QLabel("Number of search stages"), 8, 0)
-        self.stages = QtGui.QLineEdit("3")
+        self.stages = QtGui.QSpinBox()
+        self.stages.setMinimum(1)
+        self.stages.setMaximum(4)
+        self.stages.setValue(3)
         grid.addWidget(self.stages, 8, 1)
 
         grid.addWidget(QtGui.QLabel("Field of view (mm)"), 9, 0)
-        self.fov = QtGui.QLineEdit("20")
+        self.fov = QtGui.QSpinBox()
+        self.fov.setValue(20)
+        self.fov.setMinimum(1)
+        self.fov.setMaximum(100)
         grid.addWidget(self.fov, 9, 1)
 
         grid.addWidget(QtGui.QLabel("Sinc interpolation"), 10, 0)
@@ -141,7 +168,8 @@ class MCFlirtWidget(QtGui.QWidget):
         self.ivm.sig_main_volume.connect(self.main_vol_changed)
 
     def main_vol_changed(self, vol):
-        self.refvol.setText(str(int(vol.shape[3]/2)))
+        self.refvol.setMaximum(vol.shape[3]-1)
+        self.refvol.setValue(int(vol.shape[3]/2))
 
     def run_mcflirt(self):
         if self.ivm.vol is None:
@@ -150,14 +178,14 @@ class MCFlirtWidget(QtGui.QWidget):
 
         opts = {}
         opts["cost"] = self.cost_combo.itemData(self.cost_combo.currentIndex())
-        opts["bins"] = self.num_bins.text()
-        opts["dof"] = self.num_dofs.text()
-        opts["refvol"] = self.refvol.text()
-        opts["scaling"] = self.scaling.text()
-        opts["smooth"] = self.smoothing.text()
-        opts["rotation"] = self.rotation.text()
-        opts["stages"] = self.stages.text()
-        opts["fov"] = self.fov.text()
+        opts["bins"] = self.num_bins.value()
+        opts["dof"] = self.num_dofs.value()
+        opts["refvol"] = self.refvol.value()
+        opts["scaling"] = self.scaling.value()
+        opts["smooth"] = self.smoothing.value()
+        opts["rotation"] = self.rotation.value()
+        opts["stages"] = self.stages.value()
+        opts["fov"] = self.fov.value()
         if self.sinc.isChecked(): opts["sinc_final"] = ""
         if self.spline.isChecked(): opts["spline_final"] = ""
         if self.nn.isChecked(): opts["nn_final"] = ""

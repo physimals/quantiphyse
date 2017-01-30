@@ -21,7 +21,7 @@ def mcflirt(vol, voxeldims, **kwargs):
     opts = ["-report",]
     for key, value in kwargs.items():
         opts.append("-%s" % key)
-        if value is not None and len(value) > 0: opts.append(value)
+        if value is not None and len(str(value)) > 0: opts.append(str(value))
 
     # FSL volumes use data in Fortran order
     mcvol = vol.flatten(order='F').astype(np.float32)
