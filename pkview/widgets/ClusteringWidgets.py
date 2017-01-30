@@ -288,7 +288,7 @@ class CurveClusteringWidget(QtGui.QWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.add_roi(Roi('Curve clusters', data=self.label1), make_current=True)
+        self.ivm.add_roi(Roi('clusters', data=self.label1), make_current=True)
         self.sig_emit_reset.emit(1)
 
         # replot

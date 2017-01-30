@@ -206,10 +206,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         if reset:
-            self.sig_current_overlay.emit(None)
-            self.sig_current_roi.emit(None)
-            self.sig_all_rois.emit(self.rois)
-            self.sig_all_overlays.emit(self.overlays)
+            self.sig_current_overlay.emit(self.current_overlay)
+            self.sig_current_roi.emit(self.current_roi)
+            self.sig_all_rois.emit(self.rois.keys())
+            self.sig_all_overlays.emit(self.overlays.keys())
 
     def set_main_volume(self, vol):
         if self.vol is not None:
