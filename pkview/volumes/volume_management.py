@@ -178,7 +178,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         super(ImageVolumeManagement, self).__init__()
         self.init()
 
-    def init(self):
+    def init(self, reset=False):
         """
         Initilises all the volumes.
         *** NB Allows reinitialisation when loading a new image ***
@@ -204,6 +204,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
+
+        if reset:
+            self.sig_current_overlay.emit(None)
+            self.sig_current_roi.emit(None)
+            self.sig_all_rois.emit(self.rois)
+            self.sig_all_overlays.emit(self.overlays)
 
     def set_main_volume(self, vol):
         if self.vol is not None:

@@ -830,7 +830,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
                 if ret == QtGui.QMessageBox.Ok:
                     print("Clearing data")
-                    self.mw1.ivm.init()
+                    self.mw1.ivm.init(reset=True)
                 else:
                     return
 
