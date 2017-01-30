@@ -6,6 +6,7 @@ from pkview.volumes.volume_management import Overlay, Roi
 from pkview.analysis.perfusionslic import PerfSLIC
 from pkview.analysis.overlay_analysis import OverlayAnalyis
 
+
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, intonly=False):
         self.label = QtGui.QLabel(text)
@@ -19,6 +20,7 @@ class NumericOption:
         self.spin.setValue(default)
         grid.addWidget(self.label, ypos, 0)
         grid.addWidget(self.spin, ypos, 1)
+
 
 class PerfSlicWidget(QtGui.QWidget):
     """
@@ -40,8 +42,10 @@ class PerfSlicWidget(QtGui.QWidget):
         grid = QtGui.QGridLayout()
         optbox.setLayout(grid)
         self.n_comp = NumericOption("Number of components", grid, 0, minval=1, maxval=3, default=3, intonly=True)
-        self.compactness = NumericOption("Compactness", grid, 1, minval=0, maxval=1, default=0.02, intonly=False)
-        self.segment_size = NumericOption("Segment size", grid, 2, minval=1, maxval=10000, default=1000, intonly=True)
+        self.compactness = NumericOption("Compactness", grid, 1, minval=0, maxval=1, default=0.1, intonly=False)
+        # self.segment_size = NumericOption("Segment size", grid, 2, minval=1, maxval=10000, default=1000, intonly=True)
+        self.segment_number = NumericOption("Segment size", grid, 2, minval=2, maxval=10000, default=30, intonly=True)
+
         btn = QtGui.QPushButton('Generate supervoxels', self)
         btn.clicked.connect(self.generate)
         grid.addWidget(btn, 3, 0)
@@ -95,18 +99,21 @@ class PerfSlicWidget(QtGui.QWidget):
 
         ncomp = self.n_comp.spin.value()
         comp = self.compactness.spin.value()
-        ss = self.segment_size.spin.value()
+        # ss = self.segment_size.spin.value()
+        sn = self.segment_number.spin.value()
+
 
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_size, self.ivm.current_roi.data)
+        ps1 = PerfSLIC(img, vox_size, mask=self.ivm.current_roi.data)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")
         ps1.feature_extraction(n_components=ncomp)
         print("Extracting supervoxels...")
-        segments = ps1.supervoxel_extraction(compactness=comp, segment_size=ss)
+        segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
+                                             recompute_seeds=True, segment_size=sn)
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
 
