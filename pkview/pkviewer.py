@@ -373,9 +373,12 @@ class MainWindowWidget(QtGui.QWidget):
             self.ivm.set_current_overlay(ov, signal=True)
 
     def update_current_overlay(self, overlay):
-        idx = self.overlay_combo.findText(overlay.name)
-        if idx != self.overlay_combo.currentIndex():
-            self.overlay_combo.setCurrentIndex(idx)
+        if overlay is None:
+            self.roi_combo.setCurrentIndex(-1)
+        else:
+            idx = self.overlay_combo.findText(overlay.name)
+            if idx != self.overlay_combo.currentIndex():
+                self.overlay_combo.setCurrentIndex(idx)
 
     def update_overlays(self, overlays):
         self.overlay_combo.clear()
@@ -390,9 +393,12 @@ class MainWindowWidget(QtGui.QWidget):
             self.ivm.set_current_roi(roi, signal=True)
 
     def update_current_roi(self, roi):
-        idx = self.roi_combo.findText(roi.name)
-        if idx != self.roi_combo.currentIndex():
-            self.roi_combo.setCurrentIndex(idx)
+        if roi is None:
+            self.roi_combo.setCurrentIndex(-1)
+        else:
+            idx = self.roi_combo.findText(roi.name)
+            if idx != self.roi_combo.currentIndex():
+                self.roi_combo.setCurrentIndex(idx)
 
     def update_rois(self, rois):
         self.roi_combo.clear()
@@ -830,7 +836,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
                 if ret == QtGui.QMessageBox.Ok:
                     print("Clearing data")
-                    self.mw1.ivm.init()
+                    self.mw1.ivm.init(reset=True)
                 else:
                     return
 
@@ -945,7 +951,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
                 if ret == QtGui.QMessageBox.Ok:
                     print("Clearing data")
-                    self.mw1.ivm.init()
+                    self.mw1.ivm.init(reset=True)
                 else:
                     return
 

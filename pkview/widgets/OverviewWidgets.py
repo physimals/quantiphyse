@@ -76,21 +76,23 @@ class CaseWidget(QtGui.QListWidget):
         self.ivm.sig_all_overlays.connect(self.update_list)
 
     def update_list(self, list1):
+        self.clear()
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
                 self.addItem(ii)
 
     def update_current(self, ovl):
-        if ovl.name in self.list_current:
+        if ovl is not None and ovl.name in self.list_current:
             ind1 = self.list_current.index(ovl.name)
             self.setCurrentItem(self.item(ind1))
-        else:
+        elif ovl is not None:
             print("Warning: This overlay does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_overlay(choice1.text(), signal=True)
+        if choice1 is not None:
+            self.ivm.set_current_overlay(choice1.text(), signal=True)
 
 class RoiWidget(QtGui.QListWidget):
     """
@@ -108,21 +110,23 @@ class RoiWidget(QtGui.QListWidget):
         self.ivm.sig_all_rois.connect(self.update_list)
 
     def update_list(self, list1):
+        self.clear()
         for ii in list1:
             if ii not in self.list_current:
                 self.list_current.append(ii)
                 self.addItem(ii)
 
     def update_current(self, roi):
-        if roi.name in self.list_current:
+        if roi is not None and roi.name in self.list_current:
             ind1 = self.list_current.index(roi.name)
             self.setCurrentItem(self.item(ind1))
-        else:
+        elif roi is not None:
             print("Warning: This ROI does not exist")
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
-        self.ivm.set_current_roi(choice1.text(), signal=True)
+        if choice1 is not None:
+            self.ivm.set_current_roi(choice1.text(), signal=True)
 
 
 
