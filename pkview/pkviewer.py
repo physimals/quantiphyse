@@ -770,7 +770,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         :return:
         """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/benjaminirving/PkView_help_files", QtCore.QUrl.TolerantMode))
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://pkview.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
 
     @QtCore.Slot()
     def show_console(self):
