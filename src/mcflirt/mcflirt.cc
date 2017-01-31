@@ -643,7 +643,7 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
 
   // Turn vector of options into argc and then use CL parsing function
   // Use meaningless placeholders for filenames to stop program helpfully telling us its usage info and then stopping
-  char *argv[opts.size()+5];
+  char **argv = new char *[opts.size()+5];
   argv[0] = strdup("mcflirt_run");
   argv[1] = strdup("-in");
   argv[2] = strdup("<numpy array>");
@@ -658,6 +658,7 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
   for (unsigned int i=0; i<opts.size()+5; i++) {
     free(argv[i]);
   }
+  delete[] argv;
 
   if (!globalopts. no_reporting) cerr << endl << "McFLIRT v 2.0 - FMRI motion correction" << endl << endl;
   int original_refvol=globalopts.refnum;

@@ -2,7 +2,6 @@
 
 """
 
-
 # Easiest option
 # To build cython libraries in the current location
 # Use: python setup.py build_ext --inplace
@@ -46,6 +45,7 @@ currently saves the icons in the wrong folder and needs to be manually moved
 import numpy
 import platform
 import os
+import sys
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -56,8 +56,11 @@ Description = """/
 PkView
 """
 
-# Compiling the Cython extensions
-ext1 = Extension("pkview.analysis.pk_model",
+extensions = []
+
+# PK modelling extension
+
+extensions.append(Extension("pkview.analysis.pk_model",
                  sources=['pkview/analysis/pk_model.pyx',
                           'src/pkmodelling/Optimizer_class.cpp',
                           'src/pkmodelling/pkrun2.cpp',
@@ -70,39 +73,52 @@ ext1 = Extension("pkview.analysis.pk_model",
                  include_dirs=['src/pkmodelling/lmlib/',
                                'src/pkmodelling/',
                                numpy.get_include()],
-                 language="c++")
+                 language="c++"))
 
-ext2 = Extension("pkview.analysis.t1_model",
+# T1 map generation extension
+
+extensions.append(Extension("pkview.analysis.t1_model",
                  sources=['pkview/analysis/t1_model.pyx',
                           'src/T10/linear_regression.cpp',
                           'src/T10/T10_calculation.cpp'],
                  include_dirs=['src/T10',
                                numpy.get_include()],
                  language="c++",
-                 extra_compile_args=['-std=c++11'])
+                 extra_compile_args=['-std=c++11']))
 
-perfusionslic_extensions = [
-    Extension("pkview.analysis.perfusionslic.additional.bspline_smoothing",
+# Supervoxel extensions
+
+extensions.append(Extension("pkview.analysis.perfusionslic.additional.bspline_smoothing",
               sources=["pkview/analysis/perfusionslic/additional/bspline_smoothing.pyx"],
-              include_dirs=[numpy.get_include()]),
-    Extension("pkview.analysis.perfusionslic.additional.create_im",
+              include_dirs=[numpy.get_include()]))
+
+extensions.append(Extension("pkview.analysis.perfusionslic.additional.create_im",
               sources=["pkview/analysis/perfusionslic/additional/create_im.pyx"],
-              include_dirs=[numpy.get_include()]),
-    Extension("pkview.analysis.perfusionslic._slic_feat",
+              include_dirs=[numpy.get_include()]))
+
+extensions.append(Extension("pkview.analysis.perfusionslic._slic_feat",
               sources=["pkview/analysis/perfusionslic/_slic_feat.pyx"],
-              include_dirs=[numpy.get_include()]),
-    Extension("pkview.analysis.perfusionslic.additional.processing",
+              include_dirs=[numpy.get_include()]))
+
+extensions.append(Extension("pkview.analysis.perfusionslic.additional.processing",
               sources=["pkview/analysis/perfusionslic/additional/processing.pyx",
                        "src/perfusionslic/processing.cpp"],
               include_dirs=["src/perfusionslic", numpy.get_include()],
               language="c++",
-              extra_compile_args=["-std=c++11"])
-]
+              extra_compile_args=["-std=c++11"]))
+
+# MCFlirt extension - requires FSL to build
 
 fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
-  # Compiling the Cython extensions
-  mcflirt = Extension("pkview.analysis.mcflirt",
+  if sys.platform.startswith("win"):
+    zlib = "zlib"
+    extra_inc = "compat"
+  else:
+    zlib = "z"
+    extra_inc = "."
+
+  extensions.append(Extension("pkview.analysis.mcflirt",
                  sources=['pkview/analysis/mcflirt.pyx',
                           'src/mcflirt/mcflirt.cc',
                           'src/mcflirt/Globaloptions.cc',
@@ -110,14 +126,13 @@ if fsldir:
                  include_dirs=['src/mcflirt/',
                                os.path.join(fsldir, "include"),
                                os.path.join(fsldir, "extras/include/newmat"),
-                               numpy.get_include()],
-                 libraries=['newimage', 'miscmaths', 'fslio', 'niftiio', 'newmat', 'znz'],
+                               os.path.join(fsldir, "extras/include/boost"),
+                               numpy.get_include(), extra_inc],
+                 libraries=['newimage', 'miscmaths', 'fslio', 'niftiio', 'newmat', 'znz', zlib],
                  library_dirs=[os.path.join(fsldir, "lib"),os.path.join(fsldir, "extras/lib")],
-                 language="c++")
+                 language="c++"))
 else:
     print("FSLDIR not set - not building MCFLIRT extension")
-
-extensions = [ext1, ext2, mcflirt] + perfusionslic_extensions
 
 # setup parameters
 setup(name='PKView',
