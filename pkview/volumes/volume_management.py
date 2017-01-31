@@ -21,6 +21,8 @@ import os
 class Volume(object):
     def __init__(self, name, data=None, fname=None):
         self.fname = fname
+        if fname is not None:
+            self.dir, self.basename = os.path.split(fname)
         self.name = name
         self.data = data
         self.voxel_sizes = None

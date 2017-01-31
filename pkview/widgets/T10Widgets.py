@@ -141,6 +141,9 @@ class SourceImageList(QtGui.QVBoxLayout):
                                       QtGui.QMessageBox.Close)
             return
 
+        if self.dir is None:
+            self.dir = self.ivm.vol.dir
+
         filename, junk = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
         if filename:
             dims = self.check_file(filename)
