@@ -133,6 +133,22 @@ class VolumeTest(unittest.TestCase):
         fname = os.path.join(TEST_DIR, "data/broken.nii")
         self.assertRaises(Exception, Volume, "testvol", fname=fname)
 
+    def testDir(self):
+        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
+        v = Volume("testvol", fname=fname)
+        self.assertEquals(v.dir, os.path.join(TEST_DIR, "data"))
+
+    def testDirNoFile(self):
+        self.assertEquals(self.v3d.dir, None)
+
+    def testBasename(self):
+        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
+        v = Volume("testvol", fname=fname)
+        self.assertEquals(v.basename, "%s.nii.gz" % TEST_OVERLAY)
+
+    def testBasenameNoFile(self):
+        self.assertEquals(self.v3d.basename, None)
+
 class OverlayTest(unittest.TestCase):
 
     def setUp(self):
@@ -311,13 +327,55 @@ class VolumeManagementTest(unittest.TestCase):
 
     def setUp(self):
         self.ivm = ImageVolumeManagement()
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_VOLUME)
-        self.vol = Volume("main", fname=fname)
+        self.ivm.sig_main_volume.connect(self.main_volume_slot)
+        self.ivm.sig_current_overlay.connect(self.current_overlay_slot)
+        self.ivm.sig_current_roi.connect(self.current_roi_slot)
+        self.ivm.sig_all_overlays.connect(self.all_overlays_slot)
+        self.ivm.sig_all_rois.connect(self.all_rois_slot)
+        self.sigs_emitted = []
+
+        self.test_data_3d = self.generateTestData3d()
+        self.test_data_4d = self.generateTestData4d()
+        self.test_data_roi_all = np.ones([TEST_NX, TEST_NY, TEST_NZ])
+        d = np.zeros([TEST_NX, TEST_NY, TEST_NZ])
+        d[0, 0, 0] = 1
+        d[0, 0, 1] = 1
+        self.test_data_roi_part = d
+        self.vol = Volume("main", data=self.test_data_4d)
+
+    def main_volume_slot(self, vol):
+        self.sigs_emitted.append("main_volume")
+        self.main_volume_obj = vol
+
+    def current_overlay_slot(self, ovl):
+        self.sigs_emitted.append("current_overlay")
+        self.current_overlay_obj = ovl
+
+    def all_overlays_slot(self, ovls):
+        self.sigs_emitted.append("all_overlays")
+        self.overlays_obj = ovls
+
+    def current_roi_slot(self, roi):
+        self.sigs_emitted.append("current_roi")
+        self.current_roi_obj = roi
+
+    def all_rois_slot(self, rois):
+        self.sigs_emitted.append("all_rois")
+        self.rois_obj = rois
+
+    def generateTestData3d(self, dtype=np.float):
+        def test_fn(x, y, z):
+            return (x-(TEST_NX/2)**2 + (y-(TEST_NY/2))**2 - (z-(TEST_NZ/2))**2)
+        return np.fromfunction(test_fn, [TEST_NX, TEST_NY, TEST_NZ], dtype=dtype)
+
+    def generateTestData4d(self, dtype=np.float):
+        def test_fn(x, y, z, t):
+            return (x-(TEST_NX/2)**2 + (y-(TEST_NY/2))**2 - (z-(TEST_NZ/2))**2 - (t-(TEST_NT/2))**2)
+        return np.fromfunction(test_fn, [TEST_NX, TEST_NY, TEST_NZ, TEST_NT], dtype=dtype)
 
     def testAddOverlay(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_3d)
         self.ivm.add_overlay(ovl, make_current=True)
         self.assertTrue(self.ivm.current_overlay is not None)
         self.assertEquals(self.ivm.current_overlay.name, "test")
@@ -327,18 +385,20 @@ class VolumeManagementTest(unittest.TestCase):
         self.assertEquals(TEST_NZ, self.ivm.current_overlay.shape[2])
         self.assertTrue(np.array_equal(ovl.data_roi, ovl.data))
         self.assertEquals(self.ivm.current_overlay, self.ivm.overlays[self.ivm.current_overlay.name])
+        self.assertTrue("current_overlay" in self.sigs_emitted)
+        self.assertTrue("all_overlays" in self.sigs_emitted)
 
     def testAddOverlayNotCurrent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_3d)
         self.ivm.add_overlay(ovl, make_current=False)
         self.assertTrue(self.ivm.current_overlay is None)
         self.assertEquals(ovl, self.ivm.overlays["test"])
+        self.assertFalse("current_overlay" in self.sigs_emitted)
+        self.assertTrue("all_overlays" in self.sigs_emitted)
 
     def testAddOverlayNoVolume(self):
-        d = np.ones(self.vol.shape[:3])
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_3d)
         self.assertRaises(Exception, self.ivm.add_overlay, ovl)
 
     def testAddOverlayWrongDims(self):
@@ -348,18 +408,18 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testSetCurrentOverlay(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        overlay = Overlay("test_overlay", data=d)
+        overlay = Overlay("test_overlay", data=self.test_data_3d)
         self.ivm.add_overlay(overlay, make_current=False)
+        self.assertFalse("current_overlay" in self.sigs_emitted)
         self.assertTrue(self.ivm.current_overlay is None)
         self.ivm.set_current_overlay("test_overlay")
         self.assertTrue(self.ivm.current_overlay is not None)
         self.assertEquals(self.ivm.current_overlay, overlay)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
 
     def testSetCurrentOverlayAlreadyCurrent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        overlay = Overlay("test_overlay", data=d)
+        overlay = Overlay("test_overlay", data=self.test_data_3d)
         self.ivm.add_overlay(overlay, make_current=True)
         self.assertEquals(self.ivm.current_overlay, overlay)
         self.ivm.set_current_overlay("test_overlay")
@@ -367,29 +427,31 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testSetCurrentOverlayDifferent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        overlay1 = Overlay("test_overlay", data=d)
+        overlay1 = Overlay("test_overlay", data=self.test_data_3d)
         self.ivm.add_overlay(overlay1, make_current=True)
-        overlay2 = Overlay("test_overlay2", data=d)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
+        overlay2 = Overlay("test_overlay2", data=self.test_data_3d)
+        self.sigs_emitted = []
         self.ivm.add_overlay(overlay2, make_current=False)
+        self.assertFalse("current_overlay" in self.sigs_emitted)
         self.assertEquals(self.ivm.current_overlay, overlay1)
         self.ivm.set_current_overlay("test_overlay2")
         self.assertEquals(self.ivm.current_overlay, overlay2)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
 
     def testSetCurrentOverlayWrongName(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        overlay = Overlay("test_overlay", data=d)
+        overlay = Overlay("test_overlay", data=self.test_data_3d)
         self.ivm.add_overlay(overlay, make_current=False)
         self.assertRaises(Exception, self.ivm.set_current_overlay, "test_overlay2")
+        self.assertFalse("current_overlay" in self.sigs_emitted)
 
     def testSetCurrentOverlayNoVolume(self):
         self.assertRaises(Exception, self.ivm.set_current_overlay, "test_overlay")
 
     def testAddRoi(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi, make_current=True)
         self.assertTrue(self.ivm.current_roi is not None)
         self.assertEquals(self.ivm.current_roi.name, "test_roi")
@@ -398,18 +460,20 @@ class VolumeManagementTest(unittest.TestCase):
         self.assertEquals(TEST_NY, self.ivm.current_roi.shape[1])
         self.assertEquals(TEST_NZ, self.ivm.current_roi.shape[2])
         self.assertEquals(self.ivm.current_roi, self.ivm.rois[self.ivm.current_roi.name])
+        self.assertTrue("current_roi" in self.sigs_emitted)
+        self.assertTrue("all_rois" in self.sigs_emitted)
 
     def testAddRoiNotCurrent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi, make_current=False)
         self.assertTrue(self.ivm.current_roi is None)
         self.assertEquals(roi, self.ivm.rois["test_roi"])
+        self.assertFalse("current_roi" in self.sigs_emitted)
+        self.assertTrue("all_rois" in self.sigs_emitted)
 
     def testAddRoiNoVolume(self):
-        d = np.ones(self.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.assertRaises(Exception, self.ivm.add_roi, roi)
 
     def testAddRoiWrongDims(self):
@@ -419,51 +483,51 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testAddOverlayAndRoi(self):
         self.ivm.set_main_volume(self.vol)
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
-        self.ivm.add_overlay(Overlay("test", fname=fname), make_current=True)
-        d = np.zeros(self.ivm.vol.shape[:3])
-        d[0, 0, 0] = 1
-        d[0, 0, 1] = 1
-        roi = Roi("test_roi", data=d)
+        self.ivm.add_overlay(Overlay("test", data=self.test_data_3d), make_current=True)
+        roi = Roi("test_roi", data=self.test_data_roi_part)
         self.ivm.add_roi(roi, make_current=True)
         self.assertFalse(np.array_equal(self.ivm.current_overlay.data_roi, self.ivm.current_overlay.data))
 
     def testSetCurrentRoi(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi, make_current=False)
+        self.assertFalse("current_roi" in self.sigs_emitted)
         self.assertTrue(self.ivm.current_roi is None)
         self.ivm.set_current_roi("test_roi")
         self.assertTrue(self.ivm.current_roi is not None)
         self.assertEquals(self.ivm.current_roi, roi)
+        self.assertTrue("current_roi" in self.sigs_emitted)
 
     def testSetCurrentRoiAlreadyCurrent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi, make_current=True)
         self.assertEquals(self.ivm.current_roi, roi)
         self.ivm.set_current_roi("test_roi")
         self.assertEquals(self.ivm.current_roi, roi)
+        self.assertTrue("current_roi" in self.sigs_emitted)
 
     def testSetCurrentRoiDifferent(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi1 = Roi("test_roi", data=d)
+        roi1 = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi1, make_current=True)
-        roi2 = Roi("test_roi2", data=d)
+        self.assertTrue("current_roi" in self.sigs_emitted)
+        roi2 = Roi("test_roi2", data=self.test_data_roi_part)
+        self.sigs_emitted = []
         self.ivm.add_roi(roi2, make_current=False)
+        self.assertFalse("current_roi" in self.sigs_emitted)
         self.assertEquals(self.ivm.current_roi, roi1)
         self.ivm.set_current_roi("test_roi2")
         self.assertEquals(self.ivm.current_roi, roi2)
+        self.assertTrue("current_roi" in self.sigs_emitted)
 
     def testSetCurrentRoiWrongName(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.ones(self.ivm.vol.shape[:3])
-        roi = Roi("test_roi", data=d)
+        roi = Roi("test_roi", data=self.test_data_roi_all)
         self.ivm.add_roi(roi, make_current=False)
         self.assertRaises(Exception, self.ivm.set_current_roi, "test_roi2")
+        self.assertFalse("current_roi" in self.sigs_emitted)
 
     def testSetCurrentRoiNoVolume(self):
         self.assertRaises(Exception, self.ivm.set_current_roi, "test_roi")
@@ -480,8 +544,7 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testGetEnhancement3dOverlay(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.arange(TEST_NX * TEST_NY * TEST_NZ).reshape(self.ivm.vol.shape[:3])
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_3d)
         self.ivm.add_overlay(ovl, make_current=True)
         self.ivm.cim_pos = [0,0,0,0]
         sig, sig_ovl = self.ivm.get_current_enhancement()
@@ -490,8 +553,7 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testGetEnhancement4dOverlay(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.arange(TEST_NX * TEST_NY * TEST_NZ * TEST_NT).reshape(self.ivm.vol.shape)
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_4d)
         self.ivm.add_overlay(ovl, make_current=True)
         self.ivm.cim_pos = [0,0,0,0]
         sig, sig_ovl = self.ivm.get_current_enhancement()
@@ -502,10 +564,9 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testGetEnhancement4dOverlays(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.arange(TEST_NX * TEST_NY * TEST_NZ * TEST_NT).reshape(self.ivm.vol.shape)
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_4d)
         self.ivm.add_overlay(ovl, make_current=True)
-        ovl = Overlay("test2", data=d)
+        ovl = Overlay("test2", data=self.test_data_4d)
         self.ivm.add_overlay(ovl, make_current=True)
         self.ivm.cim_pos = [0, 0, 0, 0]
         sig, sig_ovl = self.ivm.get_current_enhancement()
@@ -518,10 +579,8 @@ class VolumeManagementTest(unittest.TestCase):
 
     def testOverlayValueCurPos(self):
         self.ivm.set_main_volume(self.vol)
-        d = np.arange(TEST_NX*TEST_NY*TEST_NZ).reshape(self.ivm.vol.shape[:3])
-        ovl = Overlay("test", data=d)
+        ovl = Overlay("test", data=self.test_data_3d)
         self.ivm.add_overlay(ovl, make_current=True)
-        v = 0
         for x in range(TEST_NX):
             for y in range(TEST_NY):
                 for z in range(TEST_NZ):
@@ -532,9 +591,55 @@ class VolumeManagementTest(unittest.TestCase):
                         vals = self.ivm.get_overlay_value_curr_pos()
                         self.assertEquals(1, len(vals))
                         self.assertTrue(vals.has_key("test"))
-#                        print(x, y, z, vals["test"])
-                        self.assertEquals(v, vals["test"])
-                    v += 1
+                        self.assertEquals(self.test_data_3d[x, y, z], vals["test"])
+
+    def testReinitialize(self):
+        self.ivm.set_main_volume(self.vol)
+        self.sigs_emitted = []
+        self.ivm.init(reset=True)
+        self.assertTrue(self.ivm.vol is None)
+        self.assertTrue(self.ivm.current_overlay is None)
+        self.assertEquals(0, len(self.ivm.overlays))
+        self.assertTrue(self.ivm.current_roi is None)
+        self.assertEquals(0, len(self.ivm.rois))
+        self.assertTrue("main_volume" in self.sigs_emitted)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
+        self.assertTrue("current_roi" in self.sigs_emitted)
+        self.assertTrue("all_overlays" in self.sigs_emitted)
+        self.assertTrue("all_rois" in self.sigs_emitted)
+
+    def testReinitializeWithRoi(self):
+        self.ivm.set_main_volume(self.vol)
+        self.ivm.add_roi(Roi("test_roi", data=self.test_data_roi_all), make_current=True)
+        self.sigs_emitted = []
+        self.ivm.init(reset=True)
+        self.assertTrue(self.ivm.vol is None)
+        self.assertTrue(self.ivm.current_overlay is None)
+        self.assertEquals(0, len(self.ivm.overlays))
+        self.assertTrue(self.ivm.current_roi is None)
+        self.assertEquals(0, len(self.ivm.rois))
+        self.assertTrue("main_volume" in self.sigs_emitted)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
+        self.assertTrue("current_roi" in self.sigs_emitted)
+        self.assertTrue("all_overlays" in self.sigs_emitted)
+        self.assertTrue("all_rois" in self.sigs_emitted)
+
+    def testReinitializeWithRoiOverlay(self):
+        self.ivm.set_main_volume(self.vol)
+        self.ivm.add_roi(Roi("test_roi", data=self.test_data_roi_all), make_current=True)
+        self.ivm.add_overlay(Overlay("test_ovl", data=self.test_data_3d), make_current=True)
+        self.sigs_emitted = []
+        self.ivm.init(reset=True)
+        self.assertTrue(self.ivm.vol is None)
+        self.assertTrue(self.ivm.current_overlay is None)
+        self.assertEquals(0, len(self.ivm.overlays))
+        self.assertTrue(self.ivm.current_roi is None)
+        self.assertEquals(0, len(self.ivm.rois))
+        self.assertTrue("main_volume" in self.sigs_emitted)
+        self.assertTrue("current_overlay" in self.sigs_emitted)
+        self.assertTrue("current_roi" in self.sigs_emitted)
+        self.assertTrue("all_overlays" in self.sigs_emitted)
+        self.assertTrue("all_rois" in self.sigs_emitted)
 
 
 if __name__ == '__main__':

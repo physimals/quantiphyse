@@ -23,6 +23,8 @@ class Volume(object):
         self.fname = fname
         if fname is not None:
             self.dir, self.basename = os.path.split(fname)
+        else:
+            self.dir, self.basename = None, None
         self.name = name
         self.data = data
         self.voxel_sizes = None
@@ -208,6 +210,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         if reset:
+            self.sig_main_volume.emit(self.vol)
             self.sig_current_overlay.emit(self.current_overlay)
             self.sig_current_roi.emit(self.current_roi)
             self.sig_all_rois.emit(self.rois.keys())
