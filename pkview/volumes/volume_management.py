@@ -46,7 +46,7 @@ class Volume(object):
     def save_nifti(self, fname):
         if self.nifti_header is None:
             warnings.warn("No NIFTI header information available")
-            img = nib.Nifti1Image(self.data, np.identity(self.ndims))
+            img = nib.Nifti1Image(self.data, np.identity(4))
         else:
             img = nib.Nifti1Image(self.data, self.nifti_header.get_base_affine(), header=self.nifti_header)
         img.to_filename(fname)
