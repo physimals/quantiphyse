@@ -222,7 +222,7 @@ class MeanValuesWidget(QtGui.QWidget):
         super(MeanValuesWidget, self).__init__()
 
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(QtGui.QLabel("<font size=50>Generate Mean Values Overlay</font> \n"))
+        layout.addWidget(QtGui.QLabel("<font size=5>Generate Mean Values Overlay</font> \n"))
         desc = QtGui.QLabel("This widget will convert the current overlay into a "
                             "new overlay in which each ROI region contains the mean "
                             "value for that region.\n\nThis is generally only useful for "
