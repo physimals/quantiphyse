@@ -25,16 +25,6 @@ if (sys.version_info > (3, 0)):
 else:
     from pkview.resources import resource_py3
 
-def get_dir(str1):
-    """
-    Parse a file name to extract just the directory
-    :param str1:
-    :return:
-    """
-    ind1 = str1.rfind('/')
-    dir1 = str1[:ind1]
-    return dir1
-
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
@@ -54,6 +44,18 @@ from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_perfslic import perfslic
 from .utils.cmd_t10 import t10_preclinical, t10
 from .utils import set_local_file_path, get_icon
+
+op_sys = platform.system()
+
+def get_dir(str1):
+    """
+    Parse a file name to extract just the directory
+    :param str1:
+    :return:
+    """
+    ind1 = str1.rfind('/')
+    dir1 = str1[:ind1]
+    return dir1
 
 class DragOptions(QtGui.QDialog):
     """
@@ -993,7 +995,6 @@ def main():
     if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
         # Initialise main GUI
 
-        op_sys = platform.system()
         # OSx specific Changes
         if op_sys == 'Darwin':
             from Foundation import NSURL
