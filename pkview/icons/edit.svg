@@ -14,8 +14,11 @@
    height="32"
    viewBox="0 0 34 32"
    id="svg2"
-   inkscape:version="0.48.4 r9939"
-   sodipodi:docname="edit.svg">
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="edit.svg"
+   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/edit.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <metadata
      id="metadata10">
     <rdf:RDF>
@@ -44,22 +47,22 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="10.429825"
-     inkscape:cx="-0.64181116"
+     inkscape:cx="2.083266"
      inkscape:cy="15.08657"
-     inkscape:window-x="69"
+     inkscape:window-x="75"
      inkscape:window-y="34"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2"
      showguides="true"
      inkscape:guide-bbox="true" />
   <rect
-     style="fill:none;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:none;stroke:#999999;stroke-width:3.09448791;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect2987"
-     width="29.09341"
-     height="26.991787"
-     x="2.3338335"
-     y="2.5552359"
-     ry="2.1431227" />
+     width="28.905514"
+     height="28.905512"
+     x="2.572835"
+     y="1.6489125"
+     ry="2.2950706" />
   <g
      id="g3052"
      transform="translate(-0.38351555,-0.28763666)">

@@ -10,13 +10,13 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.2"
    id="svg2"
-   inkscape:version="0.48.4 r9939"
-   width="32.09341"
-   height="29.991787"
+   inkscape:version="0.91 r13725"
+   width="32"
+   height="32"
    sodipodi:docname="pk.svg"
-   inkscape:export-filename="/local/engs1170/Dropbox/BioMedIA1/Code/9_GUI/pkview/icons/pk.png"
-   inkscape:export-xdpi="99"
-   inkscape:export-ydpi="99">
+   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/pk.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <metadata
      id="metadata65">
     <rdf:RDF>
@@ -38,14 +38,14 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1863"
+     inkscape:window-width="1855"
      inkscape:window-height="1176"
      id="namedview63"
      showgrid="false"
      inkscape:zoom="20.297462"
-     inkscape:cx="28.836549"
+     inkscape:cx="10.607669"
      inkscape:cy="15.932535"
-     inkscape:window-x="57"
+     inkscape:window-x="65"
      inkscape:window-y="24"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg2"
@@ -71,7 +71,7 @@
        clipPathUnits="userSpaceOnUse"
        id="clipPath3176">
       <rect
-         style="fill:none;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         style="fill:none;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
          id="rect3178"
          width="29.09341"
          height="26.991787"
@@ -82,7 +82,7 @@
     </clipPath>
   </defs>
   <image
-     style="font-size:14.66670036px;font-style:normal;font-weight:400;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1;font-family:Ubuntu"
+     style="font-style:normal;font-weight:400;font-size:14.66670036px;font-family:Ubuntu;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1"
      id="image57"
      y="-161.05531"
      xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAgCAYAAACinX6EAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAA3lJREFUaIHlmHFIXlUYh5/PJQgJitGKMBbSQOELh4HDEAwJwXAYrNEMwYFRSULBQBYMclSgkGA4JByDwBCTCYJrLkn4QEmzZA6kDdkk7Bui+IGCoazm0x93my5Wavuo3fn8dS+cc+/5/c77nvOeEwGotsNb7OEp5tnDLS5xgDme4eepF4m8QIS7dAtHN73/Da3KB5Gt2z0MTJinn+LbtlrigCUOmLq4bJ4TeggvgIftdDvfurlE0O51t9X+oeAj0DPYbL1VnpWrmu20XVZabYc07UzMWav0COExAMAxdAaz/ojbaINX3OcV93ndp8Ml5N+yuoL1Njtgib+SnNlrtyY85hnFSrvCM+BkYzN2JGHm05YSj7aJ5fYmReDnSUqz/xzHHmzgziAXdb+Tpi4uh9OEO9iwYUav5VuKyXHKYgclvhpsre9q6uKyJQ6E0whn0eOBCf6IH3v8vkKcxfUsLLXfCfPssUK+ULKVJm2xzqjjeiOkaQEwar7n7pPX9iDX1qVY6dYy++TaehAJzynH1BnMd9T9TobXAADfDwwocFjeUjux0QaznbbYQdustdR+a22z13ILjUmT5jkRpMUnISqf/4q5OGSRACtrKfZb6m+PB4YctlPqlV9umr6yYL6jNthoxtqcVATrAF8pX4bQgAKH7xn0uFFznLLLStNXFoxZaNRx05YSVtgThHlMCxyWmFKtfKf0qV3/zxrw2IN0foOvmRjB36NQnBGj8MZBiKfxJn1wFV7O/AFGgGOQmbHE9fnnN/4YB6JANzx5ZpZIhHAcnzdjFbZbo/MEC1x8Vc5r+sqCnFC/CVZ/jiqtygmD3G8NdgAuKmPqqyHeAcxF39tCwGnlpDJ5O+fPKec139FwnjhtwBrbdWR7M+cIpi0lrLYjMCCmtbZZaMyEaSE04FRgwE76rCcwxyk7rPakH2pPiMMewEs7F7C5fA41Prux7+86PBXM4rTZu9OAC+CcGbtTPEDG2pzdYb3QSAbJuDp7dMkN4YHmn3AafYd7Cp5t3edFbxsxqR4IScRcBj2NlzcJdAzrbHHIIosd3HHxEwZS7jzkQ4Q12GsGC6Y7ZJGvHewiwRN8z0tkssQrDG3ro32WhcsoP8OfQHPRb9FpjJtlsYOurKXcFTNh3pbC3BuSkN+MR7DNWh3DcaOW2WeLddbZsm0xHgqhcOBP/UWSlHGBvPQAAAAASUVORK5CYII="
@@ -90,14 +90,14 @@
      width="205.29523"
      preserveAspectRatio="none"
      height="102.64761"
-     transform="matrix(1,0,0,-1,-447.59573,-100.81104)"
+     transform="matrix(1,0,0,-1,-447.34939,-99.443301)"
      clip-path="url(#clipPath3176)" />
   <rect
-     style="fill:none;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:none;stroke:#999999;stroke-width:3.09448791;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect2987"
-     width="29.09341"
-     height="26.991787"
-     x="1.5"
-     y="1.5"
-     ry="2.1431227" />
+     width="28.905514"
+     height="28.905512"
+     x="1.547244"
+     y="1.6457793"
+     ry="2.2950706" />
 </svg>
