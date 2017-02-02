@@ -14,6 +14,7 @@ from scipy.interpolate import UnivariateSpline
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.ImageView import PickMode
+from pkview.utils import get_icon
 from ..QtInherit import HelpButton
 
 class SEPlot:
@@ -69,19 +70,16 @@ class SECurve(QtGui.QWidget):
     sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(SECurve, self).__init__()
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
 
-        #Local file path
-        self.local_file_path = local_file_path
-
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
         title1 = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
-        bhelp = HelpButton(self, self.local_file_path)
+        bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
@@ -109,7 +107,7 @@ class SECurve(QtGui.QWidget):
         self.cb4.stateChanged.connect(self.replot_graph)
 
         #Clear curves button
-        b1icon = QtGui.QIcon(self.local_file_path + '/icons/clear.svg')
+        b1icon = QtGui.QIcon(get_icon("clear"))
         b1 = QtGui.QPushButton(self)
         b1.setIcon(b1icon)
         b1.setIconSize(QtCore.QSize(14, 14))
@@ -282,15 +280,13 @@ class ColorOverlay1(QtGui.QWidget):
     # emit a change in range
     sig_range_change = QtCore.Signal(int)
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(ColorOverlay1, self).__init__()
 
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
-        self.local_file_path = local_file_path
-
         title1 = QtGui.QLabel("<font size=5> Overlay statistics </font>")
-        bhelp = HelpButton(self, self.local_file_path)
+        bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)

@@ -2,25 +2,24 @@ from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
+from pkview.utils import get_icon
 
 class OverviewWidget(QtGui.QWidget):
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(OverviewWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         layout = QtGui.QVBoxLayout()
 
         # List for volume management
         tb = QtGui.QLabel("<font size=50> PKView </font> \n")
 
-        pixmap = QtGui.QPixmap(self.local_file_path + "/icons/main_icon.png")
+        pixmap = QtGui.QPixmap(get_icon("main_icon.png"))
         pixmap = pixmap.scaled(35, 35, QtCore.Qt.KeepAspectRatio)
         lpic = QtGui.QLabel(self)
         lpic.setPixmap(pixmap)
 
-        b1 = HelpButton(self, self.local_file_path)
+        b1 = HelpButton(self)
         l03 = QtGui.QHBoxLayout()
         l03.addWidget(lpic)
         l03.addWidget(tb)

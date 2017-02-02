@@ -25,6 +25,15 @@ if (sys.version_info > (3, 0)):
 else:
     from pkview.resources import resource_py3
 
+def get_dir(str1):
+    """
+    Parse a file name to extract just the directory
+    :param str1:
+    :return:
+    """
+    ind1 = str1.rfind('/')
+    dir1 = str1[:ind1]
+    return dir1
 
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
@@ -41,32 +50,10 @@ from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManageme
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
-op_sys = platform.system()
-# OSx specific Changes
-if op_sys == 'Darwin':
-    from Foundation import NSURL
-    QtGui.QApplication.setGraphicsSystem('native')
-
-# Linux specific changes
-# None currently
-
-# Windows specific changes
-# None currently
-
 from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_perfslic import perfslic
 from .utils.cmd_t10 import t10_preclinical, t10
-
-def get_dir(str1):
-    """
-    Parse a file name to extract just the directory
-    :param str1:
-    :return:
-    """
-    ind1 = str1.rfind('/')
-    dir1 = str1[:ind1]
-    return dir1
-
+from .utils import set_local_file_path, get_icon
 
 class DragOptions(QtGui.QDialog):
     """
@@ -121,10 +108,8 @@ class MainWindowWidget(QtGui.QWidget):
 
     """
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(MainWindowWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         # Loading data management object
         self.ivm = ImageVolumeManagement()
@@ -143,7 +128,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid = {}
 
         # Signal Enhancement
-        self.wid["SigEn"] = [SECurve(self.local_file_path), '/icons/voxel.svg', 'Voxel analysis']
+        self.wid["SigEn"] = [SECurve(), 'voxel', 'Voxel analysis']
         self.wid["SigEn"][0].add_image_management(self.ivm)
         self.wid["SigEn"][0].add_image_view(self.ivl1)
 
@@ -151,7 +136,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PView"] = [None, 'a', 'b']
 
         # Color overlay widget
-        self.wid["ColOv"] = [ColorOverlay1(self.local_file_path), 'a', 'b']
+        self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
         self.wid["ColOv"][0].add_analysis(self.ia)
         self.wid["ColOv"][0].add_image_management(self.ivm)
 
@@ -177,14 +162,14 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ImExp"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.wid["Clus"] = [CurveClusteringWidget(self.local_file_path), 'a', 'b']
+        self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.wid["ClusOv"] = [OvCurveClusteringWidget(self.local_file_path), 'a', 'b']
+        self.wid["ClusOv"] = [OvCurveClusteringWidget(), 'a', 'b']
         self.wid["ClusOv"][0].add_image_management(self.ivm)
 
-        self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
+        self.wid["Overview"] = [OverviewWidget(), 'a', 'b']
         self.wid["Overview"][0].add_image_management(self.ivm)
 
         # Random Walker
@@ -360,10 +345,10 @@ class MainWindowWidget(QtGui.QWidget):
 
     def set_size_scaling(self, state):
         if state:
-            self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_off.png'))
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_off.png")))
             self.voxel_scaling_btn.setToolTip("Disable voxel size scaling")
         else:
-            self.voxel_scaling_btn.setIcon(QtGui.QIcon(self.local_file_path + '/icons/voxel_scaling_on.png'))
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_on.png")))
             self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
         self.ivl1.set_size_scaling(state)
 
@@ -443,10 +428,10 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Widgets added to tabs on the right hand side
         self.qtab1.addTab(self.wid["Overview"][0], "Volumes")
-        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
-        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n statistics")
-        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
-        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
+        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\n analysis")
+        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(get_icon("edit")), "Overlay\n statistics")
+        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")), "Curve\n cluster")
+        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(get_icon("clustering")), "Overlay\n cluster")
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
@@ -473,12 +458,12 @@ class MainWindowWidget(QtGui.QWidget):
 
     # Connect to a widget
     def show_widget(self, wname):
-        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(self.local_file_path + self.wid[wname][1]), self.wid[wname][2])
+        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(get_icon(self.wid[wname][1])), self.wid[wname][2])
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
+        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel analysis")
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
@@ -487,23 +472,23 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
+        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(get_icon("pk")), "Pk")
         self.qtab1.setCurrentIndex(index)
 
     def show_t10(self):
-        index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(self.local_file_path + '/icons/t10.svg'), "T10")
+        index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(get_icon("t10")), "T10")
         self.qtab1.setCurrentIndex(index)
 
     def show_sv(self):
-        index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(self.local_file_path + '/icons/sv.svg'), "Super\nvoxels")
+        index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(get_icon("sv")), "Super\nvoxels")
         self.qtab1.setCurrentIndex(index)
 
     def show_meanvals(self):
-        index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(self.local_file_path + '/icons/meanvals.svg'), "Mean\nvalues")
+        index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(get_icon("meanvals")), "Mean\nvalues")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
-        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
+        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")),
                                   "Curve\n Cluster", )
         self.qtab1.setCurrentIndex(index)
 
@@ -543,33 +528,35 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.setAcceptDrops(True)
 
         # Patch for if file is frozen (packaged apps)
+        local_file_path = ""
         if hasattr(sys, 'frozen'):
             # if frozen
             print(sys.frozen)
             if sys.frozen == 'macosx_app':
-                self.local_file_path = os.getcwd() + '/pkview'
+                local_file_path = os.getcwd() + '/pkview'
             else:
-                self.local_file_path = os.path.dirname(sys.executable)
+                local_file_path = os.path.dirname(sys.executable)
 
         # Running from a script
         else:
-            self.local_file_path = os.path.dirname(__file__)
+            local_file_path = os.path.dirname(__file__)
 
         # Use local working directory otherwise
-        if self.local_file_path == "":
+        if local_file_path == "":
             print("Reverting to current directory as base")
-            self.local_file_path = os.getcwd()
+            local_file_path = os.getcwd()
 
         # Print directory
-        print("Local directory: ", self.local_file_path)
+        print("Local directory: ", local_file_path)
+        set_local_file_path(local_file_path)
 
         # Load style sheet
-        stFile = self.local_file_path + "/resources/darkorange.stylesheet"
+        stFile = local_file_path + "/resources/darkorange.stylesheet"
         with open(stFile, "r") as fs:
             self.setStyleSheet(fs.read())
 
         # Load the main widget
-        self.mw1 = MainWindowWidget(self.local_file_path)
+        self.mw1 = MainWindowWidget()
 
         self.toolbar = None
         self.default_directory ='/home'
@@ -596,7 +583,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
-        self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
+        self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
         self.menu_ui()
         self.show()
@@ -611,18 +598,18 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
 
         # File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
         # File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
+        load_roi_action = QtGui.QAction(QtGui.QIcon(get_icon("pencil")), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         # File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
@@ -644,22 +631,22 @@ class WindowAndDecorators(QtGui.QMainWindow):
         ic_action.triggered.connect(self.mw1.show_ic)
 
         # Widgets --> Pharmacokinetics
-        pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Pharmacokinetics', self)
+        pk_action = QtGui.QAction(QtGui.QIcon(get_icon("pk")), '&Pharmacokinetics', self)
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 
         # Widgets --> T10
-        t10_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/t10.svg'), '&T10', self)
+        t10_action = QtGui.QAction(QtGui.QIcon(get_icon("t10")), '&T10', self)
         t10_action.setStatusTip('T10 Map Generation')
         t10_action.triggered.connect(self.mw1.show_t10)
 
         # Widgets --> Supervoxels
-        sv_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/sv.svg'), '&Supervoxels', self)
+        sv_action = QtGui.QAction(QtGui.QIcon(get_icon("sv")), '&Supervoxels', self)
         sv_action.setStatusTip('Supervoxel analysis')
         sv_action.triggered.connect(self.mw1.show_sv)
 
         # Widgets --> Supervoxels
-        mv_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/meanvals.svg'), '&Mean values overlay', self)
+        mv_action = QtGui.QAction(QtGui.QIcon(get_icon("meanvals")), '&Mean values overlay', self)
         mv_action.setStatusTip('Generate overlay of mean values within ROI regions')
         mv_action.triggered.connect(self.mw1.show_meanvals)
 
@@ -674,12 +661,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # rw_action.triggered.connect(self.mw1.show_rw)
 
         # Widgets --> CurveClustering
-        # cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
+        # cc_action = QtGui.QAction(QtGui.QIcon(get_icon("clustering")), '&CurveClustering', self)
         # cc_action.setStatusTip('Cluster curves in a ROI of interest')
         # cc_action.triggered.connect(self.mw1.show_cc)
 
         # Wigets --> Create Annotation
-        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
+        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Enable Annotation', self)
         # annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
         # annot_ovreg_action.setCheckable(True)
         # annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
@@ -1005,6 +992,12 @@ def main():
 
     if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
         # Initialise main GUI
+
+        op_sys = platform.system()
+        # OSx specific Changes
+        if op_sys == 'Darwin':
+            from Foundation import NSURL
+            QtGui.QApplication.setGraphicsSystem('native')
 
         # Initialise the PKView application
         app = QtGui.QApplication(sys.argv)

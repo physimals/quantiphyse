@@ -25,14 +25,12 @@ class CurveClusteringWidget(QtGui.QWidget):
     # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(CurveClusteringWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
-        bhelp = HelpButton(self, self.local_file_path)
+        bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
