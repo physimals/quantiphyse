@@ -532,8 +532,14 @@ class WindowAndDecorators(QtGui.QMainWindow):
         local_file_path = ""
         if hasattr(sys, 'frozen'):
             # if frozen
-            print(sys.frozen)
-            if sys.frozen == 'macosx_app':
+            print("Frozen executable")
+            if hasattr(sys, '_MEIPASS'):
+                print("Have _MEIPASS")
+                local_file_path = sys._MEIPASS
+            elif hasattr(sys, '_MEIPASS2'):
+                print("Have _MEIPASS2")
+                local_file_path = sys._MEIPASS2
+            elif sys.frozen == 'macosx_app':
                 local_file_path = os.getcwd() + '/pkview'
             else:
                 local_file_path = os.path.dirname(sys.executable)
@@ -1025,4 +1031,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
