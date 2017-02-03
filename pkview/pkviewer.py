@@ -906,8 +906,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
                                                        [ftype, 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
                                                         'annotation'])
 
-            self.default_directory = get_dir(fname)
-            self.mw1.ivm.add_overlay(Overlay(ftype, fname=fname), make_current=True)
+            if ok:
+                self.default_directory = get_dir(fname)
+                self.mw1.ivm.add_overlay(Overlay(ftype, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
