@@ -24,11 +24,11 @@ if sys.platform.startswith("win"):
 
     if bits == 32:
         # Possible bug in setuptools makes this necessary on 32 bit Anaconda
-        hiddenimports += ['appdirs', 'packaging', 'packaging.version',
-                          'packaging.specifiers', 'packaging.utils',
-                          'packaging.requirements', 'packaging.markers'],
+        hidden_imports += ['appdirs', 'packaging', 'packaging.version',
+                           'packaging.specifiers', 'packaging.utils',
+                           'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
-    pass
+    hidden_imports.append('FileDialog')
 elif sys.platform.startswith("darwin"):
     pass
 
