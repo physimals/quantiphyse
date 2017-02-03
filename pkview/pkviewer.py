@@ -465,12 +465,12 @@ class MainWindowWidget(QtGui.QWidget):
 
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel analysis")
+        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\nanalysis")
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
     def show_ic(self):
-        index = self.qtab1.addTab(self.wid["ImExp"][0], "Image Export")
+        index = self.qtab1.addTab(self.wid["ImExp"][0], QtGui.QIcon(get_icon("image_export")), "Image\nExport")
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
@@ -502,8 +502,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.wid["PView"][0].add_image_management(self.ivm)
             self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
 
-        index = self.qtab1.addTab(self.wid["PView"][0], "Pharma\n View")
-        print(index)
+        index = self.qtab1.addTab(self.wid["PView"][0], QtGui.QIcon(get_icon("curve_view")), "Pharma\n View")
         self.qtab1.setCurrentIndex(index)
 
 
@@ -616,19 +615,19 @@ class WindowAndDecorators(QtGui.QMainWindow):
         load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
         # File --> Save Overlay
-        save_ovreg_action = QtGui.QAction('&Save Current Overlay', self)
+        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save Current Overlay', self)
         save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
         save_ovreg_action.triggered.connect(self.show_ovreg_save_dialog)
         save_ovreg_action.setShortcut('Ctrl+S')
 
         # File --> Exit
-        exit_action = QtGui.QAction('&Exit', self)
+        exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
         # Widgets --> Image export
-        ic_action = QtGui.QAction('&ImageExport', self)
+        ic_action = QtGui.QAction(QtGui.QIcon(get_icon("image_export")), '&ImageExport', self)
         ic_action.setStatusTip('Export images from the GUI')
         ic_action.triggered.connect(self.mw1.show_ic)
 
@@ -653,7 +652,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         mv_action.triggered.connect(self.mw1.show_meanvals)
 
         # Widgets --> PharmaView
-        pw_action = QtGui.QAction('&PharmCurveView', self)
+        pw_action = QtGui.QAction(QtGui.QIcon(get_icon("curve_view")), '&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
         pw_action.triggered.connect(self.mw1.show_pw)
 
@@ -674,12 +673,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
 
         # Help -- > Online help
-        help_action = QtGui.QAction('&Online Help', self)
+        help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
         help_action.triggered.connect(self.click_link)
 
         # Advanced --> Python Console
-        console_action = QtGui.QAction('&Console', self)
+        console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
         console_action.setStatusTip('Run a console for advanced interaction')
         console_action.triggered.connect(self.show_console)
 
