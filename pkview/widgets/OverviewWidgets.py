@@ -76,15 +76,16 @@ class CaseWidget(QtGui.QListWidget):
 
     def update_list(self, list1):
         self.clear()
+        self.list_current = list1
         for ii in list1:
-            if ii not in self.list_current:
-                self.list_current.append(ii)
-                self.addItem(ii)
+            self.addItem(ii)
 
     def update_current(self, ovl):
         if ovl is not None and ovl.name in self.list_current:
             ind1 = self.list_current.index(ovl.name)
+            self.blockSignals(True)
             self.setCurrentItem(self.item(ind1))
+            self.blockSignals(False)
         elif ovl is not None:
             print("Warning: This overlay does not exist")
 
@@ -110,15 +111,16 @@ class RoiWidget(QtGui.QListWidget):
 
     def update_list(self, list1):
         self.clear()
+        self.list_current = list1
         for ii in list1:
-            if ii not in self.list_current:
-                self.list_current.append(ii)
-                self.addItem(ii)
+            self.addItem(ii)
 
     def update_current(self, roi):
         if roi is not None and roi.name in self.list_current:
             ind1 = self.list_current.index(roi.name)
+            self.blockSignals(True)
             self.setCurrentItem(self.item(ind1))
+            self.blockSignals(False)
         elif roi is not None:
             print("Warning: This ROI does not exist")
 

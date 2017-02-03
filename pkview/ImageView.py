@@ -255,9 +255,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
                 self.win[o2].setVisible(False)
                 self.grid1.addWidget(self.win[i], 0, 0, 2, 2)
             else:
-                self.grid1.addWidget(self.win[i], 0, 0)
-                self.grid1.addWidget(self.win[o1], 0, 1)
-                self.grid1.addWidget(self.win[o2], 1, 0)
+                self.grid1.addWidget(self.win[0], 0, 0, )
+                self.grid1.addWidget(self.win[1], 0, 1)
+                self.grid1.addWidget(self.win[2], 1, 0)
                 self.win[o1].setVisible(True)
                 self.win[o2].setVisible(True)
         return expand
@@ -505,6 +505,7 @@ class ImageViewOverlay(ImageViewLayout):
             self.imgwinb[0].setImage(np.zeros((1, 1)))
             self.imgwinb[1].setImage(np.zeros((1, 1)))
             self.imgwinb[2].setImage(np.zeros((1, 1)))
+            return
         else:
             lut = roi.get_lut(self.roi_alpha)
             roi_levels = self.ivm.current_roi.range
@@ -522,7 +523,7 @@ class ImageViewOverlay(ImageViewLayout):
                                    levels=roi_levels)
 
         n = 0
-        if self.options['ShowOverlayContour']:
+        if roi is not None and self.options['ShowOverlayContour']:
             # Get slice of ROI for each viewing window and convert to float
             # for isosurface routine
             slices = []

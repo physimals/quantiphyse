@@ -365,12 +365,20 @@ class MainWindowWidget(QtGui.QWidget):
         else:
             idx = self.overlay_combo.findText(overlay.name)
             if idx != self.overlay_combo.currentIndex():
-                self.overlay_combo.setCurrentIndex(idx)
+                try:
+                    self.overlay_combo.blockSignals(True)
+                    self.overlay_combo.setCurrentIndex(idx)
+                finally:
+                    self.overlay_combo.blockSignals(False)
 
     def update_overlays(self, overlays):
-        self.overlay_combo.clear()
-        for ov in overlays:
-            self.overlay_combo.addItem(ov)
+        try:
+            self.overlay_combo.blockSignals(True)
+            self.overlay_combo.clear()
+            for ov in overlays:
+                self.overlay_combo.addItem(ov)
+        finally:
+            self.overlay_combo.blockSignals(False)
         self.update_current_overlay(self.ivm.current_overlay)
         self.overlay_combo.updateGeometry()
 
@@ -385,13 +393,20 @@ class MainWindowWidget(QtGui.QWidget):
         else:
             idx = self.roi_combo.findText(roi.name)
             if idx != self.roi_combo.currentIndex():
-                self.roi_combo.setCurrentIndex(idx)
+                try:
+                    self.roi_combo.blockSignals(True)
+                    self.roi_combo.setCurrentIndex(idx)
+                finally:
+                    self.roi_combo.blockSignals(False)
 
     def update_rois(self, rois):
-        self.roi_combo.clear()
-        for roi in rois:
-            self.roi_combo.addItem(roi)
-
+        try:
+            self.roi_combo.blockSignals(True)
+            self.roi_combo.clear()
+            for roi in rois:
+                self.roi_combo.addItem(roi)
+        finally:
+            self.roi_combo.blockSignals(False)
         self.update_current_roi(self.ivm.current_roi)
         self.roi_combo.updateGeometry()
 
