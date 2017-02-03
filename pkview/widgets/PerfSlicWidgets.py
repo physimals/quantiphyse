@@ -274,6 +274,6 @@ class MeanValuesWidget(QtGui.QWidget):
             ov_data[roi.data == region] = mean
 
         ovl = Overlay(ov_name, data=ov_data)
-        self.ivm.add_overlay(ovl)
+        self.ivm.add_overlay(ovl, make_current=True)
 
 
