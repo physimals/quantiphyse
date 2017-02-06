@@ -28,6 +28,11 @@ class KMeans3D:
         @param normdata:
         @param labels1: (Optional) separate clustering of different regions
         """
+        Issue #38: OSX hangs with parallel jobs
+        if sys.platform.startswith("darwin"):
+            self.n_jobs = 1
+        else:
+            self.n_jobs = 2
 
         self.img1 = np.array(img1, dtype=np.float32)
 
@@ -56,7 +61,7 @@ class KMeans3D:
 
     def run_single(self, n_clusters):
         self.n_clusters = n_clusters
-        kmeans = cl.KMeans(init='k-means++', n_clusters=self.n_clusters, n_init=10, n_jobs=2)
+        kmeans = cl.KMeans(init='k-means++', n_clusters=self.n_clusters, n_init=10, n_jobs=self.n_jobs)
         kmeans.fit(self.voxel_se)
 
         # label image
@@ -88,6 +93,11 @@ class KMeansPCA:
         @param normdata:
         @param labels1: (Optional) separate clustering of different regions
         """
+        Issue #38: OSX hangs with parallel jobs
+        if sys.platform.startswith("darwin"):
+            self.n_jobs = 1
+        else:
+            self.n_jobs = 6
 
         self.img1 = np.array(img1, dtype=np.float32)
 
@@ -176,7 +186,7 @@ class KMeansPCA:
 
         if reduction is 'none':
 
-            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=6)
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=self.n_jobs)
             kmeans.fit(voxel_se)
             # self.cluster_centers_ = kmeans.cluster_centers_
 
@@ -194,7 +204,8 @@ class KMeansPCA:
                 reduced_data = reduced_data / np.tile(np.expand_dims(max1, axis=0),
                                                       (reduced_data.shape[0], 1))
 
-            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=6)
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=self.n_jobs)
+
             # kmeans = cl.AgglomerativeClustering(n_clusters=n_clusters)
             kmeans.fit(reduced_data)
             # converting the cluster centres back into the image feature space
