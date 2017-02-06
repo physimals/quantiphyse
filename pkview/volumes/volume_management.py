@@ -266,6 +266,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             self.sig_current_overlay.emit(self.current_overlay)
 
     def add_roi(self, roi, make_current=False, signal=True):
+        if self.vol is None:
+            raise RuntimeError("Cannot add overlay with no main volume")
+
         if roi.ndims != 3:
             raise RuntimeError("ROI must be 3D")
 
