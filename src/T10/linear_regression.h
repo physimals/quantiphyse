@@ -9,7 +9,6 @@
 #define INC_25_T10_CALCULATION_LINEAR_REGRESSION_H
 
 #include <vector>
-#include <tuple>
 
 // Arguments:
 // y -

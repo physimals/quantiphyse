@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 // Complex inverse cosine is part of C++11 so for Python 2.7 on Windows we need
 // to define it. See Wolfram for details. This uses the same branch cut
 // as the C++11 standard library function and has been tested for 
@@ -104,7 +104,7 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
         // Eq 6 of Ref 1
         complex<double> cmpl ((r*n - 1) / (n-r), 0);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
         alphac = acos_impl(cmpl);
 #else
         alphac = acos(cmpl);
