@@ -42,11 +42,12 @@ class ImageExportWidget(QtGui.QWidget):
         """
         Capture 4D changes over time
         """
-        imshape = self.ivm.vol.shape
-
-        if imshape is None:
-            warnings.warn('Image is not loaded')
+        if self.ivm.vol is None:
+            QtGui.QMessageBox.warning(self, "No volume", "Can't generate animation without main volume loaded",
+                                      QtGui.QMessageBox.Close)
             return
+
+        imshape = self.ivm.vol.shape
 
         # Choose a folder to save images
         fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')

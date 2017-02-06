@@ -288,12 +288,20 @@ class T10Widget(QtGui.QWidget):
             return
 
         fa_vols, fa_angles = self.fatable.get_images()
+        if len(fa_vols) == 0:
+            QtGui.QMessageBox.warning(self, "No FA images", "Load FA images before generating T10 map",
+                                      QtGui.QMessageBox.Close)
+            return
 
         # TR is expected in seconds but UI asks for it in ms
         tr = self.trinp.val / 1000
 
         if self.preclin.isChecked():
             afi_vols, afi_trs = self.trtable.get_images()
+            if len(afi_vols) == 0:
+                QtGui.QMessageBox.warning(self, "No AFI images", "Load AFI images before using B0 correction",
+                                          QtGui.QMessageBox.Close)
+                return
             fa_afi = self.fainp.val
             T10 = t10_map(fa_vols, fa_angles, TR=tr,
                       afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)

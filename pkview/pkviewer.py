@@ -921,7 +921,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         """
         if self.mw1.ivm.current_overlay is None:
-            raise RuntimeError("No current overlay")
+            QtGui.QMessageBox.warning(self, "No overlay", "No current overlay to save", QtGui.QMessageBox.Close)
+            return
 
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
 
