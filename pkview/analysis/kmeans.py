@@ -7,6 +7,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, print_function, absolute_import
 
+import sys
 import time
 import numpy as np
 import sklearn.cluster as cl
@@ -28,7 +29,7 @@ class KMeans3D:
         @param normdata:
         @param labels1: (Optional) separate clustering of different regions
         """
-        Issue #38: OSX hangs with parallel jobs
+        #Issue #38: OSX hangs with parallel jobs
         if sys.platform.startswith("darwin"):
             self.n_jobs = 1
         else:
@@ -93,7 +94,7 @@ class KMeansPCA:
         @param normdata:
         @param labels1: (Optional) separate clustering of different regions
         """
-        Issue #38: OSX hangs with parallel jobs
+        #Issue #38: OSX hangs with parallel jobs
         if sys.platform.startswith("darwin"):
             self.n_jobs = 1
         else:
@@ -148,7 +149,7 @@ class KMeansPCA:
         self.cluster_centers_ = np.zeros((self.n_clusters, self.img1.shape[-1]))
 
         kmeans = self._run(self.voxel_se, n_clusters=self.n_clusters, reduction=reduction,
-                           opt_normdata=opt_normdata, n_pca_components=n_pca_components)
+                           opt_normdata=opt_normdata, n_pca_components=n_pca_components, n_jobs=self.n_jobs)
 
         # label image
         self.label_image[self.region1] = kmeans.labels_ + 1
@@ -173,7 +174,7 @@ class KMeansPCA:
         return self.label_image, self.cluster_centers_
 
     @staticmethod
-    def _run(voxel_se, n_clusters=4, reduction='pca', opt_normdata=1, n_pca_components=5):
+    def _run(voxel_se, n_clusters=4, reduction='pca', opt_normdata=1, n_pca_components=5, n_jobs=1):
         """
         kmeans clustering
 
@@ -186,7 +187,7 @@ class KMeansPCA:
 
         if reduction is 'none':
 
-            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=self.n_jobs)
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=n_jobs)
             kmeans.fit(voxel_se)
             # self.cluster_centers_ = kmeans.cluster_centers_
 
@@ -204,7 +205,7 @@ class KMeansPCA:
                 reduced_data = reduced_data / np.tile(np.expand_dims(max1, axis=0),
                                                       (reduced_data.shape[0], 1))
 
-            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=self.n_jobs)
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=n_jobs)
 
             # kmeans = cl.AgglomerativeClustering(n_clusters=n_clusters)
             kmeans.fit(reduced_data)
