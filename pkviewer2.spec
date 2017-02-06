@@ -7,7 +7,8 @@ import struct
 bits = struct.calcsize("P") * 8
 
 # Whether to build single-file executable or folder
-onefile = True
+onefile = False
+osx_bundle = False
 
 # Generic configuration
 block_cipher = None
@@ -30,7 +31,10 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
 elif sys.platform.startswith("darwin"):
-    pass
+    osx_bundle = True
+    home_dir = os.environ.get("HOME", "")
+    anaconda_dir='%s/anaconda2/' % home_dir
+    bin_files.append(('%s/lib/libmkl_avx2.dylib' % anaconda_dir, '.' ))
 
 a = Analysis(['pkviewer2.py'],
              pathex=[],
@@ -77,3 +81,10 @@ else:
                    strip=False,
                    upx=True,
                    name='pkviewer2')
+    if osx_bundle:
+        pkdir = os.path.dirname(os.path.abspath(SPEC))
+        app = BUNDLE(coll,
+             name='pkviewer2.app',
+             icon='%s/pkview/icons/pk.png' % pkdir,
+             bundle_identifier=None)
+
