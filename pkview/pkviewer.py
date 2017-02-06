@@ -17,6 +17,9 @@ import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np
 
+if sys.platform.startswith("darwin"):
+    from Cocoa import NSURL
+
 import warnings
 
 # required to use resources in theme. Check if 2 or 3.
