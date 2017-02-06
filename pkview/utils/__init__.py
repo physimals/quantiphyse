@@ -17,7 +17,7 @@ def get_icon(name):
     global LOCAL_FILE_PATH
     name, extension = os.path.splitext(name)
     if extension == "":
-        if sys.platform.startswith("win"):
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
             extension = ".png"
         else:
             extension = ".svg"
