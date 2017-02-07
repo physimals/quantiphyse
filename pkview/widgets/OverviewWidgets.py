@@ -78,6 +78,7 @@ class CaseWidget(QtGui.QListWidget):
     def __init__(self, parent):
         super(CaseWidget, self).__init__(parent)
         self.list_current = []
+        self.sel_current = ""
         self.ivm = None
         self.currentItemChanged.connect(self.emit_volume)
 
@@ -87,19 +88,25 @@ class CaseWidget(QtGui.QListWidget):
         self.ivm.sig_all_overlays.connect(self.update_list)
 
     def update_list(self, list1):
-        self.clear()
-        self.list_current = list1
-        for ii in list1:
-            self.addItem(ii)
+        self.list_current = list1[:]
+        try:
+            self.blockSignals(True)
+            self.clear()
+            for ii in self.list_current:
+                self.addItem(ii)
+        finally:
+            self.blockSignals(False)
 
     def update_current(self, ovl):
-        if ovl is not None and ovl.name in self.list_current:
-            ind1 = self.list_current.index(ovl.name)
-            self.blockSignals(True)
-            self.setCurrentItem(self.item(ind1))
-            self.blockSignals(False)
-        elif ovl is not None:
-            print("Warning: This overlay does not exist")
+        if ovl is not None:
+            if self.sel_current != ovl.name:
+                self.sel_current = ovl.name
+                ind1 = self.list_current.index(ovl.name)
+                try:
+                    self.blockSignals(True)
+                    self.setCurrentRow(ind1)
+                finally:
+                    self.blockSignals(False)
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
@@ -113,6 +120,7 @@ class RoiWidget(QtGui.QListWidget):
     def __init__(self, parent):
         super(RoiWidget, self).__init__(parent)
         self.list_current = []
+        self.sel_current = ""
         self.ivm = None
         self.currentItemChanged.connect(self.emit_volume)
 
@@ -122,19 +130,25 @@ class RoiWidget(QtGui.QListWidget):
         self.ivm.sig_all_rois.connect(self.update_list)
 
     def update_list(self, list1):
-        self.clear()
-        self.list_current = list1
-        for ii in list1:
-            self.addItem(ii)
+        self.list_current = list1[:]
+        try:
+            self.blockSignals(True)
+            self.clear()
+            for ii in self.list_current:
+                self.addItem(ii)
+        finally:
+            self.blockSignals(False)
 
     def update_current(self, roi):
-        if roi is not None and roi.name in self.list_current:
-            ind1 = self.list_current.index(roi.name)
-            self.blockSignals(True)
-            self.setCurrentItem(self.item(ind1))
-            self.blockSignals(False)
-        elif roi is not None:
-            print("Warning: This ROI does not exist")
+        if roi is not None:
+            if self.sel_current != roi.name:
+                self.sel_current = roi.name
+                ind1 = self.list_current.index(roi.name)
+                try:
+                    self.blockSignals(True)
+                    self.setCurrentRow(ind1)
+                finally:
+                    self.blockSignals(False)
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
