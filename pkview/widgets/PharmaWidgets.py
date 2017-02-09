@@ -62,7 +62,7 @@ class PharmaWidget(QtGui.QWidget):
         p7 = QtGui.QLabel('Estimated Injection time (s)')
         self.valInjT = QtGui.QLineEdit('30', self)
         p8 = QtGui.QLabel('Ktrans/kep percentile threshold')
-        self.thresh1 = QtGui.QLineEdit('99.8', self)
+        self.thresh1 = QtGui.QLineEdit('100', self)
         p9 = QtGui.QLabel('Dose (mM/kg) (preclinical only)')
         self.valDose = QtGui.QLineEdit('0.6', self)
 
