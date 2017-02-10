@@ -1,3 +1,9 @@
+pkview (0.25.0ubuntu9) UNRELEASED; urgency=medium
+
+  * Add histogram to overlay analysis
+
+ -- martin <martin.craig@eng.ox.ac.uk>  Wed, 04 Jan 2017 15:03:42 +0000
+
 pkview (0.24.0ubuntu8) trusty; urgency=medium
 
   * test

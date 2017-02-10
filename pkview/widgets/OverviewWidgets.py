@@ -2,28 +2,24 @@ from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
-
+from pkview.utils import get_icon
 
 class OverviewWidget(QtGui.QWidget):
-    #
-    sig_show_se = QtCore.Signal()
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(OverviewWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         layout = QtGui.QVBoxLayout()
 
         # List for volume management
         tb = QtGui.QLabel("<font size=50> PKView </font> \n")
 
-        pixmap = QtGui.QPixmap(self.local_file_path + "/icons/main_icon.png")
+        pixmap = QtGui.QPixmap(get_icon("main_icon.png"))
         pixmap = pixmap.scaled(35, 35, QtCore.Qt.KeepAspectRatio)
         lpic = QtGui.QLabel(self)
         lpic.setPixmap(pixmap)
 
-        b1 = HelpButton(self, self.local_file_path)
+        b1 = HelpButton(self)
         l03 = QtGui.QHBoxLayout()
         l03.addWidget(lpic)
         l03.addWidget(tb)
@@ -32,27 +28,38 @@ class OverviewWidget(QtGui.QWidget):
 
         ta = QtGui.QLabel("The GUI enables analysis of a DCE-MRI volume, ROI and multiple overlays "
                           "with pharmacokinetic modelling, subregion analysis and statistics included. "
-                          "Use help (?) buttons for more online information on each widget and the entire GUI. "
-                          "(Benjamin Irving 2016)")
+                          "Please use help (?) buttons for more online information on each widget and the entire GUI. "
+                          " \n \n"
+                          "Creator: Benjamin Irving (mail@birving.com) \n"
+                          "Contributors: Benjamin Irving, Martin Craig, Michael Chappell")
+        box = QtGui.QGroupBox()
+        vbox = QtGui.QVBoxLayout()
+        box.setLayout(vbox)
+        disc = QtGui.QLabel("<font size=2> Disclaimer: This software has been developed for research purposes only, and "
+                          "should not be used as a diagnostic tool. The authors or distributors will not be "
+                          "responsible for any direct, indirect, special, incidental, or consequential damages "
+                          "arising of the use of this software. The current intention of this software is for "
+                          "'in house' use only and should not be distributed without the explicit consent of the "
+                          "authors."
+                          "\n\n"
+                          "By using the this software you agree to this disclaimer (see help for more information)</font>")
+        vbox.addWidget(disc)
         ta.setWordWrap(True)
+        disc.setWordWrap(True)
 
         t1 = QtGui.QLabel("Current overlays")
         self.l1 = CaseWidget(self)
-
-        self.cb1 = QtGui.QCheckBox('Show overlay', self)
-        self.cb1.toggle()
-
-        # Take a local region mean to reduce noise
-        self.cb2 = QtGui.QCheckBox('Only show overlay in ROI', self)
-        # self.cb2.toggle()
+        t2 = QtGui.QLabel("Current ROIs")
+        self.l2 = RoiWidget(self)
 
         layout.addLayout(l03)
         layout.addWidget(ta)
-        layout.addStretch()
+        layout.addWidget(box)
+
         layout.addWidget(t1)
         layout.addWidget(self.l1)
-        layout.addWidget(self.cb1)
-        layout.addWidget(self.cb2)
+        layout.addWidget(t2)
+        layout.addWidget(self.l2)
 
         self.setLayout(layout)
 
@@ -61,79 +68,92 @@ class OverviewWidget(QtGui.QWidget):
         Adding image management
         """
         self.ivm = image_vol_management
-
-        # listen to volume management changes
-        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
-        self.ivm.sig_all_overlays.connect(self.update_overlays)
-
         self.l1.add_image_management(self.ivm)
-
-
-    @QtCore.Slot(list)
-    def update_overlays(self, list1):
-        self.l1.update_list(list1)
-
-    @QtCore.Slot(str)
-    def update_current_overlay(self, str1):
-        self.l1.update_current_overlay(str1)
-
+        self.l2.add_image_management(self.ivm)
 
 class CaseWidget(QtGui.QListWidget):
     """
     Class to handle the organisation of the loaded volumes
     """
-
-    # emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
-
     def __init__(self, parent):
         super(CaseWidget, self).__init__(parent)
-
         self.list_current = []
-
+        self.sel_current = ""
         self.ivm = None
-
         self.currentItemChanged.connect(self.emit_volume)
 
     def add_image_management(self, image_volume_management):
-
         self.ivm = image_volume_management
+        self.ivm.sig_current_overlay.connect(self.update_current)
+        self.ivm.sig_all_overlays.connect(self.update_list)
 
     def update_list(self, list1):
-        """
-
-        Args:
-            list1:
-
-        Returns:
-
-        """
-        for ii in list1:
-            if ii not in self.list_current:
-                self.list_current.append(ii)
+        self.list_current = list1[:]
+        try:
+            self.blockSignals(True)
+            self.clear()
+            for ii in self.list_current:
                 self.addItem(ii)
+        finally:
+            self.blockSignals(False)
 
-    def update_current_overlay(self, str1):
-        """
-        Get the current item
-        Args:
-            str1:
-
-        Returns:
-
-        """
-        if str1 in self.list_current:
-            ind1 = self.list_current.index(str1)
-            self.setCurrentItem(self.item(ind1))
-
-        else:
-            print("Warning: This option does not exist")
+    def update_current(self, ovl):
+        if ovl is not None:
+            if self.sel_current != ovl.name:
+                self.sel_current = ovl.name
+                ind1 = self.list_current.index(ovl.name)
+                try:
+                    self.blockSignals(True)
+                    self.setCurrentRow(ind1)
+                finally:
+                    self.blockSignals(False)
 
     @QtCore.Slot()
     def emit_volume(self, choice1, choice1_prev):
+        if choice1 is not None:
+            self.ivm.set_current_overlay(choice1.text(), signal=True)
 
-        self.ivm.set_current_overlay(choice1.text(), broadcast_change=False)
-        self.sig_emit_reset.emit(1)
+class RoiWidget(QtGui.QListWidget):
+    """
+    Class to handle the organisation of the loaded ROIs
+    """
+    def __init__(self, parent):
+        super(RoiWidget, self).__init__(parent)
+        self.list_current = []
+        self.sel_current = ""
+        self.ivm = None
+        self.currentItemChanged.connect(self.emit_volume)
+
+    def add_image_management(self, image_volume_management):
+        self.ivm = image_volume_management
+        self.ivm.sig_current_roi.connect(self.update_current)
+        self.ivm.sig_all_rois.connect(self.update_list)
+
+    def update_list(self, list1):
+        self.list_current = list1[:]
+        try:
+            self.blockSignals(True)
+            self.clear()
+            for ii in self.list_current:
+                self.addItem(ii)
+        finally:
+            self.blockSignals(False)
+
+    def update_current(self, roi):
+        if roi is not None:
+            if self.sel_current != roi.name:
+                self.sel_current = roi.name
+                ind1 = self.list_current.index(roi.name)
+                try:
+                    self.blockSignals(True)
+                    self.setCurrentRow(ind1)
+                finally:
+                    self.blockSignals(False)
+
+    @QtCore.Slot()
+    def emit_volume(self, choice1, choice1_prev):
+        if choice1 is not None:
+            self.ivm.set_current_roi(choice1.text(), signal=True)
 
 
 

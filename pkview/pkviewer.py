@@ -17,6 +17,9 @@ import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np
 
+if sys.platform.startswith("darwin"):
+    from Cocoa import NSURL
+
 import warnings
 
 # required to use resources in theme. Check if 2 or 3.
@@ -25,34 +28,28 @@ if (sys.version_info > (3, 0)):
 else:
     from pkview.resources import resource_py3
 
-
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
+from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import MeanValuesWidget
+from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
-from .volumes.volume_management import ImageVolumeManagement
+from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
 from .analysis.overlay_analysis import OverlayAnalyis
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 from .widgets.ExampleWidgets import ExampleWidget1
 
-op_sys = platform.system()
-# OSx specific Changes
-if op_sys == 'Darwin':
-    from Foundation import NSURL
-    QtGui.QApplication.setGraphicsSystem('native')
-
-# Linux specific changes
-# None currently
-
-# Windows specific changes
 from .utils.cmd_pkmodel import pkbatch
-if op_sys != 'Windows':
-    from .utils.cmd_t10 import t10_preclinical, t10
+from .utils.cmd_perfslic import perfslic
+from .utils.cmd_t10 import t10_preclinical, t10
+from .utils import set_local_file_path, get_icon
 
+op_sys = platform.system()
 
 def get_dir(str1):
     """
@@ -63,7 +60,6 @@ def get_dir(str1):
     ind1 = str1.rfind('/')
     dir1 = str1[:ind1]
     return dir1
-
 
 class DragOptions(QtGui.QDialog):
     """
@@ -118,10 +114,8 @@ class MainWindowWidget(QtGui.QWidget):
 
     """
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(MainWindowWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         # Loading data management object
         self.ivm = ImageVolumeManagement()
@@ -140,17 +134,15 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid = {}
 
         # Signal Enhancement
-        self.wid["SigEn"] = [SECurve(self.local_file_path), '/icons/voxel.svg', 'Voxel analysis']
+        self.wid["SigEn"] = [SECurve(), 'voxel', 'Voxel analysis']
         self.wid["SigEn"][0].add_image_management(self.ivm)
-        # Signals to connect widget
-        self.wid["SigEn"][0].sig_add_pnt.connect(self.ivl1.add_arrow_current_pos)
-        self.wid["SigEn"][0].sig_clear_pnt.connect(self.ivl1.remove_all_arrows)
+        self.wid["SigEn"][0].add_image_view(self.ivl1)
 
         # Pharmaview is not initialised by default
         self.wid["PView"] = [None, 'a', 'b']
 
         # Color overlay widget
-        self.wid["ColOv"] = [ColorOverlay1(self.local_file_path), 'a', 'b']
+        self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
         self.wid["ColOv"][0].add_analysis(self.ia)
         self.wid["ColOv"][0].add_image_management(self.ivm)
 
@@ -158,20 +150,32 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
         self.wid["PAna"][0].add_image_management(self.ivm)
 
+        # T10 widget - not visible by default
+        self.wid["T10"] = [T10Widget(), 'a', 'b']
+        self.wid["T10"][0].add_image_management(self.ivm)
+
+        # Supervoxels widget - not visible by default
+        self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
+        self.wid["sv"][0].add_image_management(self.ivm)
+        self.wid["sv"][0].add_image_view(self.ivl1)
+
+        # Mean value overlay widget
+        self.wid["meanvals"] = [MeanValuesWidget(), 'a', 'b']
+        self.wid["meanvals"][0].add_image_management(self.ivm)
+
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
         self.wid["ImExp"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.wid["Clus"] = [CurveClusteringWidget(self.local_file_path), 'a', 'b']
+        self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
         self.wid["Clus"][0].add_image_management(self.ivm)
 
         # Clustering widget
-        self.wid["ClusOv"] = [OvCurveClusteringWidget(self.local_file_path), 'a', 'b']
+        self.wid["ClusOv"] = [OvCurveClusteringWidget(), 'a', 'b']
         self.wid["ClusOv"][0].add_image_management(self.ivm)
 
-        # Overview widget
-        self.wid["Overview"] = [OverviewWidget(self.local_file_path), 'a', 'b']
+        self.wid["Overview"] = [OverviewWidget(), 'a', 'b']
         self.wid["Overview"][0].add_image_management(self.ivm)
 
         # Example widget
@@ -181,64 +185,36 @@ class MainWindowWidget(QtGui.QWidget):
         # Random Walker
         # self.sw_rw = None
 
-        # Connect Signal and Slots for widgets
-        # Connect colormap choice, alpha and colormap range
-        self.wid["ColOv"][0].sig_choose_cmap.connect(self.ivl1.set_colormap)
-        self.wid["ColOv"][0].sig_set_alpha.connect(self.ivl1.set_overlay_alpha)
-        self.wid["ColOv"][0].sig_range_change.connect(self.ivl1.set_overlay_range)
-        self.wid["ColOv"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        # Connecting toggle buttons
-        self.wid["Overview"][0].cb1.stateChanged.connect(self.ivl1.toggle_ovreg_view)
-        self.wid["Overview"][0].cb2.stateChanged.connect(self.ivl1.toggle_roi_lim)
-
-        self.wid["PAna"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        self.wid["Overview"][0].l1.sig_emit_reset.connect(self.ivl1.update_overlay)
-
         # Connect image export widget
-        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_temporal_position)
+        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_time_pos)
         self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
-
-        # Connect reset from clustering widget
-        self.wid["Clus"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
-
-        # Connect example widget to update overlay
-        self.wid["Example"][0].sig_emit_reset.connect(self.ivl1.update_overlay)
 
         self.initTabs()
 
-        # Connecting widget signals
-        # 1) Plotting data on mouse image click
-        self.ivl1.sig_mouse_click.connect(self.wid["SigEn"][0].sig_mouse)
+        # Choosing supervoxels for ROI
+        self.ivl1.sig_mouse_click.connect(self.wid["sv"][0].sig_mouse_click)
 
         # InitUI
         # Sliders
         self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld1.setMinimumWidth(100)
         self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld2.setMinimumWidth(100)
         self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld3.setMinimumWidth(100)
         self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld4.setMinimumWidth(100)
         # self.update_slider_range()
 
         # connect sliders to ivl1
-        self.sld1.valueChanged[int].connect(self.ivl1.slider_connect1)
-        self.sld2.valueChanged[int].connect(self.ivl1.slider_connect2)
-        self.sld3.valueChanged[int].connect(self.ivl1.slider_connect3)
-        self.sld4.valueChanged[int].connect(self.ivl1.slider_connect4)
-
-        # CheckBox
-        cb1 = QtGui.QCheckBox('Show ROI', self)
-        cb1.stateChanged.connect(self.ivl1.toggle_roi_view)
-        cb1.toggle()
-        cb2 = QtGui.QCheckBox('Show ROI contour', self)
-        cb2.stateChanged.connect(self.ivl1.toggle_roi_contour)
-        cb3 = QtGui.QCheckBox('Use voxel size scaling', self)
-        cb3.stateChanged.connect(self.ivl1.toggle_dimscale)
-
+        self.sld1.valueChanged[int].connect(self.ivl1.set_space_pos(2))
+        self.sld2.valueChanged[int].connect(self.ivl1.set_space_pos(1))
+        self.sld3.valueChanged[int].connect(self.ivl1.set_space_pos(0))
+        self.sld4.valueChanged[int].connect(self.ivl1.set_time_pos)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -252,16 +228,34 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Layout
         # Group box buttons
-        gBox = QtGui.QGroupBox("Image and ROI options")
-        gBoxlay = QtGui.QVBoxLayout()
-        gBoxlay.addWidget(cb1)
-        gBoxlay.addWidget(cb2)
-        gBoxlay.addWidget(cb3)
-        gBoxlay.addStretch(1)
-        gBox.setLayout(gBoxlay)
+        gBox = QtGui.QGroupBox("ROI")
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
+        self.roi_combo = QtGui.QComboBox()
+        self.roi_combo.currentIndexChanged.connect(self.roi_changed)
+        grid.addWidget(self.roi_combo, 0, 1)
+        self.ivm.sig_current_roi.connect(self.update_current_roi)
+        self.ivm.sig_all_rois.connect(self.update_rois)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.roi_view_combo = QtGui.QComboBox()
+        self.roi_view_combo.addItem("Shaded")
+        self.roi_view_combo.addItem("Contour")
+        self.roi_view_combo.addItem("Both")
+        self.roi_view_combo.addItem("None")
+        self.roi_view_combo.currentIndexChanged.connect(self.roi_view_changed)
+        grid.addWidget(self.roi_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
+        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        sld1.setRange(0, 255)
+        sld1.setValue(150)
+        sld1.valueChanged.connect(self.ivl1.roi_alpha_changed)
+        grid.addWidget(sld1, 2, 1)
+        grid.setRowStretch(3, 1)
+        gBox.setLayout(grid)
 
         # Group box: sliders
-        gBox2 = QtGui.QGroupBox("Navigation Sliders")
+        gBox2 = QtGui.QGroupBox("Navigation")
         gBoxlay2 = QtGui.QGridLayout()
         gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
         gBoxlay2.addWidget(self.sld1, 0, 1)
@@ -277,17 +271,61 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
-
         gBox2.setLayout(gBoxlay2)
 
+        gBox3 = QtGui.QGroupBox("Overlay")
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
+        self.overlay_combo = QtGui.QComboBox()
+        self.overlay_combo.currentIndexChanged.connect(self.overlay_changed)
+        grid.addWidget(self.overlay_combo, 0, 1)
+        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
+        self.ivm.sig_all_overlays.connect(self.update_overlays)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.ov_view_combo = QtGui.QComboBox()
+        self.ov_view_combo.addItem("All")
+        self.ov_view_combo.addItem("Only in ROI")
+        self.ov_view_combo.addItem("None")
+        self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
+        grid.addWidget(self.ov_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
+        self.ov_cmap_combo = QtGui.QComboBox()
+        self.ov_cmap_combo.addItem("jet")
+        self.ov_cmap_combo.addItem("hot")
+        self.ov_cmap_combo.addItem("gist_heat")
+        self.ov_cmap_combo.addItem("flame")
+        self.ov_cmap_combo.addItem("bipolar")
+        self.ov_cmap_combo.addItem("spectrum")
+        self.ov_cmap_combo.currentIndexChanged.connect(self.overlay_cmap_changed)
+        grid.addWidget(self.ov_cmap_combo, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
+        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        sld1.setRange(0, 255)
+        sld1.setValue(255)
+        sld1.valueChanged.connect(self.ivl1.overlay_alpha_changed)
+        grid.addWidget(sld1, 3, 1)
+        grid.setRowStretch(4, 1)
+        gBox3.setLayout(grid)
+
         # All buttons layout
-        gBox_all = QtGui.QGroupBox()
+        gBox_all = QtGui.QWidget()
         gBoxlay_all = QtGui.QHBoxLayout()
+        vbox = QtGui.QVBoxLayout()
+        self.voxel_scaling_btn = QtGui.QPushButton()
+        self.voxel_scaling_btn.setCheckable(True)
+        self.voxel_scaling_btn.toggled.connect(self.set_size_scaling)
+        self.set_size_scaling(False)
+        vbox.addWidget(self.voxel_scaling_btn)
+        vbox.addStretch(1)
+        gBoxlay_all.addLayout(vbox)
         gBoxlay_all.addWidget(gBox2)
-        gBoxlay_all.addStretch(1)
         gBoxlay_all.addWidget(gBox)
-        gBoxlay_all.setStretch(0, 2)
+        gBoxlay_all.addWidget(gBox3)
+        gBoxlay_all.setStretch(1, 1)
         gBoxlay_all.setStretch(2, 1)
+        gBoxlay_all.setStretch(3, 1)
         gBox_all.setLayout(gBoxlay_all)
 
         # Viewing window layout + buttons
@@ -315,6 +353,85 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
+    def set_size_scaling(self, state):
+        if state:
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_off.png")))
+            self.voxel_scaling_btn.setToolTip("Disable voxel size scaling")
+        else:
+            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_on.png")))
+            self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
+        self.ivl1.set_size_scaling(state)
+
+    def overlay_changed(self, idx):
+        if idx >= 0:
+            ov = self.overlay_combo.itemText(idx)
+            self.ivm.set_current_overlay(ov, signal=True)
+
+    def update_current_overlay(self, overlay):
+        if overlay is None:
+            self.roi_combo.setCurrentIndex(-1)
+        else:
+            idx = self.overlay_combo.findText(overlay.name)
+            if idx != self.overlay_combo.currentIndex():
+                try:
+                    self.overlay_combo.blockSignals(True)
+                    self.overlay_combo.setCurrentIndex(idx)
+                finally:
+                    self.overlay_combo.blockSignals(False)
+
+    def update_overlays(self, overlays):
+        try:
+            self.overlay_combo.blockSignals(True)
+            self.overlay_combo.clear()
+            for ov in overlays:
+                self.overlay_combo.addItem(ov)
+        finally:
+            self.overlay_combo.blockSignals(False)
+        self.update_current_overlay(self.ivm.current_overlay)
+        self.overlay_combo.updateGeometry()
+
+    def roi_changed(self, idx):
+        if idx >= 0:
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi, signal=True)
+
+    def update_current_roi(self, roi):
+        if roi is None:
+            self.roi_combo.setCurrentIndex(-1)
+        else:
+            idx = self.roi_combo.findText(roi.name)
+            if idx != self.roi_combo.currentIndex():
+                try:
+                    self.roi_combo.blockSignals(True)
+                    self.roi_combo.setCurrentIndex(idx)
+                finally:
+                    self.roi_combo.blockSignals(False)
+
+    def update_rois(self, rois):
+        try:
+            self.roi_combo.blockSignals(True)
+            self.roi_combo.clear()
+            for roi in rois:
+                self.roi_combo.addItem(roi)
+        finally:
+            self.roi_combo.blockSignals(False)
+        self.update_current_roi(self.ivm.current_roi)
+        self.roi_combo.updateGeometry()
+
+    def overlay_view_changed(self, idx):
+        view = idx in (0, 1)
+        roiOnly = (idx == 1)
+        self.ivl1.set_overlay_view(view, roiOnly)
+
+    def roi_view_changed(self, idx):
+        shade = idx in (0, 2)
+        contour = idx in (1, 2)
+        self.ivl1.set_roi_view(shade, contour)
+
+    def overlay_cmap_changed(self, idx):
+        cmap = self.ov_cmap_combo.itemText(idx)
+        self.ivl1.h2.setGradientName(cmap)
+
     def initTabs(self):
 
         """
@@ -336,13 +453,10 @@ class MainWindowWidget(QtGui.QWidget):
 
         # Widgets added to tabs on the right hand side
         self.qtab1.addTab(self.wid["Overview"][0], "Volumes")
-        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel\n analysis")
-        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), "Overlay\n options")
-        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Curve\n cluster")
-        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), "Overlay\n cluster")
-        self.qtab1.addTab(self.wid["Example"][0], "Example\n widget")
-
-
+        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\n analysis")
+        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(get_icon("edit")), "Overlay\n statistics")
+        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")), "Curve\n cluster")
+        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(get_icon("clustering")), "Overlay\n cluster")
 
         # signal
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
@@ -351,12 +465,12 @@ class MainWindowWidget(QtGui.QWidget):
     # update slider range
     def update_slider_range(self):
         # set slider range
-        self.sld1.setRange(0, self.ivm.img_dims[2]-1)
-        self.sld2.setRange(0, self.ivm.img_dims[1]-1)
-        self.sld3.setRange(0, self.ivm.img_dims[0]-1)
+        self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
+        self.sld2.setRange(0, self.ivm.vol.shape[1]-1)
+        self.sld3.setRange(0, self.ivm.vol.shape[0]-1)
 
-        if len(self.ivm.img_dims) == 4:
-            self.sld4.setRange(0, self.ivm.img_dims[3]-1)
+        if self.ivm.vol.ndims == 4:
+            self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
         else:
             self.sld4.setRange(0, 0)
 
@@ -369,25 +483,37 @@ class MainWindowWidget(QtGui.QWidget):
 
     # Connect to a widget
     def show_widget(self, wname):
-        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(self.local_file_path + self.wid[wname][1]), self.wid[wname][2])
+        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(get_icon(self.wid[wname][1])), self.wid[wname][2])
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
     def show_se(self):
-        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(self.local_file_path + '/icons/voxel.svg'), "Voxel analysis")
+        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\nanalysis")
         self.qtab1.setCurrentIndex(index)
 
     # Connect widget
     def show_ic(self):
-        index = self.qtab1.addTab(self.wid["ImExp"][0], "Image Export")
+        index = self.qtab1.addTab(self.wid["ImExp"][0], QtGui.QIcon(get_icon("image_export")), "Image\nExport")
         self.qtab1.setCurrentIndex(index)
 
     def show_pk(self):
-        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), "Pk")
+        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(get_icon("pk")), "Pk")
+        self.qtab1.setCurrentIndex(index)
+
+    def show_t10(self):
+        index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(get_icon("t10")), "T10")
+        self.qtab1.setCurrentIndex(index)
+
+    def show_sv(self):
+        index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(get_icon("sv")), "Super\nvoxels")
+        self.qtab1.setCurrentIndex(index)
+
+    def show_meanvals(self):
+        index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(get_icon("meanvals")), "Mean\nvalues")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
-        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'),
+        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")),
                                   "Curve\n Cluster", )
         self.qtab1.setCurrentIndex(index)
 
@@ -399,8 +525,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.wid["PView"][0].add_image_management(self.ivm)
             self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
 
-        index = self.qtab1.addTab(self.wid["PView"][0], "Pharma\n View")
-        print(index)
+        index = self.qtab1.addTab(self.wid["PView"][0], QtGui.QIcon(get_icon("curve_view")), "Pharma\n View")
         self.qtab1.setCurrentIndex(index)
 
 
@@ -427,33 +552,41 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.setAcceptDrops(True)
 
         # Patch for if file is frozen (packaged apps)
+        local_file_path = ""
         if hasattr(sys, 'frozen'):
             # if frozen
-            print(sys.frozen)
-            if sys.frozen == 'macosx_app':
-                self.local_file_path = os.getcwd() + '/pkview'
+            print("Frozen executable")
+            if hasattr(sys, '_MEIPASS'):
+                print("Have _MEIPASS")
+                local_file_path = sys._MEIPASS
+            elif hasattr(sys, '_MEIPASS2'):
+                print("Have _MEIPASS2")
+                local_file_path = sys._MEIPASS2
+            elif sys.frozen == 'macosx_app':
+                local_file_path = os.getcwd() + '/pkview'
             else:
-                self.local_file_path = os.path.dirname(sys.executable)
+                local_file_path = os.path.dirname(sys.executable)
 
         # Running from a script
         else:
-            self.local_file_path = os.path.dirname(__file__)
+            local_file_path = os.path.dirname(__file__)
 
         # Use local working directory otherwise
-        if self.local_file_path == "":
+        if local_file_path == "":
             print("Reverting to current directory as base")
-            self.local_file_path = os.getcwd()
+            local_file_path = os.getcwd()
 
         # Print directory
-        print("Local directory: ", self.local_file_path)
+        print("Local directory: ", local_file_path)
+        set_local_file_path(local_file_path)
 
         # Load style sheet
-        stFile = self.local_file_path + "/resources/darkorange.stylesheet"
+        stFile = local_file_path + "/resources/darkorange.stylesheet"
         with open(stFile, "r") as fs:
             self.setStyleSheet(fs.read())
 
         # Load the main widget
-        self.mw1 = MainWindowWidget(self.local_file_path)
+        self.mw1 = MainWindowWidget()
 
         self.toolbar = None
         self.default_directory ='/home'
@@ -480,7 +613,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.setGeometry(100, 100, 1000, 500)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
-        self.setWindowIcon(QtGui.QIcon(self.local_file_path + '/icons/main_icon.png'))
+        self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
         self.menu_ui()
         self.show()
@@ -495,45 +628,60 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
 
         # File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/picture.svg'), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d dceMRI image')
         load_action.triggered.connect(self.show_image_load_dialog)
 
         # File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pencil.svg'), '&Load ROI', self)
+        load_roi_action = QtGui.QAction(QtGui.QIcon(get_icon("pencil")), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.show_roi_load_dialog)
 
         # File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Load Overlay', self)
+        load_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Load Overlay', self)
         load_ovreg_action.setStatusTip('Load overlay')
         load_ovreg_action.triggered.connect(self.show_ovregsel_load_dialog)
 
         # File --> Save Overlay
-        save_ovreg_action = QtGui.QAction('&Save Current Overlay', self)
+        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save Current Overlay', self)
         save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
         save_ovreg_action.triggered.connect(self.show_ovreg_save_dialog)
         save_ovreg_action.setShortcut('Ctrl+S')
 
         # File --> Exit
-        exit_action = QtGui.QAction('&Exit', self)
+        exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
         # Widgets --> Image export
-        ic_action = QtGui.QAction('&ImageExport', self)
+        ic_action = QtGui.QAction(QtGui.QIcon(get_icon("image_export")), '&ImageExport', self)
         ic_action.setStatusTip('Export images from the GUI')
         ic_action.triggered.connect(self.mw1.show_ic)
 
         # Widgets --> Pharmacokinetics
-        pk_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/pk.svg'), '&Pharmacokinetics', self)
+        pk_action = QtGui.QAction(QtGui.QIcon(get_icon("pk")), '&Pharmacokinetics', self)
         pk_action.setStatusTip('Run pharmacokinetic analysis')
         pk_action.triggered.connect(self.mw1.show_pk)
 
+        # Widgets --> T10
+        t10_action = QtGui.QAction(QtGui.QIcon(get_icon("t10")), '&T10', self)
+        t10_action.setStatusTip('T10 Map Generation')
+        t10_action.triggered.connect(self.mw1.show_t10)
+
+        # Widgets --> Supervoxels
+        sv_action = QtGui.QAction(QtGui.QIcon(get_icon("sv")), '&Supervoxels', self)
+        sv_action.setStatusTip('Supervoxel analysis')
+        sv_action.triggered.connect(self.mw1.show_sv)
+
+        # Widgets --> Supervoxels
+        mv_action = QtGui.QAction(QtGui.QIcon(get_icon("meanvals")), '&Mean values overlay', self)
+        mv_action.setStatusTip('Generate overlay of mean values within ROI regions')
+        mv_action.triggered.connect(self.mw1.show_meanvals)
+
         # Widgets --> PharmaView
-        pw_action = QtGui.QAction('&PharmCurveView', self)
+        pw_action = QtGui.QAction(QtGui.QIcon(get_icon("curve_view")), '&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
         pw_action.triggered.connect(self.mw1.show_pw)
 
@@ -543,23 +691,23 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # rw_action.triggered.connect(self.mw1.show_rw)
 
         # Widgets --> CurveClustering
-        # cc_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/clustering.svg'), '&CurveClustering', self)
+        # cc_action = QtGui.QAction(QtGui.QIcon(get_icon("clustering")), '&CurveClustering', self)
         # cc_action.setStatusTip('Cluster curves in a ROI of interest')
         # cc_action.triggered.connect(self.mw1.show_cc)
 
         # Wigets --> Create Annotation
-        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(self.local_file_path + '/icons/edit.svg'), '&Enable Annotation', self)
+        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Enable Annotation', self)
         # annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
         # annot_ovreg_action.setCheckable(True)
         # annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
 
         # Help -- > Online help
-        help_action = QtGui.QAction('&Online Help', self)
+        help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
         help_action.triggered.connect(self.click_link)
 
         # Advanced --> Python Console
-        console_action = QtGui.QAction('&Console', self)
+        console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
         console_action.setStatusTip('Run a console for advanced interaction')
         console_action.triggered.connect(self.show_console)
 
@@ -579,6 +727,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
         widget_menu.addAction(pw_action)
+        widget_menu.addAction(sv_action)
+        widget_menu.addAction(mv_action)
+        widget_menu.addAction(t10_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
 
@@ -642,7 +793,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         :return:
         """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("https://github.com/benjaminirving/PkView_help_files", QtCore.QUrl.TolerantMode))
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://pkview.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
 
     @QtCore.Slot()
     def show_console(self):
@@ -690,7 +841,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # check if file is returned
         if fname != '':
 
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
                 msgBox.setText("A volume has already been loaded")
@@ -702,13 +853,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
                 if ret == QtGui.QMessageBox.Ok:
                     print("Clearing data")
-                    self.mw1.ivm.init()
+                    self.mw1.ivm.init(reset=True)
                 else:
                     return
 
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
         else:
             print('Warning: No file selected')
@@ -737,8 +890,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
          #check if file is returned
         if fname != '':
             self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -754,16 +907,16 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # check if file is returned
         if fname != '':
-
             if ftype is None:
+                # Make default type the filename (without extension) if not specified
+                ftype = os.path.split(fname)[1].split(".", 1)[0]
                 ftype, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                       ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
+                                                       [ftype, 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves',
                                                         'annotation'])
 
-            self.default_directory = get_dir(fname)
-            self.mw1.ivm.load_ovreg(fname, ftype)
-            if ftype != 'estimated':
-                self.mw1.ivl1.load_ovreg()
+            if ok:
+                self.default_directory = get_dir(fname)
+                self.mw1.ivm.add_overlay(Overlay(ftype, fname=fname), make_current=True)
         else:
             print('Warning: No file selected')
 
@@ -772,14 +925,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Dialog for saving an overlay as a nifti file
 
         """
+        if self.mw1.ivm.current_overlay is None:
+            QtGui.QMessageBox.warning(self, "No overlay", "No current overlay to save", QtGui.QMessageBox.Close)
+            return
 
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
 
-        # check if file is returned
         if fname != '':
-
             # self.default_directory = get_dir(fname)
-            self.mw1.ivm.save_ovreg(fname, 'current')
+            self.mw1.ivm.current_overlay.save_nifti(fname)
         else:
             print('Warning: No file selected')
 
@@ -799,17 +953,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Loading overlays
         if ftype != 'DCE' and ftype != 'ROI':
-
-            ftype2, ok = QtGui.QInputDialog.getItem(self, 'Overlay type', 'Type of overlay loaded:',
-                                                    ['loaded', 'T10', 'Ktrans', 'kep', 've', 'vp',
-                                                     'model_curves', 'annotation'])
-            self.mw1.ivm.load_ovreg(fname, ftype2)
-            if ftype != 'estimation':
-                self.mw1.ivl1.load_ovreg()
+            self.show_ovregsel_load_dialog(fname)
 
         # Loading main image
         elif ftype == 'DCE':
-            if self.mw1.ivm.image_file1 is not None:
+            if self.mw1.ivm.vol is not None:
 
                 # Checking if data already exists
                 msgBox = QtGui.QMessageBox()
@@ -822,18 +970,20 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
                 if ret == QtGui.QMessageBox.Ok:
                     print("Clearing data")
-                    self.mw1.ivm.init()
+                    self.mw1.ivm.init(reset=True)
                 else:
                     return
 
-            self.mw1.ivm.load_image(fname)
-            self.mw1.ivl1.load_image()
+            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
+            print("Image dimensions: ", self.mw1.ivm.vol.shape)
+            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+            print("Image range: ", self.mw1.ivm.vol.range)
             self.mw1.update_slider_range()
 
         # Loading ROI
         elif ftype == 'ROI':
-            self.mw1.ivm.load_roi(fname)
-            self.mw1.ivl1.load_roi()
+            name = os.path.split(fname)[1].split(".", 1)[0]
+            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
 
     def auto_load_files(self):
         """
@@ -859,6 +1009,7 @@ def main():
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
     parser.add_argument('--T10afibatch', help='Run batch T10 processing from a yaml file', default=None, type=str)
+    parser.add_argument('--slicbatch', help='Run batch SLIC supervoxel processing from a yaml file', default=None, type=str)
     parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
@@ -871,8 +1022,13 @@ def main():
 
     # Check whether any batch processing arguments have been called
 
-    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None):
+    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
         # Initialise main GUI
+
+        # OSx specific Changes
+        if op_sys == 'Darwin':
+            from Foundation import NSURL
+            QtGui.QApplication.setGraphicsSystem('native')
 
         # Initialise the PKView application
         app = QtGui.QApplication(sys.argv)
@@ -885,16 +1041,14 @@ def main():
 
     elif (args.T10batch is not None):
         # Run T10 batch processing from a yaml file
-        if op_sys == 'Windows':
-            warnings.warn('Windows is not supported for T10 mapping')
-
         t10(args.T10batch)
 
     elif (args.T10afibatch is not None):
-        if op_sys == 'Windows':
-            warnings.warn('Windows is not supported for T10 mapping')
         # Run T10 and afi batch processing from a yaml file
         t10_preclinical(args.T10afibatch)
+
+    elif (args.slicbatch is not None):
+        perfslic(args.slicbatch)
 
     else:
         # Run pk modelling from a yaml file.
@@ -902,4 +1056,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

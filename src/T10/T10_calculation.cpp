@@ -5,11 +5,30 @@
 #include "T10_calculation.h"
 #include "linear_regression.h"
 
+
+// Required for M_PI etc on Windows
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <iostream>
 #include <complex>
 
 using namespace std;
+
+#if defined(_WIN32) || defined(__APPLE__)
+// Complex inverse cosine is part of C++11 so for Python 2.7 on Windows we need
+// to define it. See Wolfram for details. This uses the same branch cut
+// as the C++11 standard library function and has been tested for 
+// agreement
+const complex<double> I(0, 1);
+const complex<double> ONE(1, 0);
+const complex<double> PI2(M_PI / 2, 0);
+
+static complex<double> acos_impl(complex<double> z)
+{
+	return PI2 + I*log(I * z + sqrt(ONE - z*z));
+}
+#endif
+
 
 // TODO write a nonlinear version
 // TODO Smoothing
@@ -29,7 +48,9 @@ double T10_single_linear(vector<double> &favox, vector<double> &fa_rad, ulong nu
     }
 
     // Return intercept and gradient from linear regression.
-    tie(a, b) = linreg(y, x);
+    pair<double, double> ab = linreg(y, x);
+    a = ab.first;
+    b = ab.second;
 
     // requiring gradient to be greater than 0
     if (b > 0) {
@@ -83,7 +104,11 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
         // Eq 6 of Ref 1
         complex<double> cmpl ((r*n - 1) / (n-r), 0);
+#if defined(_WIN32) || defined(__APPLE__)
+        alphac = acos_impl(cmpl);
+#else
         alphac = acos(cmpl);
+#endif
         alpha = alphac.real();
 
         // Ration of actual flip angle and angle
@@ -110,8 +135,8 @@ vector<double> T10mapping( vector< std::vector<double> > & favols, vector<double
     // Convert flip angles to radians
     cout << "Converting flip angles to radians \n";
     int cc = 0;
-    for (double ii : fa) {
-        fa_rad[cc] = (ii * (M_PI/180));
+    for (vector<double>::iterator iter = fa.begin(); iter != fa.end(); iter++) {
+        fa_rad[cc] = (*iter * (M_PI/180));
         cc++;
     }
 

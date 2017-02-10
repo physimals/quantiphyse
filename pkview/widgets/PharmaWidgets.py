@@ -17,7 +17,7 @@ from PySide import QtCore, QtGui
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.pk_model import PyPk
-
+from pkview.volumes.volume_management import Overlay, Roi
 
 class PharmaWidget(QtGui.QWidget):
 
@@ -62,7 +62,7 @@ class PharmaWidget(QtGui.QWidget):
         p7 = QtGui.QLabel('Estimated Injection time (s)')
         self.valInjT = QtGui.QLineEdit('30', self)
         p8 = QtGui.QLabel('Ktrans/kep percentile threshold')
-        self.thresh1 = QtGui.QLineEdit('99.8', self)
+        self.thresh1 = QtGui.QLineEdit('100', self)
         p9 = QtGui.QLabel('Dose (mM/kg) (preclinical only)')
         self.valDose = QtGui.QLineEdit('0.6', self)
 
@@ -160,21 +160,21 @@ class PharmaWidget(QtGui.QWidget):
         """
 
         # Check that pkmodelling can be run
-        if self.ivm.get_image() is None:
+        if self.ivm.vol is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The image doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
 
-        if self.ivm.get_roi() is None:
+        if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
             m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
 
-        if self.ivm.get_T10() is None:
+        if "T10" not in self.ivm.overlays:
             m1 = QtGui.QMessageBox()
             m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
             m1.exec_()
@@ -184,9 +184,9 @@ class PharmaWidget(QtGui.QWidget):
 
         # get volumes to process
 
-        img1 = self.ivm.get_image()
-        roi1 = self.ivm.get_roi()
-        t101 = self.ivm.get_T10()
+        img1 = self.ivm.vol.data
+        roi1 = self.ivm.current_roi.data
+        t101 = self.ivm.overlays["T10"].data
 
         # Extract the text from the line edit options
 
@@ -203,6 +203,8 @@ class PharmaWidget(QtGui.QWidget):
         # getting model choice from list
         model_choice = self.combo.currentIndex() + 1
 
+        # Baseline is currently just using first 3 points for normalisation (document)
+        print("first 3 time points are used for baseline normalisation")
         baseline1 = np.mean(img1[:, :, :, :3], axis=-1)
 
         # Convert to list of enhancing voxels
@@ -216,7 +218,7 @@ class PharmaWidget(QtGui.QWidget):
         T101vec = np.array(T10vec, dtype=np.double)
         roi1vec = np.array(self.roi1vec, dtype=bool)
 
-        print("subset")
+        print("subset of the region within the roi")
         # Subset within the ROI and
         img1sub = img1vec[roi1vec, :]
         T101sub = T101vec[roi1vec]
@@ -273,19 +275,19 @@ class PharmaWidget(QtGui.QWidget):
             vp1 = np.zeros((roi1v.shape[0]))
             vp1[roi1v] = var1[2][:, 3]
 
-            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.img_dims[-1]))
+            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.vol.shape[-1]))
             estimated_curve1[roi1v, :] = var1[1]
 
             residual1 = np.zeros((roi1v.shape[0]))
             residual1[roi1v] = var1[0]
 
             # Convert to list of enhancing voxels
-            Ktrans1vol = np.reshape(Ktrans1, (self.ivm.img_dims[:-1]))
-            ve1vol = np.reshape(ve1, (self.ivm.img_dims[:-1]))
-            offset1vol = np.reshape(offset1, (self.ivm.img_dims[:-1]))
-            vp1vol = np.reshape(vp1, (self.ivm.img_dims[:-1]))
-            kep1vol = np.reshape(kep1, (self.ivm.img_dims[:-1]))
-            estimated1vol = np.reshape(estimated_curve1, self.ivm.img_dims)
+            Ktrans1vol = np.reshape(Ktrans1, (self.ivm.vol.shape[:-1]))
+            ve1vol = np.reshape(ve1, (self.ivm.vol.shape[:-1]))
+            offset1vol = np.reshape(offset1, (self.ivm.vol.shape[:-1]))
+            vp1vol = np.reshape(vp1, (self.ivm.vol.shape[:-1]))
+            kep1vol = np.reshape(kep1, (self.ivm.vol.shape[:-1]))
+            estimated1vol = np.reshape(estimated_curve1, self.ivm.vol.shape)
 
             #thresholding according to upper limit
             p = np.percentile(Ktrans1vol, self.thresh1val)
@@ -294,15 +296,12 @@ class PharmaWidget(QtGui.QWidget):
             kep1vol[kep1vol > p] = p
 
             # Pass overlay maps to the volume management
-            self.ivm.set_overlay(choice1='Ktrans', ovreg=Ktrans1vol)
-            self.ivm.set_overlay(choice1='ve', ovreg=ve1vol)
-            self.ivm.set_overlay(choice1='kep', ovreg=kep1vol)
-            self.ivm.set_overlay(choice1='offset', ovreg=offset1vol)
-            self.ivm.set_overlay(choice1='vp', ovreg=vp1vol)
-            # Setting as a separate volume
-            self.ivm.set_estimated(estimated1vol)
-            self.ivm.set_current_overlay(choice1='Ktrans')
-            self.sig_emit_reset.emit(1)
+            self.ivm.add_overlay(Overlay('Ktrans', data=Ktrans1vol), make_current=True)
+            self.ivm.add_overlay(Overlay('ve', data=ve1vol))
+            self.ivm.add_overlay(Overlay('kep', data=kep1vol))
+            self.ivm.add_overlay(Overlay('offset', data=offset1vol))
+            self.ivm.add_overlay(Overlay('vp', data=vp1vol))
+            self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
 
 
 def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
@@ -412,7 +411,7 @@ class PharmaView(QtGui.QWidget):
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
-        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1 = pg.GraphicsWindow()
         self.win1.setVisible(True)
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
@@ -427,10 +426,9 @@ class PharmaView(QtGui.QWidget):
         self.text1 = QtGui.QLineEdit('1.0', self)
         self.text1.returnPressed.connect(self.replot_graph)
 
-        # input temporal resolution
-        self.text2 = QtGui.QLineEdit('5', self)
+        # input the number of baseline time points
+        self.text2 = QtGui.QLineEdit('3', self)
         self.text2.returnPressed.connect(self.replot_graph)
-
 
         self.tabmod1 = QtGui.QStandardItemModel()
 
@@ -473,7 +471,7 @@ class PharmaView(QtGui.QWidget):
         l1.addWidget(self.win1)
         l1.addLayout(l05)
         l1.addWidget(g02)
-        l1.addStretch(1)
+        #l1.addStretch(1)
         self.setLayout(l1)
 
         # initial plot colour
@@ -484,18 +482,15 @@ class PharmaView(QtGui.QWidget):
         self.curve1 = None
 
     def _update_table(self):
-
         """
         Set the overlay parameter values in the table based on the current point clicked
         """
-
         self.tab1.setVisible(True)
-
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
-
-        for ii, ov1 in enumerate(overlay_vals.keys()):
-            self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ov1))
-            self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ov1], 10))))
+        for ii, ovl in enumerate(overlay_vals.keys()):
+            if self.ivm.overlays[ovl].ndims == 3:
+                self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
+                self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
 
     def add_image_management(self, image_vol_management):
         """
@@ -503,7 +498,7 @@ class PharmaView(QtGui.QWidget):
         """
         self.ivm = image_vol_management
 
-    def _plot(self, values1, values1est):
+    def _plot(self, sig, sig_ovl):
 
         """
         Plot the curve / curves
@@ -511,29 +506,26 @@ class PharmaView(QtGui.QWidget):
         #Make window visible and populate
         self.win1.setVisible(True)
 
-        values1 = np.array(values1, dtype=np.double)
+        values = np.array(sig, dtype=np.double)
 
         # Setting x-values
         xres = float(self.text1.text())
-        xx = xres * np.arange(len(values1))
+        xx = xres * np.arange(len(values))
 
         frames1 = int(self.text2.text())
 
         if self.cb3.isChecked() is True:
-            m1 = np.mean(values1[:frames1])
-            values1 = values1 / m1 - 1
+            # Show signal enhancement for main data, rather than raw values
+            m1 = np.mean(values[:frames1])
+            values = values / m1 - 1
 
-        # Plotting using single or multiple plots
-        if self.curve1 is None:
-            self.curve1 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.curve2 = self.p1.plot(pen=self.plot_color, width=4.0)
-            self.curve3 = self.p1.plot(pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.curve4 = self.p1.plot(pen=self.plot_color2, width=4.0)
+        self.p1.clear()
+        self.curve1 = self.p1.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        self.curve2 = self.p1.plot(xx, values, pen=self.plot_color, width=4.0)
 
-        self.curve2.setData(xx, values1, pen=self.plot_color)
-        self.curve1.setData(xx, values1)
-        self.curve4.setData(xx, values1est, pen=self.plot_color2)
-        self.curve3.setData(xx, values1est)
+        for ovl, sig_values in sig_ovl.items():
+            self.p1.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+            self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
         self.p1.setLabel('left', "Signal Enhancement")
         self.p1.setLabel('bottom', "Time", units='s')
@@ -559,9 +551,8 @@ class PharmaView(QtGui.QWidget):
         """
         Get signal from mouse click
         """
-
-        val, val_est = self.ivm.get_current_enhancement()
-        self._plot(val, val_est)
+        sig, sig_ovl = self.ivm.get_current_enhancement()
+        self._plot(sig, sig_ovl)
         self._update_table()
 
 

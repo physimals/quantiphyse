@@ -13,6 +13,7 @@ from PySide import QtCore, QtGui
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeans3D
+from pkview.volumes.volume_management import Roi
 
 #TODO Hide other buttons until the clustering is performed.
 
@@ -25,14 +26,12 @@ class OvCurveClusteringWidget(QtGui.QWidget):
     # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self, local_file_path):
+    def __init__(self):
         super(OvCurveClusteringWidget, self).__init__()
-
-        self.local_file_path = local_file_path
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Clustering of the current overlay </font>")
-        bhelp = HelpButton(self, self.local_file_path)
+        bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
@@ -149,17 +148,31 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         """
 
         # Check that pkmodelling can be run
-        if self.ivm.get_image() is None:
+        if self.ivm.vol is None:
             m1 = QtGui.QMessageBox()
             m1.setText("The image doesn't exist! Please load.")
             m1.setWindowTitle("PkView")
             m1.exec_()
             return
 
-        if self.ivm.get_roi() is None:
+        if self.ivm.current_roi is None:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load.")
+            m1.setText("The ROI doesn't exist! Please load.")
+            m1.exec_()
+            return
+
+        if self.ivm.current_overlay is None:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
+            m1.setText("No current overlay selected")
+            m1.exec_()
+            return
+
+        if self.ivm.current_overlay.ndims != 3:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
+            m1.setText("Cannot run clustering on 4d overlays")
             m1.exec_()
             return
 
@@ -167,8 +180,8 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.get_overlay()
-        roi1 = self.ivm.get_roi()
+        img1 = self.ivm.current_overlay.data
+        roi1 = self.ivm.current_roi.data
 
         self.km = KMeans3D(img1, region1=roi1)
 
@@ -176,8 +189,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
 
         self.label1, self.label1_cent = self.km.get_label_image()
 
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(Roi(name="Overlay clusters", data=self.label1), make_current=True)
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
 
@@ -193,7 +205,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         Returns:
 
         """
-        nimage = np.zeros(self.ivm.get_image().shape)
+        nimage = np.zeros(self.ivm.vol.shape)
         nimage[self.km.region1] = self.km.voxel_se
 
         self.labs_un = np.unique(self.label1)
@@ -220,8 +232,7 @@ class OvCurveClusteringWidget(QtGui.QWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.set_overlay(choice1='clusters', ovreg=self.label1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
+        self.ivm.add_roi(Roi(name="clusters", data=self.label1), make_current=True)
         self.sig_emit_reset.emit(1)
         print("Merged")
 

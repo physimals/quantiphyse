@@ -29,7 +29,7 @@ class OverlayAnalyis(object):
         """
         self.ivm = image_volume_management
 
-    def get_roi_stats(self):
+    def get_roi_stats(self, hist_bins=20, hist_range=None):
         """
         Return:
         @m1 mean for each ROI
@@ -39,12 +39,14 @@ class OverlayAnalyis(object):
         """
 
         # Checks if either ROI or overlay is None
-        if (self.ivm.roi is None) or (self.ivm.overlay is None):
+        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
             roi_labels = np.array([0])
             return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
-        roi_labels = np.unique(self.ivm.roi)
+        roi = self.ivm.current_roi
+        ovl = self.ivm.current_overlay
+        roi_labels = roi.regions
         roi_labels = roi_labels[roi_labels > 0]
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
@@ -54,14 +56,14 @@ class OverlayAnalyis(object):
         for ii in roi_labels:
 
             # Overlay for a single label of the roi
-            vroi1 = self.ivm.overlay[self.ivm.roi == ii]
+            vroi1 = ovl.data[roi.data == ii]
 
             stat1['mean'].append(np.mean(vroi1))
             stat1['median'].append(np.median(vroi1))
             stat1['std'].append(np.std(vroi1))
             stat1['max'].append(np.max(vroi1))
             stat1['min'].append(np.min(vroi1))
-            y, x = np.histogram(vroi1, bins=20)
+            y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
             hist1.append(y)
             hist1x.append(x)
 
@@ -77,15 +79,17 @@ class OverlayAnalyis(object):
         """
 
         # Checks if either ROI or overlay is None
-        if (self.ivm.roi is None) or (self.ivm.overlay is None):
+        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
             roi_labels = np.array([0])
             return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
         slice1 = self.ivm.cim_pos[2]
 
-        overlay_slice = self.ivm.overlay[:, :, slice1]
-        roi_slice = self.ivm.roi[:, :, slice1]
+        roi = self.ivm.current_roi
+        ovl = self.ivm.current_overlay
+        overlay_slice = ovl.data[:, :, slice1]
+        roi_slice = roi.data[:, :, slice1]
 
         roi_labels = np.unique(roi_slice)
         roi_labels = roi_labels[roi_labels > 0]

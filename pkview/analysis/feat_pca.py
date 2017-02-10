@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 
 import pkview.analysis.image_normalisation as inorm
 
-
 class PcaFeatReduce(object):
     """
     Class for extracting PCA features from an image
@@ -54,18 +53,24 @@ class PcaFeatReduce(object):
         self.opt_normdata = None
 
     @staticmethod
-    def normalise_im(im1):
+    def normalise_im(im1, norm_type='perc'):
         image_norm = inorm.ImNorm(im1)
         #image_norm.scale_norm()
-        image_norm.scale_percentile()
-        image_norm.offset_time()
+        if norm_type == 'perc':
+            image_norm.scale_percentile()
+            image_norm.offset_time()
+        elif norm_type == 'max':
+            image_norm.scale_max()
+        else:
+            raise ValueError('Scaling type does not exist')
+
         image_norm.smooth()
         #image_norm.scale_indv()
         im1 = image_norm.get_image()
 
         return im1
 
-    def get_training_features(self, opt_normdata=1, opt_normimage=0, feature_volume=False, n_components=5):
+    def get_training_features(self, opt_normdata=1, opt_normimage=0, feature_volume=False, n_components=5, norm_type='perc'):
 
         """
         Return features for each voxel from the PCA reduction
@@ -79,15 +84,15 @@ class PcaFeatReduce(object):
 
         self.opt_normdata = opt_normdata
         self.opt_normimage = opt_normimage
+        self.norm_type = norm_type
 
         if self.opt_normimage == 1:
-            self.voxel_se = self.normalise_im(self.voxel_se)
+            self.voxel_se = self.normalise_im(self.voxel_se, self.norm_type)
 
         print("Using PCA dimensionality reduction")
         self.pca = PCA(n_components=n_components)
         reduced_data = self.pca.fit_transform(self.voxel_se)
         print("Number of components", reduced_data.shape[1])
-
 
         if opt_normdata == 1:
             print("Normalising PCA modes between 0 and 1")
@@ -126,12 +131,11 @@ class PcaFeatReduce(object):
             regione = np.logical_not(np.array(exclude, dtype=np.bool))
             region1 = np.logical_and(region1, regione)
 
-
         #img1_test = img1_test * np.tile(np.expand_dims(region1, axis=-1), (1, 1, img1_test.shape[-1]))
         voxel_se_test = img1_test[region1]
 
         if self.opt_normimage == 1:
-            voxel_se_test = self.normalise_im(voxel_se_test)
+            voxel_se_test = self.normalise_im(voxel_se_test, self.norm_type)
 
         #Projecting the data using training set PCA
         if voxel_se_test.shape[1] > self.pca.mean_.shape[0]:
@@ -197,7 +201,6 @@ class PcaFeatReduce(object):
         plt.ylabel('Normalised signal')
 
         plt.show()
-
 
 
 

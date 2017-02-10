@@ -4,11 +4,9 @@ Viewer for 3D/4D data and Pk modelling
 
 Contributors:
 
-Benjamin Irving
-
-Clinical advice: 
-
-Jamie Franklin
+Benjamin Irving  
+Martin Craig  
+Michael Chappell
 
 ## Overview
 This viewer provides tools for modelling and analysis of DCE-MRI scans. 

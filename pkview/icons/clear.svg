@@ -14,8 +14,11 @@
    height="32"
    viewBox="0 0 34 32"
    id="svg2"
-   inkscape:version="0.48.4 r9939"
-   sodipodi:docname="clear.svg">
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="clear.svg"
+   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/clear.png"
+   inkscape:export-xdpi="90.56604"
+   inkscape:export-ydpi="90.56604">
   <metadata
      id="metadata10">
     <rdf:RDF>
@@ -44,29 +47,29 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="10.429825"
-     inkscape:cx="18.533966"
+     inkscape:cx="0.74843269"
      inkscape:cy="15.08657"
-     inkscape:window-x="69"
+     inkscape:window-x="75"
      inkscape:window-y="34"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <path
-     style="fill:#ff0000;stroke:#ff0000;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-     d="M 3.2598821,3.4280921 29.626576,27.973087"
+     style="fill:#ff0000;stroke:#ff0000;stroke-width:4.09500694;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 3.292287,3.4629006 30.265323,28.609431"
      id="path3002"
      inkscape:connector-curvature="0"
      sodipodi:nodetypes="cc" />
   <path
-     style="fill:#ff0000;stroke:#ff0000;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-     d="M 3.9310343,27.877208 29.530697,4.0992442"
+     style="fill:#ff0000;stroke:#ff0000;stroke-width:4.31447792;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 2.7920466,29.583252 30.19029,3.7355055"
      id="path3004"
      inkscape:connector-curvature="0" />
   <rect
-     style="fill:none;stroke:#999999;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:none;stroke:#999999;stroke-width:3.09448791;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect2987"
-     width="29.09341"
-     height="26.991787"
-     x="2.3338335"
-     y="2.5552359"
-     ry="2.1431227" />
+     width="28.905514"
+     height="28.905512"
+     x="2.3810773"
+     y="1.6489354"
+     ry="2.2950706" />
 </svg>

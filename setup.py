@@ -80,17 +80,30 @@ ext2 = Extension("pkview.analysis.t1_model",
                  language="c++",
                  extra_compile_args=['-std=c++11'])
 
+perfusionslic_extensions = [
+    Extension("pkview.analysis.perfusionslic.additional.bspline_smoothing",
+              sources=["pkview/analysis/perfusionslic/additional/bspline_smoothing.pyx"],
+              include_dirs=[numpy.get_include()]),
+    Extension("pkview.analysis.perfusionslic.additional.create_im",
+              sources=["pkview/analysis/perfusionslic/additional/create_im.pyx"],
+              include_dirs=[numpy.get_include()]),
+    Extension("pkview.analysis.perfusionslic._slic_feat",
+              sources=["pkview/analysis/perfusionslic/_slic_feat.pyx"],
+              include_dirs=[numpy.get_include()]),
+    Extension("pkview.analysis.perfusionslic.additional.processing",
+              sources=["pkview/analysis/perfusionslic/additional/processing.pyx",
+                       "src/perfusionslic/processing.cpp"],
+              include_dirs=["src/perfusionslic", numpy.get_include()],
+              language="c++",
+              extra_compile_args=["-std=c++11"])
+]
 
-# TODO exclude T10 mapping for windows due to lack of c++11 support
-if platform.system() == 'Windows':
-    extensions = [ext1]
-else:
-    extensions = [ext1, ext2]
+extensions = [ext1, ext2] + perfusionslic_extensions
 
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.23',
+      version='0.24',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
@@ -99,7 +112,7 @@ setup(name='PKView',
       packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.icons', 'pkview.resources', 'pkview.tests',
                 'pkview.utils', 'pkview.volumes', 'pkview.widgets'],
       include_package_data=True,
-      data_files=[('pkview/icons/', ['pkview/icons/picture.svg',
+      data_files=[('pkview/icons', ['pkview/icons/picture.svg',
                                      'pkview/icons/pencil.svg',
                                      'pkview/icons/clear.svg',
                                      'pkview/icons/edit.svg',
@@ -112,7 +125,7 @@ setup(name='PKView',
                                      'pkview/icons/edit.png',
                                      'pkview/icons/clustering.png',
                                      'pkview/icons/voxel.png']),
-                  ('pkview/resources/', ['pkview/resources/darkorange.stylesheet'])
+                  ('pkview/resources', ['pkview/resources/darkorange.stylesheet'])
                   ],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
       setup_requires=['Cython'],

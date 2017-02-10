@@ -14,7 +14,7 @@
    height="32"
    viewBox="0 0 34 32"
    id="svg2"
-   inkscape:version="0.48.4 r9939"
+   inkscape:version="0.91 r13725"
    sodipodi:docname="voxel.svg">
   <metadata
      id="metadata10">
@@ -44,20 +44,22 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="10.429825"
-     inkscape:cx="18.533966"
+     inkscape:cx="0.74843269"
      inkscape:cy="15.08657"
-     inkscape:window-x="69"
+     inkscape:window-x="75"
      inkscape:window-y="34"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <rect
-     style="fill:none;stroke:#b3b3b3;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+     style="fill:none;stroke:#b3b3b3;stroke-width:3.09448791;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect2987"
-     width="29.09341"
-     height="26.991787"
-     x="2.3338335"
-     y="2.5552359"
-     ry="2.1431227" />
+     width="28.905514"
+     height="28.905512"
+     x="2.2851985"
+     y="1.6489354"
+     ry="2.2950706"
+     inkscape:export-xdpi="90"
+     inkscape:export-ydpi="90" />
   <path
      style="fill:none;stroke:#ff0000;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      d="M 6.1370794,23.274191 C 8.7303003,17.577898 8.7730934,14.165953 12.373698,11.633407 16.758714,8.5491323 28.283441,9.2775339 28.283441,9.2775339"

@@ -1,0 +1,13 @@
+
+# Config file for running slic supervoxel extraction
+#
+#
+
+EG5:
+  Folder:   /home/martinc/data/
+  File: test_data.nii.gz
+  Settings:
+    n_components: 3
+    compactness: 0.02
+    segment_size: 1000
+    Out_file: supervoxels.nii
