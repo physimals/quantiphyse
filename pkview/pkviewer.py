@@ -178,10 +178,6 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["Overview"] = [OverviewWidget(), 'a', 'b']
         self.wid["Overview"][0].add_image_management(self.ivm)
 
-        # Example widget
-        self.wid["Example"] = [ExampleWidget1(self.local_file_path), 'a', 'b']
-        self.wid["Example"][0].add_image_management(self.ivm)
-
         # Random Walker
         # self.sw_rw = None
 
