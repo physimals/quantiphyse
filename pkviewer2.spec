@@ -79,7 +79,7 @@ else:
                    a.zipfiles,
                    a.datas,
                    strip=False,
-                   upx=True,
+                   upx=False,
                    name='pkviewer2')
     if osx_bundle:
         pkdir = os.path.dirname(os.path.abspath(SPEC))
