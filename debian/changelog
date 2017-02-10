@@ -1,8 +1,11 @@
-pkview (0.25.0ubuntu9) UNRELEASED; urgency=medium
+pkview (0.31) trusty; urgency=medium
 
-  * Add histogram to overlay analysis
+  * T10 map generation
+  * Overlay histogram
+  * Supervoxel generation
+  * UI tweaks and improvements
 
- -- martin <martin.craig@eng.ox.ac.uk>  Wed, 04 Jan 2017 15:03:42 +0000
+ -- Martin Craig <martin.craig@eng.ox.ac.uk>  Fri, 10 Feb 2017 11:06:47 +0000
 
 pkview (0.24.0ubuntu8) trusty; urgency=medium
 
