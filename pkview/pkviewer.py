@@ -37,6 +37,7 @@ from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
+from .widgets.FabberWidgets import FabberWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
@@ -158,6 +159,10 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
         self.wid["sv"][0].add_image_management(self.ivm)
         self.wid["sv"][0].add_image_view(self.ivl1)
+
+        # Fabber modelling widget
+        self.wid["Fab"] = [FabberWidget(), 'a', 'b']
+        self.wid["Fab"][0].add_image_management(self.ivm)
 
         # Mean value overlay widget
         self.wid["meanvals"] = [MeanValuesWidget(), 'a', 'b']
@@ -500,6 +505,10 @@ class MainWindowWidget(QtGui.QWidget):
         index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(get_icon("t10")), "T10")
         self.qtab1.setCurrentIndex(index)
 
+    def show_fab(self):
+        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(get_icon("fabber.svg")), "Fabber")
+        self.qtab1.setCurrentIndex(index)
+
     def show_sv(self):
         index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(get_icon("sv")), "Super\nvoxels")
         self.qtab1.setCurrentIndex(index)
@@ -676,6 +685,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         mv_action.setStatusTip('Generate overlay of mean values within ROI regions')
         mv_action.triggered.connect(self.mw1.show_meanvals)
 
+        # Widgets --> Fabber
+        fab_action = QtGui.QAction(QtGui.QIcon(get_icon("fabber.svg")), '&Fabber', self)
+        fab_action.setStatusTip('Run fabber model fitting')
+        fab_action.triggered.connect(self.mw1.show_fab)
+
         # Widgets --> PharmaView
         pw_action = QtGui.QAction(QtGui.QIcon(get_icon("curve_view")), '&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
@@ -722,6 +736,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         widget_menu.addAction(ic_action)
         widget_menu.addAction(pk_action)
+        widget_menu.addAction(fab_action)
         widget_menu.addAction(pw_action)
         widget_menu.addAction(sv_action)
         widget_menu.addAction(mv_action)
