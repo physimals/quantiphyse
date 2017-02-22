@@ -50,14 +50,15 @@ def make_fabber_cb(queue):
 
     return progress_cb
 
-def run_fabber(rundata, data, roi):
+def run_fabber(id, rundata, data, roi):
     try:
+        print("Running, id=", id, "data=", roi.shape)
         rundata.dump(sys.stdout)
         lib = FabberLib(rundata=rundata)
         run = lib.run_with_data(rundata, data, roi, progress_cb=make_fabber_cb(run_fabber.queue))
-        return True, run
+        return True, run, id
     except FabberException, e:
-        return False, e
+        return False, e, id
 
 def pool_init(queue):
     # see http://stackoverflow.com/a/3843313/852994
@@ -242,7 +243,7 @@ class FabberWidget(QtGui.QWidget):
         self.reset()
 
         self.queue = multiprocessing.Queue()
-        self.pool = multiprocessing.Pool(1, pool_init, initargs=(self.queue,))
+        self.pool = multiprocessing.Pool(4, pool_init, initargs=(self.queue,))
 
         # Callbacks to update GUI during processing and when finished
         self.timer = QtCore.QTimer()
@@ -312,6 +313,10 @@ class FabberWidget(QtGui.QWidget):
             m1.exec_()
             return
 
+        # set the progress value
+        self.progress.setValue(0)
+        self.timer.start(1000)
+
         # Pass in input data. This is the main image plus any referenced overlays
         used_overlays = set()
         for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
@@ -319,22 +324,26 @@ class FabberWidget(QtGui.QWidget):
                 if isinstance(view, ImageOptionView) and view.combo.isEnabled():
                     used_overlays.add(view.combo.currentText())
 
-        data = {"data": img.data}
-        for ov in used_overlays:
-            data[ov] = self.ivm.overlays[ov].data
+        N=4
+        split_data = {"data" : np.array_split(img.data, N, 0)}
+        split_roi = np.array_split(roi.data, N, 0)
 
-        # set the progress value
-        self.progress.setValue(0)
-        self.timer.start(1000)
+        for ov in used_overlays:
+            split_data[ov] = np.array_split(self.ivm.overlays[ov].data, N, 0)
 
         # Kind of pointless using a pool at the moment, but leave open possibility of parallel runs
         # when spatial VB is not in use.
-        self.pool.apply_async(run_fabber, (self.rundata, data, roi.data), callback=self.run_finished)
+        self.runs = [None,] * N
+        self.run_failed = False
+        for i in range(N):
+            data = {}
+            for key in split_data:
+                data[key] = split_data[key][i]
+            self.pool.apply_async(run_fabber, (i, self.rundata, data, split_roi[i]), callback=self.run_finished)
         self.runBtn.setEnabled(False)
 
     def run_finished(self, result):
         # Can only update GUI elements from the GUI thread
-        print("Finsihed")
         self.sig_finished.emit(result)
 
     def run_finished_gui(self, result):
@@ -343,26 +352,47 @@ class FabberWidget(QtGui.QWidget):
 
         result is a tuple. First value is success/not success boolean. Second is either the run or the exception
         """
-        self.timer.stop()
-        self.update_progress()
-        self.runBtn.setEnabled(True)
-        self.logBtn.setEnabled(result[0])
-        if result[0]:
-            self.run = result[1]
-            first = True
-            for key, item in self.run.data.items():
-                self.ivm.add_overlay(Overlay(name=key, data=item), make_current=first)
-                first = False
+        id = result[2]
+        print("Finished: id=", id)
+        done = False
+
+        if self.run_failed:
+            # If one process fails, ignore results
+            pass
+        elif result[0]:
+            self.runs[id] = result[1]
+            if None in self.runs:
+                print("Still waiting for other processes")
+            else:
+                print("Got em all now")
+                done = True
+                first = True
+                for key in self.runs[0].data:
+                    print(key, self.runs[0].data[key].shape)
+                    recombined_item = np.concatenate([self.runs[i].data[key] for i in range(len(self.runs))], 0)
+                    print(key, recombined_item.shape)
+                    self.ivm.add_overlay(Overlay(name=key, data=recombined_item), make_current=first)
+                    first = False
         else:
+            # If one process fails, they all fail
+            # FIXME need to cancel other processes
+            self.run_failed = True
+            done = True
             QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(result[1]),
                                       QtGui.QMessageBox.Close)
+        if done:
+            self.timer.stop()
+            self.update_progress()
+            self.runBtn.setEnabled(True)
+            self.logBtn.setEnabled(result[0])
 
     def update_progress(self):
         if self.queue.empty(): return
         while not self.queue.empty():
             v, nv = self.queue.get()
-        percent = 100*float(v)/nv
-        self.progress.setValue(percent)
+        if nv > 0:
+            percent = 100*float(v)/nv
+            self.progress.setValue(percent)
 
     def view_log(self):
         self.logview = LogViewerDialog(log=self.run.log)
