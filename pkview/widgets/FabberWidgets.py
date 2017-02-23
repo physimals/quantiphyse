@@ -83,23 +83,25 @@ def fabber_batch(yaml_file):
     yaml = yaml_loader(yaml_file)
 
     output_folder = yaml["OutputFolder"]
-    rundata = FabberRunData()
 
+    rundata = FabberRunData()
     for key in yaml["Options"]:
         val = yaml["Options"][key]
         if val is None: val = ""
+        print(key, val)
         rundata[key] = str(val)
+
+    overlays = {}
+    if "Overlays" in yaml:
+        for key in yaml["Overlays"]:
+            overlays[key] = Overlay(key, fname=yaml["Overlays"][key])
 
     subjs = yaml["Subjects"]
     for subj in subjs:
         vol = Volume("data", fname=subjs[subj]["Folder"] + subjs[subj]["Data"])
         roi = Roi("roi", fname=subjs[subj]["Folder"] + subjs[subj]["Roi"])
 
-        if "Overlays" in subjs[subj]:
-            for ovl in subjs[subj]["Overlays"]:
-                print(ovl, subjs[subj]["Overlays"][ovl])
-
-        process = FabberProcess(rundata, vol, roi)
+        process = FabberProcess(rundata, vol, roi, **overlays)
         process.run(sync=True)
 
         try:
@@ -111,7 +113,7 @@ def fabber_batch(yaml_file):
         for key, ovl in data.items():
             ovl.copy_header(vol.nifti_header)
             ovl.save_nifti(fname=output_folder + "/" + subj + "/" + key + ".nii")
-            print(key, ovl.shape)
+
         f = open(output_folder + "/" + subj + "/logfile", "w")
         f.write(log)
         f.close()
@@ -175,7 +177,6 @@ class ImageOptionView(OptionView):
         if self.combo.isEnabled():
             if hasattr(self, "rundata"):
                 self.rundata[self.key] = self.combo.currentText()
-            print(self.key)
 
     def do_update(self):
         OptionView.do_update(self)

@@ -1,0 +1,23 @@
+# Example config file for running Fabber
+
+OutputFolder: out
+
+Options:
+    method: vb
+    model:  poly
+    degree: 2
+    save-mean:
+
+Subjects:
+    Subject1:
+        Folder:   /home/martinc/data/
+        Data:     test_data.nii
+        Roi:      test_mask.nii
+
+    Subject2:
+        Folder:   /home/martinc/data/
+        Data:     test_data.nii
+        Roi:      test_mask.nii
+        Overlays:
+           t10:    t10.nii
+
