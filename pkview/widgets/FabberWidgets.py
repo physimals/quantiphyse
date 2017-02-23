@@ -6,9 +6,6 @@ Copyright (c) 2016-2017 University of Oxford, Martin Craig
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import sys, os
-
-import multiprocessing
-import multiprocessing.pool
 import time
 
 import nibabel as nib
@@ -17,7 +14,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
-from pkview.analysis.pk_model import PyPk
+from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Overlay
 
 try:
@@ -43,30 +40,34 @@ except:
 # can see what overlays to offer as options
 CURRENT_OVERLAYS = []
 
-def make_fabber_cb(queue):
+def make_fabber_progress_cb(id, queue):
     def progress_cb(voxel, nvoxels):
         if (voxel % 100 == 0) or (voxel == nvoxels):
-            queue.put((voxel, nvoxels))
+            queue.put((id, voxel, nvoxels))
 
     return progress_cb
 
-def run_fabber(id, rundata, data, roi):
+def run_fabber(id, queue, rundata, main_data, roi, *overlays):
+    """
+    Function to run Fabber as a separate process
+    """
     try:
-        print("Running, id=", id, "data=", roi.shape)
-        rundata.dump(sys.stdout)
-        lib = FabberLib(rundata=rundata)
-        run = lib.run_with_data(rundata, data, roi, progress_cb=make_fabber_cb(run_fabber.queue))
-        return True, run, id
-    except FabberException, e:
-        return False, e, id
+        print("Running, id=", id, "shape=", roi.shape)
+        #rundata.dump(sys.stdout)
+        data = {"data" : main_data}
+        n = 0
+        while n < len(overlays):
+            print(overlays[n], overlays[n+1].shape)
+            data[overlays[n]] = overlays[n+1]
+            n += 2
 
-def pool_init(queue):
-    # see http://stackoverflow.com/a/3843313/852994
-    # In python every function is an object so this is a quick and dirty way of adding a variable
-    # to a function for easy access later.
-    # Can't use usual approach (class method or closure) because functions run by multiprocessing
-    # must be picklable and these are not (by default at least)
-    run_fabber.queue = queue
+        lib = FabberLib(rundata=rundata)
+        run = lib.run_with_data(rundata, data, roi, progress_cb=make_fabber_progress_cb(id, queue))
+        return id, True, run
+    except FabberException, e:
+        return id, False, e
+    except:
+        return id, False, sys.exc_info()[0]
 
 class ImageOptionView(OptionView):
     """
@@ -242,13 +243,9 @@ class FabberWidget(QtGui.QWidget):
         self.rundata["save-mean"] = ""
         self.reset()
 
-        self.queue = multiprocessing.Queue()
-        self.pool = multiprocessing.Pool(4, pool_init, initargs=(self.queue,))
-
-        # Callbacks to update GUI during processing and when finished
+        # Callbacks to update GUI during processing
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_progress)
-        self.sig_finished.connect(self.run_finished_gui)
 
     def save_file(self):
         self.rundata.save()
@@ -317,84 +314,68 @@ class FabberWidget(QtGui.QWidget):
         self.progress.setValue(0)
         self.timer.start(1000)
 
-        # Pass in input data. This is the main image plus any referenced overlays
+        # Pass in input data. To enable the multiprocessing module to split our volumes
+        # up automatically we have to pass the arguments as a single list. This consists of
+        # rundata, main data, roi and then each of the used overlays, name followed by data
+        input_args = [self.rundata, img.data, roi.data]
         used_overlays = set()
         for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
             for view in dialog.views.values():
                 if isinstance(view, ImageOptionView) and view.combo.isEnabled():
-                    used_overlays.add(view.combo.currentText())
+                    input_args.append(view.combo.currentText())
+                    input_args.append(self.ivm.overlays[ov].data)
 
-        N=4
-        split_data = {"data" : np.array_split(img.data, N, 0)}
-        split_roi = np.array_split(roi.data, N, 0)
-
-        for ov in used_overlays:
-            split_data[ov] = np.array_split(self.ivm.overlays[ov].data, N, 0)
-
-        # Kind of pointless using a pool at the moment, but leave open possibility of parallel runs
-        # when spatial VB is not in use.
-        self.runs = [None,] * N
-        self.run_failed = False
-        for i in range(N):
-            data = {}
-            for key in split_data:
-                data[key] = split_data[key][i]
-            self.pool.apply_async(run_fabber, (i, self.rundata, data, split_roi[i]), callback=self.run_finished)
+        N = img.data.shape[0]
+        self.voxels_done = [0, ] * N
+        self.voxels_todo = np.count_nonzero(roi.data)
+        self.process = MultiProcess(N, run_fabber, input_args)
+        self.process.sig_finished.connect(self.run_finished_gui)
+        self.process.run()
         self.runBtn.setEnabled(False)
+        self.logBtn.setEnabled(False)
 
-    def run_finished(self, result):
-        # Can only update GUI elements from the GUI thread
-        self.sig_finished.emit(result)
-
-    def run_finished_gui(self, result):
+    def run_finished_gui(self, success, results):
         """
         Callback called when an async fabber run completes
-
-        result is a tuple. First value is success/not success boolean. Second is either the run or the exception
         """
-        id = result[2]
-        print("Finished: id=", id)
-        done = False
+        print("Finished fabber")
 
-        if self.run_failed:
-            # If one process fails, ignore results
-            pass
-        elif result[0]:
-            self.runs[id] = result[1]
-            if None in self.runs:
-                print("Still waiting for other processes")
-            else:
-                print("Got em all now")
-                done = True
-                first = True
-                for key in self.runs[0].data:
-                    print(key, self.runs[0].data[key].shape)
-                    recombined_item = np.concatenate([self.runs[i].data[key] for i in range(len(self.runs))], 0)
-                    print(key, recombined_item.shape)
-                    self.ivm.add_overlay(Overlay(name=key, data=recombined_item), make_current=first)
-                    first = False
+        if success:
+            first = True
+            for key in results[0].data:
+                print(key, results[0].data[key].shape)
+                recombined_item = np.concatenate([results[i].data[key] for i in range(len(results))], 0)
+                print(key, recombined_item.shape)
+                self.ivm.add_overlay(Overlay(name=key, data=recombined_item), make_current=first)
+                first = False
+            self.runs = results
         else:
             # If one process fails, they all fail
-            # FIXME need to cancel other processes
-            self.run_failed = True
-            done = True
-            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(result[1]),
+            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
                                       QtGui.QMessageBox.Close)
-        if done:
-            self.timer.stop()
-            self.update_progress()
-            self.runBtn.setEnabled(True)
-            self.logBtn.setEnabled(result[0])
+
+        self.timer.stop()
+        self.update_progress()
+        self.runBtn.setEnabled(True)
+        self.logBtn.setEnabled(success)
 
     def update_progress(self):
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            v, nv = self.queue.get()
-        if nv > 0:
-            percent = 100*float(v)/nv
+        queue = self.process.queue
+        if queue.empty(): return
+        while not queue.empty():
+            id, v, nv = queue.get()
+            self.voxels_done[id] = v
+        cv = sum(self.voxels_done)
+        tv = self.voxels_todo
+        print("total of %i done of %i" % (cv, tv, ))
+        if tv > 0:
+            percent = 100 * float(cv) / tv
             self.progress.setValue(percent)
 
     def view_log(self):
-        self.logview = LogViewerDialog(log=self.run.log)
-        self.logview.show()
-        self.logview.raise_()
+         fulllog = ""
+         for run in self.runs:
+             fulllog += run.log + "\n\n"
+         self.logview = LogViewerDialog(log=fulllog)
+         self.logview.show()
+         self.logview.raise_()
