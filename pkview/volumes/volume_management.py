@@ -84,6 +84,16 @@ class Volume(object):
             warnings.warn("Image contains nans")
             self.data[nans] = 0
 
+    def copy_header(self, hdr):
+        """
+        Copy header information from hdr.
+
+        Used for overlays and ROIs so they have consistent header information with the main volume
+        """
+        self.nifti_header = hdr.copy()
+        self.nifti_header.set_data_shape(self.shape)
+        self.nifti_header.set_data_dtype(self.data.dtype)
+
 class Overlay(Volume):
     def __init__(self, name, data=None, fname=None):
         super(Overlay, self).__init__(name, data, fname)
@@ -242,10 +252,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         ov.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
-            header = self.vol.nifti_header.copy()
-            header.set_data_shape(ov.shape)
-            header.set_data_dtype(ov.data.dtype)
-            ov.nifti_header = header
+            ov.copy_header(self.vol.nifti_header)
 
         self.overlays[ov.name] = ov
         if signal:
@@ -274,10 +281,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         roi.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
-            header = self.vol.nifti_header.copy()
-            header.set_data_shape(roi.shape)
-            header.set_data_dtype(roi.data.dtype)
-            roi.nifti_header = header
+            roi.copy_header(self.vol.nifti_header)
 
         self.rois[roi.name] = roi
 
