@@ -37,7 +37,7 @@ from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
-from .widgets.FabberWidgets import FabberWidget
+from .widgets.FabberWidgets import FabberWidget, fabber_batch
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
@@ -1023,6 +1023,7 @@ def main():
     parser.add_argument('--slicbatch', help='Run batch SLIC supervoxel processing from a yaml file', default=None, type=str)
     parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
+    parser.add_argument('--fabberbatch', help='Run batch Fabber processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
@@ -1033,7 +1034,25 @@ def main():
 
     # Check whether any batch processing arguments have been called
 
-    if (args.PKbatch is None) and (args.T10batch is None) and (args.T10afibatch is None) and (args.slicbatch is None):
+    if (args.T10batch is not None):
+        # Run T10 batch processing from a yaml file
+        t10(args.T10batch)
+
+    elif (args.T10afibatch is not None):
+        # Run T10 and afi batch processing from a yaml file
+        t10_preclinical(args.T10afibatch)
+
+    elif (args.slicbatch is not None):
+        perfslic(args.slicbatch)
+
+    elif (args.PKbatch is not None):
+        pkbatch(args.PKbatch)
+
+    elif (args.fabberbatch is not None):
+
+        fabber_batch(args.fabberbatch)
+
+    else:
         # Initialise main GUI
 
         # OSx specific Changes
@@ -1049,21 +1068,6 @@ def main():
         # Pass arguments from the terminal (if any) into the main application
         ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
         sys.exit(app.exec_())
-
-    elif (args.T10batch is not None):
-        # Run T10 batch processing from a yaml file
-        t10(args.T10batch)
-
-    elif (args.T10afibatch is not None):
-        # Run T10 and afi batch processing from a yaml file
-        t10_preclinical(args.T10afibatch)
-
-    elif (args.slicbatch is not None):
-        perfslic(args.slicbatch)
-
-    else:
-        # Run pk modelling from a yaml file.
-        pkbatch(args.PKbatch)
 
 if __name__ == '__main__':
     main()
