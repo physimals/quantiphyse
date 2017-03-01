@@ -12,17 +12,15 @@ from PySide import QtCore
 
 _pool = None
 
-# Number of workers in pool. Best if equal to number of cores (or less if you want to do other things
-# at the same time!)
-NUM_WORKERS = 8
-
 # Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major
 # by default
 SPLIT_AXIS = 0
 
 def _init_pool():
     global _pool
-    if _pool is None: _pool = multiprocessing.Pool(NUM_WORKERS)
+    n_workers = multiprocessing.cpu_count()
+    print("Initializing multiprocessing using %i workers" % n_workers)
+    if _pool is None: _pool = multiprocessing.Pool(n_workers)
 
 class MultiProcess(QtCore.QObject):
     """
