@@ -103,7 +103,7 @@ extensions = [ext1, ext2] + perfusionslic_extensions
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.31',
+      version='0.32',
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
