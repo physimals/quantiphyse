@@ -61,90 +61,94 @@ class MCFlirtWidget(QtGui.QWidget):
         gbox = QtGui.QGroupBox()
         gbox.setTitle("Options")
         grid = QtGui.QGridLayout()
+
         grid.addWidget(QtGui.QLabel("Cost model"), 0, 0)
         self.cost_combo = QtGui.QComboBox()
         for name, opt in self.cost_models.items():
             self.cost_combo.addItem(name, opt)
         self.cost_combo.setCurrentIndex(self.cost_combo.findData("normcorr"))
-
         grid.addWidget(self.cost_combo, 0, 1)
 
-        grid.addWidget(QtGui.QLabel("Number of bins"), 1, 0)
+        grid.addWidget(QtGui.QLabel("Reference volume"), 1, 0)
+        self.ref = QtGui.QComboBox()
+        self.ref.addItem("Middle volume")
+        self.ref.addItem("Mean volume")
+        self.ref.addItem("Specified volume")
+        self.ref.currentIndexChanged.connect(self.ref_changed)
+        grid.addWidget(self.ref, 1, 1)
+
+        self.refvol_label = QtGui.QLabel("Time index of reference volume")
+        self.refvol_label.setVisible(False)
+        grid.addWidget(self.refvol_label, 2, 0)
+        self.refvol = QtGui.QSpinBox()
+        self.refvol.setMinimum(0)
+        self.refvol.setVisible(False)
+        grid.addWidget(self.refvol, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("Number of search stages"), 3, 0)
+        self.stages = QtGui.QComboBox()
+        for i in range(1, 5):
+            self.stages.addItem(str(i), i)
+        self.stages.setCurrentIndex(2)
+        grid.addWidget(self.stages, 3, 1)
+
+        self.final_label = QtGui.QLabel("Final stage interpolation")
+        grid.addWidget(self.final_label, 4, 0)
+        self.final = QtGui.QComboBox()
+        self.final.addItem("None", "")
+        self.final.addItem("Sinc", "sinc_final")
+        self.final.addItem("Spline", "spline_final")
+        self.final.addItem("Nearest neighbour", "nn_final")
+        grid.addWidget(self.final, 4, 1)
+
+        grid.addWidget(QtGui.QLabel("Field of view (mm)"), 5, 0)
+        self.fov = QtGui.QSpinBox()
+        self.fov.setValue(20)
+        self.fov.setMinimum(1)
+        self.fov.setMaximum(100)
+        grid.addWidget(self.fov, 5, 1)
+
+        grid.addWidget(QtGui.QLabel("Number of bins"), 6, 0)
         self.num_bins = QtGui.QSpinBox()
         self.num_bins.setMinimum(1)
         self.num_bins.setMaximum(1000)
         self.num_bins.setValue(256)
-        grid.addWidget(self.num_bins, 1, 1)
+        grid.addWidget(self.num_bins, 6, 1)
 
-        grid.addWidget(QtGui.QLabel("Number of transform degrees of freedom"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Number of transform degrees of freedom"), 7, 0)
         self.num_dofs = QtGui.QSpinBox()
         self.num_dofs.setMinimum(1)
         self.num_dofs.setMaximum(10)
         self.num_dofs.setValue(6)
-        grid.addWidget(self.num_dofs, 2, 1)
+        grid.addWidget(self.num_dofs, 7, 1)
 
-        grid.addWidget(QtGui.QLabel("Time index of reference volume"), 4, 0)
-        self.refvol = QtGui.QSpinBox()
-        self.refvol.setMinimum(0)
-        grid.addWidget(self.refvol, 4, 1)
-
-        grid.addWidget(QtGui.QLabel("Scaling"), 5, 0)
+        grid.addWidget(QtGui.QLabel("Scaling"), 8, 0)
         self.scaling = QtGui.QDoubleSpinBox()
         self.scaling.setValue(6.0)
         self.scaling.setMinimum(0.1)
         self.scaling.setMaximum(10.0)
         self.scaling.setSingleStep(0.1)
-        grid.addWidget(self.scaling, 5, 1)
+        grid.addWidget(self.scaling, 8, 1)
 
-        grid.addWidget(QtGui.QLabel("Smoothing in cost function"), 6, 0)
+        grid.addWidget(QtGui.QLabel("Smoothing in cost function"), 9, 0)
         self.smoothing = QtGui.QDoubleSpinBox()
         self.smoothing.setValue(1.0)
         self.smoothing.setMinimum(0.1)
         self.smoothing.setMaximum(10.0)
         self.smoothing.setSingleStep(0.1)
-        grid.addWidget(self.smoothing, 6, 1)
+        grid.addWidget(self.smoothing, 9, 1)
 
-        grid.addWidget(QtGui.QLabel("Scaling factor for rotation\noptimization tolerances"), 7, 0)
+        grid.addWidget(QtGui.QLabel("Scaling factor for rotation\noptimization tolerances"), 10, 0)
         self.rotation = QtGui.QDoubleSpinBox()
         self.rotation.setValue(1.0)
         self.rotation.setMinimum(0.1)
         self.rotation.setMaximum(10.0)
         self.rotation.setSingleStep(0.1)
-        grid.addWidget(self.rotation, 7, 1)
+        grid.addWidget(self.rotation, 10, 1)
 
-        grid.addWidget(QtGui.QLabel("Number of search stages"), 8, 0)
-        self.stages = QtGui.QSpinBox()
-        self.stages.setMinimum(1)
-        self.stages.setMaximum(4)
-        self.stages.setValue(3)
-        grid.addWidget(self.stages, 8, 1)
-
-        grid.addWidget(QtGui.QLabel("Field of view (mm)"), 9, 0)
-        self.fov = QtGui.QSpinBox()
-        self.fov.setValue(20)
-        self.fov.setMinimum(1)
-        self.fov.setMaximum(100)
-        grid.addWidget(self.fov, 9, 1)
-
-        grid.addWidget(QtGui.QLabel("Sinc interpolation"), 10, 0)
-        self.sinc = QtGui.QCheckBox()
-        grid.addWidget(self.sinc, 10, 1)
-
-        grid.addWidget(QtGui.QLabel("Spline interpolation"), 11, 0)
-        self.spline = QtGui.QCheckBox()
-        grid.addWidget(self.spline, 11, 1)
-
-        grid.addWidget(QtGui.QLabel("Nearest-neighbour interpolation"), 12, 0)
-        self.nn = QtGui.QCheckBox()
-        grid.addWidget(self.nn, 12, 1)
-
-        grid.addWidget(QtGui.QLabel("Search on gradient images"), 13, 0)
+        grid.addWidget(QtGui.QLabel("Search on gradient images"), 11, 0)
         self.gdt = QtGui.QCheckBox()
-        grid.addWidget(self.gdt, 13, 1)
-
-        grid.addWidget(QtGui.QLabel("Register to mean volume"), 14, 0)
-        self.meanvol = QtGui.QCheckBox()
-        grid.addWidget(self.meanvol, 14, 1)
+        grid.addWidget(self.gdt, 11, 1)
 
         gbox.setLayout(grid)
         hbox.addWidget(gbox)
@@ -171,6 +175,10 @@ class MCFlirtWidget(QtGui.QWidget):
         self.refvol.setMaximum(vol.shape[3]-1)
         self.refvol.setValue(int(vol.shape[3]/2))
 
+    def ref_changed(self, idx):
+        self.refvol.setVisible(idx == 2)
+        self.refvol_label.setVisible(idx == 2)
+
     def run_mcflirt(self):
         if self.ivm.vol is None:
             QtGui.QMessageBox.warning(self, "No volume", "Load a volume before running motion correction", QtGui.QMessageBox.Close)
@@ -180,17 +188,21 @@ class MCFlirtWidget(QtGui.QWidget):
         opts["cost"] = self.cost_combo.itemData(self.cost_combo.currentIndex())
         opts["bins"] = self.num_bins.value()
         opts["dof"] = self.num_dofs.value()
-        opts["refvol"] = self.refvol.value()
         opts["scaling"] = self.scaling.value()
         opts["smooth"] = self.smoothing.value()
         opts["rotation"] = self.rotation.value()
-        opts["stages"] = self.stages.value()
+        opts["stages"] = self.stages.itemData(self.stages.currentIndex())
         opts["fov"] = self.fov.value()
-        if self.sinc.isChecked(): opts["sinc_final"] = ""
-        if self.spline.isChecked(): opts["spline_final"] = ""
-        if self.nn.isChecked(): opts["nn_final"] = ""
         if self.gdt.isChecked(): opts["gdt"] = ""
-        if self.meanvol.isChecked(): opts["meanvol"] = ""
+
+        final_interp = self.final.currentIndex()
+        if final_interp != 0: opts[self.final.itemData(final_interp)] = ""
+
+        ref = self.ref.currentIndex()
+        if ref == 1:
+            opts["meanvol"] = ""
+        elif ref == 2:
+            opts["refvol"] = self.refvol.value()
 
         for key, value in opts.items():
             print(key, value)
