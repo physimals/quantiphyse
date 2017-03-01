@@ -16,12 +16,16 @@ bin_files = []
 hidden_imports = []
 added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources')]
 
+fsldir = os.environ.get("FSLDIR")
+sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
+
 # Platform-specific configuration
 if sys.platform.startswith("win"):
     home_dir = os.environ.get("USERPROFILE", "")
     anaconda_dir='%s/AppData/Local/Continuum/Anaconda2/' % home_dir
     bin_files.append(('%s/Library/bin/mkl_avx2.dll' % anaconda_dir, '.' ))
     #bin_files.append(('%s/Library/bin/mkl_def.dll' % anaconda_dir, '.' ))
+    bin_files.append(("%s/bin/fabber*.dll" % fsldir, "fabber/bin"))
 
     if bits == 32:
         # Possible bug in setuptools makes this necessary on 32 bit Anaconda
@@ -30,11 +34,13 @@ if sys.platform.startswith("win"):
                            'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
+    bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
 elif sys.platform.startswith("darwin"):
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
     anaconda_dir='%s/anaconda2/' % home_dir
     bin_files.append(('%s/lib/libmkl_avx2.dylib' % anaconda_dir, '.' ))
+    bin_files.append(("%s/lib/libfabber*.dylib" % fsldir, "fabber/lib"))
 
 a = Analysis(['pkviewer2.py'],
              pathex=[],

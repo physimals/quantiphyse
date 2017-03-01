@@ -571,6 +571,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 local_file_path = os.getcwd() + '/pkview'
             else:
                 local_file_path = os.path.dirname(sys.executable)
+            os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
 
         # Running from a script
         else:

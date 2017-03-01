@@ -23,11 +23,10 @@ try:
     if "FABBERDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FABBERDIR"])
     from fabber import FabberRunData, FabberLib, FabberException, find_fabber
     from fabber.views import *
-    from fabber.imagedata import FabberImageData
     from fabber.dialogs import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
 except:
-    # Stub to prevent startup error - warning will occur if Fabber is used
-    raise
+    # Stubs to prevent startup error - warning will occur if Fabber is used
+    warnings.warn("Failed to import Fabber API - widget will be disabled")
     class OptionView:
         pass
     class ComponentOptionView:
@@ -207,8 +206,9 @@ class FabberWidget(QtGui.QWidget):
 
         try:
             self.fabber_lib = find_fabber()[1]
-            if not self.fabber_lib:
+            if self.fabber_lib is None:
                 mainVbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"))
+                return
         except:
             mainVbox.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"))
             return
