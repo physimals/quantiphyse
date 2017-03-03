@@ -678,10 +678,6 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
   timeseries.setTR(voxeldims[3]);
   globalopts. no_volumes = timeseries.tsize();
 
-  cout << "p1s " << timeseries[0].fbegin() << endl;
-  cout << "data0s " << timeseries(0, 0, 0, 0) << endl;
-  cout << "data1s " << timeseries(0, 0, 0, 1) << endl;
-
   for (int vol_count = 0; vol_count < globalopts. no_volumes; vol_count++) {
     mat_array0.push_back(IdentityMatrix(4));
     mat_array1.push_back(IdentityMatrix(4));
@@ -861,8 +857,4 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
   if (globalopts. costmeas) eval_costs(refvol, timeseries, mat_array0, current_scale);
   if (!globalopts. no_reporting) cerr << endl << "Saving motion corrected time series... " << endl;
   timeseries.setDisplayMaximumMinimum(timeseries.max(),timeseries.min());
-
-  cout << "p1 " << timeseries[0].fbegin() << endl;
-  cout << "data0 " << timeseries(0, 0, 0, 0) << endl;
-  cout << "data1 " << timeseries(0, 0, 0, 1) << endl;
 }
