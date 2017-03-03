@@ -374,7 +374,7 @@ class ColorOverlay1(QtGui.QWidget):
         minLabel = QtGui.QLabel("Min value")
         l03.addWidget(minLabel)
 
-        self.minSpin = QtGui.QSpinBox()
+        self.minSpin = QtGui.QDoubleSpinBox()
         # Silly numbers for max and min because seems to be no way to have
         # a spin box without a range
         self.minSpin.setMaximum(100000000)
@@ -384,7 +384,7 @@ class ColorOverlay1(QtGui.QWidget):
         maxLabel = QtGui.QLabel("Max value")
         l03.addWidget(maxLabel)
 
-        self.maxSpin = QtGui.QSpinBox()
+        self.maxSpin = QtGui.QDoubleSpinBox()
         self.maxSpin.setMaximum(100000000)
         self.maxSpin.setMinimum(-100000000)
         l03.addWidget(self.maxSpin)
@@ -468,6 +468,10 @@ class ColorOverlay1(QtGui.QWidget):
         if ov:
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
+            self.minSpin.setDecimals(ov.dps)
+            self.maxSpin.setDecimals(ov.dps)
+            self.minSpin.setSingleStep(10**(1-ov.dps))
+            self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def add_image_management(self, image_vol_management):
         """
@@ -491,6 +495,9 @@ class ColorOverlay1(QtGui.QWidget):
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
+        # Number of decimal places to display
+        dps = self.ivm.current_overlay.dps
+
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
         self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
@@ -499,11 +506,11 @@ class ColorOverlay1(QtGui.QWidget):
 
         for ii in range(len(stats1['mean'])):
             self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
+            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
+            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
+            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
+            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
 
     @QtCore.Slot()
     def generate_overlay_stats_current_slice(self):
@@ -513,6 +520,9 @@ class ColorOverlay1(QtGui.QWidget):
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss()
 
+        # Number of decimal places to display
+        dps = self.ivm.current_overlay.dps
+
         self.tabmod1ss.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.tabmod1ss.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
         self.tabmod1ss.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
@@ -521,11 +531,11 @@ class ColorOverlay1(QtGui.QWidget):
 
         for ii in range(len(stats1['mean'])):
             self.tabmod1ss.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
+            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
+            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
+            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
+            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
 
     def show_histogram(self):
         if self.win1.isVisible():
