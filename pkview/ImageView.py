@@ -43,6 +43,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         methods to extract a histogram
         """
         self.region.setRegion([np.min(arr), np.max(arr)])
+        self.region.setBounds([np.min(arr), None])
         fdim = 1
         for dim in arr.shape[1:]:
             fdim *= dim
