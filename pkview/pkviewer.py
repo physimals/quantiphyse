@@ -525,7 +525,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setCurrentIndex(index)
 
     def show_mcflirt(self):
-        index = self.qtab1.addTab(self.wid["mcflirt"][0], QtGui.QIcon(self.local_file_path + '/icons/mcflirt.svg'), "MCFlirt")
+        index = self.qtab1.addTab(self.wid["mcflirt"][0], QtGui.QIcon(get_icon("mcflirt")), "MCFlirt")
         self.qtab1.setCurrentIndex(index)
 
     def show_cc(self):
@@ -703,7 +703,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         fab_action.triggered.connect(self.mw1.show_fab)
 
         # Widgets --> MCFlirt
-        mcflirt_action = QtGui.QAction(QtGui.QIcon(get_icon("mcflirt"), '&MCFlirt', self)
+        mcflirt_action = QtGui.QAction(QtGui.QIcon(get_icon("mcflirt")), '&MCFlirt', self)
         mcflirt_action.setStatusTip('MCFlirt motion correction')
         mcflirt_action.triggered.connect(self.mw1.show_mcflirt)
 
