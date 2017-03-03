@@ -10,10 +10,10 @@ from pkview.volumes.volume_management import Volume, Overlay, Roi, ImageVolumeMa
 TEST_VOLUME = "dce"
 TEST_OVERLAY = "overlay"
 TEST_ROI = "roi"
-TEST_NX = 64
-TEST_NY = 64
-TEST_NZ = 42
-TEST_NT = 106
+TEST_NX = 20
+TEST_NY = 22
+TEST_NZ = 25
+TEST_NT = 18
 
 def test_fn(x, y, z, t=None):
     v = - (x - (TEST_NX / 2) ** 2 - (y - (TEST_NY / 2)) ** 2 + (z - (TEST_NZ / 2)) ** 2)
@@ -38,6 +38,16 @@ class VolumeTest(unittest.TestCase):
     def setUp(self):
         self.v4d = Volume("testvol", data=TEST_DATA_4D)
         self.v3d = Volume("testvol", data=TEST_DATA_3D)
+        self.v4d.save_nifti(os.path.join(TEST_DIR, "%s.nii" % TEST_VOLUME))
+        self.v4d.save_nifti(os.path.join(TEST_DIR, "%s.nii.gz" % TEST_VOLUME))
+        self.v3d.save_nifti(os.path.join(TEST_DIR, "%s.nii" % TEST_OVERLAY))
+        self.v3d.save_nifti(os.path.join(TEST_DIR, "%s.nii.gz" % TEST_OVERLAY))
+
+    def tearDown(self):
+        os.remove(os.path.join(TEST_DIR, "%s.nii" % TEST_VOLUME))
+        os.remove(os.path.join(TEST_DIR, "%s.nii.gz" % TEST_VOLUME))
+        os.remove(os.path.join(TEST_DIR, "%s.nii" % TEST_OVERLAY))
+        os.remove(os.path.join(TEST_DIR, "%s.nii.gz" % TEST_OVERLAY))
 
     def testCheckShape4d4dPass(self):
         self.v4d.check_shape([TEST_NX, TEST_NY, TEST_NZ, TEST_NT])
@@ -110,7 +120,7 @@ class VolumeTest(unittest.TestCase):
         self.assertEquals(np.max(TEST_DATA_3D), self.v3d.range[1])
 
     def testLoadNii4d(self):
-        fname = os.path.join(TEST_DIR, "data/%s.nii" % TEST_VOLUME)
+        fname = os.path.join(TEST_DIR, "%s.nii" % TEST_VOLUME)
         v = Volume("testvol", fname=fname)
         self.assertEquals(v.fname, fname)
         self.assertEquals(4, v.ndims)
@@ -120,7 +130,7 @@ class VolumeTest(unittest.TestCase):
         self.assertEquals(TEST_NT, v.shape[3])
 
     def testLoadNiiGz4d(self):
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_VOLUME)
+        fname = os.path.join(TEST_DIR, "%s.nii.gz" % TEST_VOLUME)
         v = Volume("testvol", fname=fname)
         self.assertEquals(v.fname, fname)
         self.assertEquals(4, v.ndims)
@@ -129,8 +139,17 @@ class VolumeTest(unittest.TestCase):
         self.assertEquals(TEST_NZ, v.shape[2])
         self.assertEquals(TEST_NT, v.shape[3])
 
+    def testLoadNii3d(self):
+        fname = os.path.join(TEST_DIR, "%s.nii" % TEST_OVERLAY)
+        v = Volume("testvol", fname=fname)
+        self.assertEquals(v.fname, fname)
+        self.assertEquals(3, v.ndims)
+        self.assertEquals(TEST_NX, v.shape[0])
+        self.assertEquals(TEST_NY, v.shape[1])
+        self.assertEquals(TEST_NZ, v.shape[2])
+
     def testLoadNiiGz3d(self):
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
+        fname = os.path.join(TEST_DIR, "%s.nii.gz" % TEST_OVERLAY)
         v = Volume("testvol", fname=fname)
         self.assertEquals(v.fname, fname)
         self.assertEquals(3, v.ndims)
@@ -142,7 +161,7 @@ class VolumeTest(unittest.TestCase):
         self.assertRaises(Exception, Volume, "testvol", fname="")
 
     def testLoadFileNotFound(self):
-        fname = os.path.join(TEST_DIR, "data/does_not_exist.nii")
+        fname = os.path.join(TEST_DIR, "does_not_exist/data.nii")
         self.assertRaises(Exception, Volume, "testvol", fname=fname)
 
     def testLoadInvalidFileType(self):
@@ -150,27 +169,31 @@ class VolumeTest(unittest.TestCase):
         self.assertRaises(Exception, Volume, "testvol", fname=fname)
 
     def testSave4d(self):
-        fname = os.path.join(TEST_DIR, "data/saved4d.nii")
-        self.v4d.save_nifti(fname)
-        self.assertTrue(os.path.exists(fname))
-        os.remove(fname)
+        fname = os.path.join(TEST_DIR, "saved4d.nii")
+        try:
+            self.v4d.save_nifti(fname)
+            self.assertTrue(os.path.exists(fname))
+        finally:
+            os.remove(fname)
 
     def testSave3d(self):
-        fname = os.path.join(TEST_DIR, "data/saved3d.nii")
-        self.v3d.save_nifti(fname)
-        self.assertTrue(os.path.exists(fname))
-        os.remove(fname)
+        fname = os.path.join(TEST_DIR, "saved3d.nii")
+        try:
+            self.v3d.save_nifti(fname)
+            self.assertTrue(os.path.exists(fname))
+        finally:
+            os.remove(fname)
 
     def testDir(self):
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
+        fname = os.path.join(TEST_DIR, "%s.nii.gz" % TEST_OVERLAY)
         v = Volume("testvol", fname=fname)
-        self.assertEquals(v.dir, os.path.join(TEST_DIR, "data"))
+        self.assertEquals(v.dir, TEST_DIR)
 
     def testDirNoFile(self):
         self.assertEquals(self.v3d.dir, None)
 
     def testBasename(self):
-        fname = os.path.join(TEST_DIR, "data/%s.nii.gz" % TEST_OVERLAY)
+        fname = os.path.join(TEST_DIR, "%s.nii.gz" % TEST_OVERLAY)
         v = Volume("testvol", fname=fname)
         self.assertEquals(v.basename, "%s.nii.gz" % TEST_OVERLAY)
 
@@ -348,10 +371,12 @@ class RoiTest(unittest.TestCase):
 
     def testSaveRoi(self):
         v = Roi("testroi", data=TEST_DATA_ROI_RAND)
-        fname = os.path.join(TEST_DIR, "data/savedroi.nii")
-        v.save_nifti(fname)
-        self.assertTrue(os.path.exists(fname))
-        os.remove(fname)
+        fname = os.path.join(TEST_DIR, "savedroi.nii")
+        try:
+            v.save_nifti(fname)
+            self.assertTrue(os.path.exists(fname))
+        finally:
+            os.remove(fname)
 
 class VolumeManagementTest(unittest.TestCase):
 
