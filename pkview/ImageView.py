@@ -162,6 +162,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
     # Signals when the mouse is scrolling
     sig_mouse_scroll = QtCore.Signal(bool)
 
+    # Signals when point of focus is changed
+    sig_focus_changed = QtCore.Signal(list)
+
     # Signals when the selected points / region have changed
     sig_sel_changed = QtCore.Signal(tuple)
 
@@ -214,6 +217,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             view.addItem(imgwin)
             view.addItem(vline, ignoreBounds=True)
             view.addItem(hline, ignoreBounds=True)
+            view.enableAutoRange()
             self.view.append(view)
             
             win = pg.GraphicsView()
@@ -319,6 +323,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             self.sig_mouse_scroll.emit(1)
             self.sig_mouse_click.emit(1)
             self.sig_sel_changed.emit((self.pickmode, self.sel))
+
+            # FIXME should this be a signal from IVM?
+            self.sig_focus_changed.emit(self.ivm.cim_pos)
             self._update_view()
         return mouse_pos
 
