@@ -149,6 +149,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
         self.wid["ColOv"][0].add_analysis(self.ia)
         self.wid["ColOv"][0].add_image_management(self.ivm)
+        self.wid["ColOv"][0].add_image_view(self.ivl1)
 
         # Pharmacokinetic modelling widget
         self.wid["PAna"] = [PharmaWidget(), 'a', 'b']

@@ -427,6 +427,28 @@ class ColorOverlay1(QtGui.QWidget):
         l1.addWidget(f03ss)
 
         l1.addWidget(f02)
+
+        # Radial profile widgets
+        box = QGroupBoxB()
+        box.setTitle("Radial Profile")
+        vbox = QtGui.QVBoxLayout()
+        box.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.rp_btn = QtGui.QPushButton("Show")
+        self.rp_btn.clicked.connect(self.show_radial_profile)
+        hbox.addWidget(self.rp_btn)
+        hbox.addStretch()
+        vbox.addLayout(hbox)
+
+        self.rp_win = pg.GraphicsWindow()
+        self.rp_win.setVisible(False)
+        self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance'})
+        self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))
+        self.rp_plt.addItem(self.rp_curve)
+        vbox.addWidget(self.rp_win)
+        l1.addWidget(box)
+
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -451,6 +473,26 @@ class ColorOverlay1(QtGui.QWidget):
             self.tab1ss.setVisible(True)
             self.regenBtn2.setVisible(True)
             self.butgenss.setText("Hide")
+
+    def show_histogram(self):
+        if self.win1.isVisible():
+            self.win1.setVisible(False)
+            self.regenBtn.setVisible(False)
+            self.butgen2.setText("Show")
+        else:
+            self.generate_histogram()
+            self.win1.setVisible(True)
+            self.regenBtn.setVisible(True)
+            self.butgen2.setText("Hide")
+
+    def show_radial_profile(self):
+        if self.rp_win.isVisible():
+            self.rp_win.setVisible(False)
+            self.rp_btn.setText("Show")
+        else:
+            self.update_radial_profile()
+            self.rp_win.setVisible(True)
+            self.rp_btn.setText("Hide")
 
     def add_analysis(self, image_analysis):
         """
@@ -481,11 +523,33 @@ class ColorOverlay1(QtGui.QWidget):
         self.ivm.sig_current_overlay.connect(self.overlay_changed)
         self.reset_spins()
 
+    def add_image_view(self, ivl):
+        """
+        Adding image management
+        """
+        self.ivl = ivl
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+
     def overlay_changed(self, overlay):
         """
         Update image data views
         """
         self.reset_spins()
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+
+    def focus_changed(self, overlay):
+        """
+        Update image data views
+        """
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+        if self.tab1ss.isVisible():
+            self.generate_overlay_stats_current_slice()
+
+    def update_radial_profile(self):
+        rp, binedges = self.ia.get_radial_profile()
+        self.rp_curve.setData(x=binedges, y=rp, stepMode=True)
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -537,17 +601,6 @@ class ColorOverlay1(QtGui.QWidget):
             self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
             self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
 
-    def show_histogram(self):
-        if self.win1.isVisible():
-            self.win1.setVisible(False)
-            self.regenBtn.setVisible(False)
-            self.butgen2.setText("Show")
-        else:
-            self.generate_histogram()
-            self.win1.setVisible(True)
-            self.regenBtn.setVisible(True)
-            self.butgen2.setText("Hide")
-
     @QtCore.Slot()
     def generate_histogram(self):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
@@ -569,7 +622,7 @@ class ColorOverlay1(QtGui.QWidget):
             # FIXME This is basically duplicated from ImageView - not ideal
             val = roi_labels[ii]
             pencol = self.ivm.current_roi.get_pencol(val)
-            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
+            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol, width=2))
             self.plt1.addItem(curve)
 
     def __plot(self, values1):
