@@ -114,3 +114,38 @@ class OverlayAnalyis(object):
 
         return stat1, roi_labels, hist1, hist1x
 
+    def get_radial_profile(self, bins=30):
+        """
+        Generate a radial profile curve within an ROI
+        """
+        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
+            return []
+
+        data = self.ivm.current_overlay.data
+        voxel_sizes = self.ivm.vol.voxel_sizes
+        roi = self.ivm.current_roi.data
+        centre = self.ivm.cim_pos
+
+        # If overlay is 4d, get current 3d volume
+        if len(data.shape) == 4:
+            print("4d data")
+            data = data[:, :, :, centre[3]]
+
+        # Generate an array whose entries are integer values of the distance
+        # from the centre. Set masked values to distance of -1
+        x, y, z = np.indices((data.shape[:3]))
+        r = np.sqrt(voxel_sizes[0]*(x - centre[0])**2 + voxel_sizes[1]*(y - centre[1])**2 + voxel_sizes[2]*(z - centre[2])**2)
+        r[roi==0] = -1
+
+        # Generate histogram by distance, weighted by data and corresponding histogram
+        # of distances only (i.e. the number of voxels in each bin)
+        minv = r[roi>0].min()
+        rpd, edges = np.histogram(r, weights=data, bins=bins, range=(minv, r.max()))
+        rpv, junk = np.histogram(r, bins=bins, range=(minv, r.max()))
+
+        # Divide by number of voxels in each bin to get average value by distance.
+        # Prevent divide by zero, if there are no voxels in a bin, this is OK because
+        # there will be no data either
+        rpv[rpv==0] = 1
+        rp = rpd / rpv
+        return rp, edges

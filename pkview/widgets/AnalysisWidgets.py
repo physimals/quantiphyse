@@ -374,7 +374,7 @@ class ColorOverlay1(QtGui.QWidget):
         minLabel = QtGui.QLabel("Min value")
         l03.addWidget(minLabel)
 
-        self.minSpin = QtGui.QSpinBox()
+        self.minSpin = QtGui.QDoubleSpinBox()
         # Silly numbers for max and min because seems to be no way to have
         # a spin box without a range
         self.minSpin.setMaximum(100000000)
@@ -384,7 +384,7 @@ class ColorOverlay1(QtGui.QWidget):
         maxLabel = QtGui.QLabel("Max value")
         l03.addWidget(maxLabel)
 
-        self.maxSpin = QtGui.QSpinBox()
+        self.maxSpin = QtGui.QDoubleSpinBox()
         self.maxSpin.setMaximum(100000000)
         self.maxSpin.setMinimum(-100000000)
         l03.addWidget(self.maxSpin)
@@ -427,6 +427,28 @@ class ColorOverlay1(QtGui.QWidget):
         l1.addWidget(f03ss)
 
         l1.addWidget(f02)
+
+        # Radial profile widgets
+        box = QGroupBoxB()
+        box.setTitle("Radial Profile")
+        vbox = QtGui.QVBoxLayout()
+        box.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.rp_btn = QtGui.QPushButton("Show")
+        self.rp_btn.clicked.connect(self.show_radial_profile)
+        hbox.addWidget(self.rp_btn)
+        hbox.addStretch()
+        vbox.addLayout(hbox)
+
+        self.rp_win = pg.GraphicsWindow()
+        self.rp_win.setVisible(False)
+        self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance'})
+        self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))
+        self.rp_plt.addItem(self.rp_curve)
+        vbox.addWidget(self.rp_win)
+        l1.addWidget(box)
+
         l1.addStretch(1)
         self.setLayout(l1)
 
@@ -452,6 +474,26 @@ class ColorOverlay1(QtGui.QWidget):
             self.regenBtn2.setVisible(True)
             self.butgenss.setText("Hide")
 
+    def show_histogram(self):
+        if self.win1.isVisible():
+            self.win1.setVisible(False)
+            self.regenBtn.setVisible(False)
+            self.butgen2.setText("Show")
+        else:
+            self.generate_histogram()
+            self.win1.setVisible(True)
+            self.regenBtn.setVisible(True)
+            self.butgen2.setText("Hide")
+
+    def show_radial_profile(self):
+        if self.rp_win.isVisible():
+            self.rp_win.setVisible(False)
+            self.rp_btn.setText("Show")
+        else:
+            self.update_radial_profile()
+            self.rp_win.setVisible(True)
+            self.rp_btn.setText("Hide")
+
     def add_analysis(self, image_analysis):
         """
         Reference to image analysis class
@@ -468,6 +510,10 @@ class ColorOverlay1(QtGui.QWidget):
         if ov:
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
+            self.minSpin.setDecimals(ov.dps)
+            self.maxSpin.setDecimals(ov.dps)
+            self.minSpin.setSingleStep(10**(1-ov.dps))
+            self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def add_image_management(self, image_vol_management):
         """
@@ -477,11 +523,33 @@ class ColorOverlay1(QtGui.QWidget):
         self.ivm.sig_current_overlay.connect(self.overlay_changed)
         self.reset_spins()
 
+    def add_image_view(self, ivl):
+        """
+        Adding image management
+        """
+        self.ivl = ivl
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+
     def overlay_changed(self, overlay):
         """
         Update image data views
         """
         self.reset_spins()
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+
+    def focus_changed(self, overlay):
+        """
+        Update image data views
+        """
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+        if self.tab1ss.isVisible():
+            self.generate_overlay_stats_current_slice()
+
+    def update_radial_profile(self):
+        rp, binedges = self.ia.get_radial_profile()
+        self.rp_curve.setData(x=binedges, y=rp, stepMode=True)
 
     @QtCore.Slot()
     def generate_overlay_stats(self):
@@ -491,6 +559,9 @@ class ColorOverlay1(QtGui.QWidget):
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
 
+        # Number of decimal places to display
+        dps = self.ivm.current_overlay.dps
+
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
         self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
@@ -499,11 +570,11 @@ class ColorOverlay1(QtGui.QWidget):
 
         for ii in range(len(stats1['mean'])):
             self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
+            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
+            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
+            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
+            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
+            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
 
     @QtCore.Slot()
     def generate_overlay_stats_current_slice(self):
@@ -513,6 +584,9 @@ class ColorOverlay1(QtGui.QWidget):
         # get analysis from analysis object
         stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss()
 
+        # Number of decimal places to display
+        dps = self.ivm.current_overlay.dps
+
         self.tabmod1ss.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.tabmod1ss.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
         self.tabmod1ss.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
@@ -521,22 +595,11 @@ class ColorOverlay1(QtGui.QWidget):
 
         for ii in range(len(stats1['mean'])):
             self.tabmod1ss.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], 2))))
-            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], 2))))
-            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], 2))))
-            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], 2))))
-            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], 2))))
-
-    def show_histogram(self):
-        if self.win1.isVisible():
-            self.win1.setVisible(False)
-            self.regenBtn.setVisible(False)
-            self.butgen2.setText("Show")
-        else:
-            self.generate_histogram()
-            self.win1.setVisible(True)
-            self.regenBtn.setVisible(True)
-            self.butgen2.setText("Hide")
+            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
+            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
+            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
+            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
+            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
 
     @QtCore.Slot()
     def generate_histogram(self):
@@ -559,7 +622,7 @@ class ColorOverlay1(QtGui.QWidget):
             # FIXME This is basically duplicated from ImageView - not ideal
             val = roi_labels[ii]
             pencol = self.ivm.current_roi.get_pencol(val)
-            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol))
+            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol, width=2))
             self.plt1.addItem(curve)
 
     def __plot(self, values1):

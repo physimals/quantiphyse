@@ -7,8 +7,6 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-import multiprocessing
-import multiprocessing.pool
 import time
 
 import numpy as np
@@ -16,8 +14,24 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview.QtInherit.QtSubclass import QGroupBoxB
+from pkview.analysis import MultiProcess
 from pkview.analysis.pk_model import PyPk
 from pkview.volumes.volume_management import Overlay, Roi
+
+class PkModellingProcess(MultiProcess):
+
+    """ Signal emitted to track progress"""
+    sig_progress = QtCore.Signal(int)
+
+    def __init__(self, *args):
+        N = 1
+        MultiProcess.__init__(self, N, run_pk, args)
+
+    def progress(self):
+        if self.queue.empty(): return
+        while not self.queue.empty():
+            num_row, progress = self.queue.get()
+        self.sig_progress.emit(progress)
 
 class PharmaWidget(QtGui.QWidget):
 
@@ -34,7 +48,6 @@ class PharmaWidget(QtGui.QWidget):
 
     def __init__(self):
         super(PharmaWidget, self).__init__()
-        self.init_multiproc()
 
         self.ivm = None
 
@@ -134,24 +147,12 @@ class PharmaWidget(QtGui.QWidget):
 
         self.setLayout(l0)
 
-        # Check for updates from the process
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.CheckProg)
-
     def add_image_management(self, image_vol_management):
 
         """
         Adding image management
         """
-
         self.ivm = image_vol_management
-
-    def init_multiproc(self):
-
-        # Set up the background process
-
-        self.queue = multiprocessing.Queue()
-        self.pool = multiprocessing.Pool(processes=2, initializer=pool_init, initargs=(self.queue,))
 
     def start_task(self):
 
@@ -179,8 +180,6 @@ class PharmaWidget(QtGui.QWidget):
             m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
             m1.exec_()
             return
-
-        self.timer.start(1000)
 
         # get volumes to process
 
@@ -228,30 +227,24 @@ class PharmaWidget(QtGui.QWidget):
         img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor
-        self.result = self.pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose,
-                                                               model_choice))
+        self.process = PkModellingProcess(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
+        self.process.sig_finished.connect(self.Finished)
+        self.process.sig_progress.connect(self.CheckProg)
+        self.process.run()
+
         # set the progress value
         self.prog_gen.setValue(0)
 
-    def CheckProg(self):
-
+    def CheckProg(self, progress):
         """
         Check the progress regularly and update volumes when progress reaches 100%
         """
-
-        if self.queue.empty():
-                return
-
-        # unpack the queue
-        num_row, progress = self.queue.get()
         self.prog_gen.setValue(progress)
 
-        if progress == 100:
-            # Stop checking once progress reaches 100%
-            self.timer.stop()
-
-            # Get results from the process
-            var1 = self.result.get()
+    def Finished(self, success, output):
+        if success:
+            # Only one worker - get its output
+            var1 = output[0]
 
             #make sure that we are accessing whole array
             roi1v = np.array(self.roi1vec, dtype=bool)
@@ -303,8 +296,7 @@ class PharmaWidget(QtGui.QWidget):
             self.ivm.add_overlay(Overlay('vp', data=vp1vol))
             self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
 
-
-def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
+def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
 
     """
     Simple function interface to run the c++ pk modelling code
@@ -326,79 +318,73 @@ def run_pk(img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose,
     Returns:
 
     """
-
     print("pk modelling worker started")
+    try:
+        t1 = np.arange(0, img1sub.shape[-1])*delt
+        # conversion to minutes
+        t1 = t1/60.0
 
-    t1 = np.arange(0, img1sub.shape[-1])*delt
-    # conversion to minutes
-    t1 = t1/60.0
+        injtmins = injt/60.0
 
-    injtmins = injt/60.0
+        Dose = dose
 
-    Dose = dose
+        # conversion to seconds
+        dce_TR = tr1/1000.0
+        dce_TE = te1/1000.0
 
-    # conversion to seconds
-    dce_TR = tr1/1000.0
-    dce_TE = te1/1000.0
+        #specify variable upper bounds and lower bounds
+        ub = [10, 1, 0.5, 0.5]
+        lb = [0, 0.05, -0.5, 0]
 
-    #specify variable upper bounds and lower bounds
-    ub = [10, 1, 0.5, 0.5]
-    lb = [0, 0.05, -0.5, 0]
+        print("contiguous")
+        # contiguous array
+        img1sub = np.ascontiguousarray(img1sub)
+        t101sub = np.ascontiguousarray(t101sub)
+        t1 = np.ascontiguousarray(t1)
 
-    print("contiguous")
-    # contiguous array
-    img1sub = np.ascontiguousarray(img1sub)
-    t101sub = np.ascontiguousarray(t101sub)
-    t1 = np.ascontiguousarray(t1)
+        Pkclass = PyPk(t1, img1sub, t101sub)
+        Pkclass.set_bounds(ub, lb)
+        Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
 
-    Pkclass = PyPk(t1, img1sub, t101sub)
-    Pkclass.set_bounds(ub, lb)
-    Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
+        # Initialise fitting
+        # Choose model type and injection time
+        Pkclass.rinit(model_choice, injtmins)
 
-    # Initialise fitting
-    # Choose model type and injection time
-    Pkclass.rinit(model_choice, injtmins)
+        # Iteratively process 5000 points at a time
+        # (this can be performed as a multiprocess soon)
 
-    # Iteratively process 5000 points at a time
-    # (this can be performed as a multiprocess soon)
+        size_step = np.around(img1sub.shape[0]/5)
+        size_tot = img1sub.shape[0]
+        steps1 = np.around(size_tot/size_step)
+        num_row = 1.0  # Just a placeholder for the meanwhile
 
-    size_step = np.around(img1sub.shape[0]/5)
-    size_tot = img1sub.shape[0]
-    steps1 = np.around(size_tot/size_step)
-    num_row = 1.0  # Just a placeholder for the meanwhile
+        print("Number of voxels per step: ", size_step)
+        print("Number of steps: ", steps1)
+        queue.put((num_row, 1))
+        for ii in range(int(steps1)):
+            if ii > 0:
+                progress = float(ii) / float(steps1) * 100
+                # print(progress)
+                queue.put((num_row, progress))
 
-    print("Number of voxels per step: ", size_step)
-    print("Number of steps: ", steps1)
-    run_pk.queue.put((num_row, 1))
-    for ii in range(int(steps1)):
-        if ii > 0:
-            progress = float(ii) / float(steps1) * 100
-            # print(progress)
-            run_pk.queue.put((num_row, progress))
+            time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
+            x = Pkclass.run(size_step)
+            # print(x)
 
+        print("Done")
+
+        # Get outputs
+        res1 = np.array(Pkclass.get_residual())
+        fcurve1 = np.array(Pkclass.get_fitted_curve())
+        params2 = np.array(Pkclass.get_parameters())
+
+        # final update to progress bar
+        queue.put((num_row, 100))
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-        x = Pkclass.run(size_step)
-        # print(x)
-
-    print("Done")
-
-    # Get outputs
-    res1 = np.array(Pkclass.get_residual())
-    fcurve1 = np.array(Pkclass.get_fitted_curve())
-    params2 = np.array(Pkclass.get_parameters())
-
-    # final update to progress bar
-    run_pk.queue.put((num_row, 100))
-    time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-    return res1, fcurve1, params2
-
-
-def pool_init(queue):
-    # see http://stackoverflow.com/a/3843313/852994
-    # In python every function is an object so this is a quick and dirty way of adding a variable
-    # to a function for easy access later. Prob better to create a class out of compute?
-    run_pk.queue = queue
-
+        return id, True, (res1, fcurve1, params2)
+    except:
+        print("PK worker error: %s" % sys.exc_info()[0])
+        return id, False, sys.exc_info()[0]
 
 class PharmaView(QtGui.QWidget):
 

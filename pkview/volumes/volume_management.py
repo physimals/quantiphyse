@@ -13,6 +13,7 @@ from PySide import QtCore, QtGui
 from matplotlib import cm
 import nibabel as nib
 import numpy as np
+import math
 import warnings
 import nrrd
 
@@ -40,8 +41,22 @@ class Volume(object):
         self.shape = self.data.shape
         self.ndims = len(self.shape)
         self.range = [np.min(self.data), np.max(self.data)]
+
         if self.voxel_sizes is None:
             self.voxel_sizes = [1.0, ] * self.ndims
+
+        self.dps = self._calc_dps()
+
+    def _calc_dps(self):
+        """
+        Return appropriate number of decimal places for presenting data values
+        """
+        if self.range[1] == self.range[0]:
+            # Pathological case where data is uniform
+            return 0
+        else:
+            # Look at range of data and allow decimal places to give at least 1% steps
+            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
 
     def save_nifti(self, fname):
         if self.nifti_header is None:

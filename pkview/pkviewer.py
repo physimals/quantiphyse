@@ -38,6 +38,7 @@ from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.FabberWidgets import FabberWidget, fabber_batch
+from .widgets.MCWidgets import MCFlirtWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
@@ -48,6 +49,8 @@ from .widgets.ExampleWidgets import ExampleWidget1
 from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_perfslic import perfslic
 from .utils.cmd_t10 import t10_preclinical, t10
+from .utils.cmd_mcflirt import mcflirt_batch
+
 from .utils import set_local_file_path, get_icon
 
 op_sys = platform.system()
@@ -146,6 +149,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
         self.wid["ColOv"][0].add_analysis(self.ia)
         self.wid["ColOv"][0].add_image_management(self.ivm)
+        self.wid["ColOv"][0].add_image_view(self.ivl1)
 
         # Pharmacokinetic modelling widget
         self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
@@ -167,6 +171,10 @@ class MainWindowWidget(QtGui.QWidget):
         # Mean value overlay widget
         self.wid["meanvals"] = [MeanValuesWidget(), 'a', 'b']
         self.wid["meanvals"][0].add_image_management(self.ivm)
+
+        # MCFlirt widget
+        self.wid["mcflirt"] = [MCFlirtWidget(), 'a', 'b']
+        self.wid["mcflirt"][0].add_image_management(self.ivm)
 
         # Gif creation widget
         self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
@@ -517,6 +525,10 @@ class MainWindowWidget(QtGui.QWidget):
         index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(get_icon("meanvals")), "Mean\nvalues")
         self.qtab1.setCurrentIndex(index)
 
+    def show_mcflirt(self):
+        index = self.qtab1.addTab(self.wid["mcflirt"][0], QtGui.QIcon(get_icon("mcflirt")), "MCFlirt")
+        self.qtab1.setCurrentIndex(index)
+
     def show_cc(self):
         index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")),
                                   "Curve\n Cluster", )
@@ -691,6 +703,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         fab_action.setStatusTip('Run fabber model fitting')
         fab_action.triggered.connect(self.mw1.show_fab)
 
+        # Widgets --> MCFlirt
+        mcflirt_action = QtGui.QAction(QtGui.QIcon(get_icon("mcflirt")), '&MCFlirt', self)
+        mcflirt_action.setStatusTip('MCFlirt motion correction')
+        mcflirt_action.triggered.connect(self.mw1.show_mcflirt)
+
         # Widgets --> PharmaView
         pw_action = QtGui.QAction(QtGui.QIcon(get_icon("curve_view")), '&PharmCurveView', self)
         pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
@@ -741,6 +758,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         widget_menu.addAction(pw_action)
         widget_menu.addAction(sv_action)
         widget_menu.addAction(mv_action)
+        widget_menu.addAction(mcflirt_action)
         widget_menu.addAction(t10_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
@@ -1025,6 +1043,7 @@ def main():
     parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--fabberbatch', help='Run batch Fabber processing from a yaml file', default=None, type=str)
+    parser.add_argument('--mcflirtbatch', help='Run batch MCFLIRT processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='DCE-MRI nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
@@ -1048,6 +1067,9 @@ def main():
 
     elif (args.PKbatch is not None):
         pkbatch(args.PKbatch)
+
+    elif (args.mcflirtbatch is not None):
+        mcflirt_batch(args.mcflirtbatch)
 
     elif (args.fabberbatch is not None):
 
