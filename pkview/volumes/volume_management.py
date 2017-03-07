@@ -78,7 +78,6 @@ class Volume(object):
                 self.voxel_sizes.insert(self.ndims, 1.0)
         self.shape = self.data.shape
         self.ndims = n
-        print(self.data.shape, self.voxel_sizes)
 
     def save_nifti(self, fname):
         if self.nifti_header is None:
@@ -290,7 +289,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if std_only and ov.name not in self.overlay_label_all:
             raise RuntimeError("Overlay name is not a known type")
 
-        ov.set_ndims(3, hastime=False)
+        ov.set_ndims(max(3, ov.ndims), hastime=(ov.ndims == 4))
         ov.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
             ov.copy_header(self.vol.nifti_header)
