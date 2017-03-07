@@ -438,12 +438,35 @@ class ColorOverlay1(QtGui.QWidget):
         self.rp_btn = QtGui.QPushButton("Show")
         self.rp_btn.clicked.connect(self.show_radial_profile)
         hbox.addWidget(self.rp_btn)
+
+        hbox.addWidget(QtGui.QLabel("Number of distance bins"))
+        self.rp_nbins = QtGui.QSpinBox()
+        self.rp_nbins.setMaximum(100)
+        self.rp_nbins.setMinimum(5)
+        self.rp_nbins.setValue(30)
+        self.rp_nbins.valueChanged.connect(self.update_radial_profile)
+        hbox.addWidget(self.rp_nbins)
+
+        #hbox.addWidget(QtGui.QLabel("Min distance"))
+        #self.rp_min = QtGui.QDoubleSpinBox()
+        #self.rp_min.setMaximum(100000000)
+        #self.rp_min.setMinimum(0)
+        #self.rp_min.valueChanged.connect(self.update_radial_profile)
+        #hbox.addWidget(self.rp_min)
+
+        #hbox.addWidget(QtGui.QLabel("Max distance"))
+        #self.rp_max = QtGui.QDoubleSpinBox()
+        #self.rp_max.setMaximum(100000000)
+        #self.rp_max.setMinimum(0)
+        #self.rp_max.valueChanged.connect(self.update_radial_profile)
+        #hbox.addWidget(self.rp_max)
+       
         hbox.addStretch()
         vbox.addLayout(hbox)
 
         self.rp_win = pg.GraphicsWindow()
         self.rp_win.setVisible(False)
-        self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance'})
+        self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance (mm)'})
         self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))
         self.rp_plt.addItem(self.rp_curve)
         vbox.addWidget(self.rp_win)
@@ -535,8 +558,15 @@ class ColorOverlay1(QtGui.QWidget):
         Update image data views
         """
         self.reset_spins()
+        self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
         if self.rp_win.isVisible():
             self.update_radial_profile()
+        if self.tab1.isVisible():
+            self.generate_overlay_stats()
+        if self.tab1ss.isVisible():
+            self.generate_overlay_stats_current_slice()
+        if self.win1.isVisible():
+            self.generate_histogram()
 
     def focus_changed(self, overlay):
         """
@@ -548,8 +578,8 @@ class ColorOverlay1(QtGui.QWidget):
             self.generate_overlay_stats_current_slice()
 
     def update_radial_profile(self):
-        rp, binedges = self.ia.get_radial_profile()
-        self.rp_curve.setData(x=binedges, y=rp, stepMode=True)
+        rp, xvals, binedges = self.ia.get_radial_profile(bins=self.rp_nbins.value())
+        self.rp_curve.setData(x=xvals, y=rp)
 
     @QtCore.Slot()
     def generate_overlay_stats(self):

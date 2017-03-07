@@ -148,4 +148,6 @@ class OverlayAnalyis(object):
         # there will be no data either
         rpv[rpv==0] = 1
         rp = rpd / rpv
-        return rp, edges
+
+        xvals = [(edges[i] + edges[i+1])/2 for i in range(len(edges)-1)]
+        return rp, xvals, edges
