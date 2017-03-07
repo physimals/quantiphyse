@@ -7,6 +7,7 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 
 import sys, os, warnings
 import time
+import traceback
 
 import nibabel as nib
 import numpy as np
@@ -27,6 +28,8 @@ try:
 except:
     # Stubs to prevent startup error - warning will occur if Fabber is used
     warnings.warn("Failed to import Fabber API - widget will be disabled")
+    traceback.print_exc()
+    OPT_VIEW={}
     class OptionView:
         pass
     class ComponentOptionView:
@@ -87,7 +90,6 @@ def fabber_batch(yaml_file):
     for key in yaml["Options"]:
         val = yaml["Options"][key]
         if val is None: val = ""
-        print(key, val)
         rundata[key] = str(val)
 
     overlays = {}
@@ -130,14 +132,12 @@ def _run_fabber(id, queue, rundata, main_data, roi, *overlays):
     """
     try:
         #print("Running, id=", id, "shape=", main_data.shape)
-        #rundata.dump(sys.stdout)
         data = {"data" : main_data}
         n = 0
         while n < len(overlays):
-            print(overlays[n], overlays[n+1].shape)
             data[overlays[n]] = overlays[n+1]
             n += 2
-        lib = FabberLib(rundata=rundata)
+        lib = FabberLib(rundata=rundata, auto_load_models=True)
         run = lib.run_with_data(rundata, data, roi, progress_cb=_make_fabber_progress_cb(id, queue))
         return id, True, run
     except FabberException, e:
@@ -147,7 +147,132 @@ def _run_fabber(id, queue, rundata, main_data, roi, *overlays):
         print(sys.exc_info()[0])
         return id, False, sys.exc_info()[0]
 
+class PriorsView(OptionsView):
+    """
+    More user-friendly view of prior options rather than PSP_byname etc.
+    """
+    def __init__(self, **kwargs):
+        OptionsView.__init__(self, **kwargs)
+        self.priors = []
+        self.prior_widgets = []
+        self.overlays = []
+        
+    def do_update(self):
+        if self.rundata.changed("model"):
+            self.params = FabberLib(rundata=self.rundata).get_model_params(self.rundata)
+            self.nparams = len(self.params)
+            self.repopulate()
+    
+    def get_widgets(self, idx):
+        type_combo = QtGui.QComboBox()
+        type_combo.addItem("Model default", "")
+        type_combo.addItem("Image Prior", "I")
+        type_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        type_combo.currentIndexChanged.connect(self.changed)
+        
+        image_combo = QtGui.QComboBox()
+        for overlay in self.overlays:
+            image_combo.addItem(overlay)
+        image_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        image_combo.currentIndexChanged.connect(self.changed)
+        
+        cb = QtGui.QCheckBox()
+        cb.stateChanged.connect(self.changed)
+        edit = QtGui.QLineEdit()
+        edit.editingFinished.connect(self.changed)
+        
+        return type_combo, QtGui.QLabel("Image: "), image_combo, cb, QtGui.QLabel("Custom precision: "), edit
 
+    def update_from_rundata(self):
+        prior_idx=1
+        while "PSP_byname%i" % prior_idx in self.rundata:
+            param = self.rundata["PSP_byname%i" % prior_idx]
+            ptype = self.rundata.get("PSP_byname%i_type" % prior_idx, "")
+            image = self.rundata.get("PSP_byname%i_image" % prior_idx, "")
+            prec = self.rundata.get("PSP_byname%i_prec" % prior_idx, "")
+            idx = self.params.index(param)
+            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+
+            type_combo.setCurrentIndex(type_combo.findData(ptype))
+            image_combo.setCurrentIndex(image_combo.findText(image))
+            edit.setText(prec)
+
+            prior_idx += 1
+        self.update_widgets()
+
+    def update_widgets(self):
+         for idx, param in enumerate(self.params):
+            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+        
+            prior_type = type_combo.itemData(type_combo.currentIndex())
+            need_image = (prior_type == "I")
+            l2.setEnabled(need_image)
+            image_combo.setEnabled(need_image)
+
+            cb.setEnabled(prior_type != "")
+            have_prec = (prior_type != "") and cb.isChecked()
+
+            l3.setEnabled(have_prec)
+            edit.setEnabled(have_prec)
+
+    def changed(self):
+        if not self.updating:
+            self.update_widgets()
+            self.update_rundata() 
+
+    def update_rundata(self):
+        prior_idx=1
+        for idx, param in enumerate(self.params):
+            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+        
+            prior_type = type_combo.itemData(type_combo.currentIndex())
+            need_image = (prior_type == "I")
+            need_prec = cb.isChecked()
+            
+            if prior_type != "":
+                self.rundata["PSP_byname%i" % prior_idx] = param
+                self.rundata["PSP_byname%i_type" % prior_idx] = prior_type
+                if need_image:
+                    self.rundata["PSP_byname%i_image" % prior_idx] = image_combo.currentText()
+                else:
+                    del self.rundata["PSP_byname%i_image" % prior_idx] 
+                if need_prec:
+                    self.rundata["PSP_byname%i_prec" % prior_idx] = edit.text()
+                else:
+                    del self.rundata["PSP_byname%i_prec" % prior_idx] 
+                prior_idx += 1
+
+        while "PSP_byname%i" % prior_idx in self.rundata:
+            del self.rundata["PSP_byname%i" % prior_idx]
+            del self.rundata["PSP_byname%i_type" % prior_idx]
+            del self.rundata["PSP_byname%i_image" % prior_idx]
+            del self.rundata["PSP_byname%i_prec" % prior_idx]
+            prior_idx += 1
+
+        #self.rundata.dump(sys.stdout)
+        
+    def repopulate(self):
+        self.updating=True
+        self.clear()
+        self.dialog.grid.setSpacing(20)
+        self.prior_widgets = []
+        
+        self.dialog.modelLabel.setText("Model parameter priors")
+        self.dialog.descLabel.setText("Describes optional prior information about each model parameter")
+        
+        for idx, param in enumerate(self.params):
+            self.prior_widgets.append(self.get_widgets(idx))
+        
+            self.dialog.grid.addWidget(QtGui.QLabel("%s: " % param), idx, 0)
+            for col, w in enumerate(self.prior_widgets[idx]):
+                self.dialog.grid.addWidget(w, idx, col+1)
+
+        self.update_from_rundata()
+        self.update_widgets()
+        self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
+        self.dialog.adjustSize()
+        self.updating=False
+        
 class ImageOptionView(OptionView):
     """
     OptionView subclass which allows image options to be chosen
@@ -198,19 +323,18 @@ class FabberWidget(QtGui.QWidget):
     def __init__(self):
         super(FabberWidget, self).__init__()
 
-        mainVbox = QtGui.QVBoxLayout()
-        self.setLayout(mainVbox)
+        mainGrid = QtGui.QGridLayout()
+        self.setLayout(mainGrid)
 
         self.ivm = None
-
 
         try:
             self.fabber_lib = find_fabber()[1]
             if self.fabber_lib is None:
-                mainVbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"))
+                mainGrid.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"), 0, 0)
                 return
         except:
-            mainVbox.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"))
+            mainGrid.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"), 0, 0)
             return
 
         # Options box
@@ -219,34 +343,41 @@ class FabberWidget(QtGui.QWidget):
         grid = QtGui.QGridLayout()
         optionsBox.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("Fabber core library"), 1, 0)
-        self.libEdit = QtGui.QLineEdit(self)
-        grid.addWidget(self.libEdit, 1, 1)
-        self.libChangeBtn = QtGui.QPushButton('Choose', self)
-        grid.addWidget(self.libChangeBtn, 1, 2)
+        #grid.addWidget(QtGui.QLabel("Fabber core library"), 1, 0)
+        #self.libEdit = QtGui.QLineEdit(self)
+        #grid.addWidget(self.libEdit, 1, 1)
+        #self.libChangeBtn = QtGui.QPushButton('Choose', self)
+        #grid.addWidget(self.libChangeBtn, 1, 2)
 
-        grid.addWidget(QtGui.QLabel("Fabber models library"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Extra models library"), 2, 0)
         self.modellibCombo = QtGui.QComboBox(self)
+        self.modellibCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         grid.addWidget(self.modellibCombo, 2, 1)
-        self.modellibChangeBtn = QtGui.QPushButton('Choose', self)
+        self.modellibChangeBtn = QtGui.QPushButton('Choose External library', self)
         grid.addWidget(self.modellibChangeBtn, 2, 2)
 
         grid.addWidget(QtGui.QLabel("Forward model"), 3, 0)
         self.modelCombo = QtGui.QComboBox(self)
+        self.modelCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         grid.addWidget(self.modelCombo, 3, 1)
-        self.modelOptionsBtn = QtGui.QPushButton('Options', self)
+        self.modelOptionsBtn = QtGui.QPushButton('Model Options', self)
         grid.addWidget(self.modelOptionsBtn, 3, 2)
         
         grid.addWidget(QtGui.QLabel("Inference method"), 4, 0)
         self.methodCombo = QtGui.QComboBox(self)
+        self.methodCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         grid.addWidget(self.methodCombo, 4, 1)
-        self.methodOptionsBtn = QtGui.QPushButton('Options', self)
+        self.methodOptionsBtn = QtGui.QPushButton('Inference Options', self)
         grid.addWidget(self.methodOptionsBtn, 4, 2)
         
-        grid.addWidget(QtGui.QLabel("General Options"), 5, 0)
+        grid.addWidget(QtGui.QLabel("Parameter priors"), 5, 0)
+        self.priorsBtn = QtGui.QPushButton('Edit', self)
+        grid.addWidget(self.priorsBtn, 5, 2)
+        
+        grid.addWidget(QtGui.QLabel("General Options"), 6, 0)
         self.generalOptionsBtn = QtGui.QPushButton('Edit', self)
-        grid.addWidget(self.generalOptionsBtn, 5, 2)
-
+        grid.addWidget(self.generalOptionsBtn, 6, 2)
+        
         # Run box
         runBox = QGroupBoxB()
         runBox.setTitle('Running')
@@ -264,6 +395,18 @@ class FabberWidget(QtGui.QWidget):
         self.logBtn.clicked.connect(self.view_log)
         self.logBtn.setEnabled(False)
         hbox.addWidget(self.logBtn)
+        vbox.addLayout(hbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.savefilesCb = QtGui.QCheckBox("Save copy of output data")
+        hbox.addWidget(self.savefilesCb)
+        self.saveFolderEdit = QtGui.QLineEdit()
+        hbox.addWidget(self.saveFolderEdit)
+        btn = QtGui.QPushButton("Choose folder")
+        btn.clicked.connect(self.chooseOutputFolder)
+        hbox.addWidget(btn)
+        self.savefilesCb.stateChanged.connect(self.saveFolderEdit.setEnabled)
+        self.savefilesCb.stateChanged.connect(btn.setEnabled)
         vbox.addLayout(hbox)
 
         # Load/save box
@@ -290,27 +433,27 @@ class FabberWidget(QtGui.QWidget):
         vbox.addLayout(hbox)
 
         # Main layout
-        mainVbox.addWidget(optionsBox)
-        mainVbox.addWidget(runBox)
-        mainVbox.addWidget(fileBox)
-        mainVbox.addStretch()
+        mainGrid.addWidget(optionsBox, 0, 0)
+        mainGrid.addWidget(runBox, 1, 0)
+        mainGrid.addWidget(fileBox, 2, 0)
+        mainGrid.setColumnStretch(1, 1)
+        mainGrid.setRowStretch(3, 1)
 
         # Register our custom view to handle image options
         OPT_VIEW["IMAGE"] = ImageOptionView
         OPT_VIEW["TIMESERIES"] = ImageOptionView
 
         # Keep references to the option dialogs so we can update any image option views as overlays change
-        self.modelOpts = ComponentOptionsView("model", "Forward model", dialog=ModelOptionsDialog(), btn=self.modelOptionsBtn,
-                             mat_dialog=MatrixEditDialog())
-        self.methodOpts = ComponentOptionsView("method", "Inference method", dialog=ModelOptionsDialog(), btn=self.methodOptionsBtn,
-                             mat_dialog=MatrixEditDialog())
-        self.generalOpts = OptionsView(dialog=ModelOptionsDialog(), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog())
+        self.modelOpts = ModelOptionsView(dialog=ModelOptionsDialog(self), btn=self.modelOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
+        self.methodOpts = MethodOptionsView(dialog=ModelOptionsDialog(self), btn=self.methodOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
+        self.generalOpts = OptionsView(dialog=ModelOptionsDialog(self), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
+        self.priors = PriorsView(dialog=ModelOptionsDialog(self), btn=self.priorsBtn)
 
         self.views = [
             ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
-            self.modelOpts, self.methodOpts, self.generalOpts,
-            ChooseFileView("fabber", changeBtn=self.libChangeBtn, edit=self.libEdit,
-                           dialogTitle="Choose core library", defaultDir=os.path.dirname(self.fabber_lib)),
+            self.modelOpts, self.methodOpts, self.generalOpts, self.priors,
+#            ChooseFileView("fabber_lib", changeBtn=self.libChangeBtn, edit=self.libEdit,
+#                           dialogTitle="Choose core library", defaultDir=os.path.dirname(self.fabber_lib)),
             ChooseModelLib(changeBtn=self.modellibChangeBtn, combo=self.modellibCombo),
         ]
 
@@ -318,9 +461,14 @@ class FabberWidget(QtGui.QWidget):
                                 "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
                                 "loadmodels")
         self.rundata = FabberRunData()
-        self.rundata["fabber"] = self.fabber_lib
+        self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
         self.reset()
+
+    def chooseOutputFolder(self):
+        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
+        if outputDir:
+            self.saveFolderEdit.setText(outputDir)
 
     def save_file(self):
         self.rundata.save()
@@ -363,6 +511,8 @@ class FabberWidget(QtGui.QWidget):
             for view in dialog.views.values():
                 if isinstance(view, ImageOptionView):
                     view.update_list()
+        self.priors.overlays = overlays
+        self.priors.repopulate()
 
     def start_task(self):
         """
@@ -400,7 +550,6 @@ class FabberWidget(QtGui.QWidget):
                     overlays[ov] = self.ivm.overlays[ov]
 
         self.process = FabberProcess(self.rundata, img, roi, **overlays)
-
         self.process.sig_finished.connect(self.run_finished_gui)
         self.process.sig_progress.connect(self.update_progress)
         self.process.run()
@@ -414,10 +563,17 @@ class FabberWidget(QtGui.QWidget):
         if success:
             self.log, output = self.process.get_output()
             first = True
+            save_files = self.savefilesCb.isChecked()
+            save_folder = self.saveFolderEdit.text()
             for ovl in output.values():
                 #print(key, results[0].data[key].shape)
                 #print(key, recombined_item.shape)
                 self.ivm.add_overlay(ovl, make_current=first)
+                if save_files:
+                    ovl.save_nifti(os.path.join(save_folder, ovl.name))
+                    logfile = open(os.path.join(save_folder, "logfile"), "w")
+                    logfile.write(self.log)
+                    logfile.close()
                 first = False
             self.runs = results
         else:
@@ -435,6 +591,6 @@ class FabberWidget(QtGui.QWidget):
             self.progress.setValue(percent)
 
     def view_log(self):
-         self.logview = LogViewerDialog(log=self.log)
+         self.logview = LogViewerDialog(log=self.log, parent=self)
          self.logview.show()
          self.logview.raise_()
