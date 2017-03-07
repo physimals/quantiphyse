@@ -828,13 +828,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
     @QtCore.Slot()
     def show_console(self):
         """
-
         Creates a pop up console that allows interaction with the GUI and data
         Uses:
         pyqtgraph.console
-
         """
-
         # Places that the console has access to
         namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm, 'self': self}
         text = (
@@ -863,36 +860,13 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Dialog for loading a file
         @fname: allows a file name to be passed in automatically
         """
-
         if fname is None:
             # Show file select widget
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
 
         # check if file is returned
         if fname != '':
-
-            if self.mw1.ivm.vol is not None:
-                # Checking if data already exists
-                msgBox = QtGui.QMessageBox()
-                msgBox.setText("A volume has already been loaded")
-                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-
-                ret = msgBox.exec_()
-
-                if ret == QtGui.QMessageBox.Ok:
-                    print("Clearing data")
-                    self.mw1.ivm.init(reset=True)
-                else:
-                    return
-
-            self.default_directory = get_dir(fname)
-            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
-            print("Image dimensions: ", self.mw1.ivm.vol.shape)
-            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
-            print("Image range: ", self.mw1.ivm.vol.range)
-            self.mw1.update_slider_range()
+            self.load_dce(fname)
         else:
             print('Warning: No file selected')
 
@@ -988,32 +962,61 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # Loading main image
         elif ftype == 'DCE':
             if self.mw1.ivm.vol is not None:
-
-                # Checking if data already exists
-                msgBox = QtGui.QMessageBox()
-                msgBox.setText("A volume has already been loaded")
-                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-
-                ret = msgBox.exec_()
-
-                if ret == QtGui.QMessageBox.Ok:
-                    print("Clearing data")
-                    self.mw1.ivm.init(reset=True)
-                else:
-                    return
-
-            self.mw1.ivm.set_main_volume(Volume("main", fname=fname))
-            print("Image dimensions: ", self.mw1.ivm.vol.shape)
-            print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
-            print("Image range: ", self.mw1.ivm.vol.range)
-            self.mw1.update_slider_range()
+                self.load_dce(fname)
 
         # Loading ROI
         elif ftype == 'ROI':
             name = os.path.split(fname)[1].split(".", 1)[0]
             self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
+
+    def load_dce(self, fname):
+        if self.mw1.ivm.vol is not None:
+
+            # Checking if data already exists
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("A volume has already been loaded")
+            msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+
+            ret = msgBox.exec_()
+
+            if ret == QtGui.QMessageBox.Ok:
+                print("Clearing data")
+                self.mw1.ivm.init(reset=True)
+            else:
+                return
+
+        vol = Volume("main", fname=fname)
+        if vol.ndims == 2:
+            vol.set_ndims(4, hastime = False)
+        if vol.ndims == 3:
+            # 3D volume loaded - is it 2d + time or static 3d?
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("3D volume loaded")
+            msgBox.setInformativeText("Choose image type")
+            msgBox.addButton("Static 3D", Gui.QMessageBox.NoRole)
+            msgBox.addButton("2D+time", Gui.QMessageBox.YesRole)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+            ret = msgBox.exec_()
+            if ret == QtGui.QMessageBox.Yes:
+                print("2D+time")
+                vol.set_ndims(4, hastime = True)
+            else:
+                print("Static 3D")
+                vol.set_ndims(4, hastime = False)
+        elif vol.ndims != 4:
+            m1 = QtGui.QMessageBox()
+            m1.setWindowTitle("PkView")
+            m1.setText("Pkview supports 2D and 3D volumes with optional additional time dimension only")
+            m1.exec_()
+            return
+
+        self.mw1.ivm.set_main_volume(vol)
+        print("Image dimensions: ", self.mw1.ivm.vol.shape)
+        print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+        print("Image range: ", self.mw1.ivm.vol.range)
+        self.mw1.update_slider_range()
 
     def auto_load_files(self):
         """

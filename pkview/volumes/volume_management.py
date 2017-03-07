@@ -58,12 +58,35 @@ class Volume(object):
             # Look at range of data and allow decimal places to give at least 1% steps
             return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
 
+    def set_ndims(self, n, hastime=True):
+        """
+        Force this volume into n dimensions if it isn't already
+
+        If hastime=True, assume last dimension is time and pad space 
+        dimensions only
+        """
+        self.hastime = hastime
+        if self.ndims > n:
+            raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
+        elif hastime:
+            for i in range(n-self.ndims):
+                np.expand_dims(self.data, self.ndims-1)
+                self.voxel_sizes.insert(self.ndims-1, 1.0)
+        else:
+            for i in range(n-self.ndims):
+                np.expand_dims(self.data, self.ndims)
+                self.voxel_sizes.insert(self.ndims, 1.0)
+        self.shape = self.data.shape
+        self.ndims = n
+        print(self.data.shape, self.voxel_sizes)
+
     def save_nifti(self, fname):
         if self.nifti_header is None:
             warnings.warn("No NIFTI header information available")
-            img = nib.Nifti1Image(self.data, np.identity(4))
+            img = nib.Nifti1Image(self.data, np.identity(self.ndims))
         else:
-            img = nib.Nifti1Image(self.data, self.nifti_header.get_base_affine(), header=self.nifti_header)
+            # 'Squeeze' the data so, e.g. 2D data we have forced into 3D will still get written out as 2D.
+            img = nib.Nifti1Image(self.data.squeeze(), self.nifti_header.get_base_affine(), header=self.nifti_header)
         img.to_filename(fname)
         self.fname = fname
 
@@ -106,7 +129,9 @@ class Volume(object):
         Used for overlays and ROIs so they have consistent header information with the main volume
         """
         self.nifti_header = hdr.copy()
-        self.nifti_header.set_data_shape(self.shape)
+        # Do not copy unit dimensions which we have created to force the number of dimensions
+        # to be what the rest of PkView expects 
+        self.nifti_header.set_data_shape([d for d in self.shape if d != 1])
         self.nifti_header.set_data_dtype(self.data.dtype)
 
 class Overlay(Volume):
@@ -265,6 +290,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if std_only and ov.name not in self.overlay_label_all:
             raise RuntimeError("Overlay name is not a known type")
 
+        ov.set_ndims(3, hastime=False)
         ov.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
             ov.copy_header(self.vol.nifti_header)
@@ -291,9 +317,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if self.vol is None:
             raise RuntimeError("Cannot add overlay with no main volume")
 
-        if roi.ndims != 3:
-            raise RuntimeError("ROI must be 3D")
-
+        roi.set_ndims(3, hastime=False)
         roi.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
             roi.copy_header(self.vol.nifti_header)
