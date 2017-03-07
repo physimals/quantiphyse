@@ -4,7 +4,6 @@ QToolTip
      background-color: #ffa02f;
      padding: 1px;
      border-radius: 3px;
-     opacity: 100;
 }
 
 QWidget
@@ -68,7 +67,7 @@ QMenu::item:selected
 
 QWidget:disabled
 {
-    color: #404040;
+    color: #808080;
     background-color: #323232;
 }
 
@@ -277,11 +276,6 @@ QHeaderView::section
     color: white;
     padding-left: 4px;
     border: 1px solid #6c6c6c;
-}
-
-QCheckBox:disabled
-{
-color: #414141;
 }
 
 QDockWidget::title
