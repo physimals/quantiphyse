@@ -39,7 +39,7 @@ class CurveClusteringWidget(PkWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
 
-        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
+        self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Cluster representative curves")
 

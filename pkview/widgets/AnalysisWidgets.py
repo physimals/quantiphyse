@@ -87,8 +87,7 @@ class SECurve(PkWidget):
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
-        self.win1 = pg.GraphicsWindow(title="Basic plotting examples")
-        self.win1.setVisible(True)
+        self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
         self.p1 = None
 
@@ -291,7 +290,7 @@ class ColorOverlay1(PkWidget):
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
-        self.win1 = pg.GraphicsWindow()
+        self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Overlay histogram")
 
@@ -459,7 +458,7 @@ class ColorOverlay1(PkWidget):
         hbox.addStretch()
         vbox.addLayout(hbox)
 
-        self.rp_win = pg.GraphicsWindow()
+        self.rp_win = pg.GraphicsLayoutWidget()
         self.rp_win.setVisible(False)
         self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance (mm)'})
         self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))

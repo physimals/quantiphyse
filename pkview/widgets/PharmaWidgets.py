@@ -389,8 +389,7 @@ class PharmaView(PkWidget):
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
-        self.win1 = pg.GraphicsWindow()
-        self.win1.setVisible(True)
+        self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         self.reset_graph()
