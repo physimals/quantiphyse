@@ -4,8 +4,8 @@ import skimage.segmentation as seg
 from pkview.volumes.volume_management import Overlay, Roi
 
 from pkview.analysis.perfusionslic import PerfSLIC
-from pkview.analysis.overlay_analysis import OverlayAnalyis
-
+from pkview.analysis.overlay_analysis import OverlayAnalysis
+from pkview.widgets import PkWidget
 
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, intonly=False):
@@ -22,12 +22,12 @@ class NumericOption:
         grid.addWidget(self.spin, ypos, 1)
 
 
-class PerfSlicWidget(QtGui.QWidget):
+class PerfSlicWidget(PkWidget):
     """
     Generates supervoxels using SLIC method
     """
-    def __init__(self):
-        super(PerfSlicWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(PerfSlicWidget, self).__init__(name="Super Voxels", icon="sv", desc="Generate supervoxel clusters", **kwargs)
         self.picking_roi = False
         self.freehand_roi = False
 
@@ -80,12 +80,6 @@ class PerfSlicWidget(QtGui.QWidget):
         layout.addStretch(1)
 
         self.roibox.setEnabled(False)
-
-    def add_image_management(self, image_vol_management):
-        self.ivm = image_vol_management
-
-    def add_image_view(self, ivl):
-        self.ivl = ivl
 
     def generate(self):
         if self.ivm.vol is None:
@@ -214,12 +208,12 @@ class PerfSlicWidget(QtGui.QWidget):
             self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
 
 
-class MeanValuesWidget(QtGui.QWidget):
+class MeanValuesWidget(PkWidget):
     """
     Convert an overlay + multi-level ROI into mean values overlay
     """
-    def __init__(self):
-        super(MeanValuesWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", desc="Generate mean values overlays", **kwargs)
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(QtGui.QLabel("<font size=5>Generate Mean Values Overlay</font> \n"))
@@ -248,9 +242,6 @@ class MeanValuesWidget(QtGui.QWidget):
         layout.addStretch(1)
         self.setLayout(layout)
 
-    def add_image_management(self, image_vol_management):
-        self.ivm = image_vol_management
-
     def generate(self):
         roi = self.ivm.current_roi
         if roi is None:
@@ -263,8 +254,7 @@ class MeanValuesWidget(QtGui.QWidget):
                                       QtGui.QMessageBox.Close)
             return
 
-        oa = OverlayAnalyis()
-        oa.add_image_management(self.ivm)
+        oa = OverlayAnalysis(self.ivm)
         stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
 
         #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)

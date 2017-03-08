@@ -14,11 +14,12 @@ from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeans3D
 from pkview.volumes.volume_management import Roi
+from pkview.widgets import PkWidget
 
 #TODO Hide other buttons until the clustering is performed.
 
 
-class OvCurveClusteringWidget(QtGui.QWidget):
+class OvCurveClusteringWidget(PkWidget):
     """
     Widget for clustering the tumour into various regions
     """
@@ -26,8 +27,8 @@ class OvCurveClusteringWidget(QtGui.QWidget):
     # emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self):
-        super(OvCurveClusteringWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(OvCurveClusteringWidget, self).__init__(name="Overlay Cluster", icon="clustering", desc="Generate clusters from overlays", **kwargs)
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Clustering of the current overlay </font>")
@@ -129,18 +130,10 @@ class OvCurveClusteringWidget(QtGui.QWidget):
 
         # Initialisation
         # Volume management widget
-        self.ivm = None
         self.km = None
 
         self.voxel_count_slice = []
         self.voxel_count = []
-
-    def add_image_management(self, image_vol_management):
-
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     def run_clustering(self):
         """

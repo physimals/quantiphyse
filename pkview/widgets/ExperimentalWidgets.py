@@ -10,15 +10,12 @@ from __future__ import print_function, division
 import warnings
 
 from PySide import QtCore, QtGui
+from pkview.widgets import PkWidget
 
+class ImageExportWidget(PkWidget):
 
-class ImageExportWidget(QtGui.QWidget):
-
-    sig_set_temp = QtCore.Signal(int)
-    sig_cap_image = QtCore.Signal(int, str)
-
-    def __init__(self):
-        super(ImageExportWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(ImageExportWidget, self).__init__(name="Image Export", desc="Export images and animations", icon="image_export", **kwargs)
 
         #Clear curves button
         b1 = QtGui.QPushButton('Generate temporal animation', self)
@@ -27,15 +24,6 @@ class ImageExportWidget(QtGui.QWidget):
         l1 = QtGui.QVBoxLayout()
         l1.addWidget(b1)
         self.setLayout(l1)
-
-        # Volume management
-        self.ivm = None
-
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     @QtCore.Slot()
     def run_time_window_capture(self):
@@ -56,9 +44,9 @@ class ImageExportWidget(QtGui.QWidget):
 
         for ii in range(imshape[-1]):
             print("Frame number:", ii)
-            self.sig_set_temp.emit(ii)
+            self.ivl.set_time_pos(ii)
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
-            self.sig_cap_image.emit(1, output_name)
+            self.ivl.capture_view_as_image(1, output_name)
 
 
 

@@ -16,9 +16,9 @@ from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeansPCA
 from pkview.volumes.volume_management import Roi
+from pkview.widgets import PkWidget
 
-
-class CurveClusteringWidget(QtGui.QWidget):
+class CurveClusteringWidget(PkWidget):
     """
     Widget for clustering the tumour into various regions
     """
@@ -26,8 +26,8 @@ class CurveClusteringWidget(QtGui.QWidget):
     # emit reset command t
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self):
-        super(CurveClusteringWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(CurveClusteringWidget, self).__init__(name="Curve Cluster", icon="clustering", desc="Generate clusters from enhancement curves", **kwargs)
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
@@ -162,18 +162,10 @@ class CurveClusteringWidget(QtGui.QWidget):
 
         # Initialisation
         # Volume management widget
-        self.ivm = None
         self.km = None
 
         self.voxel_count_slice = []
         self.voxel_count = []
-
-    def add_image_management(self, image_vol_management):
-
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     def run_clustering(self):
         """

@@ -28,6 +28,8 @@ if (sys.version_info > (3, 0)):
 else:
     from pkview.resources import resource_py3
 
+from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
+
 # My widgets
 from pkview.ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
@@ -42,15 +44,12 @@ from .widgets.MCWidgets import MCFlirtWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
-from .analysis.overlay_analysis import OverlayAnalyis
-from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 from .widgets.ExampleWidgets import ExampleWidget1
 
 from .utils.cmd_pkmodel import pkbatch
 from .utils.cmd_perfslic import perfslic
 from .utils.cmd_t10 import t10_preclinical, t10
 from .utils.cmd_mcflirt import mcflirt_batch
-
 from .utils import set_local_file_path, get_icon
 
 op_sys = platform.system()
@@ -112,96 +111,37 @@ class DragOptions(QtGui.QDialog):
 
 
 class MainWindowWidget(QtGui.QWidget):
-
     """
     Main widget where most of the control should happen
 
     """
-
     def __init__(self):
         super(MainWindowWidget, self).__init__()
 
-        # Loading data management object
+        # Create objects for volume and view management
         self.ivm = ImageVolumeManagement()
-
-        # Loading image analysis
-
-        self.ia = OverlayAnalyis()
-        self.ia.add_image_management(self.ivm)
-
-        # loading ImageView
-        self.ivl1 = ImageViewColorOverlay()
-        self.ivl1.add_image_management(self.ivm)
-        self.ivl1.sig_mouse_scroll.connect(self.slider_scroll_mouse)
+        self.ivl = ImageViewColorOverlay(self.ivm)
+        self.ivl.sig_mouse_scroll.connect(self.slider_scroll_mouse)
 
         # ~~~~~~~~~~~~ Widgets ~~~~~~~~~~~~~~~~~~~~
-        self.wid = {}
+        self.widgets = []
 
         # Signal Enhancement
-        self.wid["SigEn"] = [SECurve(), 'voxel', 'Voxel analysis']
-        self.wid["SigEn"][0].add_image_management(self.ivm)
-        self.wid["SigEn"][0].add_image_view(self.ivl1)
-
-        # Pharmaview is not initialised by default
-        self.wid["PView"] = [None, 'a', 'b']
-
-        # Color overlay widget
-        self.wid["ColOv"] = [ColorOverlay1(), 'a', 'b']
-        self.wid["ColOv"][0].add_analysis(self.ia)
-        self.wid["ColOv"][0].add_image_management(self.ivm)
-        self.wid["ColOv"][0].add_image_view(self.ivl1)
-
-        # Pharmacokinetic modelling widget
-        self.wid["PAna"] = [PharmaWidget(), 'a', 'b']
-        self.wid["PAna"][0].add_image_management(self.ivm)
-
-        # T10 widget - not visible by default
-        self.wid["T10"] = [T10Widget(), 'a', 'b']
-        self.wid["T10"][0].add_image_management(self.ivm)
-
-        # Supervoxels widget - not visible by default
-        self.wid["sv"] = [PerfSlicWidget(), 'a', 'b']
-        self.wid["sv"][0].add_image_management(self.ivm)
-        self.wid["sv"][0].add_image_view(self.ivl1)
-
-        # Fabber modelling widget
-        self.wid["Fab"] = [FabberWidget(), 'a', 'b']
-        self.wid["Fab"][0].add_image_management(self.ivm)
-
-        # Mean value overlay widget
-        self.wid["meanvals"] = [MeanValuesWidget(), 'a', 'b']
-        self.wid["meanvals"][0].add_image_management(self.ivm)
-
-        # MCFlirt widget
-        self.wid["mcflirt"] = [MCFlirtWidget(), 'a', 'b']
-        self.wid["mcflirt"][0].add_image_management(self.ivm)
-
-        # Gif creation widget
-        self.wid["ImExp"] = [ImageExportWidget(), 'a', 'b']
-        self.wid["ImExp"][0].add_image_management(self.ivm)
-
-        # Clustering widget
-        self.wid["Clus"] = [CurveClusteringWidget(), 'a', 'b']
-        self.wid["Clus"][0].add_image_management(self.ivm)
-
-        # Clustering widget
-        self.wid["ClusOv"] = [OvCurveClusteringWidget(), 'a', 'b']
-        self.wid["ClusOv"][0].add_image_management(self.ivm)
-
-        self.wid["Overview"] = [OverviewWidget(), 'a', 'b']
-        self.wid["Overview"][0].add_image_management(self.ivm)
-
-        # Random Walker
-        # self.sw_rw = None
-
-        # Connect image export widget
-        self.wid["ImExp"][0].sig_set_temp.connect(self.ivl1.set_time_pos)
-        self.wid["ImExp"][0].sig_cap_image.connect(self.ivl1.capture_view_as_image)
-
+        self.add_widget(OverviewWidget, default=True) 
+        self.add_widget(SECurve, default=True)
+        self.add_widget(PharmaView) 
+        self.add_widget(ColorOverlay1, default=True) 
+        self.add_widget(PharmaWidget) 
+        self.add_widget(T10Widget) 
+        self.add_widget(PerfSlicWidget) 
+        self.add_widget(FabberWidget) 
+        self.add_widget(MeanValuesWidget) 
+        self.add_widget(MCFlirtWidget) 
+        self.add_widget(ImageExportWidget) 
+        self.add_widget(CurveClusteringWidget, default=True) 
+        self.add_widget(OvCurveClusteringWidget, default=True) 
+        
         self.initTabs()
-
-        # Choosing supervoxels for ROI
-        self.ivl1.sig_mouse_click.connect(self.wid["sv"][0].sig_mouse_click)
 
         # InitUI
         # Sliders
@@ -219,11 +159,11 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld4.setMinimumWidth(100)
         # self.update_slider_range()
 
-        # connect sliders to ivl1
-        self.sld1.valueChanged[int].connect(self.ivl1.set_space_pos(2))
-        self.sld2.valueChanged[int].connect(self.ivl1.set_space_pos(1))
-        self.sld3.valueChanged[int].connect(self.ivl1.set_space_pos(0))
-        self.sld4.valueChanged[int].connect(self.ivl1.set_time_pos)
+        # connect sliders to ivl
+        self.sld1.valueChanged[int].connect(self.ivl.set_space_pos(2))
+        self.sld2.valueChanged[int].connect(self.ivl.set_space_pos(1))
+        self.sld3.valueChanged[int].connect(self.ivl.set_space_pos(0))
+        self.sld4.valueChanged[int].connect(self.ivl.set_time_pos)
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -258,7 +198,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(150)
-        sld1.valueChanged.connect(self.ivl1.roi_alpha_changed)
+        sld1.valueChanged.connect(self.ivl.roi_alpha_changed)
         grid.addWidget(sld1, 2, 1)
         grid.setRowStretch(3, 1)
         gBox.setLayout(grid)
@@ -313,7 +253,7 @@ class MainWindowWidget(QtGui.QWidget):
         sld1.setFocusPolicy(QtCore.Qt.NoFocus)
         sld1.setRange(0, 255)
         sld1.setValue(255)
-        sld1.valueChanged.connect(self.ivl1.overlay_alpha_changed)
+        sld1.valueChanged.connect(self.ivl.overlay_alpha_changed)
         grid.addWidget(sld1, 3, 1)
         grid.setRowStretch(4, 1)
         gBox3.setLayout(grid)
@@ -343,7 +283,7 @@ class MainWindowWidget(QtGui.QWidget):
         # grid_box.sig_click.connect(self.mpe)
         grid = QtGui.QVBoxLayout()
         splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
-        splitter2.addWidget(self.ivl1)
+        splitter2.addWidget(self.ivl)
         splitter2.addWidget(gBox_all)
         splitter2.setStretchFactor(0, 5)
         splitter2.setStretchFactor(1, 1)
@@ -362,6 +302,9 @@ class MainWindowWidget(QtGui.QWidget):
         # horizontal widgets
         self.setLayout(hbox)
 
+    def add_widget(self, w, **kwargs):
+	self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, **kwargs))
+
     def set_size_scaling(self, state):
         if state:
             self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_off.png")))
@@ -369,7 +312,7 @@ class MainWindowWidget(QtGui.QWidget):
         else:
             self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_on.png")))
             self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
-        self.ivl1.set_size_scaling(state)
+        self.ivl.set_size_scaling(state)
 
     def overlay_changed(self, idx):
         if idx >= 0:
@@ -430,50 +373,39 @@ class MainWindowWidget(QtGui.QWidget):
     def overlay_view_changed(self, idx):
         view = idx in (0, 1)
         roiOnly = (idx == 1)
-        self.ivl1.set_overlay_view(view, roiOnly)
+        self.ivl.set_overlay_view(view, roiOnly)
 
     def roi_view_changed(self, idx):
         shade = idx in (0, 2)
         contour = idx in (1, 2)
-        self.ivl1.set_roi_view(shade, contour)
+        self.ivl.set_roi_view(shade, contour)
 
     def overlay_cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
-        self.ivl1.h2.setGradientName(cmap)
+        self.ivl.h2.setGradientName(cmap)
 
     def initTabs(self):
-
         """
         Initialise the tab widget
-
-        Returns:
-
         """
-
-        # Tabbed Widget
         self.qtab1 = QtGui.QTabWidget()
-        # add finger tabs
         self.qtab1.setTabBar(FingerTabBarWidget(width=100, height=50))
-
         self.qtab1.setTabsClosable(False)
         self.qtab1.setMovable(False)
-        # Set the icon size of the tabs
         self.qtab1.setIconSize(QtCore.QSize(16, 16))
 
-        # Widgets added to tabs on the right hand side
-        self.qtab1.addTab(self.wid["Overview"][0], "Volumes")
-        self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\n analysis")
-        self.qtab1.addTab(self.wid["ColOv"][0], QtGui.QIcon(get_icon("edit")), "Overlay\n statistics")
-        self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")), "Curve\n cluster")
-        self.qtab1.addTab(self.wid["ClusOv"][0], QtGui.QIcon(get_icon("clustering")), "Overlay\n cluster")
-
-        # signal
+        # Add widgets flagged to appear by default
+        for w in self.widgets:
+            if w.default:
+                index = self.qtab1.addTab(w, w.icon, w.tabname)
+                w.visible = True
+                w.index = index
+                
+        # FIXME allow tabs to be closed?
         # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
         self.qtab1.setTabPosition(QtGui.QTabWidget.West)
 
-    # update slider range
     def update_slider_range(self):
-        # set slider range
         self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
         self.sld2.setRange(0, self.ivm.vol.shape[1]-1)
         self.sld3.setRange(0, self.ivm.vol.shape[0]-1)
@@ -489,61 +421,6 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[1])
         self.sld3.setValue(self.ivm.cim_pos[0])
-
-    # Connect to a widget
-    def show_widget(self, wname):
-        index = self.qtab1.addTab(self.wid[wname][0], QtGui.QIcon(get_icon(self.wid[wname][1])), self.wid[wname][2])
-        self.qtab1.setCurrentIndex(index)
-
-    # Connect widget
-    def show_se(self):
-        index = self.qtab1.addTab(self.wid["SigEn"][0], QtGui.QIcon(get_icon("voxel")), "Voxel\nanalysis")
-        self.qtab1.setCurrentIndex(index)
-
-    # Connect widget
-    def show_ic(self):
-        index = self.qtab1.addTab(self.wid["ImExp"][0], QtGui.QIcon(get_icon("image_export")), "Image\nExport")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_pk(self):
-        index = self.qtab1.addTab(self.wid["PAna"][0], QtGui.QIcon(get_icon("pk")), "Pk")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_t10(self):
-        index = self.qtab1.addTab(self.wid["T10"][0], QtGui.QIcon(get_icon("t10")), "T10")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_fab(self):
-        index = self.qtab1.addTab(self.wid["Fab"][0], QtGui.QIcon(get_icon("fabber.svg")), "Fabber")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_sv(self):
-        index = self.qtab1.addTab(self.wid["sv"][0], QtGui.QIcon(get_icon("sv")), "Super\nvoxels")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_meanvals(self):
-        index = self.qtab1.addTab(self.wid["meanvals"][0], QtGui.QIcon(get_icon("meanvals")), "Mean\nvalues")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_mcflirt(self):
-        index = self.qtab1.addTab(self.wid["mcflirt"][0], QtGui.QIcon(get_icon("mcflirt")), "MCFlirt")
-        self.qtab1.setCurrentIndex(index)
-
-    def show_cc(self):
-        index = self.qtab1.addTab(self.wid["Clus"][0], QtGui.QIcon(get_icon("clustering")),
-                                  "Curve\n Cluster", )
-        self.qtab1.setCurrentIndex(index)
-
-    def show_pw(self):
-
-        # Initialise if it is not already initialised
-        if self.wid["PView"][0] is None:
-            self.wid["PView"][0] = PharmaView()
-            self.wid["PView"][0].add_image_management(self.ivm)
-            self.ivl1.sig_mouse_click.connect(self.wid["PView"][0].sig_mouse)
-
-        index = self.qtab1.addTab(self.wid["PView"][0], QtGui.QIcon(get_icon("curve_view")), "Pharma\n View")
-        self.qtab1.setCurrentIndex(index)
 
 
 class WindowAndDecorators(QtGui.QMainWindow):
@@ -623,28 +500,36 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         self.sig_dropped.connect(self.drag_drop_dialog)
 
+        self.show()
+
     def init_ui(self):
         """
         Called during init. Sets the size and title of the overall GUI
         :return:
         """
-        self.setGeometry(100, 100, 1000, 500)
+        self.resize(1000, 700)
         self.setCentralWidget(self.mw1)
         self.setWindowTitle("PkViewer - Benjamin Irving")
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
-
         self.menu_ui()
-        self.show()
 
         # OSx specific enhancments
         self.setUnifiedTitleAndToolBarOnMac(True)
+
+    def show_widget(self):
+        w = self.sender().widget
+	if not w.visible:
+            index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
+            w.visible = True
+            w.index = index
+        self.mw1.qtab1.setCurrentIndex(w.index)
 
     def menu_ui(self):
         """
         Set up the file menu system and the toolbar at the top
         :return:
         """
-
+        
         # File --> Load Image
         load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Image Volume', self)
         load_action.setShortcut('Ctrl+L')
@@ -673,62 +558,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
-        # Widgets --> Image export
-        ic_action = QtGui.QAction(QtGui.QIcon(get_icon("image_export")), '&ImageExport', self)
-        ic_action.setStatusTip('Export images from the GUI')
-        ic_action.triggered.connect(self.mw1.show_ic)
-
-        # Widgets --> Pharmacokinetics
-        pk_action = QtGui.QAction(QtGui.QIcon(get_icon("pk")), '&Pharmacokinetics', self)
-        pk_action.setStatusTip('Run pharmacokinetic analysis')
-        pk_action.triggered.connect(self.mw1.show_pk)
-
-        # Widgets --> T10
-        t10_action = QtGui.QAction(QtGui.QIcon(get_icon("t10")), '&T10', self)
-        t10_action.setStatusTip('T10 Map Generation')
-        t10_action.triggered.connect(self.mw1.show_t10)
-
-        # Widgets --> Supervoxels
-        sv_action = QtGui.QAction(QtGui.QIcon(get_icon("sv")), '&Supervoxels', self)
-        sv_action.setStatusTip('Supervoxel analysis')
-        sv_action.triggered.connect(self.mw1.show_sv)
-
-        # Widgets --> Supervoxels
-        mv_action = QtGui.QAction(QtGui.QIcon(get_icon("meanvals")), '&Mean values overlay', self)
-        mv_action.setStatusTip('Generate overlay of mean values within ROI regions')
-        mv_action.triggered.connect(self.mw1.show_meanvals)
-
-        # Widgets --> Fabber
-        fab_action = QtGui.QAction(QtGui.QIcon(get_icon("fabber.svg")), '&Fabber', self)
-        fab_action.setStatusTip('Run fabber model fitting')
-        fab_action.triggered.connect(self.mw1.show_fab)
-
-        # Widgets --> MCFlirt
-        mcflirt_action = QtGui.QAction(QtGui.QIcon(get_icon("mcflirt")), '&MCFlirt', self)
-        mcflirt_action.setStatusTip('MCFlirt motion correction')
-        mcflirt_action.triggered.connect(self.mw1.show_mcflirt)
-
-        # Widgets --> PharmaView
-        pw_action = QtGui.QAction(QtGui.QIcon(get_icon("curve_view")), '&PharmCurveView', self)
-        pw_action.setStatusTip('Compare the true signal enhancement to the predicted model enhancement')
-        pw_action.triggered.connect(self.mw1.show_pw)
-
-        # Widgets --> RandomWalker
-        # rw_action = QtGui.QAction('&RandomWalker', self)
-        # rw_action.setStatusTip('RandomWalker')
-        # rw_action.triggered.connect(self.mw1.show_rw)
-
-        # Widgets --> CurveClustering
-        # cc_action = QtGui.QAction(QtGui.QIcon(get_icon("clustering")), '&CurveClustering', self)
-        # cc_action.setStatusTip('Cluster curves in a ROI of interest')
-        # cc_action.triggered.connect(self.mw1.show_cc)
-
-        # Wigets --> Create Annotation
-        # annot_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Enable Annotation', self)
-        # annot_ovreg_action.setStatusTip('Enable Annotation of the GUI')
-        # annot_ovreg_action.setCheckable(True)
-        # annot_ovreg_action.toggled.connect(self.show_annot_load_dialog)
-
         # Help -- > Online help
         help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
@@ -752,14 +581,22 @@ class WindowAndDecorators(QtGui.QMainWindow):
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
-        widget_menu.addAction(ic_action)
-        widget_menu.addAction(pk_action)
-        widget_menu.addAction(fab_action)
-        widget_menu.addAction(pw_action)
-        widget_menu.addAction(sv_action)
-        widget_menu.addAction(mv_action)
-        widget_menu.addAction(mcflirt_action)
-        widget_menu.addAction(t10_action)
+        for w in self.mw1.widgets:
+            if not w.default:
+                action = QtGui.QAction(w.icon, '&%s' % w.name, self)
+                action.setStatusTip(w.description)
+                action.widget = w
+                action.triggered.connect(self.show_widget)
+                widget_menu.addAction(action)
+
+        #widget_menu.addAction(ic_action)
+        #widget_menu.addAction(pk_action)
+        #widget_menu.addAction(fab_action)
+        #widget_menu.addAction(pw_action)
+        #widget_menu.addAction(sv_action)
+        #widget_menu.addAction(mv_action)
+        #widget_menu.addAction(mcflirt_action)
+        #widget_menu.addAction(t10_action)
         # widget_menu.addAction(rw_action)
         # widget_menu.addAction(annot_ovreg_action)
 
@@ -877,10 +714,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
     #
     #     if checked:
     #         self.mw1.ivm.set_blank_annotation()
-    #         self.mw1.ivl1.load_ovreg()
-    #         self.mw1.ivl1.enable_drawing(color1=1)
+    #         self.mw1.ivl.load_ovreg()
+    #         self.mw1.ivl.enable_drawing(color1=1)
     #     else:
-    #         self.mw1.ivl1.enable_drawing(color1=-1)
+    #         self.mw1.ivl.enable_drawing(color1=-1)
 
     def show_roi_load_dialog(self, fname=None):
         """

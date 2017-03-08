@@ -17,6 +17,7 @@ from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.analysis.pk_model import PyPk
 from pkview.volumes.volume_management import Overlay, Roi
+from pkview.widgets import PkWidget
 
 class PkModellingProcess(MultiProcess):
 
@@ -33,7 +34,7 @@ class PkModellingProcess(MultiProcess):
             num_row, progress = self.queue.get()
         self.sig_progress.emit(progress)
 
-class PharmaWidget(QtGui.QWidget):
+class PharmaWidget(PkWidget):
 
     """
     Widget for generating Pharmacokinetics
@@ -46,10 +47,8 @@ class PharmaWidget(QtGui.QWidget):
     #emit reset command
     sig_emit_reset = QtCore.Signal(bool)
 
-    def __init__(self):
-        super(PharmaWidget, self).__init__()
-
-        self.ivm = None
+    def __init__(self, **kwargs):
+        super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", icon="pk", **kwargs)
 
         # progress of generation
         self.prog_gen = QtGui.QProgressBar(self)
@@ -146,13 +145,6 @@ class PharmaWidget(QtGui.QWidget):
         l0.addStretch()
 
         self.setLayout(l0)
-
-    def add_image_management(self, image_vol_management):
-
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     def start_task(self):
 
@@ -386,14 +378,14 @@ def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_a
         print("PK worker error: %s" % sys.exc_info()[0])
         return id, False, sys.exc_info()[0]
 
-class PharmaView(QtGui.QWidget):
+class PharmaView(PkWidget):
 
     """
     View True and generated signal curves side by side (just reverse the scale)
     """
 
-    def __init__(self):
-        super(PharmaView, self).__init__()
+    def __init__(self, **kwargs):
+        super(PharmaView, self).__init__(name="PK Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
@@ -464,8 +456,8 @@ class PharmaView(QtGui.QWidget):
         self.plot_color = (255, 0, 0)
         self.plot_color2 = (0, 255, 0)
 
-        self.ivm = None
         self.curve1 = None
+        self.ivl.sig_mouse_click.connect(self.sig_mouse)
 
     def _update_table(self):
         """
@@ -477,12 +469,6 @@ class PharmaView(QtGui.QWidget):
             if self.ivm.overlays[ovl].ndims == 3:
                 self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
                 self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
-
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     def _plot(self, sig, sig_ovl):
 

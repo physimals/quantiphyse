@@ -6,6 +6,7 @@ from PySide import QtGui
 
 from pkview.analysis.mcflirt import mcflirt
 from pkview.volumes.volume_management import Overlay
+from pkview.widgets import PkWidget
 
 # MCflirt options!
 """
@@ -38,12 +39,14 @@ from pkview.volumes.volume_management import Overlay
        << "        -help\n";
 """
 
-class MCFlirtWidget(QtGui.QWidget):
+class MCFlirtWidget(PkWidget):
     """
     Run MCFLIRT motion correction on an input volume
     """
-    def __init__(self):
-        super(MCFlirtWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(MCFlirtWidget, self).__init__(name="MCFLIRT", icon="mcflirt", desc="MCFLIRT motion correction", **kwargs)
+
+        self.ivm.sig_main_volume.connect(self.main_vol_changed)
 
         self.cost_models = {"Mutual information" : "mutualinfo",
                             "Woods" : "woods",
@@ -164,16 +167,10 @@ class MCFlirtWidget(QtGui.QWidget):
 
         layout.addStretch(1)
 
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
-        self.ivm.sig_main_volume.connect(self.main_vol_changed)
-
     def main_vol_changed(self, vol):
-        self.refvol.setMaximum(vol.shape[3]-1)
-        self.refvol.setValue(int(vol.shape[3]/2))
+        if vol is not None and len(vol.shape) == 4:
+            self.refvol.setMaximum(vol.shape[3]-1)
+            self.refvol.setValue(int(vol.shape[3]/2))
 
     def ref_changed(self, idx):
         self.refvol.setVisible(idx == 2)

@@ -12,22 +12,13 @@ Benjamin Irving
 import numpy as np
 
 
-class OverlayAnalyis(object):
+class OverlayAnalysis(object):
     """
     Class for analysing the imported overlay
     """
 
-    def __init__(self):
-
-        self.ivm = None
-
-    def add_image_management(self, image_volume_management):
-        """
-
-        Imports the image volume management object to access data
-
-        """
-        self.ivm = image_volume_management
+    def __init__(self, ivm):
+        self.ivm = ivm
 
     def get_roi_stats(self, hist_bins=20, hist_range=None):
         """
@@ -131,10 +122,11 @@ class OverlayAnalyis(object):
             print("4d data")
             data = data[:, :, :, centre[3]]
 
+        print(voxel_sizes)
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1
         x, y, z = np.indices((data.shape[:3]))
-        r = np.sqrt(voxel_sizes[0]*(x - centre[0])**2 + voxel_sizes[1]*(y - centre[1])**2 + voxel_sizes[2]*(z - centre[2])**2)
+        r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         r[roi==0] = -1
 
         # Generate histogram by distance, weighted by data and corresponding histogram

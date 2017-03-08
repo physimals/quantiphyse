@@ -8,6 +8,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 from pkview.analysis.t1_model import t10_map
 from pkview.volumes.volume_management import Overlay, Roi
+from pkview.widgets import PkWidget
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):
@@ -176,12 +177,12 @@ class SourceImageList(QtGui.QVBoxLayout):
                     vals.append(val)
         return vols, vals
 
-class T10Widget(QtGui.QWidget):
+class T10Widget(PkWidget):
     """
     Run T10 analysis on 3 input volumes
     """
-    def __init__(self):
-        super(T10Widget, self).__init__()
+    def __init__(self, **kwargs):
+        super(T10Widget, self).__init__(name="T10", desc="Generate T10 map", icon="t10", **kwargs)
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -194,7 +195,7 @@ class T10Widget(QtGui.QWidget):
         self.trinp = NumberInput("TR (ms)", 4.108)
         self.fatable.addLayout(self.trinp)
         layout.addWidget(fabox)
-
+        
         self.preclin = QtGui.QCheckBox("Use B0 correction (Preclinical)")
         self.preclin.stateChanged.connect(self.preclin_changed)
         self.preclin.setChecked(False)
@@ -219,7 +220,6 @@ class T10Widget(QtGui.QWidget):
         self.sigma.setSingleStep(0.1)
         self.sigma.setDecimals(2)
         hbox.addWidget(self.sigma)
-        self.trtable.addLayout(hbox)
         hbox.addWidget(QtGui.QLabel(", truncate at"))
         self.truncate = QtGui.QDoubleSpinBox()
         self.truncate.setValue(3)
@@ -257,11 +257,6 @@ class T10Widget(QtGui.QWidget):
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
         self.fatable.ivm = self.ivm
         self.trtable.ivm = self.ivm
 

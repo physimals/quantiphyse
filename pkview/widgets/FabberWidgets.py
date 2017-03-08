@@ -18,6 +18,7 @@ from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.utils import yaml_loader, save_file
+from pkview.widgets import PkWidget
 
 try:
     if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
@@ -312,7 +313,7 @@ class ImageOptionView(OptionView):
         OptionView.add(self, grid, row)
         grid.addWidget(self.combo, row, 1)
 
-class FabberWidget(QtGui.QWidget):
+class FabberWidget(PkWidget):
     """
     Widget for running Fabber model fitting
     """
@@ -320,13 +321,12 @@ class FabberWidget(QtGui.QWidget):
     """ Signal emitted when async Fabber finished"""
     sig_finished = QtCore.Signal(tuple)
 
-    def __init__(self):
-        super(FabberWidget, self).__init__()
-
+    def __init__(self, **kwargs):
+        super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
+                                           desc="Fabber Bayesian model fitting",
+                                           **kwargs)
         mainGrid = QtGui.QGridLayout()
         self.setLayout(mainGrid)
-
-        self.ivm = None
 
         try:
             self.fabber_lib = find_fabber()[1]
@@ -336,6 +336,8 @@ class FabberWidget(QtGui.QWidget):
         except:
             mainGrid.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"), 0, 0)
             return
+
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
         # Options box
         optionsBox = QGroupBoxB()
@@ -494,13 +496,6 @@ class FabberWidget(QtGui.QWidget):
     def reset(self):
         for view in self.views: self.rundata.add_view(view)
 
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
-
     def overlays_changed(self, overlays):
         """
         Update image data views
@@ -561,12 +556,14 @@ class FabberWidget(QtGui.QWidget):
         Callback called when an async fabber run completes
         """
         if success:
+            print("finished success")
             self.log, output = self.process.get_output()
+            print("got output")
             first = True
             save_files = self.savefilesCb.isChecked()
             save_folder = self.saveFolderEdit.text()
             for ovl in output.values():
-                #print(key, results[0].data[key].shape)
+                print(ovl.name, ovl.shape)
                 #print(key, recombined_item.shape)
                 self.ivm.add_overlay(ovl, make_current=first)
                 if save_files:

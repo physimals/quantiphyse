@@ -171,9 +171,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
     def __init__(self):
         super(ImageViewLayout, self).__init__()
 
-        # volume management for the images
-        self.ivm = None
-
         #ViewerOptions
         self.options = {}
 
@@ -610,11 +607,16 @@ class ImageViewColorOverlay(ImageViewOverlay):
     Inherits from ImageViewOverlay
     - this is the image view class that allows a ROI to be set
     """
-    def __init__(self):
+    def __init__(self, ivm):
         """
         Updating viewer to include second image layer
         """
         super(ImageViewColorOverlay, self).__init__()
+
+        self.ivm = ivm
+        self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
+        self.ivm.sig_current_roi.connect(self.current_roi_changed)
+        self.ivm.sig_main_volume.connect(self.main_volume_changed)
 
         # Image windows
         self.imgwinc = [None, None, None]
@@ -632,15 +634,6 @@ class ImageViewColorOverlay(ImageViewOverlay):
         # Viewing options as a dictionary
         self.options['ShowColorOverlay'] = True
         self.options['UseROI'] = False
-
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
-        self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
-        self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_volume.connect(self.main_volume_changed)
 
     def init_viewer(self):
         """

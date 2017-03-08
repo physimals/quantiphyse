@@ -3,11 +3,12 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 from pkview.utils import get_icon
+from pkview.widgets import PkWidget
 
-class OverviewWidget(QtGui.QWidget):
+class OverviewWidget(PkWidget):
 
-    def __init__(self):
-        super(OverviewWidget, self).__init__()
+    def __init__(self, **kwargs):
+        super(OverviewWidget, self).__init__(name="Volumes", icon="", desc="Overview of volumes loaded", **kwargs)
 
         layout = QtGui.QVBoxLayout()
 

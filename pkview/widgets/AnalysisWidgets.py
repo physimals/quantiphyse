@@ -16,6 +16,8 @@ from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.ImageView import PickMode
 from pkview.utils import get_icon
 from ..QtInherit import HelpButton
+from pkview.widgets import PkWidget
+from pkview.analysis.overlay_analysis import OverlayAnalysis
 
 class SEPlot:
     def __init__(self, sig, **kwargs):
@@ -61,7 +63,7 @@ class SEPlot:
             plotwin.removeItem(self.pts)
             self.line, self.pts = None, None
 
-class SECurve(QtGui.QWidget):
+class SECurve(PkWidget):
 
     """
     Side widgets for plotting SE curves
@@ -70,8 +72,8 @@ class SECurve(QtGui.QWidget):
     sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
 
-    def __init__(self):
-        super(SECurve, self).__init__()
+    def __init__(self, **kwargs):
+        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal enhancement curves", **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -168,13 +170,6 @@ class SECurve(QtGui.QWidget):
         l1.addStretch(1)
         self.setLayout(l1)
 
-        self.ivm = None
-
-    def add_image_management(self, ivm):
-        self.ivm = ivm
-
-    def add_image_view(self, ivl):
-        self.ivl = ivl
         self.ivl.sig_sel_changed.connect(self.sel_changed)
         self.plot_col_changed("grey")
         self.clear_all()
@@ -264,7 +259,7 @@ class SECurve(QtGui.QWidget):
     def plot_col_changed(self, text):
         self.ivl.pick_col = self.colors.get(text, (255, 255, 255))
 
-class ColorOverlay1(QtGui.QWidget):
+class ColorOverlay1(PkWidget):
 
     """
     Color overlay interaction
@@ -280,8 +275,12 @@ class ColorOverlay1(QtGui.QWidget):
     # emit a change in range
     sig_range_change = QtCore.Signal(int)
 
-    def __init__(self):
-        super(ColorOverlay1, self).__init__()
+    def __init__(self, **kwargs):
+        super(ColorOverlay1, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
+
+        self.ivm.sig_current_overlay.connect(self.overlay_changed)
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+        self.ia = OverlayAnalysis(ivm=self.ivm)
 
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
@@ -295,10 +294,6 @@ class ColorOverlay1(QtGui.QWidget):
         self.win1 = pg.GraphicsWindow()
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Overlay histogram")
-
-        # Analysis and volume management objects
-        self.ia = None
-        self.ivm = None
 
         self.tabmod1 = QtGui.QStandardItemModel()
         self.tabmod1ss = QtGui.QStandardItemModel()
@@ -517,12 +512,6 @@ class ColorOverlay1(QtGui.QWidget):
             self.rp_win.setVisible(True)
             self.rp_btn.setText("Hide")
 
-    def add_analysis(self, image_analysis):
-        """
-        Reference to image analysis class
-        """
-        self.ia = image_analysis
-
     def update_spin_minmax(self, spin, range):
         spin.setMinimum(range[0])
         spin.setMaximum(range[1])
@@ -537,21 +526,6 @@ class ColorOverlay1(QtGui.QWidget):
             self.maxSpin.setDecimals(ov.dps)
             self.minSpin.setSingleStep(10**(1-ov.dps))
             self.maxSpin.setSingleStep(10**(1-ov.dps))
-
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
-        self.ivm.sig_current_overlay.connect(self.overlay_changed)
-        self.reset_spins()
-
-    def add_image_view(self, ivl):
-        """
-        Adding image management
-        """
-        self.ivl = ivl
-        self.ivl.sig_focus_changed.connect(self.focus_changed)
 
     def overlay_changed(self, overlay):
         """
