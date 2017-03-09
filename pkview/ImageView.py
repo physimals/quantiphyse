@@ -44,6 +44,8 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         """
         self.region.setRegion([np.min(arr), np.max(arr)])
         self.region.setBounds([np.min(arr), None])
+        self.region.lines[0].setValue(np.min(arr))
+        self.region.lines[1].setValue(np.max(arr))
         fdim = 1
         for dim in arr.shape[1:]:
             fdim *= dim
