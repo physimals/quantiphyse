@@ -70,11 +70,11 @@ class Volume(object):
             raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
         elif hastime:
             for i in range(n-self.ndims):
-                np.expand_dims(self.data, self.ndims-1)
+                self.data = np.expand_dims(self.data, self.ndims-1)
                 self.voxel_sizes.insert(self.ndims-1, 1.0)
         else:
             for i in range(n-self.ndims):
-                np.expand_dims(self.data, self.ndims)
+                self.data = np.expand_dims(self.data, self.ndims)
                 self.voxel_sizes.insert(self.ndims, 1.0)
         self.shape = self.data.shape
         self.ndims = n
@@ -99,7 +99,7 @@ class Volume(object):
             # memmap has been designed to save space on ram by keeping the array on the disk but does
             # horrible things with performance, and analysis especially when the data is on the network.
             self.data = np.asarray(image.get_data())
-            self.voxel_sizes = image.get_header().get_zooms()
+            self.voxel_sizes = list(image.get_header().get_zooms())
             self.nifti_header = image.get_header()
         elif self.fname.endswith(".nrrd"):
             # else if the file is a nrrd
