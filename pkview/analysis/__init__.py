@@ -39,6 +39,7 @@ class MultiProcess(QtCore.QObject):
         self.queue =  multiprocessing.Manager().Queue()
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.progress)
+        self.sig_finished.connect(self.finished)
 
         split_args = [range(n), [self.queue,] * n]
         for arg in args:
@@ -87,6 +88,9 @@ class MultiProcess(QtCore.QObject):
             done = True
 
         if done:
-            self.timer.stop()
             self.progress()
             self.sig_finished.emit(not self.failed, self.output)
+
+    def finished(self):
+        """ Must be called in GUI thread"""
+        self.timer.stop()
