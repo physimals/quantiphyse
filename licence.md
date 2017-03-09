@@ -1,5 +1,5 @@
-Main licence
-============
+PkView licence
+==============
 
 *Currently a work in progress*
 
@@ -54,9 +54,13 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+## Qt 
+
+Qt 4.8 is redistributed under the [GNU Lesser Public License.](https://www.gnu.org/licenses/lgpl-2.1.en.html)
+
 ## PySide
 
-PySide is released under the [GNU Lesser Public License.](https://www.gnu.org/licenses/lgpl-2.1.en.html)
+PySide is redistributed under the [GNU Lesser Public License.](https://www.gnu.org/licenses/lgpl-2.1.en.html)
 
 ## Scipy
 
