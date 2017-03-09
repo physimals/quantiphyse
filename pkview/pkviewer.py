@@ -784,7 +784,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
         Dialog for loading an overlay and specifying the type of overlay
         @fname: allows a file name to be passed in automatically
         """
-
+        self.raise_()
+        self.activateWindow()
         ftype, ok = DragOptions.getImageChoice(self)
 
         if not ok:
@@ -798,8 +799,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Loading main image
         elif ftype == 'DCE':
-            if self.mw1.ivm.vol is not None:
-                self.load_dce(fname)
+            self.load_dce(fname)
 
         # Loading ROI
         elif ftype == 'ROI':
@@ -832,8 +832,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
             msgBox = QtGui.QMessageBox()
             msgBox.setText("3D volume loaded")
             msgBox.setInformativeText("Choose image type")
-            msgBox.addButton("Static 3D", Gui.QMessageBox.NoRole)
-            msgBox.addButton("2D+time", Gui.QMessageBox.YesRole)
+            msgBox.addButton("Static 3D", QtGui.QMessageBox.NoRole)
+            msgBox.addButton("2D+time", QtGui.QMessageBox.YesRole)
             msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
             ret = msgBox.exec_()
             if ret == QtGui.QMessageBox.Yes:
