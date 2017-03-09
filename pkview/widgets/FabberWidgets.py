@@ -157,13 +157,24 @@ class PriorsView(OptionsView):
         self.priors = []
         self.prior_widgets = []
         self.overlays = []
+        self.params = []
+        self.updating_widgets = False
+        self.updating_rundata = False
         
     def do_update(self):
-        if self.rundata.changed("model"):
-            self.params = FabberLib(rundata=self.rundata).get_model_params(self.rundata)
-            self.nparams = len(self.params)
+        try:
+            params = FabberLib(rundata=self.rundata).get_model_params(self.rundata)
+        except FabberException, e:
+            # get_model_params can fail if model options not properly set. Repopulate with empty
+            # parameter set - will check again when options change
+            params = []
+
+        if set(params) != set(self.params):
+            self.params = params
             self.repopulate()
-    
+        else: 
+            self.update_from_rundata()
+
     def get_widgets(self, idx):
         type_combo = QtGui.QComboBox()
         type_combo.addItem("Model default", "")
@@ -185,21 +196,32 @@ class PriorsView(OptionsView):
         return type_combo, QtGui.QLabel("Image: "), image_combo, cb, QtGui.QLabel("Custom precision: "), edit
 
     def update_from_rundata(self):
-        prior_idx=1
-        while "PSP_byname%i" % prior_idx in self.rundata:
-            param = self.rundata["PSP_byname%i" % prior_idx]
-            ptype = self.rundata.get("PSP_byname%i_type" % prior_idx, "")
-            image = self.rundata.get("PSP_byname%i_image" % prior_idx, "")
-            prec = self.rundata.get("PSP_byname%i_prec" % prior_idx, "")
-            idx = self.params.index(param)
-            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+        if not self.updating_rundata:
+            prior_idx=1
+            used_params = []
+            while "PSP_byname%i" % prior_idx in self.rundata:
+                param = self.rundata["PSP_byname%i" % prior_idx]
+                if param in self.params:
+                    idx = self.params.index(param)
+                    type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+                    used_params.append(param)
 
-            type_combo.setCurrentIndex(type_combo.findData(ptype))
-            image_combo.setCurrentIndex(image_combo.findText(image))
-            edit.setText(prec)
+                    ptype = self.rundata.get("PSP_byname%i_type" % prior_idx, "")
+                    image = self.rundata.get("PSP_byname%i_image" % prior_idx, "")
+                    prec = self.rundata.get("PSP_byname%i_prec" % prior_idx, "")
 
-            prior_idx += 1
-        self.update_widgets()
+                    type_combo.setCurrentIndex(type_combo.findData(ptype))
+                    image_combo.setCurrentIndex(image_combo.findText(image))
+                    edit.setText(prec)
+                
+                prior_idx += 1
+            
+            for idx, param in enumerate(self.params):
+                if param not in used_params:
+                    type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
+                    type_combo.setCurrentIndex(0)
+
+            self.update_widgets()
 
     def update_widgets(self):
          for idx, param in enumerate(self.params):
@@ -217,9 +239,11 @@ class PriorsView(OptionsView):
             edit.setEnabled(have_prec)
 
     def changed(self):
-        if not self.updating:
+        if not self.updating_widgets:
+            self.updating_rundata=True
             self.update_widgets()
             self.update_rundata() 
+            self.updating_rundata=False
 
     def update_rundata(self):
         prior_idx=1
@@ -253,7 +277,7 @@ class PriorsView(OptionsView):
         #self.rundata.dump(sys.stdout)
         
     def repopulate(self):
-        self.updating=True
+        self.updating_widgets=True
         self.clear()
         self.dialog.grid.setSpacing(20)
         self.prior_widgets = []
@@ -261,6 +285,9 @@ class PriorsView(OptionsView):
         self.dialog.modelLabel.setText("Model parameter priors")
         self.dialog.descLabel.setText("Describes optional prior information about each model parameter")
         
+        if len(self.params) == 0:
+            self.dialog.grid.addWidget(QtGui.QLabel("No parameters found! Make sure model is properly configured"))
+
         for idx, param in enumerate(self.params):
             self.prior_widgets.append(self.get_widgets(idx))
         
@@ -272,7 +299,7 @@ class PriorsView(OptionsView):
         self.update_widgets()
         self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
         self.dialog.adjustSize()
-        self.updating=False
+        self.updating_widgets=False
         
 class ImageOptionView(OptionView):
     """
