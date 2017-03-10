@@ -113,7 +113,7 @@ fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
   if sys.platform.startswith("win"):
     zlib = "zlib"
-    extra_inc = "compat"
+    extra_inc = "src/mcflirt/compat"
   else:
     zlib = "z"
     extra_inc = "."
@@ -123,7 +123,7 @@ if fsldir:
                           'src/mcflirt/mcflirt.cc',
                           'src/mcflirt/Globaloptions.cc',
                           'src/mcflirt/Log.cc'],
-                 include_dirs=['src/mcflirt/',
+                 include_dirs=['src/mcflirt/', 
                                os.path.join(fsldir, "include"),
                                os.path.join(fsldir, "extras/include/newmat"),
                                os.path.join(fsldir, "extras/include/boost"),
