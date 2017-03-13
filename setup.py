@@ -46,6 +46,7 @@ import numpy
 import platform
 import os
 import sys
+import re
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -55,6 +56,15 @@ from setuptools.extension import Extension
 Description = """/
 PkView
 """
+
+# Get version info
+
+VERSIONFILE="pkview/_version.py"
+version_line = open(VERSIONFILE, "rt").read()
+if version_line.startswith("__version__ ="):
+    version_str = version_line.split("=")[1].strip()
+else:
+    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 
 extensions = []
 
@@ -137,7 +147,7 @@ else:
 # setup parameters
 setup(name='PKView',
       cmdclass={'build_ext': build_ext},
-      version='0.32',
+      version=version_str,
       description='pCT and DCE-MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
