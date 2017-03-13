@@ -31,7 +31,8 @@ else:
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
 # My widgets
-from pkview.ImageView import ImageViewColorOverlay
+from ._version import __version__
+from .ImageView import ImageViewColorOverlay
 from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
@@ -321,7 +322,7 @@ class MainWindowWidget(QtGui.QWidget):
 
     def update_current_overlay(self, overlay):
         if overlay is None:
-            self.roi_combo.setCurrentIndex(-1)
+            self.overlay_combo.setCurrentIndex(-1)
         else:
             idx = self.overlay_combo.findText(overlay.name)
             if idx != self.overlay_combo.currentIndex():
@@ -416,11 +417,12 @@ class MainWindowWidget(QtGui.QWidget):
             self.sld4.setRange(0, 0)
 
     @QtCore.Slot(bool)
-    def slider_scroll_mouse(self, value):
+    def slider_scroll_mouse(self, value=None):
         # update slider positions
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[1])
         self.sld3.setValue(self.ivm.cim_pos[0])
+        self.sld4.setValue(self.ivm.cim_pos[3])
 
 
 class WindowAndDecorators(QtGui.QMainWindow):
@@ -854,6 +856,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
         print("Image range: ", self.mw1.ivm.vol.range)
         self.mw1.update_slider_range()
+        self.mw1.slider_scroll_mouse()
 
     def auto_load_files(self):
         """
