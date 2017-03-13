@@ -80,10 +80,10 @@ class SECurve(PkWidget):
 
         self.setStatusTip("Click points on the 4D volume to see time curve")
 
-        title1 = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
+        title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
         bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
-        lhelp.addWidget(title1)
+        lhelp.addWidget(title)
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
@@ -277,16 +277,19 @@ class ColorOverlay1(PkWidget):
     def __init__(self, **kwargs):
         super(ColorOverlay1, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
 
+        self.ivm.sig_current_roi.connect(self.roi_changed)
         self.ivm.sig_current_overlay.connect(self.overlay_changed)
         self.ivl.sig_focus_changed.connect(self.focus_changed)
         self.ia = OverlayAnalysis(ivm=self.ivm)
 
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
-        title1 = QtGui.QLabel("<font size=5> Overlay statistics </font>")
+        title1 = QtGui.QLabel("<font size=5>Overlay statistics: </font>")
+        self.ovtitle = QtGui.QLabel()
         bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
+        lhelp.addWidget(self.ovtitle)
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
@@ -311,16 +314,7 @@ class ColorOverlay1(PkWidget):
         self.butgen = QtGui.QPushButton("Show")
         self.butgen.setToolTip("Show standard statistics for the overlay values in each ROI")
         self.butgen.clicked.connect(self.show_overlay_stats)
-
-        regenHbox3 = QtGui.QHBoxLayout()
-        self.regenBtn3 = QtGui.QPushButton("Recalculate")
-        self.regenBtn3.clicked.connect(self.generate_overlay_stats)
-        regenHbox3.addWidget(self.regenBtn3)
-        regenHbox3.addStretch(1)
-        self.regenBtn3.setVisible(False)
-
         l02.addWidget(self.butgen)
-        #l02.addWidget(buthide)
         l02.addStretch(1)
 
         l02ss = QtGui.QHBoxLayout()
@@ -398,7 +392,6 @@ class ColorOverlay1(PkWidget):
         l08 = QtGui.QVBoxLayout()
         l08.addLayout(l02)
         l08.addWidget(self.tab1)
-        l08.addLayout(regenHbox3)
         l08.addStretch(1)
 
         f03 = QGroupBoxB()
@@ -472,12 +465,10 @@ class ColorOverlay1(PkWidget):
     def show_overlay_stats(self):
         if self.tab1.isVisible():
             self.tab1.setVisible(False)
-            self.regenBtn3.setVisible(False)
             self.butgen.setText("Show")
         else:
             self.generate_overlay_stats()
             self.tab1.setVisible(True)
-            self.regenBtn3.setVisible(True)
             self.butgen.setText("Hide")
 
     def show_overlay_stats_current_slice(self):
@@ -527,11 +518,18 @@ class ColorOverlay1(PkWidget):
             self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def overlay_changed(self, overlay):
-        """
-        Update image data views
-        """
+        if overlay is None:
+            self.ovtitle.setText("<font size=5>No overlay selected</font>")
+        else:
+            self.ovtitle.setText("<b><font size=5>%s</font></b>" % overlay.name)
         self.reset_spins()
         self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
+        self.update()
+ 
+    def roi_changed(self, roi):
+        self.update()
+
+    def update(self):
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.tab1.isVisible():
