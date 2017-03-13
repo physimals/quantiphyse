@@ -4,6 +4,7 @@ from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 from pkview.utils import get_icon
 from pkview.widgets import PkWidget
+from pkview.pkviewer import __version__
 
 class OverviewWidget(PkWidget):
 
@@ -13,7 +14,7 @@ class OverviewWidget(PkWidget):
         layout = QtGui.QVBoxLayout()
 
         # List for volume management
-        tb = QtGui.QLabel("<font size=50> PKView </font> \n")
+        tb = QtGui.QLabel("<font size=50> PKView %s</font> \n" % __version__)
 
         pixmap = QtGui.QPixmap(get_icon("main_icon.png"))
         pixmap = pixmap.scaled(35, 35, QtCore.Qt.KeepAspectRatio)
@@ -64,14 +65,6 @@ class OverviewWidget(PkWidget):
 
         self.setLayout(layout)
 
-    def add_image_management(self, image_vol_management):
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
-        self.l1.add_image_management(self.ivm)
-        self.l2.add_image_management(self.ivm)
-
 class CaseWidget(QtGui.QListWidget):
     """
     Class to handle the organisation of the loaded volumes
@@ -82,9 +75,7 @@ class CaseWidget(QtGui.QListWidget):
         self.sel_current = ""
         self.ivm = None
         self.currentItemChanged.connect(self.emit_volume)
-
-    def add_image_management(self, image_volume_management):
-        self.ivm = image_volume_management
+        self.ivm = parent.ivm
         self.ivm.sig_current_overlay.connect(self.update_current)
         self.ivm.sig_all_overlays.connect(self.update_list)
 
@@ -124,9 +115,7 @@ class RoiWidget(QtGui.QListWidget):
         self.sel_current = ""
         self.ivm = None
         self.currentItemChanged.connect(self.emit_volume)
-
-    def add_image_management(self, image_volume_management):
-        self.ivm = image_volume_management
+        self.ivm = parent.ivm
         self.ivm.sig_current_roi.connect(self.update_current)
         self.ivm.sig_all_rois.connect(self.update_list)
 
