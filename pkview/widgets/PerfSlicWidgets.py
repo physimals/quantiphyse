@@ -8,7 +8,7 @@ from pkview.analysis.overlay_analysis import OverlayAnalysis
 from pkview.widgets import PkWidget
 
 class NumericOption:
-    def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, intonly=False):
+    def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
         self.label = QtGui.QLabel(text)
         if intonly:
             self.spin = QtGui.QSpinBox()
@@ -18,6 +18,7 @@ class NumericOption:
         self.spin.setMinimum(minval)
         self.spin.setMaximum(maxval)
         self.spin.setValue(default)
+        self.spin.setSingleStep(step)
         grid.addWidget(self.label, ypos, 0)
         grid.addWidget(self.spin, ypos, 1)
 
@@ -42,8 +43,7 @@ class PerfSlicWidget(PkWidget):
         grid = QtGui.QGridLayout()
         optbox.setLayout(grid)
         self.n_comp = NumericOption("Number of components", grid, 0, minval=1, maxval=3, default=3, intonly=True)
-        self.compactness = NumericOption("Compactness", grid, 1, minval=0, maxval=1, default=0.1, intonly=False)
-        # self.segment_size = NumericOption("Segment size", grid, 2, minval=1, maxval=10000, default=1000, intonly=True)
+        self.compactness = NumericOption("Compactness", grid, 1, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
         self.segment_number = NumericOption("Number of supervoxels", grid, 2, minval=2, maxval=1000, default=20, intonly=True)
 
         btn = QtGui.QPushButton('Generate supervoxels', self)
