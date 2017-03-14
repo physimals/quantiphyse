@@ -387,7 +387,6 @@ class ColorOverlay1(PkWidget):
         f02 = QGroupBoxB()
         f02.setTitle('Overlay Histogram')
         f02.setLayout(l07)
-        f02.setVisible(True)
 
         l08 = QtGui.QVBoxLayout()
         l08.addLayout(l02)

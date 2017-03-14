@@ -412,7 +412,6 @@ class PharmaView(PkWidget):
         self.tab1 = QtGui.QTableView()
         self.tab1.resizeColumnsToContents()
         self.tab1.setModel(self.tabmod1)
-        self.tab1.setVisible(True)
 
         l02 = QtGui.QHBoxLayout()
         l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
