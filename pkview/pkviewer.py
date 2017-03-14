@@ -560,6 +560,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
+        # About
+        about_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
+        about_action.setStatusTip('About PkView')
+        about_action.triggered.connect(self.about)
+
         # Help -- > Online help
         help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
@@ -591,19 +596,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 action.triggered.connect(self.show_widget)
                 widget_menu.addAction(action)
 
-        #widget_menu.addAction(ic_action)
-        #widget_menu.addAction(pk_action)
-        #widget_menu.addAction(fab_action)
-        #widget_menu.addAction(pw_action)
-        #widget_menu.addAction(sv_action)
-        #widget_menu.addAction(mv_action)
-        #widget_menu.addAction(mcflirt_action)
-        #widget_menu.addAction(t10_action)
-        # widget_menu.addAction(rw_action)
-        # widget_menu.addAction(annot_ovreg_action)
-
-
         help_menu.addAction(help_action)
+        help_menu.addAction(about_action)
 
         advanced_menu.addAction(console_action)
 
@@ -663,6 +657,18 @@ class WindowAndDecorators(QtGui.QMainWindow):
         :return:
         """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://pkview.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
+
+    @QtCore.Slot()
+    def about(self):
+        text = """
+        <h1 align="center">PkView %s</h1>
+        <p align="center">Created by Benjamin Irving</p>
+        <h2 align="center">Contributors</h2>
+        <p align="center">Benjamin Irving</p>
+        <p align="center">Martin Craig</p>
+        <p align="center">Michael Chappell</p>
+        """ % __version__
+        QtGui.QMessageBox.about(self, "PkView", text)
 
     @QtCore.Slot()
     def show_console(self):
