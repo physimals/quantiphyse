@@ -321,6 +321,15 @@ class ColorOverlay1(PkWidget):
         self.butgenss = QtGui.QPushButton("Show")
         self.butgenss.setToolTip("Show standard statistics for the current slice")
         self.butgenss.clicked.connect(self.show_overlay_stats_current_slice)
+        l02ss.addWidget(self.butgenss)
+        l02ss.addWidget(QtGui.QLabel("Slice direction:"))
+        self.sscombo = QtGui.QComboBox()
+        self.sscombo.addItem("Axial")
+        self.sscombo.addItem("Saggital")
+        self.sscombo.addItem("Coronal")
+        self.sscombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        l02ss.addWidget(self.sscombo)
+        l02ss.addStretch(1)
 
         regenHbox2 = QtGui.QHBoxLayout()
         self.regenBtn2 = QtGui.QPushButton("Recalculate")
@@ -328,10 +337,6 @@ class ColorOverlay1(PkWidget):
         regenHbox2.addWidget(self.regenBtn2)
         regenHbox2.addStretch(1)
         self.regenBtn2.setVisible(False)
-
-        l02ss.addWidget(self.butgenss)
-        #l02ss.addWidget(buthidess)
-        l02ss.addStretch(1)
 
         l03 = QtGui.QHBoxLayout()
 
@@ -432,20 +437,6 @@ class ColorOverlay1(PkWidget):
         self.rp_nbins.setValue(30)
         self.rp_nbins.valueChanged.connect(self.update_radial_profile)
         hbox.addWidget(self.rp_nbins)
-
-        #hbox.addWidget(QtGui.QLabel("Min distance"))
-        #self.rp_min = QtGui.QDoubleSpinBox()
-        #self.rp_min.setMaximum(100000000)
-        #self.rp_min.setMinimum(0)
-        #self.rp_min.valueChanged.connect(self.update_radial_profile)
-        #hbox.addWidget(self.rp_min)
-
-        #hbox.addWidget(QtGui.QLabel("Max distance"))
-        #self.rp_max = QtGui.QDoubleSpinBox()
-        #self.rp_max.setMaximum(100000000)
-        #self.rp_max.setMinimum(0)
-        #self.rp_max.valueChanged.connect(self.update_radial_profile)
-        #hbox.addWidget(self.rp_max)
        
         hbox.addStretch()
         vbox.addLayout(hbox)
@@ -578,11 +569,13 @@ class ColorOverlay1(PkWidget):
 
     @QtCore.Slot()
     def generate_overlay_stats_current_slice(self):
+        view = self.sscombo.currentIndex()
+
         # Clear the previous labels
         self.tabmod1ss.clear()
 
         # get analysis from analysis object
-        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss()
+        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss(view)
 
         # Number of decimal places to display
         dps = self.ivm.current_overlay.dps

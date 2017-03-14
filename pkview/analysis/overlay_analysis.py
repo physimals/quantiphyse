@@ -60,8 +60,10 @@ class OverlayAnalysis(object):
 
         return stat1, roi_labels, hist1, hist1x
 
-    def get_roi_stats_ss(self):
+    def get_roi_stats_ss(self, view):
         """
+        view = Index of the slice view - 0=axial, 1=saggital, 2=coronal
+
         Return:
         @m1 mean for each ROI
         @m2 median for each ROI
@@ -75,12 +77,23 @@ class OverlayAnalysis(object):
             roi_labels = np.array([0])
             return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
-        slice1 = self.ivm.cim_pos[2]
+        roi = self.ivm.current_roi.data
+        ovl = self.ivm.current_overlay.data
 
-        roi = self.ivm.current_roi
-        ovl = self.ivm.current_overlay
-        overlay_slice = ovl.data[:, :, slice1]
-        roi_slice = roi.data[:, :, slice1]
+        if view == 0:
+            slice1 = self.ivm.cim_pos[2]
+            overlay_slice = ovl[:, :, slice1]
+            roi_slice = roi[:, :, slice1]
+        elif view == 1:
+            slice1 = self.ivm.cim_pos[1]
+            overlay_slice = ovl[:, slice1, :]
+            roi_slice = roi[:, slice1, :]
+        elif view == 2:
+            slice1 = self.ivm.cim_pos[0]
+            overlay_slice = ovl[slice1, :, :]
+            roi_slice = roi[slice1, :, :]
+        else:
+            raise RuntimeError("Invalid view: " % view)
 
         roi_labels = np.unique(roi_slice)
         roi_labels = roi_labels[roi_labels > 0]
