@@ -20,7 +20,7 @@ class OverlayAnalysis(object):
     def __init__(self, ivm):
         self.ivm = ivm
 
-    def get_roi_stats(self, hist_bins=20, hist_range=None):
+    def get_summary_stats(self, ovl, roi=None, hist_bins=20, hist_range=None, slice=None):
         """
         Return:
         @m1 mean for each ROI
@@ -28,26 +28,42 @@ class OverlayAnalysis(object):
         @m3 standard deviation for each ROI
         @roi_labels label of each ROI
         """
-
         # Checks if either ROI or overlay is None
-        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
-            stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
+        if roi is not None:
+            roi_labels = roi.regions
+            roi_labels = roi_labels[roi_labels > 0]
+        else:
             roi_labels = np.array([0])
-            return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
-        roi = self.ivm.current_roi
-        ovl = self.ivm.current_overlay
-        roi_labels = roi.regions
-        roi_labels = roi_labels[roi_labels > 0]
+        if (ovl is None):
+            stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
+            return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
         hist1 = []
         hist1x = []
 
-        for ii in roi_labels:
+        if slice is None:
+            ovldata = ovl.data
+            roidata = roi.data
+        elif slice == 0:
+            slicepos = self.ivm.cim_pos[2]
+            ovldata = ovl.data[:, :, slicepos]
+            roidata = roi.data[:, :, slicepos]
+        elif slice == 1:
+            slicepos = self.ivm.cim_pos[1]
+            ovldata = ovl.data[:, slicepos, :]
+            roidata = roi.data[:, slicepos, :]
+        elif slice == 2:
+            slicepos = self.ivm.cim_pos[0]
+            ovldata = ovl.data[slicepos, :, :]
+            roidata = roi.data[slicepos, :, :]
+        else:
+            raise RuntimeError("Invalid slice: " % slice)
 
+        for ii in roi_labels:
             # Overlay for a single label of the roi
-            vroi1 = ovl.data[roi.data == ii]
+            vroi1 = ovldata[roidata == ii]
 
             stat1['mean'].append(np.mean(vroi1))
             stat1['median'].append(np.median(vroi1))
@@ -55,64 +71,6 @@ class OverlayAnalysis(object):
             stat1['max'].append(np.max(vroi1))
             stat1['min'].append(np.min(vroi1))
             y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
-            hist1.append(y)
-            hist1x.append(x)
-
-        return stat1, roi_labels, hist1, hist1x
-
-    def get_roi_stats_ss(self, view):
-        """
-        view = Index of the slice view - 0=axial, 1=saggital, 2=coronal
-
-        Return:
-        @m1 mean for each ROI
-        @m2 median for each ROI
-        @m3 standard deviation for each ROI
-        @roi_labels label of each ROI
-        """
-
-        # Checks if either ROI or overlay is None
-        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
-            stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            roi_labels = np.array([0])
-            return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
-
-        roi = self.ivm.current_roi.data
-        ovl = self.ivm.current_overlay.data
-
-        if view == 0:
-            slice1 = self.ivm.cim_pos[2]
-            overlay_slice = ovl[:, :, slice1]
-            roi_slice = roi[:, :, slice1]
-        elif view == 1:
-            slice1 = self.ivm.cim_pos[1]
-            overlay_slice = ovl[:, slice1, :]
-            roi_slice = roi[:, slice1, :]
-        elif view == 2:
-            slice1 = self.ivm.cim_pos[0]
-            overlay_slice = ovl[slice1, :, :]
-            roi_slice = roi[slice1, :, :]
-        else:
-            raise RuntimeError("Invalid view: " % view)
-
-        roi_labels = np.unique(roi_slice)
-        roi_labels = roi_labels[roi_labels > 0]
-
-        stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
-        hist1 = []
-        hist1x = []
-
-        for ii in roi_labels:
-
-            # Overlay for a single label of the roi
-            vroi1 = overlay_slice[roi_slice == ii]
-
-            stat1['mean'].append(np.mean(vroi1))
-            stat1['median'].append(np.median(vroi1))
-            stat1['std'].append(np.std(vroi1))
-            stat1['max'].append(np.max(vroi1))
-            stat1['min'].append(np.min(vroi1))
-            y, x = np.histogram(vroi1, bins=20)
             hist1.append(y)
             hist1x.append(x)
 

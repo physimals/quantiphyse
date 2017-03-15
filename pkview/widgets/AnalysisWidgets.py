@@ -7,6 +7,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
+import sys
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
@@ -78,7 +79,7 @@ class SECurve(PkWidget):
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
 
-        self.setStatusTip("Click points on the 4D volume to see time curve")
+        self.setStatusTip("Click points on the 4D volume to see data curve")
 
         title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
         bhelp = HelpButton(self)
@@ -196,7 +197,7 @@ class SECurve(PkWidget):
         if self.p1 is not None: self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', "Time", units='s')
+        self.p1.setLabel('bottom', "Volume", units='')
 
     @QtCore.Slot()
     def replot_graph(self):
@@ -293,6 +294,15 @@ class ColorOverlay1(PkWidget):
         lhelp.addStretch(1)
         lhelp.addWidget(bhelp)
 
+        mode_hbox = QtGui.QHBoxLayout()
+        mode_hbox.addWidget(QtGui.QLabel("Show statistics for:"))
+        self.mode_combo = QtGui.QComboBox()
+        self.mode_combo.addItem("Current overlay")
+        self.mode_combo.addItem("All overlays")
+        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
+        mode_hbox.addWidget(self.mode_combo)
+        self.col_mode = 0
+
         self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Overlay histogram")
@@ -315,6 +325,10 @@ class ColorOverlay1(PkWidget):
         self.butgen.setToolTip("Show standard statistics for the overlay values in each ROI")
         self.butgen.clicked.connect(self.show_overlay_stats)
         l02.addWidget(self.butgen)
+        self.copy_btn = QtGui.QPushButton("Copy")
+        self.copy_btn.clicked.connect(self.copy_stats)
+        self.copy_btn.setVisible(False)
+        l02.addWidget(self.copy_btn)
         l02.addStretch(1)
 
         l02ss = QtGui.QHBoxLayout()
@@ -322,21 +336,22 @@ class ColorOverlay1(PkWidget):
         self.butgenss.setToolTip("Show standard statistics for the current slice")
         self.butgenss.clicked.connect(self.show_overlay_stats_current_slice)
         l02ss.addWidget(self.butgenss)
-        l02ss.addWidget(QtGui.QLabel("Slice direction:"))
+        self.slice_dir_label = QtGui.QLabel("Slice direction:")
+        self.slice_dir_label.setVisible(False)
+        l02ss.addWidget(self.slice_dir_label)
         self.sscombo = QtGui.QComboBox()
         self.sscombo.addItem("Axial")
         self.sscombo.addItem("Saggital")
         self.sscombo.addItem("Coronal")
         self.sscombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        self.sscombo.currentIndexChanged.connect(self.update)
+        self.sscombo.setVisible(False)
         l02ss.addWidget(self.sscombo)
+        self.copy_btn_ss = QtGui.QPushButton("Copy")
+        self.copy_btn_ss.clicked.connect(self.copy_stats_ss)
+        self.copy_btn_ss.setVisible(False)
+        l02ss.addWidget(self.copy_btn_ss)
         l02ss.addStretch(1)
-
-        regenHbox2 = QtGui.QHBoxLayout()
-        self.regenBtn2 = QtGui.QPushButton("Recalculate")
-        self.regenBtn2.clicked.connect(self.generate_overlay_stats_current_slice)
-        regenHbox2.addWidget(self.regenBtn2)
-        regenHbox2.addStretch(1)
-        self.regenBtn2.setVisible(False)
 
         l03 = QtGui.QHBoxLayout()
 
@@ -390,7 +405,7 @@ class ColorOverlay1(PkWidget):
 
         # Hide histogram for the meanwhile
         f02 = QGroupBoxB()
-        f02.setTitle('Overlay Histogram')
+        f02.setTitle('Histogram')
         f02.setLayout(l07)
 
         l08 = QtGui.QVBoxLayout()
@@ -399,21 +414,21 @@ class ColorOverlay1(PkWidget):
         l08.addStretch(1)
 
         f03 = QGroupBoxB()
-        f03.setTitle('Overlay Statistics')
+        f03.setTitle('Summary Statistics')
         f03.setLayout(l08)
 
         l08ss = QtGui.QVBoxLayout()
         l08ss.addLayout(l02ss)
         l08ss.addWidget(self.tab1ss)
-        l08ss.addLayout(regenHbox2)
         l08ss.addStretch(1)
 
         f03ss = QGroupBoxB()
-        f03ss.setTitle('Overlay Statistics - Current Slice')
+        f03ss.setTitle('Summary Statistics - Slice')
         f03ss.setLayout(l08ss)
 
         l1 = QtGui.QVBoxLayout()
         l1.addLayout(lhelp)
+        l1.addLayout(mode_hbox)
         l1.addWidget(f03)
         l1.addWidget(f03ss)
 
@@ -452,24 +467,57 @@ class ColorOverlay1(PkWidget):
         l1.addStretch(1)
         self.setLayout(l1)
 
+    def mode_changed(self, idx):
+        self.col_mode = idx
+        self.update()
+
+    def copy_table(self, tabmod):
+        tsv = ""
+        rows = range(tabmod.rowCount())
+        cols = range(tabmod.columnCount())
+        colheaders = ["",] + [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
+        tsv += "\t".join(colheaders) + "\n"
+
+        for row in rows:
+            rowdata = [tabmod.verticalHeaderItem(row).text(),] 
+            rowdata += [tabmod.item(row, col).text() for col in cols]
+            tsv += "\t".join(rowdata) + "\n"
+        clipboard = QtGui.QApplication.clipboard()
+        print(tsv)
+        clipboard.setText(tsv)
+
+    def copy_stats(self):
+        print("copy")
+        self.copy_table(self.tabmod1)
+
+    def copy_stats_ss(self):
+        print("copy ss")
+        self.copy_table(self.tabmod1ss)
+        
     def show_overlay_stats(self):
         if self.tab1.isVisible():
             self.tab1.setVisible(False)
+            self.copy_btn.setVisible(False)
             self.butgen.setText("Show")
         else:
             self.generate_overlay_stats()
             self.tab1.setVisible(True)
+            self.copy_btn.setVisible(True)
             self.butgen.setText("Hide")
 
     def show_overlay_stats_current_slice(self):
         if self.tab1ss.isVisible():
             self.tab1ss.setVisible(False)
-            self.regenBtn2.setVisible(False)
+            self.slice_dir_label.setVisible(False)
+            self.sscombo.setVisible(False)
+            self.copy_btn_ss.setVisible(False)
             self.butgenss.setText("Show")
         else:
             self.generate_overlay_stats_current_slice()
             self.tab1ss.setVisible(True)
-            self.regenBtn2.setVisible(True)
+            self.slice_dir_label.setVisible(True)
+            self.sscombo.setVisible(True)
+            self.copy_btn_ss.setVisible(True)
             self.butgenss.setText("Hide")
 
     def show_histogram(self):
@@ -512,10 +560,19 @@ class ColorOverlay1(PkWidget):
             self.ovtitle.setText("<font size=5>No overlay selected</font>")
         else:
             self.ovtitle.setText("<b><font size=5>%s</font></b>" % overlay.name)
-        self.reset_spins()
-        self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
-        self.update()
+            self.reset_spins()
+            self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
+            self.update()
  
+    def focus_changed(self, overlay):
+        """
+        Update image data views
+        """
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+        if self.tab1ss.isVisible():
+            self.generate_overlay_stats_current_slice()
+
     def roi_changed(self, roi):
         self.update()
 
@@ -529,70 +586,45 @@ class ColorOverlay1(PkWidget):
         if self.win1.isVisible():
             self.generate_histogram()
 
-    def focus_changed(self, overlay):
-        """
-        Update image data views
-        """
-        if self.rp_win.isVisible():
-            self.update_radial_profile()
-        if self.tab1ss.isVisible():
-            self.generate_overlay_stats_current_slice()
-
     def update_radial_profile(self):
         rp, xvals, binedges = self.ia.get_radial_profile(bins=self.rp_nbins.value())
         self.rp_curve.setData(x=xvals, y=rp)
 
     @QtCore.Slot()
-    def generate_overlay_stats(self):
+    def populate_stats_table(self, tabmod, **kwargs):
         # Clear the previous labels
-        self.tabmod1.clear()
+        tabmod.clear()
+        tabmod.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
+        tabmod.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
+        tabmod.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        tabmod.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
+        tabmod.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
-        # get analysis from analysis object
-        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats()
+        if self.col_mode == 0:
+            ovs = [self.ivm.current_overlay,]
+        else:
+            ovs = self.ivm.overlays.values()
+            
+        col = 0
+        for ov in ovs:
+            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **kwargs)
+            for ii in range(len(stats1['mean'])):
+                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
+                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
+                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.dps))))
+                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.dps))))
+                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.dps))))
+                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.dps))))
+                col += 1
 
-        # Number of decimal places to display
-        dps = self.ivm.current_overlay.dps
-
-        self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-        self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        self.tabmod1.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-        self.tabmod1.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-        self.tabmod1.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-        for ii in range(len(stats1['mean'])):
-            self.tabmod1.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
-            self.tabmod1.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
-            self.tabmod1.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
-            self.tabmod1.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
-            self.tabmod1.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
+    @QtCore.Slot()
+    def generate_overlay_stats(self):
+        self.populate_stats_table(self.tabmod1)
 
     @QtCore.Slot()
     def generate_overlay_stats_current_slice(self):
-        view = self.sscombo.currentIndex()
-
-        # Clear the previous labels
-        self.tabmod1ss.clear()
-
-        # get analysis from analysis object
-        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats_ss(view)
-
-        # Number of decimal places to display
-        dps = self.ivm.current_overlay.dps
-
-        self.tabmod1ss.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-        self.tabmod1ss.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        self.tabmod1ss.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-        self.tabmod1ss.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-        self.tabmod1ss.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-        for ii in range(len(stats1['mean'])):
-            self.tabmod1ss.setHorizontalHeaderItem(ii, QtGui.QStandardItem("ROI label " + str(roi_labels[ii])))
-            self.tabmod1ss.setItem(0, ii, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], dps))))
-            self.tabmod1ss.setItem(1, ii, QtGui.QStandardItem(str(np.around(stats1['median'][ii], dps))))
-            self.tabmod1ss.setItem(2, ii, QtGui.QStandardItem(str(np.around(stats1['std'][ii], dps))))
-            self.tabmod1ss.setItem(3, ii, QtGui.QStandardItem(str(np.around(stats1['min'][ii], dps))))
-            self.tabmod1ss.setItem(4, ii, QtGui.QStandardItem(str(np.around(stats1['max'][ii], dps))))
+        selected_slice = self.sscombo.currentIndex()
+        self.populate_stats_table(self.tabmod1ss, slice=selected_slice)
 
     @QtCore.Slot()
     def generate_histogram(self):
@@ -606,7 +638,7 @@ class ColorOverlay1(PkWidget):
         # get analysis from analysis object
         bins = self.nbinsSpin.value()
         hist_range = (self.minSpin.value(), self.maxSpin.value())
-        stats1, roi_labels, hist1, hist1x = self.ia.get_roi_stats(hist_bins=bins, hist_range=hist_range)
+        stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(self.ivm.current_overlay, self.ivm.current_roi, hist_bins=bins, hist_range=hist_range)
 
         self.win1.removeItem(self.plt1)
         self.plt1 = self.win1.addPlot(title="")
