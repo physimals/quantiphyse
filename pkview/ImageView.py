@@ -420,6 +420,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             self._update_view()
             # signal that the mouse is scrolling
             self.sig_mouse_scroll.emit(1)
+            self.sig_focus_changed.emit(self.ivm.cim_pos)
         return step
 
     # Create an image from one of the windows
