@@ -49,101 +49,81 @@ class OverviewWidget(PkWidget):
         ta.setWordWrap(True)
         disc.setWordWrap(True)
 
-        t1 = QtGui.QLabel("Current overlays")
-        self.l1 = CaseWidget(self)
-        t2 = QtGui.QLabel("Current ROIs")
-        self.l2 = RoiWidget(self)
+        t1 = QtGui.QLabel("Current data")
+        self.vols = DataListWidget(self)
 
         layout.addLayout(l03)
         layout.addWidget(ta)
         layout.addWidget(box)
 
         layout.addWidget(t1)
-        layout.addWidget(self.l1)
-        layout.addWidget(t2)
-        layout.addWidget(self.l2)
+        layout.addWidget(self.vols)
 
         self.setLayout(layout)
 
-class CaseWidget(QtGui.QListWidget):
+class DataListWidget(QtGui.QTableWidget):
     """
-    Class to handle the organisation of the loaded volumes
+    Table showing loaded volumes
     """
     def __init__(self, parent):
-        super(CaseWidget, self).__init__(parent)
-        self.list_current = []
-        self.sel_current = ""
-        self.ivm = None
-        self.currentItemChanged.connect(self.emit_volume)
+        super(DataListWidget, self).__init__(parent)
         self.ivm = parent.ivm
-        self.ivm.sig_current_overlay.connect(self.update_current)
+        self.setColumnCount(3)
+        self.setHorizontalHeaderLabels(["Name", "Type", "Shape"])
+        header = self.horizontalHeader();
+        header.setResizeMode(0, QtGui.QHeaderView.Stretch);
+        self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.cellClicked.connect(self.clicked)
+        self.ivm.sig_main_volume.connect(self.update_list)
+        self.ivm.sig_current_overlay.connect(self.update_list)
         self.ivm.sig_all_overlays.connect(self.update_list)
-
-    def update_list(self, list1):
-        self.list_current = list1[:]
-        try:
-            self.blockSignals(True)
-            self.clear()
-            for ii in self.list_current:
-                self.addItem(ii)
-        finally:
-            self.blockSignals(False)
-
-    def update_current(self, ovl):
-        if ovl is not None:
-            if self.sel_current != ovl.name:
-                self.sel_current = ovl.name
-                ind1 = self.list_current.index(ovl.name)
-                try:
-                    self.blockSignals(True)
-                    self.setCurrentRow(ind1)
-                finally:
-                    self.blockSignals(False)
-
-    @QtCore.Slot()
-    def emit_volume(self, choice1, choice1_prev):
-        if choice1 is not None:
-            self.ivm.set_current_overlay(choice1.text(), signal=True)
-
-class RoiWidget(QtGui.QListWidget):
-    """
-    Class to handle the organisation of the loaded ROIs
-    """
-    def __init__(self, parent):
-        super(RoiWidget, self).__init__(parent)
-        self.list_current = []
-        self.sel_current = ""
-        self.ivm = None
-        self.currentItemChanged.connect(self.emit_volume)
-        self.ivm = parent.ivm
-        self.ivm.sig_current_roi.connect(self.update_current)
+        self.ivm.sig_current_roi.connect(self.update_list)
         self.ivm.sig_all_rois.connect(self.update_list)
 
+    def get_name(self, vol):
+        if vol.fname is not None:
+            name = vol.fname
+        else:
+            name = vol.name
+        return name
+
+    def add_volume(self, row, vol_type, vol, current=False):
+        self.setItem(row, 0, QtGui.QTableWidgetItem(vol.name))
+        self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
+        self.setItem(row, 2, QtGui.QTableWidgetItem(str(vol.shape)))
+        if current:
+            font = self.item(row, 0).font()
+            font.setBold(True)
+            self.item(row, 0).setFont(font)
+            self.item(row, 1).setFont(font)
+            self.item(row, 2).setFont(font)
+        if vol.fname is not None:
+            self.item(row, 0).setToolTip(vol.fname)
+
     def update_list(self, list1):
-        self.list_current = list1[:]
         try:
             self.blockSignals(True)
-            self.clear()
-            for ii in self.list_current:
-                self.addItem(ii)
+            n = 1 + len(self.ivm.overlays) + len(self.ivm.rois)
+            self.setRowCount(n)
+            if self.ivm.vol is not None:
+                self.add_volume(0, "Main volume", self.ivm.vol)
+            row = 1
+            for ovl in self.ivm.overlays.values():
+                self.add_volume(row, "Overlay", ovl, ovl == self.ivm.current_overlay)
+                row += 1
+            for roi in self.ivm.rois.values():
+                self.add_volume(row, "ROI", roi, roi == self.ivm.current_roi)
+                row += 1
         finally:
             self.blockSignals(False)
 
-    def update_current(self, roi):
-        if roi is not None:
-            if self.sel_current != roi.name:
-                self.sel_current = roi.name
-                ind1 = self.list_current.index(roi.name)
-                try:
-                    self.blockSignals(True)
-                    self.setCurrentRow(ind1)
-                finally:
-                    self.blockSignals(False)
-
-    @QtCore.Slot()
-    def emit_volume(self, choice1, choice1_prev):
-        if choice1 is not None:
-            self.ivm.set_current_roi(choice1.text(), signal=True)
+    def clicked(self, row, col):
+        if self.item(row, 1).text() == "Overlay":
+            self.ivm.set_current_overlay(self.item(row, 0).text())
+        elif self.item(row, 1).text() == "ROI":
+            self.ivm.set_current_roi(self.item(row, 0).text())
 
 
 
