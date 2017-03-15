@@ -58,17 +58,17 @@ class Volume(object):
             # Look at range of data and allow decimal places to give at least 1% steps
             return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
 
-    def set_ndims(self, n, hastime=True):
+    def force_ndims(self, n, multi=True):
         """
         Force this volume into n dimensions if it isn't already
 
-        If hastime=True, assume last dimension is time and pad space 
-        dimensions only
+        If multi=True, assume last dimension is multiple volumes (e.g. time series) 
+        and pad other dimensions only
         """
-        self.hastime = hastime
+        self.multi = multi
         if self.ndims > n:
             raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
-        elif hastime:
+        elif multi:
             for i in range(n-self.ndims):
                 self.data = np.expand_dims(self.data, self.ndims-1)
                 self.voxel_sizes.insert(self.ndims-1, 1.0)
@@ -289,7 +289,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if std_only and ov.name not in self.overlay_label_all:
             raise RuntimeError("Overlay name is not a known type")
 
-        ov.set_ndims(max(3, ov.ndims), hastime=(ov.ndims == 4))
+        ov.force_ndims(max(3, ov.ndims), multi=(ov.ndims == 4))
         ov.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
             ov.copy_header(self.vol.nifti_header)
@@ -316,7 +316,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if self.vol is None:
             raise RuntimeError("Cannot add overlay with no main volume")
 
-        roi.set_ndims(3, hastime=False)
+        roi.force_ndims(3, multi=False)
         roi.check_shape(self.vol.shape)
         if self.vol.nifti_header is not None:
             roi.copy_header(self.vol.nifti_header)

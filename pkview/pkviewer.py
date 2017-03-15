@@ -216,7 +216,7 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.addWidget(QtGui.QLabel('Coronal'), 2, 0)
         gBoxlay2.addWidget(self.sld3, 2, 1)
         gBoxlay2.addWidget(lab_p3, 2, 2)
-        gBoxlay2.addWidget(QtGui.QLabel('Time'), 3, 0)
+        gBoxlay2.addWidget(QtGui.QLabel('Volume'), 3, 0)
         gBoxlay2.addWidget(self.sld4, 3, 1)
         gBoxlay2.addWidget(lab_p4, 3, 2)
         gBoxlay2.setColumnStretch(0, 0)
@@ -584,7 +584,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
         file_menu.addAction(load_ovreg_action)
-        # file_menu.addAction(load_ovregsel_action)
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
@@ -600,13 +599,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         help_menu.addAction(about_action)
 
         advanced_menu.addAction(console_action)
-
-        # Toolbar
-        # self.toolbar = self.addToolBar('Load Image')
-        # self.setIconSize(QtCore.QSize(20, 20))
-        # self.toolbar.addAction(load_action)
-        # self.toolbar.addAction(load_roi_action)
-        # self.toolbar.addAction(load_ovreg_action)
 
         # extra info displayed in the status bar
         self.statusBar()
@@ -643,9 +635,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 else:
                     fname.append(str(url.toLocalFile()))
                 print(fname)
-            # Signal that a file has been dropped
-            self.sig_dropped.emit(fname[0])
-
+            for name in fname:
+                # Signal that a file has been dropped
+                self.sig_dropped.emit(name)
         else:
             e.ignore()
 
@@ -834,26 +826,26 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         vol = Volume("main", fname=fname)
         if vol.ndims == 2:
-            vol.set_ndims(4, hastime = False)
+            vol.force_ndims(4, multi = False)
         if vol.ndims == 3:
             # 3D volume loaded - is it 2d + time or static 3d?
             msgBox = QtGui.QMessageBox()
             msgBox.setText("3D volume loaded")
             msgBox.setInformativeText("Choose image type")
-            msgBox.addButton("Static 3D", QtGui.QMessageBox.NoRole)
-            msgBox.addButton("2D+time", QtGui.QMessageBox.YesRole)
+            msgBox.addButton("Single 3D volume", QtGui.QMessageBox.NoRole)
+            msgBox.addButton("Multiple 2D volumes", QtGui.QMessageBox.YesRole)
             msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
             ret = msgBox.exec_()
             if ret == QtGui.QMessageBox.Yes:
-                print("2D+time")
-                vol.set_ndims(4, hastime = True)
+                print("Multiple 2D")
+                vol.force_ndims(4, multi = True)
             else:
                 print("Static 3D")
-                vol.set_ndims(4, hastime = False)
+                vol.force_ndims(4, multi = False)
         elif vol.ndims != 4:
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("PkView")
-            m1.setText("Pkview supports 2D and 3D volumes with optional additional time dimension only")
+            m1.setText("Pkview supports 2D and 3D volumes with one optional additional dimension only")
             m1.exec_()
             return
 

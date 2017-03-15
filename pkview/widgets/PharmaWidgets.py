@@ -387,7 +387,7 @@ class PharmaView(PkWidget):
     def __init__(self, **kwargs):
         super(PharmaView, self).__init__(name="PK Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
 
-        self.setStatusTip("Click points on the 4D volume to see time curve")
+        self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
         self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
@@ -498,7 +498,7 @@ class PharmaView(PkWidget):
             self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
         self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', "Time", units='s')
+        self.p1.setLabel('bottom', "Volume", units='')
         #self.p1.setLogMode(x=False, y=False)
 
     @QtCore.Slot()
