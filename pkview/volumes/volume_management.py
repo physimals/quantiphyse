@@ -258,6 +258,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
+        # Interpretation of 'volumes' dimension
+        self.voldim_name = "Volumes"
+        self.voldim_scale = []
+
         if reset:
             self.sig_main_volume.emit(self.vol)
             self.sig_current_overlay.emit(self.current_overlay)
@@ -275,12 +279,38 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.vol = vol
         self.cim_pos = [int(d/2) for d in vol.shape]
         if vol.ndims == 3: self.cim_pos.append(0);
+        self.set_voldim_scale_const(1.0)
 
         # 90% of the image range
         # FIXME unclear what the purpose of this is. If for viewing, should be done on ImageView histogram widget
         #self.img_range = [self.image.min(), 0.5 * self.image.max()]
 
         self.sig_main_volume.emit(self.vol)
+
+    def set_voldim_scale_const(self, scale):
+        """
+        Set the 'volumes' dimension to be a linear multiple of the volume number
+        """
+        if self.vol.multi:
+            self.voldim_scale = [scale,] * range(vol.shape[-1])
+        else:
+            self.voldim_scale = [scale,]
+        print("Using multi-volume scale: %s" % str(self.voldim_scale))
+
+    def set_voldim_scale_var(self, scale):
+        """
+        Set the 'volumes' dimension from a list of values which must match the number of volumes
+        """
+        if self.vol.multi:
+            length =  vol.shape[-1]
+        else:
+            length = 1
+
+        if len(scale) != length:
+            raise RuntimeError("Incorrect length for volume dimension scale: %i should be %i" % (len(scale), length))
+        else:
+            self.voldim_scale = scale
+        print("Using multi-volume scale: %s" % str(self.voldim_scale))
 
     def add_overlay(self, ov, make_current=False, signal=True, std_only=False):
         if self.vol is None:
