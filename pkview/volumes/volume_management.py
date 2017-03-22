@@ -20,6 +20,11 @@ import nrrd
 import os
 
 class Volume(object):
+
+    AXIAL = 1
+    CORONAL = 2
+    SAGGITAL = 3
+    
     def __init__(self, name, data=None, fname=None):
         self.fname = fname
         if fname is not None:
@@ -65,6 +70,7 @@ class Volume(object):
         If multi=True, assume last dimension is multiple volumes (e.g. time series) 
         and pad other dimensions only
         """
+        print("Forcing to %i dims, multi=%s, current shape=%s" % (n, str(multi), str(self.shape)))
         self.multi = multi
         if self.ndims > n:
             raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
@@ -80,6 +86,11 @@ class Volume(object):
         self.ndims = n
 
     def save_nifti(self, fname):
+        """
+        Save to Nifti file
+
+        FIXME do we need to realign the data if we are using the same affine?
+        """
         if self.nifti_header is None:
             warnings.warn("No NIFTI header information available")
             img = nib.Nifti1Image(self.data, np.identity(self.ndims))
@@ -101,11 +112,48 @@ class Volume(object):
             self.data = np.asarray(image.get_data())
             self.voxel_sizes = list(image.get_header().get_zooms())
             self.nifti_header = image.get_header()
+            self.realign(self.nifti_header.get_best_affine())
         elif self.fname.endswith(".nrrd"):
             # else if the file is a nrrd
             self.data = nrrd.read(self.fname)
         else:
             raise RuntimeError("%s: Unrecognized file type" % self.fname)
+
+    def realign(self, affine):
+        """
+        Permute and flip axes to align image to correct orientation
+
+        Assumes orthogonal transformations only, not general rotations!
+        """
+        space_affine = affine[:3,:3]
+        space_pos = np.absolute(space_affine)
+        dims, flip = [], []
+        for d in range(3):
+            newd = np.argmax(space_pos[d])
+            dims.append(newd)
+            if space_affine[d, newd] < 0:
+                flip.append(d)
+        if len(self.data.shape) == 4: dims.append(3)
+        self.data = np.transpose(self.data, dims)
+        for d in flip:
+            self.data = np.flip(self.data, d)
+
+    def slice(self, axis, pos):
+        """ 
+        Get a slice in the given direction
+
+        axis should be  Volume.AXIAL, Volume.CORONAL or Volume.SAGGITAL
+        pos is the index in this dimension
+        """
+        pass
+
+    def value(self, pos):
+        """ 
+        Get data value at a given position
+
+        Axes of position are Volume.AXIAL, Volume.CORONAL, Volume.SAGGITAL
+        """
+        pass
 
     def check_shape(self, shape):
         ndims = min(self.ndims, len(shape))
@@ -292,7 +340,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Set the 'volumes' dimension to be a linear multiple of the volume number
         """
         if self.vol.multi:
-            self.voldim_scale = [scale,] * range(vol.shape[-1])
+            self.voldim_scale = [scale,] * self.vol.shape[-1]
         else:
             self.voldim_scale = [scale,]
         print("Using multi-volume scale: %s" % str(self.voldim_scale))
