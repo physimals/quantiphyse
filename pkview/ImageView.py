@@ -185,7 +185,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.ax_map = [(0, 1, 2), (0, 2, 1), (1, 2, 0)]
 
         #empty array for arrows
-        self.sizeScaling = False
+        self.sizeScaling = True
 
         self.win = []
         self.view = []
@@ -232,9 +232,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         
         self.grid1 = QtGui.QGridLayout()
 
-        self.grid1.addWidget(self.win[0], 0, 0,)
-        self.grid1.addWidget(self.win[1], 0, 1)
-        self.grid1.addWidget(self.win[2], 1, 0)
+        self.grid1.addWidget(self.win[1], 0, 0,)
+        self.grid1.addWidget(self.win[2], 0, 1)
+        self.grid1.addWidget(self.win[0], 1, 0)
         self.grid1.addWidget(self.h1, 0, 2)
 
         self.grid1.setColumnStretch(0, 3)
@@ -373,6 +373,13 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         if self.ivm.vol is None:
             return
 
+        for i in range(3):
+            if self.sizeScaling:
+                x, y = self.ax_map[i][:2]
+                self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
+            else:
+                self.view[i].setAspectLocked(True, ratio=1)
+
         if self.ivm.vol.ndims == 3:
             self.imgwin[0].setImage(self.ivm.vol.data[:, :, self.ivm.cim_pos[2]], autoLevels=False)
             self.imgwin[1].setImage(self.ivm.vol.data[:, self.ivm.cim_pos[1], :], autoLevels=False)
@@ -445,6 +452,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         # update view
         if self.ivm.vol is not None:
             self.h1.setSourceData(self.ivm.vol.data)
+
         self._update_view()
 
     def set_size_scaling(self, state):
@@ -452,13 +460,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         toggles whether voxel scaling is used
         """
         self.sizeScaling = state
-        for i in range(3):
-            if self.sizeScaling:
-                x, y = self.ax_map[i][:2]
-                self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
-            else:
-                self.view[i].setAspectLocked(True, ratio=1)
-
         self._update_view()
 
 class ImageViewOverlay(ImageViewLayout):
