@@ -330,8 +330,8 @@ class MainWindowWidget(QtGui.QWidget):
 
         # connect sliders to ivl
         self.sld1.valueChanged[int].connect(self.ivl.set_space_pos(2))
-        self.sld2.valueChanged[int].connect(self.ivl.set_space_pos(1))
-        self.sld3.valueChanged[int].connect(self.ivl.set_space_pos(0))
+        self.sld2.valueChanged[int].connect(self.ivl.set_space_pos(0))
+        self.sld3.valueChanged[int].connect(self.ivl.set_space_pos(1))
         self.sld4.valueChanged[int].connect(self.ivl.set_time_pos)
 
         # Position Label and connect to slider
@@ -589,21 +589,31 @@ class MainWindowWidget(QtGui.QWidget):
         self.qtab1.setTabPosition(QtGui.QTabWidget.West)
 
     def update_slider_range(self):
-        self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
-        self.sld2.setRange(0, self.ivm.vol.shape[1]-1)
-        self.sld3.setRange(0, self.ivm.vol.shape[0]-1)
+        try:
+            self.sld1.blockSignals(True)
+            self.sld2.blockSignals(True)
+            self.sld3.blockSignals(True)
+            self.sld4.blockSignals(True)
+            self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
+            self.sld2.setRange(0, self.ivm.vol.shape[0]-1)
+            self.sld3.setRange(0, self.ivm.vol.shape[1]-1)
 
-        if self.ivm.vol.ndims == 4:
-            self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
-        else:
-            self.sld4.setRange(0, 0)
+            if self.ivm.vol.ndims == 4:
+                self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
+            else:
+                self.sld4.setRange(0, 0)
+        finally:
+            self.sld1.blockSignals(False)
+            self.sld2.blockSignals(False)
+            self.sld3.blockSignals(False)
+            self.sld4.blockSignals(False)
 
     @QtCore.Slot(bool)
     def slider_scroll_mouse(self, value=None):
         # update slider positions
         self.sld1.setValue(self.ivm.cim_pos[2])
-        self.sld2.setValue(self.ivm.cim_pos[1])
-        self.sld3.setValue(self.ivm.cim_pos[0])
+        self.sld2.setValue(self.ivm.cim_pos[0])
+        self.sld3.setValue(self.ivm.cim_pos[1])
         self.sld4.setValue(self.ivm.cim_pos[3])
         if self.ivm.vol is not None: 
             self.vol_data.setText(str(self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], self.ivm.cim_pos[3]]))
