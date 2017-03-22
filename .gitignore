@@ -19,4 +19,4 @@ pkview/analysis/perfusionslic/additional/*.cpp
 pkview/analysis/perfusionslic/*.c
 pkview/analysis/perfusionslic/*.pyd
 pkview/analysis/*.pyd
-
+pkview/analysis/*.cpp
