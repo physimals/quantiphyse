@@ -7,6 +7,14 @@ from pkview.analysis.perfusionslic import PerfSLIC
 from pkview.analysis.overlay_analysis import OverlayAnalysis
 from pkview.widgets import PkWidget
 
+TITLE = """
+<p><font size="5">Supervoxel Generation</font></p>
+
+<p>Please cite:</p>
+
+<p><i>Irving et al (2017) "maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images" https://arxiv.org/abs/1606.09518v2</i></p>
+"""
+
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
         self.label = QtGui.QLabel(text)
@@ -35,11 +43,14 @@ class PerfSlicWidget(PkWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtGui.QLabel("<font size=5>Supervoxel Generation</font> \n"))
+        title_label = QtGui.QLabel(TITLE)
+        title_label.setWordWrap(True)
+        layout.addWidget(title_label)
+        layout.addWidget(QtGui.QLabel(""))
 
         hbox = QtGui.QHBoxLayout()
         optbox = QtGui.QGroupBox()
-        optbox.setTitle("Supervoxel Generation")
+        optbox.setTitle("Options")
         grid = QtGui.QGridLayout()
         optbox.setLayout(grid)
         self.n_comp = NumericOption("Number of components", grid, 0, minval=1, maxval=3, default=3, intonly=True)

@@ -14,6 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
+from pkview import error_dialog
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Volume, Roi, Overlay
@@ -44,6 +45,13 @@ except:
 # can see what overlays to offer as options
 CURRENT_OVERLAYS = []
 
+TITLE = """
+<p><font size="5">Fabber Bayesian model fitting</font></p>
+
+<p>Please cite:</p>
+<p><i>Chappell, M.A., Groves, A.R., Woolrich, M.W., "Variational Bayesian inference for a non-linear forward model", IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
+</p>
+"""
 class FabberProcess(MultiProcess):
 
     """ Signal emitted to track progress"""
@@ -352,31 +360,26 @@ class FabberWidget(PkWidget):
         super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
                                            desc="Fabber Bayesian model fitting",
                                            **kwargs)
-        mainGrid = QtGui.QGridLayout()
+        mainGrid = QtGui.QVBoxLayout()
         self.setLayout(mainGrid)
 
         try:
             self.fabber_lib = find_fabber()[1]
             if self.fabber_lib is None:
-                mainGrid.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"), 0, 0)
+                mainGrid.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"))
                 return
         except:
-            mainGrid.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"), 0, 0)
+            mainGrid.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"))
             return
 
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
         # Options box
         optionsBox = QGroupBoxB()
-        optionsBox.setTitle('Fabber Model Fitting')
+        optionsBox.setTitle('Options')
+        optionsBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         grid = QtGui.QGridLayout()
         optionsBox.setLayout(grid)
-
-        #grid.addWidget(QtGui.QLabel("Fabber core library"), 1, 0)
-        #self.libEdit = QtGui.QLineEdit(self)
-        #grid.addWidget(self.libEdit, 1, 1)
-        #self.libChangeBtn = QtGui.QPushButton('Choose', self)
-        #grid.addWidget(self.libChangeBtn, 1, 2)
 
         grid.addWidget(QtGui.QLabel("Extra models library"), 2, 0)
         self.modellibCombo = QtGui.QComboBox(self)
@@ -410,6 +413,7 @@ class FabberWidget(PkWidget):
         # Run box
         runBox = QGroupBoxB()
         runBox.setTitle('Running')
+        runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         vbox = QtGui.QVBoxLayout()
         runBox.setLayout(vbox)
 
@@ -441,6 +445,7 @@ class FabberWidget(PkWidget):
         # Load/save box
         fileBox = QGroupBoxB()
         fileBox.setTitle('Load/Save options')
+        fileBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         vbox = QtGui.QVBoxLayout()
         fileBox.setLayout(vbox)
 
@@ -462,11 +467,14 @@ class FabberWidget(PkWidget):
         vbox.addLayout(hbox)
 
         # Main layout
-        mainGrid.addWidget(optionsBox, 0, 0)
-        mainGrid.addWidget(runBox, 1, 0)
-        mainGrid.addWidget(fileBox, 2, 0)
-        mainGrid.setColumnStretch(1, 1)
-        mainGrid.setRowStretch(3, 1)
+        title_label = QtGui.QLabel(TITLE)
+        title_label.setWordWrap(True)
+        mainGrid.addWidget(title_label)
+        mainGrid.addWidget(QtGui.QLabel(""))
+        mainGrid.addWidget(optionsBox)
+        mainGrid.addWidget(runBox)
+        mainGrid.addWidget(fileBox)
+        mainGrid.addStretch(1)
 
         # Register our custom view to handle image options
         OPT_VIEW["IMAGE"] = ImageOptionView
@@ -544,17 +552,11 @@ class FabberWidget(PkWidget):
         roi = self.ivm.current_roi
 
         if img is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The image doesn't exist! Please load before running Fabber modelling")
-            m1.exec_()
+            error_dialog("No data loaded")
             return
 
         if roi is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The ROI doesn't exist! Please load before running Fabber modelling")
-            m1.exec_()
+            error_dialog("No ROI loaded - can only run Fabber with an ROI")
             return
 
         # set the progress value
