@@ -11,6 +11,7 @@ import sys
 import os
 import platform
 import argparse
+import traceback
 
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
@@ -209,24 +210,28 @@ class ViewOptions(QtGui.QDialog):
 
         self.voxel_size_scaling = True
 
-        vbox = QtGui.QVBoxLayout()
+        grid = QtGui.QGridLayout()
         label = QtGui.QLabel('<font size="5">View Options</font>')
-        vbox.addWidget(label)
+        grid.addWidget(label, 0, 0)
 
         cb = QtGui.QCheckBox("Voxel size scaling")
         cb.setChecked(self.voxel_size_scaling)
         cb.stateChanged.connect(self.toggle_voxel_scaling)
-        vbox.addWidget(cb)
+        grid.addWidget(cb, 1, 0)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("4D Unit"))
+        grid.addWidget(QtGui.QLabel("Orientation"), 2, 0)
+        c = QtGui.QComboBox()
+        c.addItem("Radiological (Right is Left)")
+        c.addItem("Neurological (Left is Left)")
+        c.currentIndexChanged.connect(self.lrflip_changed)
+        grid.addWidget(c, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("4D Unit"), 3, 0)
         self.t_unit_edit = QtGui.QLineEdit("Volumes")
-        hbox.addWidget(self.t_unit_edit)
-        hbox.addStretch(1)
-        vbox.addLayout(hbox)
+        grid.addWidget(self.t_unit_edit, 3, 1)
         
+        grid.addWidget(QtGui.QLabel("4D Scale"), 4, 0)
         hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("4D Scale"))
         self.t_combo = QtGui.QComboBox()
         self.t_combo.addItem("Fixed resolution")
         self.t_combo.addItem("Labelled")
@@ -237,20 +242,17 @@ class ViewOptions(QtGui.QDialog):
         self.t_btn = QtGui.QPushButton("Edit")
         self.t_btn.setVisible(False)
         self.t_btn.clicked.connect(self.edit_scale)
-        #self.t_values = QtGui.QLabel("Values")
-        #self.t_values.setVisible(False)
-        #hbox.addWidget(self.t_values)
-        #self.t_values_edit = QtGui.QLineEdit("1.0")
-        #self.t_values_edit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
-        #self.t_values_edit.setVisible(False)
         hbox.addWidget(self.t_btn)
-        vbox.addLayout(hbox)
+        grid.addLayout(hbox, 4, 1)
 
-        vbox.addStretch(1)
-        self.setLayout(vbox)
+        grid.setRowStretch(5, 1)
+        self.setLayout(grid)
+
+    def lrflip_changed(self, idx):
+        self.ivl.set_lr_flip(idx == 0)
 
     def vol_changed(self, vol):
-        if vol is not None:
+        if vol is not None and len(self.ivm.voldim_scale) > 1:
             self.t_res_edit.setText(str(self.ivm.voldim_scale[1]))
             self.t_combo.setCurrentIndex(self.ivm.voldim_scale_type)
 
@@ -985,7 +987,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 return
 
         multi = True
-        vol = Volume("main", fname=fname)
+        vol = Volume(os.path.basename(fname), fname=fname)
         if vol.ndims == 2:
             multi = False
         if vol.ndims == 3:
@@ -1023,8 +1025,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if self.overlay_dir_in is not None:
             self.load_overlay(fname=self.overlay_dir_in, name=self.overlay_type_in)
 
-def my_catch_exceptions(type, value, traceback):
-    error_dialog(value, "Error")
+def my_catch_exceptions(type, value, tb):
+    error_dialog(traceback.format_exception(type, value, tb), "Error")
         
 def main():
 

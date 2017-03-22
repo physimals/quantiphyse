@@ -190,6 +190,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         #empty array for arrows
         self.sizeScaling = True
+        self.lrFlip = True
 
         self.win = []
         self.view = []
@@ -383,6 +384,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
                 self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
             else:
                 self.view[i].setAspectLocked(True, ratio=1)
+        
+        self.view[0].invertX(self.lrFlip)
+        self.view[1].invertX(self.lrFlip)
 
         if self.ivm.vol.ndims == 3:
             self.imgwin[0].setImage(self.ivm.vol.data[:, :, self.ivm.cim_pos[2]], autoLevels=False)
@@ -464,6 +468,13 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         toggles whether voxel scaling is used
         """
         self.sizeScaling = state
+        self._update_view()
+
+    def set_lr_flip(self, state):
+        """
+        toggles whether L/R is flipped
+        """
+        self.lrFlip = state
         self._update_view()
 
 class ImageViewOverlay(ImageViewLayout):
