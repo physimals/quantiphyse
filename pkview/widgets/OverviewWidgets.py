@@ -13,27 +13,27 @@ class OverviewWidget(PkWidget):
 
         layout = QtGui.QVBoxLayout()
 
-        # List for volume management
-        tb = QtGui.QLabel("<font size=50> PKView %s</font> \n" % __version__)
-
-        pixmap = QtGui.QPixmap(get_icon("main_icon.png"))
-        pixmap = pixmap.scaled(35, 35, QtCore.Qt.KeepAspectRatio)
+        hbox = QtGui.QHBoxLayout()
+        pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
+        #pixmap = pixmap.scaledToHeight(75, QtCore.Qt.SmoothTransformation)
         lpic = QtGui.QLabel(self)
         lpic.setPixmap(pixmap)
-
+        hbox.addWidget(lpic)
+        #tb = QtGui.QLabel("<font size=50> PKView %s</font> \n" % __version__)
+        #hbox.addWidget(tb)
+        hbox.addStretch(1)
         b1 = HelpButton(self)
-        l03 = QtGui.QHBoxLayout()
-        l03.addWidget(lpic)
-        l03.addWidget(tb)
-        l03.addStretch(1)
-        l03.addWidget(b1)
+        hbox.addWidget(b1)
+        layout.addLayout(hbox)
 
-        ta = QtGui.QLabel("The GUI enables analysis of a DCE-MRI volume, ROI and multiple overlays "
+        ta = QtGui.QLabel("\n\nThe GUI enables analysis of an MRI volume, and multiple ROIs and overlays "
                           "with pharmacokinetic modelling, subregion analysis and statistics included. "
                           "Please use help (?) buttons for more online information on each widget and the entire GUI. "
                           " \n \n"
                           "Creator: Benjamin Irving (mail@birving.com) \n"
                           "Contributors: Benjamin Irving, Martin Craig, Michael Chappell")
+        layout.addWidget(ta)
+
         box = QtGui.QGroupBox()
         vbox = QtGui.QVBoxLayout()
         box.setLayout(vbox)
@@ -48,19 +48,28 @@ class OverviewWidget(PkWidget):
         vbox.addWidget(disc)
         ta.setWordWrap(True)
         disc.setWordWrap(True)
-
-        t1 = QtGui.QLabel("Current data")
-        self.vols = DataListWidget(self)
-
-        layout.addLayout(l03)
-        layout.addWidget(ta)
         layout.addWidget(box)
 
-        layout.addWidget(t1)
+        self.vols = DataListWidget(self)
         layout.addWidget(self.vols)
+
+        hbox = QtGui.QHBoxLayout()
+        btn = QtGui.QPushButton("Rename")
+        btn.clicked.connect(self.rename)
+        hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Delete")
+        btn.clicked.connect(self.delete)
+        hbox.addWidget(btn)
+        layout.addLayout(hbox)
 
         self.setLayout(layout)
 
+    def rename(self):
+        pass
+
+    def delete(self):
+        pass
+        
 class DataListWidget(QtGui.QTableWidget):
     """
     Table showing loaded volumes
@@ -69,9 +78,9 @@ class DataListWidget(QtGui.QTableWidget):
         super(DataListWidget, self).__init__(parent)
         self.ivm = parent.ivm
         self.setColumnCount(3)
-        self.setHorizontalHeaderLabels(["Name", "Type", "Shape"])
+        self.setHorizontalHeaderLabels(["Name", "Type", "File"])
         header = self.horizontalHeader();
-        header.setResizeMode(0, QtGui.QHeaderView.Stretch);
+        header.setResizeMode(2, QtGui.QHeaderView.Stretch);
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
@@ -92,16 +101,16 @@ class DataListWidget(QtGui.QTableWidget):
     def add_volume(self, row, vol_type, vol, current=False):
         self.setItem(row, 0, QtGui.QTableWidgetItem(vol.name))
         self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
-        self.setItem(row, 2, QtGui.QTableWidgetItem(str(vol.shape)))
+        if vol.fname is not None:
+            self.setItem(row, 2, QtGui.QTableWidgetItem(vol.fname))
+            self.item(row, 0).setToolTip(vol.fname)
         if current:
             font = self.item(row, 0).font()
             font.setBold(True)
             self.item(row, 0).setFont(font)
             self.item(row, 1).setFont(font)
             self.item(row, 2).setFont(font)
-        if vol.fname is not None:
-            self.item(row, 0).setToolTip(vol.fname)
-
+        
     def update_list(self, list1):
         try:
             self.blockSignals(True)
