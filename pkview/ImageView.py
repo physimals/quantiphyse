@@ -36,16 +36,20 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.sigLookupTableChanged.connect(self.lut_changed)
         self.alpha = 255
 
-    def setSourceData(self, arr):
+    def setSourceData(self, arr, percentile=100):
         """
         Set the source data for the histogram widget. This is likely to be a
         3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
         methods to extract a histogram
+
+        @percentile specifies that the initial LUT range should be set to this
+        percentile of the data - for main volume it is useful to set this 
+        to 99% to improve visibility
         """
         self.region.setRegion([np.min(arr), np.max(arr)])
         self.region.setBounds([np.min(arr), None])
         self.region.lines[0].setValue(np.min(arr))
-        self.region.lines[1].setValue(np.max(arr))
+        self.region.lines[1].setValue(np.percentile(arr, percentile))
         fdim = 1
         for dim in arr.shape[1:]:
             fdim *= dim
@@ -451,7 +455,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
 
         # update view
         if self.ivm.vol is not None:
-            self.h1.setSourceData(self.ivm.vol.data)
+            self.h1.setSourceData(self.ivm.vol.data, percentile=99)
 
         self._update_view()
 
@@ -667,7 +671,7 @@ class ImageViewColorOverlay(ImageViewOverlay):
         else:
             self.ovreg = None
 
-        if self.ovreg is not None:
+        if self.ovreg is not None: 
             self.h2.setSourceData(self.ovreg)
         self.init_viewer()
         self._update_view()
