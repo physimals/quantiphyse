@@ -126,6 +126,154 @@ class DragOptions(QtGui.QDialog):
         result = dialog.exec_()
         return dialog.but, dialog.name, result == QtGui.QDialog.Accepted
 
+class ScaleEditDialog(QtGui.QDialog):
+    def __init__(self, parent=None, scale=[]):
+        QtGui.QDialog.__init__(self, parent)
+        
+        vbox = QtGui.QVBoxLayout()
+        label = QtGui.QLabel('<font size="5">Edit Scale</font>')
+        vbox.addWidget(label)
+
+        #paste_action = QtGui.QAction("Paste", self, triggered=self.paste)
+        #paste_action.setShortcut(QtGui.QKeySequence.Paste)
+        #paste_action.triggered.connect(self.paste)
+        #self.menu = QtGui.QMenu(self.table)
+        #self.menu.addAction(self.paste_action)
+        #self.menu.exec_(QtGui.QCursor.pos())
+
+        self.table = QtGui.QTableWidget()
+        self.table.setRowCount(len(scale))
+        self.table.setColumnCount(1)
+        self.table.setHorizontalHeaderItem(0, QtGui.QTableWidgetItem("Scale position"))
+        
+        self.table.itemChanged.connect(self.changed)
+        vbox.addWidget(self.table)
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
+
+        self.set_scale(scale)
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence.Paste, self.table)
+        shortcut.activated.connect(self.paste)
+
+    def paste(self):
+        print("Paste!")
+        clipboard = QtGui.QApplication.clipboard()
+        text = clipboard.text()
+        print(text)
+        scale = text.strip().split(",")
+        if len(scale) != self.table.rowCount():
+            scale = text.strip().split()
+        if len(scale) != self.table.rowCount():
+            scale = text.strip().split("\t")
+        print(scale)
+        if len(scale) == self.table.rowCount():
+            try:
+                self.set_scale([float(v) for v in scale])
+                print(scale)
+            except:
+                pass
+
+    def changed(self):
+        try:
+            self.get_scale()
+            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+        except:
+            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+
+    def set_scale(self, scale):
+        for r, v in enumerate(scale):
+            self.table.setVerticalHeaderItem(r, QtGui.QTableWidgetItem("Volume %i" % r))
+            self.table.setItem(r, 0, QtGui.QTableWidgetItem(str(v)))
+
+    def get_scale(self):
+        scale = []
+        for r in range(self.table.rowCount()):
+            scale.append(float(self.table.item(r, 0).text()))
+        return scale
+
+class ViewOptions(QtGui.QDialog):
+    def __init__(self, parent, ivm, ivl):
+        super(ViewOptions, self).__init__(parent)
+        self.setWindowTitle("View Options")
+        #self.setFixedSize(300, 300)
+
+        self.ivm = ivm
+        self.ivl = ivl
+        self.ivm.sig_main_volume.connect(self.vol_changed)
+
+        self.voxel_size_scaling = True
+
+        vbox = QtGui.QVBoxLayout()
+        label = QtGui.QLabel('<font size="5">View Options</font>')
+        vbox.addWidget(label)
+
+        cb = QtGui.QCheckBox("Voxel size scaling")
+        cb.setChecked(self.voxel_size_scaling)
+        cb.stateChanged.connect(self.toggle_voxel_scaling)
+        vbox.addWidget(cb)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("4D Unit"))
+        self.t_unit_edit = QtGui.QLineEdit("Volumes")
+        hbox.addWidget(self.t_unit_edit)
+        hbox.addStretch(1)
+        vbox.addLayout(hbox)
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("4D Scale"))
+        self.t_combo = QtGui.QComboBox()
+        self.t_combo.addItem("Fixed resolution")
+        self.t_combo.addItem("Labelled")
+        self.t_combo.currentIndexChanged.connect(self.t_combo_changed)
+        hbox.addWidget(self.t_combo)
+        self.t_res_edit = QtGui.QLineEdit("1.0")
+        hbox.addWidget(self.t_res_edit)
+        self.t_btn = QtGui.QPushButton("Edit")
+        self.t_btn.setVisible(False)
+        self.t_btn.clicked.connect(self.edit_scale)
+        #self.t_values = QtGui.QLabel("Values")
+        #self.t_values.setVisible(False)
+        #hbox.addWidget(self.t_values)
+        #self.t_values_edit = QtGui.QLineEdit("1.0")
+        #self.t_values_edit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+        #self.t_values_edit.setVisible(False)
+        hbox.addWidget(self.t_btn)
+        vbox.addLayout(hbox)
+
+        vbox.addStretch(1)
+        self.setLayout(vbox)
+
+    def vol_changed(self, vol):
+        if vol is not None:
+            self.t_res_edit.setText(str(self.ivm.voldim_scale[1]))
+            self.t_combo.setCurrentIndex(self.ivm.voldim_scale_type)
+
+    def edit_scale(self):
+        dlg = ScaleEditDialog(self, self.ivm.voldim_scale)
+        if dlg.exec_():
+            self.ivm.set_voldim_scale_var(dlg.get_scale())
+
+    def toggle_voxel_scaling(self):
+        self.voxel_size_scaling = not self.voxel_size_scaling
+        self.ivl.set_size_scaling(self.voxel_size_scaling)
+
+    def t_combo_changed(self, idx):
+        self.t_btn.setVisible(idx == 1)
+        self.t_res_edit.setVisible(idx == 0)
+        
+        try:
+            if idx == 0:
+                self.ivm.set_voldim_scale_const(1.0)
+            elif idx == 1:
+                pass
+#                self.ivm.set_voldim_scale_var(scale)
+        except Exception, e:
+            print(e)
+
 class MainWindowWidget(QtGui.QWidget):
     """
     Main widget where most of the control should happen
@@ -138,6 +286,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.ivm = ImageVolumeManagement()
         self.ivl = ImageViewColorOverlay(self.ivm)
         self.ivl.sig_mouse_scroll.connect(self.slider_scroll_mouse)
+        self.view_options_dlg = ViewOptions(self, self.ivm, self.ivl)
 
         # ~~~~~~~~~~~~ Widgets ~~~~~~~~~~~~~~~~~~~~
         self.widgets = []
@@ -293,25 +442,19 @@ class MainWindowWidget(QtGui.QWidget):
         hbox.addWidget(self.vol_name)
         hbox.setStretchFactor(self.vol_name, 1)
         self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(50)
+        self.vol_data.setFixedWidth(60)
         hbox.addWidget(self.vol_data)
         self.roi_region = QtGui.QLineEdit()
-        self.roi_region.setFixedWidth(50)
+        self.roi_region.setFixedWidth(30)
         hbox.addWidget(self.roi_region)
         self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(50)
+        self.ov_data.setFixedWidth(60)
         hbox.addWidget(self.ov_data)
         self.view_options_btn = QtGui.QPushButton()
-        icon = self.view_options_btn.style().standardIcon(QtGui.QStyle.SP_DirIcon)
-        self.view_options_btn.setIcon(icon)
+        self.view_options_btn.setIcon(QtGui.QIcon(get_icon("options.png")))
+        self.view_options_btn.setFixedSize(24, 24)
+        self.view_options_btn.clicked.connect(self.view_options)
         hbox.addWidget(self.view_options_btn)
-        #self.voxel_scaling_btn = QtGui.QPushButton()
-        #self.voxel_scaling_btn.setCheckable(True)
-        #self.voxel_scaling_btn.toggled.connect(self.set_size_scaling)
-        #self.set_size_scaling(True)
-        #hbox.addWidget(self.voxel_scaling_btn)
-        #summary = QtGui.QWidget()
-        #summary.setLayout(hbox)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addLayout(hbox)
@@ -344,17 +487,12 @@ class MainWindowWidget(QtGui.QWidget):
         self.setLayout(hbox)
 
     def add_widget(self, w, **kwargs):
-	self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, **kwargs))
+	    self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, **kwargs))
 
-    def set_size_scaling(self, state):
-        if state:
-            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_off.png")))
-            self.voxel_scaling_btn.setToolTip("Disable voxel size scaling")
-        else:
-            self.voxel_scaling_btn.setIcon(QtGui.QIcon(get_icon("voxel_scaling_on.png")))
-            self.voxel_scaling_btn.setToolTip("Enable voxel size scaling")
-        self.ivl.set_size_scaling(state)
-
+    def view_options(self):
+        self.view_options_dlg.show()
+        self.view_options_dlg.raise_()
+        
     def overlay_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
@@ -886,7 +1024,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if self.overlay_dir_in is not None:
             self.load_overlay(fname=self.overlay_dir_in, name=self.overlay_type_in)
 
-
+def my_catch_exceptions(type, value, traceback):
+    QtGui.QMessageBox.warning(None, "Error", str(value), QtGui.QMessageBox.Close)
+                                      
 def main():
 
     """
@@ -936,6 +1076,7 @@ def main():
 
     else:
         # Initialise main GUI
+        sys.excepthook = my_catch_exceptions
 
         # OSx specific Changes
         if op_sys == 'Darwin':
