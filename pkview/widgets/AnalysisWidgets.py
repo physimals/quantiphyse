@@ -285,23 +285,21 @@ class ColorOverlay1(PkWidget):
 
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
-        title1 = QtGui.QLabel("<font size=5>Overlay statistics: </font>")
-        self.ovtitle = QtGui.QLabel()
-        bhelp = HelpButton(self)
-        lhelp = QtGui.QHBoxLayout()
-        lhelp.addWidget(title1)
-        lhelp.addWidget(self.ovtitle)
-        lhelp.addStretch(1)
-        lhelp.addWidget(bhelp)
+        l1 = QtGui.QVBoxLayout()
 
-        mode_hbox = QtGui.QHBoxLayout()
-        mode_hbox.addWidget(QtGui.QLabel("Show statistics for:"))
+        hbox = QtGui.QHBoxLayout()
+        title1 = QtGui.QLabel("<font size=5>Overlay statistics: </font>")
+        hbox.addWidget(title1)
         self.mode_combo = QtGui.QComboBox()
         self.mode_combo.addItem("Current overlay")
         self.mode_combo.addItem("All overlays")
         self.mode_combo.currentIndexChanged.connect(self.mode_changed)
-        mode_hbox.addWidget(self.mode_combo)
+        hbox.addWidget(self.mode_combo)
         self.col_mode = 0
+        hbox.addStretch(1)
+        bhelp = HelpButton(self)
+        hbox.addWidget(bhelp)
+        l1.addLayout(hbox)
 
         self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setVisible(False)
@@ -426,9 +424,6 @@ class ColorOverlay1(PkWidget):
         f03ss.setTitle('Summary Statistics - Slice')
         f03ss.setLayout(l08ss)
 
-        l1 = QtGui.QVBoxLayout()
-        l1.addLayout(lhelp)
-        l1.addLayout(mode_hbox)
         l1.addWidget(f03)
         l1.addWidget(f03ss)
 
@@ -557,9 +552,9 @@ class ColorOverlay1(PkWidget):
 
     def overlay_changed(self, overlay):
         if overlay is None:
-            self.ovtitle.setText("<font size=5>No overlay selected</font>")
+            self.mode_combo.setItemText(0, "Current overlay")
         else:
-            self.ovtitle.setText("<b><font size=5>%s</font></b>" % overlay.name)
+            self.mode_combo.setItemText(0, overlay.name)
             self.reset_spins()
             self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
             self.update()
