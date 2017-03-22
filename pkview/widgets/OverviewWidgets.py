@@ -15,12 +15,9 @@ class OverviewWidget(PkWidget):
 
         hbox = QtGui.QHBoxLayout()
         pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
-        #pixmap = pixmap.scaledToHeight(75, QtCore.Qt.SmoothTransformation)
         lpic = QtGui.QLabel(self)
         lpic.setPixmap(pixmap)
         hbox.addWidget(lpic)
-        #tb = QtGui.QLabel("<font size=50> PKView %s</font> \n" % __version__)
-        #hbox.addWidget(tb)
         hbox.addStretch(1)
         b1 = HelpButton(self)
         hbox.addWidget(b1)

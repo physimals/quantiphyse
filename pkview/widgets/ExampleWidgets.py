@@ -95,17 +95,11 @@ class ExampleWidget1(QtGui.QWidget):
 
         # Check if an image and roi exists or otherwise throw an error
         if self.ivm.get_image() is None:
-            m1 = QtGui.QMessageBox()
-            m1.setText("The image doesn't exist! Please load.")
-            m1.setWindowTitle("PkView")
-            m1.exec_()
+            error_dialog("No data loaded")
             return
 
         if self.ivm.get_roi() is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load.")
-            m1.exec_()
+            error_dialog("No ROI loaded")
             return
 
         img = self.ivm.get_image()

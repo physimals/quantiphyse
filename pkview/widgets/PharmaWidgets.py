@@ -13,6 +13,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
+from pkview import error_dialog
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.analysis.pk_model import PyPk
@@ -154,23 +155,15 @@ class PharmaWidget(PkWidget):
 
         # Check that pkmodelling can be run
         if self.ivm.vol is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The image doesn't exist! Please load before running Pk modelling")
-            m1.exec_()
+            error_dialog("No data loaded")
             return
 
         if self.ivm.current_roi is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The Image or ROI doesn't exist! Please load before running Pk modelling")
-            m1.exec_()
+            error_dialog("No ROI loaded - required for Pk modelling")
             return
 
         if "T10" not in self.ivm.overlays:
-            m1 = QtGui.QMessageBox()
-            m1.setText("The T10 map doesn't exist! Please load before running Pk modelling")
-            m1.exec_()
+            error_dialog("No T10 map loaded - required for Pk modelling")
             return
 
         # get volumes to process

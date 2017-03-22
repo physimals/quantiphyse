@@ -12,6 +12,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from sklearn.metrics import pairwise
 
+from pkview import error_dialog
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeansPCA
@@ -174,17 +175,11 @@ class CurveClusteringWidget(PkWidget):
 
         # Check that pkmodelling can be run
         if self.ivm.vol is None:
-            m1 = QtGui.QMessageBox()
-            m1.setText("The image doesn't exist! Please load.")
-            m1.setWindowTitle("PkView")
-            m1.exec_()
+            error_dialog("No data loaded")
             return
 
         if self.ivm.current_roi is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The ROI doesn't exist! Please load.")
-            m1.exec_()
+            error_dialog("An ROI must be loaded")
             return
 
         # Disable button

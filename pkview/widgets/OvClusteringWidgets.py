@@ -10,6 +10,7 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 from PySide import QtCore, QtGui
 
+from pkview import error_dialog
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeans3D
@@ -142,31 +143,19 @@ class OvCurveClusteringWidget(PkWidget):
 
         # Check that pkmodelling can be run
         if self.ivm.vol is None:
-            m1 = QtGui.QMessageBox()
-            m1.setText("The image doesn't exist! Please load.")
-            m1.setWindowTitle("PkView")
-            m1.exec_()
+            error_dialog("No data loaded")
             return
 
         if self.ivm.current_roi is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("The ROI doesn't exist! Please load.")
-            m1.exec_()
+            error_dialog("No ROI loaded - required for overlay clustering")
             return
 
         if self.ivm.current_overlay is None:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("No current overlay selected")
-            m1.exec_()
+            error_dialog("No overlay loaded")
             return
 
         if self.ivm.current_overlay.ndims != 3:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("Cannot run clustering on 4d overlays")
-            m1.exec_()
+            error_dialog("Cannot run clustering on 4d overlays")
             return
 
         # Disable button

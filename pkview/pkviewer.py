@@ -22,6 +22,8 @@ if sys.platform.startswith("darwin"):
 
 import warnings
 
+from pkview import error_dialog
+
 # required to use resources in theme. Check if 2 or 3.
 if (sys.version_info > (3, 0)):
     from pkview.resources import resource_py2
@@ -860,7 +862,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm, 'self': self}
         text = (
             """
-            ****** PkView Console ******
+            ****** Quantiphyse Console ******
 
             This is a python console that allows interaction with the GUI data and running of scripts.
 
@@ -997,10 +999,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
             ret = msgBox.exec_()
             multi = (ret == QtGui.QDialog.Accepted)
         elif vol.ndims != 4:
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("PkView")
-            m1.setText("Pkview supports 2D and 3D volumes with one optional additional dimension only")
-            m1.exec_()
+            error_dialog("Quantiphyse supports 2D and 3D volumes with one optional additional dimension only", "Error")
             return
 
         vol.force_ndims(4, multi=multi)
@@ -1025,8 +1024,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.load_overlay(fname=self.overlay_dir_in, name=self.overlay_type_in)
 
 def my_catch_exceptions(type, value, traceback):
-    QtGui.QMessageBox.warning(None, "Error", str(value), QtGui.QMessageBox.Close)
-                                      
+    error_dialog(value, "Error")
+        
 def main():
 
     """
@@ -1083,7 +1082,7 @@ def main():
             from Foundation import NSURL
             QtGui.QApplication.setGraphicsSystem('native')
 
-        # Initialise the PKView application
+        # Initialise the application
         app = QtGui.QApplication(sys.argv)
         app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
         # app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
