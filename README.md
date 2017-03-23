@@ -1,4 +1,4 @@
-# PkView
+# Quantiphyse
 
 Viewer for 3D/4D data and Pk modelling
 
@@ -9,7 +9,7 @@ Martin Craig
 Michael Chappell
 
 ## Overview
-This viewer provides tools for modelling and analysis of DCE-MRI scans. 
+This viewer provides tools for modelling and analysis of MRI scans. 
 
 Key features:
 - 4D DCE-MRI images can be loaded and viewed from nifti images
@@ -31,7 +31,7 @@ The easiest method of installation is to run the exe or deb files for Windows an
 See Release 0.20 under tags.  Consider this alpha software. Contributions and improvements to the code and 
 documentation are welcome. 
 
-For windows, unzip the file and run the pkviewer executable. There are a large number of files so it's easiest to add
+For windows, unzip the file and run the quantiphyse executable. There are a large number of files so it's easiest to add
 the program to the launcher once run once. 
 
 Alternatively, the GUI can be run from the source. See guides below for setting up Ubuntu or OSx. 
@@ -43,7 +43,7 @@ Alternatively, the GUI can be run from the source. See guides below for setting 
 
 ## Key files
 
-**pkviewer2.py**: Run the GUI and perform analysis
+**quantiphyse.py**: Run the GUI and perform analysis
 
 **cmd_pkmodel.py**: Run pkmodelling from the command line (config file *cmd_pkconfig.yaml*)
 
@@ -99,7 +99,7 @@ pip install PySide
 
 4) Run the script
 ```bash
-python pkviewer2.py
+python quantiphyse.py
 ```
 
 ## Ubuntu 14.04 
@@ -122,12 +122,12 @@ python setup.py build_ext --inplace
 4)
 
 ``` bash
-python pkviewer2.py
+python quantiphyse.py
 ```
 or
 
 ``` bash
-./pkviewer2.py
+./quantiphyse.py
 ```
 
 

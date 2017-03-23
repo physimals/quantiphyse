@@ -5,18 +5,18 @@
 # Easiest option
 # To build cython libraries in the current location
 # Use: python setup.py build_ext --inplace
-# run using ./pkviewer2
+# run using ./quantiphyse.py
 
 # Options 1: Create a wheel
 python setup.py bdist_wheel
 
 #remove existing installation
-pip uninstall PKView
+pip uninstall quantiphyse
 
 # Option 2: installing directly on the system
 python setup.py install
 then run
-pkviewer2 from the terminal
+quantiphyse from the terminal
 
 # Option 3: Build a directory of wheels for pyramid and all its dependencies
 pip wheel --wheel-dir=/tmp/wheelhouse pyramid
@@ -54,7 +54,7 @@ from Cython.Distutils import build_ext
 from setuptools.extension import Extension
 
 Description = """/
-PkView
+Quantiphyse
 """
 
 # Get version info
@@ -145,10 +145,10 @@ else:
     print("FSLDIR not set - not building MCFLIRT extension")
 
 # setup parameters
-setup(name='PKView',
+setup(name='Quantiphyse',
       cmdclass={'build_ext': build_ext},
       version=version_str,
-      description='pCT and DCE-MRI viewer and analysis tool',
+      description='MRI viewer and analysis tool',
       long_description=Description,
       author='Benjamin Irving',
       author_email='benjamin.irving@eng.ox.ac.uk',
@@ -188,7 +188,7 @@ setup(name='PKView',
                    ],
       ext_modules=cythonize(extensions),
       entry_points={
-          'gui_scripts': ['pkview2 = pkview.pkviewer:main'],
-          'console_scripts': ['pkview2 = pkview.pkviewer:main']
+          'gui_scripts': ['quantiphyse = pkview.pkviewer:main'],
+          'console_scripts': ['quantiphyse = pkview.pkviewer:main']
       })
 

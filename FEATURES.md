@@ -1,12 +1,12 @@
 # Feature Summary
 
-A list of PKView features and their current status. Detailed explanations of the current features can be found 
-in the [Pkview documents](http://pkview.readthedocs.io/en/latest/).
+A list of Quantiphyse features and their current status. Detailed explanations of the current 
+features can be found in the [documentation](http://pkview.readthedocs.io/en/latest/).
 
-Most importantly a wishlist of features to implement before release can be found in the [Wishlist](# Wishlist) section below.
+Most importantly a wishlist of features to implement before release can be found in the 
+[Wishlist](# Wishlist) section below.
 
-!["pkview"](images/feat/pkview.jpg)
-
+!["quantiphyse"](images/feat/pkview.jpg)
 
 ## Visualisation
 
@@ -67,17 +67,17 @@ so that it can be used for regional analysis without having to save the output a
 
 ### 4) T1 widget
 - Create a T1 widget that generates a T1 map from a series of variable flip angle images
-- The code is implemented in PKView for command line use and should also be integrated as a widget
+- The code is implemented in Quantiphyse for command line use and should also be integrated as a widget
 - The current command line version passes a yaml configuration file as an argument
 - There are two versions:
 *1) T1 with actual flip angle caclulation (preclinical)*
 ```
-PKView --T10afibatch eg3_t10config_preclinical.yaml
+quantiphyse --T10afibatch eg3_t10config_preclinical.yaml
 ```
 
 *2) T1 without actual flip angle (clinical)*
 ```
-PKView --T10afibatch eg2_t10config_clinical.yaml
+quantiphyse --T10afibatch eg2_t10config_clinical.yaml
 ```
 - These yaml arguments provide a template to implement a widget
 - Code:  

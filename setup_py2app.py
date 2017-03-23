@@ -6,18 +6,18 @@
 # Easiest option
 # To build cython libraries in the current location
 # Use: python setup.py build_ext --inplace
-# run using ./pkviewer2
+# run using ./quantiphyse
 
 # Options 1: Create a wheel
 python setup.py bdist_wheel
 
 #remove existing installation
-pip uninstall PKView
+pip uninstall quantiphyse
 
 # Option 2: installing directly on the system
 python setup.py install
 then run
-pkviewer2 from the terminal
+quantiphyse from the terminal
 
 # Option 3: Build a directory of wheels for pyramid and all its dependencies
 pip wheel --wheel-dir=/tmp/wheelhouse pyramid
@@ -29,7 +29,7 @@ pip install --use-wheel --no-index --find-links=https://wheelhouse.example.com/ 
 # Option 4: Build a .deb
 
 # Option 5: py2app on OSx
-- use virtualenv python27_pkviewpackage...
+- use virtualenv python27_quantiphysepackage...
 python setup_py2app.py py2app 
 
 # Experimental
@@ -44,7 +44,7 @@ from Cython.Distutils import build_ext
 from setuptools.extension import Extension
 
 Description = """/
-PkView
+Quantiphyse
 """
 
 # Compiling the Cython extensions
@@ -75,9 +75,9 @@ ext2 = Extension("pkview/analysis/t1_model",
 extensions = [ext1, ext2]
 
 # setup parameters
-setup(name='PKView',
+setup(name='Quantiphyse',
       cmdclass={'build_ext': build_ext},
-      app=['pkviewer2.py'],
+      app=['quantiphyse.py'],
       version='0.17',
       options = {"py2app": {
                           'includes': ['sklearn.utils.lgamma',

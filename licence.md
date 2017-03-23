@@ -1,4 +1,4 @@
-PkView licence
+Quantiphyse licence
 ==============
 
 *Currently a work in progress*
@@ -21,8 +21,8 @@ Benjamin Irving (benjamin.irving@eng.ox.ac.uk)
 
 # Dependencies
 
-The following software packages are required for PkView to run and may be included in the distributed package. If you wish to modify or redistribute
-these dependencies, with or without PkView, you must ensure that you comply with the terms of the relevant licenses.
+The following software packages are required for Quantiphyse to run and may be included in the distributed package. If you wish to modify or redistribute
+these dependencies, with or without Quantiphyse, you must ensure that you comply with the terms of the relevant licenses.
 
 ## Python 2.7
 
@@ -200,4 +200,4 @@ Issued under the [FSL license](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence)
 Fabber source code is available from [https://ibme-gitcvs.eng.ox.ac.uk/fabber/](https://ibme-gitcvs.eng.ox.ac.uk/fabber/)
 FSL source code is available from [https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/)
 
-Modified FSL source code is included in distributed packages in the directory `fsl_src`
+Any modified FSL source code is included in distributed packages in the directory `fsl_src`

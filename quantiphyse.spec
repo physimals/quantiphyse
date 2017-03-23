@@ -45,7 +45,7 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(("%s/lib/libfabber*.dylib" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 
-a = Analysis(['pkviewer2.py'],
+a = Analysis(['quantiphyse.py'],
              pathex=[],
              binaries=bin_files,
              datas=added_files,
@@ -66,7 +66,7 @@ if onefile:
               a.binaries,
               a.zipfiles,
               a.datas,
-              name='pkviewer2',
+              name='quantiphyse',
               strip=False,
               debug=False,
               upx=False,
@@ -76,7 +76,7 @@ else:
     exe = EXE(pyz,
               a.scripts,
               exclude_binaries=True,
-              name='pkviewer2',
+              name='quantiphyse',
               debug=False,
               strip=False,
               upx=False,
@@ -89,11 +89,11 @@ else:
                    a.datas,
                    strip=False,
                    upx=False,
-                   name='pkviewer2')
+                   name='quantiphyse')
     if osx_bundle:
         pkdir = os.path.dirname(os.path.abspath(SPEC))
         app = BUNDLE(coll,
-             name='pkviewer2.app',
+             name='quantiphyse.app',
              icon='%s/pkview/icons/pk.png' % pkdir,
              bundle_identifier=None)
 
