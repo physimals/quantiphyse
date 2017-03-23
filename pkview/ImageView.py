@@ -186,7 +186,8 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.options['show_crosshairs'] = True
 
         # For each view window, this is the volume indices of the x, y and z axes for the view
-        self.ax_map = [(0, 1, 2), (0, 2, 1), (1, 2, 0)]
+        self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
+        self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
 
         #empty array for arrows
         self.sizeScaling = True
@@ -197,6 +198,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.imgwin = []
         self.hline = []
         self.vline = []
+        self.labels = []
         for i in range(3):
             
             imgwin = ImageMed(border='k')
@@ -215,6 +217,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             hline.setVisible(False)
             self.hline.append(hline)
 
+
             view = pg.ViewBox(name="view%i" % (i + 1), border=pg.mkPen((0, 0, 255), width=3.0))
             view.setAspectLocked(True)
             view.setBackgroundColor([0, 0, 0])
@@ -227,6 +230,17 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             win = pg.GraphicsView()
             win.setCentralItem(view)
             self.win.append(win)
+
+            # Create static labels for the view directions
+            win.resizeEvent = self.get_resize_win(i, win.resizeEvent)
+            view_labels = []
+            for ax in self.ax_map[i][:2]:
+                view_labels.append(QtGui.QLabel(self.ax_labels[ax][0], parent=win))
+                view_labels.append(QtGui.QLabel(self.ax_labels[ax][1], parent=win))
+            for l in view_labels:
+                l.setVisible(False)
+                l.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+            self.labels.append(view_labels)
 
         # Adding a histogram LUT
         self.h1 = MultiImageHistogramWidget(fillHistogram=False)
@@ -254,6 +268,17 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.arrows = []
         self.pick_col = (255, 0, 0)
         self.set_pickmode(PickMode.SINGLE)
+
+    def get_resize_win(self, i, orig_resize):
+        def resize_win(event):
+            w = self.win[i].geometry().width()
+            h = self.win[i].geometry().height()
+            self.labels[i][0].setGeometry(0, h/2, 10, 10)
+            self.labels[i][1].setGeometry(w-10, h/2, 10, 10)
+            self.labels[i][2].setGeometry(w/2, h-10, 10, 10)
+            self.labels[i][3].setGeometry(w/2, 0, 10, 10)
+            orig_resize(event)
+        return resize_win
 
     def expand_view(self, i):
         def expand():
@@ -304,6 +329,7 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         def mouse_pos(event):
             mx = int(event.pos().x())
             my = int(event.pos().y())
+            print(mx, my)
 
             self.ivm.cim_pos[self.ax_map[i][0]] = mx
             self.ivm.cim_pos[self.ax_map[i][1]] = my
@@ -384,10 +410,16 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
                 self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
             else:
                 self.view[i].setAspectLocked(True, ratio=1)
-        
-        self.view[0].invertX(self.lrFlip)
-        self.view[1].invertX(self.lrFlip)
+            for l in self.labels[i]:
+                l.setVisible(True)
 
+        for i, v in enumerate(self.view[:2]):
+            v.invertX(self.lrFlip)
+            if self.lrFlip: l, r = 1, 0
+            else: l, r = 0, 1
+            self.labels[i][r].setText("R")
+            self.labels[i][l].setText("L")
+            
         if self.ivm.vol.ndims == 3:
             self.imgwin[0].setImage(self.ivm.vol.data[:, :, self.ivm.cim_pos[2]], autoLevels=False)
             self.imgwin[1].setImage(self.ivm.vol.data[:, self.ivm.cim_pos[1], :], autoLevels=False)
@@ -457,10 +489,9 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         for v in self.view:
             v.setVisible(True)
 
-        # update view
         if self.ivm.vol is not None:
             self.h1.setSourceData(self.ivm.vol.data, percentile=99)
-
+            
         self._update_view()
 
     def set_size_scaling(self, state):
