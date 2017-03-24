@@ -296,16 +296,16 @@ class ViewOptions(QtGui.QDialog):
         self.ivl = ivl
         self.ivm.sig_main_volume.connect(self.vol_changed)
 
-        self.voxel_size_scaling = True
-
         grid = QtGui.QGridLayout()
         label = QtGui.QLabel('<font size="5">View Options</font>')
         grid.addWidget(label, 0, 0)
 
-        cb = QtGui.QCheckBox("Voxel size scaling")
-        cb.setChecked(self.voxel_size_scaling)
-        cb.stateChanged.connect(self.toggle_voxel_scaling)
-        grid.addWidget(cb, 1, 0)
+        grid.addWidget(QtGui.QLabel("Voxel size scaling"), 1, 0)
+        c = QtGui.QComboBox()
+        c.addItem("Use main volume dimensions")
+        c.addItem("Display as isotropic")
+        c.currentIndexChanged.connect(self.voxel_scaling_changed)
+        grid.addWidget(c, 1, 1)
 
         grid.addWidget(QtGui.QLabel("Orientation"), 2, 0)
         c = QtGui.QComboBox()
@@ -333,11 +333,21 @@ class ViewOptions(QtGui.QDialog):
         hbox.addWidget(self.t_btn)
         grid.addLayout(hbox, 4, 1)
 
-        grid.setRowStretch(5, 1)
+        grid.addWidget(QtGui.QLabel("Display order"), 5, 0)
+        c = QtGui.QComboBox()
+        c.addItem("Overlay on top")
+        c.addItem("ROI on top")
+        c.currentIndexChanged.connect(self.zorder_changed)
+        grid.addWidget(c, 5, 1)
+
+        grid.setRowStretch(6, 1)
         self.setLayout(grid)
 
     def lrflip_changed(self, idx):
         self.ivl.set_lr_flip(idx == 0)
+
+    def zorder_changed(self, idx):
+        self.ivl.set_roi_on_top(idx == 1)
 
     def vol_changed(self, vol):
         if vol is not None and len(self.ivm.voldim_scale) > 1:
@@ -349,9 +359,8 @@ class ViewOptions(QtGui.QDialog):
         if dlg.exec_():
             self.ivm.set_voldim_scale_var(dlg.get_scale())
 
-    def toggle_voxel_scaling(self):
-        self.voxel_size_scaling = not self.voxel_size_scaling
-        self.ivl.set_size_scaling(self.voxel_size_scaling)
+    def voxel_scaling_changed(self, idx):
+        self.ivl.set_size_scaling(idx == 0)
 
     def t_combo_changed(self, idx):
         self.t_btn.setVisible(idx == 1)
