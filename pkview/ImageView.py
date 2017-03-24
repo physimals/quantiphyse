@@ -149,7 +149,7 @@ class PickMode:
     RECT = 3
     LASSO = 4
 
-class ImageViewLayout(QtGui.QGraphicsView, object):
+class ImageView(QtGui.QGraphicsView, object):
     """
     Re-implementing graphics layout class to include mouse press event.
     This defines the 3D image interaction with the cross hairs,
@@ -174,8 +174,13 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
     # Signals when the selected points / region have changed
     sig_sel_changed = QtCore.Signal(tuple)
 
-    def __init__(self):
-        super(ImageViewLayout, self).__init__()
+    def __init__(self, ivm):
+        super(ImageView, self).__init__()
+
+        self.ivm = ivm
+        self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
+        self.ivm.sig_current_roi.connect(self.current_roi_changed)
+        self.ivm.sig_main_volume.connect(self.main_volume_changed)
 
         #ViewerOptions
         self.options = {}
@@ -184,6 +189,16 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         # If false then use the same threshold for the entire volume
         self.options['view_thresh'] = False
         self.options['show_crosshairs'] = True
+        self.options['ShowOverlay'] = True
+        self.options['ShowOverlayContour'] = False
+        self.options['roi_outline_width'] = 3.0
+        self.options['ShowColorOverlay'] = True
+        self.options['UseROI'] = False
+        self.roi_alpha = 150
+        self.roi_on_top = False
+        
+        # overlay data
+        self.ovreg = None
 
         # For each view window, this is the volume indices of the x, y and z axes for the view
         self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
@@ -192,10 +207,14 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         #empty array for arrows
         self.sizeScaling = True
         self.lrFlip = True
+        
+        self.cont = [[], [], []]
 
         self.win = []
         self.view = []
         self.imgwin = []
+        self.imgwinb = []
+        self.imgwinc = []
         self.hline = []
         self.vline = []
         self.labels = []
@@ -206,7 +225,13 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             imgwin.sig_doubleClick.connect(self.expand_view(i))
             imgwin.sig_click.connect(self.mouse_pos(i))
             self.imgwin.append(imgwin)
-            
+
+            imgwin_roi = pg.ImageItem(border='k')
+            self.imgwinb.append(imgwin_roi)
+
+            imgwin_ovl = pg.ImageItem(border='k')
+            self.imgwinc.append(imgwin_ovl)
+
             vline = pg.InfiniteLine(angle=90, movable=False)
             vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
             vline.setVisible(False)
@@ -217,11 +242,12 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             hline.setVisible(False)
             self.hline.append(hline)
 
-
             view = pg.ViewBox(name="view%i" % (i + 1), border=pg.mkPen((0, 0, 255), width=3.0))
             view.setAspectLocked(True)
             view.setBackgroundColor([0, 0, 0])
             view.addItem(imgwin)
+            view.addItem(imgwin_roi)
+            view.addItem(imgwin_ovl)
             view.addItem(vline, ignoreBounds=True)
             view.addItem(hline, ignoreBounds=True)
             view.enableAutoRange()
@@ -261,6 +287,16 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.grid1.setColumnStretch(2, 1)
         self.grid1.setRowStretch(0, 1)
         self.grid1.setRowStretch(1, 1)
+
+        # Histogram, which controls colour map and levels
+        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h2.setBackground(background=None)
+        self.h2.setGradientName("jet")
+        for i in range(3):
+            print(self.imgwinc[i])
+            self.h2.addImageItem(self.imgwinc[i])
+
+        self.grid1.addWidget(self.h2, 1, 2)
 
         self.setLayout(self.grid1)
 
@@ -404,6 +440,12 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         if self.ivm.vol is None:
             return
 
+        self._update_view_vol()
+        self._update_view_roi()
+        self._update_view_overlay()
+
+    def _update_view_vol(self):
+        # Adjust axis scaling depending on whether voxel size scaling is enabled
         for i in range(3):
             if self.sizeScaling:
                 x, y = self.ax_map[i][:2]
@@ -413,23 +455,19 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
             for l in self.labels[i]:
                 l.setVisible(True)
 
+        # Flip left/right depending on the viewing convention selected
         for i, v in enumerate(self.view[:2]):
             v.invertX(self.lrFlip)
             if self.lrFlip: l, r = 1, 0
             else: l, r = 0, 1
             self.labels[i][r].setText("R")
             self.labels[i][l].setText("L")
-            
-        if self.ivm.vol.ndims == 3:
-            self.imgwin[0].setImage(self.ivm.vol.data[:, :, self.ivm.cim_pos[2]], autoLevels=False)
-            self.imgwin[1].setImage(self.ivm.vol.data[:, self.ivm.cim_pos[1], :], autoLevels=False)
-            self.imgwin[2].setImage(self.ivm.vol.data[self.ivm.cim_pos[0], :, :], autoLevels=False)
-        elif self.ivm.vol.ndims == 4:
-            self.imgwin[0].setImage(self.ivm.vol.data[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]], autoLevels=False)
-            self.imgwin[1].setImage(self.ivm.vol.data[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]], autoLevels=False)
-            self.imgwin[2].setImage(self.ivm.vol.data[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]], autoLevels=False)
-        else:
-            raise RuntimeError("Main image does not have 3 or 4 dimensions")
+        
+        # Plot image slices
+        pos = self.ivm.cim_pos
+        for i in range(3):
+            zaxis = self.ax_map[i][2]
+            self.imgwin[i].setImage(self.ivm.vol.slice((zaxis, pos[zaxis]), (3, pos[3])), autoLevels=False)
 
         self.update_arrows()
         self.__update_crosshairs()
@@ -508,25 +546,6 @@ class ImageViewLayout(QtGui.QGraphicsView, object):
         self.lrFlip = state
         self._update_view()
 
-class ImageViewOverlay(ImageViewLayout):
-    """
-    Adds the ability to view the ROI as a transparent overlay
-    """
-    def __init__(self):
-        # Updating viewer to include second image layer
-        super(ImageViewOverlay, self).__init__()
-
-        # ROI Image windows
-        self.imgwinb = [None, None, None]
-        self.cont = [[], [], []]
-
-        # Viewing options as a dictionary
-        self.options['ShowOverlay'] = True
-        self.options['ShowOverlayContour'] = False
-        self.options['roi_outline_width'] = 3.0
-
-        self.roi_alpha = 150
-
     def _iso_prepare(self, arr, val):
         return arr == val
         out = arr.copy()
@@ -540,43 +559,25 @@ class ImageViewOverlay(ImageViewLayout):
                     out[row, col] = 2
         return out
 
-    def _update_view(self):
-        """
-        Update the images
-
-        Returns:
-
-        """
-        super(ImageViewOverlay, self)._update_view()
-
-        if self.imgwinb[0] is None:
-            # If an ROI hasn't been added then return
-            return
-
-        # Loop over each volume
+    def _update_view_roi(self):
         roi = self.ivm.current_roi
+        z = 0
+        if self.roi_on_top: z=1
 
         if roi is None or (not self.options['ShowOverlay']):
-            self.imgwinb[0].setImage(np.zeros((1, 1)))
-            self.imgwinb[1].setImage(np.zeros((1, 1)))
-            self.imgwinb[2].setImage(np.zeros((1, 1)))
+            for i in range(3):
+                self.imgwinb[0].setImage(np.zeros((1, 1)))
             return
         else:
             lut = roi.get_lut(self.roi_alpha)
             roi_levels = self.ivm.current_roi.range
-            self.imgwinb[0].setImage(roi.data[:, :, self.ivm.cim_pos[2]],
-                                   lut=lut,
-                                   autoLevels=False,
-                                   levels=roi_levels)
-            self.imgwinb[1].setImage(roi.data[:, self.ivm.cim_pos[1], :],
-                                   lut=lut,
-                                   autoLevels=False,
-                                   levels=roi_levels)
-            self.imgwinb[2].setImage(roi.data[self.ivm.cim_pos[0], :, :],
-                                   lut=lut,
-                                   autoLevels=False,
-                                   levels=roi_levels)
-
+            
+            pos = self.ivm.cim_pos
+            for i in range(3):
+                zaxis = self.ax_map[i][2]
+                self.imgwinb[i].setImage(roi.slice((zaxis, pos[zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
+                self.imgwinb[i].setZValue(z)
+                
         n = 0
         if roi is not None and self.options['ShowOverlayContour']:
             # Get slice of ROI for each viewing window and convert to float
@@ -616,16 +617,6 @@ class ImageViewOverlay(ImageViewLayout):
 
     @QtCore.Slot(bool)
     def current_roi_changed(self, roi):
-        # Initialises viewer if it hasn't been initialised before
-        if self.imgwinb[0] is None:
-            self.imgwinb[0] = pg.ImageItem(border='k')
-            self.imgwinb[1] = pg.ImageItem(border='k')
-            self.imgwinb[2] = pg.ImageItem(border='k')
-
-            self.view[0].addItem(self.imgwinb[0])
-            self.view[1].addItem(self.imgwinb[1])
-            self.view[2].addItem(self.imgwinb[2])
-
         self._update_view()
 
     def set_roi_view(self, shade, contour):
@@ -644,63 +635,6 @@ class ImageViewOverlay(ImageViewLayout):
         self.roi_alpha = alpha
         self._update_view()
 
-class ImageViewColorOverlay(ImageViewOverlay):
-    """
-    This class adds the ability to have a 3D color image overlay
-    of the medical image
-
-    Interactions should include:
-    1) Show / hide
-    2) Alpha
-    3) colormap
-
-    Inherits from ImageViewOverlay
-    - this is the image view class that allows a ROI to be set
-    """
-    def __init__(self, ivm):
-        """
-        Updating viewer to include second image layer
-        """
-        super(ImageViewColorOverlay, self).__init__()
-
-        self.ivm = ivm
-        self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
-        self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_volume.connect(self.main_volume_changed)
-
-        # Image windows
-        self.imgwinc = [None, None, None]
-
-        # overlay data
-        self.ovreg = None
-
-        # Histogram, which controls colour map and levels
-        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
-        self.h2.setBackground(background=None)
-        self.h2.setGradientName("jet")
-
-        self.grid1.addWidget(self.h2, 1, 2)
-
-        # Viewing options as a dictionary
-        self.options['ShowColorOverlay'] = True
-        self.options['UseROI'] = False
-
-    def init_viewer(self):
-        """
-        Initialises viewer if it hasn't been initialised before
-        """
-        if self.imgwinc[0] is None:
-            self.imgwinc[0] = pg.ImageItem(border='k')
-            self.imgwinc[1] = pg.ImageItem(border='k')
-            self.imgwinc[2] = pg.ImageItem(border='k')
-            self.view[0].addItem(self.imgwinc[0])
-            self.view[1].addItem(self.imgwinc[1])
-            self.view[2].addItem(self.imgwinc[2])
-
-            self.h2.addImageItem(self.imgwinc[0])
-            self.h2.addImageItem(self.imgwinc[1])
-            self.h2.addImageItem(self.imgwinc[2])
-
     def _overlay_changed(self):
         """
         Processes overlay for visualisation on viewer
@@ -715,19 +649,12 @@ class ImageViewColorOverlay(ImageViewOverlay):
 
         if self.ovreg is not None: 
             self.h2.setSourceData(self.ovreg)
-        self.init_viewer()
         self._update_view()
 
-    def _update_view(self):
-        """
-        Updates the viewing windows
-        """
-        super(ImageViewColorOverlay, self)._update_view()
-
-        if self.imgwinc[0] is None:
-            # If an overlay hasn't been added then return
-            return
-
+    def _update_view_overlay(self):
+        z = 1
+        if self.roi_on_top: z=0
+        
         if self.ivm.current_overlay is None or self.ovreg is None or self.options['ShowColorOverlay'] == 0:
             self.imgwinc[0].setImage(np.zeros((1, 1)), autoLevels=False)
             self.imgwinc[1].setImage(np.zeros((1, 1)), autoLevels=False)
@@ -748,6 +675,9 @@ class ImageViewColorOverlay(ImageViewOverlay):
             self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], autoLevels=False)
             self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :], autoLevels=False)
             self.imgwinc[2].setImage(self.ovreg[self.ivm.cim_pos[0], :, :], autoLevels=False)
+
+        for i in range(3):
+            self.imgwinc[0].setZValue(z)
 
     def set_overlay_view(self, view=True, roiOnly=False):
         """
