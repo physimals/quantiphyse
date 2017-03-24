@@ -96,22 +96,25 @@ class PerfSlicWidget(PkWidget):
         if self.ivm.vol is None:
             QtGui.QMessageBox.warning(self, "No volume loaded", "Load a volume before generating supervoxels", QtGui.QMessageBox.Close)
             return
-        img = self.ivm.vol.data
-
+        
         if self.ivm.current_roi is None:
             QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating supervoxels", QtGui.QMessageBox.Close)
             return
-
+        
         ncomp = self.n_comp.spin.value()
         comp = self.compactness.spin.value()
         # ss = self.segment_size.spin.value()
         sn = self.segment_number.spin.value()
 
-
+        slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
+        roi_slices = slices[:self.ivm.current_roi.ndims]
+        img = self.ivm.vol.data[slices]
+        mask = self.ivm.current_roi.data[roi_slices]
+        
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_size, mask=self.ivm.current_roi.data)
+        ps1 = PerfSLIC(img, vox_size, mask=mask)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")
@@ -121,12 +124,14 @@ class PerfSlicWidget(PkWidget):
                                              recompute_seeds=True, n_random_seeds=sn)
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
-
+        
         #self.ivm.add_overlay(Overlay(name="supervoxels", data=svdata), make_current=True)
         #self.roibox.setEnabled(True)
         #self.roi_reset()
 
-        self.ivm.add_roi(Roi(name="supervoxels", data=svdata), make_current=True)
+        newroi = np.zeros(self.ivm.current_roi.data.shape)
+        newroi[roi_slices] = svdata
+        self.ivm.add_roi(Roi(name="supervoxels", data=newroi), make_current=True)
 
         #bound = seg.find_boundaries(ovl, mode='inner')
         #self.ivm.set_overlay(name="supervoxels", data=bound, force=True)
