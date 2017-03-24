@@ -20,12 +20,45 @@ import nrrd
 import os
 
 class Volume(object):
+    """
+    Image data class
 
-    AXIAL = 1
-    CORONAL = 2
-    SAGGITAL = 3
+    Subclasses specifically for overlays and ROIs also exist, but most of they
+    code is generic to all
+
+    The major issue with image data is orientation. This is how we handle it.
+
+    A volume's data has an original shape (dimensions)
+    However it may be re-oriented to a different shape by permuting/flipping axes
+    using an affine matrix. This raises two issues: behaviour on load and behaviour
+    on save.
+
+    On load, we get the affine from the file as best we can (NIFTI: get_best_affine())
+    We re-orient the data as required, but also save the original data shape and the
+    list of transpositions and axis flips we performed. Internally data is always oriented 
+    in RAS dimensions.
+
+    On save, we want to make sure that data loaded from a file is saved identically.
+    So we need to undo the transformations on the data and then use the original affine.
+
+    Data created internally poses an issue - we could reasonably save it using a diagonal
+    affine and without transposing anything, however this may make non-compilant viewers
+    complain because the raw axes order looks different. So instead we inherit
+    the affine and transformations from the main volume so everything looks consistent.
+
+    Then there is the issue of expanded dimensions, e.g. 2D volumes expanded to 3d
+    for internal use. We keep a list of expanded dimensions so they can be squeezed out
+    on save. Note that this list needs to be updated during re-orientation although typically
+    this does not do anything as the expanding is normally called after re-orientation.
+
+    Finally we have file that have broken affines. So, if an overlay or ROI does not
+    match the main data shape after re-orientation, we check if the original shape did
+    match, and if so we can offer the user the option of ignoring the file orientation and
+    treating it as if the data was created internally. This will result in the file being
+    'fixed' on save.
+    """
     
-    def __init__(self, name, data=None, fname=None):
+    def __init__(self, name, data=None, fname=None, affine=None):
         self.fname = fname
         if fname is not None:
             self.dir, self.basename = os.path.split(fname)
@@ -35,6 +68,9 @@ class Volume(object):
         self.data = data
         self.voxel_sizes = None
         self.nifti_header = None
+        self.affine = affine
+        self.dim_expand = []
+
         if self.data is not None and self.fname is not None:
             raise RuntimeError("Creating volume, given both data and filename!")
         elif self.fname is not None:
@@ -43,15 +79,16 @@ class Volume(object):
             raise RuntimeError("Creating volume, must be given either data or filename")
         self.remove_nans()
 
+        self.ndims = self.data.ndim
         self.shape = self.data.shape
-        self.ndims = len(self.shape)
+        self.orig_shape = self.data.shape
+        if self.voxel_sizes is None: self.voxel_sizes = [1.0, ] * self.ndims
+        if self.affine is None: self.affine = np.identity(4)
+        self._reorient()
+
         self.range = [np.min(self.data), np.max(self.data)]
-
-        if self.voxel_sizes is None:
-            self.voxel_sizes = [1.0, ] * self.ndims
-
         self.dps = self._calc_dps()
-
+        
     def _calc_dps(self):
         """
         Return appropriate number of decimal places for presenting data values
@@ -77,10 +114,12 @@ class Volume(object):
         elif multi:
             for i in range(n-self.ndims):
                 self.data = np.expand_dims(self.data, self.ndims-1)
+                self.dim_expand.append(self.ndims-1+i)
                 self.voxel_sizes.insert(self.ndims-1, 1.0)
         else:
             for i in range(n-self.ndims):
                 self.data = np.expand_dims(self.data, self.ndims)
+                self.dim_expand.append(self.ndims+i)
                 self.voxel_sizes.insert(self.ndims, 1.0)
         self.shape = self.data.shape
         self.ndims = n
@@ -112,51 +151,77 @@ class Volume(object):
             self.data = np.asarray(image.get_data())
             self.voxel_sizes = list(image.get_header().get_zooms())
             self.nifti_header = image.get_header()
-            self.realign(self.nifti_header.get_best_affine())
+            if self.affine is None:
+                self.affine = self.nifti_header.get_best_affine()
         elif self.fname.endswith(".nrrd"):
             # else if the file is a nrrd
             self.data = nrrd.read(self.fname)
         else:
             raise RuntimeError("%s: Unrecognized file type" % self.fname)
 
-    def realign(self, affine):
+    def _get_inv_transform(self):
         """
-        Permute and flip axes to align image to correct orientation
+        Returns dim_order, dim_flip transformations
+        to turn data back into original orientation from file
+        """
+        pass
 
-        Assumes orthogonal transformations only, not general rotations!
+    def _get_fwd_transform(self):
         """
-        space_affine = affine[:3,:3]
+        Returns dim_order, dim_flip transformations
+        to turn data into RAS order
+        """
+        space_affine = self.affine[:3,:3]
         space_pos = np.absolute(space_affine)
-        print(space_affine)
-        print(space_pos)
-        dims, flip = [], []
+        #print(space_affine)
+        #print(space_pos)
+        dim_order, dim_flip = [], []
         for d in range(3):
             newd = np.argmax(space_pos[:,d])
-            dims.append(newd)
+            dim_order.append(newd)
             if space_affine[newd, d] < 0:
-                flip.append(d)
-        if len(self.data.shape) == 4: dims.append(3)
-        print(dims, flip)
-        self.data = np.transpose(self.data, dims)
-        for d in flip:
-            self.data = np.flip(self.data, d)
+                dim_flip.append(d)
+        if self.ndims == 4: dim_order.append(3)
+        return dim_order, dim_flip
+        #print(dims, flip)
 
-    def slice(self, axis, pos):
-        """ 
-        Get a slice in the given direction
-
-        axis should be  Volume.AXIAL, Volume.CORONAL or Volume.SAGGITAL
-        pos is the index in this dimension
+    def _transform(self, dim_order, dim_flip):
         """
-        pass
+        Permute and flip axes
 
-    def value(self, pos):
-        """ 
-        Get data value at a given position
-
-        Axes of position are Volume.AXIAL, Volume.CORONAL, Volume.SAGGITAL
+        returns modified data, shape and voxel sizes
         """
-        pass
+        try:
+            print("Re-orienting shape ", self.shape, self.voxel_sizes)
+            new_data = np.transpose(self.data, dim_order)
+            for d in dim_flip:
+                new_data = np.flip(new_data, d)
+            new_shape = new_data.shape
+            new_voxel_sizes = [self.voxel_sizes[dim_order[i]] for i in range(self.ndims)]
+            print("Re-oriented to dim order ", dim_order)
+            print("New shape", new_shape, new_voxel_sizes)
+            return new_data, new_shape, new_voxel_sizes
+        except:
+            # If something goes wrong here, just leave the data
+            # as it is. It probably means the affine transformation
+            # is nothing like orthogonal and therefore the dimension
+            # order is not a permutation
+            warnings.warning("Failed to re-orient - non-orthogonal affine?")
+            return self.data, self.shape, self.voxel_sizes
+
+    def _reorient(self):
+        self.data, self.shape, self.voxel_sizes = self._transform(*self._get_fwd_transform())
+
+    def slice(self, *axes):
+        """ 
+        Get a slice
+
+        axes is a sequence of tuples of (axis number, position)
+        """
+        sl = [slice(None)] * self.data.ndim
+        for axis, pos in axes:
+            sl[axis] = pos
+        return self.data[sl]
 
     def check_shape(self, shape):
         ndims = min(self.ndims, len(shape))
@@ -172,21 +237,23 @@ class Volume(object):
             warnings.warn("Image contains nans")
             self.data[nans] = 0
 
-    def copy_header(self, hdr):
+    def copy_orientation(self, vol):
         """
-        Copy header information from hdr.
+        Copy size and orientation information from another volume.
 
-        Used for overlays and ROIs so they have consistent header information with the main volume
+        Used for overlays and ROIs so they save an orientation consistent with the main volume
         """
-        self.nifti_header = hdr.copy()
-        # Do not copy unit dimensions which we have created to force the number of dimensions
-        # to be what the rest of PkView expects 
-        self.nifti_header.set_data_shape([d for d in self.shape if d != 1])
-        self.nifti_header.set_data_dtype(self.data.dtype)
+        if hasattr(vol, "nifti_header"): 
+            self.nifti_header = vol.nifti_header.copy()
+            self.nifti_header.set_data_shape(self.orig_shape)
+            self.nifti_header.set_data_dtype(self.data.dtype)
+
+        self.affine = vol.affine
+        self.voxel_sizes = vol.voxel_sizes
 
 class Overlay(Volume):
-    def __init__(self, name, data=None, fname=None):
-        super(Overlay, self).__init__(name, data, fname)
+    def __init__(self, name, data=None, fname=None, **kwargs):
+        super(Overlay, self).__init__(name, data, fname, **kwargs)
         self.data_roi = data
         self.range_roi = self.range
 
@@ -207,8 +274,8 @@ class Overlay(Volume):
         self.data_roi[np.logical_not(roidata)] = self.roi_fillvalue
 
 class Roi(Volume):
-    def __init__(self, name, data=None, fname=None):
-        super(Roi, self).__init__(name, data, fname)
+    def __init__(self, name, data=None, fname=None, **kwargs):
+        super(Roi, self).__init__(name, data, fname, **kwargs)
         if self.range[0] < 0 or self.range[1] > 2**32:
             raise RuntimeError("ROI must contain values between 0 and 2**32")
 
@@ -226,6 +293,40 @@ class Roi(Volume):
         #print("ROI: Regions", self.regions)
         self.lut = self.get_lut()
         #print("ROI: LUT=", self.lut)
+
+    def get_bounding_box(self, ndims=None):
+        """
+        Returns a sequence of slice objects which
+        describe the bounding box of this ROI.
+        If ndims is specified, will return a bounding 
+        box of this number of dimensions, truncating
+        and appending slices as required.
+
+        This enables image or overlay data to be
+        easily restricted to the ROI region and
+        reduce data copying.
+
+        e.g. 
+        slices = roi.get_bounding_box(img.ndims)
+        img_restric = img.data[slices]
+        ... process img_restict, returning out_restrict
+        out_full = np.zeros(img.shape)
+        out_full[slices] = out_restrict
+        """
+        if ndims == None: ndims = self.ndims
+        bbox = []
+        for d in range(min(self.ndim, ndims)):
+            ax = [i for i in range(N) if i != d]
+            nonzero = np.any(self.data, axis=tuple(ax))
+            bbox.extend(np.where(nonzero)[0][[0, -1]])
+        #print(bbox)
+        
+        slices = [slice(None)] * ndims
+        for i in range(min(self.ndim, ndims)):
+            s1, s2 = bbox[i*2:(i+1)*2]
+            slices[i] = slice(s1, s2)
+        
+        return slices
 
     def get_pencol(self, region):
         """
@@ -329,6 +430,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         self.vol = vol
         self.cim_pos = [int(d/2) for d in vol.shape]
+        print(self.cim_pos)
         if vol.ndims == 3: self.cim_pos.append(0);
         self.set_voldim_scale_const(1.0)
         self.sig_main_volume.emit(self.vol)
@@ -369,8 +471,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         ov.force_ndims(max(3, ov.ndims), multi=(ov.ndims == 4))
         ov.check_shape(self.vol.shape)
-        if self.vol.nifti_header is not None:
-            ov.copy_header(self.vol.nifti_header)
+        ov.copy_orientation(self.vol)
 
         self.overlays[ov.name] = ov
         if signal:
@@ -396,8 +497,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         roi.force_ndims(3, multi=False)
         roi.check_shape(self.vol.shape)
-        if self.vol.nifti_header is not None:
-            roi.copy_header(self.vol.nifti_header)
+        roi.copy_orientation(self.vol)
 
         self.rois[roi.name] = roi
 
