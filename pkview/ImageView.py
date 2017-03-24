@@ -189,8 +189,8 @@ class ImageView(QtGui.QGraphicsView, object):
         # If false then use the same threshold for the entire volume
         self.options['view_thresh'] = False
         self.options['show_crosshairs'] = True
-        self.options['ShowOverlay'] = True
-        self.options['ShowOverlayContour'] = False
+        self.shade_roi = True
+        self.contour_roi = False
         self.options['roi_outline_width'] = 3.0
         self.options['ShowColorOverlay'] = True
         self.options['UseROI'] = False
@@ -564,54 +564,50 @@ class ImageView(QtGui.QGraphicsView, object):
         z = 0
         if self.roi_on_top: z=1
 
-        if roi is None or (not self.options['ShowOverlay']):
+        if roi is None:
             for i in range(3):
-                self.imgwinb[0].setImage(np.zeros((1, 1)))
+                self.imgwinb[i].setImage(np.zeros((1, 1)))
             return
-        else:
-            lut = roi.get_lut(self.roi_alpha)
-            roi_levels = self.ivm.current_roi.range
-            
-            pos = self.ivm.cim_pos
-            for i in range(3):
-                zaxis = self.ax_map[i][2]
+        
+        pos = self.ivm.cim_pos
+        lut = roi.get_lut(self.roi_alpha)
+        roi_levels = self.ivm.current_roi.range
+        for i in range(3):
+            zaxis = self.ax_map[i][2]
+                
+            if self.shade_roi:
                 self.imgwinb[i].setImage(roi.slice((zaxis, pos[zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
                 self.imgwinb[i].setZValue(z)
+            else:
+                self.imgwinb[i].setImage(np.zeros((1, 1)))
+
+            n = 0
+            if self.contour_roi:
+                zaxis = self.ax_map[i][2]
+                data = roi.slice((zaxis, pos[zaxis]))
                 
-        n = 0
-        if roi is not None and self.options['ShowOverlayContour']:
-            # Get slice of ROI for each viewing window and convert to float
-            # for isosurface routine
-            slices = []
-            slices.append(roi.data[:, :, self.ivm.cim_pos[2]])
-            slices.append(roi.data[:, self.ivm.cim_pos[1], :])
-            slices.append(roi.data[self.ivm.cim_pos[0], :, :])
+                # Update data and level for existing contour items, and create new ones if needed
+                n_conts = len(self.cont[i])
+                create_new = False
+                for val in roi.regions:
+                    pencol = roi.get_pencol(val)
+                    if val != 0:
+                        if n == n_conts:
+                            create_new = True
 
-            # Update data and level for existing contour items, and create new ones
-            # if we need them
-            n_conts = len(self.cont[0])
-            create_new = False
-            for val in roi.regions:
-                pencol = roi.get_pencol(val)
-                if val != 0:
-                    if n == n_conts:
-                        create_new = True
-
-                    for i in range(3):
                         if create_new:
                             self.cont[i].append(pg.IsocurveItem())
                             self.view[i].addItem(self.cont[i][n])
 
-                        d = self._iso_prepare(slices[i], val)
+                        d = self._iso_prepare(data, val)
                         self.cont[i][n].setData(d)
                         self.cont[i][n].setLevel(1)
                         self.cont[i][n].setPen(pg.mkPen(pencol, width=self.options['roi_outline_width']))
 
                     n += 1
 
-        # Set data to None for any existing contour items that we are not using
-        # right now FIXME should we delete these?
-        for i in range(3):
+            # Set data to None for any existing contour items that we are not using right now 
+            # FIXME should we delete these?
             for idx in range(n, len(self.cont[i])):
                 self.cont[i][idx].setData(None)
 
@@ -623,8 +619,8 @@ class ImageView(QtGui.QGraphicsView, object):
         """
         Set the view mode for the ROI
         """
-        self.options['ShowOverlay'] = shade
-        self.options['ShowOverlayContour'] = contour
+        self.shade_roi = shade
+        self.contour_roi = contour
         self._update_view()
 
     @QtCore.Slot(int)
