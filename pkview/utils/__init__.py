@@ -22,3 +22,10 @@ def get_icon(name):
         else:
             extension = ".svg"
     return os.path.join(LOCAL_FILE_PATH, "icons/%s%s" % (name, extension))
+
+def get_local_file(name):
+    """
+    Get path to the named icon
+    """
+    global LOCAL_FILE_PATH
+    return os.path.join(LOCAL_FILE_PATH, name)
