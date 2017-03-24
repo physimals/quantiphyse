@@ -125,17 +125,19 @@ class Volume(object):
         self.ndims = n
 
     def save_nifti(self, fname):
-        """
-        Save to Nifti file
+        data = self.data
+        # Remove axes that were added to pad to 4d
+        for dim in self.dim_expand:
+            print("Squeezing axis", dim)
+            data = np.squeeze(data, dim)
+        
+        # Invert axis transformations
+        order, flip = self._get_transform(invert=True)
+        data, shape, voxel_sizes = self._transform(order, flip, data)
 
-        FIXME do we need to realign the data if we are using the same affine?
-        """
-        if self.nifti_header is None:
-            warnings.warn("No NIFTI header information available")
-            img = nib.Nifti1Image(self.data, np.identity(self.ndims))
-        else:
-            # 'Squeeze' the data so, e.g. 2D data we have forced into 3D will still get written out as 2D.
-            img = nib.Nifti1Image(self.data.squeeze(), self.nifti_header.get_base_affine(), header=self.nifti_header)
+        if not hasattr(self, "nifti_header"): self.nifti_header = None
+        img = nib.Nifti1Image(data, self.affine, header=self.nifti_header)
+        img.update_header()
         img.to_filename(fname)
         self.fname = fname
 
@@ -159,19 +161,14 @@ class Volume(object):
         else:
             raise RuntimeError("%s: Unrecognized file type" % self.fname)
 
-    def _get_inv_transform(self):
-        """
-        Returns dim_order, dim_flip transformations
-        to turn data back into original orientation from file
-        """
-        pass
-
-    def _get_fwd_transform(self):
+    def _get_transform(self, invert=False):
         """
         Returns dim_order, dim_flip transformations
         to turn data into RAS order
         """
-        space_affine = self.affine[:3,:3]
+        affine = self.affine
+        if invert: affine = affine.transpose()
+        space_affine = affine[:3,:3]
         space_pos = np.absolute(space_affine)
         #print(space_affine)
         #print(space_pos)
@@ -185,22 +182,22 @@ class Volume(object):
         return dim_order, dim_flip
         #print(dims, flip)
 
-    def _transform(self, dim_order, dim_flip):
+    def _transform(self, dim_order, dim_flip, data=None):
         """
         Permute and flip axes
 
         returns modified data, shape and voxel sizes
         """
         try:
+            if data is None: data = self.data
             print("Re-orienting shape ", self.shape, self.voxel_sizes)
-            new_data = np.transpose(self.data, dim_order)
+            new_data = np.transpose(data, dim_order)
             for d in dim_flip:
                 new_data = np.flip(new_data, d)
-            new_shape = new_data.shape
             new_voxel_sizes = [self.voxel_sizes[dim_order[i]] for i in range(self.ndims)]
             print("Re-oriented to dim order ", dim_order)
-            print("New shape", new_shape, new_voxel_sizes)
-            return new_data, new_shape, new_voxel_sizes
+            print("New shape", new_data.shape, new_voxel_sizes)
+            return new_data, new_data.shape, new_voxel_sizes
         except:
             # If something goes wrong here, just leave the data
             # as it is. It probably means the affine transformation
@@ -210,7 +207,7 @@ class Volume(object):
             return self.data, self.shape, self.voxel_sizes
 
     def _reorient(self):
-        self.data, self.shape, self.voxel_sizes = self._transform(*self._get_fwd_transform())
+        self.data, self.shape, self.voxel_sizes = self._transform(*self._get_transform())
 
     def slice(self, *axes):
         """ 
@@ -314,17 +311,12 @@ class Roi(Volume):
         out_full[slices] = out_restrict
         """
         if ndims == None: ndims = self.ndims
-        bbox = []
-        for d in range(min(self.ndim, ndims)):
-            ax = [i for i in range(N) if i != d]
-            nonzero = np.any(self.data, axis=tuple(ax))
-            bbox.extend(np.where(nonzero)[0][[0, -1]])
-        #print(bbox)
-        
         slices = [slice(None)] * ndims
-        for i in range(min(self.ndim, ndims)):
-            s1, s2 = bbox[i*2:(i+1)*2]
-            slices[i] = slice(s1, s2)
+        for d in range(min(ndims, self.ndims)):
+            ax = [i for i in range(self.ndims) if i != d]
+            nonzero = np.any(self.data, axis=tuple(ax))
+            s1, s2 = np.where(nonzero)[0][[0, -1]]
+            slices[d] = slice(s1, s2)
         
         return slices
 
