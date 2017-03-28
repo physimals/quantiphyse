@@ -25,8 +25,18 @@ class PkWidget(QtGui.QWidget):
         self.name = kwargs.get("name", "")
         self.description = kwargs.get("desc", self.name)
         self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", "")))
+        self.opts = kwargs.get("opts", None)
         self.ivm = kwargs.get("ivm", None)
         self.ivl = kwargs.get("ivl", None)
         self.default = kwargs.get("default", False)
 	self.visible = False
         self.tabname = kwargs.get("tabname", self.name.replace(" ", "\n"))
+        if self.opts:
+                self.opts.sig_options_changed.connect(self.options_changed)
+
+    def options_changed(self):
+        """
+        Override to respond to option changes
+        """
+        pass
+

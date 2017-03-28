@@ -174,13 +174,15 @@ class ImageView(QtGui.QGraphicsView, object):
     # Signals when the selected points / region have changed
     sig_sel_changed = QtCore.Signal(tuple)
 
-    def __init__(self, ivm):
+    def __init__(self, ivm, opts):
         super(ImageView, self).__init__()
 
         self.ivm = ivm
         self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
         self.ivm.sig_current_roi.connect(self.current_roi_changed)
         self.ivm.sig_main_volume.connect(self.main_volume_changed)
+        self.opts = opts
+        self.opts.sig_options_changed.connect(self.options_changed)
 
         #ViewerOptions
         self.options = {}
@@ -195,7 +197,6 @@ class ImageView(QtGui.QGraphicsView, object):
         self.options['ShowColorOverlay'] = True
         self.options['UseROI'] = False
         self.roi_alpha = 150
-        self.roi_on_top = False
         
         # overlay data
         self.ovreg = None
@@ -203,10 +204,6 @@ class ImageView(QtGui.QGraphicsView, object):
         # For each view window, this is the volume indices of the x, y and z axes for the view
         self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
         self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
-
-        #empty array for arrows
-        self.sizeScaling = True
-        self.lrFlip = True
         
         self.cont = [[], [], []]
 
@@ -447,7 +444,7 @@ class ImageView(QtGui.QGraphicsView, object):
     def _update_view_vol(self):
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         for i in range(3):
-            if self.sizeScaling:
+            if self.opts.size_scaling == 1:
                 x, y = self.ax_map[i][:2]
                 self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
             else:
@@ -457,8 +454,8 @@ class ImageView(QtGui.QGraphicsView, object):
 
         # Flip left/right depending on the viewing convention selected
         for i, v in enumerate(self.view[:2]):
-            v.invertX(self.lrFlip)
-            if self.lrFlip: l, r = 1, 0
+            v.invertX(self.opts.orientation == 0)
+            if self.opts.orientation == 0: l, r = 1, 0
             else: l, r = 0, 1
             self.labels[i][r].setText("R")
             self.labels[i][l].setText("L")
@@ -532,18 +529,7 @@ class ImageView(QtGui.QGraphicsView, object):
             
         self._update_view()
 
-    def set_size_scaling(self, state):
-        """
-        toggles whether voxel scaling is used
-        """
-        self.sizeScaling = state
-        self._update_view()
-
-    def set_lr_flip(self, state):
-        """
-        toggles whether L/R is flipped
-        """
-        self.lrFlip = state
+    def options_changed(self):
         self._update_view()
 
     def _iso_prepare(self, arr, val):
@@ -562,7 +548,7 @@ class ImageView(QtGui.QGraphicsView, object):
     def _update_view_roi(self):
         roi = self.ivm.current_roi
         z = 0
-        if self.roi_on_top: z=1
+        if self.opts.display_order == 1: z=1
 
         if roi is None:
             for i in range(3):
@@ -649,7 +635,7 @@ class ImageView(QtGui.QGraphicsView, object):
 
     def _update_view_overlay(self):
         z = 1
-        if self.roi_on_top: z=0
+        if self.opts.display_order == 1: z=0
         
         if self.ivm.current_overlay is None or self.ovreg is None or self.options['ShowColorOverlay'] == 0:
             self.imgwinc[0].setImage(np.zeros((1, 1)), autoLevels=False)

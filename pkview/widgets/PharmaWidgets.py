@@ -385,16 +385,12 @@ class PharmaView(PkWidget):
         self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.reset_graph()
+        self.replot_graph()
 
         #Signal enhancement (normalised)
         self.cb3 = QtGui.QCheckBox('Signal enhancement', self)
         self.cb3.toggle()
-        self.cb3.stateChanged.connect(self.reset_graph)
-
-        # input temporal resolution
-        self.text1 = QtGui.QLineEdit('1.0', self)
-        self.text1.returnPressed.connect(self.replot_graph)
+        self.cb3.stateChanged.connect(self.replot_graph)
 
         # input the number of baseline time points
         self.text2 = QtGui.QLineEdit('3', self)
@@ -406,18 +402,12 @@ class PharmaView(PkWidget):
         self.tab1.resizeColumnsToContents()
         self.tab1.setModel(self.tabmod1)
 
-        l02 = QtGui.QHBoxLayout()
-        l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
-        l02.addStretch(1)
-        l02.addWidget(self.text1)
-
         l03 = QtGui.QHBoxLayout()
         l03.addWidget(QtGui.QLabel("Normalise Frames"))
         l03.addStretch(1)
         l03.addWidget(self.text2)
 
         l04 = QtGui.QVBoxLayout()
-        l04.addLayout(l02)
         l04.addLayout(l03)
         l04.addWidget(self.cb3)
 
@@ -472,9 +462,7 @@ class PharmaView(PkWidget):
         values = np.array(sig, dtype=np.double)
 
         # Setting x-values
-        xres = float(self.text1.text())
-        xx = xres * np.arange(len(values))
-
+        xx = self.opts.t_scale
         frames1 = int(self.text2.text())
 
         if self.cb3.isChecked() is True:
@@ -491,16 +479,14 @@ class PharmaView(PkWidget):
             self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
         self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', "Volume", units='')
+        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
         #self.p1.setLogMode(x=False, y=False)
+
+    def options_changed(self, opts):
+        self.replot_graph()
 
     @QtCore.Slot()
     def replot_graph(self):
-        self.reset_graph()
-        #other stuff
-
-    @QtCore.Slot()
-    def reset_graph(self):
         """
         Reset and clear the graph
         """

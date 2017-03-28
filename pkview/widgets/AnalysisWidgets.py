@@ -116,10 +116,6 @@ class SECurve(PkWidget):
         b1.setToolTip("Clear curves")
         b1.clicked.connect(self.clear_all)
 
-        # input temporal resolution
-        self.text1 = QtGui.QLineEdit('1.0', self)
-        self.text1.editingFinished.connect(self.replot_graph)
-
         # Select plot color
         combo = QtGui.QComboBox(self)
         for col in self.colors.keys():
@@ -140,14 +136,8 @@ class SECurve(PkWidget):
         l01.addWidget(combo)
         l01.addStretch(1)
 
-        l02 = QtGui.QHBoxLayout()
-        l02.addWidget(QtGui.QLabel("Temporal resolution (s)"))
-        l02.addWidget(self.text1)
-        l02.addStretch(1)
-
         l04 = QtGui.QVBoxLayout()
         l04.addLayout(l01)
-        l04.addLayout(l02)
         l04.addWidget(self.cb1)
         l04.addWidget(self.cb2)
         l04.addWidget(self.cb3)
@@ -186,7 +176,7 @@ class SECurve(PkWidget):
                 mean_values = np.stack([plt.sig for plt in plts], axis=1)
                 mean_values = np.squeeze(np.mean(mean_values, axis=1))
                 plt = SEPlot(mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
-                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
                 self.mean_plots[col] = plt
 
     def clear_graph(self):
@@ -196,14 +186,22 @@ class SECurve(PkWidget):
         self.win1.setVisible(True)
         if self.p1 is not None: self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', "Volume", units='')
+        if self.ivm.vol:
+            if self.cb3.isChecked():
+                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.name)
+            else:
+                self.p1.setLabel('left', self.ivm.vol.name)
+            
+        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
+
+    def options_changed(self, opts):
+        self.replot_graph()
 
     @QtCore.Slot()
     def replot_graph(self):
         self.clear_graph()
         for plt in self.plots.values():
-            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
         if self.cb4.isChecked():
             self.update_mean()
 
@@ -245,7 +243,7 @@ class SECurve(PkWidget):
                     warnings.warning("Image is not 3D or 4D")
                     continue
                 plt = SEPlot(sig, pen=self.ivl.pick_col)
-                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), float(self.text1.text()))
+                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
                 self.plots[point] = plt
 
         for point in self.plots.keys():
