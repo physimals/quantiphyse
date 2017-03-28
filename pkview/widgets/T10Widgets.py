@@ -65,14 +65,13 @@ class SourceImageList(QtGui.QVBoxLayout):
         and must have shape consistent with the main volume
         """
         try:
-            f = nib.load(filename)
-            data = f.get_data()
-            if len(data.shape) not in (3, 4):
+            f = Overlay(name=filename, fname=filename, affine=self.ivm.vol.affine)
+            if len(f.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
                 return []
 
-            if data.shape[:3] != self.ivm.vol.shape[:3]:
+            if f.shape[:3] != self.ivm.vol.shape[:3]:
                 QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
                                           QtGui.QMessageBox.Close)
                 return []
@@ -81,7 +80,7 @@ class SourceImageList(QtGui.QVBoxLayout):
                                       QtGui.QMessageBox.Close)
             return []
 
-        return data.shape
+        return f.shape
 
     def load_image(self, filename):
         # Try to guess the value from the filename - if it ends in a number, go with that
@@ -164,8 +163,9 @@ class SourceImageList(QtGui.QVBoxLayout):
         for i in range(self.table.rowCount()):
             filename = self.table.item(i, 0).text()
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
-            img = nib.load(filename)
-            vol = img.get_data()
+            # NB need to pass main volume affine to ensure consistant orientation
+            img = Overlay(filename, fname=filename, affine=self.ivm.vol.affine)
+            vol = img.data
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
                 vols.append(vol)
