@@ -203,7 +203,7 @@ class Volume(object):
             # as it is. It probably means the affine transformation
             # is nothing like orthogonal and therefore the dimension
             # order is not a permutation
-            warnings.warning("Failed to re-orient - non-orthogonal affine?")
+            warnings.warn("Failed to re-orient - non-orthogonal affine?")
             return self.data, self.shape, self.voxel_sizes
 
     def _reorient(self):
