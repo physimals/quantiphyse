@@ -9,6 +9,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
+import sys
 import matplotlib
 
 from matplotlib import cm
@@ -290,7 +291,6 @@ class ImageView(QtGui.QGraphicsView, object):
         self.h2.setBackground(background=None)
         self.h2.setGradientName("jet")
         for i in range(3):
-            print(self.imgwinc[i])
             self.h2.addImageItem(self.imgwinc[i])
 
         self.grid1.addWidget(self.h2, 1, 2)
@@ -362,7 +362,6 @@ class ImageView(QtGui.QGraphicsView, object):
         def mouse_pos(event):
             mx = int(event.pos().x())
             my = int(event.pos().y())
-            print(mx, my)
 
             self.ivm.cim_pos[self.ax_map[i][0]] = mx
             self.ivm.cim_pos[self.ax_map[i][1]] = my
@@ -444,7 +443,7 @@ class ImageView(QtGui.QGraphicsView, object):
     def _update_view_vol(self):
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         for i in range(3):
-            if self.opts.size_scaling == 1:
+            if self.opts.size_scaling == self.opts.SCALE_VOXELS:
                 x, y = self.ax_map[i][:2]
                 self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
             else:
@@ -455,7 +454,7 @@ class ImageView(QtGui.QGraphicsView, object):
         # Flip left/right depending on the viewing convention selected
         for i, v in enumerate(self.view[:2]):
             v.invertX(self.opts.orientation == 0)
-            if self.opts.orientation == 0: l, r = 1, 0
+            if self.opts.orientation == self.opts.RADIOLOGICAL: l, r = 1, 0
             else: l, r = 0, 1
             self.labels[i][r].setText("R")
             self.labels[i][l].setText("L")
@@ -548,7 +547,7 @@ class ImageView(QtGui.QGraphicsView, object):
     def _update_view_roi(self):
         roi = self.ivm.current_roi
         z = 0
-        if self.opts.display_order == 1: z=1
+        if self.opts.display_order == self.opts.ROI_ON_TOP: z=1
 
         if roi is None:
             for i in range(3):
@@ -635,7 +634,7 @@ class ImageView(QtGui.QGraphicsView, object):
 
     def _update_view_overlay(self):
         z = 1
-        if self.opts.display_order == 1: z=0
+        if self.opts.display_order  == self.opts.ROI_ON_TOP: z=0
         
         if self.ivm.current_overlay is None or self.ovreg is None or self.options['ShowColorOverlay'] == 0:
             self.imgwinc[0].setImage(np.zeros((1, 1)), autoLevels=False)
@@ -643,6 +642,7 @@ class ImageView(QtGui.QGraphicsView, object):
             self.imgwinc[2].setImage(np.zeros((1, 1)), autoLevels=False)
 
         elif self.ivm.current_overlay.ndims == 4:
+            print("4d overlay")
             if self.ivm.current_overlay.shape[3] == 3:
                 # RGB or RGBA image
                 self.imgwinc[0].setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
@@ -650,9 +650,13 @@ class ImageView(QtGui.QGraphicsView, object):
                 self.imgwinc[2].setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
             else:
                 # Timeseries
-                self.imgwinc[0].setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]]), autoLevels=False)
-                self.imgwinc[1].setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]]), autoLevels=False)
-                self.imgwinc[2].setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]]), autoLevels=False)
+        
+                print("timeseries")
+                print("shape", self.ovreg.shape)
+                
+                self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]], autoLevels=False)
+                self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]], autoLevels=False)
+                self.imgwinc[2].setImage(self.ovreg[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]], autoLevels=False)
         else:
             self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], autoLevels=False)
             self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :], autoLevels=False)

@@ -287,7 +287,16 @@ class ScaleEditDialog(QtGui.QDialog):
         return scale
 
 class ViewOptions(QtGui.QDialog):
+
+    SCALE_VOXELS = 0
+    ISOTROPIC = 1
+
+    RADIOLOGICAL = 0
+    NEUROLOGICAL = 1
     
+    OVERLAY_ON_TOP = 0
+    ROI_ON_TOP = 1
+
     sig_options_changed = QtCore.Signal(object)
 
     def __init__(self, parent, ivm):
@@ -581,9 +590,6 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay_all.addWidget(gBox2)
         gBoxlay_all.addWidget(gBox)
         gBoxlay_all.addWidget(gBox3)
-        gBoxlay_all.setStretch(1, 1)
-        gBoxlay_all.setStretch(2, 1)
-        gBoxlay_all.setStretch(3, 1)
         
         # Data summary bar
         hbox = QtGui.QHBoxLayout()
