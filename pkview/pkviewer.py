@@ -13,6 +13,7 @@ import platform
 import argparse
 import traceback
 import requests
+import warnings
 
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
@@ -21,8 +22,6 @@ import numpy as np
 
 if sys.platform.startswith("darwin"):
     from Cocoa import NSURL
-
-import warnings
 
 from pkview import error_dialog
 
@@ -726,23 +725,15 @@ class MainWindowWidget(QtGui.QWidget):
         """
         Initialise the tab widget
         """
-        self.qtab1 = QtGui.QTabWidget()
-        self.qtab1.setTabBar(FingerTabBarWidget(width=100, height=50))
-        self.qtab1.setTabsClosable(False)
-        self.qtab1.setMovable(False)
-        self.qtab1.setIconSize(QtCore.QSize(16, 16))
+        self.qtab1 = FingerTabWidget(self)
 
         # Add widgets flagged to appear by default
-        for w in self.widgets:
+        for idx, w in enumerate(self.widgets):
             if w.default:
                 index = self.qtab1.addTab(w, w.icon, w.tabname)
                 w.visible = True
                 w.index = index
                 
-        # FIXME allow tabs to be closed?
-        # self.qtab1.tabCloseRequested.connect(self.qtab1.removeTab)
-        self.qtab1.setTabPosition(QtGui.QTabWidget.West)
-
     def update_slider_range(self):
         try:
             self.sld1.blockSignals(True)
@@ -887,7 +878,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
     def show_widget(self):
         w = self.sender().widget
-	if not w.visible:
+        if not w.visible:
             index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
             w.visible = True
             w.index = index
@@ -944,7 +935,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
-        widget_menu = menubar.addMenu('&Additional Widgets')
+        widget_menu = menubar.addMenu('&Widgets')
         advanced_menu = menubar.addMenu('&Advanced')
         help_menu = menubar.addMenu('&Help')
 
