@@ -35,125 +35,171 @@ class PkModellingProcess(MultiProcess):
             num_row, progress = self.queue.get()
         self.sig_progress.emit(progress)
 
+def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
+    """
+    Simple function to run the c++ pk modelling code. Must be a function to work with multiprocessing
+    
+        img1sub:
+        t101sub:
+        r1:
+        r2:
+        delt:
+        injt:
+        tr1:
+        te1:
+        dce_flip_angle:
+        dose:
+        model_choice:
+    """
+    print("pk modelling worker started")
+    try:
+        t1 = np.arange(0, img1sub.shape[-1])*delt
+        # conversion to minutes
+        t1 = t1/60.0
+
+        injtmins = injt/60.0
+
+        Dose = dose
+
+        # conversion to seconds
+        dce_TR = tr1/1000.0
+        dce_TE = te1/1000.0
+
+        #specify variable upper bounds and lower bounds
+        ub = [10, 1, 0.5, 0.5]
+        lb = [0, 0.05, -0.5, 0]
+
+        # contiguous array
+        img1sub = np.ascontiguousarray(img1sub)
+        t101sub = np.ascontiguousarray(t101sub)
+        t1 = np.ascontiguousarray(t1)
+
+        Pkclass = PyPk(t1, img1sub, t101sub)
+        Pkclass.set_bounds(ub, lb)
+        Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
+
+        # Initialise fitting
+        # Choose model type and injection time
+        Pkclass.rinit(model_choice, injtmins)
+
+        # Iteratively process 5000 points at a time
+        # (this can be performed as a multiprocess soon)
+
+        size_step = max(1, np.around(img1sub.shape[0]/5))
+        size_tot = img1sub.shape[0]
+        steps1 = np.around(size_tot/size_step)
+        num_row = 1.0  # Just a placeholder for the meanwhile
+
+        print("Number of voxels per step: ", size_step)
+        print("Number of steps: ", steps1)
+        queue.put((num_row, 1))
+        for ii in range(int(steps1)):
+            if ii > 0:
+                progress = float(ii) / float(steps1) * 100
+                # print(progress)
+                queue.put((num_row, progress))
+
+            time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
+            x = Pkclass.run(size_step)
+            # print(x)
+
+        print("Done")
+
+        # Get outputs
+        res1 = np.array(Pkclass.get_residual())
+        fcurve1 = np.array(Pkclass.get_fitted_curve())
+        params2 = np.array(Pkclass.get_parameters())
+
+        # final update to progress bar
+        queue.put((num_row, 100))
+        time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
+        return id, True, (res1, fcurve1, params2)
+    except:
+        print("PK worker error: %s" % sys.exc_info()[0])
+        return id, False, sys.exc_info()[0]
+
 class PharmaWidget(PkWidget):
-
     """
-    Widget for generating Pharmacokinetics
-    Bass class
-        - GUI framework
-        - Buttons
-        - Multiprocessing
+    Widget for Pharmacokinetic modelling
     """
-
-    #emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
 
     def __init__(self, **kwargs):
         super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", icon="pk", **kwargs)
 
-        # progress of generation
-        self.prog_gen = QtGui.QProgressBar(self)
-        self.prog_gen.setStatusTip('Progress of Pk modelling. Be patient. Progress is only updated in chunks')
+        main_vbox = QtGui.QVBoxLayout()
 
-        # generate button
-        but_gen = QtGui.QPushButton('Run modelling', self)
-        but_gen.clicked.connect(self.start_task)
-
-        #Inputs
-        p1 = QtGui.QLabel('R1')
+        # Inputs
+        param_box = QGroupBoxB()
+        param_box.setTitle('Parameters')
+        input_grid = QtGui.QGridLayout()
+        input_grid.addWidget(QtGui.QLabel('R1'), 0, 0)
         self.valR1 = QtGui.QLineEdit('3.7', self)
-        p2 = QtGui.QLabel('R2')
+        input_grid.addWidget(self.valR1, 0, 1)
+        input_grid.addWidget(QtGui.QLabel('R2'), 1, 0)
         self.valR2 = QtGui.QLineEdit('4.8', self)
-        p3 = QtGui.QLabel('Flip Angle (degrees)')
+        input_grid.addWidget(self.valR2, 1, 1)
+        input_grid.addWidget(QtGui.QLabel('Flip Angle (degrees)'), 2, 0)
         self.valFA = QtGui.QLineEdit('12.0', self)
-        p4 = QtGui.QLabel('TR (ms)')
+        input_grid.addWidget(self.valFA, 2, 1)
+        input_grid.addWidget(QtGui.QLabel('TR (ms)'), 3, 0)
         self.valTR = QtGui.QLineEdit('4.108', self)
-        p5 = QtGui.QLabel('TE (ms)')
+        input_grid.addWidget(self.valTR, 3, 1)
+        input_grid.addWidget(QtGui.QLabel('TE (ms)'), 4, 0)
         self.valTE = QtGui.QLineEdit('1.832', self)
-        p6 = QtGui.QLabel('delta T (s)')
+        input_grid.addWidget(self.valTE, 4, 1)
+        input_grid.addWidget(QtGui.QLabel('delta T (s)'), 5, 0)
         self.valDelT = QtGui.QLineEdit('12', self)
-        p7 = QtGui.QLabel('Estimated Injection time (s)')
+        input_grid.addWidget(self.valDelT, 5, 1)
+        input_grid.addWidget(QtGui.QLabel('Estimated Injection time (s)'), 6, 0)
         self.valInjT = QtGui.QLineEdit('30', self)
-        p8 = QtGui.QLabel('Ktrans/kep percentile threshold')
+        input_grid.addWidget(self.valInjT, 6, 1)
+        input_grid.addWidget(QtGui.QLabel('Ktrans/kep percentile threshold'), 7, 0)
         self.thresh1 = QtGui.QLineEdit('100', self)
-        p9 = QtGui.QLabel('Dose (mM/kg) (preclinical only)')
+        input_grid.addWidget(self.thresh1, 7, 1)
+        input_grid.addWidget(QtGui.QLabel('Dose (mM/kg) (preclinical only)'), 8, 0)
         self.valDose = QtGui.QLineEdit('0.6', self)
+        input_grid.addWidget(self.valDose, 8, 1)
+        param_box.setLayout(input_grid)
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(param_box)
+        hbox.addStretch(2)
+        main_vbox.addLayout(hbox)
 
-        # AIF
-        # Select plot color
+        # Model choice
+        aif_choice = QGroupBoxB()
+        aif_choice.setTitle('Pharmacokinetic model choice')
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('AIF choice'))
         self.combo = QtGui.QComboBox(self)
         self.combo.addItem("Clinical: Toft / OrtonAIF (3rd) with offset")
         self.combo.addItem("Clinical: Toft / OrtonAIF (3rd) no offset")
         self.combo.addItem("Preclinical: Toft / BiexpAIF (Heilmann)")
         self.combo.addItem("Preclinical: Ext Toft / BiexpAIF (Heilmann)")
+        hbox.addWidget(self.combo)
+        hbox.addStretch(1)
+        aif_choice.setLayout(hbox)
+        main_vbox.addWidget(aif_choice)
 
-        #self.combo.activated[str].connect(self.emit_cchoice)
-        #self.combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
-        #                 "Allows visualisation of multiple enhancement curves of different colours")
+        # Run button and progress
+        run_box = QGroupBoxB()
+        run_box.setTitle('Running')
+        hbox = QtGui.QHBoxLayout()
+        but_gen = QtGui.QPushButton('Run modelling', self)
+        but_gen.clicked.connect(self.start_task)
+        hbox.addWidget(but_gen)
+        self.prog_gen = QtGui.QProgressBar(self)
+        self.prog_gen.setStatusTip('Progress of Pk modelling. Be patient. Progress is only updated in chunks')
+        hbox.addWidget(self.prog_gen)
+        run_box.setLayout(hbox)
+        main_vbox.addWidget(run_box)
 
-        #LAYOUTS
-        # Progress
-        l01 = QtGui.QHBoxLayout()
-        l01.addWidget(but_gen)
-        l01.addWidget(self.prog_gen)
-
-        f01 = QGroupBoxB()
-        f01.setTitle('Running')
-        f01.setLayout(l01)
-
-        # Inputs
-        l02 = QtGui.QGridLayout()
-        l02.addWidget(p1, 0, 0)
-        l02.addWidget(self.valR1, 0, 1)
-        l02.addWidget(p2, 1, 0)
-        l02.addWidget(self.valR2, 1, 1)
-        l02.addWidget(p3, 2, 0)
-        l02.addWidget(self.valFA, 2, 1)
-        l02.addWidget(p4, 3, 0)
-        l02.addWidget(self.valTR, 3, 1)
-        l02.addWidget(p5, 4, 0)
-        l02.addWidget(self.valTE, 4, 1)
-        l02.addWidget(p6, 5, 0)
-        l02.addWidget(self.valDelT, 5, 1)
-        l02.addWidget(p7, 6, 0)
-        l02.addWidget(self.valInjT, 6, 1)
-        l02.addWidget(p8, 7, 0)
-        l02.addWidget(self.thresh1, 7, 1)
-        l02.addWidget(p9, 8, 0)
-        l02.addWidget(self.valDose, 8, 1)
-
-        f02 = QGroupBoxB()
-        f02.setTitle('Parameters')
-        f02.setLayout(l02)
-
-        l03 = QtGui.QHBoxLayout()
-        l03.addWidget(f02)
-        l03.addStretch(2)
-
-        l04 = QtGui.QHBoxLayout()
-        l04.addWidget(QtGui.QLabel('AIF choice'))
-        l04.addWidget(self.combo)
-        l04.addStretch(1)
-
-        f03 = QGroupBoxB()
-        f03.setTitle('Pharmacokinetic model choice')
-        f03.setLayout(l04)
-
-        l0 = QtGui.QVBoxLayout()
-        l0.addLayout(l03)
-        l0.addWidget(f03)
-        l0.addWidget(f01)
-        l0.addStretch()
-
-        self.setLayout(l0)
+        main_vbox.addStretch()
+        self.setLayout(main_vbox)
 
     def start_task(self):
-
         """
         Start running the PK modelling on button click
         """
-
-        # Check that pkmodelling can be run
         if self.ivm.vol is None:
             error_dialog("No data loaded")
             return
@@ -167,10 +213,15 @@ class PharmaWidget(PkWidget):
             return
 
         # get volumes to process
-
         img1 = self.ivm.vol.data
         roi1 = self.ivm.current_roi.data
         t101 = self.ivm.overlays["T10"].data
+
+        #slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
+        #roi_slices = slices[:self.ivm.current_roi.ndims]
+        #img1 = self.ivm.vol.data[slices]
+        #roi1 = self.ivm.current_roi.data[roi_slices]
+        #t101 = self.ivm.overlays["T10"].data[roi_slices]
 
         # Extract the text from the line edit options
 
@@ -187,29 +238,29 @@ class PharmaWidget(PkWidget):
         # getting model choice from list
         model_choice = self.combo.currentIndex() + 1
 
-        # Baseline is currently just using first 3 points for normalisation (document)
-        print("first 3 time points are used for baseline normalisation")
-        baseline1 = np.mean(img1[:, :, :, :3], axis=-1)
+        # Baseline defaults to time points prior to injection
+        baseline_tpts = int(1 + InjT / DelT)
+        print("First %i time points used for baseline normalisation" % baseline_tpts)
+        self.baseline = np.mean(img1[:, :, :, :baseline_tpts], axis=-1)
 
         # Convert to list of enhancing voxels
         img1vec = np.reshape(img1, (-1, img1.shape[-1]))
         T10vec = np.reshape(t101, (-1))
         self.roi1vec = np.array(np.reshape(roi1, (-1)), dtype=bool)
-        baseline1 = np.reshape(baseline1, (-1))
+        self.baseline = np.reshape(self.baseline, (-1))
 
         # Make sure the type is correct
         img1vec = np.array(img1vec, dtype=np.double)
         T101vec = np.array(T10vec, dtype=np.double)
         roi1vec = np.array(self.roi1vec, dtype=bool)
 
-        print("subset of the region within the roi")
-        # Subset within the ROI and
+        # Subset within the ROI 
         img1sub = img1vec[roi1vec, :]
         T101sub = T101vec[roi1vec]
-        baseline1sub = baseline1[roi1vec]
+        self.baseline = self.baseline[roi1vec]
 
         # Normalisation of the image
-        img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
+        img1sub = img1sub / (np.tile(np.expand_dims(self.baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor
         self.process = PkModellingProcess(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
@@ -253,9 +304,11 @@ class PharmaWidget(PkWidget):
             vp1 = np.zeros((roi1v.shape[0]))
             vp1[roi1v] = var1[2][:, 3]
 
-            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.vol.shape[-1]))
-            estimated_curve1[roi1v, :] = var1[1]
+            sig = (var1[1] + 1) * (np.tile(np.expand_dims(self.baseline, axis=-1), (1, self.ivm.vol.shape[-1])))
 
+            estimated_curve1 = np.zeros((roi1v.shape[0], self.ivm.vol.shape[-1]))
+            estimated_curve1[roi1v, :] = sig
+    
             residual1 = np.zeros((roi1v.shape[0]))
             residual1[roi1v] = var1[0]
 
@@ -273,6 +326,9 @@ class PharmaWidget(PkWidget):
             p = np.percentile(kep1vol, self.thresh1val)
             kep1vol[kep1vol > p] = p
 
+            #slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
+            #roi_slices = slices[:self.ivm.current_roi.ndims]
+            
             # Pass overlay maps to the volume management
             self.ivm.add_overlay(Overlay('Ktrans', data=Ktrans1vol), make_current=True)
             self.ivm.add_overlay(Overlay('ve', data=ve1vol))
@@ -280,182 +336,104 @@ class PharmaWidget(PkWidget):
             self.ivm.add_overlay(Overlay('offset', data=offset1vol))
             self.ivm.add_overlay(Overlay('vp', data=vp1vol))
             self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
-
-def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
-
-    """
-    Simple function interface to run the c++ pk modelling code
-    Run from a multiprocess call
-
-    Args:
-        img1sub:
-        t101sub:
-        r1:
-        r2:
-        delt:
-        injt:
-        tr1:
-        te1:
-        dce_flip_angle:
-        dose:
-        model_choice:
-
-    Returns:
-
-    """
-    print("pk modelling worker started")
-    try:
-        t1 = np.arange(0, img1sub.shape[-1])*delt
-        # conversion to minutes
-        t1 = t1/60.0
-
-        injtmins = injt/60.0
-
-        Dose = dose
-
-        # conversion to seconds
-        dce_TR = tr1/1000.0
-        dce_TE = te1/1000.0
-
-        #specify variable upper bounds and lower bounds
-        ub = [10, 1, 0.5, 0.5]
-        lb = [0, 0.05, -0.5, 0]
-
-        print("contiguous")
-        # contiguous array
-        img1sub = np.ascontiguousarray(img1sub)
-        t101sub = np.ascontiguousarray(t101sub)
-        t1 = np.ascontiguousarray(t1)
-
-        Pkclass = PyPk(t1, img1sub, t101sub)
-        Pkclass.set_bounds(ub, lb)
-        Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
-
-        # Initialise fitting
-        # Choose model type and injection time
-        Pkclass.rinit(model_choice, injtmins)
-
-        # Iteratively process 5000 points at a time
-        # (this can be performed as a multiprocess soon)
-
-        size_step = np.around(img1sub.shape[0]/5)
-        size_tot = img1sub.shape[0]
-        steps1 = np.around(size_tot/size_step)
-        num_row = 1.0  # Just a placeholder for the meanwhile
-
-        print("Number of voxels per step: ", size_step)
-        print("Number of steps: ", steps1)
-        queue.put((num_row, 1))
-        for ii in range(int(steps1)):
-            if ii > 0:
-                progress = float(ii) / float(steps1) * 100
-                # print(progress)
-                queue.put((num_row, progress))
-
-            time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-            x = Pkclass.run(size_step)
-            # print(x)
-
-        print("Done")
-
-        # Get outputs
-        res1 = np.array(Pkclass.get_residual())
-        fcurve1 = np.array(Pkclass.get_fitted_curve())
-        params2 = np.array(Pkclass.get_parameters())
-
-        # final update to progress bar
-        queue.put((num_row, 100))
-        time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-        return id, True, (res1, fcurve1, params2)
-    except:
-        print("PK worker error: %s" % sys.exc_info()[0])
-        return id, False, sys.exc_info()[0]
+            
+    def add_ovl(self, name, data, slices):
+        newdata = np.zeros(self.ivm.vol.data.shape[:len(slices)])
+        newdata[slices] = data
+        self.ivm.add_overlay(Overlay(name, data=newdata), make_current=False)
 
 class PharmaView(PkWidget):
-
     """
-    View True and generated signal curves side by side (just reverse the scale)
+    View original data and generated signal curves side by side (just reverse the scale)
     """
 
     def __init__(self, **kwargs):
-        super(PharmaView, self).__init__(name="PK Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
+        super(PharmaView, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
 
+        main_vbox = QtGui.QVBoxLayout()
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
         self.win1 = pg.GraphicsLayoutWidget()
         self.win1.setBackground(background=None)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.replot_graph()
+        main_vbox.addWidget(self.win1)
 
-        #Signal enhancement (normalised)
+        hbox = QtGui.QHBoxLayout()
+        opts_box = QGroupBoxB()
+        opts_box.setTitle('Curve options')
+        vbox = QtGui.QVBoxLayout()
+        hbox2 = QtGui.QHBoxLayout()
+        hbox2.addWidget(QtGui.QLabel("Normalise Frames"))
+        hbox2.addStretch(1)
+
+        # Baseline time points
+        self.norm_frames = QtGui.QLineEdit('3', self)
+        self.norm_frames.editingFinished.connect(self.replot_curves)
+        hbox2.addWidget(self.norm_frames)
+        vbox.addLayout(hbox2)
+
+        # Signal enhancement (normalised)
         self.cb3 = QtGui.QCheckBox('Signal enhancement', self)
         self.cb3.toggle()
-        self.cb3.stateChanged.connect(self.replot_graph)
+        self.cb3.stateChanged.connect(self.replot_curves)
+        vbox.addWidget(self.cb3)
 
-        # input the number of baseline time points
-        self.text2 = QtGui.QLineEdit('3', self)
-        self.text2.returnPressed.connect(self.replot_graph)
+        opts_box.setLayout(vbox)
+        hbox.addWidget(opts_box)
+        hbox.addStretch()
+        main_vbox.addLayout(hbox)
 
+        # Table showing value of model parameters
+        params_box = QGroupBoxB()
+        params_box.setTitle('Current parameters')
+        vbox2 = QtGui.QVBoxLayout()
         self.tabmod1 = QtGui.QStandardItemModel()
+        self.params_table = QtGui.QTableView()
+        self.params_table.resizeColumnsToContents()
+        self.params_table.setModel(self.tabmod1)
+        vbox2.addWidget(self.params_table)
+        params_box.setLayout(vbox2)
+        main_vbox.addWidget(params_box)
 
-        self.tab1 = QtGui.QTableView()
-        self.tab1.resizeColumnsToContents()
-        self.tab1.setModel(self.tabmod1)
-
-        l03 = QtGui.QHBoxLayout()
-        l03.addWidget(QtGui.QLabel("Normalise Frames"))
-        l03.addStretch(1)
-        l03.addWidget(self.text2)
-
-        l04 = QtGui.QVBoxLayout()
-        l04.addLayout(l03)
-        l04.addWidget(self.cb3)
-
-        g01 = QGroupBoxB()
-        g01.setLayout(l04)
-        g01.setTitle('Curve options')
-
-        l05 = QtGui.QHBoxLayout()
-        l05.addWidget(g01)
-        l05.addStretch()
-
-        l06 = QtGui.QVBoxLayout()
-        l06.addWidget(self.tab1)
-
-        g02 = QGroupBoxB()
-        g02.setLayout(l06)
-        g02.setTitle('Current parameters')
-
-        l1 = QtGui.QVBoxLayout()
-        l1.addWidget(self.win1)
-        l1.addLayout(l05)
-        l1.addWidget(g02)
-        #l1.addStretch(1)
-        self.setLayout(l1)
+        self.setLayout(main_vbox)
 
         # initial plot colour
         self.plot_color = (255, 0, 0)
         self.plot_color2 = (0, 255, 0)
 
         self.curve1 = None
-        self.ivl.sig_mouse_click.connect(self.sig_mouse)
+    
+    def activate(self):
+        self.ivl.sig_mouse_click.connect(self.replot_curves)
+        self.replot_curves()
+
+    def deactivate(self):
+        self.ivl.sig_mouse_click.disconnect(self.replot_curves)
+
+    def options_changed(self, opts):
+        self.replot_curves()
+
+    def replot_curves(self, data=None):
+        self._plot()
+        self._update_table()
 
     def _update_table(self):
         """
         Set the overlay parameter values in the table based on the current point clicked
         """
-        self.tab1.setVisible(True)
+        self.params_table.setVisible(True)
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
         for ii, ovl in enumerate(overlay_vals.keys()):
             if self.ivm.overlays[ovl].ndims == 3:
                 self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
                 self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
 
-    def _plot(self, sig, sig_ovl):
-
+    def _plot(self):
         """
         Plot the curve / curves
         """
+        sig, sig_ovl = self.ivm.get_current_enhancement()
+
         #Make window visible and populate
         self.win1.setVisible(True)
 
@@ -463,45 +441,26 @@ class PharmaView(PkWidget):
 
         # Setting x-values
         xx = self.opts.t_scale
-        frames1 = int(self.text2.text())
+        frames1 = int(self.norm_frames.text())
 
-        if self.cb3.isChecked() is True:
+        if self.cb3.isChecked():
             # Show signal enhancement for main data, rather than raw values
             m1 = np.mean(values[:frames1])
-            values = values / m1 - 1
+            if m1 != 0: values = values / m1 - 1
 
         self.p1.clear()
         self.curve1 = self.p1.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
         self.curve2 = self.p1.plot(xx, values, pen=self.plot_color, width=4.0)
 
         for ovl, sig_values in sig_ovl.items():
+            if self.cb3.isChecked():
+                m1 = np.mean(sig_values[:frames1])
+                if m1 != 0: sig_values = sig_values / m1 - 1
             self.p1.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
             self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
         self.p1.setLabel('left', "Signal Enhancement")
         self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
         #self.p1.setLogMode(x=False, y=False)
-
-    def options_changed(self, opts):
-        self.replot_graph()
-
-    @QtCore.Slot()
-    def replot_graph(self):
-        """
-        Reset and clear the graph
-        """
-        self.win1.removeItem(self.p1)
-        self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        self.curve1 = None
-
-    @QtCore.Slot(np.ndarray)
-    def sig_mouse(self, values1):
-
-        """
-        Get signal from mouse click
-        """
-        sig, sig_ovl = self.ivm.get_current_enhancement()
-        self._plot(sig, sig_ovl)
-        self._update_table()
 
 
