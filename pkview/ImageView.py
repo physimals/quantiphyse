@@ -621,7 +621,7 @@ class ImageView(QtGui.QGraphicsView, object):
         Processes overlay for visualisation on viewer
         """
         ov = self.ivm.current_overlay
-        if (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
+        if ov is not None and (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
             self.ovreg = ov.data_roi
         elif ov is not None:
             self.ovreg = ov.data

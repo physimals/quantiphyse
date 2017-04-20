@@ -451,9 +451,49 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if signal:
             self.sig_current_overlay.emit(self.current_overlay)
 
+    def rename_overlay(self, name, newname, signal=True):
+        if name in self.overlays:
+            ovl = self.overlays[name]
+            ovl.name = newname
+            self.overlays[newname] = ovl
+            del self.overlays[name]
+            if signal: self.sig_all_overlays.emit(self.overlays.keys())
+        else:
+            raise RuntimeError("rename_overlay: overlay %s does not exist" % name)
+
+    def rename_roi(self, name, newname, signal=True):
+        if name in self.rois:
+            roi = self.rois[name]
+            roi.name = newname
+            self.rois[newname] = roi
+            del self.rois[name]
+            if signal: self.sig_all_rois.emit(self.rois.keys())
+        else:
+            raise RuntimeError("rename_roi: ROI %s does not exist" % name)
+
+    def delete_overlay(self, name, signal=True):
+        if name in self.overlays:
+            del self.overlays[name]
+            if signal: self.sig_all_overlays.emit(self.overlays.keys())
+            if self.current_overlay.name == name:
+                self.current_overlay = None
+                if signal: self.sig_current_overlay.emit(None)
+        else:
+            raise RuntimeError("delete_overlay: overlay %s does not exist" % name)
+
+    def delete_roi(self, name, signal=True):
+        if name in self.rois:
+            del self.rois[name]
+            if signal: self.sig_all_rois.emit(self.rois.keys())
+            if self.current_roi.name == name:
+                self.current_roi = None
+                if signal: self.sig_current_roi.emit(None)
+        else:
+            raise RuntimeError("delete_roi: ROI %s does not exist" % name)
+
     def add_roi(self, roi, make_current=False, signal=True):
         if self.vol is None:
-            raise RuntimeError("Cannot add overlay with no main volume")
+            raise RuntimeError("Cannot add ROI with no main volume")
 
         roi.force_ndims(3, multi=False)
         roi.check_shape(self.vol.shape)

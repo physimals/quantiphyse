@@ -61,12 +61,32 @@ class OverviewWidget(PkWidget):
 
         self.setLayout(layout)
 
-    def rename(self):
-        pass
-
     def delete(self):
-        pass
-        
+        if self.vols.selected is not None:
+            ok = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % self.vols.selected,
+                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            if ok:
+                if self.vols.selected_type == "Overlay":
+                    self.ivm.delete_overlay(self.vols.selected)
+                elif self.vols.selected_type == "ROI":
+                    self.ivm.delete_roi(self.vols.selected)
+                else:                
+                    # Delete main volume by doing a reset
+                    self.ivm.init(reset=True)
+
+    def rename(self):
+        if self.vols.selected is not None:
+            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % self.vols.selected, "New name")
+            if result:
+                if self.vols.selected_type == "Overlay":
+                    self.ivm.rename_overlay(self.vols.selected, text)
+                elif self.vols.selected_type == "ROI":
+                    self.ivm.rename_roi(self.vols.selected, text)
+                else:
+                    # Nothing else should care about the name of the main volume
+                    self.ivm.vol.name = text
+                    self.vols.update_list(None)
+       
 class DataListWidget(QtGui.QTableWidget):
     """
     Table showing loaded volumes
@@ -87,6 +107,8 @@ class DataListWidget(QtGui.QTableWidget):
         self.ivm.sig_all_overlays.connect(self.update_list)
         self.ivm.sig_current_roi.connect(self.update_list)
         self.ivm.sig_all_rois.connect(self.update_list)
+        self.selected = None
+        self.selected_type = None
 
     def get_name(self, vol):
         if vol.fname is not None:
@@ -106,7 +128,7 @@ class DataListWidget(QtGui.QTableWidget):
             font.setBold(True)
             self.item(row, 0).setFont(font)
             self.item(row, 1).setFont(font)
-            self.item(row, 2).setFont(font)
+            if vol.fname is not None: self.item(row, 2).setFont(font)
         
     def update_list(self, list1):
         try:
@@ -126,10 +148,12 @@ class DataListWidget(QtGui.QTableWidget):
             self.blockSignals(False)
 
     def clicked(self, row, col):
-        if self.item(row, 1).text() == "Overlay":
-            self.ivm.set_current_overlay(self.item(row, 0).text())
-        elif self.item(row, 1).text() == "ROI":
-            self.ivm.set_current_roi(self.item(row, 0).text())
+        self.selected_type = self.item(row, 1).text()
+        self.selected = self.item(row, 0).text()
+        if self.selected_type == "Overlay":
+            self.ivm.set_current_overlay(self.selected)
+        elif self.selected_type == "ROI":
+            self.ivm.set_current_roi(self.selected)
 
 
 
