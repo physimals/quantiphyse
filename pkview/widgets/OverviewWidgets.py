@@ -72,7 +72,7 @@ class OverviewWidget(PkWidget):
                     self.ivm.delete_roi(self.vols.selected)
                 else:                
                     # Delete main volume by doing a reset
-                    self.ivm.init(reset=True)
+                    self.ivm.reset()
 
     def rename(self):
         if self.vols.selected is not None:

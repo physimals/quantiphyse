@@ -373,12 +373,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
-        self.init()
+        self.reset()
 
-    def init(self, reset=False):
+    def reset(self):
         """
-        Initilises all the volumes.
-        *** NB Allows reinitialisation when loading a new image ***
+        Reset to empty, signalling any connected widgets
         """
         # Main background image
         self.vol = None
@@ -389,10 +388,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current overlay object
         self.current_overlay = None
 
-        # List of known overlay types that can be loaded
-        self.overlay_label_all = ['loaded', 'Ktrans', 'kep', 've', 'vp', 'offset', 'residual', 'T10', 'annotation',
-                                  'segmentation', 'clustering']
-
         # Map from name to ROI object
         self.rois = {}
 
@@ -402,12 +397,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Current position of the cross hair as an array
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
-        if reset:
-            self.sig_main_volume.emit(self.vol)
-            self.sig_current_overlay.emit(self.current_overlay)
-            self.sig_current_roi.emit(self.current_roi)
-            self.sig_all_rois.emit(self.rois.keys())
-            self.sig_all_overlays.emit(self.overlays.keys())
+        self.sig_main_volume.emit(self.vol)
+        self.sig_current_overlay.emit(self.current_overlay)
+        self.sig_current_roi.emit(self.current_roi)
+        self.sig_all_rois.emit(self.rois.keys())
+        self.sig_all_overlays.emit(self.overlays.keys())
 
     def set_main_volume(self, vol):
         if self.vol is not None:
@@ -422,13 +416,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if vol.ndims == 3: self.cim_pos.append(0)
         self.sig_main_volume.emit(self.vol)
 
-    def add_overlay(self, ov, make_current=False, signal=True, std_only=False):
-        if self.vol is None:
-            raise RuntimeError("Cannot add overlay with no main volume")
-
-        if std_only and ov.name not in self.overlay_label_all:
-            raise RuntimeError("Overlay name is not a known type")
-
+    def add_overlay(self, ov, make_current=False, signal=True):
+        self._vol_exists()
+        
         ov.force_ndims(max(3, ov.ndims), multi=(ov.ndims == 4))
         ov.check_shape(self.vol.shape)
         ov.copy_orientation(self.vol)
@@ -440,65 +430,63 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if make_current:
             self.set_current_overlay(ov.name, signal)
 
-    def set_current_overlay(self, name, signal=True):
-        if name in self.overlays:
-            self.current_overlay = self.overlays[name]
-            if self.current_roi is not None:
-                self.current_overlay.set_roi(self.current_roi)
-        else:
-            raise RuntimeError("set_current_overlay: overlay %s does not exist" % name)
+    def _vol_exists(self):
+        if self.vol is None:
+            raise RuntimeError("Main volume not loaded")
 
-        if signal:
-            self.sig_current_overlay.emit(self.current_overlay)
+    def _overlay_exists(self, name, invert=False):
+        if name not in self.overlays:
+            raise RuntimeError("Overlay %s does not exist" % name)
+
+    def _roi_exists(self, name):
+        if name not in self.rois:
+            raise RuntimeError("ROI %s does not exist" % name)
+
+    def set_current_overlay(self, name, signal=True):
+        self._overlay_exists(name)
+        self.current_overlay = self.overlays[name]
+        if self.current_roi is not None:
+            self.current_overlay.set_roi(self.current_roi)
+        if signal: self.sig_current_overlay.emit(self.current_overlay)
 
     def rename_overlay(self, name, newname, signal=True):
-        if name in self.overlays:
-            ovl = self.overlays[name]
-            ovl.name = newname
-            self.overlays[newname] = ovl
-            del self.overlays[name]
-            if signal: self.sig_all_overlays.emit(self.overlays.keys())
-        else:
-            raise RuntimeError("rename_overlay: overlay %s does not exist" % name)
+        self._overlay_exists(name)
+        ovl = self.overlays[name]
+        ovl.name = newname
+        self.overlays[newname] = ovl
+        del self.overlays[name]
+        if signal: self.sig_all_overlays.emit(self.overlays.keys())
 
     def rename_roi(self, name, newname, signal=True):
-        if name in self.rois:
-            roi = self.rois[name]
-            roi.name = newname
-            self.rois[newname] = roi
-            del self.rois[name]
-            if signal: self.sig_all_rois.emit(self.rois.keys())
-        else:
-            raise RuntimeError("rename_roi: ROI %s does not exist" % name)
+        self._roi_exists(name)
+        roi = self.rois[name]
+        roi.name = newname
+        self.rois[newname] = roi
+        del self.rois[name]
+        if signal: self.sig_all_rois.emit(self.rois.keys())
 
     def delete_overlay(self, name, signal=True):
-        if name in self.overlays:
-            del self.overlays[name]
-            if signal: self.sig_all_overlays.emit(self.overlays.keys())
-            if self.current_overlay.name == name:
-                self.current_overlay = None
-                if signal: self.sig_current_overlay.emit(None)
-        else:
-            raise RuntimeError("delete_overlay: overlay %s does not exist" % name)
+        self._overlay_exists(name)
+        del self.overlays[name]
+        if signal: self.sig_all_overlays.emit(self.overlays.keys())
+        if self.current_overlay.name == name:
+            self.current_overlay = None
+            if signal: self.sig_current_overlay.emit(None)
 
     def delete_roi(self, name, signal=True):
-        if name in self.rois:
-            del self.rois[name]
-            if signal: self.sig_all_rois.emit(self.rois.keys())
-            if self.current_roi.name == name:
-                self.current_roi = None
-                if signal: self.sig_current_roi.emit(None)
-        else:
-            raise RuntimeError("delete_roi: ROI %s does not exist" % name)
+        self._roi_exists(name)
+        del self.rois[name]
+        if signal: self.sig_all_rois.emit(self.rois.keys())
+        if self.current_roi.name == name:
+            self.current_roi = None
+            if signal: self.sig_current_roi.emit(None)
 
     def add_roi(self, roi, make_current=False, signal=True):
-        if self.vol is None:
-            raise RuntimeError("Cannot add ROI with no main volume")
+        self._vol_exists()
 
         roi.force_ndims(3, multi=False)
         roi.check_shape(self.vol.shape)
         roi.copy_orientation(self.vol)
-
         self.rois[roi.name] = roi
 
         if signal:
@@ -507,13 +495,10 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             self.set_current_roi(roi.name, signal)
 
     def set_current_roi(self, name, signal=True):
-        if name in self.rois:
-            self.current_roi = self.rois[name]
-            if self.current_overlay is not None:
-                self.current_overlay.set_roi(self.current_roi)
-        else:
-            raise RuntimeError("set_current_roi: ROI %s does not exist" % name)
-
+        self._roi_exists(name)
+        self.current_roi = self.rois[name]
+        if self.current_overlay is not None:
+            self.current_overlay.set_roi(self.current_roi)
         if signal:
             self.sig_current_roi.emit(self.current_roi)
 
@@ -534,7 +519,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         Return enhancement curves for all 4D overlays whose 4th dimension matches that of the main volume
         """
-        if self.vol is None: raise RuntimeError("No volume loaded")
+        if self.vol is None: return [], {}
         if self.vol.ndims != 4: raise RuntimeError("Main volume is not 4D")
 
         main_sig = self.vol.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
@@ -551,7 +536,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         - Initialise the annotation overlay
         - Set the annotation overlay to be the current overlay
         """
-        if self.vol is None: raise RuntimeError("No volume loaded")
+        self._vol_exists()
 
         ov = Overlay("annotation", np.zeros(self.vol.shape[:3]))
         # little hack to normalise the image from 0 to 10 by listing possible labels in the corner

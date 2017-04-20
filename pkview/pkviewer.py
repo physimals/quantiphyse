@@ -731,6 +731,8 @@ class MainWindowWidget(QtGui.QWidget):
         for idx, w in enumerate(self.widgets):
             if w.default:
                 index = self.qtab1.addTab(w, w.icon, w.tabname)
+                w.init()
+                w.activate()
                 w.visible = True
                 w.index = index
                 
@@ -880,6 +882,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
         w = self.sender().widget
         if not w.visible:
             index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
+            w.init()
+            w.activate()
             w.visible = True
             w.index = index
         self.mw1.qtab1.setCurrentIndex(w.index)
@@ -1170,8 +1174,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
             ret = msgBox.exec_()
 
             if ret == QtGui.QMessageBox.Ok:
-                print("Clearing data")
-                self.mw1.ivm.init(reset=True)
+                self.mw1.ivm.reset()
             else:
                 return
 
