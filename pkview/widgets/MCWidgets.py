@@ -120,8 +120,8 @@ class MCFlirtWidget(PkWidget):
 
         grid.addWidget(QtGui.QLabel("Number of transform degrees of freedom"), 7, 0)
         self.num_dofs = QtGui.QSpinBox()
-        self.num_dofs.setMinimum(1)
-        self.num_dofs.setMaximum(10)
+        self.num_dofs.setMinimum(6)
+        self.num_dofs.setMaximum(12)
         self.num_dofs.setValue(6)
         grid.addWidget(self.num_dofs, 7, 1)
 
