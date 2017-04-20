@@ -23,36 +23,21 @@ Key features:
 - Python console to interact with the loaded data and analysis (advanced users)
 
 See:
-[http://pkview.readthedocs.org/en/latest/](http://pkview.readthedocs.org/en/latest/) for usage.
+[http://quantiphyse.readthedocs.org/en/latest/](http://quantiphyse.readthedocs.org/en/latest/) for usage.
 
 ## Installation
-The easiest method of installation is to run the exe or deb files for Windows and Ubuntu (OSx coming soon). 
 
-See Release 0.20 under tags.  Consider this alpha software. Contributions and improvements to the code and 
-documentation are welcome. 
+Installation packages are available on the [Wiki](https://ibme-gitcvs.eng.ox.ac.uk/biomedia-perfusion/PkView/wikis/home)
 
-For windows, unzip the file and run the quantiphyse executable. There are a large number of files so it's easiest to add
-the program to the launcher once run once. 
+The packages are rather large because they include all dependencies (including Python). However this
+does have the advantage of making them standalone.
 
-Alternatively, the GUI can be run from the source. See guides below for setting up Ubuntu or OSx. 
+### Running from source code (for developers)
 
-![alt text](images/Screenshot2.png "Screenshot")
+Running from source is recommended only if your are interested in developing the software further.
 
-![alt text](images/Screenshot1.png "Screenshot")
+1. Install the following dependencies:
 
-
-## Key files
-
-**quantiphyse.py**: Run the GUI and perform analysis
-
-**cmd_pkmodel.py**: Run pkmodelling from the command line (config file *cmd_pkconfig.yaml*)
-
-**cmd_t10.py**: Run T10 mapping from the command line (config file *cmd_t10config.yaml*)
-
-## Running from source
-Tested on Ubuntu 14.04 and OSx 10.11. Although it runs on Windows, Ubuntu and OSx.
-
-Dependencies:
 Python 2.7 or python 3.4
 
 Python libraries:
@@ -66,10 +51,21 @@ Python libraries:
 - scikit-learn
 - scipy
 
+2. Build extensions
 
+`python setup.py build_ext --inplace`
 
-## OSx 10.11
+3. Run from source directory
+
+`python quantiphyse.py`
+
+#### OSx 10.11
+
 *NB: this guide is still a work in progress. Please let me know if something doesn't work*
+
+Installing from source on OSX is not fun. The major issue is QT since the required version (4.8) is 
+deprecated and hard to install properly. The instructions below are preserved but have not been
+recently tested and you will probably need to use your own initiative a bit.
 
 For OSx it is recommended that you don't use the system version of python so that libraries can be updated without
 affecting the underlying system. 
@@ -102,81 +98,18 @@ pip install PySide
 python quantiphyse.py
 ```
 
-## Ubuntu 14.04 
-*NB: this guide is still a work in progress. Please let me know if something doesn't work*
+#### Using a python virtualenv
 
-### Option 1: Using a system python. Libraries may be out of date and option 2 is recommended. 
+If you're running from source it can be a good idea to create a Python virtual environment so the
+dependencies you install do not affect anything else on your system. See (https://virtualenv.readthedocs.org/en/latest/) for details.
 
-1) Install dependencies
-```bash
-sudo apt-get install build-essentials pip python-all-dev numpy scipy python-pyside
-```
-
-2) Install required python libraries using pip
-
-3) Build c++/Cython code
-```bash
-python setup.py build_ext --inplace
-```
-
-4)
-
-``` bash
-python quantiphyse.py
-```
-or
-
-``` bash
-./quantiphyse.py
-```
-
-
-### Option 2: Using a python virtualenv
-
-Creating a vm (see https://virtualenv.readthedocs.org/en/latest/)
-
-```bash
-sudo apt-get install python-virtualenv     # Installing virtualenv library
-mkdir python-vm # make a directory to store the virtualenv
-cd ~/python-vm
-virtualenv pyvm # Create a vm named pyvm
-```
-
-Activating the vm
-```
-source ~/python-vm/pyvm/bin/activate #start the vim
-```
-
-Deactivating the vm
-
-```bash
-deactivate
-```
-
-Make sure dependencies are installed
-```bash
-sudo apt-get install libffi-dev libssl-dev
-sudo apt-get install gfortran libatlas-base-dev libblas-dev liblapack-dev python-all-dev cmake
-sudo apt-get install libfreetype6-dev libfreetype6 libpng12-dev libpng12 qt4-qmake shiboken libshiboken-dev libqt4-dev
-```
-
-Installing python libraries in the vm (make sure system libraries in 2) are installed)
-```bash
-pip install requests[security]
-pip install --upgrade pip
-pip install --upgrade setuptools
-pip install numpy
-pip install scipy
-pip install -r requirements.txt
-pip install PySide
-```
+On Windows, Anaconda is recommended and comes with virtual environment support as standard.
 
 ## Additional notes:
 
 ### Class diagram
 
-![alt text](images/class_diagram.png "Screenshot")
-
+![Class diagram](images/class_diagram.png "Class Diagram")
 
 ### Resource file
 

@@ -1,33 +1,24 @@
+# To Do list
+
+## Issue tracker
+
+Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng.ox.ac.uk/biomedia-perfusion/PkView/issues)
+
+## Future plans
+
+This is a rough indication of future plans which are not yet specific enough to be added as issues
+
+ - More registration/motion correction options. MCFLIRT is linear only, could add FNIRT based option
+   for nonlinear registration or integrate MIND/DEEDS
+ - PK modelling validation is in progress against QIN and QIBA test data sets
+ - ROI builder widget for putting together simple ROIs
+ - Improve memory usage by swapping out overlays which are not being displayed
+ - All widgets which process within ROI should work with the subimage within the bounding box of the
+   ROI, not the whole image. Supervoxels does this already with great performance improvement.
+ - Unified batch processing language to allow all analysis to be run in batch on multiple cases
+ - Support other file formats using NIBABEL.
+ - Include DICOM conversion
+ - Generic maths/processing widget to do things like add/subtract overlays. Very easy with numpy.
 
 
-TODO
-====
 
-- Fix PK modelling cmd line script (done)
-- Add T10 calculation command line script (done)
-- Add CNR restriction option to PK modelling
-- Add smoothing for the maps
-- Update documentation and links from help buttons
-- add tests for pkmodelling and T10 mapping
-- use TravisCI to build for ubuntu and osx
-- ...
-- Profit?
-
-- Just use as a viewer for supervoxels. Possibly add script later on
-
-# idea:
-
-- Use this viewer to view subregions in my bag of words approach
-- release this viewer with that paper
-- possibly also show subregions for these words and pk maps of the subregions for effect
-
-
-# windows exe issues
-
-- disable T10 mapping on windows because uses c++11 code that's not supported with python 2.7
-                - use python 3.5 once pyside (pyside 2) has support for this. 
-- downgraded setuptools to 19.2 on windows
-- manually copy mkl files from 
-C:\Users\engs1170\AppData\Local\Continuum\Anaconda2\Library\bin
-- add multiprocessing.freeze_support()
-- added .bat file to run more easily
