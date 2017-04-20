@@ -353,30 +353,31 @@ class PharmaView(PkWidget):
         main_vbox = QtGui.QVBoxLayout()
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
-        self.win1 = pg.GraphicsLayoutWidget()
-        self.win1.setBackground(background=None)
-        self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        main_vbox.addWidget(self.win1)
+        win = pg.GraphicsLayoutWidget()
+        win.setBackground(background=None)
+        self.plot = win.addPlot(title="Model / Data Curves")
+        main_vbox.addWidget(win)
 
         hbox = QtGui.QHBoxLayout()
         opts_box = QGroupBoxB()
         opts_box.setTitle('Curve options')
         vbox = QtGui.QVBoxLayout()
-        hbox2 = QtGui.QHBoxLayout()
-        hbox2.addWidget(QtGui.QLabel("Normalise Frames"))
-        hbox2.addStretch(1)
-
-        # Baseline time points
-        self.norm_frames = QtGui.QLineEdit('3', self)
-        self.norm_frames.editingFinished.connect(self.replot_curves)
-        hbox2.addWidget(self.norm_frames)
-        vbox.addLayout(hbox2)
 
         # Signal enhancement (normalised)
-        self.cb3 = QtGui.QCheckBox('Signal enhancement', self)
-        self.cb3.toggle()
-        self.cb3.stateChanged.connect(self.replot_curves)
-        vbox.addWidget(self.cb3)
+        hbox2 = QtGui.QHBoxLayout()
+        self.sig_en_cb = QtGui.QCheckBox('Plot signal enhancement using first', self)
+        self.sig_en_cb.stateChanged.connect(self.sig_enh_changed)
+        hbox2.addWidget(self.sig_en_cb)
+        self.norm_frames = QtGui.QSpinBox()
+        self.norm_frames.setValue(3)
+        self.norm_frames.setMinimum(1)
+        self.norm_frames.setMaximum(100)
+        self.norm_frames.valueChanged.connect(self.replot_curves)
+        self.norm_frames.setEnabled(False)
+        hbox2.addWidget(self.norm_frames)
+        hbox2.addWidget(QtGui.QLabel("frames as baseline"))
+        hbox2.addStretch(1)
+        vbox.addLayout(hbox2)
 
         opts_box.setLayout(vbox)
         hbox.addWidget(opts_box)
@@ -385,13 +386,13 @@ class PharmaView(PkWidget):
 
         # Table showing value of model parameters
         params_box = QGroupBoxB()
-        params_box.setTitle('Current parameters')
+        params_box.setTitle('Overlay values at current position')
         vbox2 = QtGui.QVBoxLayout()
-        self.tabmod1 = QtGui.QStandardItemModel()
-        self.params_table = QtGui.QTableView()
-        self.params_table.resizeColumnsToContents()
-        self.params_table.setModel(self.tabmod1)
-        vbox2.addWidget(self.params_table)
+        self.values_table = QtGui.QStandardItemModel()
+        tview = QtGui.QTableView()
+        tview.resizeColumnsToContents()
+        tview.setModel(self.values_table)
+        vbox2.addWidget(tview)
         params_box.setLayout(vbox2)
         main_vbox.addWidget(params_box)
 
@@ -413,6 +414,10 @@ class PharmaView(PkWidget):
     def options_changed(self, opts):
         self.replot_curves()
 
+    def sig_enh_changed(self, opts):
+        self.norm_frames.setEnabled(self.sig_en_cb.isChecked())
+        self.replot_curves()
+
     def replot_curves(self, data=None):
         self._plot()
         self._update_table()
@@ -421,12 +426,11 @@ class PharmaView(PkWidget):
         """
         Set the overlay parameter values in the table based on the current point clicked
         """
-        self.params_table.setVisible(True)
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
         for ii, ovl in enumerate(overlay_vals.keys()):
             if self.ivm.overlays[ovl].ndims == 3:
-                self.tabmod1.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
-                self.tabmod1.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
+                self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
+                self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
 
     def _plot(self):
         """
@@ -434,33 +438,33 @@ class PharmaView(PkWidget):
         """
         sig, sig_ovl = self.ivm.get_current_enhancement()
 
-        #Make window visible and populate
-        self.win1.setVisible(True)
-
         values = np.array(sig, dtype=np.double)
 
         # Setting x-values
         xx = self.opts.t_scale
-        frames1 = int(self.norm_frames.text())
+        frames1 = self.norm_frames.value()
 
-        if self.cb3.isChecked():
+        if self.sig_en_cb.isChecked():
             # Show signal enhancement for main data, rather than raw values
             m1 = np.mean(values[:frames1])
             if m1 != 0: values = values / m1 - 1
 
-        self.p1.clear()
-        self.curve1 = self.p1.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-        self.curve2 = self.p1.plot(xx, values, pen=self.plot_color, width=4.0)
+        self.plot.clear()
+        self.curve1 = self.plot.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        self.curve2 = self.plot.plot(xx, values, pen=self.plot_color, width=4.0)
 
         for ovl, sig_values in sig_ovl.items():
-            if self.cb3.isChecked():
+            if self.sig_en_cb.isChecked():
                 m1 = np.mean(sig_values[:frames1])
                 if m1 != 0: sig_values = sig_values / m1 - 1
-            self.p1.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.p1.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
+            self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+            self.plot.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
 
-        self.p1.setLabel('left', "Signal Enhancement")
-        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-        #self.p1.setLogMode(x=False, y=False)
+        if self.sig_en_cb.isChecked():
+            self.plot.setLabel('left', "Signal Enhancement")
+        else:
+            self.plot.setLabel('left', "Signal")
+        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
+        #self.plot.setLogMode(x=False, y=False)
 
 
