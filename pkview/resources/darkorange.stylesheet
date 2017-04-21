@@ -10,6 +10,7 @@ QWidget
 {
     color: #b1b1b1;
     background-color: #323232;
+    font-size: 12px;
 }
 
 QWidget:item:hover
@@ -99,7 +100,6 @@ QPushButton
     border-style: solid;
     border-radius: 6;
     padding: 3px;
-    font-size: 12px;
     padding-left: 5px;
     padding-right: 5px;
 }
@@ -388,9 +388,7 @@ QTabBar::tab:last
 
 QTabBar::tab:first:!selected
 {
- margin-left: 0px; /* the last selected tab has nothing to overlap with on the right */
-
-
+    margin-left: 0px; /* the last selected tab has nothing to overlap with on the right */
     border-top-left-radius: 3px;
 }
 
