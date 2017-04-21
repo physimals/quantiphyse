@@ -13,7 +13,6 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.ImageView import PickMode
 from pkview.utils import get_icon
 from ..QtInherit import HelpButton
@@ -82,7 +81,7 @@ class SECurve(PkWidget):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
         title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
-        bhelp = HelpButton(self)
+        bhelp = HelpButton(self, "curve_compare")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title)
         lhelp.addStretch(1)
@@ -143,7 +142,7 @@ class SECurve(PkWidget):
         l04.addWidget(self.cb3)
         l04.addWidget(self.cb4)
 
-        g01 = QGroupBoxB()
+        g01 = QtGui.QGroupBox()
         g01.setLayout(l04)
         g01.setTitle('Curve options')
 
@@ -295,7 +294,7 @@ class ColorOverlay1(PkWidget):
         hbox.addWidget(self.mode_combo)
         self.col_mode = 0
         hbox.addStretch(1)
-        bhelp = HelpButton(self)
+        bhelp = HelpButton(self, "overlay_stats")
         hbox.addWidget(bhelp)
         l1.addLayout(hbox)
 
@@ -400,7 +399,7 @@ class ColorOverlay1(PkWidget):
         l07.addStretch(1)
 
         # Hide histogram for the meanwhile
-        f02 = QGroupBoxB()
+        f02 = QtGui.QGroupBox()
         f02.setTitle('Histogram')
         f02.setLayout(l07)
 
@@ -409,7 +408,7 @@ class ColorOverlay1(PkWidget):
         l08.addWidget(self.tab1)
         l08.addStretch(1)
 
-        f03 = QGroupBoxB()
+        f03 = QtGui.QGroupBox()
         f03.setTitle('Summary Statistics')
         f03.setLayout(l08)
 
@@ -418,7 +417,7 @@ class ColorOverlay1(PkWidget):
         l08ss.addWidget(self.tab1ss)
         l08ss.addStretch(1)
 
-        f03ss = QGroupBoxB()
+        f03ss = QtGui.QGroupBox()
         f03ss.setTitle('Summary Statistics - Slice')
         f03ss.setLayout(l08ss)
 
@@ -428,7 +427,7 @@ class ColorOverlay1(PkWidget):
         l1.addWidget(f02)
 
         # Radial profile widgets
-        box = QGroupBoxB()
+        box = QtGui.QGroupBox()
         box.setTitle("Radial Profile")
         vbox = QtGui.QVBoxLayout()
         box.setLayout(vbox)

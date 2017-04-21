@@ -12,7 +12,6 @@ from PySide import QtCore, QtGui
 
 from pkview import error_dialog
 from pkview.QtInherit import HelpButton
-from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeans3D
 from pkview.volumes.volume_management import Roi
 from pkview.widgets import PkWidget
@@ -33,7 +32,7 @@ class OvCurveClusteringWidget(PkWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Clustering of the current overlay </font>")
-        bhelp = HelpButton(self)
+        bhelp = HelpButton(self, "overlay_cluster")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
@@ -66,7 +65,7 @@ class OvCurveClusteringWidget(PkWidget):
         l04 = QtGui.QVBoxLayout()
         l04.addLayout(l01)
 
-        g01 = QGroupBoxB()
+        g01 = QtGui.QGroupBox()
         g01.setLayout(l04)
         g01.setTitle('Clustering options')
 
@@ -94,7 +93,7 @@ class OvCurveClusteringWidget(PkWidget):
         l_merge.addWidget(t2)
         l_merge.addWidget(self.val_m2)
 
-        self.g_merge = QGroupBoxB()
+        self.g_merge = QtGui.QGroupBox()
         self.g_merge.setLayout(l_merge)
         self.g_merge.setTitle('Editing regions')
         self.g_merge.setVisible(False)
@@ -113,7 +112,7 @@ class OvCurveClusteringWidget(PkWidget):
         l_stats.addWidget(self.b_stat)
         l_stats.addWidget(self.tab1)
 
-        self.g_stats = QGroupBoxB()
+        self.g_stats = QtGui.QGroupBox()
         self.g_stats.setLayout(l_stats)
         self.g_stats.setTitle('Voxel count')
         self.g_stats.setVisible(False)

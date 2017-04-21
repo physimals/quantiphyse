@@ -6,11 +6,12 @@ class HelpButton(QtGui.QPushButton):
     A button for online help
     """
 
-    def __init__(self, parent, link='http://pkview.readthedocs.io/en/latest/'):
+    def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
 
         super(HelpButton, self).__init__(parent)
 
-        self.link = link
+        if section != "" and not section.endswith(".html"): section += ".html"
+        self.link = base + section
         self.setToolTip("Online Help")
 
         b1icon = QtGui.QIcon(get_icon("question-mark"))

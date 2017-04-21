@@ -1,4 +1,6 @@
-# Updated so a PyQT4 Designer TabWidget can be promoted to a FingerTabWidget
+# Finger Tabs
+#
+# Based on https://gist.github.com/LegoStormtroopr/5075267 by http://www.twitter.com/legostormtroopr - thanks!
 
 from PySide import QtGui, QtCore
 

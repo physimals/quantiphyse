@@ -14,7 +14,6 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview import error_dialog
-from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.analysis.pk_model import PyPk
 from pkview.volumes.volume_management import Overlay, Roi
@@ -129,7 +128,7 @@ class PharmaWidget(PkWidget):
         main_vbox = QtGui.QVBoxLayout()
 
         # Inputs
-        param_box = QGroupBoxB()
+        param_box = QtGui.QGroupBox()
         param_box.setTitle('Parameters')
         input_grid = QtGui.QGridLayout()
         input_grid.addWidget(QtGui.QLabel('R1'), 0, 0)
@@ -166,7 +165,7 @@ class PharmaWidget(PkWidget):
         main_vbox.addLayout(hbox)
 
         # Model choice
-        aif_choice = QGroupBoxB()
+        aif_choice = QtGui.QGroupBox()
         aif_choice.setTitle('Pharmacokinetic model choice')
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('AIF choice'))
@@ -181,7 +180,7 @@ class PharmaWidget(PkWidget):
         main_vbox.addWidget(aif_choice)
 
         # Run button and progress
-        run_box = QGroupBoxB()
+        run_box = QtGui.QGroupBox()
         run_box.setTitle('Running')
         hbox = QtGui.QHBoxLayout()
         but_gen = QtGui.QPushButton('Run modelling', self)
@@ -359,7 +358,7 @@ class PharmaView(PkWidget):
         main_vbox.addWidget(win)
 
         hbox = QtGui.QHBoxLayout()
-        opts_box = QGroupBoxB()
+        opts_box = QtGui.QGroupBox()
         opts_box.setTitle('Curve options')
         vbox = QtGui.QVBoxLayout()
 
@@ -385,7 +384,7 @@ class PharmaView(PkWidget):
         main_vbox.addLayout(hbox)
 
         # Table showing value of model parameters
-        params_box = QGroupBoxB()
+        params_box = QtGui.QGroupBox()
         params_box.setTitle('Overlay values at current position')
         vbox2 = QtGui.QVBoxLayout()
         self.values_table = QtGui.QStandardItemModel()

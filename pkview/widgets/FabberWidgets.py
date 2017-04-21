@@ -15,7 +15,6 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview import error_dialog
-from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.utils import yaml_loader, save_file
@@ -121,7 +120,7 @@ def fabber_batch(yaml_file):
 
         log, data = process.get_output()
         for key, ovl in data.items():
-            ovl.copy_header(vol.nifti_header)
+            ovl.copy_orientation(vol)
             ovl.save_nifti(fname=output_folder + "/" + subj + "/" + key + ".nii")
 
         f = open(output_folder + "/" + subj + "/logfile", "w")
@@ -375,7 +374,7 @@ class FabberWidget(PkWidget):
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
         # Options box
-        optionsBox = QGroupBoxB()
+        optionsBox = QtGui.QGroupBox()
         optionsBox.setTitle('Options')
         optionsBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         grid = QtGui.QGridLayout()
@@ -411,7 +410,7 @@ class FabberWidget(PkWidget):
         grid.addWidget(self.generalOptionsBtn, 6, 2)
         
         # Run box
-        runBox = QGroupBoxB()
+        runBox = QtGui.QGroupBox()
         runBox.setTitle('Running')
         runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         vbox = QtGui.QVBoxLayout()
@@ -443,7 +442,7 @@ class FabberWidget(PkWidget):
         vbox.addLayout(hbox)
 
         # Load/save box
-        fileBox = QGroupBoxB()
+        fileBox = QtGui.QGroupBox()
         fileBox.setTitle('Load/Save options')
         fileBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         vbox = QtGui.QVBoxLayout()

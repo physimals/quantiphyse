@@ -18,7 +18,6 @@ from PySide import QtCore, QtGui
 
 from pkview.QtInherit import HelpButton
 
-
 class ExampleWidget1(QtGui.QWidget):
     """
     Widget for setting a threshold to the image data inside the ROI. This is saved as an overlay.
@@ -34,7 +33,7 @@ class ExampleWidget1(QtGui.QWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Example 1: Threshold volume</font>")
-        bhelp = HelpButton(self, self.local_file_path)
+        bhelp = HelpButton(self)
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
@@ -80,13 +79,6 @@ class ExampleWidget1(QtGui.QWidget):
         # Initialisation
         # Volume management widget
         self.ivm = None
-
-    def add_image_management(self, image_vol_management):
-
-        """
-        Adding image management
-        """
-        self.ivm = image_vol_management
 
     def run_threshold(self):
         """

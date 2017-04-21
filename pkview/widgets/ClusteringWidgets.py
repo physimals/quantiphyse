@@ -14,7 +14,6 @@ from sklearn.metrics import pairwise
 
 from pkview import error_dialog
 from pkview.QtInherit import HelpButton
-from pkview.QtInherit.QtSubclass import QGroupBoxB
 from pkview.analysis.kmeans import KMeansPCA
 from pkview.volumes.volume_management import Roi
 from pkview.widgets import PkWidget
@@ -32,7 +31,7 @@ class CurveClusteringWidget(PkWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
-        bhelp = HelpButton(self)
+        bhelp = HelpButton(self, "curve_cluster")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
@@ -85,7 +84,7 @@ class CurveClusteringWidget(PkWidget):
         l04.addLayout(l01)
         l04.addLayout(l02)
 
-        g01 = QGroupBoxB()
+        g01 = QtGui.QGroupBox()
         g01.setLayout(l04)
         g01.setTitle('Clustering options')
 
@@ -125,7 +124,7 @@ class CurveClusteringWidget(PkWidget):
         l_mergev.addLayout(l_merge)
         l_mergev.addLayout(l_merge2)
 
-        self.g_merge = QGroupBoxB()
+        self.g_merge = QtGui.QGroupBox()
         self.g_merge.setLayout(l_mergev)
         self.g_merge.setTitle('Editing regions')
         self.g_merge.setVisible(False)
@@ -144,7 +143,7 @@ class CurveClusteringWidget(PkWidget):
         l_stats.addWidget(self.b_stat)
         l_stats.addWidget(self.tab1)
 
-        self.g_stats = QGroupBoxB()
+        self.g_stats = QtGui.QGroupBox()
         self.g_stats.setLayout(l_stats)
         self.g_stats.setTitle('Voxel count')
         self.g_stats.setVisible(False)
