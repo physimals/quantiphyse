@@ -9,7 +9,7 @@ from pkview.pkviewer import __version__
 class OverviewWidget(PkWidget):
 
     def __init__(self, **kwargs):
-        super(OverviewWidget, self).__init__(name="Volumes", icon="", desc="Overview of volumes loaded", **kwargs)
+        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", **kwargs)
 
         layout = QtGui.QVBoxLayout()
 

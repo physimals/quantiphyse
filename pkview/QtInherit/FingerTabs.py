@@ -11,7 +11,7 @@ class FingerTabBarWidget(QtGui.QTabBar):
     def __init__(self, tab_widget, parent=None, *args, **kwargs):
         self.tabSize = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
         QtGui.QTabBar.__init__(self, parent, *args, **kwargs)
-        self.close_icon = QtGui.QIcon(get_icon("clear"))
+        self.close_icon = QtGui.QIcon(get_icon("close"))
         self.tab_widget = tab_widget
 
     def paintEvent(self, event):
