@@ -11,23 +11,24 @@ OutputFolder: out
 
 Processing:
   - PkModelling:
-      model_choice: 1
-      flip_angle: 30    # degrees
-      TR:         5.0   # ms
-      TE:         2.2   # ms
-      T:          0.5    # temporal resolution (s)
-      R1:         3.7
-      R2:         4.8
-      v1thresh:   99.8
-      # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
-      InjT:       60
-      # Smoothing of the PK maps
-      Smoothing:  1 # TODO
+      model:      1
+      fa:         30     # degrees
+      tr:         5.0    # ms
+      te:         2.2    # ms
+      dt:         0.5    # temporal resolution (s)
+      r1:         3.7    # T1 Relaxivity of contrast agent
+      r2:         4.8    # T2 Relaxivity of contrast agent
+      ve-thresh:   99.8   # Ktrans/kep percentile threshold
+      tinj:       60     # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
+      #smoothing:  1      # Smoothing of the PK maps - TODO
 
 SaveOverlays:
   kep:
-  Ktrans:
-  model_curves:
+  ktrans:
+  ve:
+  vp:
+  offset:
+  Model curves:
 
 Cases:
     QIBA1:
