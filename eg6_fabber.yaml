@@ -1,26 +1,37 @@
 # Example config file for running Fabber
 
 OutputFolder: out
+#Debug: True
 
-Options:
-    loadmodels: c:\Users\ctsu0221\fsl_x64_release\bin\fabber_models_dce.dll
-    method: vb
-    max-iterations: 30
-    model:  dce_tofts
-    degree: 2 
-    delt: 0.16667
-    fa: 30
-    tr: 0.005
-    r1: 4.5
-    aif: c:\Users\ctsu0221\build\PkView\aif_qiba3.txt
-    t10: 1
-    m0: 50000
-    save-mean:
+Processing:
+  - Fabber:
+        loadmodels: c:\Users\ctsu0221\fsl_x64_release\bin\fabber_models_dce.dll
+        method: vb
+        max-iterations: 30
+        model:  poly
+        degree: 2 
+        delt: 0.16667
+        fa: 30
+        tr: 0.005
+        r1: 4.5
+        aif: c:\Users\ctsu0221\build\PkView\aif_qiba3.txt
+        t10: 1
+        m0: 50000
+        save-mean:
 
-Subjects:
-    Subject2:
+SaveVolume:
+SaveOverlays:
+    mean_c0 :
+    mean_c1:
+    mean_c2:
+SaveRois:
+    mask:
+
+Cases:
+    Subject1:
         Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
-        Data:     qiba_lesst_20.nii
-        Roi:      qiba_mask.nii
+        Volume:   qiba_lesst_20.nii
+        Rois:
+          mask:   qiba_mask.nii
 
 
