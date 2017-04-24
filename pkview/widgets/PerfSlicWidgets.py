@@ -42,7 +42,7 @@ def run_batch(case, params):
     newroi[roi_slices] = svdata
     case.ivm.add_roi(Roi(name="supervoxels", data=newroi), make_current=True)
     return ""
-    
+
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
         self.label = QtGui.QLabel(text)
@@ -141,7 +141,7 @@ class PerfSlicWidget(PkWidget):
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, self.ivm.voxel_sizes, mask=mask)
+        ps1 = PerfSLIC(img, self.ivm.vol.voxel_sizes[:3], mask=mask)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")
