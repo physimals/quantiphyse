@@ -7,6 +7,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 import numpy as np
 import multiprocessing
 import multiprocessing.pool
+import threading
 
 from PySide import QtCore
 
@@ -38,9 +39,6 @@ class MultiProcess(QtCore.QObject):
         self.n = n
         self.fn = fn
         self.queue =  multiprocessing.Manager().Queue()
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.progress)
-        self.sig_finished.connect(self.finished)
 
         split_args = [range(n), [self.queue,] * n]
         for arg in args:
@@ -58,11 +56,21 @@ class MultiProcess(QtCore.QObject):
     def run(self, sync=False):
         processes = []
         for i in range(self.n):
-            processes.append(_pool.apply_async(self.fn, self.split_args[i], callback=self.cb))
-        self.timer.start(1000)
+            proc = _pool.apply_async(self.fn, self.split_args[i], callback=self.cb)
+            processes.append(proc)
+        self.restart_timer()
         if sync:
             for i in range(self.n):
                 processes[i].get()
+
+    def restart_timer(self):
+        self.timer = threading.Timer(1, self.timer_cb)
+        self.timer.daemon = True
+        self.timer.start()
+
+    def timer_cb(self):
+        self.progress()
+        self.restart_timer()
 
     def progress(self):
         """
@@ -72,7 +80,7 @@ class MultiProcess(QtCore.QObject):
 
     def cb(self, result):
         id, success, output = result
-        #print("Finished: id=", id)
+        #print("Finished: id=", id, success, str(output))
         done = False
 
         if self.failed:
@@ -90,8 +98,5 @@ class MultiProcess(QtCore.QObject):
 
         if done:
             self.progress()
+            self.timer.cancel()
             self.sig_finished.emit(not self.failed, self.output)
-
-    def finished(self):
-        """ Must be called in GUI thread"""
-        self.timer.stop()
