@@ -1,11 +1,16 @@
-import yaml
-import nibabel as nib
+"""
+Implements the batch processing system for Quantiphyse
+"""
+import os
 import os.path
 import errno
-import os
 import traceback
+import yaml
+
+import nibabel as nib
 
 from pkview.volumes.volume_management import ImageVolumeManagement, Volume, Overlay, Roi
+
 import pkview.widgets.FabberWidgets as Fabber
 import pkview.widgets.MCWidgets as Motion
 import pkview.widgets.T10Widgets as T10
