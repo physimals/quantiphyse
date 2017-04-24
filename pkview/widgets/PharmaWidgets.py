@@ -19,6 +19,121 @@ from pkview.analysis.pk_model import PyPk
 from pkview.volumes.volume_management import Overlay, Roi
 from pkview.widgets import PkWidget
 
+def run_batch(case, params):
+        #queue = multiprocessing.Queue()
+        #pool = multiprocessing.Pool(processes=1, initializer=pool_init, initargs=(queue,))
+
+        # get volumes to process
+
+        img1 = case.ivm.vol.data
+        roi1 = case.ivm.current_roi.data
+        t101 = case.ivm.overlays["T10"].data
+
+        # Extract the text from the line edit options
+        R1 = params['R1']
+        R2 = params['R2']
+        DelT = params['T']
+        InjT = params['InjT']
+        TR = params['TR']
+        TE = params['TE']
+        FA = params['flip_angle']
+        thresh1val = params['v1thresh']
+        Dose = params.get('Dose', 0)
+
+        # getting model choice from list
+        model_choice = params['model_choice']
+
+        # FIXME
+        baseline1 = np.mean(img1[:, :, :, :3], axis=-1)
+
+        #print("Convert to list of enhancing voxels")
+        img1vec = np.reshape(img1, (-1, img1.shape[-1]))
+        T10vec = np.reshape(t101, (-1))
+        roi1vec = np.array(np.reshape(roi1, (-1)), dtype=bool)
+        baseline1 = np.reshape(baseline1, (-1))
+
+        #print("Make sure the type is correct")
+        img1vec = np.array(img1vec, dtype=np.double)
+        T101vec = np.array(T10vec, dtype=np.double)
+        roi1vec = np.array(roi1vec, dtype=bool)
+
+        #print("subset")
+        # Subset within the ROI and
+        img1sub = img1vec[roi1vec, :]
+        T101sub = T101vec[roi1vec]
+        baseline1sub = baseline1[roi1vec]
+
+        # Normalisation of the image
+        img1sub = img1sub / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
+
+        #print("Running pk")
+        process = PkModellingProcess(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
+        #process.sig_finished.connect(self.Finished)
+        #process.sig_progress.connect(self.CheckProg)
+        process.run(sync=True)
+        if process.failed:
+            raise process.output
+        #result = pool.apply_async(func=run_pk, args=(img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice))
+
+        #progress = 0
+        #while progress < 100:
+        #    num_row, progress = queue.get()
+        #    print("Progress: ", progress)
+        #    time.sleep(5)
+
+        #var1 = result.get()
+        var1 = process.output[0]
+        img_dims = img1.shape
+        roi1v = np.array(roi1vec, dtype=bool)
+
+        #Params: Ktrans, ve, offset, vp
+        Ktrans1 = np.zeros((roi1v.shape[0]))
+
+        ktemp = var1[2][:, 0]
+        ktemp[ktemp < 0] = 0.0
+        ktemp[ktemp > 2] = 2.0
+        Ktrans1[roi1v] = ktemp
+
+        ve1 = np.zeros((roi1v.shape[0]))
+        ve1[roi1v] = var1[2][:, 1] * (var1[2][:, 1] < 2.0) + 2 * (var1[2][:, 1] > 2.0)
+        ve1 *= (ve1 > 0)
+
+        kep1p = Ktrans1 / (ve1 + 0.001)
+        kep1p[np.logical_or(np.isnan(kep1p), np.isinf(kep1p))] = 0
+        kep1p *= (kep1p > 0)
+        kep1 = kep1p * (kep1p < 2.0) + 2 * (kep1p >= 2.0)
+
+        offset1 = np.zeros((roi1v.shape[0]))
+        offset1[roi1v] = var1[2][:, 2]
+
+        vp1 = np.zeros((roi1v.shape[0]))
+        vp1[roi1v] = var1[2][:, 3]
+
+        estimated_curve1 = np.zeros((roi1v.shape[0], img_dims[-1]))
+        estimated_curve1[roi1v, :] = var1[1]
+
+        residual1 = np.zeros((roi1v.shape[0]))
+        residual1[roi1v] = var1[0]
+
+        # Convert to list of enhancing voxels
+        Ktrans1vol = np.reshape(Ktrans1, (img_dims[:-1]))
+        ve1vol = np.reshape(ve1, (img_dims[:-1]))
+        offset1vol = np.reshape(offset1, (img_dims[:-1]))
+        vp1vol = np.reshape(vp1, (img_dims[:-1]))
+        kep1vol = np.reshape(kep1, (img_dims[:-1]))
+        estimated1vol = np.reshape(estimated_curve1, img_dims)
+
+        # thresholding according to upper limit
+        # p = np.percentile(Ktrans1vol, thresh1val)
+        # Ktrans1vol[Ktrans1vol > p] = p
+        # p = np.percentile(kep1vol, thresh1val)
+        # kep1vol[kep1vol > p] = p
+
+        case.ivm.add_overlay(Overlay("kep", data=kep1vol))
+        case.ivm.add_overlay(Overlay("Ktrans", data=Ktrans1vol))
+        case.ivm.add_overlay(Overlay("model_curves", data=estimated1vol))
+        return ""
+
 class PkModellingProcess(MultiProcess):
 
     """ Signal emitted to track progress"""

@@ -48,7 +48,6 @@ from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
 from .widgets.ExampleWidgets import ExampleWidget1
 
-from .utils.cmd_pkmodel import pkbatch
 from .utils.batch import run_batch
 from .utils import set_local_file_path, get_icon, get_local_file
 
@@ -1225,7 +1224,6 @@ def main():
 
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
-    parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='main image nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
@@ -1237,10 +1235,7 @@ def main():
 
     # Check whether any batch processing arguments have been called
 
-    if (args.PKbatch is not None):
-        pkbatch(args.PKbatch)
-
-    elif (args.batch is not None):
+    if (args.batch is not None):
         run_batch(args.batch)
 
     else:

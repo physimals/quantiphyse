@@ -1,22 +1,21 @@
-# Lists the configuration for running DCE-MRI from the command line
-# (c) Benjamin Irving (2016)
+### Example config file for PK modelling 
 
-EG1:
+#  Model descriptions:
+#  Model 1: Orton with offset (Clinical) - Recommended model for clinical
+#  Model 2: Orton without offset (Clinical)
+#  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
+#  Model 4: Weinmann with offset and vp (Pre-clinical)
 
-  Name:
+OutputFolder: out
+#Debug: True
 
-  Files:
-      DCE:       /data1/Results/2_pk_RIT_motioncor/RIT005/DCE.nii
-      T10:        /data1/Results/2_pk_RIT_motioncor/RIT005/T10.nii
-      ROI:       /data1/Results/2_pk_RIT_motioncor/RIT005/seg.nii
-
-  Output_folder:  /data1/Results/2_pk_RIT_motioncor/RIT005/test/ # TODO
-
-  Param:
-      flip_angle: 12    # degrees
-      TR:         4.5   # ms
+Processing:
+  - PkModelling:
+      model_choice: 1
+      flip_angle: 30    # degrees
+      TR:         5.0   # ms
       TE:         2.2   # ms
-      T:          17    # temporal resolution (s)
+      T:          0.5    # temporal resolution (s)
       R1:         3.7
       R2:         4.8
       v1thresh:   99.8
@@ -25,13 +24,18 @@ EG1:
       # Smoothing of the PK maps
       Smoothing:  1 # TODO
 
-  Configuration:
-      model_choice: 1
+SaveOverlays:
+  kep:
+  Ktrans:
+  model_curves:
 
-#  Model descriptions:
-#  Model 1: Orton with offset (Clinical) - Recommended model for clinical
-#  Model 2: Orton without offset (Clinical)
-#  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
-#  Model 4: Weinmann with offset and vp (Pre-clinical)
+Cases:
+    QIBA1:
+        Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
+        Volume:   qiba.nii
+        Overlays:
+          T10: qiba_t1_new.nii
+        Rois:
+          mask: qiba_mask_onevox.nii
 
 
