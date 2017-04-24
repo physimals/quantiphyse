@@ -90,10 +90,8 @@ class OverlayAnalysis(object):
 
         # If overlay is 4d, get current 3d volume
         if len(data.shape) == 4:
-            print("4d data")
             data = data[:, :, :, centre[3]]
 
-        print(voxel_sizes)
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1
         x, y, z = np.indices((data.shape[:3]))
