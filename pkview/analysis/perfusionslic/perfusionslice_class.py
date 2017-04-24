@@ -20,7 +20,7 @@ class PerfSLIC(object):
     20141124
     """
 
-    def __init__(self, img1, vox_size, mask=None):
+    def __init__(self, img, vox_sizes, mask=None):
         """
 
         :param img1: 4D image to load
@@ -28,9 +28,9 @@ class PerfSLIC(object):
         :return:
         """
 
-        self.img1 = img1
+        self.img1 = img
         # cython is sensitive to the double definition
-        self.vox_size = np.asarray(vox_size/vox_size[0], dtype=np.double)
+        self.vox_size = np.asarray(vox_sizes/vox_sizes[0], dtype=np.double)
         self.mask = mask
 
         self.segments = None

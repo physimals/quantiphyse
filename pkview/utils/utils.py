@@ -1,12 +1,10 @@
 import yaml
 import nibabel as nib
 
-
 def yaml_loader(filepath):
     with open(filepath, "r") as fd:
         data = yaml.load(fd)
     return data
-
 
 def save_file(file1, hdr, data1):
     # get header

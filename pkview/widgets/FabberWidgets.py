@@ -86,47 +86,23 @@ class FabberProcess(MultiProcess):
 
         return log, output
 
-def fabber_batch(yaml_file):
-    """
-    Run Fabber in batch mode using the specified YAML file. eg6_fabber.yaml gives an examples
-    """
-    yaml = yaml_loader(yaml_file)
-
-    output_folder = yaml["OutputFolder"]
-
+def run_batch(case, params):
     rundata = FabberRunData()
-    for key in yaml["Options"]:
-        val = yaml["Options"][key]
+    for key, val in params.items():
         if val is None: val = ""
         rundata[key] = str(val)
 
-    overlays = {}
-    if "Overlays" in yaml:
-        for key in yaml["Overlays"]:
-            overlays[key] = Overlay(key, fname=yaml["Overlays"][key])
-
-    subjs = yaml["Subjects"]
-    for subj in subjs:
-        vol = Volume("data", fname=subjs[subj]["Folder"] + subjs[subj]["Data"])
-        roi = Roi("roi", fname=subjs[subj]["Folder"] + subjs[subj]["Roi"])
-
-        process = FabberProcess(rundata, vol, roi, **overlays)
-        process.run(sync=True)
-
-        try:
-            os.makedirs(output_folder + "/" + subj)
-        except OSError, e:
-            warnings.warn(str(e))
-
+    process = FabberProcess(rundata, case.ivm.vol, case.ivm.current_roi, **case.ivm.overlays)
+    process.run(sync=True)
+    if process.failed:
+         raise process.output
+    else:
         log, data = process.get_output()
         for key, ovl in data.items():
-            ovl.copy_orientation(vol)
-            ovl.save_nifti(fname=output_folder + "/" + subj + "/" + key + ".nii")
-
-        f = open(output_folder + "/" + subj + "/logfile", "w")
-        f.write(log)
-        f.close()
-
+            if case.debug: print("Adding new overlay: %s" % key)
+            case.ivm.add_overlay(ovl, make_current=False)
+        return log
+        
 def _make_fabber_progress_cb(id, queue):
     def progress_cb(voxel, nvoxels):
         if (voxel % 100 == 0) or (voxel == nvoxels):

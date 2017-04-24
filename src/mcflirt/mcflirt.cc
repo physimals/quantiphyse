@@ -396,7 +396,7 @@ void fix2D(volume<float>& vol)
 }
 
 
- void correct(const int direction, volume<float>& reference_volume, volume4D<float>& timeseries, const float scaling, const float new_tolerance, vector<Matrix>& mat_array_in, vector<Matrix>& mat_array_out, int mean_cond) {
+ void correct(const int direction, volume<float>& reference_volume, volume4D<float>& timeseries, const float scaling, const float new_tolerance, vector<Matrix>& mat_array_in, vector<Matrix>& mat_array_out, int mean_cond, std::ostream &log) {
    Tracer tr("correct");
    Globaloptions& globalopts = Globaloptions::getInstance();
    volume<float> testvol, newtestvol, refvol;
@@ -410,7 +410,7 @@ void fix2D(volume<float>& vol)
    fix2D(refvol);
    
    if ((!Globaloptions::getInstance(). no_reporting) && (Globaloptions::getInstance().twodcorrect == 1))
-     cerr << "restricting optimization to R_z, T_x and T_y" << endl;
+     log << "restricting optimization to R_z, T_x and T_y" << endl;
     
    /*
      not the most elegant logic but if we come into this loop with i = -2, and with stop = -2
@@ -422,16 +422,16 @@ void fix2D(volume<float>& vol)
    
    while ( i != (direction == 1 ? globalopts. no_volumes : stop)) {
      if (!globalopts. no_reporting) 
-       cerr << "[" << i << "]";
+       log << "[" << i << "]";
      testvol = timeseries[i];
      
      if (globalopts. edgeflag){
        if (!globalopts. no_reporting) 
-	 cerr <<"Calculating contour image for volume [" << i << "]" << endl;
+	 log <<"Calculating contour image for volume [" << i << "]" << endl;
        fixed_edge_detect(testvol, 15000);  
      } else if (globalopts. gdtflag){
        if (!globalopts. no_reporting) 
-	 cerr <<"Calculating gradient image for volume [" << i << "]" << endl;
+	 log <<"Calculating gradient image for volume [" << i << "]" << endl;
        volume<float> gtempvol = testvol;
        gtempvol = gradient(testvol);
        testvol = gtempvol;
@@ -628,10 +628,11 @@ void fix2D(volume<float>& vol)
  * into Fortan order.
  */
 //void mcflirt_run (vector<float> &vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
-void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
+std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxeldims, std::vector<std::string> &opts)
 {
   volume4D<float> meanseries;
   volume<float> refvol, anisorefvol, testvol, meanvol, extrefvol;
+  ostringstream log;
 
   // Default constructor sets default values
   Globaloptions& globalopts = Globaloptions::getInstance();
@@ -660,9 +661,9 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
   }
   delete[] argv;
 
-  if (!globalopts. no_reporting) cerr << endl << "McFLIRT v 2.0 - FMRI motion correction" << endl << endl;
+  if (!globalopts. no_reporting) log << endl << "McFLIRT v 2.0 - FMRI motion correction" << endl << endl;
   int original_refvol=globalopts.refnum;
-  if (!globalopts. no_reporting) cerr <<"Reading time series... " << endl;
+  if (!globalopts. no_reporting) log <<"Reading time series... " << endl;
 
   if (extent.size() != 4) {
     throw std::runtime_error("Must be 4 dimension in extent");
@@ -688,7 +689,7 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
 
   for (int mean_its = 0; mean_its < 1 + globalopts. meanvol; mean_its++) {
     if (globalopts. no_stages>=1) {
-      if (!globalopts. no_reporting) cerr <<"first iteration - 8mm scaling, set tolerance" << endl;
+      if (!globalopts. no_reporting) log <<"first iteration - 8mm scaling, set tolerance" << endl;
       new_tolerance=8*0.2*0.5; current_scale=8.0; mat_index[0] = (int) (new_tolerance*current_scale);
 
       if (mean_its == 0) {
@@ -724,7 +725,7 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
 	mean_cond = 1;
       }
 
-      if (!globalopts. no_reporting)  cerr <<"Rescaling reference volume [" << globalopts. refnum << "] to "
+      if (!globalopts. no_reporting)  log <<"Rescaling reference volume [" << globalopts. refnum << "] to "
 					   << current_scale << " mm pixels" << endl;
 
       refvol = isotropic_resample(anisorefvol,current_scale);
@@ -732,59 +733,59 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
       fix2D(refvol);
 
       if (globalopts. edgeflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating contour image for reference volume" << endl;
+	if (!globalopts. no_reporting) log <<"Calculating contour image for reference volume" << endl;
 	fixed_edge_detect(refvol, 15000);
-	//if (!globalopts. no_reporting) cerr <<"Saving contour reference volume... " << endl;
+	//if (!globalopts. no_reporting) log <<"Saving contour reference volume... " << endl;
 	//save_volume(refvol, "crefvol_"+globalopts.outputfname);
       } else if (globalopts. gdtflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating gradient image for reference volume" << endl;
+	if (!globalopts. no_reporting) log <<"Calculating gradient image for reference volume" << endl;
 	volume<float> gtempvol = refvol;  gtempvol = gradient(refvol);
-	//if (!globalopts. no_reporting) cerr <<"Saving gradient reference volume... " << endl;
+	//if (!globalopts. no_reporting) log <<"Saving gradient reference volume... " << endl;
 	//save_volume(refvol, "grefvol_"+globalopts.outputfname);
       }
 
       globalopts.initmat=IdentityMatrix(globalopts.initmat.Nrows());
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond);
+      if (!globalopts. no_reporting) log <<"Registering volumes ... ";
+      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond, log);
+      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array0, mat_array1, mean_cond, log);
     } else {
       for (int i=0; i<globalopts.no_volumes; i++)  mat_array1[i] = mat_array0[i];
     }
     if (globalopts. no_stages>=2) {
-      if (!globalopts. no_reporting) cerr <<endl << "second iteration - drop to 4mm scaling" << endl;
+      if (!globalopts. no_reporting) log <<endl << "second iteration - drop to 4mm scaling" << endl;
       new_tolerance=4*0.2; current_scale=4.0; mat_index[1] = (int) (new_tolerance*current_scale);
 
-      if (!globalopts. no_reporting) cerr <<"Rescaling reference volume [" << globalopts. refnum << "] to "
+      if (!globalopts. no_reporting) log <<"Rescaling reference volume [" << globalopts. refnum << "] to "
 					  << current_scale << " mm pixels" << endl;
       refvol = isotropic_resample(anisorefvol,current_scale);
 
       if (globalopts. edgeflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating contour image for reference volume" << endl;
+	if (!globalopts. no_reporting) log <<"Calculating contour image for reference volume" << endl;
 	fixed_edge_detect(refvol, 15000);
-	//if (!globalopts. no_reporting) cerr <<"Saving contour reference volume... " << endl;
+	//if (!globalopts. no_reporting) log <<"Saving contour reference volume... " << endl;
 	//save_volume(refvol, "crefvol_"+globalopts.outputfname);
       } else if (globalopts. gdtflag){
-	if (!globalopts. no_reporting) cerr <<"Calculating gradient image for reference volume" << endl;
+	if (!globalopts. no_reporting) log <<"Calculating gradient image for reference volume" << endl;
 	volume<float> gtempvol = refvol;
 	gtempvol = gradient(refvol);
-	//if (!globalopts. no_reporting) cerr <<"Saving gradient reference volume... " << endl;
+	//if (!globalopts. no_reporting) log <<"Saving gradient reference volume... " << endl;
 	//save_volume(refvol, "grefvol_"+globalopts.outputfname);
       }
 
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond);
+      if (!globalopts. no_reporting) log <<"Registering volumes ... ";
+      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond, log);
+      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array2, mean_cond, log);
     } else {
       for (int i=0; i<globalopts.no_volumes; i++)  mat_array2[i] = mat_array1[i];
     }
 
     if (globalopts. no_stages>=3) {
-      if (!globalopts. no_reporting) cerr << endl << "third iteration - 4mm scaling, eighth tolerance" << endl;
+      if (!globalopts. no_reporting) log << endl << "third iteration - 4mm scaling, eighth tolerance" << endl;
       new_tolerance = 0.1; mat_index[2] = (int) (new_tolerance*current_scale);
 
-      if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
-      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond);
-      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond);
+      if (!globalopts. no_reporting) log <<"Registering volumes ... ";
+      correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond, log);
+      correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond, log);
     } else {
       for (int i=0; i<globalopts.no_volumes; i++)  mat_array1[i] = mat_array2[i];
     }
@@ -793,12 +794,12 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
   mean_cond = 0;
 
   if (globalopts. no_stages>=4) {
-    if (!globalopts. no_reporting) cerr << endl << "fourth iteration - 4mm scaling, eighth tolerance, sinc interpolation" << endl;
+    if (!globalopts. no_reporting) log << endl << "fourth iteration - 4mm scaling, eighth tolerance, sinc interpolation" << endl;
 
-    if (!globalopts. no_reporting) cerr <<"Registering volumes ... ";
+    if (!globalopts. no_reporting) log <<"Registering volumes ... ";
     if (globalopts.maincostfn == NormCorr)  globalopts.maincostfn = NormCorrSinc;
-    correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond);
-    correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond);
+    correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond, log);
+    correct(-1, refvol, timeseries, current_scale, new_tolerance, mat_array1, mat_array0, mean_cond, log);
   } else {
     for (int i=0; i<globalopts.no_volumes; i++)  mat_array0[i] = mat_array1[i];
   }
@@ -855,6 +856,8 @@ void mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float> &voxe
     }
   }
   if (globalopts. costmeas) eval_costs(refvol, timeseries, mat_array0, current_scale);
-  if (!globalopts. no_reporting) cerr << endl << "Saving motion corrected time series... " << endl;
+  if (!globalopts. no_reporting) log << endl << "Saving motion corrected time series... " << endl;
   timeseries.setDisplayMaximumMinimum(timeseries.max(),timeseries.min());
+
+  return log.str();
 }

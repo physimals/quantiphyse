@@ -5,10 +5,10 @@ import numpy as np
 from PySide import QtGui
 
 from pkview.analysis.mcflirt import mcflirt
-from pkview.volumes.volume_management import Overlay
+from pkview.volumes.volume_management import Volume, Overlay
 from pkview.widgets import PkWidget
 
-# MCflirt options!
+# MCflirt options
 """
        << "        -out, -o <outfile>               (default is infile_mcf)\n"
        << "        -cost {mutualinfo,woods,corratio,normcorr,normmi,leastsquares}        (default is normcorr)\n"
@@ -38,6 +38,18 @@ from pkview.widgets import PkWidget
        << "        -report                            report progress to screen\n"
        << "        -help\n";
 """
+
+def run_mcflirt_batch(case, params):
+    replace = params.pop("replace-vol", False)
+    retdata, log = mcflirt(case.ivm.vol.data, case.ivm.vol.voxel_sizes, **params)
+    if replace:
+        if case.debug: print("Replacing main volume")
+        case.ivm.set_main_volume(Volume(case.ivm.vol.name, data=retdata), replace=True)
+    else:
+        if case.debug: print("Adding new overlay")
+        ovl = Overlay("moco", data=retdata)
+        case.ivm.add_overlay(ovl, make_current=False)
+    return log
 
 class MCFlirtWidget(PkWidget):
     """
@@ -204,5 +216,5 @@ class MCFlirtWidget(PkWidget):
         for key, value in opts.items():
             print(key, value)
 
-        corvol = mcflirt(self.ivm.vol.data, self.ivm.vol.voxel_sizes, **opts)
+        corvol, log = mcflirt(self.ivm.vol.data, self.ivm.vol.voxel_sizes, **opts)
         self.ivm.add_overlay(Overlay(name="Motion corrected", data=corvol), make_current=True)

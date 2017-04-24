@@ -107,7 +107,7 @@ class Volume(object):
         If multi=True, assume last dimension is multiple volumes (e.g. time series) 
         and pad other dimensions only
         """
-        print("Forcing to %i dims, multi=%s, current shape=%s" % (n, str(multi), str(self.shape)))
+        #print("Forcing to %i dims, multi=%s, current shape=%s" % (n, str(multi), str(self.shape)))
         self.multi = multi
         if self.ndims > n:
             raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
@@ -128,7 +128,7 @@ class Volume(object):
         data = self.data
         # Remove axes that were added to pad to 4d
         for dim in self.dim_expand:
-            print("Squeezing axis", dim)
+            #print("Squeezing axis", dim)
             data = np.squeeze(data, dim)
         
         # Invert axis transformations
@@ -190,13 +190,13 @@ class Volume(object):
         """
         try:
             if data is None: data = self.data
-            print("Re-orienting shape ", self.shape, self.voxel_sizes)
+            #print("Re-orienting shape ", self.shape, self.voxel_sizes)
             new_data = np.transpose(data, dim_order)
             for d in dim_flip:
                 new_data = np.flip(new_data, d)
             new_voxel_sizes = [self.voxel_sizes[dim_order[i]] for i in range(self.ndims)]
-            print("Re-oriented to dim order ", dim_order)
-            print("New shape", new_data.shape, new_voxel_sizes)
+            #print("Re-oriented to dim order ", dim_order)
+            #print("New shape", new_data.shape, new_voxel_sizes)
             return new_data, new_data.shape, new_voxel_sizes
         except:
             # If something goes wrong here, just leave the data
@@ -403,16 +403,20 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.sig_all_rois.emit(self.rois.keys())
         self.sig_all_overlays.emit(self.overlays.keys())
 
-    def set_main_volume(self, vol):
+    def set_main_volume(self, vol, replace=False):
         if self.vol is not None:
-            raise RuntimeError("Main volume already loaded")
+            if replace:
+                vol.check_shape(self.vol.shape)
+                vol.copy_orientation(self.vol)
+            else:
+                raise RuntimeError("Main volume already loaded")
 
         if vol.ndims not in (3, 4):
             raise RuntimeError("Main volume must be 3d or 4d")
 
         self.vol = vol
         self.cim_pos = [int(d/2) for d in vol.shape]
-        print(self.cim_pos)
+        #print(self.cim_pos)
         if vol.ndims == 3: self.cim_pos.append(0)
         self.sig_main_volume.emit(self.vol)
 

@@ -15,6 +15,34 @@ TITLE = """
 <p><i>Irving et al (2017) "maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images" https://arxiv.org/abs/1606.09518v2</i></p>
 """
 
+def run_batch(case, params):
+    ncomp = params['n-components']
+    comp = params['compactness']
+    segment_size = params['segment-size']
+
+    slices = case.ivm.current_roi.get_bounding_box(ndims=case.ivm.vol.ndims)
+    roi_slices = slices[:case.ivm.current_roi.ndims]
+    img = case.ivm.vol.data[slices]
+    mask = case.ivm.current_roi.data[roi_slices]
+    vox_sizes = case.ivm.vol.voxel_sizes[:3]
+
+    #print("Initialise the perf slic class")
+    ps1 = PerfSLIC(img, vox_sizes, mask=mask)
+    #print("Normalising image...")
+    ps1.normalise_curves()
+    #print("Extracting features...")
+    ps1.feature_extraction(n_components=ncomp)
+    #print("Extracting supervoxels...")
+    segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
+                                         recompute_seeds=True, n_random_seeds=segment_size)
+    # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
+    svdata = np.array(segments, dtype=np.int) + 1
+
+    newroi = np.zeros(case.ivm.current_roi.data.shape)
+    newroi[roi_slices] = svdata
+    case.ivm.add_roi(Roi(name="supervoxels", data=newroi), make_current=True)
+    return ""
+    
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
         self.label = QtGui.QLabel(text)
@@ -29,7 +57,6 @@ class NumericOption:
         self.spin.setSingleStep(step)
         grid.addWidget(self.label, ypos, 0)
         grid.addWidget(self.spin, ypos, 1)
-
 
 class PerfSlicWidget(PkWidget):
     """
@@ -114,7 +141,7 @@ class PerfSlicWidget(PkWidget):
         vox_size = np.ones(3) # FIXME
 
         print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_size, mask=mask)
+        ps1 = PerfSLIC(img, self.ivm.voxel_sizes, mask=mask)
         print("Normalising image...")
         ps1.normalise_curves()
         print("Extracting features...")

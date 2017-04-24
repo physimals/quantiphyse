@@ -278,8 +278,8 @@ void Globaloptions::parse_command_line(int argc,char** argv)
       cerr << "No output name specified. ";
   }
   
-  if (!no_reporting)
-    cerr << "Processed data will be saved as " << outputfname << endl;
+  //if (!no_reporting)
+    //cerr << "Processed data will be saved as " << outputfname << endl;
 }
 
 void Globaloptions::print_usage(int argc, char *argv[])

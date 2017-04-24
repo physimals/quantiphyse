@@ -1,8 +1,6 @@
 """
-
 Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
@@ -43,7 +41,7 @@ from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
-from .widgets.FabberWidgets import FabberWidget, fabber_batch
+from .widgets.FabberWidgets import FabberWidget
 from .widgets.MCWidgets import MCFlirtWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -51,9 +49,7 @@ from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManageme
 from .widgets.ExampleWidgets import ExampleWidget1
 
 from .utils.cmd_pkmodel import pkbatch
-from .utils.cmd_perfslic import perfslic
-from .utils.cmd_t10 import t10_preclinical, t10
-from .utils.cmd_mcflirt import mcflirt_batch
+from .utils.batch import run_batch
 from .utils import set_local_file_path, get_icon, get_local_file
 
 op_sys = platform.system()
@@ -202,7 +198,6 @@ class RegisterDialog(QtGui.QDialog):
         self.agree_cb = QtGui.QCheckBox("I agree to abide by the terms of the Quantiphyse license")
         self.agree_cb.stateChanged.connect(self.agree_changed)
         layout.addWidget(self.agree_cb)
-
         
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
         self.buttonBox.accepted.connect(self.accept)
@@ -1049,7 +1044,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
             """)
         self.con1 = pg.console.ConsoleWidget(namespace=namespace, text=text)
-        self.con1.setWindowTitle('pyqtgraph example: ConsoleWidget')
+        self.con1.setWindowTitle('Quantiphyse Console')
         self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
         self.con1.show()
 
@@ -1230,42 +1225,23 @@ def main():
 
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
-    parser.add_argument('--T10afibatch', help='Run batch T10 processing from a yaml file', default=None, type=str)
-    parser.add_argument('--slicbatch', help='Run batch SLIC supervoxel processing from a yaml file', default=None, type=str)
-    parser.add_argument('--T10batch', help='Run batch T10 processing from a yaml file', default=None, type=str)
     parser.add_argument('--PKbatch', help='Run batch PK processing from a yaml file', default=None, type=str)
-    parser.add_argument('--fabberbatch', help='Run batch Fabber processing from a yaml file', default=None, type=str)
-    parser.add_argument('--mcflirtbatch', help='Run batch MCFLIRT processing from a yaml file', default=None, type=str)
     parser.add_argument('--image', help='main image nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
     parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
+    parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     args = parser.parse_args()
 
     print(pg.systemInfo())
 
     # Check whether any batch processing arguments have been called
 
-    if (args.T10batch is not None):
-        # Run T10 batch processing from a yaml file
-        t10(args.T10batch)
-
-    elif (args.T10afibatch is not None):
-        # Run T10 and afi batch processing from a yaml file
-        t10_preclinical(args.T10afibatch)
-
-    elif (args.slicbatch is not None):
-        perfslic(args.slicbatch)
-
-    elif (args.PKbatch is not None):
+    if (args.PKbatch is not None):
         pkbatch(args.PKbatch)
 
-    elif (args.mcflirtbatch is not None):
-        mcflirt_batch(args.mcflirtbatch)
-
-    elif (args.fabberbatch is not None):
-
-        fabber_batch(args.fabberbatch)
+    elif (args.batch is not None):
+        run_batch(args.batch)
 
     else:
         # Initialise main GUI

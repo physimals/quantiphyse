@@ -1,25 +1,24 @@
+### Example config file for T10 modelling without B0 correction
 
-# Config file for running T10 modelling
-#
-#
+OutputFolder: out
+#Debug: True
 
-# This name can be anything but must be unique for each patient
-EG1:
-  Folder:   /netshares/mvlprojects6/Registration_Data/RIT_Data2_ben/Nifti/RIT005/PRE/
-  Files:
-    -
-      File:   fa3_aligned.nii
-      FA:     3
-    -
-      File:   fa9_aligned.nii
-      FA:     9
-    -
-      File:   fa12_aligned.nii
-      FA:     12
-    -
-      File:   fa15_aligned.nii
-      FA:     15
+Processing:
+  - T10:
+      tr: 0.0035 # seconds
+      clamp:
+        min: 0
+        max: 5
 
-  Settings:
-    TR:           0.0035  # seconds (s)
-    Out_file_path: T10.nii
+SaveOverlays:
+    T10:
+
+Cases:
+    RIT005:
+        Folder:   c:\Users\ctsu0221\build\data\Martin_test_data\RIT005_PRE
+        Volume:   dceMRI.nii
+        T10:
+          vfa:
+            fa3_aligned.nii : 3
+            fa9_aligned.nii : 3
+            fa15_aligned.nii : 3

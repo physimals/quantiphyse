@@ -1,13 +1,20 @@
+### Example config file for supervoxel generation
 
-# Config file for running slic supervoxel extraction
-#
-#
+OutputFolder: out
+#Debug: True
 
-EG5:
-  Folder:   /home/martinc/data/
-  File: test_data.nii.gz
-  Settings:
-    n_components: 3
-    compactness: 0.02
-    segment_size: 1000
-    Out_file: supervoxels.nii
+Processing:
+  - Supervoxels:
+      n-components: 3
+      compactness: 0.02
+      segment-size: 1000
+
+SaveRois:
+    supervoxels:
+
+Cases:
+    Test:
+        Folder:   c:\Users\ctsu0221\build\data\
+        Volume:   test_data.nii
+        Rois:
+          mask:   test_mask.nii

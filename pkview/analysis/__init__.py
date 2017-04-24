@@ -18,9 +18,10 @@ SPLIT_AXIS = 0
 
 def _init_pool():
     global _pool
-    n_workers = multiprocessing.cpu_count()
-    print("Initializing multiprocessing using %i workers" % n_workers)
-    if _pool is None: _pool = multiprocessing.Pool(n_workers)
+    if _pool is None: 
+        n_workers = multiprocessing.cpu_count()
+        #print("Initializing multiprocessing using %i workers" % n_workers)
+        _pool = multiprocessing.Pool(n_workers)
 
 class MultiProcess(QtCore.QObject):
     """
