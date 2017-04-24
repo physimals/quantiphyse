@@ -17,7 +17,6 @@ from PySide import QtCore, QtGui
 from pkview import error_dialog
 from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Volume, Roi, Overlay
-from pkview.utils import yaml_loader, save_file
 from pkview.widgets import PkWidget
 
 try:
