@@ -208,8 +208,8 @@ def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_a
         steps1 = np.around(size_tot/size_step)
         num_row = 1.0  # Just a placeholder for the meanwhile
 
-        print("Number of voxels per step: ", size_step)
-        print("Number of steps: ", steps1)
+        #print("Number of voxels per step: ", size_step)
+        #print("Number of steps: ", steps1)
         queue.put((num_row, 1))
         for ii in range(int(steps1)):
             if ii > 0:
@@ -220,8 +220,7 @@ def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_a
             time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
             x = Pkclass.run(size_step)
             # print(x)
-
-        print("Done")
+        #print("Done")
 
         # Get outputs
         res1 = np.array(Pkclass.get_residual())
@@ -233,7 +232,7 @@ def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_a
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
         return id, True, (res1, fcurve1, params2)
     except:
-        print("PK worker error: %s" % sys.exc_info()[0])
+        #print("PK worker error: %s" % sys.exc_info()[0])
         return id, False, sys.exc_info()[0]
 
 class PharmaWidget(PkWidget):
@@ -367,13 +366,13 @@ class PharmaWidget(PkWidget):
         # Subset within the ROI 
         img1sub = img1vec[roi1vec, :]
         T101sub = T101vec[roi1vec]
-        baseline = self.baseline[roi1vec]
+        baseline = baseline[roi1vec]
 
         # Normalisation of the image
-        img1sub = img1sub / (np.tile(np.expand_dims(self.baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
+        img1sub = img1sub / (np.tile(np.expand_dims(baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
         # start separate processor
-        self.process = PkModellingProcess(self.ivm.vol.shape, thresh1val, baseline, roi1vec, img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice, self.ivm.vol.shape)
+        self.process = PkModellingProcess(self.ivm.vol.shape, thresh1val, baseline, roi1vec, img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
         self.process.sig_finished.connect(self.Finished)
         self.process.sig_progress.connect(self.CheckProg)
         self.process.run()
@@ -391,7 +390,10 @@ class PharmaWidget(PkWidget):
         if success:
             for ovl in self.process.get_output():
                 self.ivm.add_overlay(ovl)
-            
+        else:
+            QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(output),
+                                      QtGui.QMessageBox.Close)
+
     def add_ovl(self, name, data, slices):
         newdata = np.zeros(self.ivm.vol.data.shape[:len(slices)])
         newdata[slices] = data
