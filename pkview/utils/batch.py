@@ -21,7 +21,8 @@ processes = {"Fabber" : Fabber.run_batch,
              "MCFlirt": Motion.run_mcflirt_batch,
              "T10" : T10.run_batch,
              "Supervoxels" : SV.run_batch,
-             "PkModelling" : Pk.run_batch}
+             "PkModelling" : Pk.run_batch,
+             "Deeds" : Motion.run_deeds_batch}
 
 class BatchCase:
     def __init__(self, id, root, case):

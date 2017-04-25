@@ -5,6 +5,7 @@ import numpy as np
 from PySide import QtGui
 
 from pkview.analysis.mcflirt import mcflirt
+from pkview.analysis.deedsReg import deedsReg
 from pkview.volumes.volume_management import Volume, Overlay
 from pkview.widgets import PkWidget
 
@@ -38,6 +39,20 @@ from pkview.widgets import PkWidget
        << "        -report                            report progress to screen\n"
        << "        -help\n";
 """
+
+def run_deeds_batch(case, params):
+    replace = params.pop("replace-vol", False)
+    regvol = case.ivm.vol.data[:,:,:,0]
+    refvol = case.ivm.vol.data[:,:,:,20]
+    retdata, log = deedsReg(regvol, refvol, **params)
+    if replace:
+        if case.debug: print("Replacing main volume")
+        case.ivm.set_main_volume(Volume(case.ivm.vol.name, data=retdata), replace=True)
+    else:
+        if case.debug: print("Adding new overlay")
+        ovl = Overlay("reg", data=retdata)
+        case.ivm.add_overlay(ovl, make_current=False)
+    return log
 
 def run_mcflirt_batch(case, params):
     replace = params.pop("replace-vol", False)
