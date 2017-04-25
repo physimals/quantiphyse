@@ -144,6 +144,14 @@ if fsldir:
 else:
     print("FSLDIR not set - not building MCFLIRT extension")
 
+# deedsReg extension
+
+extensions.append(Extension("pkview.analysis.deeds",
+                 sources=['pkview/analysis/deeds.pyx',
+                          'src/deedsRegSSC/TMI2013/deedsMSTssc.cpp'],
+                 include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/"],
+                 language="c++"))
+
 # setup parameters
 setup(name='Quantiphyse',
       cmdclass={'build_ext': build_ext},
