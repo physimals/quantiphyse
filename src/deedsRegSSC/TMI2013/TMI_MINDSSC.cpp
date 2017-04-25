@@ -73,7 +73,6 @@
 #include <sys/time.h>
 #include <math.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 

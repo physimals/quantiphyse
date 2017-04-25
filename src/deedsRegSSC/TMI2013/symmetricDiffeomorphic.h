@@ -1,6 +1,18 @@
 /* several functions to interpolate and symmetrise deformations (as well as make them diffeomorphic)
  calculates Jacobian and harmonic Energy */
 
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+#ifdef _WIN32
+double round(double number)
+{
+    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
+}
+#endif
+
 template <typename TypeI>
 
 void interp3(TypeI* interp,TypeI* input,float* x1,float* y1,float* z1,int m,int n,int o,int m2,int n2,int o2,bool flag){
@@ -308,39 +320,39 @@ float harmonicEnergy(float* u,float* v,float* w,int m,int n,int o){
 	float energy=0.0;
 	filter1(u,output,m,n,o,grad,3,1);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(u,output,m,n,o,grad,3,2);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(u,output,m,n,o,grad,3,3);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(v,output,m,n,o,grad,3,1);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(v,output,m,n,o,grad,3,2);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(v,output,m,n,o,grad,3,3);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(w,output,m,n,o,grad,3,1);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(w,output,m,n,o,grad,3,2);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	filter1(w,output,m,n,o,grad,3,3);
 	for(int i=0;i<sz;i++){
-		energy+=pow(output[i],2.0);
+		energy+=pow(output[i],(float)2.0);
 	}
 	energy/=(float)(sz);
 	return energy;
@@ -426,7 +438,7 @@ float jacobian(float* u1,float* v1,float* w1,int m,int n,int o,int factor){
 	}
 	jmean/=(m*n*o);
 	for(int i=0;i<m*n*o;i++){
-		jstd+=pow(Jac[i]-jmean,2.0);
+		jstd+=pow(Jac[i]-jmean,(float)2.0);
 	}
 	jstd/=(m*n*o-1);
 	jstd=sqrt(jstd);

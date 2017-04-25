@@ -151,7 +151,7 @@ void descriptor(float* mind,float* im1,int m,int n,int o,int qs){
 	for(int l=0;l<len1;l++){
 		imshift(im1,w1,dx[l],dy[l],dz[l],m,n,o);
 		for(int i=0;i<sz1;i++){
-			w1[i]=pow(w1[i]-im1[i],2.0);
+			w1[i]=pow(w1[i]-im1[i],(float)2.0);
 		}
 		boxfilter(w1,temp1,temp2,qs,m,n,o);
 		for(int i=0;i<sz1;i++){

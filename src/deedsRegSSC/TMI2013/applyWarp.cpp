@@ -26,7 +26,6 @@
 #include <sstream>
 #include <stdarg.h>
 #include <unistd.h>
-#include <pthread.h>
 
 using namespace std;
 
@@ -37,7 +36,6 @@ int image_n=256;
 int image_o=106;
 float SSD0; float SSD1;
 
-#include "niftiIO.h"
 #include "symmetricDiffeomorphic.h"
 
 void warpImage(float* warped,float* im1,float* im1b,float* u1,float* v1,float* w1){

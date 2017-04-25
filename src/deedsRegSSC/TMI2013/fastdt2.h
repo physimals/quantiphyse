@@ -1,4 +1,4 @@
-
+#include <cmath>
 
 void dt1sq(float *val,int* ind,int len,float offset,int k,int* v,float* z,float* f,int* ind1){
 	float INF=1e10;
@@ -8,10 +8,10 @@ void dt1sq(float *val,int* ind,int len,float offset,int k,int* v,float* z,float*
 	z[1]=INF;
 	v[0]=0;
 	for(int q=1;q<len;q++){
-		float s=((val[q*k]+pow((float)q+offset,2.0))-(val[v[j]*k]+pow((float)v[j]+offset,2.0)))/(2.0*(float)(q-v[j]));
+		float s=((val[q*k]+pow((float)q+offset,(float)2.0))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0)))/(2.0*(float)(q-v[j]));
 		while(s<=z[j]){
 			j--;
-			s=((val[q*k]+pow((float)q+offset,2.0))-(val[v[j]*k]+pow((float)v[j]+offset,2.0)))/(2.0*(float)(q-v[j]));
+			s=((val[q*k]+pow((float)q+offset,(float)2.0))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0)))/(2.0*(float)(q-v[j]));
 		}
 		j++;
 		v[j]=q;
@@ -28,7 +28,7 @@ void dt1sq(float *val,int* ind,int len,float offset,int k,int* v,float* z,float*
 			j++;
 		}
 		ind[q*k]=ind1[v[j]];//ind[v[j]*k];
-		val[q*k]=pow((float)q-((float)v[j]+offset),2.0)+f[v[j]];//val[v[j]*k];
+		val[q*k]=pow((float)q-((float)v[j]+offset),(float)2.0)+f[v[j]];//val[v[j]*k];
 	}
 
 }

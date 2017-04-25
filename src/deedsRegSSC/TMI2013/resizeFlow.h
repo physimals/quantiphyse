@@ -6,7 +6,6 @@ float timeP,timeD; //global variables for comp. time
 
 
 
-#include "niftiIO.h"
 //#include "transformations.h"
 #include "symmetricDiffeomorphic.h"
 

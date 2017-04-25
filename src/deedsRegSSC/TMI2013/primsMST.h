@@ -3,6 +3,10 @@
  Uses heap data structure to speed-up finding the next lowest edge-weight.
  Edge-weights 
 */
+#include <vector>
+#include <algorithm>
+
+using namespace std;
 
 class Edge
 {
@@ -57,7 +61,7 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1){
 	
 	int num_vertices=m*n*o;
 	int len=m*n*o;
-	timeval time1,time2;
+	//timeval time1,time2;
 	int num_neighbours=6;
 	float* edgecost=new float[num_vertices*num_neighbours]; 
 	int* index_neighbours=new int[num_vertices*num_neighbours];
@@ -118,7 +122,7 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1){
 	Edge edgeout=Edge(0.0,-1,-1);
 	Edge minedge=Edge(0.0,-1,-1);
 	float cost=0.0;
-	gettimeofday(&time1, NULL);
+	//gettimeofday(&time1, NULL);
 	
 	for(int i=0;i<num_vertices-1;i++){ //run n-1 times to have all vertices added
 		//add edges of new vertex to priority queue
@@ -171,8 +175,8 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1){
 		ordered[num]=i;
 	}
 
-	gettimeofday(&time2, NULL);
-	double timeAll=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
+	//gettimeofday(&time2, NULL);
+	//double timeAll=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
 	//printf("Prims algorithm with %d levels finished in %f secs.\n",maxlevel,timeAll);
 	
 	priority.clear();

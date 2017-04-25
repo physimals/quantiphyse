@@ -30,7 +30,7 @@ void *regularisation(void *threadarg)
 	int n=n2/step1;
 	int o=o2/step1;
 	
-	timeval time1,time2;
+	//timeval time1,time2;
 	
 	int sz=m*n*o;
 	
@@ -56,7 +56,7 @@ void *regularisation(void *threadarg)
 	float *cost1=new float[len2];
 	float *vals=new float[len2];
 	int *inds=new int[len2];
-	gettimeofday(&time1, NULL);
+	//gettimeofday(&time1, NULL);
 	
 	float alpha1=(float)step1/(alpha*quant);
 	//inverse of regularisation weighting alpha

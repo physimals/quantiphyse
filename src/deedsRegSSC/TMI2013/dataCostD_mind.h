@@ -60,7 +60,7 @@ void *dataCost(void *threadarg)
 	int o=image_o;
 	int sz=m*n*o;
 	
-	int step3=pow(step1,3);
+	int step3=pow((float)step1,3);
 	int m1=m/step1;
 	int n1=n/step1;
 	int o1=o/step1;
@@ -69,7 +69,7 @@ void *dataCost(void *threadarg)
 	
 	//dense displacement space
 	int len=hw*2+1;
-	int len4=pow(len,3);
+	int len4=pow((float)len,3);
 	float* xs=new float[len4];
 	float* ys=new float[len4];
 	float* zs=new float[len4];
@@ -107,13 +107,13 @@ void *dataCost(void *threadarg)
     
     
 	int samples=RAND_SAMPLES;
-	bool randommode=samples<pow(step1,3);
+	bool randommode=samples<pow((float)step1,3);
 	int maxsamp;
 	if(randommode){
 		maxsamp=samples;
 	}
 	else{
-		maxsamp=pow(step1,3);
+		maxsamp=pow((float)step1,3);
 	}
 	float* cost1=new float[len4];
 	float* costcount=new float[len4];
@@ -157,7 +157,7 @@ void *dataCost(void *threadarg)
 			int i1;
 			if(randommode)
 				//stochastic sampling for speed-up (~8x faster)
-				i1=(int)(rand()*pow(step1,3)/float(RAND_MAX));
+				i1=(int)(rand()*pow((float)step1,3)/float(RAND_MAX));
 			else
 				i1=j1;
 			int zz=i1/(step1*step1);
@@ -170,7 +170,7 @@ void *dataCost(void *threadarg)
             int ind1=yy+xx*m+zz*m*n;
 			for(int l=0;l<len4;l++){
                 int ind2;
-				if(not(boundaries)){
+				if(!boundaries){
                     
                     xx2=max(min(xx+(int)(xs[l]),ni-1),0);
                     yy2=max(min(yy+(int)(ys[l]),mi-1),0);
