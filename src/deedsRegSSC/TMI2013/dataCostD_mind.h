@@ -4,6 +4,19 @@
  Quantisation of label space has to be integer when using MIND descriptors
  */
 
+// Get a random number between 0 and 1 (not including 1!)
+#ifdef _WIN32
+  float getrand(unsigned int *state) {
+	  // Apparently rand() is threadsafe under win32
+      return ((float)rand())/(RAND_MAX+1);
+  }
+#else
+  float getrand(unsigned int *state) {
+      // But not in POSIX, so use rand_r instead with the local state
+      return ((float)rand_r(state))/(RAND_MAX+1);
+  }
+#endif
+
 const uint64_t m1=0x5555555555555555;
 const uint64_t m2=0x3333333333333333;
 const uint64_t m4=0x0f0f0f0f0f0f0f0f;
@@ -43,6 +56,17 @@ void *dataCost(void *threadarg)
     int istart=my_data->istart;
     int iend=my_data->iend;
 	
+	// We need local state for the rand_r() function, because
+	// rand() is not threadsafe on POSIX
+	// 
+	// The initial value below will make results reproducible by generating 
+	// the same set of random numbers for the same run. Could also use time(0)
+	// to generate different random numbers each time e.g. to check
+	// robustness of results
+    // 
+	// unsigned int state = time(0)
+	unsigned int state = istart;
+
     //no subpixel support when using MIND descriptors yet
 	bool subpixel=false;
 	//if(quant==0.5)
@@ -52,8 +76,8 @@ void *dataCost(void *threadarg)
         //    wordbits[i1]=__builtin_popcount(i1);
     }
 	float alpha1=(float)step1/(alpha*(float)quant);
-	
-	float randv=((float)rand()/float(RAND_MAX));
+	float randv=getrand(&state);
+
 	timeval time1,time2;
 	int m=image_m;
 	int n=image_n;
@@ -121,8 +145,9 @@ void *dataCost(void *threadarg)
     float beta1=(1.0-beta);
 	float alpha2=alpha1/(float)maxsamp;
 	int xx2,yy2,zz2;
+
 	for(int i=istart;i<iend;i++){
-		if((i%frac)==0){
+		if(((i-istart)%frac)==0){
 			cout<<"x"<<flush;
 		}
 		int z1=i/(m1*n1);
@@ -152,22 +177,25 @@ void *dataCost(void *threadarg)
 		for(int l=0;l<len4;l++){
 			cost1[l]=0.0;
 		}
-		
+
 		for(int j1=0;j1<maxsamp;j1++){
 			int i1;
-			if(randommode)
+			if(randommode) {
 				//stochastic sampling for speed-up (~8x faster)
-				i1=(int)(rand()*pow((float)step1,3)/float(RAND_MAX));
-			else
+				i1=(int)(getrand(&state)*pow((float)step1,3));
+			}
+			else {
 				i1=j1;
+			}
 			int zz=i1/(step1*step1);
 			int xx=(i1-zz*step1*step1)/step1;
 			int yy=i1-zz*step1*step1-xx*step1;
-			
+
 			xx+=x1;
 			yy+=y1;
 			zz+=z1;
-            int ind1=yy+xx*m+zz*m*n;
+			int ind1=yy+xx*m+zz*m*n;
+			
 			for(int l=0;l<len4;l++){
                 int ind2;
 				if(!boundaries){
@@ -178,16 +206,13 @@ void *dataCost(void *threadarg)
                     ind2=yy2+xx2*m+zz2*m*n;
 				}
 				else{
-					
                     ind2=ind1+inds[l];
-					
 				}
 				//point-wise similarity term (hamming distance of MIND descriptors)
                 cost1[l]+=popcount_3(fixed_mind[ind1]^moving_mind[ind2]);
-                
 			}
 		}
-		
+
 		for(int l=0;l<len4;l++){
 			costall[i+l*sz1]=0.5*alpha2*cost1[l];
 		}
