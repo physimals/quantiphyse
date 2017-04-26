@@ -258,7 +258,6 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		int* parents2=new int[sz1];
 		primsGraph(im1,ordered2,parents2,step1);
         
-		cout << "Done prims" << endl;
         //gettimeofday(&time1, NULL);
         
         uint64_t* warped1_mind=new uint64_t[m*n*o];
@@ -271,8 +270,6 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
         create_thread(&thread2,quantisedMIND,(void *)&mind2);
         join_thread(thread1);
         join_thread(thread2);
-
-		cout << "Done quantisedMIND" << endl;
 
 		//gettimeofday(&time2, NULL);
 		//float timeMIND=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
@@ -307,14 +304,12 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		join_thread( thread1b);
 		join_thread( thread2b);
 		
-		cout << "Done dataCost" << endl;
-
 		//gettimeofday(&time2, NULL);
 		//float timeData=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
 		//cout<<"\nTime for data cost: "<<timeData<<"\nSpeed: "<<(float)sz1*(float)len3*(float)RAND_SAMPLES/timeData<<" dof/s\n";
 		
 		//incremental diffusion regularisation
-		cout<<"Start regularisation on MST!\n";
+		cout<<"\nStart regularisation on MST!\n";
 		cout<<"==================================================\n";
 		//gettimeofday(&time1, NULL);
         
@@ -370,16 +365,16 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 //        bench[3+level*6]=timeMIND;
 //        bench[4+level*6]=timeSmooth;
 //        bench[5+level*6]=timeData;
-        delete warped1_mind;
-        delete warped2_mind;
+        delete[] warped1_mind;
+        delete[] warped2_mind;
 		
 		delete []u0; delete []v0; delete []w0;
 		delete []u0i; delete []v0i; delete []w0i;
 		delete []costall1; delete []costall2;
 		delete []parents1; delete []ordered1;
 		delete []parents2; delete []ordered2;
-        delete im1_mind;
-        delete im1b_mind;
+        delete[] im1_mind;
+        delete[] im1b_mind;
         
 	}
 	//===============================================================
