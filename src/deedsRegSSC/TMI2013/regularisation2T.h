@@ -147,11 +147,11 @@ void *regularisation(void *threadarg)
 	
 	//cout<<"Deformation field calculated!\n";
 
-	delete cost1;
-	delete vals;
-	delete inds;
-	delete allinds;
-	delete selected;
+	delete[] cost1;
+	delete[] vals;
+	delete[] inds;
+	delete[] allinds;
+	delete[] selected;
     
     return NULL;
 	

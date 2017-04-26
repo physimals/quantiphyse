@@ -308,8 +308,8 @@ void consistentMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,
 	}
 	
     
-    delete us; delete vs; delete ws;
-    delete us2; delete vs2; delete ws2;
+    delete[] us; delete[] vs; delete[] ws;
+    delete[] us2; delete[] vs2; delete[] ws2;
 }
 
 float harmonicEnergy(float* u,float* v,float* w,int m,int n,int o){

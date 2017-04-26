@@ -181,12 +181,12 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1){
 	
 	priority.clear();
 	
-	delete edgecost;
-	delete index_neighbours;
-	delete levelcount;
-	delete leveloffset;
-	delete vertices;
-	delete level;
+	delete[] edgecost;
+	delete[] index_neighbours;
+	delete[] levelcount;
+	delete[] leveloffset;
+	delete[] vertices;
+	delete[] level;
 	
 	
 	

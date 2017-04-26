@@ -158,7 +158,7 @@ void descriptor(float* mind,float* im1,int m,int n,int o,int qs){
 			d1[i+l*sz1]=w1[i];
 		}
 	}
-    delete temp1; delete temp2;
+    delete[] temp1; delete[] temp2;
 	
 	for(int l=0;l<len2;l++){
 		imshift(d1+index[l]*sz1,mind+l*sz1,sx[l],sy[l],sz[l],m,n,o);
@@ -195,12 +195,12 @@ void descriptor(float* mind,float* im1,int m,int n,int o,int qs){
 			mind[i+l*sz1]=exp(-mind[i+l*sz1]/noise1[i]);
 		}
 	}
-    delete w1;
-	delete d1;
+    delete[] w1;
+	delete[] d1;
     
     
-	delete sum1;
-	delete noise1;
+	delete[] sum1;
+	delete[] noise1;
 }
 
 void *quantisedMIND(void *threadarg)
@@ -229,7 +229,7 @@ void *quantisedMIND(void *threadarg)
 	for(int i=0;i<sz*d;i++){
 		mindi[i]=min(max((int)(mindf[i]*val-0.5),0),val-1);
 	}
-	delete mindf;
+	delete[] mindf;
 	uint64_t* tablei=new uint64_t[val]; //intensity values
 	for(int i=0;i<val;i++){
 		tablei[i]=0ULL;
@@ -259,9 +259,9 @@ void *quantisedMIND(void *threadarg)
 		}
 	}
 	
-	delete tabled;
-	delete tablei;
-	delete mindi;
+	delete[] tabled;
+	delete[] tablei;
+	delete[] mindi;
 	
     return NULL;
 	
