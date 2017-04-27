@@ -124,11 +124,11 @@ def _run_fabber(id, queue, rundata, main_data, roi, *overlays):
         run = lib.run_with_data(rundata, data, roi, progress_cb=_make_fabber_progress_cb(id, queue))
         return id, True, run
     except FabberException, e:
-        print(e)
+        #print(e)
         return id, False, e
     except:
-        print(sys.exc_info()[0])
-        return id, False, sys.exc_info()[0]
+        #print(sys.exc_info()[1])
+        return id, False, sys.exc_info()[1]
 
 class PriorsView(OptionsView):
     """
@@ -559,14 +559,14 @@ class FabberWidget(PkWidget):
         Callback called when an async fabber run completes
         """
         if success:
-            print("finished success")
+            #print("finished success")
             self.log, output = self.process.get_output()
-            print("got output")
+            #print("got output")
             first = True
             save_files = self.savefilesCb.isChecked()
             save_folder = self.saveFolderEdit.text()
             for ovl in output.values():
-                print(ovl.name, ovl.shape)
+                #print(ovl.name, ovl.shape)
                 #print(key, recombined_item.shape)
                 self.ivm.add_overlay(ovl, make_current=first)
                 if save_files:
@@ -585,7 +585,7 @@ class FabberWidget(PkWidget):
         self.logBtn.setEnabled(success)
 
     def update_progress(self, done, todo):
-        print("total of %i done of %i" % (done, todo))
+        #print("total of %i done of %i" % (done, todo))
         if todo > 0:
             percent = 100 * float(done) / todo
             self.progress.setValue(percent)
