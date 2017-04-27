@@ -20,5 +20,13 @@ This is a rough indication of future plans which are not yet specific enough to 
  - Include DICOM conversion
  - Generic maths/processing widget to do things like add/subtract overlays. Very easy with numpy.
 
+### 6) Migration to PySide2 when released.
+- The current implementation uses PySide which is based on Qt4
+- Update to PySide2 when released which uses Qt5
+- Will provide support for HiDPI screens and proper scaling in OSx
 
+### 7) Add semiquantitative DCE-MRI measures
+- Area under the curve
+- Enhancing fraction
 
+### 8) Support Jola with addition of a texture analysis widget
