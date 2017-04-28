@@ -126,7 +126,7 @@ void descriptor(float* mind,float* im1,int m,int n,int o,int qs){
 	int len1=6;
 	int len2=12;
     
-    image_d=12;
+    //image_d=12;
 	int sz1=m*n*o;
     
 	float* w1=new float[sz1];
@@ -210,12 +210,10 @@ void *quantisedMIND(void *threadarg)
 	uint64_t* mindq=my_data->mindq;
     float* im1=my_data->im1;
     int qs=my_data->qs;
-    int m=image_m;
-    int n=image_n;
-    int o=image_o;
+    int m=my_data->m;
+    int n=my_data->n;
+    int o=my_data->o;
     
-    //void quantisedMIND(uint64_t* mindq,float* im1,int m,int n,int o,int qs){
-	
 	int d=12;
 	int sz=m*n*o;
 	
@@ -223,7 +221,7 @@ void *quantisedMIND(void *threadarg)
 	
 	descriptor(mindf,im1,m,n,o,qs);
     int val=6;
-    
+
 	int* mindi=new int[sz*d];
 	
 	for(int i=0;i<sz*d;i++){
@@ -258,7 +256,7 @@ void *quantisedMIND(void *threadarg)
 			mindq[i]+=tablei[mindi[i+q*sz]]*tabled[q];
 		}
 	}
-	
+
 	delete[] tabled;
 	delete[] tablei;
 	delete[] mindi;

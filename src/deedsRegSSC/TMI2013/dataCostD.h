@@ -119,9 +119,9 @@ void *dataCost(void *threadarg)
 	float alpha2=alpha1/(float)maxsamp;
 	int xx2,yy2,zz2;
 	for(int i=0;i<sz1;i++){
-		if((i%frac)==0){
-			cout<<"x"<<flush;
-		}
+		//if((i%frac)==0){
+		//	cout<<"x"<<flush;
+		//}
 		int z1=i/(m1*n1);
 		int x1=(i-z1*m1*n1)/m1;
 		int y1=i-z1*m1*n1-x1*m1;

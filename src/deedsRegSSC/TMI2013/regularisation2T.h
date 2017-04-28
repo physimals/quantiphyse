@@ -22,9 +22,9 @@ void *regularisation(void *threadarg)
 	int* ordered=my_data->ordered;
 	int* parents=my_data->parents;
 		
-	int m2=image_m;
-	int n2=image_n;
-	int o2=image_o;
+	int m2=my_data->m;
+	int n2=my_data->n;
+	int o2=my_data->o;
 		
 	int m=m2/step1;
 	int n=n2/step1;
@@ -71,9 +71,9 @@ void *regularisation(void *threadarg)
 	int frac=(int)(sz/25);
 	//calculate mst-cost
 	for(int i=(sz-1);i>0;i--){ //do for each control point
-		if((i%frac)==0){
-			cout<<"x"<<flush;
-		}
+		//if((i%frac)==0){
+		//	cout<<"x"<<flush;
+		//}
 		int ochild=ordered[i];
 		int oparent=parents[ordered[i]];
 		int z1=ochild/(m*n);
@@ -152,7 +152,10 @@ void *regularisation(void *threadarg)
 	delete[] inds;
 	delete[] allinds;
 	delete[] selected;
-    
+    delete[] xs;
+	delete[] ys;
+	delete[] zs;
+	
     return NULL;
 	
 }

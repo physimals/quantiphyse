@@ -51,10 +51,7 @@ int newEdge(Edge edge1,Edge& edgeout,bool* vertices){
 
 
 
-void primsGraph(float* im1,int* ordered,int* parents,int step1){
-	int m2=image_m;
-	int n2=image_n;
-	int o2=image_o;
+void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, int o2){
 	int m=m2/step1;
 	int n=n2/step1;
 	int o=o2/step1;

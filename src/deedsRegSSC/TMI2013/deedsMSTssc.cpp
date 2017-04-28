@@ -1,17 +1,6 @@
 #include "deeds_thread.h"
 #include "stdint.h"
 
-//global image dimensions
-int image_m=1; //will be set later
-int image_n=1;
-int image_o=1; int image_d=12;
-float SSD0=0.0; float SSD1=0.0; float SSD2=0.0;
-float beta=1; int RAND_SAMPLES=64;
-
-float timeP,timeD; //global variables for comp. time
-
-
-
 //structs for multi-threading
 struct regulariser_data{
 	float* u1; float* v1; float* w1;
@@ -23,6 +12,7 @@ struct regulariser_data{
 	float quant;
 	int* ordered;
 	int* parents;
+	int m; int n; int o;
 };
 
 struct cost_data{
@@ -36,11 +26,14 @@ struct cost_data{
     uint64_t* fixed_mind;
     uint64_t* moving_mind;
     int istart; int iend;
+	int m; int n; int o;
+	int rand_samples;
 };
 struct mind_data{
 	float* im1;
     uint64_t* mindq;
     int qs;
+	int m; int n; int o;
 };
 
 void minimumIndA(float *numbers,float &value,int &index,int length)
@@ -55,34 +48,6 @@ void minimumIndA(float *numbers,float &value,int &index,int length)
 		}
     }
 }
-/*
-void warpImage(float* warped,float* im1,float* im1b,float* u1,float* v1,float* w1){
-	int m=image_m;
-	int n=image_n;
-	int o=image_o;
-	int sz=m*n*o;
-	
-	float ssd=0;
-	float ssd0=0;
-	float ssd2=0;
-	
-	interp3(warped,im1,u1,v1,w1,m,n,o,m,n,o,true);
-	
-	for(int i=0;i<m;i++){
-		for(int j=0;j<n;j++){
-			for(int k=0;k<o;k++){
-				ssd+=pow(im1b[i+j*m+k*m*n]-warped[i+j*m+k*m*n],2);
-				ssd0+=pow(im1b[i+j*m+k*m*n]-im1[i+j*m+k*m*n],2);
-			}
-		}
-	}
-	
-	ssd/=m*n*o;
-	ssd0/=m*n*o;
-	SSD0=ssd0;
-	SSD1=ssd;
-	
-}*/
 
 #include "fastdt2.h"
 #include "symmetricDiffeomorphic.h"
@@ -91,20 +56,42 @@ void warpImage(float* warped,float* im1,float* im1b,float* u1,float* v1,float* w
 #include "MIND-SSC.h"
 #include "dataCostD_mind.h"
 
-//int deeds(char* fixedin,char* movingin,char* movingsegin,char* outputstem,int randsamp2,
-//          float alpha,int maxlevel,int* grid_step,int* label_hw,int* label_quant,bool segment,bool symmetric) {
-int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
+#include <string>
+#include <sstream>
+
+/*
+int deeds(char* fixedin,char* movingin,char* movingsegin,char* outputstem,int randsamp2,
+          float alpha,int maxlevel,int* grid_step,int* label_hw,int* label_quant,bool segment,bool symmetric) {
+
+	float* im1; float* im1b;
+	int M,N,O,K;
+	char* header1;
+	char *header2;
+	
+	readNifti(fixedin,im1b,M,N,O,K,header1);
+	readNifti(movingin,im1,M,N,O,K,header2);
+	
+	delete[] header1;
+	delete[] header2;
+}*/
+
+std::string deeds(float* im1, float* im1b, int m, int n, int o, float *retbuf, 
+                  float alpha=2.0, int randsamp2=50, int maxlevel=5)
 {
     // Options - just default for now
-	int randsamp2=50;
-    float alpha=2.0;
-	int maxlevel=5;
 	int* grid_step=NULL;
 	int* label_hw=NULL;
 	int* label_quant=NULL;
+	//bool symmetric=True;
 	//bool segment=false;
-	bool symmetric=true;
+	std::stringstream log;
 
+	log << "Starting DEEDS registration" << endl;
+	log << "alpha=" << alpha << endl;
+	log << "randsamp=" << randsamp2 << endl;
+	log << "levels=" << maxlevel << endl;
+	//log << "symmetric=" << symmetric << endl;
+	
 	int s_grid[10]={7,6,5,4,3,2,2,2,2,2};
     int s_search[10]={6,5,4,3,2,1,1,1,1,1};
     int s_quant[10]={3,2,2,1,1,1,1,1,1,1};
@@ -115,46 +102,13 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 	if (!label_quant) label_quant = s_quant;
 
 	//Initialise random variable
-//	srand (time(0) );
-#ifndef _WIN32
-	timeval time1,time2,time1a,time2a;
-#endif
-	/*
-	
-	char* flowend=new char[50];
-	strcpy(flowend,"_flow4D.dat");
-	char* defend=new char[50];
-	strcpy(defend,"_deformed.nii");
-	char* outputflow=new char[200];
-	strcpy(outputflow,argv[3]);
-	strncat(outputflow,flowend,200);
-	cout<<"Fileoutput (flow): "<<outputflow<<"\n";
-	char* outputdef=new char[200];
-	strcpy(outputdef,argv[3]);
-	strncat(outputdef,defend,200);
-	cout<<"Fileoutput (deformed): "<<outputdef<<"\n";
-	
-	float alpha=atof(argv[4]);
-	int randsamp2=atoi(argv[5]);*/
-	
-	RAND_SAMPLES=randsamp2;
+	//	srand (time(0));	
+	//RAND_SAMPLES=randsamp2;
     
+	int sz=m*n*o;
+	float *warped1=new float[sz];
+	float *warped2=new float[sz];
     
-	//float* im1; float* im1b;
-	//int M,N,O,K;
-	//char* header;
-	
-	//readNifti(fixedin,im1b,M,N,O,K,header);
-	//readNifti(movingin,im1,M,N,O,K,header);
-	
-	image_m=M; image_n=N; image_o=O;
-	
-	int m=image_m; int n=image_n; int o=image_o; int sz=m*n*o;
-    
-	float *warped1=new float[m*n*o];
-	float *warped2=new float[m*n*o];
-    
-	
 	//==========================================================================================
 	//==========================================================================================
 	//IMPORTANT SETTINGS FOR CONTROL POINT SPACING AND LABEL SPACE
@@ -169,11 +123,11 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
     
 	//float label_quant[]={3,2,1,1};//
 	//quantisation of search space L, important: can only by integer or 0.5 so far!
-    float* mind_step=new float[maxlevel];
+    //float* mind_step=new float[maxlevel];
     //[]={3,2,2,1,1};//{1,1,1,1,1};//
-    for(int i=0;i<maxlevel;i++){
-        mind_step[i]=ceil(label_quant[i]*0.49999);
-    }
+    //for(int i=0;i<maxlevel;i++){
+    //    mind_step[i]=ceil(label_quant[i]*0.49999);
+    //}
     
 	int step1; int hw1; float quant1;
     
@@ -203,19 +157,18 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
     struct mind_data mind1,mind2;
     
     
+	// Allocate space for MIND descriptors 
+	uint64_t* im1_mind=new uint64_t[sz];
+	uint64_t* im1b_mind=new uint64_t[sz];
+        
 	//gettimeofday(&time1a, NULL);
     
-	//==========================================================================================
-	//==========================================================================================
-	float* bench=new float[6*maxlevel];
 	for(int level=0;level<maxlevel;level++){
         quant1=label_quant[level];
         
-        //calculate MIND descriptors (could be reused for further levels to save computation time)
-        uint64_t* im1_mind=new uint64_t[m*n*o];
-        uint64_t* im1b_mind=new uint64_t[m*n*o];
-        
+		mind1.m=m; mind1.n=n; mind1.o=o;
         mind1.im1=im1; mind1.mindq=im1_mind; mind1.qs=max(min(quant1,2.0f),1.0f); //qs determines size of patches for MIND
+		mind2.m=m; mind2.n=n; mind2.o=o;
         mind2.im1=im1b; mind2.mindq=im1b_mind; mind2.qs=max(min(quant1,2.0f),1.0f);
         
         create_thread(&thread1,quantisedMIND,(void *)&mind1);
@@ -228,8 +181,8 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		struct cost_data cosd1,cosd2,cosd1b,cosd2b;
 		
 		//warp both high-resolution images according
-		warpImage(warped1,im1,ux,vx,wx);
-		warpImage(warped2,im1b,uxi,vxi,wxi);
+		warpImage(warped1,im1,ux,vx,wx,m,n,o);
+		warpImage(warped2,im1b,uxi,vxi,wxi,m,n,o);
         
 		step1=grid_step[level];
 		hw1=label_hw[level];
@@ -243,25 +196,27 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		upsampleDeformations2(u0,v0,w0,u1,v1,w1,m1,n1,o1,m2,n2,o2);
 		upsampleDeformations2(u0i,v0i,w0i,u1i,v1i,w1i,m1,n1,o1,m2,n2,o2);
         
-		cout<<"==========================================================\n";
-		cout<<"Level "<<level<<" grid="<<step1<<" with sizes: "<<m1<<"x"<<n1<<"x"<<o1<<" hw="<<hw1<<" quant="<<quant1<<"\n";
-		cout<<"==========================================================\n";
+		log<<"==========================================================\n";
+		log<<"Level "<<level<<" grid="<<step1<<" with sizes: "<<m1<<"x"<<n1<<"x"<<o1<<" hw="<<hw1<<" quant="<<quant1<<"\n";
+		log<<"==========================================================\n";
 		
+		delete []u1; delete []v1; delete []w1;
+		delete []u1i; delete []v1i; delete []w1i;
 		u1=new float[sz1]; v1=new float[sz1]; w1=new float[sz1];
 		u1i=new float[sz1]; v1i=new float[sz1]; w1i=new float[sz1];
         
 		//Minimum-spanning-tree
 		int* ordered1=new int[sz1];
 		int* parents1=new int[sz1];
-		primsGraph(im1b,ordered1,parents1,step1);
+		primsGraph(im1b,ordered1,parents1,step1, m, n, o);
 		int* ordered2=new int[sz1];
 		int* parents2=new int[sz1];
-		primsGraph(im1,ordered2,parents2,step1);
+		primsGraph(im1,ordered2,parents2,step1, m, n, o);
         
         //gettimeofday(&time1, NULL);
         
-        uint64_t* warped1_mind=new uint64_t[m*n*o];
-        uint64_t* warped2_mind=new uint64_t[m*n*o];
+        uint64_t* warped1_mind=new uint64_t[sz];
+        uint64_t* warped2_mind=new uint64_t[sz];
         
         mind1.im1=warped1; mind1.mindq=warped1_mind; mind1.qs=max(min(quant1,2.0f),1.0f);
         mind2.im1=warped2; mind2.mindq=warped2_mind; mind2.qs=max(min(quant1,2.0f),1.0f);
@@ -273,24 +228,32 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 
 		//gettimeofday(&time2, NULL);
 		//float timeMIND=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//cout<<"Start similarity computation! (Time for MIND: "<<timeMIND<<" secs)\n";
-		//cout<<"==================================================\n";
+		//log<<"Start similarity computation! (Time for MIND: "<<timeMIND<<" secs)\n";
+		//log<<"==================================================\n";
 		//gettimeofday(&time1, NULL);
         
 		//data-cost/similarity computation 4-threaded (uses plenty of memory)
 		float* costall1=new float[sz1*len3];
 		float* costall2=new float[sz1*len3];
         
+		cosd1.m=m;cosd1.n=n;cosd1.o=o;
+		cosd1.rand_samples = randsamp2;
 		cosd1.im1=im1b; cosd1.im1b=warped1; cosd1.alpha=alpha; cosd1.costall=costall1;
         cosd1.fixed_mind=im1b_mind; cosd1.moving_mind=warped1_mind;
 		cosd1.hw=hw1; cosd1.step1=step1; cosd1.quant=quant1; cosd1.istart=0; cosd1.iend=sz1/2;
+		cosd2.m=m;cosd2.n=n;cosd2.o=o;
+		cosd2.rand_samples = randsamp2;
 		cosd2.im1=im1; cosd2.im1b=warped2; cosd2.alpha=alpha; cosd2.costall=costall2;
         cosd2.fixed_mind=im1_mind; cosd2.moving_mind=warped2_mind;
 		cosd2.hw=hw1; cosd2.step1=step1; cosd2.quant=quant1; cosd2.istart=0; cosd2.iend=sz1/2;
         
+		cosd1b.m=m;cosd1b.n=n;cosd1b.o=o;
+		cosd1b.rand_samples = randsamp2;
 		cosd1b.im1=im1b; cosd1b.im1b=warped1; cosd1b.alpha=alpha; cosd1b.costall=costall1;
         cosd1b.fixed_mind=im1b_mind; cosd1b.moving_mind=warped1_mind;
 		cosd1b.hw=hw1; cosd1b.step1=step1; cosd1b.quant=quant1; cosd1b.istart=sz1/2; cosd1b.iend=sz1;
+		cosd2b.m=m;cosd2b.n=n;cosd2b.o=o;
+		cosd2b.rand_samples = randsamp2;
 		cosd2b.im1=im1; cosd2b.im1b=warped2; cosd2b.alpha=alpha; cosd2b.costall=costall2;
         cosd2b.fixed_mind=im1_mind; cosd2b.moving_mind=warped2_mind;
 		cosd2b.hw=hw1; cosd2b.step1=step1; cosd2b.quant=quant1; cosd2b.istart=sz1/2; cosd2b.iend=sz1;
@@ -306,18 +269,20 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		
 		//gettimeofday(&time2, NULL);
 		//float timeData=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//cout<<"\nTime for data cost: "<<timeData<<"\nSpeed: "<<(float)sz1*(float)len3*(float)RAND_SAMPLES/timeData<<" dof/s\n";
+		//log<<"\nTime for data cost: "<<timeData<<"\nSpeed: "<<(float)sz1*(float)len3*(float)RAND_SAMPLES/timeData<<" dof/s\n";
 		
 		//incremental diffusion regularisation
-		cout<<"\nStart regularisation on MST!\n";
-		cout<<"==================================================\n";
+		log<<"\nStart regularisation on MST!\n";
+		log<<"==================================================\n";
 		//gettimeofday(&time1, NULL);
         
+		reg1.m=m; reg1.n=n; reg1.o=o;
 		reg1.u1=u1; reg1.v1=v1; reg1.w1=w1; reg1.costall=costall1;
 		reg1.u0=u0; reg1.v0=v0; reg1.w0=w0; reg1.alpha=alpha;
 		reg1.hw=hw1; reg1.step1=step1; reg1.quant=quant1;
 		reg1.ordered=ordered1; reg1.parents=parents1;
 		
+		reg2.m=m; reg2.n=n; reg2.o=o;
 		reg2.u1=u1i; reg2.v1=v1i; reg2.w1=w1i; reg2.costall=costall2;
 		reg2.u0=u0i; reg2.v0=v0i; reg2.w0=w0i; reg2.alpha=alpha;
 		reg2.hw=hw1; reg2.step1=step1; reg2.quant=quant1;
@@ -340,31 +305,22 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
         //consistent mapping according to the MICCAI 2013 paper
         consistentMapping(u1,v1,w1,u1i,v1i,w1i,m1,n1,o1,step1);
         
-        
         //gettimeofday(&time2, NULL);
 		//float timeSmooth=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//cout<<"\nComputation time for smoothness terms : "<<timeSmooth<<" secs.\nSpeed: "<<(float)sz1*(float)len3/timeSmooth<<" dof/s\n";
+		//log<<"\nComputation time for smoothness terms : "<<timeSmooth<<" secs.\nSpeed: "<<(float)sz1*(float)len3/timeSmooth<<" dof/s\n";
         
-		
 		//upsample deformations from grid-resolution to high-resolution (trilinear=1st-order spline)
 		upsampleDeformations2(ux,vx,wx,u1,v1,w1,m,n,o,m1,n1,o1);
 		upsampleDeformations2(uxi,vxi,wxi,u1i,v1i,w1i,m,n,o,m1,n1,o1);
-		float jac=jacobian(u1,v1,w1,m1,n1,o1,step1);
+		float jac=jacobian(u1,v1,w1,m1,n1,o1,step1, log);
         float energy=harmonicEnergy(ux,vx,wx,m,n,o);
-		cout<<"harmonic energy of deformation field: "<<energy<<"\n";
-        
+		log<<"harmonic energy of deformation field: "<<energy<<"\n";
         
 		//warpImage(warped1,im1,im1b,ux,vx,wx);
-		//cout<<"SSD before registration: "<<SSD0<<" and after "<<SSD1<<"\n";
+		//log<<"SSD before registration: "<<SSD0<<" and after "<<SSD1<<"\n";
 		m2=m1; n2=n1; o2=o1;
-		cout<<"\n";
+		log<<"\n";
         
-        bench[0+level*6]=SSD1;
-        bench[1+level*6]=jac;
-        bench[2+level*6]=energy;
-//        bench[3+level*6]=timeMIND;
-//        bench[4+level*6]=timeSmooth;
-//        bench[5+level*6]=timeData;
         delete[] warped1_mind;
         delete[] warped2_mind;
 		
@@ -373,29 +329,19 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
 		delete []costall1; delete []costall2;
 		delete []parents1; delete []ordered1;
 		delete []parents2; delete []ordered2;
-        delete[] im1_mind;
-        delete[] im1b_mind;
-        
 	}
-	//===============================================================
-	//===============================================================
+	
+	delete[] im1_mind;
+	delete[] im1b_mind;
 
-    
     float* flow1=new float[sz1*3];
 	for(int i=0;i<sz1;i++){
         flow1[i]=u1[i]; flow1[i+sz1]=v1[i]; flow1[i+sz1*2]=w1[i];
     }
-    //char* output1=new char[200];
-    //sprintf(output1,"%s_deformed.nii",outputstem);
-    //char* output2=new char[200];
-    //sprintf(output2,"%s_flowLR.dat",outputstem);
-    //char* output3=new char[200];
-    //sprintf(output3,"%s_segment.nii",outputstem);
-
+    
     //float* warpout=new float[sz];
-    warpImage(retbuf,im1,ux,vx,wx);
-//    writeNifti(output1,warpout,header,sz);
-
+    warpImage(retbuf,im1,ux,vx,wx,m,n,o);
+	
     //optionally write-out warped Labels
     /*
 	if(segment){
@@ -418,8 +364,15 @@ int deeds(float* im1, float* im1b, int M, int N, int O, float *retbuf)
     //timeP=(time2a.tv_sec+time2a.tv_usec/1e6-(time1a.tv_sec+time1a.tv_usec/1e6));
     //printf("Total registration time: %f secs.\n",timeP);
 
-	
-	// FIXME need to return float * warpout
-	return 0;
+	delete[] flow1;
+	delete []u1; delete []v1; delete []w1;
+	delete []u1i; delete []v1i; delete []w1i;
+	delete []ux; delete []vx; delete []wx;
+	delete []uxi; delete []vxi; delete []wxi;
+	delete[] warped1;
+    delete[] warped2;
+
+	//cout << log.str() << endl;
+	return log.str();
 }
 

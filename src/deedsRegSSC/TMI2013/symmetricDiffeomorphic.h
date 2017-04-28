@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 
@@ -355,13 +356,14 @@ float harmonicEnergy(float* u,float* v,float* w,int m,int n,int o){
 		energy+=pow(output[i],(float)2.0);
 	}
 	energy/=(float)(sz);
+	delete[] output;
 	return energy;
 }
 
 
 
 
-float jacobian(float* u1,float* v1,float* w1,int m,int n,int o,int factor){
+float jacobian(float* u1,float* v1,float* w1,int m,int n,int o,int factor, std::stringstream &log){
 	
 	float factor1=1.0/(float)factor;
 	float jmean=0.0;
@@ -443,10 +445,10 @@ float jacobian(float* u1,float* v1,float* w1,int m,int n,int o,int factor){
 	jstd/=(m*n*o-1);
 	jstd=sqrt(jstd);
 	frac=neg/count;
-	cout<<"Jacobian of deformations| Mean (std): "<<round(jmean*1000)/1000.0<<" ("<<round(jstd*1000)/1000.0<<")\n";
-	cout<<"Range: ["<<Jmin<<", "<<Jmax<<"] Negative fraction: "<<frac<<"\n";
+	log<<"Jacobian of deformations| Mean (std): "<<round(jmean*1000)/1000.0<<" ("<<round(jstd*1000)/1000.0<<")\n";
+	log<<"Range: ["<<Jmin<<", "<<Jmax<<"] Negative fraction: "<<frac<<"\n";
+
 	delete []Jac;
-	
 	
 	delete []J11;
 	delete []J12;

@@ -55,7 +55,8 @@ void *dataCost(void *threadarg)
     uint64_t* moving_mind=my_data->moving_mind;
     int istart=my_data->istart;
     int iend=my_data->iend;
-	
+	int beta=1; // MSC: This was a global but is used nowhere else. No idea what it is for.
+
 	// We need local state for the rand_r() function, because
 	// rand() is not threadsafe on POSIX
 	// 
@@ -79,9 +80,9 @@ void *dataCost(void *threadarg)
 	float randv=getrand(&state);
 
 	timeval time1,time2;
-	int m=image_m;
-	int n=image_n;
-	int o=image_o;
+	int m=my_data->m;
+	int n=my_data->n;
+	int o=my_data->o;
 	int sz=m*n*o;
 	
 	int step3=pow((float)step1,3);
@@ -130,7 +131,7 @@ void *dataCost(void *threadarg)
     }
     
     
-	int samples=RAND_SAMPLES;
+	int samples=my_data->rand_samples;
 	bool randommode=samples<pow((float)step1,3);
 	int maxsamp;
 	if(randommode){
@@ -147,9 +148,9 @@ void *dataCost(void *threadarg)
 	int xx2,yy2,zz2;
 
 	for(int i=istart;i<iend;i++){
-		if(((i-istart)%frac)==0){
-			cout<<"x"<<flush;
-		}
+		//if(((i-istart)%frac)==0){
+		//	cout<<"x"<<flush;
+		//}
 		int z1=i/(m1*n1);
 		int x1=(i-z1*m1*n1)/m1;
 		int y1=i-z1*m1*n1-x1*m1;
@@ -227,6 +228,7 @@ void *dataCost(void *threadarg)
 	delete []xs;
 	delete []ys;
 	delete []zs;
+	delete []inds;
     
     return NULL;
     
@@ -234,7 +236,7 @@ void *dataCost(void *threadarg)
 
 template <typename TypeW>
 
-void warpImage(TypeW* warped,TypeW* im1,float* u1,float* v1,float* w1){
-    int m=image_m; int n=image_n; int o=image_o; int sz=m*n*o;
+void warpImage(TypeW* warped,TypeW* im1,float* u1,float* v1,float* w1, int m, int n, int o){
+    int sz=m*n*o;
     interp3(warped,im1,u1,v1,w1,m,n,o,m,n,o,true);
 }
