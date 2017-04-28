@@ -14,226 +14,10 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview import error_dialog
-from pkview.analysis import MultiProcess
-from pkview.analysis.pk_model import PyPk
+from pkview.analysis import Process
+from pkview.analysis.pk import PkModellingProcess
 from pkview.volumes.volume_management import Overlay, Roi
 from pkview.widgets import PkWidget
-
-def run_batch(case, params):
-        img1 = case.ivm.vol.data
-        roi1 = case.ivm.current_roi.data
-        t101 = case.ivm.overlays["T10"].data
-
-        R1 = params['r1']
-        R2 = params['r2']
-        DelT = params['dt']
-        InjT = params['tinj']
-        TR = params['tr']
-        TE = params['te']
-        FA = params['fa']
-        thresh1val = params['ve-thresh']
-        Dose = params.get('dose', 0)
-        model_choice = params['model']
-
-        # Baseline defaults to time points prior to injection
-        baseline_tpts = int(1 + InjT / DelT)
-        #print("First %i time points used for baseline normalisation" % baseline_tpts)
-        baseline = np.mean(img1[:, :, :, :baseline_tpts], axis=-1)
-
-        #print("Convert to list of enhancing voxels")
-        img1vec = np.reshape(img1, (-1, img1.shape[-1]))
-        T10vec = np.reshape(t101, (-1))
-        roi1vec = np.array(np.reshape(roi1, (-1)), dtype=bool)
-        baseline = np.reshape(baseline, (-1))
-
-        #print("Make sure the type is correct")
-        img1vec = np.array(img1vec, dtype=np.double)
-        T101vec = np.array(T10vec, dtype=np.double)
-        roi1vec = np.array(roi1vec, dtype=bool)
-
-        #print("subset")
-        # Subset within the ROI and
-        img1sub = img1vec[roi1vec, :]
-        T101sub = T101vec[roi1vec]
-        baseline = baseline[roi1vec]
-
-        # Normalisation of the image - convert to signal enhancement
-        img1sub = img1sub / (np.tile(np.expand_dims(baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
-
-        #print("Running pk")
-        process = PkModellingProcess(img1.shape, thresh1val, baseline, roi1vec, img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
-        process.run(sync=True)
-        if process.failed:
-            raise process.output
-        
-        for ovl in process.get_output():
-            case.ivm.add_overlay(ovl)
-        return ""
-
-class PkModellingProcess(MultiProcess):
-
-    """ Signal emitted to track progress"""
-    sig_progress = QtCore.Signal(int)
-
-    def __init__(self, orig_shape, thresh1val, baseline, roi1vec, *args):
-        N = 1
-        self.shape = orig_shape
-        self.thresh1val = thresh1val
-        self.baseline = baseline
-        self.roi1vec = roi1vec
-        MultiProcess.__init__(self, N, run_pk, args)
-
-    def progress(self):
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            num_row, progress = self.queue.get()
-        self.sig_progress.emit(progress)
-
-    def get_output(self):
-        """
-        Return list of overlays
-        """
-        # Only one worker - get its output
-        var1 = self.output[0]
-
-        #make sure that we are accessing whole array
-        roi1v = self.roi1vec
-
-        #Params: Ktrans, ve, offset, vp
-        Ktrans1 = np.zeros((roi1v.shape[0]))
-        Ktrans1[roi1v] = var1[2][:, 0] * (var1[2][:, 0] < 2.0) + 2 * (var1[2][:, 0] > 2.0)
-
-        ve1 = np.zeros((roi1v.shape[0]))
-        ve1[roi1v] = var1[2][:, 1] * (var1[2][:, 1] < 2.0) + 2 * (var1[2][:, 1] > 2.0)
-        ve1 *= (ve1 > 0)
-
-        kep1p = Ktrans1 / (ve1 + 0.001)
-        kep1p[np.logical_or(np.isnan(kep1p), np.isinf(kep1p))] = 0
-        kep1p *= (kep1p > 0)
-        kep1 = kep1p * (kep1p < 2.0) + 2 * (kep1p >= 2.0)
-
-        offset1 = np.zeros((roi1v.shape[0]))
-        offset1[roi1v] = var1[2][:, 2]
-
-        vp1 = np.zeros((roi1v.shape[0]))
-        vp1[roi1v] = var1[2][:, 3]
-
-        # Convert signal enhancement back to data curve
-        sig = (var1[1] + 1) * (np.tile(np.expand_dims(self.baseline, axis=-1), (1, self.shape[-1])))
-        
-        estimated_curve1 = np.zeros((roi1v.shape[0], self.shape[-1]))
-        estimated_curve1[roi1v, :] = sig
-
-        residual1 = np.zeros((roi1v.shape[0]))
-        residual1[roi1v] = var1[0]
-
-        # Convert to list of enhancing voxels
-        Ktrans1vol = np.reshape(Ktrans1, (self.shape[:-1]))
-        ve1vol = np.reshape(ve1, (self.shape[:-1]))
-        offset1vol = np.reshape(offset1, (self.shape[:-1]))
-        vp1vol = np.reshape(vp1, (self.shape[:-1]))
-        kep1vol = np.reshape(kep1, (self.shape[:-1]))
-        estimated1vol = np.reshape(estimated_curve1, self.shape)
-
-        #thresholding according to upper limit
-        p = np.percentile(Ktrans1vol, self.thresh1val)
-        Ktrans1vol[Ktrans1vol > p] = p
-        p = np.percentile(kep1vol, self.thresh1val)
-        kep1vol[kep1vol > p] = p
-
-        #slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
-        #roi_slices = slices[:self.ivm.current_roi.ndims]
-        
-        ret = []
-        ret.append(Overlay('ktrans', data=Ktrans1vol))
-        ret.append(Overlay('ve', data=ve1vol))
-        ret.append(Overlay('kep', data=kep1vol))
-        ret.append(Overlay('offset', data=offset1vol))
-        ret.append(Overlay('vp', data=vp1vol))
-        ret.append(Overlay("Model curves", data=estimated1vol))
-        return ret
-
-def run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
-    """
-    Simple function to run the c++ pk modelling code. Must be a function to work with multiprocessing
-    
-        img1sub:
-        t101sub:
-        r1:
-        r2:
-        delt:
-        injt:
-        tr1:
-        te1:
-        dce_flip_angle:
-        dose:
-        model_choice:
-    """
-    #print("pk modelling worker started")
-    try:
-        t1 = np.arange(0, img1sub.shape[-1])*delt
-        # conversion to minutes
-        t1 = t1/60.0
-
-        injtmins = injt/60.0
-
-        Dose = dose
-
-        # conversion to seconds
-        dce_TR = tr1/1000.0
-        dce_TE = te1/1000.0
-
-        #specify variable upper bounds and lower bounds
-        ub = [10, 1, 0.5, 0.5]
-        lb = [0, 0.05, -0.5, 0]
-
-        # contiguous array
-        img1sub = np.ascontiguousarray(img1sub)
-        t101sub = np.ascontiguousarray(t101sub)
-        t1 = np.ascontiguousarray(t1)
-
-        Pkclass = PyPk(t1, img1sub, t101sub)
-        Pkclass.set_bounds(ub, lb)
-        Pkclass.set_parameters(r1, r2, dce_flip_angle, dce_TR, dce_TE, Dose)
-
-        # Initialise fitting
-        # Choose model type and injection time
-        Pkclass.rinit(model_choice, injtmins)
-
-        # Iteratively process 5000 points at a time
-        # (this can be performed as a multiprocess soon)
-
-        size_step = max(1, np.around(img1sub.shape[0]/5))
-        size_tot = img1sub.shape[0]
-        steps1 = np.around(size_tot/size_step)
-        num_row = 1.0  # Just a placeholder for the meanwhile
-
-        #print("Number of voxels per step: ", size_step)
-        #print("Number of steps: ", steps1)
-        queue.put((num_row, 1))
-        for ii in range(int(steps1)):
-            if ii > 0:
-                progress = float(ii) / float(steps1) * 100
-                # print(progress)
-                queue.put((num_row, progress))
-
-            time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-            x = Pkclass.run(size_step)
-            # print(x)
-        #print("Done")
-
-        # Get outputs
-        res1 = np.array(Pkclass.get_residual())
-        fcurve1 = np.array(Pkclass.get_fitted_curve())
-        params2 = np.array(Pkclass.get_parameters())
-
-        # final update to progress bar
-        queue.put((num_row, 100))
-        time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-        return id, True, (res1, fcurve1, params2)
-    except:
-        #print("PK worker error: %s" % sys.exc_info()[0])
-        return id, False, sys.exc_info()[0]
 
 class PharmaWidget(PkWidget):
     """
@@ -313,6 +97,10 @@ class PharmaWidget(PkWidget):
         main_vbox.addStretch()
         self.setLayout(main_vbox)
 
+        self.process = PkModellingProcess(self.ivm)
+        self.process.sig_finished.connect(self.finished)
+        self.process.sig_progress.connect(self.progress)
+
     def start_task(self):
         """
         Start running the PK modelling on button click
@@ -329,75 +117,29 @@ class PharmaWidget(PkWidget):
             error_dialog("No T10 map loaded - required for Pk modelling")
             return
 
-        # get volumes to process
-        img1 = self.ivm.vol.data
-        roi1 = self.ivm.current_roi.data
-        t101 = self.ivm.overlays["T10"].data
+        options = {}
+        options["r1"] = float(self.valR1.text())
+        options["r2"] = float(self.valR2.text())
+        options["dt"] = float(self.valDelT.text())
+        options["tinj"] = float(self.valInjT.text())
+        options["tr"] = float(self.valTR.text())
+        options["te"] = float(self.valTE.text())
+        options["fa"] = float(self.valFA.text())
+        options["ve-thresh"] = float(self.thresh1.text())
+        options["dose"] = float(self.valDose.text())
+        options["model"] = self.combo.currentIndex() + 1
 
-        R1 = float(self.valR1.text())
-        R2 = float(self.valR2.text())
-        DelT = float(self.valDelT.text())
-        InjT = float(self.valInjT.text())
-        TR = float(self.valTR.text())
-        TE = float(self.valTE.text())
-        FA = float(self.valFA.text())
-        thresh1val= float(self.thresh1.text())
-        Dose = float(self.valDose.text())
-
-        # getting model choice from list
-        model_choice = self.combo.currentIndex() + 1
-
-        # Baseline defaults to time points prior to injection
-        baseline_tpts = int(1 + InjT / DelT)
-        print("First %i time points used for baseline normalisation" % baseline_tpts)
-        baseline = np.mean(img1[:, :, :, :baseline_tpts], axis=-1)
-
-        # Convert to list of enhancing voxels
-        img1vec = np.reshape(img1, (-1, img1.shape[-1]))
-        T10vec = np.reshape(t101, (-1))
-        self.roi1vec = np.array(np.reshape(roi1, (-1)), dtype=bool)
-        baseline = np.reshape(baseline, (-1))
-
-        # Make sure the type is correct
-        img1vec = np.array(img1vec, dtype=np.double)
-        T101vec = np.array(T10vec, dtype=np.double)
-        roi1vec = np.array(self.roi1vec, dtype=bool)
-
-        # Subset within the ROI 
-        img1sub = img1vec[roi1vec, :]
-        T101sub = T101vec[roi1vec]
-        baseline = baseline[roi1vec]
-
-        # Normalisation of the image
-        img1sub = img1sub / (np.tile(np.expand_dims(baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
-
-        # start separate processor
-        self.process = PkModellingProcess(self.ivm.vol.shape, thresh1val, baseline, roi1vec, img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice)
-        self.process.sig_finished.connect(self.Finished)
-        self.process.sig_progress.connect(self.CheckProg)
-        self.process.run()
-
-        # set the progress value
         self.prog_gen.setValue(0)
+        self.process.run(options)
 
-    def CheckProg(self, progress):
-        """
-        Check the progress regularly and update volumes when progress reaches 100%
-        """
-        self.prog_gen.setValue(progress)
+    def progress(self, progress):
+        self.prog_gen.setValue(100*progress)
 
-    def Finished(self, success, output):
-        if success:
-            for ovl in self.process.get_output():
-                self.ivm.add_overlay(ovl)
-        else:
+    def finished(self, status, output):
+        """ GUI updates on process completion """
+        if status != Process.SUCCEEDED:
             QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(output),
                                       QtGui.QMessageBox.Close)
-
-    def add_ovl(self, name, data, slices):
-        newdata = np.zeros(self.ivm.vol.data.shape[:len(slices)])
-        newdata[slices] = data
-        self.ivm.add_overlay(Overlay(name, data=newdata), make_current=False)
 
 class PharmaView(PkWidget):
     """

@@ -14,15 +14,14 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
+from pkview.analysis import Process
+from pkview.analysis.fab import FabberProcess
 from pkview import error_dialog
-from pkview.analysis import MultiProcess
 from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.widgets import PkWidget
 
 try:
-    if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
-    if "FABBERDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FABBERDIR"])
-    from fabber import FabberRunData, FabberLib, FabberException, find_fabber
+    from fabber import FabberRunData, find_fabber
     from fabber.views import *
     from fabber.dialogs import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
 except:
@@ -50,85 +49,6 @@ TITLE = """
 <p><i>Chappell, M.A., Groves, A.R., Woolrich, M.W., "Variational Bayesian inference for a non-linear forward model", IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
 </p>
 """
-class FabberProcess(MultiProcess):
-
-    """ Signal emitted to track progress"""
-    sig_progress = QtCore.Signal(int, int)
-
-    def __init__(self, rundata, vol, roi, **overlays):
-        N = vol.data.shape[0]
-        input_args = [rundata, vol.data, roi.data]
-        for key, value in overlays.items():
-            input_args.append(key)
-            input_args.append(value.data)
-        MultiProcess.__init__(self, N, _run_fabber, input_args)
-
-        # Callbacks to update GUI during processing
-        self.voxels_todo = np.count_nonzero(roi.data)
-        self.voxels_done = [0, ] * N
-
-    def progress(self):
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            id, v, nv = self.queue.get()
-            self.voxels_done[id] = v
-        cv = sum(self.voxels_done)
-        self.sig_progress.emit(cv, self.voxels_todo)
-
-    def get_output(self):
-        log, output = "", {}
-        if not self.failed:
-            log = "\n\n".join([o.log for o in self.output])
-            for key in self.output[0].data:
-                recombined_item = np.concatenate([self.output[i].data[key] for i in range(self.n)], 0)
-                output[key] = Overlay(name=key, data=recombined_item)
-
-        return log, output
-
-def run_batch(case, params):
-    rundata = FabberRunData()
-    for key, val in params.items():
-        if val is None: val = ""
-        rundata[key] = str(val)
-
-    process = FabberProcess(rundata, case.ivm.vol, case.ivm.current_roi, **case.ivm.overlays)
-    process.run(sync=True)
-    if process.failed:
-         raise process.output
-    else:
-        log, data = process.get_output()
-        for key, ovl in data.items():
-            if case.debug: print("Adding new overlay: %s" % key)
-            case.ivm.add_overlay(ovl, make_current=False)
-        return log
-        
-def _make_fabber_progress_cb(id, queue):
-    def progress_cb(voxel, nvoxels):
-        if (voxel % 100 == 0) or (voxel == nvoxels):
-            queue.put((id, voxel, nvoxels))
-
-    return progress_cb
-
-def _run_fabber(id, queue, rundata, main_data, roi, *overlays):
-    """
-    Function to run Fabber as a separate process
-    """
-    try:
-        #print("Running, id=", id, "shape=", main_data.shape)
-        data = {"data" : main_data}
-        n = 0
-        while n < len(overlays):
-            data[overlays[n]] = overlays[n+1]
-            n += 2
-        lib = FabberLib(rundata=rundata, auto_load_models=True)
-        run = lib.run_with_data(rundata, data, roi, progress_cb=_make_fabber_progress_cb(id, queue))
-        return id, True, run
-    except FabberException, e:
-        #print(e)
-        return id, False, e
-    except:
-        #print(sys.exc_info()[1])
-        return id, False, sys.exc_info()[1]
 
 class PriorsView(OptionsView):
     """
@@ -476,6 +396,10 @@ class FabberWidget(PkWidget):
         self.rundata["save-mean"] = ""
         self.reset()
 
+        self.process = FabberProcess(self.ivm)
+        self.process.sig_finished.connect(self.run_finished_gui)
+        self.process.sig_progress.connect(self.update_progress)
+
     def chooseOutputFolder(self):
         outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
@@ -535,60 +459,34 @@ class FabberWidget(PkWidget):
 
         # set the progress value
         self.progress.setValue(0)
-
-        # Pass in input data. To enable the multiprocessing module to split our volumes
-        # up automatically we have to pass the arguments as a single list. This consists of
-        # rundata, main data, roi and then each of the used overlays, name followed by data
-        input_args = [self.rundata, img.data, roi.data]
-        overlays = {}
-        for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
-            for view in dialog.views.values():
-                if isinstance(view, ImageOptionView) and view.combo.isEnabled():
-                    ov = view.combo.currentText()
-                    overlays[ov] = self.ivm.overlays[ov]
-
-        self.process = FabberProcess(self.rundata, img, roi, **overlays)
-        self.process.sig_finished.connect(self.run_finished_gui)
-        self.process.sig_progress.connect(self.update_progress)
-        self.process.run()
         self.runBtn.setEnabled(False)
         self.logBtn.setEnabled(False)
 
-    def run_finished_gui(self, success, results):
+        self.process.run(self.rundata)
+
+    def run_finished_gui(self, status, results, log):
         """
         Callback called when an async fabber run completes
         """
-        if success:
-            #print("finished success")
-            self.log, output = self.process.get_output()
-            #print("got output")
-            first = True
-            save_files = self.savefilesCb.isChecked()
-            save_folder = self.saveFolderEdit.text()
-            for ovl in output.values():
-                #print(ovl.name, ovl.shape)
-                #print(key, recombined_item.shape)
-                self.ivm.add_overlay(ovl, make_current=first)
-                if save_files:
-                    ovl.save_nifti(os.path.join(save_folder, ovl.name))
+        self.log = log
+        if status == Process.SUCCEEDED:
+            save_files = self.savefilesCb.isChecked()     
+            if save_files:
+                save_folder = self.saveFolderEdit.text()       
+                for ovl in results[0].data:
+                    self.ivm.overlays[ovl].save_nifti(os.path.join(save_folder, ovl.name))
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()
-                first = False
-            self.runs = results
         else:
-            # If one process fails, they all fail
             QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
                                       QtGui.QMessageBox.Close)
 
         self.runBtn.setEnabled(True)
-        self.logBtn.setEnabled(success)
+        self.logBtn.setEnabled(status == Process.SUCCEEDED)
 
-    def update_progress(self, done, todo):
-        #print("total of %i done of %i" % (done, todo))
-        if todo > 0:
-            percent = 100 * float(done) / todo
-            self.progress.setValue(percent)
+    def update_progress(self, complete):
+        self.progress.setValue(100*complete)
 
     def view_log(self):
          self.logview = LogViewerDialog(log=self.log, parent=self)

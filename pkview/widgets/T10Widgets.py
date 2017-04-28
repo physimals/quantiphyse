@@ -10,44 +10,6 @@ from pkview.analysis.t1_model import t10_map
 from pkview.volumes.volume_management import Volume, Overlay, Roi
 from pkview.widgets import PkWidget
 
-def run_batch(case, params):
-    fa_vols, fas = [], []
-    for fname, fa in params["vfa"].items():
-        vol = Volume(fname, fname=case.get_filepath(fname))
-        if isinstance(fa, list):
-            for i, a in enumerate(fa):
-                fas.append(a)
-                fa_vols.append(vol.data[:,:,:,i])
-        else:
-            fas.append(fa)
-            fa_vols.append(vol.data)
-
-    if "afi" in params:
-        # We are doing a B0 correction (preclinical)
-        afi_vols, trs = [], []
-        for fname, tr in params["afi"].items():
-            vol = Volume(fname, fname=case.get_filepath(fname))
-            if isinstance(tr, list):
-                for i, a in enumerate(tr):
-                    trs.append(a)
-                    afi_vols.append(vol.data[:,:,:,i])
-            else:
-                trs.append(tr)
-                afi_vols.append(vol.data)
-
-        fa_afi = params["fa-afi"]
-        T10 = t10_map(fa_vols, fas, TR=params["tr"], afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=trs)
-        if "smooth" in params:
-            T10 = gaussian_filter(T10, sigma=params["smooth"].get("sigma", 0.5), 
-                                  truncate=params["smooth"].get("truncate", 3))
-    else:
-        T10 = t10_map(fa_vols, fas, params["tr"])
-
-    if "clamp" in params:
-        np.clip(T10, params["clamp"]["min"], params["clamp"]["max"], out=T10)
-    case.ivm.add_overlay(Overlay(name="T10", data=T10))
-    return ""
-    
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):
         super(NumberInput, self).__init__()
