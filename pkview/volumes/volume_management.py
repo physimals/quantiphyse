@@ -161,6 +161,11 @@ class Volume(object):
         else:
             raise RuntimeError("%s: Unrecognized file type" % self.fname)
 
+    def value_str(self, pos):
+        """ Return the data value at pos as a string to an appropriate
+        number of decimal places"""
+        return str(np.around(self.data[tuple(pos[:self.ndims])], self.dps))
+
     def _get_transform(self, invert=False):
         """
         Returns dim_order, dim_flip transformations
@@ -289,6 +294,7 @@ class Roi(Volume):
         self.regions = self.regions[self.regions > 0]
         #print("ROI: Regions", self.regions)
         self.lut = self.get_lut()
+        self.dps = 0
         #print("ROI: LUT=", self.lut)
 
     def get_bounding_box(self, ndims=None):

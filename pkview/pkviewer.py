@@ -758,15 +758,12 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld3.setValue(self.ivm.cim_pos[1])
         self.sld4.setValue(self.ivm.cim_pos[3])
         if self.ivm.vol is not None: 
-            self.vol_data.setText(str(self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], self.ivm.cim_pos[3]]))
+            self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
         if self.ivm.current_roi is not None: 
-            self.roi_region.setText(str(self.ivm.current_roi.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2]]))
+            self.roi_region.setText(self.ivm.current_roi.value_str(self.ivm.cim_pos))
         if self.ivm.current_overlay is not None: 
-            if self.ivm.current_overlay.ndims == 4:
-                self.ov_data.setText(str(self.ivm.current_overlay.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], self.ivm.cim_pos[3]]))
-            else:
-                self.ov_data.setText(str(self.ivm.current_overlay.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2]]))
-
+            self.ov_data.setText(self.ivm.current_overlay.value_str(self.ivm.cim_pos))
+            
 class WindowAndDecorators(QtGui.QMainWindow):
 
     """
