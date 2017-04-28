@@ -33,10 +33,10 @@ SaveOverlays:
 Cases:
     QIBA1:
         Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
-        Volume:   qiba.nii
+        Volume:   qiba_67tpts.nii
         Overlays:
-          T10: qiba_t1_new.nii
+          T10: qiba_t10.nii
         Rois:
-          mask: qiba_mask_onevox.nii
+          mask: qiba_mask.nii
 
 

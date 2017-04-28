@@ -1,10 +1,36 @@
 
-# Config file for running slic supervoxel extraction
-#
-#
+### 
 
-EG5:
-  Folder:   /home/martinc/data/
-  File: test_data.nii.gz
-  Settings:
-    Out_file: mc.nii
+OutputFolder: out
+Debug: True
+
+Processing:
+  - MCFlirt:
+      cost: normcorr
+      replace-vol: True
+
+# Output data. Can opt to save the whole workspace, or just key volumes
+# Note that the output folder is used to form the filename
+
+#SaveWorkspace
+SaveVolume:
+
+# List of cases to apply the processing to
+
+Cases:
+    MrX:
+        Folder:   c:\Users\ctsu0221\build\data\
+        Volume:   test_data.nii
+        Rois:
+          mask: test_mask.nii
+
+        # Can override processing defaults here
+        MCFlirt:
+          refvol: 10 
+
+    #MrsY:
+    #    Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
+    #    Volume:     qiba_lesst_20.nii
+    #    Roi:      qiba_mask.nii
+
+
