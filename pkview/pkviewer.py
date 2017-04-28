@@ -42,7 +42,7 @@ from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.FabberWidgets import FabberWidget
-from .widgets.MCWidgets import MCFlirtWidget
+from .widgets.MCWidgets import RegWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
@@ -456,7 +456,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(PerfSlicWidget) 
         self.add_widget(FabberWidget) 
         self.add_widget(MeanValuesWidget) 
-        self.add_widget(MCFlirtWidget) 
+        self.add_widget(RegWidget) 
         self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 

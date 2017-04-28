@@ -7,22 +7,30 @@ import errno
 import traceback
 import yaml
 
-import nibabel as nib
-
 from pkview.volumes.volume_management import ImageVolumeManagement, Volume, Overlay, Roi
 
-import pkview.widgets.FabberWidgets as Fabber
-import pkview.widgets.MCWidgets as Motion
-import pkview.widgets.T10Widgets as T10
-import pkview.widgets.PerfSlicWidgets as SV
-import pkview.widgets.PharmaWidgets as Pk
+from pkview.analysis import Process
+from pkview.analysis.fab import FabberProcess
+from pkview.analysis.reg import MocoProcess, RegProcess, McflirtProcess
+from pkview.analysis.pk import PkModellingProcess
+from pkview.analysis.t10 import T10Process
+from pkview.analysis.sv import SupervoxelsProcess
 
-processes = {"Fabber" : Fabber.run_batch,
-             "MCFlirt": Motion.run_mcflirt_batch,
-             "T10" : T10.run_batch,
-             "Supervoxels" : SV.run_batch,
-             "PkModelling" : Pk.run_batch,
-             "Deeds" : Motion.run_deeds_batch}
+processes = {"Fabber"      : FabberProcess,
+             "MCFlirt"     : McflirtProcess,
+             "T10"         : T10Process,
+             "Supervoxels" : SupervoxelsProcess,
+             "PkModelling" : PkModellingProcess,
+             "Reg"         : RegProcess,
+             "Moco"        : MocoProcess}
+
+def run_batch(batchfile):
+    """ Run a YAML batch file """
+    with open(batchfile, "r") as f:
+        root = yaml.load(f)
+        for id, case in root["Cases"].items():
+            c = BatchCase(id, root, case)
+            c.run()
 
 class BatchCase:
     def __init__(self, id, root, case):
@@ -30,6 +38,7 @@ class BatchCase:
         self.root = root
         self.case = case
         self.debug = self.get("Debug", False)
+        self.folder = self.get("Folder", "")
         self.outdir = os.path.join(self.get("OutputFolder", ""), id)
         self.ivm = ImageVolumeManagement()
         
@@ -37,7 +46,7 @@ class BatchCase:
         if os.path.isabs(fname):
             return fname
         else:
-            if folder is None: folder = self.get("Folder")
+            if folder is None: folder = self.folder
             return os.path.abspath(os.path.join(folder, fname))
 
     def get(self, param, default=None):
@@ -91,7 +100,8 @@ class BatchCase:
         # Run processing steps
         for process in self.root.get("Processing", []):
             name = process.keys()[0]
-            params = process[name]
+            params = {"Debug" : self.debug, "Folder" : self.folder, "OutputFolder" : self.outdir}
+            params.update(process[name])
             params.update(self.case.get(name, {}))
             self.run_process(name, params)
 
@@ -105,9 +115,13 @@ class BatchCase:
             for key, value in params.items():
                 print("      %s=%s" % (key, str(value)))
         try:
-            log = proc(self, params)
-            self.write_log(log, name)
+            process.run(params)
+            if process.status == Process.SUCCEEDED:
+                self.write_log(process.log, name)
+            else:
+                raise process.output
         except:
+            print("  - WARNING: process %s failed to run" % name)
             traceback.print_exc()
 
     def write_log(self, log, procname):
@@ -116,7 +130,7 @@ class BatchCase:
             f.write(log)
 
     def save_output(self):
-        # Save Output
+        print(self.root)
         if "SaveVolume" in self.root:
             fname = self.root["SaveVolume"]
             if not fname: fname = self.ivm.vol.name
@@ -147,9 +161,3 @@ class BatchCase:
         self.run_processing_steps()
         self.save_output()
         
-def run_batch(batchfile):
-    with open(batchfile, "r") as f:
-        root = yaml.load(f)
-        for id, case in root["Cases"].items():
-            c = BatchCase(id, root, case)
-            c.run()

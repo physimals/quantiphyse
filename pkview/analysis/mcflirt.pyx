@@ -14,8 +14,6 @@ cdef extern from "mcflirt.h":
 
 def run_mcflirt_c(np.ndarray[np.float32_t, ndim=1, mode="fortran"] mcvol, shape, voxeldims, opts):
     return mcflirt_run(&mcvol[0], shape, voxeldims, opts)
-    #print(mcvol[0])
-    #print(mcvol[64*64*42])
 
 def mcflirt(vol, voxeldims, **kwargs):
     opts = []
@@ -28,12 +26,7 @@ def mcflirt(vol, voxeldims, **kwargs):
     mcvol = vol.flatten(order='F').astype(np.float32)
 
     log = run_mcflirt_c(mcvol, vol.shape, voxeldims, opts)
-#    print(mcvol[0])
-#    print(mcvol[64*64*42])
-
     mcvol = np.reshape(mcvol, vol.shape, order='F')
-#    print(mcvol[0,0,0,0])
-#    print(mcvol[0,0,0,1])
 
     return mcvol, log
 

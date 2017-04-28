@@ -24,23 +24,96 @@ def _init_pool():
         #print("Initializing multiprocessing using %i workers" % n_workers)
         _pool = multiprocessing.Pool(n_workers)
 
-class MultiProcess(QtCore.QObject):
+class Process(QtCore.QObject):
     """
-    Enables a parallelisable analysis task to be carried out by multiple processes by
-    splitting the Numpy arrays
+    A simple synchronous process
+    
+    The purpose of this class and it subclasses is to expose processing tasks to the batch system, 
+    and also allow them to be used from the GUI
     """
+
+    """ Signal may be emitted to track progress"""
+    sig_progress = QtCore.Signal(float)
 
     """ Signal emitted when process finished"""
-    sig_finished = QtCore.Signal(bool, list)
+    sig_finished = QtCore.Signal(int, list, str)
 
-    def __init__(self, n, fn, args):
-        super(MultiProcess, self).__init__()
+    NOTSTARTED = 0
+    RUNNING = 1
+    FAILED = 2
+    SUCCEEDED = 3
+
+    def __init__(self, ivm, **kwargs):
+        super(Process, self).__init__()
+        self.ivm = ivm
+        self.log = ""
+        self.status = Process.NOTSTARTED
+        self.debug = kwargs.get("debug", False)
+        self.folder = kwargs.get("indir", "")
+        self.outdir = kwargs.get("outdir", "")
+
+    def run(self, options):
+        """ Override to run the process """
+        pass
+
+class BackgroundProcess(Process):
+    """
+    A serial (non parallelized) asynchronous process
+    """
+
+    def __init__(self, ivm, fn, sync=False, **kwargs):
+        super(BackgroundProcess, self).__init__(ivm)
         _init_pool()
-        self.n = n
         self.fn = fn
         self.queue =  multiprocessing.Manager().Queue()
+        self.sync = sync
 
+    def timeout(self):
+        """
+        Called every 1s. Override to monitor progress of job via the queue
+        and emit sig_progress
+        """
+        pass
+
+    def finished(self):
+        """
+        Called when process completes, successful or not, before sig_finished is emitted.
+        Should combine output data and add to the ivm and set self.log 
+        """
+        pass
+    
+    def start(self, n, args):
+        """
+        Start worker processes. Should be called by run()
+
+        n = number of workers
+        args = list of run arguments - will be split up amongst workers by split_args()
+        """
+        worker_args = self.split_args(n, args)
+        self.output = [None, ] * n
+        self.status = Process.RUNNING
+        processes = []
+        for i in range(n):
+            proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
+            processes.append(proc)
+        self._restart_timer()
+        
+        if self.sync:
+            for i in range(n):
+                processes[i].get()
+    
+    def split_args(self, n, args):
+        """
+        Split function arguments up across workers. 
+
+        Numpy arrays are split along SPLIT_AXIS, other types of argument
+        are simply copied
+        
+        Note that this can be overridden to customize splitting behaviour
+        """
+        # First argument is worker ID, second is queue
         split_args = [range(n), [self.queue,] * n]
+
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
                 split_args.append(np.array_split(arg, n, 0))
@@ -48,55 +121,36 @@ class MultiProcess(QtCore.QObject):
                 split_args.append([arg,] * n)
 
         # Transpose list of lists so first element is all the arguments for process 0, etc
-        self.split_args = map(list, zip(*split_args))
+        return map(list, zip(*split_args))
 
-        self.failed = False
-        self.output = [None, ] * n
+    def _restart_timer(self):
+        self._timer = threading.Timer(1, self._timer_cb)
+        self._timer.daemon = True
+        self._timer.start()
 
-    def run(self, sync=False):
-        processes = []
-        for i in range(self.n):
-            proc = _pool.apply_async(self.fn, self.split_args[i], callback=self.cb)
-            processes.append(proc)
-        self.restart_timer()
-        if sync:
-            for i in range(self.n):
-                processes[i].get()
+    def _timer_cb(self):
+        self.timeout()
+        self._restart_timer()
 
-    def restart_timer(self):
-        self.timer = threading.Timer(1, self.timer_cb)
-        self.timer.daemon = True
-        self.timer.start()
-
-    def timer_cb(self):
-        self.progress()
-        self.restart_timer()
-
-    def progress(self):
-        """
-        Override to monitor progress of job via the queue
-        """
-        pass
-
-    def cb(self, result):
-        id, success, output = result
-        #print("Finished: id=", id, success, str(output))
-        done = False
-
-        if self.failed:
-            # If one process fails, ignore results
+    def _process_cb(self, result):
+        worker_id, success, output = result
+        #print("Finished: id=", worker_id, success, str(output))
+        
+        if self.status == Process.FAILED:
+            # If one process has already failed, ignore results of others
             pass
         elif success:
-            self.output[id] = output
-            done = None not in self.output
+            self.output[worker_id] = output
+            if None not in self.output:
+                self.status = Process.SUCCEEDED
         else:
             # If one process fails, they all fail. Output is just the first exception to be caught
-            # FIXME need to cancel other processes?
-            self.failed = True
+            # FIXME cancel other processes?
+            self.status = Process.FAILED
             self.output = output
-            done = True
 
-        if done:
-            self.progress()
-            self.timer.cancel()
-            self.sig_finished.emit(not self.failed, self.output)
+        if self.status != Process.RUNNING:
+            self.timeout()
+            self._timer.cancel()
+            self.finished()
+            self.sig_finished.emit(self.status, self.output, self.log)
