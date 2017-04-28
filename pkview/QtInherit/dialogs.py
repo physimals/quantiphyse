@@ -1,0 +1,18 @@
+from PySide import QtGui
+
+class LogViewerDialog(QtGui.QDialog):
+
+    def __init__(self, parent, title="Log", log=""):
+        super(LogViewerDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+
+        self.text = QtGui.QTextBrowser()
+        self.text.setText(log)
+        vbox.addWidget(self.text)
+        
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.close)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
