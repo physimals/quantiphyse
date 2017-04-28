@@ -58,7 +58,7 @@ class FingerTabWidget(QtGui.QTabWidget):
     """A QTabWidget equivalent which uses our FingerTabBarWidget"""
     def __init__(self, parent, *args):
         QtGui.QTabWidget.__init__(self, parent, *args)
-        self.setTabBar(FingerTabBarWidget(self, width=100, height=50))
+        self.setTabBar(FingerTabBarWidget(self, width=110, height=50))
         self.setTabPosition(QtGui.QTabWidget.West)
         self.setMovable(False)
         self.setIconSize(QtCore.QSize(16, 16))
