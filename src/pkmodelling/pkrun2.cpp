@@ -11,6 +11,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 #include "pkrun2.h"
 
 using namespace pkmodellingspace;
+using namespace std;
 
 // Initialising an empty OTofts object in the constructor
 Pkrun2::Pkrun2(std::vector<double> & tt1, std::vector< std::vector<double> > & yy1, std::vector<double> & T101in)
@@ -25,8 +26,6 @@ Pkrun2::Pkrun2(std::vector<double> & tt1, std::vector< std::vector<double> > & y
     mrows=y1.size();
     ncols=y1[0].size();
     n_t101= T101.size();
-
-    cout << "vector size: " << mrows << " , " << ncols << endl;
 
     // Assign memory to variable arrays and populate temporal array for a single instance
     t = new double [m_t1];
@@ -106,6 +105,10 @@ void Pkrun2::rinit(int model1, double injtmins)
 
     if (model1 ==1)
     {
+        // AIF[0] = aB (2.84 mM) in Orton 2008?
+        // AIF[1] = aG (1.36 /min) in Orton 2008?
+        // AIF[2] = muB in Orton 2008 (22.8 / min)
+        // AIF[3] = muG in Orton 2008 (0.171 / min)
         cout << "Orton with offset (Clinical) \n";
         AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=injtmins;
     }
