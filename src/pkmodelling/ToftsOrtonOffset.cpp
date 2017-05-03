@@ -73,7 +73,7 @@ double Ct_with_orton_aif2(double a1, double a2, double m1, double m2, double off
     {
         double ftBm, ftBkep;
         ftBm =f2(tB, m2, m1);
-        ftBkep=f2(tB, m2, m1);
+        ftBkep=f2(tB, kep, m1);
         Ct = tmp1 * (ftBm * exp(-m2*(time1-tB)) + tmp2 * ftBkep * exp(-kep *(time1-tB)));
     }
     return Ct;
