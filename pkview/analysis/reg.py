@@ -13,30 +13,48 @@ from pkview.analysis.mcflirt import mcflirt
 def deeds_reg(regdata, refdata, options):
     return deedsReg(regdata, refdata, **options)
 
-# Known registration methods (case-insensitive)
-methods = {"deeds" : deeds_reg}
+def mcflirt_reg(regdata, refdata, options):
+    # MCFLIRT wants to do motion correction so we stack the reg and ref
+    # data together and tell it to use the second as the reference.
+    data = np.stack((regdata, refdata), -1)
+    options["refvol"] = 1
+    # FIXME voxel sizes?
+    retdata, log = mcflirt(data, [1.0,] * data.ndim, **options)
+    return retdata[:,:,:,0], log
 
-def _run_moco(id, queue, method, options, regdata, refdata, refidx=None):
+# Known registration methods (case-insensitive)
+methods = {"deeds" : deeds_reg,
+           "mcflirt" : mcflirt_reg}
+
+"""
+Registration function for asynchronous process - used for moco and registration
+"""
+def _run_reg(id, queue, method, options, regdata, refdata, ignore_idx=None):
     try:
-        mocovols = np.zeros(regdata.shape)
+        if regdata.ndim == 3: 
+            regdata = np.expand_dims(regdata, -1)
+            data_4d = False
+        else:
+            data_4d = True
+        outdata = np.zeros(regdata.shape)
         reg_fn = methods[method.lower()]
 
         full_log = ""
         for t in range(regdata.shape[-1]):
-            print("Registering slice %i of %i" % (t, regdata.shape[-1]))
+            print("Registering volume %i of %i" % (t+1, regdata.shape[-1]))
             regvol = regdata[:,:,:,t]
-            if t == refidx:
-                mocovols[:,:,:,t] = regvol
+            if t == ignore_idx:
+                outdata[:,:,:,t] = regvol
             else:
-                mocovol, log = reg_fn(regvol, refdata, options)
-                mocovols[:,:,:,t] = mocovol
+                outvol, log = reg_fn(regvol, refdata, options)
+                outdata[:,:,:,t] = outvol
                 full_log += log
             queue.put(t)
-        return id, True, (mocovols, full_log)
+        if not data_4d: outdata = np.squeeze(outdata, -1)
+        return id, True, (outdata, full_log)
     except:
         return id, False, sys.exc_info()[1]
 
-def _run_reg(id, queue, method, options, regdata, refdata):
     try:
         reg_fn = methods[method]
         registered, log = reg_fn(regdata, refdata, options)
@@ -44,37 +62,48 @@ def _run_reg(id, queue, method, options, regdata, refdata):
     except:
         return id, False, sys.exc_info()[1]
 
-class MocoProcess(BackgroundProcess):
+class RegProcess(BackgroundProcess):
     """
-    Asynchronous background process to run motion correction
+    Asynchronous background process to run registration / motion correction
     """
     def __init__(self, ivm, **kwargs):
-        BackgroundProcess.__init__(self, ivm, _run_moco, **kwargs)
+        BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
 
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
         self.method = options.pop("method", "deeds")
-        self.output_name = options.pop("output-name", "moco")
-        #self.refvol = options.pop("vol", self.ivm.vol.name)
-        moco_vols = self.ivm.vol.data
-        self.nvols = moco_vols.shape[-1]
+        regdata_name = options.pop("reg", self.ivm.vol.name)
+        if regdata_name == self.ivm.vol.name:
+            reg_vols = self.ivm.vol.data
+        else:
+            reg_vols = self.ivm.overlays[regdata_name].data
 
-        refidx = None
-        if moco_vols.ndim == 4:
+        self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
+        self.nvols = reg_vols.shape[-1]
+
+        # Reference data defaults to same as reg data so MoCo can be
+        # supported as self-registration
+        refdata_name = options.pop("ref", regdata_name)
+        if refdata_name == self.ivm.vol.name:
+            ref_vols = self.ivm.vol.data
+        else:
+            ref_vols = self.ivm.overlays[refdata_name]
+
+        if ref_vols.ndim == 4:
             self.refvol = options.pop("ref-vol", "median")
             if self.refvol == "median":
-                refidx = moco_vols.shape[-1]/2
-                refdata = moco_vols[:,:,:,refidx]
+                refidx = ref_vols.shape[-1]/2
+                refdata = ref_vols[:,:,:,refidx]
             elif self.refvol == "mean":
                 raise RuntimeException("Not yet implemented")
             else:
                 refidx = self.refvol
-                refdata = moco_vols[:,:,:,refidx]
+                refdata = ref_vols[:,:,:,refidx]
         else:
-            raise RuntimeException("Can only motion correct 4D data")
+            refdata = ref_vols
 
         # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, options, moco_vols, refdata, refidx])
+        self.start(1, [self.method, options, reg_vols, refdata])
 
     def timeout(self):
         if self.queue.empty(): return
@@ -88,15 +117,12 @@ class MocoProcess(BackgroundProcess):
         self.log = ""
         if self.status == Process.SUCCEEDED:
             output = self.output[0]
-            if self.replace:
-                self.ivm.set_main_volume(Volume(self.output_name, data=output[0]), replace=True)
-            else:
-                self.ivm.add_overlay(Overlay(self.output_name, data=output[0]), make_current=False)
-                self.log = output[1]
+            self.ivm.add_overlay(Overlay(self.output_name, data=output[0]), make_current=True)
+            self.log = output[1]
 
 class McflirtProcess(Process):
     """
-    Process to run MCFLIRT motion correction
+    Process to run MCFLIRT motion correction DEPRECATED
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -130,27 +156,3 @@ class McflirtProcess(Process):
             self.status = Process.FAILED
 
         self.sig_finished.emit(self.status,self.output, self.log)
-
-class RegProcess(BackgroundProcess):
-    """
-    Asynchronous background process to run registration
-    """
-    def __init__(self, ivm, **kwargs):
-        BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
-
-    def run(self, options):
-        self.method = options.pop("method", "deeds")
-        refvol = self.ivm.overlays[options.pop("ref")]
-        regvol = self.ivm.overlays[options.pop("reg")]
-        self.output_name = options.pop("output-name",regvol.name + "_reg")
-
-        # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, refvol.data, regvol.data, options])
-
-    def finished(self):
-        """ Add output data to the IVM and set the log """
-        self.log = ""
-        if self.status == Process.SUCCEEDED:
-            output = self.output[0]
-            self.ivm.add_overlay(Overlay(self.output_name, data=output[0]), make_current=True)
-            self.log = output[1]

@@ -11,7 +11,7 @@ from pkview.volumes.volume_management import ImageVolumeManagement, Volume, Over
 
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
-from pkview.analysis.reg import MocoProcess, RegProcess, McflirtProcess
+from pkview.analysis.reg import RegProcess, McflirtProcess
 from pkview.analysis.pk import PkModellingProcess
 from pkview.analysis.t10 import T10Process
 from pkview.analysis.sv import SupervoxelsProcess
@@ -22,7 +22,7 @@ processes = {"Fabber"      : FabberProcess,
              "Supervoxels" : SupervoxelsProcess,
              "PkModelling" : PkModellingProcess,
              "Reg"         : RegProcess,
-             "Moco"        : MocoProcess}
+             "Moco"        : RegProcess}
 
 def run_batch(batchfile):
     """ Run a YAML batch file """
@@ -69,14 +69,15 @@ class BatchCase:
 
         vol = Volume(os.path.basename(vol_file), fname=self.get_filepath(vol_file))
         multi = True
-        if vol.ndims == 2:
+        if vol.ndim == 2:
                 multi = False
-        if vol.ndims == 3:
+        if vol.ndim == 3:
             multi = self.get("MultiVolumes", False)
-        elif vol.ndims != 4:
-            raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndims)
-        vol.force_ndims(4, multi=multi)
-        self.ivm.set_main_volume(vol)
+        elif vol.ndim != 4:
+            raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
+        vol.force_ndim(4, multi=multi)
+        self.ivm.add_overlay(vol)
+        self.ivm.set_main_volume(vol.name)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case

@@ -6,7 +6,7 @@ from PySide import QtGui
 
 from pkview.QtInherit.dialogs import LogViewerDialog
 from pkview.analysis import Process
-from pkview.analysis.reg import MocoProcess, RegProcess, McflirtProcess
+from pkview.analysis.reg import RegProcess, McflirtProcess
 from pkview.volumes.volume_management import Volume, Overlay
 from pkview.widgets import PkWidget
 
@@ -172,6 +172,7 @@ class RegWidget(PkWidget):
         super(RegWidget, self).__init__(name="Registration", icon="mcflirt", desc="Registration and Motion Correction", **kwargs)
 
         self.ivm.sig_main_volume.connect(self.main_vol_changed)
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
         self.reg_methods = {"DEEDS" : DeedsInterface(),
                             "MCFLIRT" : McflirtInterface()}
@@ -203,13 +204,14 @@ class RegWidget(PkWidget):
         self.method_combo = QtGui.QComboBox()
         for name, impl in self.reg_methods.items():
             self.method_combo.addItem(name,impl)
-        self.method_combo.setCurrentIndex(self.method_combo.findText("DEEDS"))
         self.method_combo.currentIndexChanged.connect(self.method_changed)
+        self.method_combo.setCurrentIndex(self.method_combo.findText("DEEDS"))
         grid.addWidget(self.method_combo, 1, 1)
 
         self.refdata_label = QtGui.QLabel("Reference data")
         grid.addWidget(self.refdata_label, 2, 0)
         self.refdata = QtGui.QComboBox()
+        self.refdata.currentIndexChanged.connect(self.refdata_changed)
         grid.addWidget(self.refdata, 2, 1)
         
         self.refvol_label =QtGui.QLabel("Reference volume")
@@ -232,8 +234,19 @@ class RegWidget(PkWidget):
         self.regdata_label = QtGui.QLabel("Registration data")
         grid.addWidget(self.regdata_label, 5, 0)
         self.regdata = QtGui.QComboBox()
+        self.regdata.currentIndexChanged.connect(self.regdata_changed)
         grid.addWidget(self.regdata, 5, 1)
         
+        grid.addWidget(QtGui.QLabel("Replace data"), 6, 0)
+        self.replace_cb = QtGui.QCheckBox()
+        self.replace_cb.stateChanged.connect(self.replace_changed)
+        grid.addWidget(self.replace_cb, 6, 1)
+        
+        self.name_label = QtGui.QLabel("New data name")
+        grid.addWidget(self.name_label, 7, 0)
+        self.name_edit = QtGui.QLineEdit()
+        grid.addWidget(self.name_edit, 7, 1)
+
         gbox.setLayout(grid)
         hbox.addWidget(gbox)
         hbox.addStretch(1)
@@ -267,63 +280,82 @@ class RegWidget(PkWidget):
 
         layout.addStretch(1)
 
-        self.set_method("DEEDS")
+        self.mode = 0
+        self.method_changed(0)
+
+    def overlays_changed(self, vol):
+        self.update()
 
     def main_vol_changed(self, vol):
-        self.update_refdata()
+        self.update()
 
     def method_changed(self, idx):
         if idx >= 0:
-            self.set_method(self.method_combo.currentText())
+            method_name = self.method_combo.currentText()
+            self.method = self.reg_methods[method_name]
+            for name, box in self.opt_boxes.items():
+                box.setVisible(name == method_name)
 
     def mode_changed(self, idx):
-        if idx == 0:
+        self.mode = idx
+        if self.mode == 0:
             self.refdata_label.setText("Reference Data")
         else:
             self.refdata_label.setText("Moving Data")
 
-        self.regdata_label.setVisible(idx == 0)
-        self.regdata.setVisible(idx == 0)
-
-    def update_refdata(self):
-        self.refdata.clear()
-        vol = self.ivm.vol
-        if vol is not None:
-            self.refdata.addItem(vol.name, vol)
-            self.refdata_changed(0)
-
-    def update_regdata(self):
-        self.regdata.clear()
-        vol = self.ivm.vol
-        if vol is not None:
-            self.regdata.addItem(vol.name, vol)
-
-    def set_method(self, method_name):
-        self.method = self.reg_methods[method_name]
-        for name, box in self.opt_boxes.items():
-            box.setVisible(name == method_name)
+        self.regdata_label.setVisible(self.mode == 0)
+        self.regdata.setVisible(self.mode == 0)
+        self.update() # Need to remove 3D overlays when doing Moco
 
     def refdata_changed(self, idx):
         if idx >= 0:
             vol = self.refdata.itemData(idx)
-            self.refvol_label.setVisible(vol.ndims == 4)
-            self.refvol.setVisible(vol.ndims == 4)
-            if vol.ndims == 4:
+            self.refvol_label.setVisible(vol.ndim == 4)
+            self.refvol.setVisible(vol.ndim == 4)
+            if vol.ndim == 4:
                 self.refidx.setMaximum(vol.shape[3]-1)
                 self.refidx.setValue(int(vol.shape[3]/2))
-                self.refvol_changed(self.refvol.currentIndex())
+            self.refvol_changed(self.refvol.currentIndex())
+            if self.mode == 1: # MoCo
+                self.name_edit.setText("%s_reg" % vol.name)
+
+    def regdata_changed(self, idx):
+        if idx >= 0 and self.mode == 0:
+            self.name_edit.setText("%s_reg" % self.regdata.itemData(idx).name)
 
     def refvol_changed(self, idx):
         self.refidx.setVisible(self.refvol.isVisible() and (idx == 2))
         self.refidx_label.setVisible(self.refvol.isVisible() and (idx == 2))
 
+    def replace_changed(self):
+        self.name_label.setVisible(not self.replace_cb.isChecked())
+        self.name_edit.setVisible(not self.replace_cb.isChecked())
+
+    def update(self):
+        currentRef = self.refdata.currentText()
+        currentReg = self.regdata.currentText()
+        self.refdata.clear()
+        self.regdata.clear()
+        vol = self.ivm.vol
+        if vol is not None:
+            self.refdata.addItem(vol.name, vol)
+        for ovl in self.ivm.overlays.values():
+            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.name, ovl)
+            if ovl.ndim == 3: self.regdata.addItem(ovl.name, ovl)
+
+        idx = self.refdata.findText(currentRef)
+        self.refdata.setCurrentIndex(idx)
+        idx = self.regdata.findText(currentReg)
+        self.regdata.setCurrentIndex(idx)
+
     def run(self):
         options = self.method.getOptions()
 
-        # FIXME just using main volume for now
-        #refvol = self.refdata.itemData(self.refdata.currentIndex())
         options["method"] = self.method_combo.currentText()
-        if self.ivm.vol.ndims == 4:
+        options["output-name"] = self.name_edit.text()
+
+        refdata = self.refdata.itemData(self.refdata.currentIndex())
+        if refdata.ndim == 4:
             refvol = self.refvol.currentIndex()
             if refvol == 0:
                 options["ref-vol"] = "median"
@@ -333,13 +365,12 @@ class RegWidget(PkWidget):
                 options["ref-vol"] = self.refidx.value()
         
         if self.mode_combo.currentIndex() == 0:
-            raise RuntimeError("Registration not implemented yet")
-        elif options["method"] == "MCFLIRT":
-            # MCFLIRT requires a different approach (because it's MOCO only, not general reg)
-            options.pop("method")
-            process = McflirtProcess(self.ivm)
+            options["ref"] = self.refdata.currentText()
+            options["reg"] = self.regdata.currentText()
+            process = RegProcess(self.ivm)
         else:
-            process = MocoProcess(self.ivm)
+            options["reg"] = self.refdata.currentText()
+            process = RegProcess(self.ivm)
         
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
