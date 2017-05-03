@@ -34,7 +34,7 @@ from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 # My widgets
 from ._version import __version__
 from .ImageView import ImageView
-from .widgets.AnalysisWidgets import SECurve, ColorOverlay1
+from .widgets.AnalysisWidgets import SECurve, ColorOverlay1, RoiAnalysisWidget
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
@@ -451,6 +451,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(SECurve, default=True)
         self.add_widget(PharmaView) 
         self.add_widget(ColorOverlay1, default=True) 
+        self.add_widget(RoiAnalysisWidget) 
         self.add_widget(PharmaWidget) 
         self.add_widget(T10Widget) 
         self.add_widget(PerfSlicWidget) 

@@ -14,7 +14,7 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from pkview.ImageView import PickMode
-from pkview.utils import get_icon
+from pkview.utils import get_icon, copy_table
 from ..QtInherit import HelpButton
 from pkview.widgets import PkWidget
 from pkview.analysis.overlay_analysis import OverlayAnalysis
@@ -463,28 +463,11 @@ class ColorOverlay1(PkWidget):
         self.col_mode = idx
         self.update()
 
-    def copy_table(self, tabmod):
-        tsv = ""
-        rows = range(tabmod.rowCount())
-        cols = range(tabmod.columnCount())
-        colheaders = ["",] + [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
-        tsv += "\t".join(colheaders) + "\n"
-
-        for row in rows:
-            rowdata = [tabmod.verticalHeaderItem(row).text(),] 
-            rowdata += [tabmod.item(row, col).text() for col in cols]
-            tsv += "\t".join(rowdata) + "\n"
-        clipboard = QtGui.QApplication.clipboard()
-        print(tsv)
-        clipboard.setText(tsv)
-
     def copy_stats(self):
-        print("copy")
-        self.copy_table(self.tabmod1)
+        copy_table(self.tabmod1)
 
     def copy_stats_ss(self):
-        print("copy ss")
-        self.copy_table(self.tabmod1ss)
+        copy_table(self.tabmod1ss)
         
     def show_overlay_stats(self):
         if self.tab1.isVisible():
@@ -592,7 +575,9 @@ class ColorOverlay1(PkWidget):
         tabmod.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
         tabmod.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
-        if self.col_mode == 0:
+        if self.ivm.current_overlay is None:
+            return
+        elif self.col_mode == 0:
             ovs = [self.ivm.current_overlay,]
         else:
             ovs = self.ivm.overlays.values()
@@ -649,4 +634,64 @@ class ColorOverlay1(PkWidget):
     def sig_mouse(self, values1):
         self.__plot(values1)
 
+class RoiAnalysisWidget(PkWidget):
+    """
+    Analysis of ROIs
+    """
+    def __init__(self, **kwargs):
+        super(RoiAnalysisWidget, self).__init__(name="ROI Analysis", icon="roi", desc="Analysis of ROIs", **kwargs)
+        
+        layout = QtGui.QVBoxLayout()
+        self.setLayout(layout)
 
+        layout.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
+        layout.addWidget(QtGui.QLabel(""))
+
+        self.model = QtGui.QStandardItemModel()
+
+        self.table = QtGui.QTableView()
+        self.table.resizeColumnsToContents()
+        self.table.setModel(self.model)
+        layout.addWidget(self.table)
+
+        self.copy_btn = QtGui.QPushButton("Copy")
+        self.copy_btn.clicked.connect(self.copy_stats)
+        layout.addWidget(self.copy_btn)
+
+        layout.addStretch(1)
+
+    def activate(self):
+        self.ivm.sig_current_roi.connect(self.roi_changed)
+        self.ivm.sig_all_rois.connect(self.rois_changed)
+        self.update()
+        #self.ivl.sig_focus_changed.connect(self.focus_changed)
+
+    def deactivate(self):
+        self.ivm.sig_current_roi.disconnect(self.roi_changed)
+        self.ivm.sig_all_rois.disconnect(self.rois_changed)
+        #self.ivl.sig_focus_changed.connect(self.focus_changed)
+
+    def roi_changed(self):
+        self.update()
+
+    def rois_changed(self):
+        self.update()
+
+    def update(self):
+        self.model.clear()
+        self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
+        self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
+
+        roi = self.ivm.current_roi 
+        sizes = self.ivm.voxel_sizes
+        if roi is not None:
+            counts = np.bincount(roi.data.flatten())
+            for idx, region in enumerate(roi.regions):
+                nvoxels = counts[region]
+                vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
+                self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
+                self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
+                self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
+
+    def copy_stats(self):
+        copy_table(self.model)
