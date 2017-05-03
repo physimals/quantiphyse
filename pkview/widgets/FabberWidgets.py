@@ -14,6 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
+from ..QtInherit import HelpButton
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
 from pkview import error_dialog
@@ -42,12 +43,10 @@ except:
 # can see what overlays to offer as options
 CURRENT_OVERLAYS = []
 
-TITLE = """
-<p><font size="5">Fabber Bayesian model fitting</font></p>
-
-<p>Please cite:</p>
-<p><i>Chappell, M.A., Groves, A.R., Woolrich, M.W., "Variational Bayesian inference for a non-linear forward model", IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
-</p>
+CITE = """
+<i>Chappell, M.A., Groves, A.R., Woolrich, M.W.
+"Variational Bayesian inference for a non-linear forward model"
+IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
 """
 
 class PriorsView(OptionsView):
@@ -361,9 +360,17 @@ class FabberWidget(PkWidget):
         vbox.addLayout(hbox)
 
         # Main layout
-        title_label = QtGui.QLabel(TITLE)
-        title_label.setWordWrap(True)
-        mainGrid.addWidget(title_label)
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Fabber Bayesian Model Fitting</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "fabber"))
+        mainGrid.addLayout(hbox)
+        
+        cite = QtGui.QLabel(CITE)
+        cite.setWordWrap(True)
+        mainGrid.addWidget(cite)
+
         mainGrid.addWidget(QtGui.QLabel(""))
         mainGrid.addWidget(optionsBox)
         mainGrid.addWidget(runBox)

@@ -4,6 +4,7 @@ import numpy as np
 
 from PySide import QtGui
 
+from pkview.QtInherit import HelpButton
 from pkview.QtInherit.dialogs import LogViewerDialog
 from pkview.analysis import Process
 from pkview.analysis.reg import RegProcess, McflirtProcess
@@ -180,7 +181,11 @@ class RegWidget(PkWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtGui.QLabel("<font size=5>Registration and Motion Correction</font>"))
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Registration and Motion Correction</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "reg"))
+        layout.addLayout(hbox)
 
         hbox = QtGui.QHBoxLayout()
         
@@ -344,9 +349,9 @@ class RegWidget(PkWidget):
             if ovl.ndim == 3: self.regdata.addItem(ovl.name, ovl)
 
         idx = self.refdata.findText(currentRef)
-        self.refdata.setCurrentIndex(idx)
+        self.refdata.setCurrentIndex(max(0, idx))
         idx = self.regdata.findText(currentReg)
-        self.regdata.setCurrentIndex(idx)
+        self.regdata.setCurrentIndex(max(0, idx))
 
     def run(self):
         options = self.method.getOptions()

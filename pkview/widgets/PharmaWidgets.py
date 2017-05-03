@@ -14,6 +14,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from pkview import error_dialog
+from ..QtInherit import HelpButton
 from pkview.analysis import Process
 from pkview.analysis.pk import PkModellingProcess
 from pkview.volumes.volume_management import Overlay, Roi
@@ -28,6 +29,12 @@ class PharmaWidget(PkWidget):
         super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", icon="pk", **kwargs)
 
         main_vbox = QtGui.QVBoxLayout()
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">PK Modelling</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "pk"))
+        main_vbox.addLayout(hbox)
 
         # Inputs
         param_box = QtGui.QGroupBox()

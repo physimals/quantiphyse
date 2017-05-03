@@ -3,45 +3,16 @@ import numpy as np
 import skimage.segmentation as seg
 from pkview.volumes.volume_management import Overlay, Roi
 
+from ..QtInherit import HelpButton
 from pkview.analysis.perfusionslic import PerfSLIC
 from pkview.analysis.overlay_analysis import OverlayAnalysis
 from pkview.widgets import PkWidget
 
-TITLE = """
-<p><font size="5">Supervoxel Generation</font></p>
-
-<p>Please cite:</p>
-
-<p><i>Irving et al (2017) "maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images" https://arxiv.org/abs/1606.09518v2</i></p>
+CITE = """
+<i>Irving et al (2017)
+"maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images"
+https://arxiv.org/abs/1606.09518v2</i>
 """
-
-def run_batch(case, params):
-    ncomp = params['n-components']
-    comp = params['compactness']
-    segment_size = params['segment-size']
-
-    slices = case.ivm.current_roi.get_bounding_box(ndim=case.ivm.vol.ndim)
-    roi_slices = slices[:case.ivm.current_roi.ndim]
-    img = case.ivm.vol.data[slices]
-    mask = case.ivm.current_roi.data[roi_slices]
-    vox_sizes = case.ivm.vol.voxel_sizes[:3]
-
-    #print("Initialise the perf slic class")
-    ps1 = PerfSLIC(img, vox_sizes, mask=mask)
-    #print("Normalising image...")
-    ps1.normalise_curves()
-    #print("Extracting features...")
-    ps1.feature_extraction(n_components=ncomp)
-    #print("Extracting supervoxels...")
-    segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
-                                         recompute_seeds=True, n_random_seeds=segment_size)
-    # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
-    svdata = np.array(segments, dtype=np.int) + 1
-
-    newroi = np.zeros(case.ivm.current_roi.data.shape)
-    newroi[roi_slices] = svdata
-    case.ivm.add_roi(Roi(name="supervoxels", data=newroi), make_current=True)
-    return ""
 
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
@@ -70,9 +41,15 @@ class PerfSlicWidget(PkWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        title_label = QtGui.QLabel(TITLE)
-        title_label.setWordWrap(True)
-        layout.addWidget(title_label)
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Supervoxel Generation</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "sv"))
+        layout.addLayout(hbox)
+        
+        cite = QtGui.QLabel(CITE)
+        cite.setWordWrap(True)
+        layout.addWidget(cite)
         layout.addWidget(QtGui.QLabel(""))
 
         hbox = QtGui.QHBoxLayout()
@@ -128,41 +105,15 @@ class PerfSlicWidget(PkWidget):
             QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating supervoxels", QtGui.QMessageBox.Close)
             return
         
-        ncomp = self.n_comp.spin.value()
-        comp = self.compactness.spin.value()
-        # ss = self.segment_size.spin.value()
-        sn = self.segment_number.spin.value()
+        options = {"n-components" : self.n_comp.spin.value(),
+                   "compactness" : self.compactness.spin.value(),
+                   "segment-size" :  self.segment_number.spin.value() }
 
-        slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
-        roi_slices = slices[:self.ivm.current_roi.ndim]
-        img = self.ivm.vol.data[slices]
-        mask = self.ivm.current_roi.data[roi_slices]
-        
-        vox_size = np.ones(3) # FIXME
-
-        print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, self.ivm.vol.voxel_sizes[:3], mask=mask)
-        print("Normalising image...")
-        ps1.normalise_curves()
-        print("Extracting features...")
-        ps1.feature_extraction(n_components=ncomp)
-        print("Extracting supervoxels...")
-        segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
-                                             recompute_seeds=True, n_random_seeds=sn)
-        # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
-        svdata = np.array(segments, dtype=np.int) + 1
-        
-        #self.ivm.add_overlay(Overlay(name="supervoxels", data=svdata), make_current=True)
-        #self.roibox.setEnabled(True)
-        #self.roi_reset()
-
-        newroi = np.zeros(self.ivm.current_roi.data.shape)
-        newroi[roi_slices] = svdata
-        self.ivm.add_roi(Roi(name="supervoxels", data=newroi), make_current=True)
-
-        #bound = seg.find_boundaries(ovl, mode='inner')
-        #self.ivm.set_overlay(name="supervoxels", data=bound, force=True)
-        #self.ivm.set_current_overlay("supervoxels")
+        process = SupervoxelsProcess(self.ivm, sync=True)
+        process.run(options)
+        if process.status != Process.SUCCEEDED:
+            QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
+                                      QtGui.QMessageBox.Close)
 
     def pick_clicked(self):
         if self.pick_btn.text() == "Start":
@@ -259,7 +210,13 @@ class MeanValuesWidget(PkWidget):
         super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", desc="Generate mean values overlays", **kwargs)
 
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(QtGui.QLabel("<font size=5>Generate Mean Values Overlay</font> \n"))
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Generate Mean Values Overlay</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "mean_values"))
+        layout.addLayout(hbox)
+        
         desc = QtGui.QLabel("This widget will convert the current overlay into a "
                             "new overlay in which each ROI region contains the mean "
                             "value for that region.\n\nThis is generally only useful for "

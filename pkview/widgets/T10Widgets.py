@@ -6,6 +6,7 @@ from PySide import QtGui
 import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
+from ..QtInherit import HelpButton
 from pkview.analysis.t1_model import t10_map
 from pkview.volumes.volume_management import Volume, Overlay, Roi
 from pkview.widgets import PkWidget
@@ -186,8 +187,12 @@ class T10Widget(PkWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtGui.QLabel("<font size=5>T10 map generation</font>"))
-
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">T10 map generation</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self, "t1"))
+        layout.addLayout(hbox)
+        
         fabox = QtGui.QGroupBox()
         fabox.setTitle("Flip angle images")
         self.fatable = SourceImageList("Flip angle", val_range=[0, 90])
