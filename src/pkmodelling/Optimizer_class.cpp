@@ -118,11 +118,13 @@ void OptimizeFunction::RandomInitialisation()
 {
     
     // Ktrans initialisation
-    randnum=((double)rand()/(RAND_MAX));
+//    randnum=((double)rand()/(RAND_MAX));
+    randnum = 0.5;
     par[0]=randnum*2;
 
     // ve initialisation
-    randnum=((double)rand()/(RAND_MAX));
+    //randnum=((double)rand()/(RAND_MAX));
+    randnum = 0.5;
     par[1]=randnum*0.6 +0.4;
 
     if (model1==3)
@@ -132,7 +134,8 @@ void OptimizeFunction::RandomInitialisation()
     else
     {
         //Including offset parameter if used
-        randnum=((double)rand()/(RAND_MAX));
+        //randnum=((double)rand()/(RAND_MAX));
+        randnum = 0.5;
         par[2]=randnum*1.0;
     }
 
