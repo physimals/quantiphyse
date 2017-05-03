@@ -28,7 +28,7 @@ def deedsReg(vol, refvol, **kwargs):
     retvol = np.zeros(vol.shape, dtype=np.float32)
 
     log = run_deeds_c(vol, refvol, retvol, shape,
-                      kwargs["alpha"], kwargs["randsamp"], kwargs["levels"])
+                      kwargs.get("alpha", 2), kwargs.get("randsamp", 50), kwargs.get("levels", 5))
     retvol = np.reshape(retvol, shape, order='F')
 
     return retvol, log
