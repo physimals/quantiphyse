@@ -16,8 +16,6 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 #include "Optimizer_class.h"
 
-using std::vector;
-
 /*
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ bounds ~~~~~~~~~~~~~~~
 
@@ -55,14 +53,14 @@ private:
     int n_par; // number of parameters in model function f
     double pars3[4], ub[4], lb[4];
 
-    vector<double> t1;
-    vector< vector <double> > y1;
-    vector<double> T101;
+    std::vector<double> t1;
+    std::vector< std::vector <double> > y1;
+    std::vector<double> T101;
 
     // Output
-    vector<vector<double> > outdata;
-    vector<vector<double> > outdata2;
-    vector <double> outdata3;
+    std::vector<std::vector<double> > outdata;
+    std::vector<std::vector<double> > outdata2;
+    std::vector <double> outdata3;
 
     double R1, R2, dce_flip_angle, dce_TR, dce_TE, Dose;
 
@@ -78,12 +76,12 @@ public:
 
     // Constructor
     // Missing a std:: in declaration
-    Pkrun2(std::vector<double> & t1, vector< std::vector<double> > & y1, std::vector<double> & T101in);
+    Pkrun2(std::vector<double> & t1, std::vector< std::vector<double> > & y1, std::vector<double> & T101in);
 
     // Destructor
     ~Pkrun2();
 
-    void set_bounds(vector<double> & ub1, vector<double> & lb1);
+    void set_bounds(std::vector<double> & ub1, std::vector<double> & lb1);
 
     void set_parameters(double R1in, double R2in, double dce_flip_anglein, double dce_TRin, double dce_TEin, double Dosein);
 
@@ -94,9 +92,9 @@ public:
     void rinit(int model1, double injtmins);
     double run(int pause1);
 
-    const vector<vector<double> > get_parameters();
-    vector<vector<double> > get_fitted_curve();
-    const vector<double> get_residual();
+    const std::vector<std::vector<double> > get_parameters();
+    std::vector<std::vector<double> > get_fitted_curve();
+    const std::vector<double> get_residual();
 
 
 };
