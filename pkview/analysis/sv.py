@@ -23,7 +23,7 @@ class SupervoxelsProcess(Process):
         roi_slices = slices[:self.ivm.current_roi.ndim]
         img = self.ivm.vol.data[slices]
         mask = self.ivm.current_roi.data[roi_slices]
-        vox_sizes = self.ivm.vol.voxel_sizes[:3]
+        vox_sizes = self.ivm.voxel_sizes[:3]
 
         #print("Initialise the perf slic class")
         ps1 = PerfSLIC(img, vox_sizes, mask=mask)
