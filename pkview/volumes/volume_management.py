@@ -79,10 +79,10 @@ class Volume(object):
             raise RuntimeError("Creating volume, must be given either data or filename")
         self.remove_nans()
 
-        self.ndims = self.data.ndim
+        self.ndim = self.data.ndim
         self.shape = self.data.shape
         self.orig_shape = self.data.shape
-        if self.voxel_sizes is None: self.voxel_sizes = [1.0, ] * self.ndims
+        if self.voxel_sizes is None: self.voxel_sizes = [1.0, ] * self.ndim
         if self.affine is None: self.affine = np.identity(4)
         self._reorient()
 
@@ -100,7 +100,7 @@ class Volume(object):
             # Look at range of data and allow decimal places to give at least 1% steps
             return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
 
-    def force_ndims(self, n, multi=True):
+    def force_ndim(self, n, multi=True):
         """
         Force this volume into n dimensions if it isn't already
 
@@ -109,20 +109,20 @@ class Volume(object):
         """
         #print("Forcing to %i dims, multi=%s, current shape=%s" % (n, str(multi), str(self.shape)))
         self.multi = multi
-        if self.ndims > n:
-            raise RuntimeError("Can't force volume to %i dims since ndims > %i" % (n, n))
+        if self.ndim > n:
+            raise RuntimeError("Can't force volume to %i dims since ndim > %i" % (n, n))
         elif multi:
-            for i in range(n-self.ndims):
-                self.data = np.expand_dims(self.data, self.ndims-1)
-                self.dim_expand.append(self.ndims-1+i)
-                self.voxel_sizes.insert(self.ndims-1, 1.0)
+            for i in range(n-self.ndim):
+                self.data = np.expand_dims(self.data, self.ndim-1)
+                self.dim_expand.append(self.ndim-1+i)
+                self.voxel_sizes.insert(self.ndim-1, 1.0)
         else:
-            for i in range(n-self.ndims):
-                self.data = np.expand_dims(self.data, self.ndims)
-                self.dim_expand.append(self.ndims+i)
-                self.voxel_sizes.insert(self.ndims, 1.0)
+            for i in range(n-self.ndim):
+                self.data = np.expand_dims(self.data, self.ndim)
+                self.dim_expand.append(self.ndim+i)
+                self.voxel_sizes.insert(self.ndim, 1.0)
         self.shape = self.data.shape
-        self.ndims = n
+        self.ndim = n
 
     def save_nifti(self, fname):
         data = self.data
@@ -164,7 +164,7 @@ class Volume(object):
     def value_str(self, pos):
         """ Return the data value at pos as a string to an appropriate
         number of decimal places"""
-        return str(np.around(self.data[tuple(pos[:self.ndims])], self.dps))
+        return str(np.around(self.data[tuple(pos[:self.ndim])], self.dps))
 
     def _get_transform(self, invert=False):
         """
@@ -183,7 +183,7 @@ class Volume(object):
             dim_order.append(newd)
             if space_affine[newd, d] < 0:
                 dim_flip.append(d)
-        if self.ndims == 4: dim_order.append(3)
+        if self.ndim == 4: dim_order.append(3)
         return dim_order, dim_flip
         #print(dims, flip)
 
@@ -199,7 +199,7 @@ class Volume(object):
             new_data = np.transpose(data, dim_order)
             for d in dim_flip:
                 new_data = np.flip(new_data, d)
-            new_voxel_sizes = [self.voxel_sizes[dim_order[i]] for i in range(self.ndims)]
+            new_voxel_sizes = [self.voxel_sizes[dim_order[i]] for i in range(self.ndim)]
             #print("Re-oriented to dim order ", dim_order)
             #print("New shape", new_data.shape, new_voxel_sizes)
             return new_data, new_data.shape, new_voxel_sizes
@@ -226,9 +226,9 @@ class Volume(object):
         return self.data[sl]
 
     def check_shape(self, shape):
-        ndims = min(self.ndims, len(shape))
-        if (list(self.shape[:ndims]) != list(shape[:ndims])):
-            raise RuntimeError("First %i Dimensions of must be %s - they are %s" % (ndims, shape[:ndims], self.shape[:ndims]))
+        ndim = min(self.ndim, len(shape))
+        if (list(self.shape[:ndim]) != list(shape[:ndim])):
+            raise RuntimeError("First %i Dimensions of must be %s - they are %s" % (ndim, shape[:ndim], self.shape[:ndim]))
 
     def remove_nans(self):
         """
@@ -256,25 +256,7 @@ class Volume(object):
 class Overlay(Volume):
     def __init__(self, name, data=None, fname=None, **kwargs):
         super(Overlay, self).__init__(name, data, fname, **kwargs)
-        self.data_roi = data
-        self.range_roi = self.range
-
-    def set_roi(self, roi):
-        # Get data inside the ROI
-        self.data_roi = np.copy(self.data)
-
-        if self.ndims == 3:
-            roidata = roi.data
-        else:
-            roidata = np.expand_dims(roi.data, 3).repeat(self.shape[3], 3)
-
-        within_roi = self.data_roi[np.array(roidata, dtype=bool)]
-        self.range_roi = [np.min(within_roi), np.max(within_roi)]
-        # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
-        # FIXME what if range is zero?
-        self.roi_fillvalue = -0.01 * (self.range_roi[1] - self.range_roi[0]) + self.range_roi[0]
-        self.data_roi[np.logical_not(roidata)] = self.roi_fillvalue
-
+        
 class Roi(Volume):
     def __init__(self, name, data=None, fname=None, **kwargs):
         super(Roi, self).__init__(name, data, fname, **kwargs)
@@ -297,11 +279,11 @@ class Roi(Volume):
         self.dps = 0
         #print("ROI: LUT=", self.lut)
 
-    def get_bounding_box(self, ndims=None):
+    def get_bounding_box(self, ndim=None):
         """
         Returns a sequence of slice objects which
         describe the bounding box of this ROI.
-        If ndims is specified, will return a bounding 
+        If ndim is specified, will return a bounding 
         box of this number of dimensions, truncating
         and appending slices as required.
 
@@ -310,16 +292,16 @@ class Roi(Volume):
         reduce data copying.
 
         e.g. 
-        slices = roi.get_bounding_box(img.ndims)
+        slices = roi.get_bounding_box(img.ndim)
         img_restric = img.data[slices]
         ... process img_restict, returning out_restrict
         out_full = np.zeros(img.shape)
         out_full[slices] = out_restrict
         """
-        if ndims == None: ndims = self.ndims
-        slices = [slice(None)] * ndims
-        for d in range(min(ndims, self.ndims)):
-            ax = [i for i in range(self.ndims) if i != d]
+        if ndim == None: ndim = self.ndim
+        slices = [slice(None)] * ndim
+        for d in range(min(ndim, self.ndim)):
+            ax = [i for i in range(self.ndim) if i != d]
             nonzero = np.any(self.data, axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
             slices[d] = slice(s1, s2)
@@ -388,6 +370,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Main background image
         self.vol = None
 
+        self.voxel_sizes = [1.0, 1.0, 1.0]
+        self.shape = [1,1,1,1]
+
         # Map from name to overlay object
         self.overlays = {}
 
@@ -417,19 +402,22 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             else:
                 raise RuntimeError("Main volume already loaded")
 
-        if vol.ndims not in (3, 4):
+        if vol.ndim not in (3, 4):
             raise RuntimeError("Main volume must be 3d or 4d")
 
         self.vol = vol
         self.cim_pos = [int(d/2) for d in vol.shape]
+        self.voxel_sizes = self.vol.voxel_sizes
+        self.shape = self.vol.shape
+
         #print(self.cim_pos)
-        if vol.ndims == 3: self.cim_pos.append(0)
+        if vol.ndim == 3: self.cim_pos.append(0)
         self.sig_main_volume.emit(self.vol)
 
     def add_overlay(self, ov, make_current=False, signal=True):
         self._vol_exists()
         
-        ov.force_ndims(max(3, ov.ndims), multi=(ov.ndims == 4))
+        ov.force_ndim(max(3, ov.ndim), multi=(ov.ndim == 4))
         ov.check_shape(self.vol.shape)
         ov.copy_orientation(self.vol)
 
@@ -455,8 +443,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def set_current_overlay(self, name, signal=True):
         self._overlay_exists(name)
         self.current_overlay = self.overlays[name]
-        if self.current_roi is not None:
-            self.current_overlay.set_roi(self.current_roi)
         if signal: self.sig_current_overlay.emit(self.current_overlay)
 
     def rename_overlay(self, name, newname, signal=True):
@@ -494,7 +480,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def add_roi(self, roi, make_current=False, signal=True):
         self._vol_exists()
 
-        roi.force_ndims(3, multi=False)
+        roi.force_ndim(3, multi=False)
         roi.check_shape(self.vol.shape)
         roi.copy_orientation(self.vol)
         self.rois[roi.name] = roi
@@ -507,8 +493,6 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def set_current_roi(self, name, signal=True):
         self._roi_exists(name)
         self.current_roi = self.rois[name]
-        if self.current_overlay is not None:
-            self.current_overlay.set_roi(self.current_roi)
         if signal:
             self.sig_current_roi.emit(self.current_roi)
 
@@ -520,7 +504,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         # loop over all loaded overlays and save values in a dictionary
         for name, ovl in self.overlays.items():
-            if ovl.ndims == 3:
+            if ovl.ndim == 3:
                 overlay_value[name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
 
         return overlay_value
@@ -530,13 +514,13 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Return enhancement curves for all 4D overlays whose 4th dimension matches that of the main volume
         """
         if self.vol is None: return [], {}
-        if self.vol.ndims != 4: raise RuntimeError("Main volume is not 4D")
+        if self.vol.ndim != 4: raise RuntimeError("Main volume is not 4D")
 
         main_sig = self.vol.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         ovl_sig = {}
 
         for ovl in self.overlays.values():
-            if ovl.ndims == 4 and (ovl.shape[3] == self.vol.shape[3]):
+            if ovl.ndim == 4 and (ovl.shape[3] == self.vol.shape[3]):
                 ovl_sig[ovl.name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, ovl_sig

@@ -153,7 +153,7 @@ class OvCurveClusteringWidget(PkWidget):
             error_dialog("No overlay loaded")
             return
 
-        if self.ivm.current_overlay.ndims != 3:
+        if self.ivm.current_overlay.ndim != 3:
             error_dialog("Cannot run clustering on 4d overlays")
             return
 

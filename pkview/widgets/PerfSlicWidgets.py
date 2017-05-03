@@ -20,8 +20,8 @@ def run_batch(case, params):
     comp = params['compactness']
     segment_size = params['segment-size']
 
-    slices = case.ivm.current_roi.get_bounding_box(ndims=case.ivm.vol.ndims)
-    roi_slices = slices[:case.ivm.current_roi.ndims]
+    slices = case.ivm.current_roi.get_bounding_box(ndim=case.ivm.vol.ndim)
+    roi_slices = slices[:case.ivm.current_roi.ndim]
     img = case.ivm.vol.data[slices]
     mask = case.ivm.current_roi.data[roi_slices]
     vox_sizes = case.ivm.vol.voxel_sizes[:3]
@@ -133,8 +133,8 @@ class PerfSlicWidget(PkWidget):
         # ss = self.segment_size.spin.value()
         sn = self.segment_number.spin.value()
 
-        slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
-        roi_slices = slices[:self.ivm.current_roi.ndims]
+        slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
+        roi_slices = slices[:self.ivm.current_roi.ndim]
         img = self.ivm.vol.data[slices]
         mask = self.ivm.current_roi.data[roi_slices]
         

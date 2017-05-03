@@ -384,7 +384,7 @@ class ViewOptions(QtGui.QDialog):
         we have a uniform scale, if not only do it if the number of points has
         changed (as a starting point for customisation)
         """
-        if self.ivm.vol is not None and self.ivm.vol.ndims == 4 and \
+        if self.ivm.vol is not None and self.ivm.vol.ndim == 4 and \
            (self.t_scale_type == 0 or self.ivm.vol.shape[3] != len(self.t_scale)):
             self.t_scale = [i*self.t_res for i in range(self.ivm.vol.shape[3])]
 
@@ -740,7 +740,7 @@ class MainWindowWidget(QtGui.QWidget):
             self.sld2.setRange(0, self.ivm.vol.shape[0]-1)
             self.sld3.setRange(0, self.ivm.vol.shape[1]-1)
 
-            if self.ivm.vol.ndims == 4:
+            if self.ivm.vol.ndim == 4:
                 self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
             else:
                 self.sld4.setRange(0, 0)
@@ -1171,9 +1171,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         multi = True
         vol = Volume(os.path.basename(fname), fname=fname)
-        if vol.ndims == 2:
+        if vol.ndim == 2:
             multi = False
-        if vol.ndims == 3:
+        if vol.ndim == 3:
             # 3D volume loaded - is it 2d + time or static 3d?
             msgBox = QtGui.QMessageBox()
             msgBox.setText("3D volume loaded")
@@ -1183,14 +1183,14 @@ class WindowAndDecorators(QtGui.QMainWindow):
             msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
             ret = msgBox.exec_()
             multi = (ret == QtGui.QDialog.Accepted)
-        elif vol.ndims != 4:
+        elif vol.ndim != 4:
             error_dialog("Quantiphyse supports 2D and 3D volumes with one optional additional dimension only", "Error")
             return
 
-        vol.force_ndims(4, multi=multi)
+        vol.force_ndim(4, multi=multi)
         self.mw1.ivm.set_main_volume(vol)
-        print("Image dimensions: ", self.mw1.ivm.vol.shape)
-        print("Voxel size: ", self.mw1.ivm.vol.voxel_sizes)
+        print("Image dimensions: ", self.mw1.ivm.shape)
+        print("Voxel size: ", self.mw1.ivm.voxel_sizes)
         print("Image range: ", self.mw1.ivm.vol.range)
         self.mw1.vol_name.setText(fname)
         self.mw1.update_slider_range()

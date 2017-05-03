@@ -19,8 +19,8 @@ class SupervoxelsProcess(Process):
         segment_size = options['segment-size']
         output_name = options.get('output-name', "supervoxels")
         
-        slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
-        roi_slices = slices[:self.ivm.current_roi.ndims]
+        slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
+        roi_slices = slices[:self.ivm.current_roi.ndim]
         img = self.ivm.vol.data[slices]
         mask = self.ivm.current_roi.data[roi_slices]
         vox_sizes = self.ivm.vol.voxel_sizes[:3]

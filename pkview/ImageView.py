@@ -445,7 +445,7 @@ class ImageView(QtGui.QGraphicsView, object):
         for i in range(3):
             if self.opts.size_scaling == self.opts.SCALE_VOXELS:
                 x, y = self.ax_map[i][:2]
-                self.view[i].setAspectLocked(True, ratio=(self.ivm.vol.voxel_sizes[x] / self.ivm.vol.voxel_sizes[y]))
+                self.view[i].setAspectLocked(True, ratio=(self.ivm.voxel_sizes[x] / self.ivm.voxel_sizes[y]))
             else:
                 self.view[i].setAspectLocked(True, ratio=1)
             for l in self.labels[i]:
@@ -622,7 +622,19 @@ class ImageView(QtGui.QGraphicsView, object):
         """
         ov = self.ivm.current_overlay
         if ov is not None and (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
-            self.ovreg = ov.data_roi
+            # Restrict to data within ROI
+            self.ovreg = np.copy(ov.data)
+            if ov.ndim == 3:
+                roidata = self.ivm.current_roi.data
+            else:
+                roidata = np.expand_dims(self.ivm.current_roi.data, 3).repeat(ov.shape[3], 3)
+
+            within_roi =self.ovreg[np.array(roidata, dtype=bool)]
+            range_roi = [np.min(within_roi), np.max(within_roi)]
+            # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
+            # FIXME what if range is zero?
+            roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
+            self.ovreg[np.logical_not(roidata)] = roi_fillvalue
         elif ov is not None:
             self.ovreg = ov.data
         else:
@@ -641,7 +653,7 @@ class ImageView(QtGui.QGraphicsView, object):
             self.imgwinc[1].setImage(np.zeros((1, 1)), autoLevels=False)
             self.imgwinc[2].setImage(np.zeros((1, 1)), autoLevels=False)
 
-        elif self.ivm.current_overlay.ndims == 4:
+        elif self.ivm.current_overlay.ndim == 4:
             print("4d overlay")
             if self.ivm.current_overlay.shape[3] == 3:
                 # RGB or RGBA image

@@ -187,8 +187,8 @@ class PkModellingProcess(BackgroundProcess):
             p = np.percentile(kep1vol, self.thresh1val)
             kep1vol[kep1vol > p] = p
 
-            #slices = self.ivm.current_roi.get_bounding_box(ndims=self.ivm.vol.ndims)
-            #roi_slices = slices[:self.ivm.current_roi.ndims]
+            #slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
+            #roi_slices = slices[:self.ivm.current_roi.ndim]
             self.ivm.add_overlay(Overlay('ktrans', data=Ktrans1vol), make_current=True)
             self.ivm.add_overlay(Overlay('ve', data=ve1vol))
             self.ivm.add_overlay(Overlay('kep', data=kep1vol))

@@ -232,11 +232,11 @@ class SECurve(PkWidget):
         pickmode, points = sel
         for point in points:
             if point not in self.plots:
-                if self.ivm.vol.ndims == 3:
+                if self.ivm.vol.ndim == 3:
                     # FIXME this should take into account which window the picked point was from
                     warnings.warning("3D image so just calculating cross image profile")
                     sig = self.ivm.vol.data[point[0], :, point[2]]
-                elif self.ivm.vol.ndims == 4:
+                elif self.ivm.vol.ndim == 4:
                     sig = self.ivm.vol.data[point[0], point[1], point[2], :]
                 else:
                     warnings.warning("Image is not 3D or 4D")
