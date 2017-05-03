@@ -28,8 +28,8 @@ def get_local_file(name):
     global LOCAL_FILE_PATH
     return os.path.join(LOCAL_FILE_PATH, name)
 
-def copy_table(tabmod):
-    """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
+def table_to_str(tabmod):
+    """ Turn a QT table model into a TSV string """
     tsv = ""
     rows = range(tabmod.rowCount())
     cols = range(tabmod.columnCount())
@@ -40,6 +40,11 @@ def copy_table(tabmod):
         rowdata = [tabmod.verticalHeaderItem(row).text(),] 
         rowdata += [tabmod.item(row, col).text() for col in cols]
         tsv += "\t".join(rowdata) + "\n"
-    clipboard = QtGui.QApplication.clipboard()
     print(tsv)
+    return tsv
+
+def copy_table(tabmod):
+    """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
+    clipboard = QtGui.QApplication.clipboard()
+    tsv = table_to-str(tabmod)
     clipboard.setText(tsv)

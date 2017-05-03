@@ -18,6 +18,7 @@ from pkview.utils import get_icon, copy_table
 from ..QtInherit import HelpButton
 from pkview.widgets import PkWidget
 from pkview.analysis.overlay_analysis import OverlayAnalysis
+from pkview.analysis.misc import CalcVolumesProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):
@@ -644,54 +645,41 @@ class RoiAnalysisWidget(PkWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self))
+        layout.addLayout(hbox)
+        
         layout.addWidget(QtGui.QLabel(""))
 
-        self.model = QtGui.QStandardItemModel()
+        self.process = CalcVolumesProcess(self.ivm)
 
         self.table = QtGui.QTableView()
         self.table.resizeColumnsToContents()
-        self.table.setModel(self.model)
+        self.table.setModel(self.process.model)
         layout.addWidget(self.table)
 
+        hbox = QtGui.QHBoxLayout()
         self.copy_btn = QtGui.QPushButton("Copy")
         self.copy_btn.clicked.connect(self.copy_stats)
-        layout.addWidget(self.copy_btn)
-
+        hbox.addWidget(self.copy_btn)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
+        
         layout.addStretch(1)
 
     def activate(self):
-        self.ivm.sig_current_roi.connect(self.roi_changed)
-        self.ivm.sig_all_rois.connect(self.rois_changed)
+        self.ivm.sig_current_roi.connect(self.update)
+        self.ivm.sig_all_rois.connect(self.update)
         self.update()
-        #self.ivl.sig_focus_changed.connect(self.focus_changed)
 
     def deactivate(self):
-        self.ivm.sig_current_roi.disconnect(self.roi_changed)
-        self.ivm.sig_all_rois.disconnect(self.rois_changed)
-        #self.ivl.sig_focus_changed.connect(self.focus_changed)
-
-    def roi_changed(self):
-        self.update()
-
-    def rois_changed(self):
-        self.update()
+        self.ivm.sig_current_roi.disconnect(self.update)
+        self.ivm.sig_all_rois.disconnect(self.update)
 
     def update(self):
-        self.model.clear()
-        self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
-        self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
-
-        roi = self.ivm.current_roi 
-        sizes = self.ivm.voxel_sizes
-        if roi is not None:
-            counts = np.bincount(roi.data.flatten())
-            for idx, region in enumerate(roi.regions):
-                nvoxels = counts[region]
-                vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
-                self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
-                self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
-                self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
-
+        self.process.run({"no-artifact" : True})
+        
     def copy_stats(self):
-        copy_table(self.model)
+        copy_table(self.process.model)

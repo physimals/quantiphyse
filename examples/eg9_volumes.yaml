@@ -1,0 +1,20 @@
+# Example config file for running Fabber
+
+OutputFolder: out
+#Debug: True
+
+Processing:
+  - CalcVolumes:
+        output-name: roi_vols
+
+SaveArtifacts:
+    roi_vols:
+
+Cases:
+    Subject1:
+        Folder:   c:\Users\ctsu0221\build\data
+        Volume:   test_data.nii
+        Rois:
+          mask:   test_mask.nii
+
+
