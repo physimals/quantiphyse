@@ -1,6 +1,7 @@
 """
 Implements the batch processing system for Quantiphyse
 """
+import sys
 import os
 import os.path
 import errno
@@ -15,6 +16,7 @@ from pkview.analysis.reg import RegProcess, McflirtProcess
 from pkview.analysis.pk import PkModellingProcess
 from pkview.analysis.t10 import T10Process
 from pkview.analysis.sv import SupervoxelsProcess
+from pkview.analysis.misc import CalcVolumesProcess
 
 processes = {"Fabber"      : FabberProcess,
              "MCFlirt"     : McflirtProcess,
@@ -22,7 +24,8 @@ processes = {"Fabber"      : FabberProcess,
              "Supervoxels" : SupervoxelsProcess,
              "PkModelling" : PkModellingProcess,
              "Reg"         : RegProcess,
-             "Moco"        : RegProcess}
+             "Moco"        : RegProcess,
+             "CalcVolumes" : CalcVolumesProcess}
 
 def run_batch(batchfile):
     """ Run a YAML batch file """
@@ -57,7 +60,7 @@ class BatchCase:
             os.makedirs(self.outdir)
         except OSError as exc:
             if exc.errno == errno.EEXIST and os.path.isdir(self.outdir):
-                print("WARNING: Output directory %s already exists" % self.outdir)
+                print("  - WARNING: Output directory %s already exists" % self.outdir)
             else:
                 raise
 
@@ -76,8 +79,7 @@ class BatchCase:
         elif vol.ndim != 4:
             raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
         vol.force_ndim(4, multi=multi)
-        self.ivm.add_overlay(vol)
-        self.ivm.set_main_volume(vol.name)
+        self.ivm.set_main_volume(vol)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case
@@ -111,27 +113,35 @@ class BatchCase:
         if proc is None:
             print("  - WARNING: skipping unknown process: %s" % name)
         else:
-            print("  - Running %s" % name)
-        if self.debug:
-            for key, value in params.items():
-                print("      %s=%s" % (key, str(value)))
-        try:
-            process.run(params)
-            if process.status == Process.SUCCEEDED:
-                self.write_log(process.log, name)
-            else:
-                raise process.output
-        except:
-            print("  - WARNING: process %s failed to run" % name)
-            traceback.print_exc()
+            try:
+                if self.debug:
+                    for key, value in params.items():
+                        print("      %s=%s" % (key, str(value)))
+                process = proc(self.ivm, sync=True)
+                process.debug = self.debug
+                process.workdir = self.folder
+                process.outdir = self.outdir
+                process.sig_progress.connect(self.progress)
+                sys.stdout.write("  - Running %s   0%%" % name)
+                process.run(params)
+                print("\b\b\b\bDONE")
+                if process.status == Process.SUCCEEDED:
+                    self.save_text(process.log, name, "log")
+                else:
+                    raise process.output
+            except:
+                print("  - WARNING: process %s failed to run" % name)
+                traceback.print_exc()
 
-    def write_log(self, log, procname):
-        fname = os.path.join(self.outdir, "%s.log" % procname)
+    def progress(self, complete):
+        sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
+
+    def save_text(self, text, fname, ext="txt"):
+        fname = os.path.join(self.outdir, "%s.%s" % (fname, ext))
         with open(fname, "w") as f:
-            f.write(log)
+            f.write(text)
 
     def save_output(self):
-        print(self.root)
         if "SaveVolume" in self.root:
             fname = self.root["SaveVolume"]
             if not fname: fname = self.ivm.vol.name
@@ -139,11 +149,24 @@ class BatchCase:
 
         for name, fname in self.get("SaveOverlays", {}).items():
             if not fname: fname = name
-            self.save_data(self.ivm.overlays[name], fname)
+            if name in self.ivm.overlays:
+                self.save_data(self.ivm.overlays[name], fname)
+            else:
+                print("  - WARNING: overlay %s not found - not saving" % name)
 
         for name, fname in self.get("SaveRois", {}).items():
             if not fname: fname = name
-            self.save_data(self.ivm.rois[name], fname)
+            if name in self.ivm.rois:
+                self.save_data(self.ivm.rois[name], fname)
+            else:
+                print("  - WARNING: ROI %s not found - not saving" % name)
+
+        for name, fname in self.get("SaveArtifacts", {}).items():
+            if not fname: fname = name
+            if name in self.ivm.artifacts:
+                self.save_text(str(self.ivm.artifacts[name]), fname)
+            else:
+                print("  - WARNING: Artifact %s not found - not saving" % name)
 
     def save_data(self, vol, fname):
         if not fname.endswith(".nii"): 

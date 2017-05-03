@@ -382,6 +382,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         # Map from name to ROI object
         self.rois = {}
 
+        # Processing artifacts
+        self.artifacts = {}
+
         # Current ROI object
         self.current_roi = None
 
@@ -524,6 +527,16 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
                 ovl_sig[ovl.name] = ovl.data[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, ovl_sig
+
+    def add_artifact(self, name, obj):
+        """
+        Add an 'artifact', which can be any result of a process which
+        is not voxel data, e.g. a number, table, etc.
+
+        Artifacts are only required to support str() conversion so they
+        can be written to a file
+        """
+        self.artifacts[name] = obj
 
     def set_blank_annotation(self):
         """
