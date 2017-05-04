@@ -21,7 +21,7 @@ import numpy as np
 if sys.platform.startswith("darwin"):
     from Cocoa import NSURL
 
-from pkview import error_dialog
+from pkview.QtInherit.dialogs import error_dialog
 
 # required to use resources in theme. Check if 2 or 3.
 if (sys.version_info > (3, 0)):
@@ -88,7 +88,7 @@ class DragOptions(QtGui.QDialog):
 
         hbox = QtGui.QHBoxLayout()
         if ftype is None:
-            btn = QtGui.QPushButton("Scan")
+            btn = QtGui.QPushButton("Main data")
             btn.clicked.connect(self.clicked("MAIN"))
             hbox.addWidget(btn)
             btn = QtGui.QPushButton("ROI")
@@ -757,7 +757,10 @@ class MainWindowWidget(QtGui.QWidget):
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[0])
         self.sld3.setValue(self.ivm.cim_pos[1])
-        self.sld4.setValue(self.ivm.cim_pos[3])
+        if self.ivm.vol.ndim == 4:
+            self.sld4.setValue(self.ivm.cim_pos[3])
+        else:
+            self.sld4.setValue(0)
         if self.ivm.vol is not None: 
             self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
         if self.ivm.current_roi is not None: 
@@ -1138,7 +1141,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
     def drag_drop_dialog(self, fname):
         """
         Dialog for loading an overlay and specifying the type of overlay
-        @fname: allows a file name to be passed in automatically
         """
         self.raise_()
         self.activateWindow()
@@ -1156,24 +1158,11 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.load_roi(fname, name)
 
     def load_main(self, fname):
-        if self.mw1.ivm.vol is not None:
-            # Data already exists
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("A volume has already been loaded")
-            msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-            ret = msgBox.exec_()
-
-            if ret == QtGui.QMessageBox.Ok:
-                self.mw1.ivm.reset()
-            else:
-                return
-
-        multi = True
         vol = Volume(os.path.basename(fname), fname=fname)
+        ndim = vol.ndim
         if vol.ndim == 2:
             multi = False
+            ndim = 3
         if vol.ndim == 3:
             # 3D volume loaded - is it 2d + time or static 3d?
             msgBox = QtGui.QMessageBox()
@@ -1183,13 +1172,31 @@ class WindowAndDecorators(QtGui.QMainWindow):
             msgBox.addButton("Multiple 2D volumes", QtGui.QMessageBox.YesRole)
             msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
             ret = msgBox.exec_()
-            multi = (ret == QtGui.QDialog.Accepted)
+            if ret == QtGui.QDialog.Accepted:
+                ndim = 4
         elif vol.ndim != 4:
             error_dialog("Quantiphyse supports 2D and 3D volumes with one optional additional dimension only", "Error")
             return
 
-        vol.force_ndim(4, multi=multi)
-        self.mw1.ivm.set_main_volume(vol)
+        vol.force_ndim(ndim, multi=(ndim == 4))
+        
+        try:
+            self.mw1.ivm.check_shape(vol.shape)
+        except:
+            # Data already exists and shape is not consistent
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("A different shaped volume has already been loaded")
+            msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+            ret = msgBox.exec_()
+        
+            if ret == QtGui.QMessageBox.Ok:
+                self.mw1.ivm.reset()
+            else:
+                return
+
+        self.mw1.ivm.add_overlay(vol, make_main=True)
         print("Image dimensions: ", self.mw1.ivm.shape)
         print("Voxel size: ", self.mw1.ivm.voxel_sizes)
         print("Image range: ", self.mw1.ivm.vol.range)
@@ -1210,8 +1217,27 @@ class WindowAndDecorators(QtGui.QMainWindow):
             self.load_overlay(fname=self.overlay_dir_in, name=self.overlay_type_in)
 
 def my_catch_exceptions(type, value, tb):
-    error_dialog(traceback.format_exception(type, value, tb), "Error")
+    error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
         
+"""
+def get_run_batch(script):
+    def run():
+        print ("ok")
+        run_batch(script)
+    return run
+
+import threading
+
+class BatchThread(QtCore.QThread):
+
+    def __init__(self, script):
+        super(BatchThread, self).__init__()
+        self.script = script
+
+    def run(self):
+        run_batch(self.script)
+"""
+
 def main():
 
     """
@@ -1232,11 +1258,22 @@ def main():
     print(pg.systemInfo())
 
     # Check whether any batch processing arguments have been called
-
     if (args.batch is not None):
+        #app = QtCore.QCoreApplication(sys.argv)
+        #timer = threading.Timer(1, get_run_batch(args.batch))
+        #timer.daemon = True
+        #timer.start()
+        #QtCore.QTimer.singleShot(0, get_run_batch(args.batch))
+        #t = BatchThread(args.batch)
+        #t.start()
         run_batch(args.batch)
-
+        #sys.exit(app.exec_())
     else:
+        # Initialise the application
+        app = QtGui.QApplication(sys.argv)
+        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
+        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
+        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
         # Initialise main GUI
         sys.excepthook = my_catch_exceptions
 
@@ -1245,14 +1282,7 @@ def main():
             from Foundation import NSURL
             QtGui.QApplication.setGraphicsSystem('native')
 
-        # Initialise the application
-        app = QtGui.QApplication(sys.argv)
-        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
-        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
-        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-
         app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
-        # app.setGraphicsSystem('native')  ## work around a variety of bugs in the native graphics system
 
         # Pass arguments from the terminal (if any) into the main application
         ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)

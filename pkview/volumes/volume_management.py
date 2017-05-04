@@ -9,15 +9,19 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import division, print_function
 
-from PySide import QtCore, QtGui
-from matplotlib import cm
-import nibabel as nib
-import numpy as np
+import sys
+import os
 import math
 import warnings
-import nrrd
+import glob
 
-import os
+from PySide import QtCore, QtGui
+from matplotlib import cm
+
+import nibabel as nib
+import dcmstack
+import numpy as np
+import nrrd
 
 class Volume(object):
     """
@@ -141,22 +145,38 @@ class Volume(object):
         img.to_filename(fname)
         self.fname = fname
 
+    def _init_from_nifti(self, image):
+        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
+        # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
+        # memmap has been designed to save space on ram by keeping the array on the disk but does
+        # horrible things with performance, and analysis especially when the data is on the network.
+        self.data = np.asarray(image.get_data())
+        self.voxel_sizes = list(image.get_header().get_zooms())
+        self.nifti_header = image.get_header()
+        if self.affine is None:
+            self.affine = self.nifti_header.get_best_affine()
+
     def load(self):
-        if self.fname.endswith(".nii") or self.fname.endswith(".nii.gz"):
+        if os.path.isdir(self.fname):
+            # A directory. It ought to contain DICOMs. Convert them to a Nifti
+            sys.stdout.write("Converting DICOMS in %s..." % (os.path.basename(self.fname)))
+            sys.stdout.flush()
+            src_dcms = glob.glob('%s/*.dcm' % self.fname)
+            stacks = dcmstack.parse_and_stack(src_dcms)
+            stack = stacks.values()[0]
+            nii = stack.to_nifti()
+            # FIXME should we do this?
+            if nii.shape[-1] == 1:
+                nii = squeeze_image(nii)
+            self._init_from_nifti(nii)
+            sys.stdout.write("DONE\n")
+            sys.stdout.flush()
+        elif self.fname.endswith(".nii") or self.fname.endswith(".nii.gz"):
             # File is a nifti
             image = nib.load(self.fname)
-
-            # NB: np.asarray appears to convert to an array instead of a numpy memmap.
-            # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-            # memmap has been designed to save space on ram by keeping the array on the disk but does
-            # horrible things with performance, and analysis especially when the data is on the network.
-            self.data = np.asarray(image.get_data())
-            self.voxel_sizes = list(image.get_header().get_zooms())
-            self.nifti_header = image.get_header()
-            if self.affine is None:
-                self.affine = self.nifti_header.get_best_affine()
+            self._init_from_nifti(image)     
         elif self.fname.endswith(".nrrd"):
-            # else if the file is a nrrd
+            # file is a nrrd
             self.data = nrrd.read(self.fname)
         else:
             raise RuntimeError("%s: Unrecognized file type" % self.fname)
@@ -371,7 +391,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.vol = None
 
         self.voxel_sizes = [1.0, 1.0, 1.0]
-        self.shape = [1,1,1,1]
+        self.shape = []
 
         # Map from name to overlay object
         self.overlays = {}
@@ -397,32 +417,32 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.sig_all_rois.emit(self.rois.keys())
         self.sig_all_overlays.emit(self.overlays.keys())
 
-    def set_main_volume(self, vol, replace=False):
-        if self.vol is not None:
-            if replace:
-                vol.check_shape(self.vol.shape)
-                vol.copy_orientation(self.vol)
-            else:
-                raise RuntimeError("Main volume already loaded")
+    def check_shape(self, shape):
+        ndim = min(len(self.shape), len(shape))
+        if (list(self.shape[:ndim]) != list(shape[:ndim])):
+            raise RuntimeError("First %i Dimensions must be %s - they are %s" % (ndim, self.shape[:ndim], shape[:ndim]))
 
-        if vol.ndim not in (3, 4):
-            raise RuntimeError("Main volume must be 3d or 4d")
+    def update_shape(self, shape):
+        self.check_shape(shape)
+        for d in range(len(self.shape), min(len(shape), 4)):
+            self.shape.append(shape[d])
 
-        self.vol = vol
-        self.cim_pos = [int(d/2) for d in vol.shape]
+    def set_main_volume(self, name):
+        self._overlay_exists(name)
+        
+        self.vol = self.overlays[name]
         self.voxel_sizes = self.vol.voxel_sizes
-        self.shape = self.vol.shape
+        print("Voxel sizes are: ", self.voxel_sizes)
+        self.update_shape(self.vol.shape)
 
         #print(self.cim_pos)
-        if vol.ndim == 3: self.cim_pos.append(0)
+        self.cim_pos = [int(d/2) for d in self.vol.shape]
+        if self.vol.ndim == 3: self.cim_pos.append(0)
         self.sig_main_volume.emit(self.vol)
 
-    def add_overlay(self, ov, make_current=False, signal=True):
-        self._vol_exists()
-        
+    def add_overlay(self, ov, make_current=False, make_main=False, signal=True):
         ov.force_ndim(max(3, ov.ndim), multi=(ov.ndim == 4))
-        ov.check_shape(self.vol.shape)
-        ov.copy_orientation(self.vol)
+        self.update_shape(ov.shape)
 
         self.overlays[ov.name] = ov
         if signal:
@@ -430,6 +450,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         if make_current:
             self.set_current_overlay(ov.name, signal)
+
+        if make_main or self.vol is None:
+            self.set_main_volume(ov.name)
 
     def _vol_exists(self):
         if self.vol is None:
@@ -481,11 +504,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             if signal: self.sig_current_roi.emit(None)
 
     def add_roi(self, roi, make_current=False, signal=True):
-        self._vol_exists()
-
+        
         roi.force_ndim(3, multi=False)
-        roi.check_shape(self.vol.shape)
-        roi.copy_orientation(self.vol)
+        self.update_shape(roi.shape)
         self.rois[roi.name] = roi
 
         if signal:

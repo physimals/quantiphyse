@@ -142,13 +142,9 @@ class McflirtProcess(Process):
                 options["refvol"] = refvol
 
             retdata, self.log = mcflirt(self.ivm.vol.data, self.ivm.vol.voxel_sizes, **options)
-            if replace:
-                if debug: print("Replacing main volume")
-                self.ivm.set_main_volume(Volume(self.ivm.vol.name, data=retdata), replace=True)
-            else:
-                if debug: print("Adding new overlay")
-                ovl = Overlay(name, data=retdata)
-                self.ivm.add_overlay(ovl, make_current=True)
+            if debug: print("Adding new overlay")
+            ovl = Overlay(name, data=retdata)
+            self.ivm.add_overlay(ovl, make_current=True, make_main=replace)
             self.status = Process.SUCCEEDED
             self.output = [retdata, ]
         except:
