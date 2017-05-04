@@ -16,3 +16,11 @@ class LogViewerDialog(QtGui.QDialog):
         vbox.addWidget(self.buttonBox)
 
         self.setLayout(vbox)
+
+def error_dialog(msg, title="Warning", detail="", subtitle="Details:"):
+    text = msg
+    if detail != "":
+        text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail)
+
+    QtGui.QMessageBox.warning(None, title, text, QtGui.QMessageBox.Close)
+                   

@@ -17,7 +17,7 @@ from PySide import QtCore, QtGui
 from ..QtInherit import HelpButton
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
-from pkview import error_dialog
+from pkview.QtInherit.dialogs import error_dialog
 from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.widgets import PkWidget
 

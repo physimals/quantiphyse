@@ -8,6 +8,8 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 import sys
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
@@ -235,12 +237,12 @@ class SECurve(PkWidget):
             if point not in self.plots:
                 if self.ivm.vol.ndim == 3:
                     # FIXME this should take into account which window the picked point was from
-                    warnings.warning("3D image so just calculating cross image profile")
+                    warnings.warn("3D image so just calculating cross image profile")
                     sig = self.ivm.vol.data[point[0], :, point[2]]
                 elif self.ivm.vol.ndim == 4:
                     sig = self.ivm.vol.data[point[0], point[1], point[2], :]
                 else:
-                    warnings.warning("Image is not 3D or 4D")
+                    warnings.warn("Image is not 3D or 4D")
                     continue
                 plt = SEPlot(sig, pen=self.ivl.pick_col)
                 plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)

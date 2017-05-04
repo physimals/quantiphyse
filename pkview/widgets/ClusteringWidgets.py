@@ -12,8 +12,8 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from sklearn.metrics import pairwise
 
-from pkview import error_dialog
 from pkview.QtInherit import HelpButton
+from pkview.QtInherit.dialogs import error_dialog
 from pkview.analysis.kmeans import KMeansPCA
 from pkview.volumes.volume_management import Roi
 from pkview.widgets import PkWidget

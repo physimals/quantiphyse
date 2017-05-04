@@ -10,7 +10,7 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 from PySide import QtCore, QtGui
 
-from pkview import error_dialog
+from pkview.QtInherit.dialogs import error_dialog
 from pkview.QtInherit import HelpButton
 from pkview.analysis.kmeans import KMeans3D
 from pkview.volumes.volume_management import Roi
