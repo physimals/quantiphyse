@@ -170,7 +170,7 @@ class RegWidget(PkWidget):
     Generic registration / motion correction widget 
     """
     def __init__(self, **kwargs):
-        super(RegWidget, self).__init__(name="Registration", icon="mcflirt", desc="Registration and Motion Correction", **kwargs)
+        super(RegWidget, self).__init__(name="Registration", icon="reg", desc="Registration and Motion Correction", **kwargs)
 
         self.ivm.sig_main_volume.connect(self.main_vol_changed)
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
