@@ -119,15 +119,15 @@ extensions.append(Extension("pkview.analysis.perfusionslic.additional.processing
 
 # MCFlirt extension - requires FSL to build
 
+if sys.platform.startswith("win"):
+  zlib = "zlib"
+  extra_inc = "src/compat"
+else:
+  zlib = "z"
+  extra_inc = "."
+
 fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
-  if sys.platform.startswith("win"):
-    zlib = "zlib"
-    extra_inc = "src/mcflirt/compat"
-  else:
-    zlib = "z"
-    extra_inc = "."
-
   extensions.append(Extension("pkview.analysis.mcflirt",
                  sources=['pkview/analysis/mcflirt.pyx',
                           'src/mcflirt/mcflirt.cc',
@@ -149,7 +149,7 @@ else:
 extensions.append(Extension("pkview.analysis.deeds",
                  sources=['pkview/analysis/deeds.pyx',
                           'src/deedsRegSSC/TMI2013/deedsMSTssc.cpp'],
-                 include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/"],
+                 include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/", extra_inc],
                  language="c++"))
 
 # setup parameters

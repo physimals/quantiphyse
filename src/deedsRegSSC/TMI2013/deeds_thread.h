@@ -28,11 +28,12 @@
 	  else return 0;
   }
 #else
+  #include <pthread.h>
   typedef pthread_t THREAD_ID;
   int create_thread(THREAD_ID *id, void *(*func)(void *), void *data) {
 	  return pthread_create(id, NULL, func, data);
   }
   int join_thread(THREAD_ID id) {
-	  return pthread_join(id);
+	  return pthread_join(id, NULL);
   }
 #endif
