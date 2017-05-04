@@ -14,232 +14,26 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..QtInherit import HelpButton
+from pkview.QtInherit import HelpButton
+from pkview.QtInherit.dialogs import LogViewerDialog, error_dialog
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
-from pkview.QtInherit.dialogs import error_dialog
 from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.widgets import PkWidget
+from pkview.widgets.fabber.views import *
+from pkview.widgets.fabber.dialogs import ModelOptionsDialog, MatrixEditDialog
 
 try:
     from fabber import FabberRunData, find_fabber
-    from fabber.views import *
-    from fabber.dialogs import ModelOptionsDialog, MatrixEditDialog, LogViewerDialog
 except:
-    # Stubs to prevent startup error - warning will occur if Fabber is used
     warnings.warn("Failed to import Fabber API - widget will be disabled")
     traceback.print_exc()
-    OPT_VIEW={}
-    class OptionView:
-        pass
-    class ComponentOptionView:
-        pass
-    class ModelOptionsDialog:
-        pass
-    class MatrixEditDialog:
-        pass
-
-# Current overlays list from the IVM object. Global so that all the ImageOptionView instances
-# can see what overlays to offer as options
-CURRENT_OVERLAYS = []
 
 CITE = """
 <i>Chappell, M.A., Groves, A.R., Woolrich, M.W.
 "Variational Bayesian inference for a non-linear forward model"
 IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
 """
-
-class PriorsView(OptionsView):
-    """
-    More user-friendly view of prior options rather than PSP_byname etc.
-    """
-    def __init__(self, **kwargs):
-        OptionsView.__init__(self, **kwargs)
-        self.priors = []
-        self.prior_widgets = []
-        self.overlays = []
-        self.params = []
-        self.updating_widgets = False
-        self.updating_rundata = False
-        
-    def do_update(self):
-        try:
-            params = FabberLib(rundata=self.rundata).get_model_params(self.rundata)
-        except FabberException, e:
-            # get_model_params can fail if model options not properly set. Repopulate with empty
-            # parameter set - will check again when options change
-            params = []
-
-        if set(params) != set(self.params):
-            self.params = params
-            self.repopulate()
-        else: 
-            self.update_from_rundata()
-
-    def get_widgets(self, idx):
-        type_combo = QtGui.QComboBox()
-        type_combo.addItem("Model default", "")
-        type_combo.addItem("Image Prior", "I")
-        type_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-        type_combo.currentIndexChanged.connect(self.changed)
-        
-        image_combo = QtGui.QComboBox()
-        for overlay in self.overlays:
-            image_combo.addItem(overlay)
-        image_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-        image_combo.currentIndexChanged.connect(self.changed)
-        
-        cb = QtGui.QCheckBox()
-        cb.stateChanged.connect(self.changed)
-        edit = QtGui.QLineEdit()
-        edit.editingFinished.connect(self.changed)
-        
-        return type_combo, QtGui.QLabel("Image: "), image_combo, cb, QtGui.QLabel("Custom precision: "), edit
-
-    def update_from_rundata(self):
-        if not self.updating_rundata:
-            prior_idx=1
-            used_params = []
-            while "PSP_byname%i" % prior_idx in self.rundata:
-                param = self.rundata["PSP_byname%i" % prior_idx]
-                if param in self.params:
-                    idx = self.params.index(param)
-                    type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
-                    used_params.append(param)
-
-                    ptype = self.rundata.get("PSP_byname%i_type" % prior_idx, "")
-                    image = self.rundata.get("PSP_byname%i_image" % prior_idx, "")
-                    prec = self.rundata.get("PSP_byname%i_prec" % prior_idx, "")
-
-                    type_combo.setCurrentIndex(type_combo.findData(ptype))
-                    image_combo.setCurrentIndex(image_combo.findText(image))
-                    edit.setText(prec)
-                
-                prior_idx += 1
-            
-            for idx, param in enumerate(self.params):
-                if param not in used_params:
-                    type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
-                    type_combo.setCurrentIndex(0)
-
-            self.update_widgets()
-
-    def update_widgets(self):
-         for idx, param in enumerate(self.params):
-            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
-        
-            prior_type = type_combo.itemData(type_combo.currentIndex())
-            need_image = (prior_type == "I")
-            l2.setEnabled(need_image)
-            image_combo.setEnabled(need_image)
-
-            cb.setEnabled(prior_type != "")
-            have_prec = (prior_type != "") and cb.isChecked()
-
-            l3.setEnabled(have_prec)
-            edit.setEnabled(have_prec)
-
-    def changed(self):
-        if not self.updating_widgets:
-            self.updating_rundata=True
-            self.update_widgets()
-            self.update_rundata() 
-            self.updating_rundata=False
-
-    def update_rundata(self):
-        prior_idx=1
-        for idx, param in enumerate(self.params):
-            type_combo, l2, image_combo, cb, l3, edit = self.prior_widgets[idx]
-        
-            prior_type = type_combo.itemData(type_combo.currentIndex())
-            need_image = (prior_type == "I")
-            need_prec = cb.isChecked()
-            
-            if prior_type != "":
-                self.rundata["PSP_byname%i" % prior_idx] = param
-                self.rundata["PSP_byname%i_type" % prior_idx] = prior_type
-                if need_image:
-                    self.rundata["PSP_byname%i_image" % prior_idx] = image_combo.currentText()
-                else:
-                    del self.rundata["PSP_byname%i_image" % prior_idx] 
-                if need_prec:
-                    self.rundata["PSP_byname%i_prec" % prior_idx] = edit.text()
-                else:
-                    del self.rundata["PSP_byname%i_prec" % prior_idx] 
-                prior_idx += 1
-
-        while "PSP_byname%i" % prior_idx in self.rundata:
-            del self.rundata["PSP_byname%i" % prior_idx]
-            del self.rundata["PSP_byname%i_type" % prior_idx]
-            del self.rundata["PSP_byname%i_image" % prior_idx]
-            del self.rundata["PSP_byname%i_prec" % prior_idx]
-            prior_idx += 1
-
-        #self.rundata.dump(sys.stdout)
-        
-    def repopulate(self):
-        self.updating_widgets=True
-        self.clear()
-        self.dialog.grid.setSpacing(20)
-        self.prior_widgets = []
-        
-        self.dialog.modelLabel.setText("Model parameter priors")
-        self.dialog.descLabel.setText("Describes optional prior information about each model parameter")
-        
-        if len(self.params) == 0:
-            self.dialog.grid.addWidget(QtGui.QLabel("No parameters found! Make sure model is properly configured"))
-
-        for idx, param in enumerate(self.params):
-            self.prior_widgets.append(self.get_widgets(idx))
-        
-            self.dialog.grid.addWidget(QtGui.QLabel("%s: " % param), idx, 0)
-            for col, w in enumerate(self.prior_widgets[idx]):
-                self.dialog.grid.addWidget(w, idx, col+1)
-
-        self.update_from_rundata()
-        self.update_widgets()
-        self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
-        self.dialog.adjustSize()
-        self.updating_widgets=False
-        
-class ImageOptionView(OptionView):
-    """
-    OptionView subclass which allows image options to be chosen
-    from the current list of overlays
-    """
-    def __init__(self, opt, **kwargs):
-        OptionView.__init__(self, opt, **kwargs)
-        self.combo = QtGui.QComboBox()
-        self.combo.currentIndexChanged.connect(self.changed)
-        self.update_list()
-        self.widgets.append(self.combo)
-
-    def update_list(self):
-        global CURRENT_OVERLAYS
-        current = self.combo.currentText()
-        self.combo.clear()
-        for ov in CURRENT_OVERLAYS:
-            self.combo.addItem(ov)
-        idx = self.combo.findText(current)
-        self.combo.setCurrentIndex(idx)
-
-    def changed(self):
-        # Note that this signal is triggered when the widget
-        # is enabled/disabled and when overlays are added/removed
-        # from the list. So we can't be sure 'fab' is defined
-        if self.combo.isEnabled():
-            if hasattr(self, "rundata"):
-                self.rundata[self.key] = self.combo.currentText()
-
-    def do_update(self):
-        OptionView.do_update(self)
-        if self.key in self.rundata:
-            idx = self.combo.findText(self.rundata[self.key])
-            self.combo.setCurrentIndex(idx)
-
-    def add(self, grid, row):
-        OptionView.add(self, grid, row)
-        grid.addWidget(self.combo, row, 1)
 
 class FabberWidget(PkWidget):
     """

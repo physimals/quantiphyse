@@ -41,7 +41,7 @@ from .widgets.PharmaWidgets import PharmaWidget, PharmaView
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
-from .widgets.FabberWidgets import FabberWidget
+from .widgets.fabber import FabberWidget
 from .widgets.MCWidgets import RegWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
