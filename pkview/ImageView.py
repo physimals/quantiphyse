@@ -463,7 +463,9 @@ class ImageView(QtGui.QGraphicsView, object):
         pos = self.ivm.cim_pos
         for i in range(3):
             zaxis = self.ax_map[i][2]
-            self.imgwin[i].setImage(self.ivm.vol.slice((zaxis, pos[zaxis]), (3, pos[3])), autoLevels=False)
+            slices = [(zaxis, pos[zaxis])]
+            if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
+            self.imgwin[i].setImage(self.ivm.vol.slice(*slices), autoLevels=False)
 
         self.update_arrows()
         self.__update_crosshairs()
