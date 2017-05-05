@@ -9,7 +9,7 @@ from PySide import QtCore, QtGui
 CURRENT_OVERLAYS = []
 
 try:
-    from fabber import View, FabberLib, find_fabber
+    from fabber import View, FabberException, FabberLib, find_fabber
 except:
     # Stub to prevent import failure if Fabber not available
     class View:
