@@ -244,20 +244,16 @@ class ScaleEditDialog(QtGui.QDialog):
         shortcut.activated.connect(self.paste)
 
     def paste(self):
-        print("Paste!")
         clipboard = QtGui.QApplication.clipboard()
         text = clipboard.text()
-        print(text)
         scale = text.strip().split(",")
         if len(scale) != self.table.rowCount():
             scale = text.strip().split()
         if len(scale) != self.table.rowCount():
             scale = text.strip().split("\t")
-        print(scale)
         if len(scale) == self.table.rowCount():
             try:
                 self.set_scale([float(v) for v in scale])
-                print(scale)
             except:
                 pass
 
@@ -796,10 +792,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
             # if frozen
             print("Frozen executable")
             if hasattr(sys, '_MEIPASS'):
-                print("Have _MEIPASS")
                 local_file_path = sys._MEIPASS
             elif hasattr(sys, '_MEIPASS2'):
-                print("Have _MEIPASS2")
                 local_file_path = sys._MEIPASS2
             elif sys.frozen == 'macosx_app':
                 local_file_path = os.getcwd() + '/pkview'
@@ -991,7 +985,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
                     fname.append(filep)
                 else:
                     fname.append(str(url.toLocalFile()))
-                print(fname)
             for name in fname:
                 # Signal that a file has been dropped
                 self.sig_dropped.emit(name)
