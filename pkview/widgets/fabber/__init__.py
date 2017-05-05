@@ -245,17 +245,10 @@ class FabberWidget(PkWidget):
 
     def start_task(self):
         """
-        Start running the PK modelling on button click
+        Start running the Fabber modelling on button click
         """
-        img = self.ivm.vol
-        roi = self.ivm.current_roi
-
-        if img is None:
+        if self.ivm.vol is None:
             error_dialog("No data loaded")
-            return
-
-        if roi is None:
-            error_dialog("No ROI loaded - can only run Fabber with an ROI")
             return
 
         # set the progress value
