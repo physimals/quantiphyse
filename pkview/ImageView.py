@@ -322,9 +322,9 @@ class ImageView(QtGui.QGraphicsView, object):
                 self.win[o2].setVisible(False)
                 self.grid1.addWidget(self.win[i], 0, 0, 2, 2)
             else:
-                self.grid1.addWidget(self.win[0], 0, 0, )
-                self.grid1.addWidget(self.win[1], 0, 1)
-                self.grid1.addWidget(self.win[2], 1, 0)
+                self.grid1.addWidget(self.win[1], 0, 0, )
+                self.grid1.addWidget(self.win[2], 0, 1)
+                self.grid1.addWidget(self.win[0], 1, 0)
                 self.win[o1].setVisible(True)
                 self.win[o2].setVisible(True)
         return expand
@@ -365,8 +365,7 @@ class ImageView(QtGui.QGraphicsView, object):
 
             self.ivm.cim_pos[self.ax_map[i][0]] = mx
             self.ivm.cim_pos[self.ax_map[i][1]] = my
-            #print(self.ivm.vol.data[self.ivm.cim_pos[0], self.ivm.cim_pos[1], self.ivm.cim_pos[2], self.ivm.cim_pos[3]])
-
+            
             if self.pickmode == PickMode.SINGLE:
                 self.sel = [tuple(self.ivm.cim_pos), ]
             elif self.pickmode == PickMode.MULTIPLE:
@@ -656,7 +655,6 @@ class ImageView(QtGui.QGraphicsView, object):
             self.imgwinc[2].setImage(np.zeros((1, 1)), autoLevels=False)
 
         elif self.ivm.current_overlay.ndim == 4:
-            print("4d overlay")
             if self.ivm.current_overlay.shape[3] == 3:
                 # RGB or RGBA image
                 self.imgwinc[0].setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
@@ -664,10 +662,6 @@ class ImageView(QtGui.QGraphicsView, object):
                 self.imgwinc[2].setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
             else:
                 # Timeseries
-        
-                print("timeseries")
-                print("shape", self.ovreg.shape)
-                
                 self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]], autoLevels=False)
                 self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]], autoLevels=False)
                 self.imgwinc[2].setImage(self.ovreg[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]], autoLevels=False)
