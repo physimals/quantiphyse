@@ -27,7 +27,16 @@ Cases:
         # Can override processing defaults here
         MCFlirt:
           refvol: 10 
-
+    MrY:
+        Folder:   c:\Users\ctsu0221\build\data\
+        Volume:   test_data.nii
+        Rois:
+          mask: test_mask.nii
+    MrZ:
+        Folder:   c:\Users\ctsu0221\build\data\
+        Volume:   test_data.nii
+        Rois:
+          mask: test_mask.nii
     #MrsY:
     #    Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
     #    Volume:     qiba_lesst_20.nii
