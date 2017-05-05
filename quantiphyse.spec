@@ -14,7 +14,7 @@ osx_bundle = False
 block_cipher = None
 bin_files = []
 hidden_imports = []
-added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources')]
+added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources'), ('src', 'src')]
 
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
