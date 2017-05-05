@@ -859,5 +859,6 @@ std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float
   if (!globalopts. no_reporting) log << endl << "Saving motion corrected time series... " << endl;
   timeseries.setDisplayMaximumMinimum(timeseries.max(),timeseries.min());
 
+   if (Globaloptions::getInstance().impair != 0) delete Globaloptions::getInstance().impair;
   return log.str();
 }
