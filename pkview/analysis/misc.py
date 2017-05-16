@@ -29,7 +29,7 @@ class CalcVolumesProcess(Process):
         sizes = self.ivm.voxel_sizes
         if roi is not None:
             counts = np.bincount(roi.flatten())
-            for idx, region in enumerate(roi.regions):
+            for idx, region in enumerate(roi.md.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
                     vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
