@@ -18,7 +18,6 @@ from pkview.QtInherit import HelpButton
 from pkview.QtInherit.dialogs import LogViewerDialog, error_dialog
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
-from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.widgets import PkWidget
 from pkview.widgets.fabber.views import *
 from pkview.widgets.fabber.dialogs import ModelOptionsDialog, MatrixEditDialog

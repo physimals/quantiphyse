@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from pkview.volumes.volume_management import Volume, Overlay, Roi
+from pkview.volumes.io import load
 from pkview.analysis import Process
 from pkview.analysis.t1_model import t10_map
 
@@ -22,27 +22,27 @@ class T10Process(Process):
     def run(self, options):
         fa_vols, fas = [], []
         for fname, fa in options["vfa"].items():
-            vol = Volume(fname, fname=_get_filepath(fname, options.get("Folder", "")))
+            vol =load(_get_filepath(fname, self.workdir))
             if isinstance(fa, list):
                 for i, a in enumerate(fa):
                     fas.append(a)
-                    fa_vols.append(vol.data[:,:,:,i])
+                    fa_vols.append(vol[:,:,:,i])
             else:
                 fas.append(fa)
-                fa_vols.append(vol.data)
+                fa_vols.append(vol)
 
         if "afi" in options:
             # We are doing a B0 correction (preclinical)
             afi_vols, trs = [], []
             for fname, tr in options["afi"].items():
-                vol = Volume(fname, fname=_get_filepath(fname, options.get("Folder", "")))
+                vol = load(_get_filepath(fname, self.workdir))
                 if isinstance(tr, list):
                     for i, a in enumerate(tr):
                         trs.append(a)
-                        afi_vols.append(vol.data[:,:,:,i])
+                        afi_vols.append(vol[:,:,:,i])
                 else:
                     trs.append(tr)
-                    afi_vols.append(vol.data)
+                    afi_vols.append(vol)
 
             fa_afi = options["fa-afi"]
             T10 = t10_map(fa_vols, fas, TR=options["tr"], afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=trs)
@@ -54,5 +54,5 @@ class T10Process(Process):
 
         if "clamp" in options:
             np.clip(T10, options["clamp"]["min"], options["clamp"]["max"], out=T10)
-        self.ivm.add_overlay(Overlay(name="T10", data=T10))
+        self.ivm.add_overlay("T10", T10)
         self.status = Process.SUCCEEDED

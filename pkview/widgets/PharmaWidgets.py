@@ -17,7 +17,6 @@ from pkview.QtInherit.dialogs import error_dialog
 from ..QtInherit import HelpButton
 from pkview.analysis import Process
 from pkview.analysis.pk import PkModellingProcess
-from pkview.volumes.volume_management import Overlay, Roi
 from pkview.widgets import PkWidget
 
 class PharmaWidget(PkWidget):

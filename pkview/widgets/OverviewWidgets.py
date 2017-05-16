@@ -111,24 +111,24 @@ class DataListWidget(QtGui.QTableWidget):
         self.selected_type = None
 
     def get_name(self, vol):
-        if vol.fname is not None:
-            name = vol.fname
+        if vol.md.fname is not None:
+            name = vol.md.fname
         else:
-            name = vol.name
+            name = vol.md.name
         return name
 
     def add_volume(self, row, vol_type, vol, current=False):
-        self.setItem(row, 0, QtGui.QTableWidgetItem(vol.name))
+        self.setItem(row, 0, QtGui.QTableWidgetItem(vol.md.name))
         self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
-        if vol.fname is not None:
-            self.setItem(row, 2, QtGui.QTableWidgetItem(vol.fname))
-            self.item(row, 0).setToolTip(vol.fname)
+        if vol.md.fname is not None:
+            self.setItem(row, 2, QtGui.QTableWidgetItem(vol.md.fname))
+            self.item(row, 0).setToolTip(vol.md.fname)
         if current:
             font = self.item(row, 0).font()
             font.setBold(True)
             self.item(row, 0).setFont(font)
             self.item(row, 1).setFont(font)
-            if vol.fname is not None: self.item(row, 2).setFont(font)
+            if vol.md.fname is not None: self.item(row, 2).setFont(font)
         
     def update_list(self, list1):
         try:
@@ -139,10 +139,10 @@ class DataListWidget(QtGui.QTableWidget):
                 self.add_volume(0, "Main volume", self.ivm.vol)
             row = 1
             for ovl in self.ivm.overlays.values():
-                self.add_volume(row, "Overlay", ovl, ovl == self.ivm.current_overlay)
+                self.add_volume(row, "Overlay", ovl, self.ivm.is_current_overlay(ovl))
                 row += 1
             for roi in self.ivm.rois.values():
-                self.add_volume(row, "ROI", roi, roi == self.ivm.current_roi)
+                self.add_volume(row, "ROI", roi, self.ivm.is_current_roi(roi))
                 row += 1
         finally:
             self.blockSignals(False)

@@ -188,11 +188,11 @@ class SECurve(PkWidget):
         self.win1.setVisible(True)
         if self.p1 is not None: self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        if self.ivm.vol:
+        if self.ivm.vol is not None:
             if self.cb3.isChecked():
-                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.name)
+                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.md.name)
             else:
-                self.p1.setLabel('left', self.ivm.vol.name)
+                self.p1.setLabel('left', self.ivm.vol.md.name)
             
         self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
@@ -238,9 +238,9 @@ class SECurve(PkWidget):
                 if self.ivm.vol.ndim == 3:
                     # FIXME this should take into account which window the picked point was from
                     warnings.warn("3D image so just calculating cross image profile")
-                    sig = self.ivm.vol.data[point[0], :, point[2]]
+                    sig = self.ivm.vol[point[0], :, point[2]]
                 elif self.ivm.vol.ndim == 4:
-                    sig = self.ivm.vol.data[point[0], point[1], point[2], :]
+                    sig = self.ivm.vol[point[0], point[1], point[2], :]
                 else:
                     warnings.warn("Image is not 3D or 4D")
                     continue
@@ -259,11 +259,13 @@ class SECurve(PkWidget):
     def plot_col_changed(self, text):
         self.ivl.pick_col = self.colors.get(text, (255, 255, 255))
 
-class ColorOverlay1(PkWidget):
+class OverlayStatistics(PkWidget):
 
     """
     Color overlay interaction
     """
+    CURRENT_OVERLAY = 0
+    ALL_OVERLAYS = 1
 
     # Signals
     # emit colormap choice
@@ -276,13 +278,22 @@ class ColorOverlay1(PkWidget):
     sig_range_change = QtCore.Signal(int)
 
     def __init__(self, **kwargs):
-        super(ColorOverlay1, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
+        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
 
-        self.ivm.sig_current_roi.connect(self.roi_changed)
-        self.ivm.sig_current_overlay.connect(self.overlay_changed)
+    def activate(self):
+        self.ivm.sig_current_roi.connect(self.update_all)
+        self.ivm.sig_all_overlays.connect(self.update_all)
+        self.ivm.sig_current_overlay.connect(self.update_all)
         self.ivl.sig_focus_changed.connect(self.focus_changed)
-        self.ia = OverlayAnalysis(ivm=self.ivm)
 
+    def deactivate(self):
+        self.ivm.sig_current_roi.disconnect(self.roi_changed)
+        self.ivm.sig_current_overlay.disconnect(self.overlay_changed)
+        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
+
+    def init(self):
+        """ Set up UI controls here so as not to delay startup"""
+        self.ia = OverlayAnalysis(ivm=self.ivm)
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
         l1 = QtGui.QVBoxLayout()
@@ -295,7 +306,7 @@ class ColorOverlay1(PkWidget):
         self.mode_combo.addItem("All overlays")
         self.mode_combo.currentIndexChanged.connect(self.mode_changed)
         hbox.addWidget(self.mode_combo)
-        self.col_mode = 0
+        self.ovl_selection = self.CURRENT_OVERLAY
         hbox.addStretch(1)
         bhelp = HelpButton(self, "overlay_stats")
         hbox.addWidget(bhelp)
@@ -359,7 +370,7 @@ class ColorOverlay1(PkWidget):
 
         regenHbox = QtGui.QHBoxLayout()
         self.regenBtn = QtGui.QPushButton("Recalculate")
-        self.regenBtn.clicked.connect(self.generate_histogram)
+        self.regenBtn.clicked.connect(self.update_histogram)
         regenHbox.addWidget(self.regenBtn)
         regenHbox.addStretch(1)
         self.regenBtn.setVisible(False)
@@ -463,8 +474,43 @@ class ColorOverlay1(PkWidget):
         self.setLayout(l1)
 
     def mode_changed(self, idx):
-        self.col_mode = idx
-        self.update()
+        self.ovl_selection = idx
+        self.update_all()
+
+    def focus_changed(self, overlay):
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+        if self.tab1ss.isVisible():
+            self.update_overlay_stats_current_slice()
+
+    def update_all(self):
+        if self.ivm.current_overlay is None:
+            self.mode_combo.setItemText(0, "Current overlay")
+        else:
+            self.mode_combo.setItemText(0, self.ivm.current_overlay.md.name)
+            self.rp_plt.setLabel('left', self.ivm.current_overlay.md.name)
+
+        self.update_histogram_spins()
+
+        if self.rp_win.isVisible():
+            self.update_radial_profile()
+        if self.tab1.isVisible():
+            self.update_overlay_stats()
+        if self.tab1ss.isVisible():
+            self.update_overlay_stats_current_slice()
+        if self.win1.isVisible():
+            self.update_histogram()
+
+    def update_histogram_spins(self):
+        # Min and max set for overlay choice
+        ov = self.ivm.current_overlay
+        if ov is not None:
+            self.minSpin.setValue(ov.md.range[0])
+            self.maxSpin.setValue(ov.md.range[1])
+            self.minSpin.setDecimals(ov.md.dps)
+            self.maxSpin.setDecimals(ov.md.dps)
+            self.minSpin.setSingleStep(10**(1-ov.md.dps))
+            self.maxSpin.setSingleStep(10**(1-ov.md.dps))
 
     def copy_stats(self):
         copy_table(self.tabmod1)
@@ -478,7 +524,7 @@ class ColorOverlay1(PkWidget):
             self.copy_btn.setVisible(False)
             self.butgen.setText("Show")
         else:
-            self.generate_overlay_stats()
+            self.update_overlay_stats()
             self.tab1.setVisible(True)
             self.copy_btn.setVisible(True)
             self.butgen.setText("Hide")
@@ -491,7 +537,7 @@ class ColorOverlay1(PkWidget):
             self.copy_btn_ss.setVisible(False)
             self.butgenss.setText("Show")
         else:
-            self.generate_overlay_stats_current_slice()
+            self.update_overlay_stats_current_slice()
             self.tab1ss.setVisible(True)
             self.slice_dir_label.setVisible(True)
             self.sscombo.setVisible(True)
@@ -504,7 +550,7 @@ class ColorOverlay1(PkWidget):
             self.regenBtn.setVisible(False)
             self.butgen2.setText("Show")
         else:
-            self.generate_histogram()
+            self.update_histogram()
             self.win1.setVisible(True)
             self.regenBtn.setVisible(True)
             self.butgen2.setText("Hide")
@@ -518,96 +564,18 @@ class ColorOverlay1(PkWidget):
             self.rp_win.setVisible(True)
             self.rp_btn.setText("Hide")
 
-    def update_spin_minmax(self, spin, range):
-        spin.setMinimum(range[0])
-        spin.setMaximum(range[1])
-
-    def reset_spins(self):
-        # Min and max set for overlay choice
-        ov = self.ivm.current_overlay
-        if ov:
-            self.minSpin.setValue(ov.range[0])
-            self.maxSpin.setValue(ov.range[1])
-            self.minSpin.setDecimals(ov.dps)
-            self.maxSpin.setDecimals(ov.dps)
-            self.minSpin.setSingleStep(10**(1-ov.dps))
-            self.maxSpin.setSingleStep(10**(1-ov.dps))
-
-    def overlay_changed(self, overlay):
-        if overlay is None:
-            self.mode_combo.setItemText(0, "Current overlay")
-        else:
-            self.mode_combo.setItemText(0, overlay.name)
-            self.reset_spins()
-            self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
-            self.update()
- 
-    def focus_changed(self, overlay):
-        """
-        Update image data views
-        """
-        if self.rp_win.isVisible():
-            self.update_radial_profile()
-        if self.tab1ss.isVisible():
-            self.generate_overlay_stats_current_slice()
-
-    def roi_changed(self, roi):
-        self.update()
-
-    def update(self):
-        if self.rp_win.isVisible():
-            self.update_radial_profile()
-        if self.tab1.isVisible():
-            self.generate_overlay_stats()
-        if self.tab1ss.isVisible():
-            self.generate_overlay_stats_current_slice()
-        if self.win1.isVisible():
-            self.generate_histogram()
-
     def update_radial_profile(self):
         rp, xvals, binedges = self.ia.get_radial_profile(bins=self.rp_nbins.value())
         self.rp_curve.setData(x=xvals, y=rp)
 
-    @QtCore.Slot()
-    def populate_stats_table(self, tabmod, **kwargs):
-        # Clear the previous labels
-        tabmod.clear()
-        tabmod.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-        tabmod.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        tabmod.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-        tabmod.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-        tabmod.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-        if self.ivm.current_overlay is None:
-            return
-        elif self.col_mode == 0:
-            ovs = [self.ivm.current_overlay,]
-        else:
-            ovs = self.ivm.overlays.values()
-            
-        col = 0
-        for ov in ovs:
-            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **kwargs)
-            for ii in range(len(stats1['mean'])):
-                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
-                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
-                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.dps))))
-                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.dps))))
-                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.dps))))
-                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.dps))))
-                col += 1
-
-    @QtCore.Slot()
-    def generate_overlay_stats(self):
+    def update_overlay_stats(self):
         self.populate_stats_table(self.tabmod1)
 
-    @QtCore.Slot()
-    def generate_overlay_stats_current_slice(self):
+    def update_overlay_stats_current_slice(self):
         selected_slice = self.sscombo.currentIndex()
         self.populate_stats_table(self.tabmod1ss, slice=selected_slice)
 
-    @QtCore.Slot()
-    def generate_histogram(self):
+    def update_histogram(self):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             m1 = QtGui.QMessageBox()
             m1.setWindowTitle("Histogram")
@@ -630,12 +598,33 @@ class ColorOverlay1(PkWidget):
             curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol, width=2))
             self.plt1.addItem(curve)
 
-    def __plot(self, values1):
-        self.curve.setData(values1)
+    def populate_stats_table(self, tabmod, **kwargs):
+        # Clear the previous labels
+        tabmod.clear()
+        tabmod.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
+        tabmod.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
+        tabmod.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        tabmod.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
+        tabmod.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
-    @QtCore.Slot(np.ndarray)
-    def sig_mouse(self, values1):
-        self.__plot(values1)
+        if self.ivm.current_overlay is None:
+            return
+        elif self.ovl_selection == self.CURRENT_OVERLAY:
+            ovs = [self.ivm.current_overlay,]
+        else:
+            ovs = self.ivm.overlays.values()
+            
+        col = 0
+        for ov in ovs:
+            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **kwargs)
+            for ii in range(len(stats1['mean'])):
+                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.md.name, roi_labels[ii])))
+                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.md.dps))))
+                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.md.dps))))
+                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.md.dps))))
+                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.md.dps))))
+                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.md.dps))))
+                col += 1
 
 class RoiAnalysisWidget(PkWidget):
     """

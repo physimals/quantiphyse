@@ -34,7 +34,7 @@ from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 # My widgets
 from ._version import __version__
 from .ImageView import ImageView
-from .widgets.AnalysisWidgets import SECurve, ColorOverlay1, RoiAnalysisWidget
+from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
@@ -45,7 +45,8 @@ from .widgets.fabber import FabberWidget
 from .widgets.MCWidgets import RegWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
-from .volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
+from .volumes.io import load, save
+from .volumes.volume_management import ImageVolumeManagement
 from .widgets.ExampleWidgets import ExampleWidget1
 
 from .utils.batch import run_batch
@@ -68,34 +69,30 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ftype=None):
+    def __init__(self, parent, fname, ftype=None, force_t_option=False):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
 
         layout = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("File:"), 0, 0)
-        grid.addWidget(QtGui.QLabel(fname), 0, 1)
+        #grid.addWidget(QtGui.QLabel("File:"), 0, 0)
+        #grid.addWidget(QtGui.QLabel(fname), 0, 1)
         grid.addWidget(QtGui.QLabel("Name:"), 1, 0)
         self.name_combo = QtGui.QComboBox()
         def_name = os.path.split(fname)[1].split(".", 1)[0]
         for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves', 'annotation']:
             self.name_combo.addItem(name)
         self.name_combo.setEditable(True)
-        grid.addWidget(self.name_combo)
+        grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
-
         hbox = QtGui.QHBoxLayout()
         if ftype is None:
-            btn = QtGui.QPushButton("Main data")
-            btn.clicked.connect(self.clicked("MAIN"))
+            btn = QtGui.QPushButton("Data")
+            btn.clicked.connect(self.clicked("DATA"))
             hbox.addWidget(btn)
             btn = QtGui.QPushButton("ROI")
             btn.clicked.connect(self.clicked("ROI"))
-            hbox.addWidget(btn)
-            btn = QtGui.QPushButton("Overlay")
-            btn.clicked.connect(self.clicked("OVERLAY"))
             hbox.addWidget(btn)
         else:
             btn = QtGui.QPushButton("Ok")
@@ -105,24 +102,32 @@ class DragOptions(QtGui.QDialog):
         btn.clicked.connect(self.reject)
         hbox.addWidget(btn)
         layout.addLayout(hbox)
-
+        
+        hbox = QtGui.QHBoxLayout()
+        self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
+        self.force_t_cb.setVisible(force_t_option)
+        hbox.addWidget(self.force_t_cb, 2, 0)
+        hbox.addStretch()
+        layout.addLayout(hbox)
+        
         self.setLayout(layout)
-        self.but = ""
+        self.type = ""
         self.name = ""
+        self.force_t = False
 
     def clicked(self, ret):
         def cb():
-            self.but = ret
+            self.type = ret
+            self.force_t = self.force_t_cb.isChecked()
             self.name = self.name_combo.currentText()
             self.accept()
         return cb
 
     @staticmethod
-    def getImageChoice(parent, fname, ftype=None):
-
-        dialog = DragOptions(parent, fname, ftype)
+    def getImageChoice(parent, fname, ftype=None, force_t_option=False):
+        dialog = DragOptions(parent, fname, ftype=ftype, force_t_option=force_t_option)
         result = dialog.exec_()
-        return dialog.but, dialog.name, result == QtGui.QDialog.Accepted
+        return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t
 
 def send_register_email(name, inst, email):
     """
@@ -446,7 +451,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(OverviewWidget, default=True) 
         self.add_widget(SECurve, default=True)
         self.add_widget(PharmaView) 
-        self.add_widget(ColorOverlay1, default=True) 
+        self.add_widget(OverlayStatistics, default=True) 
         self.add_widget(RoiAnalysisWidget) 
         self.add_widget(PharmaWidget) 
         self.add_widget(T10Widget) 
@@ -651,7 +656,7 @@ class MainWindowWidget(QtGui.QWidget):
         if overlay is None:
             self.overlay_combo.setCurrentIndex(-1)
         else:
-            idx = self.overlay_combo.findText(overlay.name)
+            idx = self.overlay_combo.findText(overlay.md.name)
             if idx != self.overlay_combo.currentIndex():
                 try:
                     self.overlay_combo.blockSignals(True)
@@ -679,7 +684,7 @@ class MainWindowWidget(QtGui.QWidget):
         if roi is None:
             self.roi_combo.setCurrentIndex(-1)
         else:
-            idx = self.roi_combo.findText(roi.name)
+            idx = self.roi_combo.findText(roi.md.name)
             if idx != self.roi_combo.currentIndex():
                 try:
                     self.roi_combo.blockSignals(True)
@@ -843,6 +848,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         settings = QtCore.QSettings()
         reg = settings.value("registered", 0)
+        #reg = 0
         if not reg:
             dlg = RegisterDialog(self)
             res = dlg.exec_()
@@ -884,20 +890,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
         
         # File --> Load Image
-        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Image Volume', self)
+        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d image')
-        load_action.triggered.connect(self.load_volume)
+        load_action.triggered.connect(self.load_vol)
 
         # File --> Load ROI
         load_roi_action = QtGui.QAction(QtGui.QIcon(get_icon("pencil")), '&Load ROI', self)
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.load_roi)
-
-        # File --> Load Overlay
-        load_ovreg_action = QtGui.QAction(QtGui.QIcon(get_icon("edit")), '&Load Overlay', self)
-        load_ovreg_action.setStatusTip('Load overlay')
-        load_ovreg_action.triggered.connect(self.load_overlay)
 
         # File --> Save Overlay
         save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save Current Overlay', self)
@@ -934,7 +935,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
-        file_menu.addAction(load_ovreg_action)
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
@@ -1021,7 +1021,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pyqtgraph.console
         """
         # Places that the console has access to
-        namespace = {'pg': pg, 'np': np, 'mw1': self.mw1, 'ivm': self.mw1.ivm, 'self': self}
+        namespace = {'np': np, 'ivm': self.mw1.ivm, 'self': self}
+        for name, ovl in self.mw1.ivm.overlays.items():
+            namespace[name] = ovl
+        for name, roi in self.mw1.ivm.rois.items():
+            namespace[name] = roi
+
         text = (
             """
             ****** Quantiphyse Console ******
@@ -1029,11 +1034,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
             This is a python console that allows interaction with the GUI data and running of scripts.
 
             Libraries already imported
-            np: Numpy
+              np: Numpy
 
             Access to data
-            mw1: Access to the main window
-            ivm: Access to all the stored image data
+              ivm: Access to all the stored image data
 
             """)
         self.con1 = pg.console.ConsoleWidget(namespace=namespace, text=text)
@@ -1041,56 +1045,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
         self.con1.show()
 
-    # Dialogs
-
-    def load_volume(self, fname=None):
-        """
-        Dialog for loading a file
-        @fname: allows a file name to be passed in automatically
-        """
-        if fname is None:
-            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-
-        if fname != '':
-            self.load_main(fname)
-
-    # def show_annot_load_dialog(self, checked):
-    #     """
-    #     Annotation dialog
-    #     """
-    #
-    #     if checked:
-    #         self.mw1.ivm.set_blank_annotation()
-    #         self.mw1.ivl.load_ovreg()
-    #         self.mw1.ivl.enable_drawing(color1=1)
-    #     else:
-    #         self.mw1.ivl.enable_drawing(color1=-1)
-
-    def load_roi(self, fname=None, name=None):
-        """
-        Dialog for loading a file
-        @fname: allows a file name to be passed in automatically
-        """
-        if fname is None:
-            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
-            if not fname: return
-
-        if name is None:
-            name = os.path.split(fname)[1].split(".", 1)[0]
-        
-        self.default_directory = get_dir(fname)
-        
-        try:
-            self.mw1.ivm.add_roi(Roi(name, fname=fname), make_current=True)
-        except:
-            # Try again, ignoring file transformation
-            if self.mw1.ivm.vol:
-                print("Failed shape check, try again with volume affine")
-                self.mw1.ivm.add_roi(Roi(name, fname=fname, affine=self.mw1.ivm.vol.affine), make_current=True)
-            else:
-                raise
-
-    def load_overlay(self, fname=None, name=None):
+    def load_data(self, fname=None, name=None, ftype=None):
         """
         Dialog for loading an overlay and specifying the type of overlay
         @fname: allows a file name to be passed in automatically
@@ -1100,19 +1055,26 @@ class WindowAndDecorators(QtGui.QMainWindow):
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
             if not fname: return
 
-        if name is None:
-            ftype, name, ok = DragOptions.getImageChoice(self, fname, ftype="OVERLAY")
+        vol = load(fname)
+        self.default_directory = get_dir(fname)
+
+        if ftype is None:
+            ftype, name, ok, force_t = DragOptions.getImageChoice(self, fname, force_t_option=(vol.ndim == 3))
             if not ok: return
 
-        self.default_directory = get_dir(fname)
-        
+        if name is not None:
+            vol.md.name = name
+
+        if ftype == "DATA": add_fn = self.mw1.ivm.add_overlay
+        else: add_fn = self.mw1.ivm.add_roi
         try:
-            self.mw1.ivm.add_overlay(Overlay(name, fname=fname), make_current=True)
+            add_fn(vol.md.name, vol, make_current=True)
         except:
             # Try again, ignoring file transformation
-            if self.mw1.ivm.vol:
+            if self.mw1.ivm.vol is not None:
                 print("Failed shape check, try again with volume affine")
-                self.mw1.ivm.add_overlay(Overlay(name, fname=fname, affine=self.mw1.ivm.vol.affine), make_current=True)
+                vol = load(fname, ignore_affine=True)
+                add_fn(vol.md.name, vol, make_current=True)
             else:
                 raise
 
@@ -1126,9 +1088,15 @@ class WindowAndDecorators(QtGui.QMainWindow):
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
                 # self.default_directory = get_dir(fname)
-                self.mw1.ivm.current_overlay.save_nifti(fname)
+                save(self.mw1.ivm.current_overlay, fname)
             else:
                 print('Warning: No file selected')
+
+    def load_vol(self):
+        self.load_data(ftype="DATA")
+
+    def load_roi(self):
+        self.load_data(ftype="ROI")
 
     @QtCore.Slot(str)
     def drag_drop_dialog(self, fname):
@@ -1137,77 +1105,18 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
         self.raise_()
         self.activateWindow()
-        ftype, name, ok = DragOptions.getImageChoice(self, fname)
-        if not ok: return
-
-        # Remember load directory
-        self.default_directory = get_dir(fname)
-
-        if ftype == 'MAIN':
-            self.load_main(fname)
-        elif ftype == 'OVERLAY':
-            self.load_overlay(fname, name)
-        elif ftype == 'ROI':
-            self.load_roi(fname, name)
-
-    def load_main(self, fname):
-        vol = Volume(os.path.basename(fname), fname=fname)
-        ndim = vol.ndim
-        if vol.ndim == 2:
-            multi = False
-            ndim = 3
-        if vol.ndim == 3:
-            # 3D volume loaded - is it 2d + time or static 3d?
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("3D volume loaded")
-            msgBox.setInformativeText("Choose image type")
-            msgBox.addButton("Single 3D volume", QtGui.QMessageBox.NoRole)
-            msgBox.addButton("Multiple 2D volumes", QtGui.QMessageBox.YesRole)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
-            ret = msgBox.exec_()
-            if ret == QtGui.QDialog.Accepted:
-                ndim = 4
-        elif vol.ndim != 4:
-            error_dialog("Quantiphyse supports 2D and 3D volumes with one optional additional dimension only", "Error")
-            return
-
-        vol.force_ndim(ndim, multi=(ndim == 4))
-        
-        try:
-            self.mw1.ivm.check_shape(vol.shape)
-        except:
-            # Data already exists and shape is not consistent
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("A different shaped volume has already been loaded")
-            msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-            ret = msgBox.exec_()
-        
-            if ret == QtGui.QMessageBox.Ok:
-                self.mw1.ivm.reset()
-            else:
-                return
-
-        self.mw1.ivm.add_overlay(vol, make_main=True)
-        print("Image dimensions: ", self.mw1.ivm.shape)
-        print("Voxel size: ", self.mw1.ivm.voxel_sizes)
-        print("Image range: ", self.mw1.ivm.vol.range)
-        self.mw1.vol_name.setText(fname)
-        self.mw1.update_slider_range()
-        self.mw1.slider_scroll_mouse()
+        self.load_data(fname)
 
     def auto_load_files(self):
         """
         Check to see if any input directories have been passed from the terminal for auto loading and loads those images
         """
-
         if self.image_dir_in is not None:
-            self.load_volume(fname=self.image_dir_in)
+            self.load_data(fname=self.image_dir_in, ftype="DATA")
         if self.roi_dir_in is not None:
-            self.load_roi(fname=self.roi_dir_in)
+            self.load_data(fname=self.roi_dir_in, ftype="ROI")
         if self.overlay_dir_in is not None:
-            self.load_overlay(fname=self.overlay_dir_in, name=self.overlay_type_in)
+            self.load_data(fname=self.overlay_dir_in, name=self.overlay_type_in, ftype="DATA")
 
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))

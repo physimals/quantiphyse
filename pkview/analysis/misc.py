@@ -2,7 +2,6 @@ import numpy as np
 
 from PySide import QtGui
 
-from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.utils import table_to_str
 from pkview.analysis import Process, BackgroundProcess
 
@@ -29,7 +28,7 @@ class CalcVolumesProcess(Process):
 
         sizes = self.ivm.voxel_sizes
         if roi is not None:
-            counts = np.bincount(roi.data.flatten())
+            counts = np.bincount(roi.flatten())
             for idx, region in enumerate(roi.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]

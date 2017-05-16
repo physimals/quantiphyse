@@ -116,6 +116,7 @@ class BackgroundProcess(Process):
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
+                print("Splitting numpy array shape ", arg.shape)
                 split_args.append(np.array_split(arg, n, 0))
             else:
                 split_args.append([arg,] * n)
@@ -134,7 +135,7 @@ class BackgroundProcess(Process):
 
     def _process_cb(self, result):
         worker_id, success, output = result
-        #print("Finished: id=", worker_id, success, str(output))
+        print("Finished: id=", worker_id, success, str(output))
         
         if self.status == Process.FAILED:
             # If one process has already failed, ignore results of others

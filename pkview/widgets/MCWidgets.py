@@ -8,7 +8,6 @@ from pkview.QtInherit import HelpButton
 from pkview.QtInherit.dialogs import LogViewerDialog
 from pkview.analysis import Process
 from pkview.analysis.reg import RegProcess, McflirtProcess
-from pkview.volumes.volume_management import Volume, Overlay
 from pkview.widgets import PkWidget
 
 class McflirtInterface:
@@ -288,7 +287,7 @@ class RegWidget(PkWidget):
         self.mode = 0
         self.method_changed(0)
 
-    def overlays_changed(self, vol):
+    def overlays_changed(self, ovls):
         self.update()
 
     def main_vol_changed(self, vol):
@@ -314,7 +313,7 @@ class RegWidget(PkWidget):
 
     def refdata_changed(self, idx):
         if idx >= 0:
-            vol = self.refdata.itemData(idx)
+            vol = self.ivm.overlays[self.refdata.currentText()]
             self.refvol_label.setVisible(vol.ndim == 4)
             self.refvol.setVisible(vol.ndim == 4)
             if vol.ndim == 4:
@@ -322,11 +321,11 @@ class RegWidget(PkWidget):
                 self.refidx.setValue(int(vol.shape[3]/2))
             self.refvol_changed(self.refvol.currentIndex())
             if self.mode == 1: # MoCo
-                self.name_edit.setText("%s_reg" % vol.name)
+                self.name_edit.setText("%s_reg" % vol.md.name)
 
     def regdata_changed(self, idx):
         if idx >= 0 and self.mode == 0:
-            self.name_edit.setText("%s_reg" % self.regdata.itemData(idx).name)
+            self.name_edit.setText("%s_reg" % self.ivm.overlays[self.regdata.currentText()])
 
     def refvol_changed(self, idx):
         self.refidx.setVisible(self.refvol.isVisible() and (idx == 2))
@@ -343,10 +342,11 @@ class RegWidget(PkWidget):
         self.regdata.clear()
         vol = self.ivm.vol
         if vol is not None:
-            self.refdata.addItem(vol.name, vol)
+            self.refdata.addItem(vol.md.name)
+            
         for ovl in self.ivm.overlays.values():
-            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.name, ovl)
-            if ovl.ndim == 3: self.regdata.addItem(ovl.name, ovl)
+            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.md.name)
+            if ovl.ndim == 3: self.regdata.addItem(ovl.md.name)
 
         idx = self.refdata.findText(currentRef)
         self.refdata.setCurrentIndex(max(0, idx))
@@ -359,7 +359,7 @@ class RegWidget(PkWidget):
         options["method"] = self.method_combo.currentText()
         options["output-name"] = self.name_edit.text()
 
-        refdata = self.refdata.itemData(self.refdata.currentIndex())
+        refdata = self.ivm.overlays[self.refdata.currentText()]
         if refdata.ndim == 4:
             refvol = self.refvol.currentIndex()
             if refvol == 0:

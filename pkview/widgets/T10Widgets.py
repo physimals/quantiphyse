@@ -8,7 +8,6 @@ from scipy.ndimage.filters import gaussian_filter
 
 from ..QtInherit import HelpButton
 from pkview.analysis.t1_model import t10_map
-from pkview.volumes.volume_management import Volume, Overlay, Roi
 from pkview.widgets import PkWidget
 
 class NumberInput(QtGui.QHBoxLayout):
@@ -66,7 +65,7 @@ class SourceImageList(QtGui.QVBoxLayout):
         and must have shape consistent with the main volume
         """
         try:
-            f = Overlay(name=filename, fname=filename, affine=self.ivm.vol.affine)
+            f = load(filename)
             if len(f.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
@@ -165,8 +164,7 @@ class SourceImageList(QtGui.QVBoxLayout):
             filename = self.table.item(i, 0).text()
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
             # NB need to pass main volume affine to ensure consistant orientation
-            img = Overlay(filename, fname=filename, affine=self.ivm.vol.affine)
-            vol = img.data
+            vol = load(filename)
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
                 vols.append(vol)
@@ -313,4 +311,4 @@ class T10Widget(PkWidget):
         if self.clamp.isChecked():
             np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)
 
-        self.ivm.add_overlay(Overlay(name="T10", data=T10), make_current=True)
+        self.ivm.add_overlay("T10", T10, make_current=True)

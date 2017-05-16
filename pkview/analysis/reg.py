@@ -5,7 +5,6 @@ import traceback
 
 import numpy as np
 
-from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.analysis import Process, BackgroundProcess
 from pkview.analysis.deeds import deedsReg
 from pkview.analysis.mcflirt import mcflirt
@@ -72,11 +71,11 @@ class RegProcess(BackgroundProcess):
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
         self.method = options.pop("method", "deeds")
-        regdata_name = options.pop("reg", self.ivm.vol.name)
-        if regdata_name == self.ivm.vol.name:
-            reg_vols = self.ivm.vol.data
+        regdata_name = options.pop("reg", self.ivm.vol.md.name)
+        if regdata_name == self.ivm.vol.md.name:
+            reg_vols = self.ivm.vol
         else:
-            reg_vols = self.ivm.overlays[regdata_name].data
+            reg_vols = self.ivm.overlays[regdata_name]
 
         self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
         self.nvols = reg_vols.shape[-1]
@@ -84,8 +83,8 @@ class RegProcess(BackgroundProcess):
         # Reference data defaults to same as reg data so MoCo can be
         # supported as self-registration
         refdata_name = options.pop("ref", regdata_name)
-        if refdata_name == self.ivm.vol.name:
-            ref_vols = self.ivm.vol.data
+        if refdata_name == self.ivm.vol.md.name:
+            ref_vols = self.ivm.vol
         else:
             ref_vols = self.ivm.overlays[refdata_name]
 
@@ -117,7 +116,7 @@ class RegProcess(BackgroundProcess):
         self.log = ""
         if self.status == Process.SUCCEEDED:
             output = self.output[0]
-            self.ivm.add_overlay(Overlay(self.output_name, data=output[0]), make_current=True)
+            self.ivm.add_overlay(self.output_name, output[0], make_current=True)
             self.log = output[1]
 
 class McflirtProcess(Process):
@@ -131,20 +130,15 @@ class McflirtProcess(Process):
         try:
             replace = options.pop("replace-vol", False)
             name = options.pop("output-name", "moco")
-            debug = options.pop("Debug", False)
-            folder = options.pop("Folder", "")
-            folder = options.pop("OutputFolder", "")
-            
             refvol = options.pop("ref-vol", "median")
             if refvol == "mean":
                 options["meanvol"] = ""
             elif refvol != "median":
                 options["refvol"] = refvol
 
-            retdata, self.log = mcflirt(self.ivm.vol.data, self.ivm.vol.voxel_sizes, **options)
-            if debug: print("Adding new overlay")
-            ovl = Overlay(name, data=retdata)
-            self.ivm.add_overlay(ovl, make_current=True, make_main=replace)
+            retdata, self.log = mcflirt(self.ivm.vol, self.ivm.voxel_sizes, **options)
+            if self.debug: print("Adding new overlay")
+            self.ivm.add_overlay(name, retdata, make_current=True, make_main=replace)
             self.status = Process.SUCCEEDED
             self.output = [retdata, ]
         except:

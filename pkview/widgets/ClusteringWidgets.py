@@ -15,7 +15,6 @@ from sklearn.metrics import pairwise
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.dialogs import error_dialog
 from pkview.analysis.kmeans import KMeansPCA
-from pkview.volumes.volume_management import Roi
 from pkview.widgets import PkWidget
 
 class CurveClusteringWidget(PkWidget):
@@ -185,8 +184,8 @@ class CurveClusteringWidget(PkWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.vol.data
-        roi1 = self.ivm.current_roi.data
+        img1 = self.ivm.vol
+        roi1 = self.ivm.current_roi
 
         self.km = KMeansPCA(img1, region1=roi1.astype(np.float32))
         self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
@@ -195,7 +194,7 @@ class CurveClusteringWidget(PkWidget):
         self.label1, self.label1_cent = self.km.get_label_image()
         # self.labs_un_orig = np.unique(self.label1)
 
-        self.ivm.add_roi(Roi("clusters", data=self.label1), make_current=True)
+        self.ivm.add_roi("clusters", self.label1, make_current=True)
         # This previous step should generate a color map which can then be used in the following steps.
 
         self._plot()
@@ -273,7 +272,7 @@ class CurveClusteringWidget(PkWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.add_roi(Roi('clusters', data=self.label1), make_current=True)
+        self.ivm.add_roi('clusters', self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
 
         # replot

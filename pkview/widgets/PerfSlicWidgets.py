@@ -1,7 +1,6 @@
 from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
-from pkview.volumes.volume_management import Overlay, Roi
 
 from ..QtInherit import HelpButton
 from pkview.analysis.perfusionslic import PerfSLIC
@@ -154,12 +153,12 @@ class PerfSlicWidget(PkWidget):
             f = np.vectorize(lambda x: self.closest(x, svoxels))
             sel = f(sel)
             print(sel)
-            ovl = self.ivm.overlays["supervoxels"].data
+            ovl = self.ivm.overlays["supervoxels"]
             for val in svoxels:
                 self.roi = self.roi | np.where(ovl == val, 1, 0)
                 self.roi_regions.add(val)
             self.roi_hist.append(svoxels)
-            self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
+            self.ivm.add_roi("sv_roi", self.roi, make_current=True)
 
     def roi_reset(self):
         self.roi = np.zeros(self.ivm.vol.shape[:3], dtype=np.int8)
@@ -172,7 +171,7 @@ class PerfSlicWidget(PkWidget):
 
     def roi_undo(self):
         last_change = self.roi_hist[-1]
-        ovl = self.ivm.overlays["supervoxels"].data
+        ovl = self.ivm.overlays["supervoxels"]
         for val in last_change:
             if val < 0:
                 # Undo region removal, i.e. add it back
@@ -183,12 +182,12 @@ class PerfSlicWidget(PkWidget):
                 self.roi = self.roi & np.where(ovl == val, 0, 1)
                 self.roi_regions.remove(val)
         self.roi_hist = self.roi_hist[:-1]
-        self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
+        self.ivm.add_roi("sv_roi", self.roi, make_current=True)
 
     def sig_mouse_click(self, values):
         pos = self.ivm.cim_pos[:3]
         if self.picking_roi:
-            ovl = self.ivm.overlays["supervoxels"].data
+            ovl = self.ivm.overlays["supervoxels"]
             val = ovl[pos[0], pos[1], pos[2]]
 
             if val in self.roi_regions:
@@ -199,7 +198,7 @@ class PerfSlicWidget(PkWidget):
                 self.roi = self.roi | np.where(ovl == val, 1, 0)
                 self.roi_hist.append([val])
                 self.roi_regions.add(val)
-            self.ivm.add_roi(Roi(name="sv_roi", data=self.roi), make_current=True)
+            self.ivm.add_roi("sv_roi", self.roi, make_current=True)
 
 
 class MeanValuesWidget(PkWidget):
@@ -258,12 +257,11 @@ class MeanValuesWidget(PkWidget):
         stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
 
         #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
-        ov_name = self.ivm.current_overlay.name + "_means"
-        ov_data = np.copy(self.ivm.current_overlay.data)
+        ov_name = self.ivm.current_overlay.md.name + "_means"
+        ov_data = np.copy(self.ivm.current_overlay)
         for region, mean in zip(roi_labels, stat1["mean"]):
-            ov_data[roi.data == region] = mean
+            ov_data[roi == region] = mean
 
-        ovl = Overlay(ov_name, data=ov_data)
-        self.ivm.add_overlay(ovl, make_current=True)
+        self.ivm.add_overlay(ov_name, ov_data, make_current=True)
 
 

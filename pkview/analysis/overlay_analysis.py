@@ -30,10 +30,11 @@ class OverlayAnalysis(object):
         """
         # Checks if either ROI or overlay is None
         if roi is not None:
-            roi_labels = roi.regions
+            roi_labels = roi.md.regions
             roi_labels = roi_labels[roi_labels > 0]
         else:
-            roi_labels = np.array([0])
+            roi = np.ones(ovl.shape[:3])
+            roi_labels = [1,]
 
         if (ovl is None):
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
@@ -44,20 +45,20 @@ class OverlayAnalysis(object):
         hist1x = []
 
         if slice is None:
-            ovldata = ovl.data
-            roidata = roi.data
+            ovldata = ovl
+            roidata = roi
         elif slice == 0:
             slicepos = self.ivm.cim_pos[2]
-            ovldata = ovl.data[:, :, slicepos]
-            roidata = roi.data[:, :, slicepos]
+            ovldata = ovl[:, :, slicepos]
+            roidata = roi[:, :, slicepos]
         elif slice == 1:
             slicepos = self.ivm.cim_pos[1]
-            ovldata = ovl.data[:, slicepos, :]
-            roidata = roi.data[:, slicepos, :]
+            ovldata = ovl[:, slicepos, :]
+            roidata = roi[:, slicepos, :]
         elif slice == 2:
             slicepos = self.ivm.cim_pos[0]
-            ovldata = ovl.data[slicepos, :, :]
-            roidata = roi.data[slicepos, :, :]
+            ovldata = ovl[slicepos, :, :]
+            roidata = roi[slicepos, :, :]
         else:
             raise RuntimeError("Invalid slice: " % slice)
 
@@ -83,9 +84,9 @@ class OverlayAnalysis(object):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             return []
 
-        data = self.ivm.current_overlay.data
-        voxel_sizes = self.ivm.vol.voxel_sizes
-        roi = self.ivm.current_roi.data
+        data = self.ivm.current_overlay
+        voxel_sizes = self.ivm.voxel_sizes
+        roi = self.ivm.current_roi
         centre = self.ivm.cim_pos
 
         # If overlay is 4d, get current 3d volume

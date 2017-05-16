@@ -1,7 +1,6 @@
 import time
 import numpy as np
 
-from pkview.volumes.volume_management import Overlay, Roi
 from pkview.analysis import Process, BackgroundProcess
 from pkview.analysis.pk_model import PyPk
 
@@ -81,9 +80,9 @@ class PkModellingProcess(BackgroundProcess):
         BackgroundProcess.__init__(self, ivm, _run_pk, **kwargs)
 
     def run(self, options):
-        img1 = self.ivm.vol.data
-        roi1 = self.ivm.current_roi.data
-        t101 = self.ivm.overlays["T10"].data
+        img1 = self.ivm.vol
+        roi1 = self.ivm.current_roi
+        t101 = self.ivm.overlays["T10"]
 
         R1 = options['r1']
         R2 = options['r2']
@@ -189,10 +188,10 @@ class PkModellingProcess(BackgroundProcess):
 
             #slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
             #roi_slices = slices[:self.ivm.current_roi.ndim]
-            self.ivm.add_overlay(Overlay('ktrans', data=Ktrans1vol), make_current=True)
-            self.ivm.add_overlay(Overlay('ve', data=ve1vol))
-            self.ivm.add_overlay(Overlay('kep', data=kep1vol))
-            self.ivm.add_overlay(Overlay('offset', data=offset1vol))
-            self.ivm.add_overlay(Overlay('vp', data=vp1vol))
-            self.ivm.add_overlay(Overlay("Model curves", data=estimated1vol))
+            self.ivm.add_overlay('ktrans', Ktrans1vol, make_current=True)
+            self.ivm.add_overlay('ve', ve1vol)
+            self.ivm.add_overlay('kep', kep1vol)
+            self.ivm.add_overlay('offset', offset1vol)
+            self.ivm.add_overlay('vp', vp1vol)
+            self.ivm.add_overlay("Model curves", estimated1vol)
             

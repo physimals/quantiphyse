@@ -1,7 +1,5 @@
 import numpy as np
 
-from pkview.volumes.volume_management import Overlay, Roi
-
 from pkview.analysis import Process
 from pkview.analysis.perfusionslic import PerfSLIC
 
@@ -21,8 +19,8 @@ class SupervoxelsProcess(Process):
         
         slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
         roi_slices = slices[:self.ivm.current_roi.ndim]
-        img = self.ivm.vol.data[slices]
-        mask = self.ivm.current_roi.data[roi_slices]
+        img = self.ivm.vol[slices]
+        mask = self.ivm.current_roi[roi_slices]
         vox_sizes = self.ivm.voxel_sizes[:3]
 
         #print("Initialise the perf slic class")
@@ -37,7 +35,7 @@ class SupervoxelsProcess(Process):
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
 
-        newroi = np.zeros(self.ivm.current_roi.data.shape)
+        newroi = np.zeros(self.ivm.current_roi.shape)
         newroi[roi_slices] = svdata
-        self.ivm.add_roi(Roi(name=output_name, data=newroi), make_current=True)
+        self.ivm.add_roi(output_name, newroi, make_current=True)
         self.status = Process.SUCCEEDED

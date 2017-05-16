@@ -340,7 +340,7 @@ class ImageView(QtGui.QGraphicsView, object):
 
     def get_lasso_roi(self, ovname):
         if self.pick_win == -1: return
-        ovl = self.ivm.overlays[ovname].data
+        ovl = self.ivm.overlays[ovname]
         ret = None
         view = None
         if self.pick_win == 0:
@@ -464,7 +464,7 @@ class ImageView(QtGui.QGraphicsView, object):
             zaxis = self.ax_map[i][2]
             slices = [(zaxis, pos[zaxis])]
             if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
-            self.imgwin[i].setImage(self.ivm.vol.slice(*slices), autoLevels=False)
+            self.imgwin[i].setImage(self.ivm.vol.pos_slice(*slices), autoLevels=False)
 
         self.update_arrows()
         self.__update_crosshairs()
@@ -525,7 +525,7 @@ class ImageView(QtGui.QGraphicsView, object):
             v.setVisible(True)
 
         if self.ivm.vol is not None:
-            self.h1.setSourceData(self.ivm.vol.data, percentile=99)
+            self.h1.setSourceData(self.ivm.vol, percentile=99)
             
         self._update_view()
 
@@ -557,12 +557,12 @@ class ImageView(QtGui.QGraphicsView, object):
         
         pos = self.ivm.cim_pos
         lut = roi.get_lut(self.roi_alpha)
-        roi_levels = self.ivm.current_roi.range
+        roi_levels = self.ivm.current_roi.md.range
         for i in range(3):
             zaxis = self.ax_map[i][2]
                 
             if self.shade_roi:
-                self.imgwinb[i].setImage(roi.slice((zaxis, pos[zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
+                self.imgwinb[i].setImage(roi.pos_slice((zaxis, pos[zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
                 self.imgwinb[i].setZValue(z)
             else:
                 self.imgwinb[i].setImage(np.zeros((1, 1)))
@@ -570,12 +570,12 @@ class ImageView(QtGui.QGraphicsView, object):
             n = 0
             if self.contour_roi:
                 zaxis = self.ax_map[i][2]
-                data = roi.slice((zaxis, pos[zaxis]))
+                data = roi.pos_slice((zaxis, pos[zaxis]))
                 
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.cont[i])
                 create_new = False
-                for val in roi.regions:
+                for val in roi.md.regions:
                     pencol = roi.get_pencol(val)
                     if val != 0:
                         if n == n_conts:
@@ -624,11 +624,11 @@ class ImageView(QtGui.QGraphicsView, object):
         ov = self.ivm.current_overlay
         if ov is not None and (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
             # Restrict to data within ROI
-            self.ovreg = np.copy(ov.data)
+            self.ovreg = np.copy(ov)
             if ov.ndim == 3:
-                roidata = self.ivm.current_roi.data
+                roidata = self.ivm.current_roi
             else:
-                roidata = np.expand_dims(self.ivm.current_roi.data, 3).repeat(ov.shape[3], 3)
+                roidata = np.expand_dims(self.ivm.current_roi, 3).repeat(ov.shape[3], 3)
 
             within_roi =self.ovreg[np.array(roidata, dtype=bool)]
             range_roi = [np.min(within_roi), np.max(within_roi)]
@@ -637,7 +637,7 @@ class ImageView(QtGui.QGraphicsView, object):
             roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
             self.ovreg[np.logical_not(roidata)] = roi_fillvalue
         elif ov is not None:
-            self.ovreg = ov.data
+            self.ovreg = ov
         else:
             self.ovreg = None
 

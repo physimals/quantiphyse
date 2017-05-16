@@ -13,7 +13,6 @@ from PySide import QtCore, QtGui
 from pkview.QtInherit.dialogs import error_dialog
 from pkview.QtInherit import HelpButton
 from pkview.analysis.kmeans import KMeans3D
-from pkview.volumes.volume_management import Roi
 from pkview.widgets import PkWidget
 
 #TODO Hide other buttons until the clustering is performed.
@@ -161,8 +160,8 @@ class OvCurveClusteringWidget(PkWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.current_overlay.data
-        roi1 = self.ivm.current_roi.data
+        img1 = self.ivm.current_overlay
+        roi1 = self.ivm.current_roi
 
         self.km = KMeans3D(img1, region1=roi1)
 
@@ -170,7 +169,7 @@ class OvCurveClusteringWidget(PkWidget):
 
         self.label1, self.label1_cent = self.km.get_label_image()
 
-        self.ivm.add_roi(Roi(name="Overlay clusters", data=self.label1), make_current=True)
+        self.ivm.add_roi("Overlay clusters", self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
         # This previous step should generate a color map which can then be used in the following steps.
 
@@ -213,7 +212,7 @@ class OvCurveClusteringWidget(PkWidget):
         self.label1[self.label1 == m1] = m2
 
         # signal the change
-        self.ivm.add_roi(Roi(name="clusters", data=self.label1), make_current=True)
+        self.ivm.add_roi("clusters", self.label1, make_current=True)
         self.sig_emit_reset.emit(1)
         print("Merged")
 

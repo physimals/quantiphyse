@@ -5,7 +5,6 @@ import traceback
 
 import numpy as np
 
-from pkview.volumes.volume_management import Volume, Roi, Overlay
 from pkview.analysis import Process, BackgroundProcess
 
 try:
@@ -63,27 +62,27 @@ class FabberProcess(BackgroundProcess):
         # up automatically we have to pass the arguments as a single list. This consists of
         # rundata, main data, roi and then each of the used overlays, name followed by data
         if self.ivm.current_roi is not None:
-            roidata = self.ivm.current_roi.data
+            roidata = self.ivm.current_roi
         else:
             roidata = None
-        input_args = [rundata, self.ivm.vol.data, roidata]
+        input_args = [rundata, self.ivm.vol, roidata]
         run_overlays = {}
 
         # This is not perfect - we just grab all overlays matching an option value
         for key, value in rundata.items():
             if value in self.ivm.overlays:
                 input_args.append(value)
-                input_args.append(self.ivm.overlays[value].data)
+                input_args.append(self.ivm.overlays[value])
 
         if rundata["method"] == "spatialvb":
             # Spatial VB will not work properly in parallel
             n = 1
         else:
             # Run one worker for each slice
-            n = self.ivm.vol.data.shape[0]
+            n = self.ivm.vol.shape[0]
 
-        if roidata is not None: self.voxels_todo = np.count_nonzero(self.ivm.current_roi.data)
-        else: self.voxels_todo = self.ivm.vol.data.size
+        if roidata is not None: self.voxels_todo = np.count_nonzero(self.ivm.current_roi)
+        else: self.voxels_todo = self.ivm.vol.size
 
         self.voxels_done = [0, ] * n
         self.start(n, input_args)
@@ -105,8 +104,7 @@ class FabberProcess(BackgroundProcess):
             self.log = "\n\n".join([o.log for o in self.output])
 
             first = True
-            for key in self.output[0].data:
-                recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
-                ovl = Overlay(name=key, data=recombined_item)
-                self.ivm.add_overlay(ovl, make_current=first)
+            for key in self.output[0]:
+                recombined_item = np.concatenate([o[key] for o in self.output], 0)
+                self.ivm.add_overlay(key, recombined_item, make_current=first)
                 first = False

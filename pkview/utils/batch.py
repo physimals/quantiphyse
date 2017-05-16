@@ -8,8 +8,6 @@ import errno
 import traceback
 import yaml
 
-from pkview.volumes.volume_management import ImageVolumeManagement, Volume, Overlay, Roi
-
 from pkview.analysis import Process
 from pkview.analysis.fab import FabberProcess
 from pkview.analysis.reg import RegProcess, McflirtProcess
@@ -17,6 +15,9 @@ from pkview.analysis.pk import PkModellingProcess
 from pkview.analysis.t10 import T10Process
 from pkview.analysis.sv import SupervoxelsProcess
 from pkview.analysis.misc import CalcVolumesProcess
+
+from pkview.volumes.volume_management import ImageVolumeManagement
+from pkview.volumes.io import load, save
 
 processes = {"Fabber"      : FabberProcess,
              "MCFlirt"     : McflirtProcess,
@@ -70,7 +71,7 @@ class BatchCase:
         if vol_file is None:
             raise RuntimeError("No main volume defined")
 
-        vol = Volume(os.path.basename(vol_file), fname=self.get_filepath(vol_file))
+        vol = load(self.get_filepath(vol_file))
         multi = True
         if vol.ndim == 2:
                 multi = False
@@ -78,8 +79,7 @@ class BatchCase:
             multi = self.get("MultiVolumes", False)
         elif vol.ndim != 4:
             raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
-        vol.force_ndim(4, multi=multi)
-        self.ivm.add_overlay(vol, make_main=True)
+        self.ivm.add_overlay(vol.md.name, vol, make_main=True)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case
@@ -88,7 +88,8 @@ class BatchCase:
         for key in overlays:
             filepath = self.get_filepath(overlays[key])
             if self.debug: print("  - Loading overlay '%s' from %s" % (key, filepath))
-            self.ivm.add_overlay(Overlay(key, fname=filepath), make_current=True)
+            ovl = load(filepath)
+            self.ivm.add_overlay(key, ovl, make_current=True)
         
     def load_rois(self):
         # Load case ROIs followed by any root ROIs not overridden by case
@@ -97,14 +98,14 @@ class BatchCase:
         for key in rois:
             filepath = self.get_filepath(rois[key])
             if self.debug: print("  - Loading ROI '%s' from %s" % (key, filepath))
-            self.ivm.add_roi(Roi(key, fname=filepath), make_current=True)
+            roi = load(filepath)
+            self.ivm.add_roi(key, roi, make_current=True)
         
     def run_processing_steps(self):
         # Run processing steps
         for process in self.root.get("Processing", []):
             name = process.keys()[0]
-            params = {"Debug" : self.debug, "Folder" : self.folder, "OutputFolder" : self.outdir}
-            params.update(process[name])
+            params = process[name]
             params.update(self.case.get(name, {}))
             self.run_process(name, params)
 
@@ -121,7 +122,7 @@ class BatchCase:
                 process.debug = self.debug
                 process.workdir = self.folder
                 process.outdir = self.outdir
-                process.sig_progress.connect(self.progress)
+                #process.sig_progress.connect(self.progress)
                 sys.stdout.write("  - Running %s   0%%" % name)
                 process.run(params)
                 print("\b\b\b\bDONE")
@@ -144,7 +145,7 @@ class BatchCase:
     def save_output(self):
         if "SaveVolume" in self.root:
             fname = self.root["SaveVolume"]
-            if not fname: fname = self.ivm.vol.name
+            if not fname: fname = self.ivm.vol.md.name
             self.save_data(self.ivm.vol, fname)
 
         for name, fname in self.get("SaveOverlays", {}).items():
@@ -174,7 +175,7 @@ class BatchCase:
         if not os.path.isabs(fname):
             fname = os.path.join(self.outdir, fname)
         print("  - Saving %s" % fname)
-        vol.save_nifti(fname)
+        save(vol, fname)
 
     def run(self):
         print("Processing case: %s" % self.id)
