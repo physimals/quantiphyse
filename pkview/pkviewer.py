@@ -1080,24 +1080,19 @@ class WindowAndDecorators(QtGui.QMainWindow):
             # We can add anything to an empty IVM - but if data is 3D, give discreet option to interpret
             # it as 2D+time
             force_t_option = (len(shape) == 3)
-            print("Fine to add as no existing data")
         else:
             # Try to add directly, as 2D+time, directly in original dims and finally 2D+time in original space 
             if self.mw1.ivm.check_shape(shape):
-                print("Found match ", self.mw1.ivm.shape, shape)
+                pass
             elif len(shape) == 3 and self.mw1.ivm.check_shape([shape[0], shape[1], 1, shape[2]]):
                 force_t = True
-                print("Found match with force_t ", self.mw1.ivm.shape, shape)
             elif self.mw1.ivm.check_shape(shape_orig):
                 ignore_affine = True
-                print("Found match with ignore_affine ", self.mw1.ivm.shape, shape)
             elif len(shape) == 3 and self.mw1.ivm.check_shape([shape_orig[0], shape_orig[1], 1, shape_orig[2]]):
                 force_t = True
                 ignore_affine = True
-                print("Found match with force_t and ignore_affine", self.mw1.ivm.shape, shape)
             else:
                 # Data already exists and shape is not consistent - only option is to empty and start again
-                print("no match", self.mw1.ivm.shape, shape)
                 msgBox = QtGui.QMessageBox()
                 msgBox.setText("A different shaped volume has already been loaded")
                 msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
