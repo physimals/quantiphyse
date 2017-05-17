@@ -109,14 +109,13 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         self.cim_pos = [int(d/2) for d in self.shape]
         if self.vol.ndim == 3: self.cim_pos.append(0)
-        print(self.shape, self.cim_pos)
         self.sig_main_volume.emit(self.vol)
 
     def add_overlay(self, name, ov, make_current=False, make_main=False, signal=True):
         ov = ov.view(QpVolume)
         ov.set_as_data(name)
         if ov.md is None:
-            ov.md = FileMetadata(ov, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+            ov.md = FileMetadata(name, shape=ov.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
         
         self.update_shape(ov.shape)
         self.overlays[name] = ov
@@ -135,7 +134,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         roi = roi.astype(np.int32).view(QpVolume)
         roi.set_as_roi(name)
         if roi.md is None:
-            roi.md = FileMetadata(roi, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+            roi.md = FileMetadata(name, shape=roi.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
 
         if roi.range[0] < 0 or roi.range[1] > 2**32:
             raise RuntimeError("ROI must contain values between 0 and 2**32")
