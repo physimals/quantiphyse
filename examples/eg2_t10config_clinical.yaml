@@ -20,5 +20,5 @@ Cases:
         T10:
           vfa:
             fa3_aligned.nii : 3
-            fa9_aligned.nii : 3
-            fa15_aligned.nii : 3
+            fa9_aligned.nii : 9
+            fa15_aligned.nii : 15
