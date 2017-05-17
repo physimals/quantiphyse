@@ -65,7 +65,7 @@ class SourceImageList(QtGui.QVBoxLayout):
         and must have shape consistent with the main volume
         """
         try:
-            f = load(filename)
+            f = load(filename).get_data()
             if len(f.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
@@ -164,7 +164,7 @@ class SourceImageList(QtGui.QVBoxLayout):
             filename = self.table.item(i, 0).text()
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
             # NB need to pass main volume affine to ensure consistant orientation
-            vol = load(filename)
+            vol = load(filename).get_data()
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
                 vols.append(vol)
