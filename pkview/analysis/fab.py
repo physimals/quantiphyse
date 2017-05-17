@@ -104,7 +104,7 @@ class FabberProcess(BackgroundProcess):
             self.log = "\n\n".join([o.log for o in self.output])
 
             first = True
-            for key in self.output[0]:
-                recombined_item = np.concatenate([o[key] for o in self.output], 0)
+            for key in self.output[0].data:
+                recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
                 self.ivm.add_overlay(key, recombined_item, make_current=first)
                 first = False
