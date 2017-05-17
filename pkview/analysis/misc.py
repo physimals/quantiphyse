@@ -29,7 +29,7 @@ class CalcVolumesProcess(Process):
         sizes = self.ivm.voxel_sizes
         if roi is not None:
             counts = np.bincount(roi.flatten())
-            for idx, region in enumerate(roi.md.regions):
+            for idx, region in enumerate(roi.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
                     vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
@@ -41,4 +41,20 @@ class CalcVolumesProcess(Process):
         if not no_artifact: 
             output_name = options.pop('output-name', "roi-vols")
             self.ivm.add_artifact(output_name, table_to_str(self.model))
+        self.status = Process.SUCCEEDED
+
+class SimpleMathsProcess(Process):
+    
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+        self.model = QtGui.QStandardItemModel()
+
+    def run(self, options):
+        globals = {'np': np, 'ivm': self.ivm}
+        for name, ovl in self.ivm.overlays.items():
+            globals[name] = ovl
+        for name, proc in options.items():
+            result = eval(proc, globals)
+            self.ivm.add_overlay(name, result)
+       
         self.status = Process.SUCCEEDED
