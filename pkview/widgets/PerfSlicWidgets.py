@@ -257,7 +257,7 @@ class MeanValuesWidget(PkWidget):
         stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
 
         #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
-        ov_name = self.ivm.current_overlay.md.name + "_means"
+        ov_name = self.ivm.current_overlay.name + "_means"
         ov_data = np.copy(self.ivm.current_overlay)
         for region, mean in zip(roi_labels, stat1["mean"]):
             ov_data[roi == region] = mean

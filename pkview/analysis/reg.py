@@ -71,8 +71,8 @@ class RegProcess(BackgroundProcess):
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
         self.method = options.pop("method", "deeds")
-        regdata_name = options.pop("reg", self.ivm.vol.md.name)
-        if regdata_name == self.ivm.vol.md.name:
+        regdata_name = options.pop("reg", self.ivm.vol.name)
+        if regdata_name == self.ivm.vol.name:
             reg_vols = self.ivm.vol
         else:
             reg_vols = self.ivm.overlays[regdata_name]
@@ -83,7 +83,7 @@ class RegProcess(BackgroundProcess):
         # Reference data defaults to same as reg data so MoCo can be
         # supported as self-registration
         refdata_name = options.pop("ref", regdata_name)
-        if refdata_name == self.ivm.vol.md.name:
+        if refdata_name == self.ivm.vol.name:
             ref_vols = self.ivm.vol
         else:
             ref_vols = self.ivm.overlays[refdata_name]

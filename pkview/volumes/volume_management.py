@@ -91,11 +91,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
     def check_shape(self, shape):
         ndim = min(len(self.shape), len(shape))
-        if (list(self.shape[:ndim]) != list(shape[:ndim])):
-            raise RuntimeError("First %i Dimensions must be %s - they are %s" % (ndim, self.shape[:ndim], shape[:ndim]))
+        return list(self.shape[:ndim]) == list(shape[:ndim])
 
     def update_shape(self, shape):
-        self.check_shape(shape)
+        if not self.check_shape(shape):
+            raise RuntimeError("Dimensions don't match - %s vs %s" % (self.shape, shape))
+
         for d in range(len(self.shape), min(len(shape), 4)):
             self.shape.append(shape[d])
 
@@ -103,43 +104,45 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self._overlay_exists(name)
         
         self.vol = self.overlays[name]
-        self.voxel_sizes = self.vol.md.voxel_sizes
+        self.voxel_sizes = self.vol.md.voxel_sizes_ras
         self.update_shape(self.vol.shape)
 
-        self.cim_pos = [int(d/2) for d in self.vol.shape]
+        self.cim_pos = [int(d/2) for d in self.shape]
         if self.vol.ndim == 3: self.cim_pos.append(0)
+        print(self.shape, self.cim_pos)
         self.sig_main_volume.emit(self.vol)
 
     def add_overlay(self, name, ov, make_current=False, make_main=False, signal=True):
         ov = ov.view(QpVolume)
+        ov.set_as_data(name)
         if ov.md is None:
-            ov.md = FileMetadata(ov, name=name, affine=self.vol.md.affine, voxel_sizes=self.vol.md.voxel_sizes)
+            ov.md = FileMetadata(ov, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+        
         self.update_shape(ov.shape)
-
         self.overlays[name] = ov
         
         if signal:
             self.sig_all_overlays.emit(self.overlays.keys())
 
-        if make_current:
-            self.set_current_overlay(name, signal)
-
         # Make main volume if requested, or if the first volume, or if the first 4d volume
+        # If not the main volume, set as current overlay if requested
         if make_main or self.vol is None or (ov.ndim == 4 and self.vol.ndim == 3):
             self.set_main_volume(name)
+        elif make_current:
+            self.set_current_overlay(name, signal)
 
     def add_roi(self, name, roi, make_current=False, signal=True):
         roi = roi.astype(np.int32).view(QpVolume)
+        roi.set_as_roi(name)
         if roi.md is None:
-            roi.md = FileMetadata(roi, name=name, affine=self.vol.md.affine, voxel_sizes=self.vol.md.voxel_sizes)
+            roi.md = FileMetadata(roi, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
 
-        if roi.md.range[0] < 0 or roi.md.range[1] > 2**32:
+        if roi.range[0] < 0 or roi.range[1] > 2**32:
             raise RuntimeError("ROI must contain values between 0 and 2**32")
 
         if not np.equal(np.mod(roi, 1), 0).any():
            raise RuntimeError("ROI contains non-integer values.")
 
-        roi.set_as_roi()
         self.update_shape(roi.shape)
         self.rois[name] = roi
 
@@ -156,11 +159,14 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         if name not in self.rois:
             raise RuntimeError("ROI %s does not exist" % name)
 
+    def is_main_volume(self, ovl):
+        return self.vol is not None and ovl is not None and self.vol.name == ovl.name
+
     def is_current_overlay(self, ovl):
-        return self.current_overlay is not None and ovl is not None and self.current_overlay.md.name == ovl.md.name
+        return self.current_overlay is not None and ovl is not None and self.current_overlay.name == ovl.name
 
     def is_current_roi(self, roi):
-        return self.current_roi is not None and roi is not None and self.current_roi.md.name == roi.md.name
+        return self.current_roi is not None and roi is not None and self.current_roi.name == roi.name
         
     def set_current_overlay(self, name, signal=True):
         self._overlay_exists(name)
@@ -170,7 +176,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def rename_overlay(self, name, newname, signal=True):
         self._overlay_exists(name)
         ovl = self.overlays[name]
-        ovl.md.name = newname
+        ovl.name = newname
         self.overlays[newname] = ovl
         del self.overlays[name]
         if signal: self.sig_all_overlays.emit(self.overlays.keys())
@@ -178,7 +184,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def rename_roi(self, name, newname, signal=True):
         self._roi_exists(name)
         roi = self.rois[name]
-        roi.md.name = newname
+        roi.name = newname
         self.rois[newname] = roi
         del self.rois[name]
         if signal: self.sig_all_rois.emit(self.rois.keys())
@@ -187,7 +193,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self._overlay_exists(name)
         del self.overlays[name]
         if signal: self.sig_all_overlays.emit(self.overlays.keys())
-        if self.current_overlay.md.name == name:
+        if self.current_overlay.name == name:
             self.current_overlay = None
             if signal: self.sig_current_overlay.emit(None)
 
@@ -195,7 +201,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self._roi_exists(name)
         del self.rois[name]
         if signal: self.sig_all_rois.emit(self.rois.keys())
-        if self.current_roi.md.name == name:
+        if self.current_roi.name == name:
             self.current_roi = None
             if signal: self.sig_current_roi.emit(None)
 
@@ -230,7 +236,7 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
 
         for ovl in self.overlays.values():
             if ovl.ndim == 4 and (ovl.shape[3] == self.vol.shape[3]):
-                ovl_sig[ovl.md.name] = ovl[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+                ovl_sig[ovl.name] = ovl[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, ovl_sig
 

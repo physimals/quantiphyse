@@ -557,7 +557,7 @@ class ImageView(QtGui.QGraphicsView, object):
         
         pos = self.ivm.cim_pos
         lut = roi.get_lut(self.roi_alpha)
-        roi_levels = self.ivm.current_roi.md.range
+        roi_levels = self.ivm.current_roi.range
         for i in range(3):
             zaxis = self.ax_map[i][2]
                 
@@ -575,7 +575,7 @@ class ImageView(QtGui.QGraphicsView, object):
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.cont[i])
                 create_new = False
-                for val in roi.md.regions:
+                for val in roi.regions:
                     pencol = roi.get_pencol(val)
                     if val != 0:
                         if n == n_conts:

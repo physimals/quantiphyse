@@ -19,31 +19,44 @@ import nrrd
 class FileMetadata(object):
     """ Metadata from file. Newly created data objects get their metadata from the main Volume
         in use at the time"""
-    ROI = 0
-    DATA = 1
-
     ORIENT_TO_FILE = 0
     ORIENT_TO_RAS = 1
 
-    def __init__(self, data, name=None, fname=None, affine=None, voxel_sizes=None, vtype=DATA, nifti_header=None, ignore_affine=False):
-        self.name = name
+    def __init__(self, fname, affine=None, shape=None, voxel_sizes=None, dtype=None,
+                 ignore_affine=False, force_t=False, squeeze_trailing=True):
         self.set_fname(fname)
         
-        if voxel_sizes is not None:
-            self.voxel_sizes = voxel_sizes
-        else:
-            self.voxel_sizes = [1.0,] * data.ndim
-
-        if affine is not None:
+        if affine is not None and not ignore_affine:
             self.affine = affine
         else:
             self.affine = np.identity(4)
 
-        self.range = (data.min(), data.max())
-        self.dps = self._calc_dps()
+        self.dim_order, self.dim_flip = {}, {}
+        for direction in (self.ORIENT_TO_FILE, self.ORIENT_TO_RAS):
+            self.dim_order[direction], self.dim_flip[direction] = self.get_transform(direction)
 
-        if nifti_header is not None:
-            self._init_nifti(nifti_header, ignore_affine)
+        if shape is not None:
+            self.shape_orig = list(shape)
+            self.shape_ras = self.reorient_dimdata(self.ORIENT_TO_RAS, shape)
+
+        if voxel_sizes is not None:
+            self.voxel_sizes_orig = list(voxel_sizes)
+            self.voxel_sizes_ras = self.reorient_dimdata(self.ORIENT_TO_RAS, voxel_sizes)
+
+        if force_t:
+            self.shape_orig.insert(2, 1)
+            self.shape_ras.insert(2, 1)
+            self.voxel_sizes_orig.insert(2, self.voxel_sizes_orig[0])
+            self.voxel_sizes_ras.insert(2, self.voxel_sizes_ras[0])
+            
+        if squeeze_trailing and len(self.shape_orig) == 4 and self.shape_orig[3] == 1:
+            self.shape_orig = self.shape_orig[:3]
+            self.shape_ras = self.shape_ras[:3]
+            self.voxel_sizes_orig = self.voxel_sizes_orig[:3]
+            self.voxel_sizes_ras = self.voxel_sizes_ras[:3]
+            
+        if dtype is not None:
+            self.dtype = dtype
 
     def set_fname(self, fname):
         self.fname = fname
@@ -51,61 +64,49 @@ class FileMetadata(object):
             self.dir, self.basename = os.path.split(fname)
         else:
             self.dir, self.basename = None, None
-        if self.name is None:
-            self.name = self.basename
 
-    def reorient(self, direction, data=None, voxel_sizes=None):
+    def reorient_dimdata(self, direction, dimdata):
         """
-        Permute and flip axes to turn data into file or RAS orientation
-
-        returns modified data, and/or voxel sizes as required
+        Reorder dim data (e.g. voxel sizes) according to coordinate transformation
         """
         ret = []
         try:
-            dim_reorder, dim_flip = self._get_transform(direction)
-            #print(dim_reorder, dim_flip)
-            #print("Re-orienting shape ", data.shape)
-            if data is not None:
-                dim_reorder = dim_reorder[:data.ndim]
-                new_data = np.transpose(data, dim_reorder)
-                for d in dim_flip:
-                    new_data = np.flip(new_data, d)
-                ret.append(new_data)
-            #print("to: ", new_data.shape)
-            if voxel_sizes is not None:
-                dim_reorder = dim_reorder[:len(voxel_sizes)]
-                ret.append([voxel_sizes[d] for d in dim_reorder])
+            ret = [dimdata[d] for d in self.dim_order[direction]]
+            if len(dimdata) == 4: ret.append(dimdata[3])
+            return ret
         except:
             # If something goes wrong here, just leave the data
             # as it is. It probably means the affine transformation
             # is nothing like orthogonal and therefore the dimension
             # order is not a permutation
             warnings.warn("Failed to re-orient - non-orthogonal affine?")
-            raise
-            ret = []
-            if data is not None: ret.append(data)
-            if voxel_sizes is not None: ret.append(voxel_sizes)
-            
-        if len(ret) == 1: return ret[0]
-        else: return tuple(ret)
-            
-    def _calc_dps(self):
-        """
-        Return appropriate number of decimal places for presenting data values
-        """
-        if self.range[0] == self.range[1]:
-            # Pathological case where data is uniform
-            return 0
-        else:
-            # Look at range of data and allow decimal places to give at least 1% steps
-            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
+            #raise
+            return dimdata
 
-    def _init_nifti(self, hdr, ignore_affine=False):
-        self.nifti_header = hdr
-        self.affine = hdr.get_best_affine()
-        self.voxel_sizes = self.reorient(FileMetadata.ORIENT_TO_RAS, voxel_sizes=hdr.get_zooms())
+    def reorient_data(self, direction, data):
+        """
+        Permute and flip axes to turn data into file or RAS orientation
 
-    def _get_transform(self, direction):
+        returns modified data,
+        """
+        try:
+            dim_order = self.dim_order[direction]
+            #print("re-orienting data to ", dim_order, self.dim_flip)
+            if data.ndim == 4: dim_order.append(3)
+            new_data = np.transpose(data, dim_order)
+            for d in self.dim_flip[direction]:
+                new_data = np.flip(new_data, d)
+            return new_data
+        except:
+            # If something goes wrong here, just leave the data
+            # as it is. It probably means the affine transformation
+            # is nothing like orthogonal and therefore the dimension
+            # order is not a permutation
+            warnings.warn("Failed to re-orient - non-orthogonal affine?")
+            #raise
+            return data
+            
+    def get_transform(self, direction):
         """
         Returns dim_order, dim_flip transformations
         to turn data into RAS order from file order or vice versa
@@ -121,8 +122,13 @@ class FileMetadata(object):
             dim_order.append(newd)
             if space_affine[newd, d] < 0:
                 dim_flip.append(d)
-        if len(self.voxel_sizes) == 4: dim_order.append(3)
         return dim_order, dim_flip
+
+class NiftiMetadata(FileMetadata):
+    def __init__(self, fname, hdr, **kwargs):
+        self.nifti_header = hdr
+        FileMetadata.__init__(self, fname, affine=hdr.get_best_affine(), shape=hdr.get_data_shape(), 
+                              voxel_sizes=hdr.get_zooms(), dtype=hdr.get_data_dtype(), **kwargs)
 
 class QpVolume(np.ndarray):
     """
@@ -142,6 +148,11 @@ class QpVolume(np.ndarray):
         obj = np.ndarray.__new__(subtype, shape, dtype, buffer, offset, strides, order)
         # set the new metadata attributes to the values passed
         obj.md = md
+        # These attributes must exist but are initialized separately for ROIS and data
+        obj.range = None
+        obj.dps = None
+        obj.regions = None
+        obj.name = None
         return obj
 
     def __array_finalize__(self, obj):
@@ -169,11 +180,28 @@ class QpVolume(np.ndarray):
         # QpVolume.__new__ constructor, but also with
         # arr.view(QpVolume).
         self.md = getattr(obj, 'md', None)
+        self.range = getattr(obj, 'range', None)
+        self.dps = getattr(obj, 'dps', None)
+        self.regions = getattr(obj, 'regions', None)
+        self.name = getattr(obj, 'name', None)
+        
+    def set_as_roi(self, name):
+        self.name = name
+        self.range = (self.min(), self.max())
+        self.dps = 0
+        self.regions = np.unique(self)
+        self.regions = self.regions[self.regions > 0]
+        
+    def set_as_data(self, name):
+        self.name = name
+        self.range = (self.min(), self.max())
+        self.dps = self._calc_dps()
+        self.regions = []
 
     def value_str(self, pos):
         """ Return the data value at pos as a string to an appropriate
         number of decimal places"""
-        return str(np.around(self[tuple(pos[:self.ndim])], self.md.dps))
+        return str(np.around(self[tuple(pos[:self.ndim])], self.dps))
 
     def pos_slice(self, *axes):
         """ 
@@ -230,18 +258,12 @@ class QpVolume(np.ndarray):
         """
         return self.get_lut()[region]
 
-    def set_as_roi(self):
-        if not hasattr(self.md, "regions"):
-            self.md.regions = np.unique(self)
-            self.md.regions = self.md.regions[self.md.regions > 0]
-            self.dps = 0
-
     def get_lut(self, alpha=None):
         """
         Get the colour look up table for the ROI.
         """
         cmap = getattr(cm, 'jet')
-        mx = max(self.md.regions)
+        mx = max(self.regions)
         lut = [[int(255 * rgb1) for rgb1 in cmap(float(v)/mx)[:3]] for v in range(mx+1)]
         lut = np.array(lut, dtype=np.ubyte)
 
@@ -254,57 +276,87 @@ class QpVolume(np.ndarray):
 
         return lut
 
-def _init_nifti(nii, ignore_affine):
-    # NB: np.asarray appears to convert to an array instead of a numpy memmap.
-    # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
-    # memmap has been designed to save space on ram by keeping the array on the disk but does
-    # horrible things with performance, and analysis especially when the data is on the network.
-    data = np.asarray(nii.get_data()).view(QpVolume)
-    md = FileMetadata(data, nifti_header=nii.get_header(), ignore_affine=ignore_affine)
-    return data, md
-        
-def load(fname, vtype=FileMetadata.DATA, ignore_affine=False):
-    if os.path.isdir(fname):
-        # A directory. It ought to contain DICOMs. Convert them to a Nifti
+    def _calc_dps(self):
+        """
+        Return appropriate number of decimal places for presenting data values
+        """
+        if self.range[0] == self.range[1]:
+            # Pathological case where data is uniform
+            return 0
+        else:
+            # Look at range of data and allow decimal places to give at least 1% steps
+            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
+
+class NiftiDataFile:
+    def __init__(self, fname):
+        self.fname = fname
+        self.nii = nib.load(fname)
+        self.md = NiftiMetadata(fname, self.nii.header)
+
+    def get_info(self):
+        return self.md.shape_ras, self.md.shape_orig, self.md.dtype
+
+    def get_metadata(self):
+        return self.md
+
+    def get_data(self, ignore_affine=False, force_t=False):
+        data = np.asarray(self.nii.get_data())
+
+        if ignore_affine or force_t:
+            # Need to create new metadata object as we are diverging from the strict contents
+            # of the file
+            md = NiftiMetadata(self.fname, self.nii.header, ignore_affine=ignore_affine, force_t=force_t)
+        else:
+            md = self.md
+
+        if force_t:
+            data = np.expand_dims(data, 2)
+
+        if not ignore_affine:
+            data = md.reorient_data(FileMetadata.ORIENT_TO_RAS, data)
+
+        if data.ndim == 4 and data.shape[3] == 1: data = np.squeeze(data, 3)
+        data = data.view(QpVolume)
+        data.remove_nans()
+        data.md = md
+        return data
+
+class DicomFolder(NiftiDataFile):
+    def __init__(self, fname):
+        # A directory containing DICOMs. Convert them to Nifti
         sys.stdout.write("Converting DICOMS in %s..." % (os.path.basename(fname)))
         sys.stdout.flush()
         src_dcms = glob.glob('%s/*.dcm' % fname)
         stacks = dcmstack.parse_and_stack(src_dcms)
         stack = stacks.values()[0]
-        nii = stack.to_nifti()
+        self.nii = stack.to_nifti()
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
         # FIXME should we do this?
-        if nii.shape[-1] == 1:
-            nii = squeeze_image(nii)
-        data, md = _init_nifti(nii, ignore_affine)
+        if self.nii.shape[-1] == 1:
+            self.nii = nib.squeeze_image(nii)
+        self.md = NiftiMetadata(fname + ".nii", self.nii.header)
 
+class NrrdDataFile:
+    def __init__(self, fname):
+        raise RuntimeError("NRRD support not currently enabled")
+
+def load(fname):
+    if os.path.isdir(fname):
+        return DicomFolder(fname)
     elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
-        # File is a nifti
-        nii = nib.load(fname)
-        data, md = _init_nifti(nii, ignore_affine)
-
+        return NiftiDataFile(fname)
     elif fname.endswith(".nrrd"):
-        # file is a nrrd
-        data = nrrd.read(fname).view(QpVolume)
-        md = FileMetadata(data)
+        return NttrDataFile(fname)
     else:
         raise RuntimeError("%s: Unrecognized file type" % fname)
-
-    ret = data.view(QpVolume)
-    md.set_fname(fname)
-    ret.md = md
-    ret.remove_nans()
-    if vtype == FileMetadata.ROI:
-        ret = data.astype(np.int32)
-    return ret
 
 def save(data, fname):
     hdr = None
     affine = np.identity(4)
     if hasattr(data, "md"):
         # Invert axis transformations
-        data = data.md.reorient(FileMetadata.ORIENT_TO_FILE, data=data)
+        data = data.md.reorient_data(FileMetadata.ORIENT_TO_FILE, data)
         affine = data.md.affine
         try:
             hdr = getattr(data.md, "nifti_header")

@@ -13,6 +13,84 @@ import numpy as np
 import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
+from pkview.analysis import Process
+
+class KMeansPCAProcess(Process):
+    """
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        n_clusters = options.pop('n-clusters', 5)
+        norm_data = options.pop('norm-data', True)
+        n_pca = options.pop('n-pca', 5)
+        reduction = options.pop('reduction', 'pca')
+        invert_roi = options.pop('invert-roi', False)
+        output_name = options.pop('output-name', 'clusters')
+        vol_name = options.pop('vol', self.ivm.vol.name)
+
+        img = self.ivm.overlays[vol_name].astype(np.float32)
+        roi = self.ivm.current_roi
+
+        #ROI to process
+        if roi is None:
+            roi = np.ones(img.shape[:-1], dtype=bool)
+        elif invert_roi:
+            roi = np.logical_not(roi)
+        else:
+            roi = roi.astype(np.bool)
+
+        voxel_se = img[roi]
+        baseline1 = np.mean(img[:, :, :, :3], axis=-1)
+        baseline1sub = baseline1[roi]
+
+        # Normalisation of the image
+        voxel_se = voxel_se / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img.shape[-1])) + 0.001) - 1
+
+        # Outputs
+        self.log = ""
+        start1 = time.time()
+
+        if reduction == 'none':
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=1)
+            kmeans.fit(voxel_se)
+            # self.cluster_centers_ = kmeans.cluster_centers_
+        else:
+            self.log += "Using PCA dimensionality reduction"
+            pca = PCA(n_components=n_pca)
+            reduced_data = pca.fit_transform(voxel_se)
+
+            if norm_data:
+                self.log += "Normalising PCA modes"
+                min1 = np.min(reduced_data, axis=0)
+                reduced_data = reduced_data - np.tile(np.expand_dims(min1, axis=0),
+                                                      (reduced_data.shape[0], 1))
+                max1 = np.max(reduced_data, axis=0)
+                reduced_data = reduced_data / np.tile(np.expand_dims(max1, axis=0),
+                                                      (reduced_data.shape[0], 1))
+
+            kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=1)
+
+            # kmeans = cl.AgglomerativeClustering(n_clusters=n_clusters)
+            kmeans.fit(reduced_data)
+            # converting the cluster centres back into the image feature space
+            # self.cluster_centers_ = pca.inverse_transform(kmeans.cluster_centers_)
+
+        self.log += "Elapsed time: %s" % (time.time() - start1)
+
+        label_image = np.zeros(self.ivm.shape[:3])
+        label_image[roi] = kmeans.labels_ + 1
+        self.ivm.add_roi(output_name, label_image, make_current=True)
+        
+        # find mean cluster curves
+        #cluster_centers_ = np.zeros((n_clusters, self.ivm.shape[-1]))
+        #label_vector = kmeans.labels_ + 1
+        #for ii in range(n_clusters):
+        #    c1 = voxel_se[label_vector == ii + 1]
+        #    cluster_centers_[ii, :] = c1.mean(axis=0)
+
+        self.status = Process.SUCCEEDED
 
 class KMeans3D:
     """
@@ -20,20 +98,7 @@ class KMeans3D:
     """
 
     def __init__(self, img1, region1=None, invert_roi=0, labels1=None):
-        """
-
-        @param img1: image region
-        @param n_clusters:  number of k-means clusters to generate
-        @param region1: region of interest to cluster
-        @param invert_roi:
-        @param normdata:
-        @param labels1: (Optional) separate clustering of different regions
-        """
-        #Issue #38: OSX hangs with parallel jobs
-        if sys.platform.startswith("darwin"):
-            self.n_jobs = 1
-        else:
-            self.n_jobs = 2
+        
 
         self.img1 = np.array(img1, dtype=np.float32)
 

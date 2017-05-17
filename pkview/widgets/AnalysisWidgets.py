@@ -20,7 +20,7 @@ from pkview.utils import get_icon, copy_table
 from ..QtInherit import HelpButton
 from pkview.widgets import PkWidget
 from pkview.analysis.overlay_analysis import OverlayAnalysis
-from pkview.analysis.misc import CalcVolumesProcess
+from pkview.analysis.misc import CalcVolumesProcess, SimpleMathsProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):
@@ -190,9 +190,9 @@ class SECurve(PkWidget):
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
         if self.ivm.vol is not None:
             if self.cb3.isChecked():
-                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.md.name)
+                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.name)
             else:
-                self.p1.setLabel('left', self.ivm.vol.md.name)
+                self.p1.setLabel('left', self.ivm.vol.name)
             
         self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
@@ -487,8 +487,8 @@ class OverlayStatistics(PkWidget):
         if self.ivm.current_overlay is None:
             self.mode_combo.setItemText(0, "Current overlay")
         else:
-            self.mode_combo.setItemText(0, self.ivm.current_overlay.md.name)
-            self.rp_plt.setLabel('left', self.ivm.current_overlay.md.name)
+            self.mode_combo.setItemText(0, self.ivm.current_overlay.name)
+            self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
 
         self.update_histogram_spins()
 
@@ -505,12 +505,12 @@ class OverlayStatistics(PkWidget):
         # Min and max set for overlay choice
         ov = self.ivm.current_overlay
         if ov is not None:
-            self.minSpin.setValue(ov.md.range[0])
-            self.maxSpin.setValue(ov.md.range[1])
-            self.minSpin.setDecimals(ov.md.dps)
-            self.maxSpin.setDecimals(ov.md.dps)
-            self.minSpin.setSingleStep(10**(1-ov.md.dps))
-            self.maxSpin.setSingleStep(10**(1-ov.md.dps))
+            self.minSpin.setValue(ov.range[0])
+            self.maxSpin.setValue(ov.range[1])
+            self.minSpin.setDecimals(ov.dps)
+            self.maxSpin.setDecimals(ov.dps)
+            self.minSpin.setSingleStep(10**(1-ov.dps))
+            self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def copy_stats(self):
         copy_table(self.tabmod1)
@@ -618,12 +618,12 @@ class OverlayStatistics(PkWidget):
         for ov in ovs:
             stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **kwargs)
             for ii in range(len(stats1['mean'])):
-                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.md.name, roi_labels[ii])))
-                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.md.dps))))
-                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.md.dps))))
-                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.md.dps))))
-                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.md.dps))))
-                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.md.dps))))
+                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
+                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
+                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.dps))))
+                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.dps))))
+                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.dps))))
+                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.dps))))
                 col += 1
 
 class RoiAnalysisWidget(PkWidget):
@@ -674,3 +674,44 @@ class RoiAnalysisWidget(PkWidget):
         
     def copy_stats(self):
         copy_table(self.process.model)
+
+class SimpleMathsWidget(PkWidget):
+    """
+    """
+    def __init__(self, **kwargs):
+        super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="", desc="Simple mathematical operations on data", **kwargs)
+        
+        layout = QtGui.QVBoxLayout()
+        self.setLayout(layout)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Simple Maths</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self))
+        layout.addLayout(hbox)
+        
+        layout.addWidget(QtGui.QLabel(""))
+
+        self.process = SimpleMathsProcess(self.ivm)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("Set"))
+        self.output_name_edit = QtGui.QLineEdit("newdata")
+        hbox.addWidget(self.output_name_edit)
+        hbox.addWidget(QtGui.QLabel("="))
+        self.proc_edit = QtGui.QLineEdit()
+        hbox.addWidget(self.proc_edit)
+        layout.addLayout(hbox)
+        
+        hbox = QtGui.QHBoxLayout()
+        self.go_btn = QtGui.QPushButton("Go")
+        self.go_btn.clicked.connect(self.go)
+        hbox.addWidget(self.go_btn)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
+
+        layout.addStretch(1)
+
+    def go(self):
+        options = {self.output_name_edit.text() : self.proc_edit.text()}
+        self.process.run(options)

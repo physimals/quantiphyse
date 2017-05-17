@@ -14,7 +14,7 @@ from sklearn.metrics import pairwise
 
 from pkview.QtInherit import HelpButton
 from pkview.QtInherit.dialogs import error_dialog
-from pkview.analysis.kmeans import KMeansPCA
+from pkview.analysis.kmeans import KMeansPCAProcess
 from pkview.widgets import PkWidget
 
 class CurveClusteringWidget(PkWidget):
@@ -161,7 +161,7 @@ class CurveClusteringWidget(PkWidget):
 
         # Initialisation
         # Volume management widget
-        self.km = None
+        self.process = KMeansPCAProcess(self.ivm)
 
         self.voxel_count_slice = []
         self.voxel_count = []
@@ -184,22 +184,19 @@ class CurveClusteringWidget(PkWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.vol
-        roi1 = self.ivm.current_roi
-
-        self.km = KMeansPCA(img1, region1=roi1.astype(np.float32))
-        self.km.run_single(n_clusters=self.combo.value(), opt_normdata=1, n_pca_components=self.combo2.value())
-
-        # self.km.plot(slice1=30)
-        self.label1, self.label1_cent = self.km.get_label_image()
-        # self.labs_un_orig = np.unique(self.label1)
-
-        self.ivm.add_roi("clusters", self.label1, make_current=True)
-        # This previous step should generate a color map which can then be used in the following steps.
+        options = {
+            "n-clusters" : self.combo.value(),
+            "norm-data" : True,
+            "n-pca" : self.combo2.value(),
+            "reduction" : "pca",
+            "invert-roi" : False,
+            "output-name" : "clusters"
+        }
+        self.process.run(options)
 
         self._plot()
-
         print("Done!")
+
         # enable button again
         self.b1.setDown(0)
         self.b1.setDisabled(0)
@@ -230,13 +227,10 @@ class CurveClusteringWidget(PkWidget):
 
         # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
         num_clus = (self.labs_un.max())
-
-
         le1 = self.p1.addLegend()
 
         # Plotting using single or multiple plots
         for ii in self.labs_un:
-
             if np.sum(self.label1_cent[ii, :]) == 0:
                 continue
 
@@ -248,24 +242,18 @@ class CurveClusteringWidget(PkWidget):
             # le1.addItem(curve1[ii], name1)
 
     def _generate_cluster_means(self):
-
         """
         Generate the mean curves for each cluster
         Returns:
-
         """
-        nimage = np.zeros(self.ivm.vol.shape)
-        nimage[self.km.region1] = self.km.voxel_se
+        roi = self.ivm.rois["clusters"]
+        regions = roi.regions
 
-        self.labs_un = np.unique(self.label1).astype(int)
-        self.labs_un = self.labs_un[self.labs_un != 0]
-        self.label1_cent = np.zeros((self.labs_un.max()+1, nimage.shape[-1]))
+        curves = np.zeros((len(regions), self.ivm.shape[-1]))
 
-        cc = 0
-        for ii in self.labs_un:
-
-            mean1 = np.median(nimage[self.label1 == ii], axis=0)
-            self.label1_cent[ii, :] = mean1
+        for region in regions:
+            mean = np.median(self.ivm.vol[roi == region], axis=(0, 1, 2))
+            curves[region, :] = mean1
 
     def merge1(self, m1, m2):
         # relabel

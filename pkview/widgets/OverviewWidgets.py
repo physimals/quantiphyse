@@ -114,11 +114,11 @@ class DataListWidget(QtGui.QTableWidget):
         if vol.md.fname is not None:
             name = vol.md.fname
         else:
-            name = vol.md.name
+            name = vol.name
         return name
 
     def add_volume(self, row, vol_type, vol, current=False):
-        self.setItem(row, 0, QtGui.QTableWidgetItem(vol.md.name))
+        self.setItem(row, 0, QtGui.QTableWidgetItem(vol.name))
         self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
         if vol.md.fname is not None:
             self.setItem(row, 2, QtGui.QTableWidgetItem(vol.md.fname))

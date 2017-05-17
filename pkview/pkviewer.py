@@ -34,7 +34,7 @@ from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 # My widgets
 from ._version import __version__
 from .ImageView import ImageView
-from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget
+from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 from .widgets.PharmaWidgets import PharmaWidget, PharmaView
@@ -76,8 +76,6 @@ class DragOptions(QtGui.QDialog):
         layout = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
-        #grid.addWidget(QtGui.QLabel("File:"), 0, 0)
-        #grid.addWidget(QtGui.QLabel(fname), 0, 1)
         grid.addWidget(QtGui.QLabel("Name:"), 1, 0)
         self.name_combo = QtGui.QComboBox()
         def_name = os.path.split(fname)[1].split(".", 1)[0]
@@ -453,6 +451,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(PharmaView) 
         self.add_widget(OverlayStatistics, default=True) 
         self.add_widget(RoiAnalysisWidget) 
+        self.add_widget(SimpleMathsWidget) 
         self.add_widget(PharmaWidget) 
         self.add_widget(T10Widget) 
         self.add_widget(PerfSlicWidget) 
@@ -543,6 +542,8 @@ class MainWindowWidget(QtGui.QWidget):
         gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
         gBox2.setLayout(gBoxlay2)
+
+        self.ivm.sig_main_volume.connect(self.main_volume_changed)
 
         gBox3 = QtGui.QGroupBox("Overlay")
         grid = QtGui.QGridLayout()
@@ -647,6 +648,14 @@ class MainWindowWidget(QtGui.QWidget):
         self.view_options_dlg.show()
         self.view_options_dlg.raise_()
         
+    def main_volume_changed(self, vol):
+        self.update_slider_range()
+        self.slider_scroll_mouse()
+        if vol is not None:
+            self.vol_name.setText(vol.md.basename)
+        else:
+            self.vol_name.setText("")
+
     def overlay_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
@@ -656,7 +665,7 @@ class MainWindowWidget(QtGui.QWidget):
         if overlay is None:
             self.overlay_combo.setCurrentIndex(-1)
         else:
-            idx = self.overlay_combo.findText(overlay.md.name)
+            idx = self.overlay_combo.findText(overlay.name)
             if idx != self.overlay_combo.currentIndex():
                 try:
                     self.overlay_combo.blockSignals(True)
@@ -684,7 +693,7 @@ class MainWindowWidget(QtGui.QWidget):
         if roi is None:
             self.roi_combo.setCurrentIndex(-1)
         else:
-            idx = self.roi_combo.findText(roi.md.name)
+            idx = self.roi_combo.findText(roi.name)
             if idx != self.roi_combo.currentIndex():
                 try:
                     self.roi_combo.blockSignals(True)
@@ -738,12 +747,12 @@ class MainWindowWidget(QtGui.QWidget):
             self.sld2.blockSignals(True)
             self.sld3.blockSignals(True)
             self.sld4.blockSignals(True)
-            self.sld1.setRange(0, self.ivm.vol.shape[2]-1)
-            self.sld2.setRange(0, self.ivm.vol.shape[0]-1)
-            self.sld3.setRange(0, self.ivm.vol.shape[1]-1)
+            self.sld1.setRange(0, self.ivm.shape[2]-1)
+            self.sld2.setRange(0, self.ivm.shape[0]-1)
+            self.sld3.setRange(0, self.ivm.shape[1]-1)
 
             if self.ivm.vol.ndim == 4:
-                self.sld4.setRange(0, self.ivm.vol.shape[3]-1)
+                self.sld4.setRange(0, self.ivm.shape[3]-1)
             else:
                 self.sld4.setRange(0, 0)
         finally:
@@ -785,7 +794,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
     #File dropped
     sig_dropped = QtCore.Signal(str)
 
-    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None, overlay_type_in=None):
+    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None):
 
         super(WindowAndDecorators, self).__init__()
 
@@ -834,7 +843,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.image_dir_in = image_dir_in
         self.roi_dir_in = roi_dir_in
         self.overlay_dir_in = overlay_dir_in
-        self.overlay_type_in = overlay_type_in
 
         # initialise the whole UI
         self.init_ui()
@@ -1047,36 +1055,90 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
     def load_data(self, fname=None, name=None, ftype=None):
         """
-        Dialog for loading an overlay and specifying the type of overlay
-        @fname: allows a file name to be passed in automatically
-        @name: allows overlay name to be passed automatically
+        Load data into the IVM from a file (which may already be known)
         """
         if fname is None:
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
             if not fname: return
-
-        vol = load(fname)
         self.default_directory = get_dir(fname)
 
-        if ftype is None:
-            ftype, name, ok, force_t = DragOptions.getImageChoice(self, fname, force_t_option=(vol.ndim == 3))
-            if not ok: return
+        # Get metadata for file - shape and data type so we can assess fit
+        datafile = load(fname)
+        shape, shape_orig, dtype = datafile.get_info()
 
-        if name is not None:
-            vol.md.name = name
+        # FIXME not doing this because a lot of ROIs seem to come in as float data? 
+        #if ftype is None and issubclass(dtype.type, np.floating):
+        #    # Floating point is assumed to be data (not ROI)
+        #    print(dtype)
+        #    ftype = "DATA"
+
+        # At this point we assess transformed and original shape to decide what advanced load options/warnings to offer
+        force_t_option = False
+        ignore_affine = False
+        force_t = False
+        if self.mw1.ivm.vol is None:
+            # We can add anything to an empty IVM - but if data is 3D, give discreet option to interpret
+            # it as 2D+time
+            force_t_option = (len(shape) == 3)
+            print("Fine to add as no existing data")
+        else:
+            # Try to add directly, as 2D+time, directly in original dims and finally 2D+time in original space 
+            if self.mw1.ivm.check_shape(shape):
+                print("Found match ", self.mw1.ivm.shape, shape)
+            elif len(shape) == 3 and self.mw1.ivm.check_shape([shape[0], shape[1], 1, shape[2]]):
+                force_t = True
+                print("Found match with force_t ", self.mw1.ivm.shape, shape)
+            elif self.mw1.ivm.check_shape(shape_orig):
+                ignore_affine = True
+                print("Found match with ignore_affine ", self.mw1.ivm.shape, shape)
+            elif len(shape) == 3 and self.mw1.ivm.check_shape([shape_orig[0], shape_orig[1], 1, shape_orig[2]]):
+                force_t = True
+                ignore_affine = True
+                print("Found match with force_t and ignore_affine", self.mw1.ivm.shape, shape)
+            else:
+                # Data already exists and shape is not consistent - only option is to empty and start again
+                print("no match", self.mw1.ivm.shape, shape)
+                msgBox = QtGui.QMessageBox()
+                msgBox.setText("A different shaped volume has already been loaded")
+                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
+                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+                if msgBox.exec_() != QtGui.QMessageBox.Ok: return
+                
+                self.mw1.ivm.reset()
+                force_t_option = (len(shape) == 3)
+                
+        # If file type (ROI or data) is not already known, ask the user.
+        if ftype is None:
+            ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, force_t_option=force_t_option)
+            if not ok: return
+        if force_t_option: force_t = force_t_dialog
+
+        # If we had to do anything evil to make data fit, warn and give user the chance to back out
+        warnings = []
+        if force_t:
+            warnings.append("Interpreted data as multiple 2D volumes although file contained 3D spatial data")
+        if ignore_affine:
+            warnings.append("Ignored space transformation from file")
+        if len(warnings) > 0:
+            msgBox = QtGui.QMessageBox()
+            warntxt = "\n  -".join(warnings)
+            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warntxt)
+            msgBox.setInformativeText("Add data anyway?")
+            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
+            if msgBox.exec_() != QtGui.QMessageBox.Ok: return
+            
+        # Now get the actual data and add it as data or an ROI
+        vol = datafile.get_data(ignore_affine=ignore_affine, force_t=force_t)
 
         if ftype == "DATA": add_fn = self.mw1.ivm.add_overlay
         else: add_fn = self.mw1.ivm.add_roi
+
         try:
-            add_fn(vol.md.name, vol, make_current=True)
+            add_fn(name, vol, make_current=True)
         except:
-            # Try again, ignoring file transformation
-            if self.mw1.ivm.vol is not None:
-                print("Failed shape check, try again with volume affine")
-                vol = load(fname, ignore_affine=True)
-                add_fn(vol.md.name, vol, make_current=True)
-            else:
-                raise
+            raise
 
     def save_overlay(self):
         """
@@ -1116,7 +1178,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if self.roi_dir_in is not None:
             self.load_data(fname=self.roi_dir_in, ftype="ROI")
         if self.overlay_dir_in is not None:
-            self.load_data(fname=self.overlay_dir_in, name=self.overlay_type_in, ftype="DATA")
+            self.load_data(fname=self.overlay_dir_in, ftype="DATA")
 
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
@@ -1153,7 +1215,6 @@ def main():
     parser.add_argument('--image', help='main image nifti file location', default=None, type=str)
     parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
     parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
-    parser.add_argument('--overlaytype', help='Type of overlay', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     args = parser.parse_args()
 
@@ -1187,7 +1248,7 @@ def main():
         app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
 
         # Pass arguments from the terminal (if any) into the main application
-        ex = WindowAndDecorators(args.image, args.roi, args.overlay, args.overlaytype)
+        ex = WindowAndDecorators(args.image, args.roi, args.overlay)
 
         sys.exit(app.exec_())
 

@@ -30,7 +30,7 @@ class OverlayAnalysis(object):
         """
         # Checks if either ROI or overlay is None
         if roi is not None:
-            roi_labels = roi.md.regions
+            roi_labels = roi.regions
             roi_labels = roi_labels[roi_labels > 0]
         else:
             roi = np.ones(ovl.shape[:3])

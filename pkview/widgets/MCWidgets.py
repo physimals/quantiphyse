@@ -321,7 +321,7 @@ class RegWidget(PkWidget):
                 self.refidx.setValue(int(vol.shape[3]/2))
             self.refvol_changed(self.refvol.currentIndex())
             if self.mode == 1: # MoCo
-                self.name_edit.setText("%s_reg" % vol.md.name)
+                self.name_edit.setText("%s_reg" % vol.name)
 
     def regdata_changed(self, idx):
         if idx >= 0 and self.mode == 0:
@@ -342,11 +342,11 @@ class RegWidget(PkWidget):
         self.regdata.clear()
         vol = self.ivm.vol
         if vol is not None:
-            self.refdata.addItem(vol.md.name)
+            self.refdata.addItem(vol.name)
             
         for ovl in self.ivm.overlays.values():
-            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.md.name)
-            if ovl.ndim == 3: self.regdata.addItem(ovl.md.name)
+            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.name)
+            if ovl.ndim == 3: self.regdata.addItem(ovl.name)
 
         idx = self.refdata.findText(currentRef)
         self.refdata.setCurrentIndex(max(0, idx))
