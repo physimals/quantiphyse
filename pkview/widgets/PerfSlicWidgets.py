@@ -34,6 +34,8 @@ class PerfSlicWidget(PkWidget):
     """
     def __init__(self, **kwargs):
         super(PerfSlicWidget, self).__init__(name="Super Voxels", icon="sv", desc="Generate supervoxel clusters", **kwargs)
+        
+    def init_ui(self):
         self.picking_roi = False
         self.freehand_roi = False
 

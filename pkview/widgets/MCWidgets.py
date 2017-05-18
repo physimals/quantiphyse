@@ -171,9 +171,7 @@ class RegWidget(PkWidget):
     def __init__(self, **kwargs):
         super(RegWidget, self).__init__(name="Registration", icon="reg", desc="Registration and Motion Correction", **kwargs)
 
-        self.ivm.sig_main_volume.connect(self.main_vol_changed)
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
-
+    def init_ui(self):
         self.reg_methods = {"DEEDS" : DeedsInterface(),
                             "MCFLIRT" : McflirtInterface()}
 
@@ -286,6 +284,14 @@ class RegWidget(PkWidget):
 
         self.mode = 0
         self.method_changed(0)
+
+    def activate(self):
+        self.ivm.sig_main_volume.connect(self.main_vol_changed)
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
+
+    def deactivate(self):
+        self.ivm.sig_main_volume.disconnect(self.main_vol_changed)
+        self.ivm.sig_all_overlays.disconnect(self.overlays_changed)
 
     def overlays_changed(self, ovls):
         self.update()

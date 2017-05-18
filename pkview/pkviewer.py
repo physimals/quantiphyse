@@ -736,7 +736,7 @@ class MainWindowWidget(QtGui.QWidget):
         for idx, w in enumerate(self.widgets):
             if w.default:
                 index = self.qtab1.addTab(w, w.icon, w.tabname)
-                w.init()
+                w.init_ui()
                 w.activate()
                 w.visible = True
                 w.index = index
@@ -885,7 +885,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         w = self.sender().widget
         if not w.visible:
             index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
-            w.init()
+            w.init_ui()
             w.activate()
             w.visible = True
             w.index = index

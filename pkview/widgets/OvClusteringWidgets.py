@@ -73,7 +73,6 @@ class OvCurveClusteringWidget(PkWidget):
         l05.addWidget(g01)
 
         # Merge options
-
         self.b2 = QtGui.QPushButton('Merge', self)
         self.b2.clicked.connect(self.run_merge)
 
@@ -94,7 +93,6 @@ class OvCurveClusteringWidget(PkWidget):
         self.g_merge.setTitle('Editing regions')
 
         # Statistics
-
         self.tabmod1 = QtGui.QStandardItemModel()
         self.tab1 = QtGui.QTableView()
         self.tab1.resizeColumnsToContents()

@@ -27,6 +27,7 @@ class PharmaWidget(PkWidget):
     def __init__(self, **kwargs):
         super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", icon="pk", **kwargs)
 
+    def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
         
         hbox = QtGui.QHBoxLayout()
@@ -155,6 +156,7 @@ class PharmaView(PkWidget):
     def __init__(self, **kwargs):
         super(PharmaView, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
 
+    def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 

@@ -67,11 +67,9 @@ class SEPlot:
             self.line, self.pts = None, None
 
 class SECurve(PkWidget):
-
     """
-    Side widgets for plotting SE curves
+    Plots SE curve for current main data
     """
-
     sig_add_pnt = QtCore.Signal(tuple)
     sig_clear_pnt = QtCore.Signal(bool)
 
@@ -291,7 +289,7 @@ class OverlayStatistics(PkWidget):
         self.ivm.sig_current_overlay.disconnect(self.overlay_changed)
         self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
-    def init(self):
+    def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
         self.ia = OverlayAnalysis(ivm=self.ivm)
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
@@ -477,7 +475,7 @@ class OverlayStatistics(PkWidget):
         self.ovl_selection = idx
         self.update_all()
 
-    def focus_changed(self, overlay):
+    def focus_changed(self, pos):
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.tab1ss.isVisible():
@@ -633,6 +631,9 @@ class RoiAnalysisWidget(PkWidget):
     def __init__(self, **kwargs):
         super(RoiAnalysisWidget, self).__init__(name="ROI Analysis", icon="roi", desc="Analysis of ROIs", **kwargs)
         
+    def init_ui(self):
+        self.process = CalcVolumesProcess(self.ivm)
+
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -641,10 +642,10 @@ class RoiAnalysisWidget(PkWidget):
         hbox.addStretch(1)
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
-        
-        layout.addWidget(QtGui.QLabel(""))
 
-        self.process = CalcVolumesProcess(self.ivm)
+        info = QtGui.QLabel("<i><br>Calculate size and volume of the current ROI<br></i>")
+        info.setWordWrap(True)
+        layout.addWidget(info)
 
         self.table = QtGui.QTableView()
         self.table.resizeColumnsToContents()
@@ -657,7 +658,6 @@ class RoiAnalysisWidget(PkWidget):
         hbox.addWidget(self.copy_btn)
         hbox.addStretch(1)
         layout.addLayout(hbox)
-        
         layout.addStretch(1)
 
     def activate(self):
@@ -675,12 +675,22 @@ class RoiAnalysisWidget(PkWidget):
     def copy_stats(self):
         copy_table(self.process.model)
 
+MATHS_INFO = """
+<i>Create data using simple mathematical operations on existing data
+<br><br>
+For example, if you have loaded data called 'mydata' and run modelling
+to produce a model prediction 'modelfit', you could calculate the residuals
+using:</i>
+<br><br>
+resids = mydata - modelfit
+<br>
+"""
+
 class SimpleMathsWidget(PkWidget):
-    """
-    """
     def __init__(self, **kwargs):
-        super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="", desc="Simple mathematical operations on data", **kwargs)
-        
+        super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="maths", desc="Simple mathematical operations on data", **kwargs)
+
+    def init_ui(self):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -690,13 +700,16 @@ class SimpleMathsWidget(PkWidget):
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
         
-        layout.addWidget(QtGui.QLabel(""))
+        info = QtGui.QLabel(MATHS_INFO)
+        info.setWordWrap(True)
+        layout.addWidget(info)
 
         self.process = SimpleMathsProcess(self.ivm)
 
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel("Set"))
         self.output_name_edit = QtGui.QLineEdit("newdata")
+        self.output_name_edit.setFixedWidth(100)
         hbox.addWidget(self.output_name_edit)
         hbox.addWidget(QtGui.QLabel("="))
         self.proc_edit = QtGui.QLineEdit()
@@ -705,6 +718,7 @@ class SimpleMathsWidget(PkWidget):
         
         hbox = QtGui.QHBoxLayout()
         self.go_btn = QtGui.QPushButton("Go")
+        self.go_btn.setFixedWidth(50)
         self.go_btn.clicked.connect(self.go)
         hbox.addWidget(self.go_btn)
         hbox.addStretch(1)

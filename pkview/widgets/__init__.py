@@ -35,10 +35,10 @@ class PkWidget(QtGui.QWidget):
         if self.opts:
                 self.opts.sig_options_changed.connect(self.options_changed)
 
-    def init(self):
+    def init_ui(self):
         """
-        Called when widget is first shown. Widgets may choose to override this to delay
-        expensive setup operations until required
+        Called when widget is first shown. Widgets should ideally override this to build their
+        UI widgets when required, rather than in the constructor which is called at startup
         """
         pass
 

@@ -46,6 +46,7 @@ class FabberWidget(PkWidget):
         super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
                                            desc="Fabber Bayesian model fitting",
                                            **kwargs)
+    def init_ui(self):
         mainGrid = QtGui.QVBoxLayout()
         self.setLayout(mainGrid)
 

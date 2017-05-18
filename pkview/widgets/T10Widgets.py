@@ -182,6 +182,8 @@ class T10Widget(PkWidget):
     """
     def __init__(self, **kwargs):
         super(T10Widget, self).__init__(name="T10", desc="Generate T10 map", icon="t10", **kwargs)
+
+    def init_ui(self):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
