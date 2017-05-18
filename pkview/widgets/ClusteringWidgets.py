@@ -22,9 +22,6 @@ class CurveClusteringWidget(PkWidget):
     Widget for clustering the tumour into various regions
     """
 
-    # emit reset command t
-    sig_emit_reset = QtCore.Signal(bool)
-
     def __init__(self, **kwargs):
         super(CurveClusteringWidget, self).__init__(name="Curve Cluster", icon="clustering", desc="Generate clusters from enhancement curves", **kwargs)
 
@@ -129,17 +126,12 @@ class CurveClusteringWidget(PkWidget):
         self.g_merge.setVisible(False)
 
         # Statistics
-
-        self.b_stat = QtGui.QPushButton('Run', self)
-        self.b_stat.clicked.connect(self.generate_voxel_stats)
-
         self.tabmod1 = QtGui.QStandardItemModel()
         self.tab1 = QtGui.QTableView()
         self.tab1.resizeColumnsToContents()
         self.tab1.setModel(self.tabmod1)
 
         l_stats = QtGui.QHBoxLayout()
-        l_stats.addWidget(self.b_stat)
         l_stats.addWidget(self.tab1)
 
         self.g_stats = QtGui.QGroupBox()
@@ -163,15 +155,16 @@ class CurveClusteringWidget(PkWidget):
         # Volume management widget
         self.process = KMeansPCAProcess(self.ivm)
 
-        self.voxel_count_slice = []
-        self.voxel_count = []
+    def activate(self):
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+
+    def deactivate(self):
+        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
     def run_clustering(self):
         """
         Run kmeans clustering using normalised PCA modes
         """
-
-        # Check that pkmodelling can be run
         if self.ivm.vol is None:
             error_dialog("No data loaded")
             return
@@ -184,22 +177,22 @@ class CurveClusteringWidget(PkWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        options = {
-            "n-clusters" : self.combo.value(),
-            "norm-data" : True,
-            "n-pca" : self.combo2.value(),
-            "reduction" : "pca",
-            "invert-roi" : False,
-            "output-name" : "clusters"
-        }
-        self.process.run(options)
-
-        self._plot()
-        print("Done!")
-
-        # enable button again
-        self.b1.setDown(0)
-        self.b1.setDisabled(0)
+        try:
+            options = {
+                "n-clusters" : self.combo.value(),
+                "norm-data" : True,
+                "n-pca" : self.combo2.value(),
+                "reduction" : "pca",
+                "invert-roi" : False,
+                "output-name" : "clusters"
+            }
+            self.process.run(options)
+            self.update_voxel_count()
+            self._plot()
+        finally:
+            # enable button again
+            self.b1.setDown(0)
+            self.b1.setDisabled(0)
 
     def reset_graph(self):
         """
@@ -220,26 +213,23 @@ class CurveClusteringWidget(PkWidget):
         curve1 = []
         roi = self.ivm.rois["clusters"]
 
-        # generate the cluster means
+        # Generate the cluster mean curves
         self._generate_cluster_means()
 
-        xx = np.arange(self.label1_cent.shape[1])
-
         # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
-        num_clus = (self.labs_un.max())
+        num_clus = (roi.regions.max())
         le1 = self.p1.addLegend()
 
         # Plotting using single or multiple plots
-        for ii in self.labs_un:
-            if np.sum(self.label1_cent[ii, :]) == 0:
+        for idx, region in enumerate(roi.regions):
+            if np.sum(self.curves[region]) == 0:
                 continue
 
-            pencol = roi.get_pencol(ii)
-            name1 = "Region " + str(int(ii))
+            pencol = roi.get_pencol(region)
+            name1 = "Region " + str(region)
             curve1.append(self.p1.plot(pen=pencol, width=8.0, name=name1))
-            curve1[-1].setData(xx, self.label1_cent[ii, :])
-
-            # le1.addItem(curve1[ii], name1)
+            xx = np.arange(len(self.curves[region]))
+            curve1[-1].setData(xx, self.curves[region])
 
     def _generate_cluster_means(self):
         """
@@ -249,83 +239,65 @@ class CurveClusteringWidget(PkWidget):
         roi = self.ivm.rois["clusters"]
         regions = roi.regions
 
-        curves = np.zeros((len(regions), self.ivm.shape[-1]))
-
+        self.curves = {}
         for region in regions:
-            mean = np.median(self.ivm.vol[roi == region], axis=(0, 1, 2))
-            curves[region, :] = mean1
+            mean = np.median(self.ivm.vol[roi == region], axis=0)
+            self.curves[region] = mean
 
     def merge1(self, m1, m2):
         # relabel
-        self.label1[self.label1 == m1] = m2
+        roi = self.ivm.rois["clusters"]
+        roi[roi == m1] = m2
 
         # signal the change
-        self.ivm.add_roi('clusters', self.label1, make_current=True)
-        self.sig_emit_reset.emit(1)
+        self.ivm.add_roi('clusters', roi, make_current=True)
 
         # replot
         self._plot()
+        self.update_voxel_count()
 
     def run_merge(self):
-        """
-
-        Returns:
-
-        """
-
         m1 = int(self.val_m1.text())
         m2 = int(self.val_m2.text())
         self.merge1(m1, m2)
 
     def run_automerge(self):
-
         # Use PCA features or true curves?
-
         # Mean features from each cluster
-
         # Distance matrix between features
-        distmat = pairwise.euclidean_distances(self.label1_cent[1:])
+        curvemat = np.zeros((len(self.curves), self.ivm.vol.shape[-1]))
+        row_region = {}
+        idx = 0
+        for region, curve in self.curves.items():
+            row_region[idx] = region
+            curvemat[idx, :] = curve
+            idx += 1
+        distmat = pairwise.euclidean_distances(curvemat)
         distmat[distmat == 0] = np.inf
-        loc1 = np.where(distmat == distmat.min())[0] + 1
-        self.merge1(loc1[0], loc1[1])
-        self.label1_cent[loc1[0]][0] = -1E6
+        loc1 = np.where(distmat == distmat.min())[0]
+        self.merge1(row_region[loc1[0]], row_region[loc1[1]])
 
-    def calculate_voxel_count(self):
+    def focus_changed(self, pos):
+        self.update_voxel_count()
 
-        """
-        Returns:
-        """
-
-        self.voxel_count_slice = []
-        self.voxel_count = []
-
-        for ii in self.labs_un:
-            # Slice 1 count
-            self.voxel_count_slice.append(np.sum(self.label1[:, :, self.ivm.cim_pos[2]] == ii))
-
-            # Volume count
-            self.voxel_count.append(np.sum(self.label1 == ii))
-
-
-    @QtCore.Slot()
-    def generate_voxel_stats(self):
-        """
-        Some initial analysis
-        (temporary location before moving analysis into a separate framework)
-        """
-
-        # get analysis
-        self.calculate_voxel_count()
+    def update_voxel_count(self):
         self.tabmod1.clear()
-
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
 
-        for cc, ii in enumerate(self.labs_un):
-
+        if "clusters" not in self.ivm.rois: return
+        
+        roi = self.ivm.rois["clusters"]
+        for cc, ii in enumerate(roi.regions):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
-            self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(self.voxel_count_slice[cc]))))
-            self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(self.voxel_count[cc]))))
+
+            # Slice count
+            voxel_count_slice = np.sum(roi[:, :, self.ivm.cim_pos[2]] == ii)
+            self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
+
+            # Volume count
+            voxel_count = np.sum(roi == ii)
+            self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def show_options(self):
         if self.g_merge.isVisible():

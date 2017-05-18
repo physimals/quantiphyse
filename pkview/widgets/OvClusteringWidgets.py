@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 
 from pkview.QtInherit.dialogs import error_dialog
 from pkview.QtInherit import HelpButton
-from pkview.analysis.kmeans import KMeans3D
+from pkview.analysis.kmeans import KMeans3DProcess
 from pkview.widgets import PkWidget
 
 #TODO Hide other buttons until the clustering is performed.
@@ -71,9 +71,6 @@ class OvCurveClusteringWidget(PkWidget):
         l05 = QtGui.QHBoxLayout()
         l05.addLayout(l03)
         l05.addWidget(g01)
-        
-        self.b4 = QtGui.QPushButton('Advanced options', self)
-        self.b4.clicked.connect(self.show_options)
 
         # Merge options
 
@@ -95,12 +92,8 @@ class OvCurveClusteringWidget(PkWidget):
         self.g_merge = QtGui.QGroupBox()
         self.g_merge.setLayout(l_merge)
         self.g_merge.setTitle('Editing regions')
-        self.g_merge.setVisible(False)
 
         # Statistics
-
-        self.b_stat = QtGui.QPushButton('Run', self)
-        self.b_stat.clicked.connect(self.generate_voxel_stats)
 
         self.tabmod1 = QtGui.QStandardItemModel()
         self.tab1 = QtGui.QTableView()
@@ -108,20 +101,17 @@ class OvCurveClusteringWidget(PkWidget):
         self.tab1.setModel(self.tabmod1)
 
         l_stats = QtGui.QHBoxLayout()
-        l_stats.addWidget(self.b_stat)
         l_stats.addWidget(self.tab1)
 
         self.g_stats = QtGui.QGroupBox()
         self.g_stats.setLayout(l_stats)
         self.g_stats.setTitle('Voxel count')
-        self.g_stats.setVisible(False)
 
         # Outer layout
         l1 = QtGui.QVBoxLayout()
         l1.addLayout(lhelp)
         l1.addLayout(l05)
         l1.addWidget(space1)
-        l1.addWidget(self.b4)
         l1.addWidget(self.g_merge)
         l1.addWidget(self.g_stats)
         l1.addStretch(1)
@@ -129,17 +119,21 @@ class OvCurveClusteringWidget(PkWidget):
 
         # Initialisation
         # Volume management widget
-        self.km = None
+        self.process = KMeans3DProcess(self.ivm)
 
-        self.voxel_count_slice = []
-        self.voxel_count = []
+    def activate(self):
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+
+    def deactivate(self):
+        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
+
+    def focus_changed(self, pos):
+        self.update_voxel_count()
 
     def run_clustering(self):
         """
-        Run kmeans clustering using normalised PCA modes
+        Run kmeans clustering on an overlay
         """
-
-        # Check that pkmodelling can be run
         if self.ivm.vol is None:
             error_dialog("No data loaded")
             return
@@ -160,108 +154,48 @@ class OvCurveClusteringWidget(PkWidget):
         self.b1.setDown(1)
         self.b1.setDisabled(1)
 
-        img1 = self.ivm.current_overlay
-        roi1 = self.ivm.current_roi
-
-        self.km = KMeans3D(img1, region1=roi1)
-
-        self.km.run_single(n_clusters=self.combo.value())
-
-        self.label1, self.label1_cent = self.km.get_label_image()
-
-        self.ivm.add_roi("Overlay clusters", self.label1, make_current=True)
-        self.sig_emit_reset.emit(1)
-        # This previous step should generate a color map which can then be used in the following steps.
-
-        print("Done!")
-        # enable button again
-        self.b1.setDown(0)
-        self.b1.setDisabled(0)
-
-    def _generate_cluster_means(self):
-
-        """
-        Generate the mean curves for each cluster
-        Returns:
-
-        """
-        nimage = np.zeros(self.ivm.vol.shape)
-        nimage[self.km.region1] = self.km.voxel_se
-
-        self.labs_un = np.unique(self.label1)
-        self.labs_un = self.labs_un[self.labs_un != 0]
-        self.label1_cent = np.zeros((self.labs_un.max()+1, nimage.shape[-1]))
-
-        cc = 0
-        for ii in self.labs_un:
-
-            mean1 = np.median(nimage[self.label1 == ii], axis=0)
-            self.label1_cent[ii, :] = mean1
+        try:
+            options = {
+                "n-clusters" : self.combo.value(),
+                "invert-roi" : False,
+                "output-name" : "overlay-clusters"
+            }
+            self.process.run(options)
+            self.update_voxel_count()
+        finally:
+            # enable button again
+            self.b1.setDown(0)
+            self.b1.setDisabled(0)
 
     def run_merge(self):
-        """
-
-        Returns:
-
-        """
-
         m1 = int(self.val_m1.text())
         m2 = int(self.val_m2.text())
 
         # relabel
-        self.label1[self.label1 == m1] = m2
-
+        roi = self.ivm.rois["overlay-clusters"]
+        roi[roi == m1] = m2
+        
         # signal the change
-        self.ivm.add_roi("clusters", self.label1, make_current=True)
-        self.sig_emit_reset.emit(1)
-        print("Merged")
+        self.ivm.add_roi("overlay-clusters", roi, make_current=True)
+        self.update_voxel_count()
 
-    def calculate_voxel_count(self):
-        """
-
-        Returns:
-
-        """
-        self.voxel_count_slice = []
-        self.voxel_count = []
-
-        self._generate_cluster_means()
-
-        for ii in self.labs_un:
-            # Slice 1 count
-            self.voxel_count_slice.append(np.sum(self.label1[:, :, self.ivm.cim_pos[2]] == ii))
-
-            # Volume count
-            self.voxel_count.append(np.sum(self.label1 == ii))
-
-
-    @QtCore.Slot()
-    def generate_voxel_stats(self):
-        """
-        Some initial analysis
-        (temporary location before moving analysis into a separate framework)
-        """
-
-        # get analysis
-        self.calculate_voxel_count()
+    def update_voxel_count(self):
         self.tabmod1.clear()
-
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
 
-        for cc, ii in enumerate(self.labs_un):
-
-            self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
-            self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(self.voxel_count_slice[cc]))))
-            self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(self.voxel_count[cc]))))
+        if "overlay-clusters" not in self.ivm.rois: return
         
-    def show_options(self):
-        if self.g_merge.isVisible():
-            self.g_merge.setVisible(False)
-            self.g_stats.setVisible(False)
-        else:
-            self.g_merge.setVisible(True)
-            self.g_stats.setVisible(True)
+        roi = self.ivm.rois["overlay-clusters"]
+        for cc, ii in enumerate(roi.regions):
+            self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
+            # Slice count
+            voxel_count_slice = np.sum(roi[:, :, self.ivm.cim_pos[2]] == ii)
+            self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
+
+            # Volume count
+            voxel_count = np.sum(roi == ii)
+            self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
 
 
