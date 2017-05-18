@@ -29,19 +29,32 @@ class KMeansPCAProcess(Process):
         reduction = options.pop('reduction', 'pca')
         invert_roi = options.pop('invert-roi', False)
         output_name = options.pop('output-name', 'clusters')
-        vol_name = options.pop('vol', self.ivm.vol.name)
-
-        img = self.ivm.overlays[vol_name].astype(np.float32)
-        roi = self.ivm.current_roi
-
-        #ROI to process
-        if roi is None:
-            roi = np.ones(img.shape[:-1], dtype=bool)
-        elif invert_roi:
-            roi = np.logical_not(roi)
+        data_name = options.pop('data', None)
+        roi_name = options.pop('roi', None)
+        
+        # 4D data
+        if data_name is not None:
+            img = self.ivm.overlays[data_name].astype(np.float32)
+        elif self.ivm.current_overlay is not None:
+            img = self.ivm.current_overlay.astype(np.float32)
         else:
-            roi = roi.astype(np.bool)
+            raise RuntimeError("No data specified and no current overlay")
 
+        if len(img.shape) != 4:
+            raise RuntimeError("Can only run PCA clustering on 4D data")
+            
+        # ROI to process
+        if roi_name is not None:
+            roi = self.ivm.rois[roi_name]
+        elif self.ivm.current_roi is not None:
+            roi = self.ivm.current_roi
+        else:
+            roi = np.ones(img.shape[:3])
+            invert_roi = False
+
+        if invert_roi:
+            roi = np.logical_not(roi)
+            
         voxel_se = img[roi]
         baseline1 = np.mean(img[:, :, :, :3], axis=-1)
         baseline1sub = baseline1[roi]
