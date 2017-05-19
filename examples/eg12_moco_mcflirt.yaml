@@ -1,0 +1,22 @@
+### Illustration of proposed YAML-based batch file format
+
+OutputFolder: out
+Debug: True
+
+Processing:
+    - Moco:
+        method: mcflirt
+        replace-vol: False
+        ref-vol: 14
+        output-name: moco
+
+SaveOverlays:
+    moco:
+
+Cases:
+    FslExample:
+        Folder:   C:\Users\ctsu0221\build\data\
+        Volume:   test_data.nii
+
+
+
