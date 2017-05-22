@@ -160,9 +160,14 @@ class SECurve(PkWidget):
         l1.addStretch(1)
         self.setLayout(l1)
 
-        self.ivl.sig_sel_changed.connect(self.sel_changed)
         self.plot_col_changed("grey")
         self.clear_all()
+
+    def activate(self):
+        self.ivl.sig_sel_changed.connect(self.sel_changed)
+
+    def deactivate(self):
+        self.ivl.sig_sel_changed.disconnect(self.sel_changed)
 
     def get_plots_by_color(self, col):
         return [plt for plt in self.plots.values() if plt.pen == col]
@@ -215,14 +220,14 @@ class SECurve(PkWidget):
         self.mean_plots = {}
         # Reset the list of picked points
         if self.ivl.pickmode == PickMode.MULTIPLE:
-            self.ivl.set_pickmode(PickMode.MULTIPLE)
+            self.ivl.reset_pickmode(PickMode.MULTIPLE)
 
     @QtCore.Slot()
     def multi_curves(self, state):
         if state:
-            self.ivl.set_pickmode(PickMode.MULTIPLE)
+            self.ivl.reset_pickmode(PickMode.MULTIPLE)
         else:
-            self.ivl.set_pickmode(PickMode.SINGLE)
+            self.ivl.reset_pickmode(PickMode.SINGLE)
             self.clear_all()
 
     @QtCore.Slot(np.ndarray)
@@ -277,17 +282,6 @@ class OverlayStatistics(PkWidget):
 
     def __init__(self, **kwargs):
         super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
-
-    def activate(self):
-        self.ivm.sig_current_roi.connect(self.update_all)
-        self.ivm.sig_all_overlays.connect(self.update_all)
-        self.ivm.sig_current_overlay.connect(self.update_all)
-        self.ivl.sig_focus_changed.connect(self.focus_changed)
-
-    def deactivate(self):
-        self.ivm.sig_current_roi.disconnect(self.roi_changed)
-        self.ivm.sig_current_overlay.disconnect(self.overlay_changed)
-        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
     def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
@@ -470,6 +464,18 @@ class OverlayStatistics(PkWidget):
 
         l1.addStretch(1)
         self.setLayout(l1)
+
+    def activate(self):
+        self.ivm.sig_current_roi.connect(self.update_all)
+        self.ivm.sig_all_overlays.connect(self.update_all)
+        self.ivm.sig_current_overlay.connect(self.update_all)
+        self.ivl.sig_focus_changed.connect(self.focus_changed)
+
+    def deactivate(self):
+        self.ivm.sig_current_roi.disconnect(self.update_all)
+        self.ivm.sig_all_overlays.disconnect(self.update_all)
+        self.ivm.sig_current_overlay.connect(self.update_all)
+        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
     def mode_changed(self, idx):
         self.ovl_selection = idx

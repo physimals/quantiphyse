@@ -45,6 +45,7 @@ from .widgets.fabber import FabberWidget
 from .widgets.MCWidgets import RegWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
+#from .widgets.RoiBuilderWidget import RoiBuilderWidget
 from .volumes.io import load, save
 from .volumes.volume_management import ImageVolumeManagement
 from .widgets.ExampleWidgets import ExampleWidget1
@@ -461,6 +462,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
+        #self.add_widget(RoiBuilderWidget, default=True) 
         
         self.initTabs()
 
@@ -737,7 +739,6 @@ class MainWindowWidget(QtGui.QWidget):
             if w.default:
                 index = self.qtab1.addTab(w, w.icon, w.tabname)
                 w.init_ui()
-                w.activate()
                 w.visible = True
                 w.index = index
                 
@@ -835,6 +836,9 @@ class WindowAndDecorators(QtGui.QMainWindow):
 
         # Load the main widget
         self.mw1 = MainWindowWidget()
+        self.current_widget = None
+        self.mw1.qtab1.currentChanged.connect(self.tab_changed)
+        self.tab_changed(0)
 
         self.toolbar = None
         self.default_directory ='/home'
@@ -886,11 +890,16 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if not w.visible:
             index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
             w.init_ui()
-            w.activate()
             w.visible = True
             w.index = index
         self.mw1.qtab1.setCurrentIndex(w.index)
 
+    def tab_changed(self, idx):
+        if self.current_widget is not None:
+            self.current_widget.deactivate()
+        self.current_widget = self.mw1.qtab1.widget(idx)
+        self.current_widget.activate()
+        
     def menu_ui(self):
         """
         Set up the file menu system and the toolbar at the top
