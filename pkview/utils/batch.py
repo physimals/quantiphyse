@@ -8,17 +8,17 @@ import errno
 import traceback
 import yaml
 
-from pkview.analysis import Process
-from pkview.analysis.fab import FabberProcess
-from pkview.analysis.reg import RegProcess, McflirtProcess
-from pkview.analysis.pk import PkModellingProcess
-from pkview.analysis.t10 import T10Process
-from pkview.analysis.sv import SupervoxelsProcess
-from pkview.analysis.misc import CalcVolumesProcess, SimpleMathsProcess
-from pkview.analysis.kmeans import KMeansPCAProcess
+from ..analysis import Process
+from ..analysis.fab import FabberProcess
+from ..analysis.reg import RegProcess, McflirtProcess
+from ..analysis.pk import PkModellingProcess
+from ..analysis.t10 import T10Process
+from ..analysis.sv import SupervoxelsProcess
+from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess
+from ..analysis.kmeans import KMeansPCAProcess
 
-from pkview.volumes.volume_management import ImageVolumeManagement
-from pkview.volumes.io import load, save
+from ..volumes.volume_management import ImageVolumeManagement
+from ..volumes.io import load, save
 
 processes = {"Fabber"      : FabberProcess,
              "MCFlirt"     : McflirtProcess,

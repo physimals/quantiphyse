@@ -2,9 +2,9 @@ from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
-from pkview.utils import get_icon
-from pkview.widgets import PkWidget
-from pkview.pkviewer import __version__
+from ..utils import get_icon
+from ..pkviewer import __version__
+from . import PkWidget
 
 class OverviewWidget(PkWidget):
 

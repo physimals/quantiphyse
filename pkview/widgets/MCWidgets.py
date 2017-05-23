@@ -4,11 +4,11 @@ import numpy as np
 
 from PySide import QtGui
 
-from pkview.QtInherit import HelpButton
-from pkview.QtInherit.dialogs import LogViewerDialog
-from pkview.analysis import Process
-from pkview.analysis.reg import RegProcess, McflirtProcess
-from pkview.widgets import PkWidget
+from ..QtInherit import HelpButton
+from ..QtInherit.dialogs import LogViewerDialog
+from ..analysis import Process
+from ..analysis.reg import RegProcess, McflirtProcess
+from . import PkWidget
 
 class McflirtInterface:
     def __init__(self):

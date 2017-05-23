@@ -23,7 +23,7 @@ import dcmstack
 import numpy as np
 import nrrd
 
-from pkview.volumes.io import QpVolume, FileMetadata
+from .io import QpVolume, FileMetadata
 
 class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """

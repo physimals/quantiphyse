@@ -1,8 +1,8 @@
 import time
 import numpy as np
 
-from pkview.analysis import Process, BackgroundProcess
-from pkview.analysis.pk_model import PyPk
+from . import Process, BackgroundProcess
+from .pk_model import PyPk
 
 def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
     """

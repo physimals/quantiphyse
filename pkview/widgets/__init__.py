@@ -7,7 +7,7 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from PySide import QtGui
 
-from pkview.utils import get_icon
+from ..utils import get_icon
 
 class PkWidget(QtGui.QWidget):
     """

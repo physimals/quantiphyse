@@ -4,9 +4,9 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from pkview.volumes.io import load
-from pkview.analysis import Process
-from pkview.analysis.t1_model import t10_map
+from ..volumes.io import load
+from . import Process
+from .t1_model import t10_map
 
 def _get_filepath(fname, folder):
     if os.path.isabs(fname):

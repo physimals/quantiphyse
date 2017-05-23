@@ -7,8 +7,8 @@ import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
 from ..QtInherit import HelpButton
-from pkview.analysis.t1_model import t10_map
-from pkview.widgets import PkWidget
+from ..analysis.t1_model import t10_map
+from . import PkWidget
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):

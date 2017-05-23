@@ -5,7 +5,7 @@ import traceback
 
 import numpy as np
 
-from pkview.analysis import Process, BackgroundProcess
+from . import Process, BackgroundProcess
 
 try:
     if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])

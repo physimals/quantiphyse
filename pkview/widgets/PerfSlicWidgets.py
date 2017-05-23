@@ -3,9 +3,9 @@ import numpy as np
 import skimage.segmentation as seg
 
 from ..QtInherit import HelpButton
-from pkview.analysis.perfusionslic import PerfSLIC
-from pkview.analysis.overlay_analysis import OverlayAnalysis
-from pkview.widgets import PkWidget
+from ..analysis.perfusionslic import PerfSLIC
+from ..analysis.overlay_analysis import OverlayAnalysis
+from . import PkWidget
 
 CITE = """
 <i>Irving et al (2017)

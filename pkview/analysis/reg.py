@@ -5,9 +5,9 @@ import traceback
 
 import numpy as np
 
-from pkview.analysis import Process, BackgroundProcess
-from pkview.analysis.deeds import deedsReg
-from pkview.analysis.mcflirt import mcflirt
+from . import Process, BackgroundProcess
+from .deeds import deedsReg
+from .mcflirt import mcflirt
 
 def deeds_reg(regdata, refdata, options):
     return deedsReg(regdata, refdata, **options)

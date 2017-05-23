@@ -1,7 +1,7 @@
 import numpy as np
 
-from pkview.analysis import Process
-from pkview.analysis.perfusionslic import PerfSLIC
+from . import Process
+from .perfusionslic import PerfSLIC
 
 class SupervoxelsProcess(Process):
     """

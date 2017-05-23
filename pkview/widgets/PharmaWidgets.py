@@ -13,11 +13,11 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from pkview.QtInherit.dialogs import error_dialog
+from ..QtInherit.dialogs import error_dialog
 from ..QtInherit import HelpButton
-from pkview.analysis import Process
-from pkview.analysis.pk import PkModellingProcess
-from pkview.widgets import PkWidget
+from ..analysis import Process
+from ..analysis.pk import PkModellingProcess
+from . import PkWidget
 
 class PharmaWidget(PkWidget):
     """

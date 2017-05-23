@@ -22,13 +22,13 @@ import numpy as np
 if sys.platform.startswith("darwin"):
     from Cocoa import NSURL
 
-from pkview.QtInherit.dialogs import error_dialog
+from .QtInherit.dialogs import error_dialog
 
 # required to use resources in theme. Check if 2 or 3.
 if (sys.version_info > (3, 0)):
-    from pkview.resources import resource_py2
+    from .resources import resource_py2
 else:
-    from pkview.resources import resource_py3
+    from .resources import resource_py3
 
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
@@ -875,7 +875,7 @@ def main():
             elif hasattr(sys, '_MEIPASS2'):
                 local_file_path = sys._MEIPASS2
             elif sys.frozen == 'macosx_app':
-                local_file_path = os.getcwd() + '/pkview'
+                local_file_path = os.getcwd() + '/quantiphyse'
             else:
                 local_file_path = os.path.dirname(sys.executable)
             os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
