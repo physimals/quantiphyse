@@ -420,19 +420,16 @@ class ViewOptions(QtGui.QDialog):
         self.sig_options_changed.emit(self)
 
 class MainWindow(QtGui.QMainWindow):
-
     """
-    Overall window framework
+    Main application window
 
-    Steps:
-    1) Loads the main widget (mw1) - this is where all the interesting stuff happens
-    2) Accepts any input directories that are passed from the terminal
-    3) Initialises the GUI, menus, and toolbar
-    3) Loads any files that are passed from the terminal
-
+    Initializes volume management object and main view widget.
+    Loads optional widgets
+    Builds menus
+    Requests registration if required
+    Loads data from command line options
     """
 
-    #File dropped
     sig_dropped = QtCore.Signal(str)
 
     def __init__(self, load_data=None, load_roi=None):
@@ -470,21 +467,19 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(OvCurveClusteringWidget, default=True) 
         self.add_widget(RoiBuilderWidget, default=True) 
         
-        # Menu and tabs
-        self.menu_ui()
-        self.initTabs()
-        self.qtab1.currentChanged.connect(self.tab_changed)
-        self.tab_changed(0)
+        # Initialize menu and tabs
+        self.init_menu()
+        self.init_tabs()
 
         # Main layout - image view to left, tabs to right
         main_widget = QtGui.QWidget()
         hbox = QtGui.QHBoxLayout(self)
-        splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
-        splitter1.addWidget(self.ivl)
-        splitter1.addWidget(self.qtab1)
-        splitter1.setStretchFactor(0, 4)
-        splitter1.setStretchFactor(1, 1)
-        hbox.addWidget(splitter1)
+        splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        splitter.addWidget(self.ivl)
+        splitter.addWidget(self.tab_widget)
+        splitter.setStretchFactor(0, 4)
+        splitter.setStretchFactor(1, 1)
+        hbox.addWidget(splitter)
         main_widget.setLayout(hbox)
         self.setCentralWidget(main_widget)
 
@@ -518,36 +513,39 @@ class MainWindow(QtGui.QMainWindow):
                 self.close()
                 QtCore.QCoreApplication.quit()
 
-    def initTabs(self):
-        self.qtab1 = FingerTabWidget(self)
+    def init_tabs(self):
+        self.tab_widget = FingerTabWidget(self)
 
         # Add widgets flagged to appear by default
         for idx, w in enumerate(self.widgets):
             if w.default:
-                index = self.qtab1.addTab(w, w.icon, w.tabname)
+                index = self.tab_widget.addTab(w, w.icon, w.tabname)
                 w.init_ui()
                 w.visible = True
                 w.index = index
-        
+        self.tab_widget.currentChanged.connect(self.select_tab)
+        self.select_tab(0)
+
     def add_widget(self, w, **kwargs):
 	    self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg, **kwargs))
 
     def show_widget(self):
+        # For some reason a closure did not work here - get the widget to show from the event sender
         w = self.sender().widget
         if not w.visible:
-            index = self.qtab1.addTab(w, w.icon, w.tabname)
+            index = self.tab_widget.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
             w.index = index
-        self.qtab1.setCurrentIndex(w.index)
+        self.tab_widget.setCurrentIndex(w.index)
 
-    def tab_changed(self, idx):
+    def select_tab(self, idx):
         if self.current_widget is not None:
             self.current_widget.deactivate()
-        self.current_widget = self.qtab1.widget(idx)
+        self.current_widget = self.tab_widget.widget(idx)
         self.current_widget.activate()
         
-    def menu_ui(self):
+    def init_menu(self):
         """
         Set up the file menu system and the toolbar at the top
         :return:
@@ -635,8 +633,6 @@ class MainWindow(QtGui.QMainWindow):
         Drop files directly onto the widget
 
         File locations are stored in fname
-        :param e:
-        :return:
         """
         if e.mimeData().hasUrls:
             e.setDropAction(QtCore.Qt.CopyAction)
@@ -656,11 +652,7 @@ class MainWindow(QtGui.QMainWindow):
             e.ignore()
 
     def click_link(self):
-        """
-        Provide a clickable link to help files
-
-        :return:
-        """
+        """ Provide a clickable link to help files """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
 
     def about(self):
@@ -757,11 +749,11 @@ class MainWindow(QtGui.QMainWindow):
                 force_t_option = (len(shape) == 3)
                 
         # If file type (ROI or data) is not already known, ask the user.
-        if ftype is None:
+        if ftype is None or force_t_option:
             ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, force_t_option=force_t_option)
             if not ok: return
         if force_t_option: force_t = force_t_dialog
-
+        
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         warnings = []
         if force_t:
@@ -779,6 +771,9 @@ class MainWindow(QtGui.QMainWindow):
             
         # Now get the actual data and add it as data or an ROI
         vol = datafile.get_data(ignore_affine=ignore_affine, force_t=force_t)
+
+        if name is None:
+            name = os.path.basename(fname)
 
         if ftype == "DATA": add_fn = self.ivm.add_overlay
         else: add_fn = self.ivm.add_roi
@@ -864,14 +859,13 @@ def main():
         run_batch(args.batch)
         #sys.exit(app.exec_())
     else:
-        # Initialise the application
         app = QtGui.QApplication(sys.argv)
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
         QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-        
         sys.excepthook = my_catch_exceptions
 
+        # Set the local file path, used for finding icons, etc
         local_file_path = ""
         if hasattr(sys, 'frozen'):
             # File is frozen (packaged apps)
@@ -891,7 +885,7 @@ def main():
 
         if local_file_path == "":
             # Use local working directory otherwise
-            print("Reverting to current directory as base")
+            warnings.warn("Reverting to current directory as local path")
             local_file_path = os.getcwd()
 
         print("Local directory: ", local_file_path)
@@ -902,11 +896,9 @@ def main():
             from Foundation import NSURL
             QtGui.QApplication.setGraphicsSystem('native')
 
+        # Create window and start main loop
         app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
-
-        # Initialise main GUI
         ex = MainWindow(load_data=args.data, load_roi=args.roi)
-
         sys.exit(app.exec_())
 
 if __name__ == '__main__':
