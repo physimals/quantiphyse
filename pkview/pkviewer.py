@@ -465,15 +465,15 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
-        self.add_widget(RoiBuilderWidget, default=True) 
+        self.add_widget(RoiBuilderWidget, default=True)
         
         # Initialize menu and tabs
         self.init_menu()
         self.init_tabs()
-
+        
         # Main layout - image view to left, tabs to right
         main_widget = QtGui.QWidget()
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.ivl)
         splitter.addWidget(self.tab_widget)
@@ -482,7 +482,7 @@ class MainWindow(QtGui.QMainWindow):
         hbox.addWidget(splitter)
         main_widget.setLayout(hbox)
         self.setCentralWidget(main_widget)
-
+        
         # General properties of main window
         self.setWindowTitle("Quantiphyse %s" % __version__)
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
