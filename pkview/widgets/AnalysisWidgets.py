@@ -161,10 +161,12 @@ class SECurve(PkWidget):
         self.setLayout(l1)
 
         self.plot_col_changed("grey")
+        self.multi = False
         self.clear_all()
 
     def activate(self):
         self.ivl.sig_sel_changed.connect(self.sel_changed)
+        self.clear_all()
 
     def deactivate(self):
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
@@ -219,40 +221,43 @@ class SECurve(PkWidget):
         self.plots = {}
         self.mean_plots = {}
         # Reset the list of picked points
-        if self.ivl.pickmode == PickMode.MULTIPLE:
-            self.ivl.reset_pickmode(PickMode.MULTIPLE)
+        if self.multi:
+            self.ivl.set_picker(PickMode.MULTIPLE)
+            self.ivl.picker.col = self.col
+        else:
+            self.ivl.set_picker(PickMode.SINGLE)
+            self.ivl.picker.col = self.col
 
     @QtCore.Slot()
     def multi_curves(self, state):
-        if state:
-            self.ivl.reset_pickmode(PickMode.MULTIPLE)
-        else:
-            self.ivl.reset_pickmode(PickMode.SINGLE)
-            self.clear_all()
+        self.multi = state
+        self.clear_all()
 
     @QtCore.Slot(np.ndarray)
-    def sel_changed(self, sel):
+    def sel_changed(self, picker):
         """
         Get signal from mouse click
         """
-        pickmode, points = sel
-        for point in points:
-            if point not in self.plots:
-                if self.ivm.vol.ndim == 3:
-                    # FIXME this should take into account which window the picked point was from
-                    warnings.warn("3D image so just calculating cross image profile")
-                    sig = self.ivm.vol[point[0], :, point[2]]
-                elif self.ivm.vol.ndim == 4:
-                    sig = self.ivm.vol[point[0], point[1], point[2], :]
-                else:
-                    warnings.warn("Image is not 3D or 4D")
-                    continue
-                plt = SEPlot(sig, pen=self.ivl.pick_col)
-                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
-                self.plots[point] = plt
+        allpoints = []
+        for col, points in picker.points.items():
+            allpoints += points
+            for point in points:
+                if point not in self.plots:
+                    if self.ivm.vol.ndim == 3:
+                        # FIXME this should take into account which window the picked point was from
+                        warnings.warn("3D image so just calculating cross image profile")
+                        sig = self.ivm.vol[point[0], :, point[2]]
+                    elif self.ivm.vol.ndim == 4:
+                        sig = self.ivm.vol[point[0], point[1], point[2], :]
+                    else:
+                        warnings.warn("Image is not 3D or 4D")
+                        continue
+                    plt = SEPlot(sig, pen=col)
+                    plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
+                    self.plots[point] = plt
 
         for point in self.plots.keys():
-            if point not in points:
+            if point not in allpoints:
                 self.plots[point].remove(self.p1)
                 del self.plots[point]
 
@@ -260,7 +265,8 @@ class SECurve(PkWidget):
 
     @QtCore.Slot(str)
     def plot_col_changed(self, text):
-        self.ivl.pick_col = self.colors.get(text, (255, 255, 255))
+        self.col = self.colors.get(text, (255, 255, 255))
+        self.ivl.picker.col = self.col
 
 class OverlayStatistics(PkWidget):
 

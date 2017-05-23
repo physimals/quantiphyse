@@ -36,7 +36,7 @@ class RoiBuilderWidget(PkWidget):
         self.setLayout(layout)
 
     def activate(self):
-        self.ivl.reset_pickmode(PickMode.LASSO)
+        self.ivl.set_picker(PickMode.LASSO)
 
     def deactivate(self):
-        self.ivl.reset_pickmode(PickMode.SINGLE)
+        self.ivl.set_picker(PickMode.SINGLE)

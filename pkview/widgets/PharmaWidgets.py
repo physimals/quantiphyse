@@ -212,11 +212,11 @@ class PharmaView(PkWidget):
         self.curve1 = None
     
     def activate(self):
-        self.ivl.sig_mouse_click.connect(self.replot_curves)
+        self.ivl.sig_focus_changed.connect(self.replot_curves)
         self.replot_curves()
 
     def deactivate(self):
-        self.ivl.sig_mouse_click.disconnect(self.replot_curves)
+        self.ivl.sig_focus_changed.disconnect(self.replot_curves)
 
     def options_changed(self, opts):
         self.replot_curves()
@@ -225,7 +225,7 @@ class PharmaView(PkWidget):
         self.norm_frames.setEnabled(self.sig_en_cb.isChecked())
         self.replot_curves()
 
-    def replot_curves(self, data=None):
+    def replot_curves(self, pos=None):
         self._plot()
         self._update_table()
 

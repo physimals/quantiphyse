@@ -45,7 +45,7 @@ from .widgets.fabber import FabberWidget
 from .widgets.MCWidgets import RegWidget
 from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
-#from .widgets.RoiBuilderWidget import RoiBuilderWidget
+from .widgets.RoiBuilderWidget import RoiBuilderWidget
 from .volumes.io import load, save
 from .volumes.volume_management import ImageVolumeManagement
 from .widgets.ExampleWidgets import ExampleWidget1
@@ -441,7 +441,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.ivm = ImageVolumeManagement()
         self.view_options_dlg = ViewOptions(self, self.ivm)
         self.ivl = ImageView(self.ivm, self.view_options_dlg)
-        self.ivl.sig_mouse_scroll.connect(self.slider_scroll_mouse)
+        self.ivl.sig_focus_changed.connect(self.slider_scroll_mouse)
 
         # ~~~~~~~~~~~~ Widgets ~~~~~~~~~~~~~~~~~~~~
         self.widgets = []
@@ -462,7 +462,7 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
-        #self.add_widget(RoiBuilderWidget, default=True) 
+        self.add_widget(RoiBuilderWidget, default=True) 
         
         self.initTabs()
 
@@ -483,10 +483,10 @@ class MainWindowWidget(QtGui.QWidget):
         # self.update_slider_range()
 
         # connect sliders to ivl
-        self.sld1.valueChanged[int].connect(self.ivl.set_space_pos(2))
-        self.sld2.valueChanged[int].connect(self.ivl.set_space_pos(0))
-        self.sld3.valueChanged[int].connect(self.ivl.set_space_pos(1))
-        self.sld4.valueChanged[int].connect(self.ivl.set_time_pos)
+        self.sld1.valueChanged[int].connect(self.ivl.set_pos(2))
+        self.sld2.valueChanged[int].connect(self.ivl.set_pos(0))
+        self.sld3.valueChanged[int].connect(self.ivl.set_pos(1))
+        self.sld4.valueChanged[int].connect(self.ivl.set_pos(3))
 
         # Position Label and connect to slider
         lab_p1 = QtGui.QLabel('0')
@@ -726,7 +726,8 @@ class MainWindowWidget(QtGui.QWidget):
 
     def overlay_cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
-        self.ivl.h2.setGradientName(cmap)
+        self.ivl.current_data_view.cmap = cmap
+        self.ivl.update_from_dataview()
 
     def initTabs(self):
         """
@@ -763,15 +764,12 @@ class MainWindowWidget(QtGui.QWidget):
             self.sld4.blockSignals(False)
 
     @QtCore.Slot(bool)
-    def slider_scroll_mouse(self, value=None):
+    def slider_scroll_mouse(self, pos=None):
         # update slider positions
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[0])
         self.sld3.setValue(self.ivm.cim_pos[1])
-        if self.ivm.vol.ndim == 4:
-            self.sld4.setValue(self.ivm.cim_pos[3])
-        else:
-            self.sld4.setValue(0)
+        self.sld4.setValue(self.ivm.cim_pos[3])
         if self.ivm.vol is not None: 
             self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
         if self.ivm.current_roi is not None: 

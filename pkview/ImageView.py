@@ -1,11 +1,7 @@
 """
-
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Author: Benjamin Irving (benjamin.irv@gmail.com), Martin Craig (martin.craig@eng.ox.ac.uk)
+Copyright (c) 2013-2015 University of Oxford
 """
-
-# TODO remove display of mutliple ROIs at once and instead select the ROIs
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
@@ -20,7 +16,8 @@ import weakref
 
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
-# setting defaults for the library
+
+from pkview.volumes.io import QpVolume
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
@@ -66,6 +63,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.lut_changed()
 
     def setGradientName(self, name):
+        self.cmap_name = name
         try:
             self.gradient.loadPreset(name)
         except KeyError:
@@ -108,429 +106,284 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
             if img() is not None:
                 img().setLookupTable(self.getImageLut, update=True)
 
-class ImageMed(pg.ImageItem, object):
-    """
-    Subclassing ImageItem in order to change the wheeEvent action
-    """
-    # General signal that the mouse has been interacted with (used to be just for the wheel)
-    sig_mouse_wheel = QtCore.Signal(int)
-    # Signal that the mouse has been clicked in the image
-    sig_click = QtCore.Signal(QtGui.QMouseEvent)
-    sig_doubleClick = QtCore.Signal(QtGui.QMouseEvent)
+"""
+How should picking work?
 
-    def __init__(self, border):
-        super(ImageMed, self).__init__(border=border)
+On activation, widget will typically put the viewer in a pick mode. Some widgets might change the
+mode during use (e.g. ROI builder). The view will clear any existing selection at this point.
 
-    def wheelEvent(self, event):
+Once selection is initiated (generally by clicking in a window) a Picker is instantiated. Some pickers
+(e.g. single/multi point selection) are not tied to a particular view windows, however others (lasso / freehand)
+are. Clicks in other widows will not generate selection or focus events and will not change the focus point
+(as this may alter the visible slice in the picking window).
 
-        """
-        Subclassed to remove scroll to zoom from pg.ImageItem
-        and instead trigger a scroll through the volume
-        """
+Widgets can choose when to stop picking, however the picker may also emit the sel_finished signal (e.g. when
+user goes back to the starting point in a lasso picker, or finishes drawing a selection box)
 
-        # defines whether the change is negative or positive scroll
-        chnge1 = int(event.delta()/120)
-        self.sig_mouse_wheel.emit(chnge1)
-
-    # Mouse clicked on widget
-    def mousePressEvent(self, event):
-        super(ImageMed, self).mousePressEvent(event)
-        if event.button() == QtCore.Qt.LeftButton:
-            self.sig_click.emit(event)
-
-    # Mouse double clicked on widget
-    def mouseDoubleClickEvent(self, event):
-        super(ImageMed, self).mouseDoubleClickEvent(event)
-        if event.button() == QtCore.Qt.LeftButton:
-            self.sig_doubleClick.emit(event)
+Changes to the selection will trigger sel_changed events. For freehand selection this will only occur
+when mouse button is released.
+"""
 
 class PickMode:
+    """ Single point picking. pick_points contains a single point """
     SINGLE = 1
+
+    """ Multi-point picking. pick_points contains a list of points """
     MULTIPLE = 2
+
+    """ Select rectangular regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
     RECT = 3
+
+    """ Polygon lasso. pick_points contains line segment ends. Use get_pick_roi to get full set """
     LASSO = 4
+    
+    """ Like LASSO but holding mouse down for continual freehand drawing."""
+    FREEHAND = 5
+    
+    """ Pick an ROI region. pick_points contains a single point. get_pick_roi gets the full region"""
+    ROI_REGION = 6
 
-class ImageView(QtGui.QGraphicsView, object):
+class Picker:
+    def __init__(self, iv):
+        self.iv = iv
+        self.win = None
+        # Map from colour to selected points
+        self.points = {}
+
+    def add_point(self, pos, win):
+        pass
+
+    def update_view(self, pos):
+        pass
+
+    def cleanup(self):
+        """ Remove picker objects from the view """
+        pass
+
+class PointPicker(Picker):
+    def __init__(self, iv, col=(255, 255, 255)):
+        Picker.__init__(self, iv)
+        self.col = col
+        self.points[self.col] = []
+
+    def add_point(self, pos, win):
+        self.points[self.col] = [tuple(pos),]
+        self.iv.sig_sel_changed.emit(self)
+
+class MultiPicker(PointPicker):
+    def __init__(self, iv, col=(255, 0, 0)):
+        PointPicker.__init__(self, iv, col)
+        self.arrows = []
+
+    def add_point(self, pos, win):
+        if self.col not in self.points: 
+            self.points[self.col] = []
+        self.points[self.col].append(tuple(pos))
+        for win in self.iv.win.values():
+            win.add_arrow(pos, self.col)
+        self.iv.sig_sel_changed.emit(self)
+    
+    def cleanup(self):
+        for w in range(3):
+            win = self.iv.win[w].remove_arrows()
+
+class LassoPicker(Picker): 
+
+    def __init__(self, iv):
+        Picker.__init__(self, iv)
+        self.points = []
+
+    def add_point(self, pos, win):
+        if self.win is None: 
+            self.win = win
+            self.roisel = pg.PolyLineROI([], closed=True)
+            self.iv.view[self.win].addItem(self.roisel)
+        xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
+        self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
+        self.roisel.setPoints(self.points)
+
+    def get_roi(self):
+        """
+        Get the selected ROI as a 2d slice. 
+
+        Returns the 2d ROI array
+        """
+        shape = self.win.image.shape
+        data = np.ones(shape)
+
+        roi_slice = self.roisel.getArrayRegion(data, self.win)
+        # FIXME Reset points
+        return roi_slice
+
+class FreehandPicker(Picker): 
+
+    def __init__(self, iv):
+        Picker.__init__(self, iv)
+        self.points = []
+
+    def add_point(self, pos, win):
+        if self.win is None: 
+            self.win = win
+            self.roisel = pg.PolyLineROI([], closed=True)
+            self.iv.view[self.win].addItem(self.roisel)
+        xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
+        self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
+        self.roisel.setPoints(self.points)
+
+    def get_roi(self):
+        """
+        Get the selected ROI as a 2d slice. 
+
+        Returns the 2d ROI array
+        """
+        shape = self.win.image.shape
+        data = np.ones(shape)
+
+        roi_slice = self.roisel.getArrayRegion(data, self.win)
+        # FIXME Reset points
+        return roi_slice
+
+PICKERS = {PickMode.SINGLE : PointPicker,
+           PickMode.MULTIPLE : MultiPicker,
+           PickMode.LASSO : LassoPicker
+           }
+
+class DataView:
     """
-    Re-implementing graphics layout class to include mouse press event.
-    This defines the 3D image interaction with the cross hairs,
-    provides slots to connect sliders and controls 3D/4D image view updates
-
-    Signals:
-            self.sig_mouse
+    View of a data item, storing details about visual parameters, e.g.
+    color map and min/max range for color mapping
     """
+    def __init__(self, data):
+        self.data = data
+        self.data_roi = data
+        self.cmap = "jet"
+        self.visible = True
+        self.roi_only = False
+        self.cmap_range = data.range
 
-    # Signals (moving out of init means that the signal is shared by
-    # each instance. Just how Qt appears to be set up)
+    def set_roi(self, roi):
+        if self.roi_only and roi is not None:
+            # Restrict to data within ROI
+            self.data_roi = np.copy(self.data).view(QpVolume)
+            if self.data.ndim == 4:
+                roi = np.expand_dims(roi, 3).repeat(self.data.shape[3], 3)
 
-    # signalling a mouse click
-    sig_mouse_click = QtCore.Signal(bool)
+            within_roi =self.data_roi[np.array(roi, dtype=bool)]
+            range_roi = [np.min(within_roi), np.max(within_roi)]
+            # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
+            # FIXME what if range is zero?
+            roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
+            self.data_roi[np.logical_not(roi)] = roi_fillvalue
+        else:
+            self.data_roi = self.data
 
-    # Signals when the mouse is scrolling
-    sig_mouse_scroll = QtCore.Signal(bool)
+class OrthoView(pg.GraphicsView):
+    """
+    A single slice view of data, overlay and ROI
+    """
 
     # Signals when point of focus is changed
-    sig_focus_changed = QtCore.Signal(list)
+    sig_focus = QtCore.Signal(tuple, int, bool)
 
-    # Signals when the selected points / region have changed
-    sig_sel_changed = QtCore.Signal(tuple)
+    # Signals when view is maximised/minimised
+    sig_maxmin = QtCore.Signal(int)
 
-    def __init__(self, ivm, opts):
-        super(ImageView, self).__init__()
-
+    def __init__(self, iv, ivm, ax_map, ax_labels):
+        pg.GraphicsView.__init__(self)
+        self.iv = iv
         self.ivm = ivm
-        self.ivm.sig_current_overlay.connect(self.current_overlay_changed)
-        self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_volume.connect(self.main_volume_changed)
-        self.opts = opts
-        self.opts.sig_options_changed.connect(self.options_changed)
-
-        #ViewerOptions
-        self.options = {}
-
-        # Automatically adjust threshold for each view
-        # If false then use the same threshold for the entire volume
-        self.options['view_thresh'] = False
-        self.options['show_crosshairs'] = True
-        self.shade_roi = True
-        self.contour_roi = False
-        self.options['roi_outline_width'] = 3.0
-        self.options['ShowColorOverlay'] = True
-        self.options['UseROI'] = False
-        self.roi_alpha = 150
-        
-        # overlay data
-        self.ovreg = None
-
-        # For each view window, this is the volume indices of the x, y and z axes for the view
-        self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
-        self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
-        
-        self.cont = [[], [], []]
-
-        self.win = []
-        self.view = []
-        self.imgwin = []
-        self.imgwinb = []
-        self.imgwinc = []
-        self.hline = []
-        self.vline = []
-        self.labels = []
-        for i in range(3):
-            
-            imgwin = ImageMed(border='k')
-            imgwin.sig_mouse_wheel.connect(self.step_axis(i))
-            imgwin.sig_doubleClick.connect(self.expand_view(i))
-            imgwin.sig_click.connect(self.mouse_pos(i))
-            self.imgwin.append(imgwin)
-
-            imgwin_roi = pg.ImageItem(border='k')
-            self.imgwinb.append(imgwin_roi)
-
-            imgwin_ovl = pg.ImageItem(border='k')
-            self.imgwinc.append(imgwin_ovl)
-
-            vline = pg.InfiniteLine(angle=90, movable=False)
-            vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-            vline.setVisible(False)
-            self.vline.append(vline)
-            
-            hline = pg.InfiniteLine(angle=0, movable=False)
-            hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-            hline.setVisible(False)
-            self.hline.append(hline)
-
-            view = pg.ViewBox(name="view%i" % (i + 1), border=pg.mkPen((0, 0, 255), width=3.0))
-            view.setAspectLocked(True)
-            view.setBackgroundColor([0, 0, 0])
-            view.addItem(imgwin)
-            view.addItem(imgwin_roi)
-            view.addItem(imgwin_ovl)
-            view.addItem(vline, ignoreBounds=True)
-            view.addItem(hline, ignoreBounds=True)
-            view.enableAutoRange()
-            self.view.append(view)
-            
-            win = pg.GraphicsView()
-            win.setCentralItem(view)
-            self.win.append(win)
-
-            # Create static labels for the view directions
-            win.resizeEvent = self.get_resize_win(i, win.resizeEvent)
-            view_labels = []
-            for ax in self.ax_map[i][:2]:
-                view_labels.append(QtGui.QLabel(self.ax_labels[ax][0], parent=win))
-                view_labels.append(QtGui.QLabel(self.ax_labels[ax][1], parent=win))
-            for l in view_labels:
-                l.setVisible(False)
-                l.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-            self.labels.append(view_labels)
-
-        # Adding a histogram LUT
-        self.h1 = MultiImageHistogramWidget(fillHistogram=False)
-        self.h1.addImageItem(self.imgwin[0])
-        self.h1.addImageItem(self.imgwin[1])
-        self.h1.addImageItem(self.imgwin[2])
-        self.h1.setBackground(background=None)
-        
-        self.grid1 = QtGui.QGridLayout()
-
-        self.grid1.addWidget(self.win[1], 0, 0,)
-        self.grid1.addWidget(self.win[2], 0, 1)
-        self.grid1.addWidget(self.win[0], 1, 0)
-        self.grid1.addWidget(self.h1, 0, 2)
-
-        self.grid1.setColumnStretch(0, 3)
-        self.grid1.setColumnStretch(1, 3)
-        self.grid1.setColumnStretch(2, 1)
-        self.grid1.setRowStretch(0, 1)
-        self.grid1.setRowStretch(1, 1)
-
-        # Histogram, which controls colour map and levels
-        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
-        self.h2.setBackground(background=None)
-        self.h2.setGradientName("jet")
-        for i in range(3):
-            self.h2.addImageItem(self.imgwinc[i])
-
-        self.grid1.addWidget(self.h2, 1, 2)
-
-        self.setLayout(self.grid1)
-
-        self.roisel = pg.PolyLineROI([])
+        self.xaxis, self.yaxis, self.zaxis = ax_map
+        self.dragging = False
+        self.drag_mode = False
+        self.contours = []
         self.arrows = []
-        self.pick_col = (255, 0, 0)
-        self.set_pickmode(PickMode.SINGLE)
 
-    def get_resize_win(self, i, orig_resize):
-        def resize_win(event):
-            w = self.win[i].geometry().width()
-            h = self.win[i].geometry().height()
-            self.labels[i][0].setGeometry(0, h/2, 10, 10)
-            self.labels[i][1].setGeometry(w-10, h/2, 10, 10)
-            self.labels[i][2].setGeometry(w/2, h-10, 10, 10)
-            self.labels[i][3].setGeometry(w/2, 0, 10, 10)
-            orig_resize(event)
-        return resize_win
+        self.img = pg.ImageItem(border='k')
+        self.img_roi = pg.ImageItem(border='k')
+        self.img_ovl = pg.ImageItem(border='k')
 
-    def expand_view(self, i):
-        def expand():
-            o1 = (i+1) % 3
-            o2 = (i+2) % 3
-            if self.win[o1].isVisible():
-                self.win[o1].setVisible(False)
-                self.win[o2].setVisible(False)
-                self.grid1.addWidget(self.win[i], 0, 0, 2, 2)
-            else:
-                self.grid1.addWidget(self.win[1], 0, 0, )
-                self.grid1.addWidget(self.win[2], 0, 1)
-                self.grid1.addWidget(self.win[0], 1, 0)
-                self.win[o1].setVisible(True)
-                self.win[o2].setVisible(True)
-        return expand
+        self.vline = pg.InfiniteLine(angle=90, movable=False)
+        self.vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
+        self.vline.setVisible(False)
+        
+        self.hline = pg.InfiniteLine(angle=0, movable=False)
+        self.hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
+        self.hline.setVisible(False)
 
-    def set_pickmode(self, pickmode):
-        self.pickmode = pickmode
-        self.sel = []
-        self.remove_arrows()
-        self.pick_win = -1
+        self.vb = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0, 0, 255), width=3.0))
+        self.vb.setAspectLocked(True)
+        self.vb.setBackgroundColor([0, 0, 0])
+        self.vb.addItem(self.img)
+        self.vb.addItem(self.img_roi)
+        self.vb.addItem(self.img_ovl)
+        self.vb.addItem(self.vline, ignoreBounds=True)
+        self.vb.addItem(self.hline, ignoreBounds=True)
+        self.vb.enableAutoRange()
+        self.setCentralItem(self.vb)
 
-    def set_pick_color(self, c):
-        self.pick_col = c
-
-    def get_lasso_roi(self, ovname):
-        if self.pick_win == -1: return
-        ovl = self.ivm.overlays[ovname]
-        ret = None
-        view = None
-        if self.pick_win == 0:
-            data = ovl[:, :, self.ivm.cim_pos[2]]
-        elif self.pick_win == 1:
-            data = ovl[:, self.ivm.cim_pos[1], :]
-        elif self.pick_win == 2:
-            data = ovl[self.ivm.cim_pos[0], :, :]
-        ret = self.roisel.getArrayRegion(data, self.imgwin[i])
-        self.roisel.clearPoints()
-        self.view[i].removeItem(self.roisel)
-        return ret
-
-    def mouse_pos(self, i):
-        """
-        Capture mouse click events for window i
-        """
-        @QtCore.Slot()
-        def mouse_pos(event):
-            mx = int(event.pos().x())
-            my = int(event.pos().y())
-
-            self.ivm.cim_pos[self.ax_map[i][0]] = mx
-            self.ivm.cim_pos[self.ax_map[i][1]] = my
-            
-            if self.pickmode == PickMode.SINGLE:
-                self.sel = [tuple(self.ivm.cim_pos), ]
-            elif self.pickmode == PickMode.MULTIPLE:
-                self.sel.append(tuple(self.ivm.cim_pos))
-                self.add_arrow(i, (mx, my), self.ivm.cim_pos[self.ax_map[i][2]], self.pick_col)
-            elif self.pickmode == PickMode.LASSO:
-                if self.pick_win == -1:
-                    self.view[i].addItem(self.roisel)
-                    self.pick_win = i
-                elif self.pick_win == i:
-                    self.sel.append((mx, my))
-                    self.roisel.setPoints(self.sel)
-            elif self.pickmode == PickMode.RECT:
-                pass
-
-            self.sig_mouse_scroll.emit(1)
-            self.sig_mouse_click.emit(1)
-            self.sig_sel_changed.emit((self.pickmode, self.sel))
-
-            # FIXME should this be a signal from IVM?
-            self.sig_focus_changed.emit(self.ivm.cim_pos)
-            self._update_view()
-        return mouse_pos
-
-    def add_arrow(self, win, pos, slice, pen1=(255, 0, 0)):
-        """
-        Place an arrow at the current position
-        """
-        aa = pg.ArrowItem(pen=pen1, brush=pen1)
-        aa.setPos(float(pos[0])+0.5, float(pos[1])+0.5)
-        self.view[win].addItem(aa)
-        self.arrows.append((win, slice, aa))
+        # Create static labels for the view directions
+        self.labels = []
+        for ax in [self.xaxis, self.yaxis]:
+            self.labels.append(QtGui.QLabel(ax_labels[ax][0], parent=self))
+            self.labels.append(QtGui.QLabel(ax_labels[ax][1], parent=self))
+        for l in self.labels:
+            l.setVisible(False)
+            l.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.resizeEventOrig = self.resizeEvent
+        self.resizeEvent = self.resize_win
+    
+    def add_arrow(self, pos, col):
+        arrow = pg.ArrowItem(pen=col, brush=col)
+        arrow.setPos(float(pos[self.xaxis])+0.5, float(pos[self.yaxis])+0.5)
+        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis])
+        self.vb.addItem(arrow)
+        self.arrows.append((pos[self.zaxis], arrow))
 
     def remove_arrows(self):
-        """
-        Remove all the arrows that have been placed
-        """
-        for win, slice, arrow in self.arrows:
-            self.view[win].removeItem(arrow)
+        """ Remove all the arrows that have been placed """
+        for zpos, arrow in self.arrows:
+            self.vb.removeItem(arrow)
         self.arrows = []
 
-    def update_arrows(self):
-        """
-        Update arrows so only those visible are shown
-        """
-        for win, slice, arrow in self.arrows:
-            if self.ivm.cim_pos[self.ax_map[win][2]] == slice:
-                arrow.show()
-            else:
-                arrow.hide()
+    def update(self):
+        if self.ivm.vol is None: return
 
-    def __update_crosshairs(self):
-        """
-        update cross hair positions based on cim_pos
-        """
-        show = self.options["show_crosshairs"]
-        for i in range(3):
-            self.vline[i].setPos(float(self.ivm.cim_pos[self.ax_map[i][0]])+0.5)
-            self.hline[i].setPos(float(self.ivm.cim_pos[self.ax_map[i][1]])+0.5)
-            self.vline[i].setVisible(show)
-            self.hline[i].setVisible(show)
-
-    def _update_view(self):
-        """
-        Update the image viewer to account for the new position
-        """
-        if self.ivm.vol is None:
-            return
-
-        self._update_view_vol()
-        self._update_view_roi()
-        self._update_view_overlay()
-
-    def _update_view_vol(self):
         # Adjust axis scaling depending on whether voxel size scaling is enabled
-        for i in range(3):
-            if self.opts.size_scaling == self.opts.SCALE_VOXELS:
-                x, y = self.ax_map[i][:2]
-                self.view[i].setAspectLocked(True, ratio=(self.ivm.voxel_sizes[x] / self.ivm.voxel_sizes[y]))
-            else:
-                self.view[i].setAspectLocked(True, ratio=1)
-            for l in self.labels[i]:
-                l.setVisible(True)
+        if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
+            self.vb.setAspectLocked(True, ratio=(self.ivm.voxel_sizes[self.xaxis] / self.ivm.voxel_sizes[self.yaxis]))
+        else:
+            self.vb.setAspectLocked(True, ratio=1)
+        for l in self.labels:
+            l.setVisible(True)
 
         # Flip left/right depending on the viewing convention selected
-        for i, v in enumerate(self.view[:2]):
-            v.invertX(self.opts.orientation == 0)
-            if self.opts.orientation == self.opts.RADIOLOGICAL: l, r = 1, 0
+        if self.xaxis == 0:
+            # X-axis is left/right
+            self.vb.invertX(self.iv.opts.orientation == 0)
+            if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL: l, r = 1, 0
             else: l, r = 0, 1
-            self.labels[i][r].setText("R")
-            self.labels[i][l].setText("L")
+            self.labels[r].setText("R")
+            self.labels[l].setText("L")
         
         # Plot image slices
         pos = self.ivm.cim_pos
-        for i in range(3):
-            zaxis = self.ax_map[i][2]
-            slices = [(zaxis, pos[zaxis])]
-            if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
-            self.imgwin[i].setImage(self.ivm.vol.pos_slice(*slices), autoLevels=False)
+        slices = [(self.zaxis, pos[self.zaxis])]
+        if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
+        self.img.setImage(self.ivm.vol.pos_slice(*slices), autoLevels=False)
 
+        self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
+        self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
+        self.vline.setVisible(self.iv.show_crosshairs)
+        self.hline.setVisible(self.iv.show_crosshairs)
+
+        self._update_view_roi()
+        self._update_view_overlay()
         self.update_arrows()
-        self.__update_crosshairs()
 
-    @QtCore.Slot(int)
-    def set_time_pos(self, value):
-        if self.ivm.cim_pos[3] != value:
-            # don't do any updating if the values are the same
-            self.ivm.cim_pos[3] = value
-            self._update_view()
-
-    def set_space_pos(self, dim):
-        @QtCore.Slot(int)
-        def set_pos(value):
-            if self.ivm.cim_pos[dim] != value:
-                # don't do any updating if the values are the same
-                self.ivm.cim_pos[dim] = value
-                self._update_view()
-        return set_pos
-
-    def step_axis(self, i):
-        """
-        Stepping through the axis when the scroll wheel is triggered
-        """
-        @QtCore.Slot(int)
-        def step(value):
-            z = self.ax_map[i][2]
-            if self.ivm.cim_pos[z]+value >= self.ivm.vol.shape[z]:
-                return
-
-            if self.ivm.cim_pos[z]+value < 0:
-                return
-
-            self.ivm.cim_pos[z] += value
-            self._update_view()
-            # signal that the mouse is scrolling
-            self.sig_mouse_scroll.emit(1)
-            self.sig_focus_changed.emit(self.ivm.cim_pos)
-        return step
-
-    # Create an image from one of the windows
-    @QtCore.Slot(int, str)
-    def capture_view_as_image(self, window, outputfile):
-        """
-        Export an image using pyqtgraph
-        """
-        if window not in (1, 2, 3):
-            raise RuntimeError("No such window: %i" % window)
-
-        expimg = self.imgwin[window-1]
-        exporter = ImageExporter(expimg)
-        exporter.parameters()['width'] = 2000
-        exporter.export(str(outputfile))
-
-    @QtCore.Slot()
-    def main_volume_changed(self):
-        for v in self.view:
-            v.setVisible(True)
-
-        if self.ivm.vol is not None:
-            self.h1.setSourceData(self.ivm.vol, percentile=99)
-            
-        self._update_view()
-
-    def options_changed(self):
-        self._update_view()
+    def update_arrows(self):
+        """ Update arrows so only those visible are shown """
+        for zpos, arrow in self.arrows:
+            arrow.setVisible(self.ivm.cim_pos[self.zaxis] == zpos)
 
     def _iso_prepare(self, arr, val):
         return arr == val
@@ -548,194 +401,309 @@ class ImageView(QtGui.QGraphicsView, object):
     def _update_view_roi(self):
         roi = self.ivm.current_roi
         z = 0
-        if self.opts.display_order == self.opts.ROI_ON_TOP: z=1
+        if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
 
         if roi is None:
-            for i in range(3):
-                self.imgwinb[i].setImage(np.zeros((1, 1)))
+            self.img_roi.setImage(np.zeros((1, 1)))
             return
         
         pos = self.ivm.cim_pos
-        lut = roi.get_lut(self.roi_alpha)
+        lut = roi.get_lut(self.iv.roi_alpha)
         roi_levels = self.ivm.current_roi.range
-        for i in range(3):
-            zaxis = self.ax_map[i][2]
-                
-            if self.shade_roi:
-                self.imgwinb[i].setImage(roi.pos_slice((zaxis, pos[zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
-                self.imgwinb[i].setZValue(z)
-            else:
-                self.imgwinb[i].setImage(np.zeros((1, 1)))
-
-            n = 0
-            if self.contour_roi:
-                zaxis = self.ax_map[i][2]
-                data = roi.pos_slice((zaxis, pos[zaxis]))
-                
-                # Update data and level for existing contour items, and create new ones if needed
-                n_conts = len(self.cont[i])
-                create_new = False
-                for val in roi.regions:
-                    pencol = roi.get_pencol(val)
-                    if val != 0:
-                        if n == n_conts:
-                            create_new = True
-
-                        if create_new:
-                            self.cont[i].append(pg.IsocurveItem())
-                            self.view[i].addItem(self.cont[i][n])
-
-                        d = self._iso_prepare(data, val)
-                        self.cont[i][n].setData(d)
-                        self.cont[i][n].setLevel(1)
-                        self.cont[i][n].setPen(pg.mkPen(pencol, width=self.options['roi_outline_width']))
-
-                    n += 1
-
-            # Set data to None for any existing contour items that we are not using right now 
-            # FIXME should we delete these?
-            for idx in range(n, len(self.cont[i])):
-                self.cont[i][idx].setData(None)
-
-    @QtCore.Slot(bool)
-    def current_roi_changed(self, roi):
-        self._update_view()
-
-    def set_roi_view(self, shade, contour):
-        """
-        Set the view mode for the ROI
-        """
-        self.shade_roi = shade
-        self.contour_roi = contour
-        self._update_view()
-
-    @QtCore.Slot(int)
-    def roi_alpha_changed(self, alpha):
-        """
-        Set the ROI transparency
-        """
-        self.roi_alpha = alpha
-        self._update_view()
-
-    def _overlay_changed(self):
-        """
-        Processes overlay for visualisation on viewer
-        """
-        ov = self.ivm.current_overlay
-        if ov is not None and (self.ivm.current_roi is not None) and (self.options['UseROI'] == 1):
-            # Restrict to data within ROI
-            self.ovreg = np.copy(ov)
-            if ov.ndim == 3:
-                roidata = self.ivm.current_roi
-            else:
-                roidata = np.expand_dims(self.ivm.current_roi, 3).repeat(ov.shape[3], 3)
-
-            within_roi =self.ovreg[np.array(roidata, dtype=bool)]
-            range_roi = [np.min(within_roi), np.max(within_roi)]
-            # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
-            # FIXME what if range is zero?
-            roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
-            self.ovreg[np.logical_not(roidata)] = roi_fillvalue
-        elif ov is not None:
-            self.ovreg = ov
+        
+        if self.iv.shade_roi:
+            self.img_roi.setImage(roi.pos_slice((self.zaxis, pos[self.zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
+            self.img_roi.setZValue(z)
         else:
-            self.ovreg = None
+            self.img_roi.setImage(np.zeros((1, 1)))
 
-        if self.ovreg is not None: 
-            self.h2.setSourceData(self.ovreg)
-        self._update_view()
+        n = 0
+        if self.iv.contour_roi:
+            data = roi.pos_slice((self.zaxis, pos[self.zaxis]))
+            
+            # Update data and level for existing contour items, and create new ones if needed
+            n_conts = len(self.contours)
+            create_new = False
+            for val in roi.regions:
+                pencol = roi.get_pencol(val)
+                if val != 0:
+                    if n == n_conts:
+                        create_new = True
+
+                    if create_new:
+                        self.contours.append(pg.IsocurveItem())
+                        self.vb.addItem(self.contours[n])
+
+                    d = self._iso_prepare(data, val)
+                    self.contours[n].setData(d)
+                    self.contours[n].setLevel(1)
+                    self.contours[n].setPen(pg.mkPen(pencol, width=self.iv.roi_outline_width))
+
+                n += 1
+
+        # Set data to None for any existing contour items that we are not using right now 
+        # FIXME should we delete these?
+        for idx in range(n, len(self.contours)):
+            self.contours[idx].setData(None)
 
     def _update_view_overlay(self):
-        z = 1
-        if self.opts.display_order  == self.opts.ROI_ON_TOP: z=0
-        
-        if self.ivm.current_overlay is None or self.ovreg is None or self.options['ShowColorOverlay'] == 0:
-            self.imgwinc[0].setImage(np.zeros((1, 1)), autoLevels=False)
-            self.imgwinc[1].setImage(np.zeros((1, 1)), autoLevels=False)
-            self.imgwinc[2].setImage(np.zeros((1, 1)), autoLevels=False)
-
-        elif self.ivm.current_overlay.ndim == 4:
-            if self.ivm.current_overlay.shape[3] == 3:
-                # RGB or RGBA image
-                self.imgwinc[0].setImage(np.squeeze(self.ovreg[:, :, self.ivm.cim_pos[2], :]), autoLevels=False)
-                self.imgwinc[1].setImage(np.squeeze(self.ovreg[:, self.ivm.cim_pos[1], :, :]), autoLevels=False)
-                self.imgwinc[2].setImage(np.squeeze(self.ovreg[self.ivm.cim_pos[0], :, :, :]), autoLevels=False)
-            else:
-                # Timeseries
-                self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2], self.ivm.cim_pos[3]], autoLevels=False)
-                self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :, self.ivm.cim_pos[3]], autoLevels=False)
-                self.imgwinc[2].setImage(self.ovreg[self.ivm.cim_pos[0], :, :, self.ivm.cim_pos[3]], autoLevels=False)
+        oview = self.iv.current_data_view
+        if oview is None or not oview.visible:
+            self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
-            self.imgwinc[0].setImage(self.ovreg[:, :, self.ivm.cim_pos[2]], autoLevels=False)
-            self.imgwinc[1].setImage(self.ovreg[:, self.ivm.cim_pos[1], :], autoLevels=False)
-            self.imgwinc[2].setImage(self.ovreg[self.ivm.cim_pos[0], :, :], autoLevels=False)
+            ovdata = oview.data_roi
+            z = 1
+            if self.iv.opts.display_order  == self.iv.opts.ROI_ON_TOP: z=0
+            self.img_ovl.setZValue(z)
+            
+            if ovdata.ndim == 4:
+                slicedata = ovdata.pos_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
+                                            (3, self.ivm.cim_pos[3]))
+                if self.ivm.current_overlay.shape[3] == 3:
+                    # RGB or RGBA image
+                    self.img_ovl.setImage(np.squeeze(slicedata), autoLevels=False)
+                else:
+                    # Timeseries
+                    self.img_ovl.setImage(slicedata, autoLevels=False)
+            else:
+                slicedata = ovdata.pos_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]))
+                self.img_ovl.setImage(slicedata, autoLevels=False)
 
+    def resize_win(self, event):
+        """
+        Called when window is resized - updates the position
+        of the text labels and then calls the original resize method
+        """
+        w = self.geometry().width()
+        h = self.geometry().height()
+        self.labels[0].setGeometry(0, h/2, 10, 10)
+        self.labels[1].setGeometry(w-10, h/2, 10, 10)
+        self.labels[2].setGeometry(w/2, h-10, 10, 10)
+        self.labels[3].setGeometry(w/2, 0, 10, 10)
+        self.resizeEventOrig(event)
+
+    def wheelEvent(self, event):
+        """
+        Subclassed to remove scroll to zoom from pg.ImageItem
+        and instead trigger a scroll through the volume
+        """
+        dz = int(event.delta()/120)
+        pos = self.ivm.cim_pos[:]
+        pos[self.zaxis] += dz
+        if pos[self.zaxis] >= self.ivm.vol.shape[self.zaxis] or pos[self.zaxis] < 0:
+            return
+
+        self.sig_focus.emit(pos, self.zaxis, False)
+
+    def mousePressEvent(self, event):
+        super(OrthoView, self).mousePressEvent(event)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.dragging = self.drag_mode
+            
+            coords = self.img.mapFromScene(event.pos())
+            mx = int(coords.x())
+            my = int(coords.y())
+            pos = self.ivm.cim_pos[:]
+            pos[self.xaxis] = mx
+            pos[self.yaxis] = my
+            self.sig_focus.emit(pos, self.zaxis, True)
+
+    def mouseReleaseEvent(self, event):
+        super(OrthoView, self).mouseReleaseEvent(event)
+        self.dragging = False
+        
+    def mouseDoubleClickEvent(self, event):
+        super(OrthoView, self).mouseDoubleClickEvent(event)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sig_maxmin.emit(self.zaxis)
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            print("drag=", event)
+        else:
+            super(OrthoView, self).mouseMoveEvent(event)
+
+class ImageView(QtGui.QGraphicsView, object):
+    """
+    QGraphicsView containing three orthogonal slice views and two histogram/LUT widgets
+    """
+
+    # Signals when point of focus is changed
+    sig_focus_changed = QtCore.Signal(tuple)
+
+    # Signals when the selected points / region have changed
+    sig_sel_changed = QtCore.Signal(object)
+
+    def __init__(self, ivm, opts):
+        super(ImageView, self).__init__()
+
+        self.ivm = ivm
+        self.opts = opts
+        self.ivm.sig_current_overlay.connect(self.overlay_changed)
+        self.ivm.sig_current_roi.connect(self.current_roi_changed)
+        self.ivm.sig_main_volume.connect(self.main_volume_changed)
+        self.opts.sig_options_changed.connect(self.update_ortho_views)
+
+        # Viewer Options
+        self.shade_roi = True
+        self.contour_roi = False
+        self.roi_outline_width = 3.0
+        self.show_crosshairs = True
+        self.show_overlay = True
+        self.show_overlay_in_roi = False
+        self.roi_alpha = 150
+        
+        # overlay data - may be restricted by ROI so need viewer copy
+        self.data_views = {}
+        self.current_data_view = None
+
+        # For each view window, this is the volume indices of the x, y and z axes for the view
+        self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
+        self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
+
+        self.win = {}
         for i in range(3):
-            self.imgwinc[0].setZValue(z)
+            win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
+            win.sig_focus.connect(self.view_focus)
+            win.sig_maxmin.connect(self.max_min)
+            self.win[win.zaxis] = win
 
-    def set_overlay_view(self, view=True, roiOnly=False):
-        """
-        Change the view mode of the overlay
-        """
-        self.options['ShowColorOverlay'] = view
-        self.options['UseROI'] = roiOnly
-        self._overlay_changed()
+        # Histogram which controls colour map and levels for main volume
+        self.h1 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h1.addImageItem(self.win[0].img)
+        self.h1.addImageItem(self.win[1].img)
+        self.h1.addImageItem(self.win[2].img)
+        self.h1.setBackground(background=None)
+        
+        # Histogram which controls colour map and levels for overlay
+        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h2.setBackground(background=None)
+        self.h2.setGradientName("jet")
+        for i in range(3):
+            self.h2.addImageItem(self.win[i].img_ovl)
 
-    @QtCore.Slot(int)
+        # Main grid layout
+        self.grid = QtGui.QGridLayout()
+        self.grid.addWidget(self.win[1], 0, 0,)
+        self.grid.addWidget(self.win[0], 0, 1)
+        self.grid.addWidget(self.h1, 0, 2)
+        self.grid.addWidget(self.win[2], 1, 0)
+        self.grid.addWidget(self.h2, 1, 2)
+        self.grid.setColumnStretch(0, 3)
+        self.grid.setColumnStretch(1, 3)
+        self.grid.setColumnStretch(2, 1)
+        self.grid.setRowStretch(0, 1)
+        self.grid.setRowStretch(1, 1)
+        self.setLayout(self.grid)
+
+        self.picker = PointPicker(self) 
+
+    def view_focus(self, pos, win, is_click):
+        if self.picker.win is not None and win != self.picker.win:
+            # Bit of a hack. Ban focus changes in other windows when we 
+            # have a single-window picker because it will change the slice 
+            # visible in the pick window
+            return
+        if is_click:
+            self.picker.add_point(pos, win)
+        
+        # FIXME should this be a signal from IVM?
+        self.ivm.cim_pos = pos
+        self.sig_focus_changed.emit(pos)
+        self.update_ortho_views()
+
+    def set_picker(self, pickmode):
+        self.picker.cleanup()
+        self.picker = PICKERS[pickmode](self)
+        
+    def max_min(self, win):
+        """ Maximise/Minimise view window """
+        o1 = (win+1) % 3
+        o2 = (win+2) % 3
+        if self.win[o1].isVisible():
+            self.win[o1].setVisible(False)
+            self.win[o2].setVisible(False)
+            self.grid.addWidget(self.win[win], 0, 0, 2, 2)
+        else:
+            self.grid.addWidget(self.win[1], 0, 0, )
+            self.grid.addWidget(self.win[0], 0, 1)
+            self.grid.addWidget(self.win[2], 1, 0)
+            self.win[o1].setVisible(True)
+            self.win[o2].setVisible(True)
+
+    def update_ortho_views(self):
+        """ Update the image viewer windows """
+        for win in self.win.values(): win.update()
+
+    def set_pos(self, dim):
+        def set_pos(value):
+            if self.ivm.cim_pos[dim] != value:
+                # Don't do any updating if the value has not changed
+                self.ivm.cim_pos[dim] = value
+                self.update_ortho_views()
+        return set_pos
+
+    def capture_view_as_image(self, window, outputfile):
+        """ Export an image using pyqtgraph """
+        if window not in (1, 2, 3):
+            raise RuntimeError("No such window: %i" % window)
+
+        expimg = self.win[window-1].img
+        exporter = ImageExporter(expimg)
+        exporter.parameters()['width'] = 2000
+        exporter.export(str(outputfile))
+
+    def main_volume_changed(self):
+        if self.ivm.vol is not None:
+            self.h1.setSourceData(self.ivm.vol, percentile=99)
+        self.update_ortho_views()
+
+    def current_roi_changed(self, roi):
+        if self.current_data_view is not None: 
+            self.current_data_view.set_roi(roi)
+        self.update_ortho_views()
+
+    def set_roi_view(self, shade, contour):
+        self.shade_roi = shade
+        self.contour_roi = contour
+        self.update_ortho_views()
+
+    def roi_alpha_changed(self, alpha):
+        """ Set the ROI transparency """
+        self.roi_alpha = alpha
+        self.update_ortho_views()
+
+    def overlay_changed(self, ov):
+        if ov is not None:
+            if ov.name not in self.data_views:
+                # Create a data view if we don't already have one for this overlay
+                self.data_views[ov.name] = DataView(ov)
+
+            if self.current_data_view is not None:
+                # Update the view parameters from the existing overlay and free the within-ROI data
+                self.current_data_view.cmap_range = self.h2.region.getRegion()
+                self.current_data_view.cmap = self.h2.cmap_name
+                self.current_data_view.set_roi(None)
+
+            self.current_data_view = self.data_views[ov.name]
+            self.current_data_view.set_roi(self.ivm.current_roi)
+            self.update_from_dataview()
+        else:
+            self.current_data_view = None
+        self.update_ortho_views()
+
+    def update_from_dataview(self):
+        if self.current_data_view is not None:
+            self.h2.setGradientName(self.current_data_view.cmap)
+            self.h2.setSourceData(self.current_data_view.data_roi)
+            self.h2.region.setRegion(self.current_data_view.cmap_range)
+
+    def set_overlay_view(self, visible=True, roi_only=False):
+        if self.current_data_view is not None:
+            self.current_data_view.visible = visible
+            self.current_data_view.roi_only = roi_only
+        self.overlay_changed(self.ivm.current_overlay)
+
     def overlay_alpha_changed(self, alpha):
-        """
-        Set the overlay transparency
-        """
+        """ Set the overlay transparency """
         self.h2.setAlpha(alpha)
-
-    @QtCore.Slot(bool)
-    def current_overlay_changed(self, ov):
-        """
-        Update the overlay data
-        """
-        self._overlay_changed()
-
-    #@QtCore.Slot(bool)
-    #def save_overlay(self, state):
-    #    """
-    #    Save the edited annotation back to the volume management
-    #    """
-    #    if state:
-    #        self.ivm.add_overlay(Overlay('annotation', data=self.ovreg))
-    #
-    # @QtCore.Slot(int)
-    # def enable_drawing(self, color1=1):
-    #
-    #     """
-    #     Allow drawing on annotation in all three views
-    #     """
-    #
-    #     if color1 != -1:
-    #
-    #         # start drawing with 3x3 brush
-    #         kern = np.array([[color1]])
-    #         self.imgwinc[0].setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-    #         self.imgwinc[1].setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-    #         self.imgwinc[2].setDrawKernel(kern, mask=None, center=(1, 1), mode='set')
-    #
-    #         self.view[0].setAspectLocked(True)
-    #         self.view[1].setAspectLocked(True)
-    #         self.view[2].setAspectLocked(True)
-    #
-    #     else:
-    #
-    #         self.imgwinc[0].setDrawKernel(kernel=None)
-    #         self.imgwinc[1].setDrawKernel(kernel=None)
-    #         self.imgwinc[2].setDrawKernel(kernel=None)
-    #
-    #         self.view[0].setAspectLocked(False)
-    #         self.view[1].setAspectLocked(False)
-    #         self.view[2].setAspectLocked(False)
-    #
-    #         # Save overlay to annotation when stopped annotating
-    #         self.save_overlay(True)
-
-
-
-
-
