@@ -197,22 +197,42 @@ class LassoPicker(Picker):
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.roisel = pg.PolyLineROI([], closed=True)
-            self.iv.win[self.win].vb.addItem(self.roisel)
-        xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
-        self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
+            self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
+            self.view = self.iv.win[self.win]
+            self.view.vb.addItem(self.roisel)
+        
+        self.points.append((float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5))
+        #print(self.points)
         self.roisel.setPoints(self.points)
 
     def get_roi(self):
-        """ Get the selected points as a 2d boolean array """
-        shape = self.win.image.shape
+        """ Get the selected points as an ROI"""
+        shape = self.view.img.image.shape
         data = np.ones(shape)
+        ox = int(min(p[0] for p in self.points))
+        oy = int(min(p[1] for p in self.points))
+        
+        print(self.roisel.getArraySlice(data, self.view.img))
+        roi_slice = self.roisel.getArrayRegion(data, self.view.img)
 
-        roi_slice = self.roisel.getArrayRegion(data, self.win)
-        # FIXME Reset points
-        return roi_slice
+        ret = np.zeros(self.view.ivm.shape[:3])
+        slices = [slice(None)] * 3
+        for ax in range(3):
+            if ax == self.view.xaxis:
+                slices[ax] = slice(ox, ox+roi_slice.shape[0])
+            elif ax == self.view.yaxis:
+                slices[ax] = slice(oy, oy+roi_slice.shape[1])
+            else:
+                slices[ax] = self.view.ivm.cim_pos[ax]
+        print(slices)
+        ret[slices] = roi_slice
+        return ret
 
-class FreehandPicker(Picker): 
+    def cleanup(self):
+        if self.win is not None: 
+            self.iv.win[self.win].vb.removeItem(self.roisel)
+        
+class FreehandPicker(LassoPicker): 
 
     def __init__(self, iv):
         Picker.__init__(self, iv)
@@ -221,24 +241,19 @@ class FreehandPicker(Picker):
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.roisel = pg.PolyLineROI([], closed=True)
-            self.iv.win[self.win].vb.addItem(self.roisel)
-        xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
-        self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
+            self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
+            self.view = self.iv.win[self.win]
+            self.view.vb.addItem(self.roisel)
+            self.view.dragging = True
+
+        self.points.append((pos[self.view.xaxis], pos[self.view.yaxis]))
+        #print(self.points)
         self.roisel.setPoints(self.points)
-
-    def get_roi(self):
-        """ Get the selected points as a 2d boolean array """
-        shape = self.win.image.shape
-        data = np.ones(shape)
-
-        roi_slice = self.roisel.getArrayRegion(data, self.win)
-        # FIXME Reset points
-        return roi_slice
 
 PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.MULTIPLE : MultiPicker,
-           PickMode.LASSO : LassoPicker
+           PickMode.LASSO : LassoPicker,
+           PickMode.FREEHAND : FreehandPicker
            }
 
 class DataView:
@@ -490,6 +505,7 @@ class OrthoView(pg.GraphicsView):
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
+            #print(mx, my)
             pos = self.ivm.cim_pos[:]
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
@@ -525,7 +541,15 @@ class OrthoView(pg.GraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
-            print("drag=", event)
+            coords = self.img.mapFromScene(event.pos())
+            mx = int(coords.x())
+            my = int(coords.y())
+            #print(mx, my)
+            pos = self.ivm.cim_pos[:]
+            pos[self.xaxis] = mx
+            pos[self.yaxis] = my
+            self.sig_focus.emit(pos, self.zaxis, True)
+            #print("drag=", event)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
@@ -769,6 +793,7 @@ class ImageView(QtGui.QSplitter):
             # visible in the pick window
             return
         if is_click:
+            #print("Adding point ", pos, win)
             self.picker.add_point(pos, win)
         
         self.ivm.cim_pos = pos

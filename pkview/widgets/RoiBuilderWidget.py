@@ -21,7 +21,7 @@ class RoiBuilderWidget(PkWidget):
     def __init__(self, **kwargs):
         super(RoiBuilderWidget, self).__init__(name="ROI Builder", icon="roibuild", desc="Build ROIs", **kwargs)
 
-    def init_gui(self):
+    def init_ui(self):
         layout = QtGui.QVBoxLayout()
         
         hbox = QtGui.QHBoxLayout()
@@ -32,6 +32,10 @@ class RoiBuilderWidget(PkWidget):
         hbox.addWidget(help_btn)
         layout.addLayout(hbox)
 
+        btn = QtGui.QPushButton("Done")
+        btn.clicked.connect(self.done_btn_clicked)
+        layout.addWidget(btn)
+
         layout.addStretch(1)
         self.setLayout(layout)
 
@@ -40,3 +44,7 @@ class RoiBuilderWidget(PkWidget):
 
     def deactivate(self):
         self.ivl.set_picker(PickMode.SINGLE)
+
+    def done_btn_clicked(self):
+        roi = self.ivl.picker.get_roi()
+        self.ivm.add_roi("ROI_BUILDER", roi)
