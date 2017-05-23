@@ -198,17 +198,13 @@ class LassoPicker(Picker):
         if self.win is None: 
             self.win = win
             self.roisel = pg.PolyLineROI([], closed=True)
-            self.iv.view[self.win].addItem(self.roisel)
+            self.iv.win[self.win].vb.addItem(self.roisel)
         xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
         self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
         self.roisel.setPoints(self.points)
 
     def get_roi(self):
-        """
-        Get the selected ROI as a 2d slice. 
-
-        Returns the 2d ROI array
-        """
+        """ Get the selected points as a 2d boolean array """
         shape = self.win.image.shape
         data = np.ones(shape)
 
@@ -226,17 +222,13 @@ class FreehandPicker(Picker):
         if self.win is None: 
             self.win = win
             self.roisel = pg.PolyLineROI([], closed=True)
-            self.iv.view[self.win].addItem(self.roisel)
+            self.iv.win[self.win].vb.addItem(self.roisel)
         xaxis, yaxis, zaxis = self.iv.ax_map[self.win]
         self.points.append((self.iv.ivm.cim_pos[xaxis], self.iv.ivm.cim_pos[yaxis]))
         self.roisel.setPoints(self.points)
 
     def get_roi(self):
-        """
-        Get the selected ROI as a 2d slice. 
-
-        Returns the 2d ROI array
-        """
+        """ Get the selected points as a 2d boolean array """
         shape = self.win.image.shape
         data = np.ones(shape)
 
@@ -344,19 +336,6 @@ class OrthoView(pg.GraphicsView):
             l.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.resizeEventOrig = self.resizeEvent
         self.resizeEvent = self.resize_win
-    
-    def add_arrow(self, pos, col):
-        arrow = pg.ArrowItem(pen=col, brush=col)
-        arrow.setPos(float(pos[self.xaxis])+0.5, float(pos[self.yaxis])+0.5)
-        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis])
-        self.vb.addItem(arrow)
-        self.arrows.append((pos[self.zaxis], arrow))
-
-    def remove_arrows(self):
-        """ Remove all the arrows that have been placed """
-        for zpos, arrow in self.arrows:
-            self.vb.removeItem(arrow)
-        self.arrows = []
 
     def update(self):
         if self.ivm.vol is None: return
@@ -392,11 +371,6 @@ class OrthoView(pg.GraphicsView):
         self._update_view_roi()
         self._update_view_overlay()
         self.update_arrows()
-
-    def update_arrows(self):
-        """ Update arrows so only those visible are shown """
-        for zpos, arrow in self.arrows:
-            arrow.setVisible(self.ivm.cim_pos[self.zaxis] == zpos)
 
     def _iso_prepare(self, arr, val):
         return arr == val
@@ -521,6 +495,25 @@ class OrthoView(pg.GraphicsView):
             pos[self.yaxis] = my
             self.sig_focus.emit(pos, self.zaxis, True)
 
+    def add_arrow(self, pos, col):
+        arrow = pg.ArrowItem(pen=col, brush=col)
+        arrow.setPos(float(pos[self.xaxis])+0.5, float(pos[self.yaxis])+0.5)
+        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis]) 
+        arrow.setZValue(2)
+        self.vb.addItem(arrow)
+        self.arrows.append((pos[self.zaxis], arrow))
+
+    def remove_arrows(self):
+        """ Remove all the arrows that have been placed """
+        for zpos, arrow in self.arrows:
+            self.vb.removeItem(arrow)
+        self.arrows = []
+
+    def update_arrows(self):
+        """ Update arrows so only those visible are shown """
+        for zpos, arrow in self.arrows:
+            arrow.setVisible(self.ivm.cim_pos[self.zaxis] == zpos)
+
     def mouseReleaseEvent(self, event):
         super(OrthoView, self).mouseReleaseEvent(event)
         self.dragging = False
@@ -538,7 +531,8 @@ class OrthoView(pg.GraphicsView):
 
 class ImageView(QtGui.QSplitter):
     """
-    QGraphicsView containing three orthogonal slice views and two histogram/LUT widgets
+    Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
+    navigation sliders and data summary view
     """
 
     # Signals when point of focus is changed
@@ -558,7 +552,6 @@ class ImageView(QtGui.QSplitter):
         self.ivm.sig_all_rois.connect(self.rois_changed)
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
         self.opts.sig_options_changed.connect(self.update_ortho_views)
-        self.sig_focus_changed.connect(self.slider_scroll_mouse)
 
         # Viewer Options
         self.roi_outline_width = 3.0
@@ -778,10 +771,12 @@ class ImageView(QtGui.QSplitter):
         if is_click:
             self.picker.add_point(pos, win)
         
-        # FIXME should this be a signal from IVM?
         self.ivm.cim_pos = pos
-        self.sig_focus_changed.emit(pos)
+        self.update_nav_sliders()
         self.update_ortho_views()
+
+        # FIXME should this be a signal from IVM?
+        self.sig_focus_changed.emit(pos)
 
     def set_picker(self, pickmode):
         self.picker.cleanup()
@@ -826,7 +821,7 @@ class ImageView(QtGui.QSplitter):
 
     def main_volume_changed(self, vol):
         self.update_slider_range()
-        self.slider_scroll_mouse()
+        self.update_nav_sliders()
         if vol is not None:
             self.vol_name.setText(vol.md.basename)
             self.h1.setSourceData(self.ivm.vol, percentile=99)
@@ -940,6 +935,19 @@ class ImageView(QtGui.QSplitter):
             self.current_data_view = None
         self.update_ortho_views()
 
+    def overlay_view_changed(self, idx):
+        """ Viewing style (all or within ROI only) changed """
+        if self.current_data_view is not None:
+            self.current_data_view.visible = idx in (0, 1)
+            self.current_data_view.roi_only = (idx == 1)
+        self.overlay_changed(self.ivm.current_overlay)
+
+    def overlay_alpha_changed(self, alpha):
+        """ Set the overlay transparency """
+        if self.current_data_view is not None:
+            self.current_data_view.alpha = alpha
+        self.update_view_widgets()
+            
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
@@ -968,18 +976,6 @@ class ImageView(QtGui.QSplitter):
                 self.roi_view_combo.setCurrentIndex(3)
             self.roi_alpha_sld.setValue(self.current_roi_view.alpha)
 
-    def overlay_view_changed(self, idx):
-        if self.current_data_view is not None:
-            self.current_data_view.visible = idx in (0, 1)
-            self.current_data_view.roi_only = (idx == 1)
-        self.overlay_changed(self.ivm.current_overlay)
-
-    def overlay_alpha_changed(self, alpha):
-        """ Set the overlay transparency """
-        if self.current_data_view is not None:
-            self.current_data_view.alpha = alpha
-        self.update_view_widgets()
-            
     def update_slider_range(self):
         try:
             self.sld1.blockSignals(True)
@@ -999,8 +995,7 @@ class ImageView(QtGui.QSplitter):
             self.sld3.blockSignals(False)
             self.sld4.blockSignals(False)
         
-    def slider_scroll_mouse(self, pos=None):
-        # update slider positions
+    def update_nav_sliders(self, pos=None):
         self.sld1.setValue(self.ivm.cim_pos[2])
         self.sld2.setValue(self.ivm.cim_pos[0])
         self.sld3.setValue(self.ivm.cim_pos[1])
