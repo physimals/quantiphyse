@@ -7,6 +7,7 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import sys
 import os
+import os.path
 import platform
 import argparse
 import traceback
@@ -31,7 +32,6 @@ else:
 
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
-# My widgets
 from ._version import __version__
 from .ImageView import ImageView
 from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
@@ -54,16 +54,6 @@ from .utils.batch import run_batch
 from .utils import set_local_file_path, get_icon, get_local_file
 
 op_sys = platform.system()
-
-def get_dir(str1):
-    """
-    Parse a file name to extract just the directory
-    :param str1:
-    :return:
-    """
-    ind1 = str1.rfind('/')
-    dir1 = str1[:ind1]
-    return dir1
 
 class DragOptions(QtGui.QDialog):
     """
@@ -429,24 +419,40 @@ class ViewOptions(QtGui.QDialog):
         self.update_scale()
         self.sig_options_changed.emit(self)
 
-class MainWindowWidget(QtGui.QWidget):
-    """
-    Main widget where most of the control should happen
+class MainWindow(QtGui.QMainWindow):
 
     """
-    def __init__(self):
-        super(MainWindowWidget, self).__init__()
+    Overall window framework
 
-        # Create objects for volume and view management
+    Steps:
+    1) Loads the main widget (mw1) - this is where all the interesting stuff happens
+    2) Accepts any input directories that are passed from the terminal
+    3) Initialises the GUI, menus, and toolbar
+    3) Loads any files that are passed from the terminal
+
+    """
+
+    #File dropped
+    sig_dropped = QtCore.Signal(str)
+
+    def __init__(self, load_data=None, load_roi=None):
+        super(MainWindow, self).__init__()
+        
         self.ivm = ImageVolumeManagement()
         self.view_options_dlg = ViewOptions(self, self.ivm)
         self.ivl = ImageView(self.ivm, self.view_options_dlg)
-        self.ivl.sig_focus_changed.connect(self.slider_scroll_mouse)
 
-        # ~~~~~~~~~~~~ Widgets ~~~~~~~~~~~~~~~~~~~~
+        # Load style sheet
+        stFile = get_local_file("resources/darkorange.stylesheet")
+        with open(stFile, "r") as fs:
+            self.setStyleSheet(fs.read())
+
+        # Default dir to load files from is the user's home dir
+        self.default_directory = os.path.expanduser("~")
+
+        # Widgets 
         self.widgets = []
-
-        # Signal Enhancement
+        self.current_widget = None
         self.add_widget(OverviewWidget, default=True) 
         self.add_widget(SECurve, default=True)
         self.add_widget(PharmaView) 
@@ -464,394 +470,37 @@ class MainWindowWidget(QtGui.QWidget):
         self.add_widget(OvCurveClusteringWidget, default=True) 
         self.add_widget(RoiBuilderWidget, default=True) 
         
+        # Menu and tabs
+        self.menu_ui()
         self.initTabs()
+        self.qtab1.currentChanged.connect(self.tab_changed)
+        self.tab_changed(0)
 
-        # InitUI
-        # Sliders
-        self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld1.setMinimumWidth(100)
-        self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld2.setMinimumWidth(100)
-        self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld3.setMinimumWidth(100)
-        self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld4.setMinimumWidth(100)
-        # self.update_slider_range()
-
-        # connect sliders to ivl
-        self.sld1.valueChanged[int].connect(self.ivl.set_pos(2))
-        self.sld2.valueChanged[int].connect(self.ivl.set_pos(0))
-        self.sld3.valueChanged[int].connect(self.ivl.set_pos(1))
-        self.sld4.valueChanged[int].connect(self.ivl.set_pos(3))
-
-        # Position Label and connect to slider
-        lab_p1 = QtGui.QLabel('0')
-        self.sld1.valueChanged[int].connect(lab_p1.setNum)
-        lab_p2 = QtGui.QLabel('0')
-        self.sld2.valueChanged[int].connect(lab_p2.setNum)
-        lab_p3 = QtGui.QLabel('0')
-        self.sld3.valueChanged[int].connect(lab_p3.setNum)
-        lab_p4 = QtGui.QLabel('0')
-        self.sld4.valueChanged[int].connect(lab_p4.setNum)
-
-        # Layout
-        # Group box buttons
-        gBox = QtGui.QGroupBox("ROI")
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = QtGui.QComboBox()
-        self.roi_combo.currentIndexChanged.connect(self.roi_changed)
-        grid.addWidget(self.roi_combo, 0, 1)
-        self.ivm.sig_current_roi.connect(self.update_current_roi)
-        self.ivm.sig_all_rois.connect(self.update_rois)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.roi_view_combo = QtGui.QComboBox()
-        self.roi_view_combo.addItem("Shaded")
-        self.roi_view_combo.addItem("Contour")
-        self.roi_view_combo.addItem("Both")
-        self.roi_view_combo.addItem("None")
-        self.roi_view_combo.currentIndexChanged.connect(self.roi_view_changed)
-        grid.addWidget(self.roi_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
-        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        sld1.setRange(0, 255)
-        sld1.setValue(150)
-        sld1.valueChanged.connect(self.ivl.roi_alpha_changed)
-        grid.addWidget(sld1, 2, 1)
-        grid.setRowStretch(3, 1)
-        gBox.setLayout(grid)
-
-        # Group box: sliders
-        gBox2 = QtGui.QGroupBox("Navigation")
-        gBoxlay2 = QtGui.QGridLayout()
-        gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
-        gBoxlay2.addWidget(self.sld1, 0, 1)
-        gBoxlay2.addWidget(lab_p1, 0, 2)
-        gBoxlay2.addWidget(QtGui.QLabel('Coronal'), 1, 0)
-        gBoxlay2.addWidget(self.sld2, 1, 1)
-        gBoxlay2.addWidget(lab_p2, 1, 2)
-        gBoxlay2.addWidget(QtGui.QLabel('Sagittal'), 2, 0)
-        gBoxlay2.addWidget(self.sld3, 2, 1)
-        gBoxlay2.addWidget(lab_p3, 2, 2)
-        gBoxlay2.addWidget(QtGui.QLabel('Volume'), 3, 0)
-        gBoxlay2.addWidget(self.sld4, 3, 1)
-        gBoxlay2.addWidget(lab_p4, 3, 2)
-        gBoxlay2.setColumnStretch(0, 0)
-        gBoxlay2.setColumnStretch(1, 2)
-        gBox2.setLayout(gBoxlay2)
-
-        self.ivm.sig_main_volume.connect(self.main_volume_changed)
-
-        gBox3 = QtGui.QGroupBox("Overlay")
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = QtGui.QComboBox()
-        self.overlay_combo.currentIndexChanged.connect(self.overlay_changed)
-        grid.addWidget(self.overlay_combo, 0, 1)
-        self.ivm.sig_current_overlay.connect(self.update_current_overlay)
-        self.ivm.sig_all_overlays.connect(self.update_overlays)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.ov_view_combo = QtGui.QComboBox()
-        self.ov_view_combo.addItem("All")
-        self.ov_view_combo.addItem("Only in ROI")
-        self.ov_view_combo.addItem("None")
-        self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
-        grid.addWidget(self.ov_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
-        self.ov_cmap_combo = QtGui.QComboBox()
-        self.ov_cmap_combo.addItem("jet")
-        self.ov_cmap_combo.addItem("hot")
-        self.ov_cmap_combo.addItem("gist_heat")
-        self.ov_cmap_combo.addItem("flame")
-        self.ov_cmap_combo.addItem("bipolar")
-        self.ov_cmap_combo.addItem("spectrum")
-        self.ov_cmap_combo.currentIndexChanged.connect(self.overlay_cmap_changed)
-        grid.addWidget(self.ov_cmap_combo, 2, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
-        sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        sld1.setRange(0, 255)
-        sld1.setValue(255)
-        sld1.valueChanged.connect(self.ivl.overlay_alpha_changed)
-        grid.addWidget(sld1, 3, 1)
-        grid.setRowStretch(4, 1)
-        gBox3.setLayout(grid)
-
-        # Navigation controls layout
-        gBox_all = QtGui.QWidget()
-        gBoxlay_all = QtGui.QHBoxLayout()
-        gBoxlay_all.addWidget(gBox2)
-        gBoxlay_all.addWidget(gBox)
-        gBoxlay_all.addWidget(gBox3)
-        
-        # Data summary bar
-        hbox = QtGui.QHBoxLayout()
-        
-        self.vol_name = QtGui.QLineEdit()
-        p = self.vol_name.sizePolicy()
-        p.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
-        self.vol_name.setSizePolicy(p)
-        hbox.addWidget(self.vol_name)
-        hbox.setStretchFactor(self.vol_name, 1)
-        self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(60)
-        hbox.addWidget(self.vol_data)
-        self.roi_region = QtGui.QLineEdit()
-        self.roi_region.setFixedWidth(30)
-        hbox.addWidget(self.roi_region)
-        self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(60)
-        hbox.addWidget(self.ov_data)
-        self.view_options_btn = QtGui.QPushButton()
-        self.view_options_btn.setIcon(QtGui.QIcon(get_icon("options.png")))
-        self.view_options_btn.setFixedSize(24, 24)
-        self.view_options_btn.clicked.connect(self.view_options)
-        hbox.addWidget(self.view_options_btn)
-
-        vbox = QtGui.QVBoxLayout()
-        vbox.addLayout(hbox)
-        vbox.addLayout(gBoxlay_all)  
-        gBox_all.setLayout(vbox)  
-
-        # Viewing window layout + buttons
-        # Add a horizontal splitter between image viewer and buttons below
-        #grid_box = QtGui.QWidget()
-        # grid_box.sig_click.connect(self.mpe)
-        #grid = QtGui.QVBoxLayout()
-        splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
-        splitter2.addWidget(self.ivl)
-        splitter2.addWidget(gBox_all)
-        splitter2.setStretchFactor(0, 5)
-        splitter2.setStretchFactor(1, 1)
-        #grid.addWidget(splitter2)
-        #grid_box.setLayout(grid)
-
-        # Add a vertical splitter between main view and tabs
+        # Main layout - image view to left, tabs to right
+        main_widget = QtGui.QWidget()
         hbox = QtGui.QHBoxLayout(self)
         splitter1 = QtGui.QSplitter(QtCore.Qt.Horizontal)
-        splitter1.addWidget(splitter2)
+        splitter1.addWidget(self.ivl)
         splitter1.addWidget(self.qtab1)
         splitter1.setStretchFactor(0, 4)
         splitter1.setStretchFactor(1, 1)
         hbox.addWidget(splitter1)
+        main_widget.setLayout(hbox)
+        self.setCentralWidget(main_widget)
 
-        # horizontal widgets
-        self.setLayout(hbox)
+        # General properties of main window
+        self.setWindowTitle("Quantiphyse %s" % __version__)
+        self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
+        self.resize(1000, 700)
 
-    def add_widget(self, w, **kwargs):
-	    self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg, **kwargs))
-
-    def view_options(self):
-        self.view_options_dlg.show()
-        self.view_options_dlg.raise_()
-        
-    def main_volume_changed(self, vol):
-        self.update_slider_range()
-        self.slider_scroll_mouse()
-        if vol is not None:
-            self.vol_name.setText(vol.md.basename)
-        else:
-            self.vol_name.setText("")
-
-    def overlay_changed(self, idx):
-        if idx >= 0:
-            ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_overlay(ov, signal=True)
-
-    def update_current_overlay(self, overlay):
-        if overlay is None:
-            self.overlay_combo.setCurrentIndex(-1)
-        else:
-            idx = self.overlay_combo.findText(overlay.name)
-            if idx != self.overlay_combo.currentIndex():
-                try:
-                    self.overlay_combo.blockSignals(True)
-                    self.overlay_combo.setCurrentIndex(idx)
-                finally:
-                    self.overlay_combo.blockSignals(False)
-
-    def update_overlays(self, overlays):
-        try:
-            self.overlay_combo.blockSignals(True)
-            self.overlay_combo.clear()
-            for ov in overlays:
-                self.overlay_combo.addItem(ov)
-        finally:
-            self.overlay_combo.blockSignals(False)
-        self.update_current_overlay(self.ivm.current_overlay)
-        self.overlay_combo.updateGeometry()
-
-    def roi_changed(self, idx):
-        if idx >= 0:
-            roi = self.roi_combo.itemText(idx)
-            self.ivm.set_current_roi(roi, signal=True)
-
-    def update_current_roi(self, roi):
-        if roi is None:
-            self.roi_combo.setCurrentIndex(-1)
-        else:
-            idx = self.roi_combo.findText(roi.name)
-            if idx != self.roi_combo.currentIndex():
-                try:
-                    self.roi_combo.blockSignals(True)
-                    self.roi_combo.setCurrentIndex(idx)
-                finally:
-                    self.roi_combo.blockSignals(False)
-
-    def update_rois(self, rois):
-        try:
-            self.roi_combo.blockSignals(True)
-            self.roi_combo.clear()
-            for roi in rois:
-                self.roi_combo.addItem(roi)
-        finally:
-            self.roi_combo.blockSignals(False)
-        self.update_current_roi(self.ivm.current_roi)
-        self.roi_combo.updateGeometry()
-
-    def overlay_view_changed(self, idx):
-        view = idx in (0, 1)
-        roiOnly = (idx == 1)
-        self.ivl.set_overlay_view(view, roiOnly)
-
-    def roi_view_changed(self, idx):
-        shade = idx in (0, 2)
-        contour = idx in (1, 2)
-        self.ivl.set_roi_view(shade, contour)
-
-    def overlay_cmap_changed(self, idx):
-        cmap = self.ov_cmap_combo.itemText(idx)
-        self.ivl.current_data_view.cmap = cmap
-        self.ivl.update_from_dataview()
-
-    def initTabs(self):
-        """
-        Initialise the tab widget
-        """
-        self.qtab1 = FingerTabWidget(self)
-
-        # Add widgets flagged to appear by default
-        for idx, w in enumerate(self.widgets):
-            if w.default:
-                index = self.qtab1.addTab(w, w.icon, w.tabname)
-                w.init_ui()
-                w.visible = True
-                w.index = index
-                
-    def update_slider_range(self):
-        try:
-            self.sld1.blockSignals(True)
-            self.sld2.blockSignals(True)
-            self.sld3.blockSignals(True)
-            self.sld4.blockSignals(True)
-            self.sld1.setRange(0, self.ivm.shape[2]-1)
-            self.sld2.setRange(0, self.ivm.shape[0]-1)
-            self.sld3.setRange(0, self.ivm.shape[1]-1)
-
-            if self.ivm.vol.ndim == 4:
-                self.sld4.setRange(0, self.ivm.shape[3]-1)
-            else:
-                self.sld4.setRange(0, 0)
-        finally:
-            self.sld1.blockSignals(False)
-            self.sld2.blockSignals(False)
-            self.sld3.blockSignals(False)
-            self.sld4.blockSignals(False)
-
-    @QtCore.Slot(bool)
-    def slider_scroll_mouse(self, pos=None):
-        # update slider positions
-        self.sld1.setValue(self.ivm.cim_pos[2])
-        self.sld2.setValue(self.ivm.cim_pos[0])
-        self.sld3.setValue(self.ivm.cim_pos[1])
-        self.sld4.setValue(self.ivm.cim_pos[3])
-        if self.ivm.vol is not None: 
-            self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
-        if self.ivm.current_roi is not None: 
-            self.roi_region.setText(self.ivm.current_roi.value_str(self.ivm.cim_pos))
-        if self.ivm.current_overlay is not None: 
-            self.ov_data.setText(self.ivm.current_overlay.value_str(self.ivm.cim_pos))
-            
-class WindowAndDecorators(QtGui.QMainWindow):
-
-    """
-    Overall window framework
-
-    Steps:
-    1) Loads the main widget (mw1) - this is where all the interesting stuff happens
-    2) Accepts any input directories that are passed from the terminal
-    3) Initialises the GUI, menus, and toolbar
-    3) Loads any files that are passed from the terminal
-
-    """
-
-    #File dropped
-    sig_dropped = QtCore.Signal(str)
-
-    def __init__(self, image_dir_in=None, roi_dir_in=None, overlay_dir_in=None):
-
-        super(WindowAndDecorators, self).__init__()
-
-        self.setAcceptDrops(True)
-
-        # Patch for if file is frozen (packaged apps)
-        local_file_path = ""
-        if hasattr(sys, 'frozen'):
-            # if frozen
-            print("Frozen executable")
-            if hasattr(sys, '_MEIPASS'):
-                local_file_path = sys._MEIPASS
-            elif hasattr(sys, '_MEIPASS2'):
-                local_file_path = sys._MEIPASS2
-            elif sys.frozen == 'macosx_app':
-                local_file_path = os.getcwd() + '/pkview'
-            else:
-                local_file_path = os.path.dirname(sys.executable)
-            os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
-
-        # Running from a script
-        else:
-            local_file_path = os.path.dirname(__file__)
-
-        # Use local working directory otherwise
-        if local_file_path == "":
-            print("Reverting to current directory as base")
-            local_file_path = os.getcwd()
-
-        # Print directory
-        print("Local directory: ", local_file_path)
-        set_local_file_path(local_file_path)
-
-        # Load style sheet
-        stFile = local_file_path + "/resources/darkorange.stylesheet"
-        with open(stFile, "r") as fs:
-            self.setStyleSheet(fs.read())
-
-        # Load the main widget
-        self.mw1 = MainWindowWidget()
-        self.current_widget = None
-        self.mw1.qtab1.currentChanged.connect(self.tab_changed)
-        self.tab_changed(0)
-
-        self.toolbar = None
-        self.default_directory ='/home'
-
-        # Directories for the three main files
-        self.image_dir_in = image_dir_in
-        self.roi_dir_in = roi_dir_in
-        self.overlay_dir_in = overlay_dir_in
-
-        # initialise the whole UI
-        self.init_ui()
+        # OSx specific enhancments
+        self.setUnifiedTitleAndToolBarOnMac(True)
 
         # autoload any files that have been passed from the command line
-        self.auto_load_files()
+        if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
+        if load_roi is not None: self.load_data(fname=load_roi, ftype="ROI")
 
+        self.setAcceptDrops(True)
         self.sig_dropped.connect(self.drag_drop_dialog)
 
         self.show()
@@ -869,33 +518,33 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 self.close()
                 QtCore.QCoreApplication.quit()
 
-    def init_ui(self):
-        """
-        Called during init. Sets the size and title of the overall GUI
-        :return:
-        """
-        self.resize(1000, 700)
-        self.setCentralWidget(self.mw1)
-        self.setWindowTitle("Quantiphyse %s" % __version__)
-        self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
-        self.menu_ui()
+    def initTabs(self):
+        self.qtab1 = FingerTabWidget(self)
 
-        # OSx specific enhancments
-        self.setUnifiedTitleAndToolBarOnMac(True)
+        # Add widgets flagged to appear by default
+        for idx, w in enumerate(self.widgets):
+            if w.default:
+                index = self.qtab1.addTab(w, w.icon, w.tabname)
+                w.init_ui()
+                w.visible = True
+                w.index = index
+        
+    def add_widget(self, w, **kwargs):
+	    self.widgets.append(w(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg, **kwargs))
 
     def show_widget(self):
         w = self.sender().widget
         if not w.visible:
-            index = self.mw1.qtab1.addTab(w, w.icon, w.tabname)
+            index = self.qtab1.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
             w.index = index
-        self.mw1.qtab1.setCurrentIndex(w.index)
+        self.qtab1.setCurrentIndex(w.index)
 
     def tab_changed(self, idx):
         if self.current_widget is not None:
             self.current_widget.deactivate()
-        self.current_widget = self.mw1.qtab1.widget(idx)
+        self.current_widget = self.qtab1.widget(idx)
         self.current_widget.activate()
         
     def menu_ui(self):
@@ -953,7 +602,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(exit_action)
 
-        for w in self.mw1.widgets:
+        for w in self.widgets:
             if not w.default:
                 action = QtGui.QAction(w.icon, '&%s' % w.name, self)
                 action.setStatusTip(w.description)
@@ -1006,16 +655,14 @@ class WindowAndDecorators(QtGui.QMainWindow):
         else:
             e.ignore()
 
-    @QtCore.Slot()
     def click_link(self):
         """
         Provide a clickable link to help files
 
         :return:
         """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://pkview.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
 
-    @QtCore.Slot()
     def about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
@@ -1028,7 +675,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """ % __version__
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
-    @QtCore.Slot()
     def show_console(self):
         """
         Creates a pop up console that allows interaction with the GUI and data
@@ -1036,10 +682,10 @@ class WindowAndDecorators(QtGui.QMainWindow):
         pyqtgraph.console
         """
         # Places that the console has access to
-        namespace = {'np': np, 'ivm': self.mw1.ivm, 'self': self}
-        for name, ovl in self.mw1.ivm.overlays.items():
+        namespace = {'np': np, 'ivm': self.ivm, 'self': self}
+        for name, ovl in self.ivm.overlays.items():
             namespace[name] = ovl
-        for name, roi in self.mw1.ivm.rois.items():
+        for name, roi in self.ivm.rois.items():
             namespace[name] = roi
 
         text = (
@@ -1067,7 +713,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
         if fname is None:
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
             if not fname: return
-        self.default_directory = get_dir(fname)
+        self.default_directory = os.path.dirname(fname)
 
         # Get metadata for file - shape and data type so we can assess fit
         datafile = load(fname)
@@ -1083,19 +729,19 @@ class WindowAndDecorators(QtGui.QMainWindow):
         force_t_option = False
         ignore_affine = False
         force_t = False
-        if self.mw1.ivm.vol is None:
+        if self.ivm.vol is None:
             # We can add anything to an empty IVM - but if data is 3D, give discreet option to interpret
             # it as 2D+time
             force_t_option = (len(shape) == 3)
         else:
             # Try to add directly, as 2D+time, directly in original dims and finally 2D+time in original space 
-            if self.mw1.ivm.check_shape(shape):
+            if self.ivm.check_shape(shape):
                 pass
-            elif len(shape) == 3 and self.mw1.ivm.check_shape([shape[0], shape[1], 1, shape[2]]):
+            elif len(shape) == 3 and self.ivm.check_shape([shape[0], shape[1], 1, shape[2]]):
                 force_t = True
-            elif self.mw1.ivm.check_shape(shape_orig):
+            elif self.ivm.check_shape(shape_orig):
                 ignore_affine = True
-            elif len(shape) == 3 and self.mw1.ivm.check_shape([shape_orig[0], shape_orig[1], 1, shape_orig[2]]):
+            elif len(shape) == 3 and self.ivm.check_shape([shape_orig[0], shape_orig[1], 1, shape_orig[2]]):
                 force_t = True
                 ignore_affine = True
             else:
@@ -1107,7 +753,7 @@ class WindowAndDecorators(QtGui.QMainWindow):
                 msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
                 if msgBox.exec_() != QtGui.QMessageBox.Ok: return
                 
-                self.mw1.ivm.reset()
+                self.ivm.reset()
                 force_t_option = (len(shape) == 3)
                 
         # If file type (ROI or data) is not already known, ask the user.
@@ -1134,8 +780,8 @@ class WindowAndDecorators(QtGui.QMainWindow):
         # Now get the actual data and add it as data or an ROI
         vol = datafile.get_data(ignore_affine=ignore_affine, force_t=force_t)
 
-        if ftype == "DATA": add_fn = self.mw1.ivm.add_overlay
-        else: add_fn = self.mw1.ivm.add_roi
+        if ftype == "DATA": add_fn = self.ivm.add_overlay
+        else: add_fn = self.ivm.add_roi
 
         try:
             add_fn(name, vol, make_current=True)
@@ -1146,13 +792,12 @@ class WindowAndDecorators(QtGui.QMainWindow):
         """
         Dialog for saving an overlay as a nifti file
         """
-        if self.mw1.ivm.current_overlay is None:
+        if self.ivm.current_overlay is None:
             QtGui.QMessageBox.warning(self, "No overlay", "No current overlay to save", QtGui.QMessageBox.Close)
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
-                # self.default_directory = get_dir(fname)
-                save(self.mw1.ivm.current_overlay, fname)
+                save(self.ivm.current_overlay, fname)
             else:
                 print('Warning: No file selected')
 
@@ -1170,17 +815,6 @@ class WindowAndDecorators(QtGui.QMainWindow):
         self.raise_()
         self.activateWindow()
         self.load_data(fname)
-
-    def auto_load_files(self):
-        """
-        Check to see if any input directories have been passed from the terminal for auto loading and loads those images
-        """
-        if self.image_dir_in is not None:
-            self.load_data(fname=self.image_dir_in, ftype="DATA")
-        if self.roi_dir_in is not None:
-            self.load_data(fname=self.roi_dir_in, ftype="ROI")
-        if self.overlay_dir_in is not None:
-            self.load_data(fname=self.overlay_dir_in, ftype="DATA")
 
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
@@ -1205,18 +839,14 @@ class BatchThread(QtCore.QThread):
 """
 
 def main():
-
     """
     Parse any input arguments and run the application
     """
 
-    # current_folder = args_in.pop(0)
-
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image', help='main image nifti file location', default=None, type=str)
-    parser.add_argument('--roi', help='ROI nifti file location', default=None, type=str)
-    parser.add_argument('--overlay', help='Overlay nifti file location', default=None, type=str)
+    parser.add_argument('--data', help='Load data file', default=None, type=str)
+    parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     args = parser.parse_args()
 
@@ -1239,18 +869,43 @@ def main():
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
         QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-        # Initialise main GUI
+        
         sys.excepthook = my_catch_exceptions
 
-        # OSx specific Changes
+        local_file_path = ""
+        if hasattr(sys, 'frozen'):
+            # File is frozen (packaged apps)
+            print("Frozen executable")
+            if hasattr(sys, '_MEIPASS'):
+                local_file_path = sys._MEIPASS
+            elif hasattr(sys, '_MEIPASS2'):
+                local_file_path = sys._MEIPASS2
+            elif sys.frozen == 'macosx_app':
+                local_file_path = os.getcwd() + '/pkview'
+            else:
+                local_file_path = os.path.dirname(sys.executable)
+            os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
+        else:
+            # Running from a script
+            local_file_path = os.path.dirname(__file__)
+
+        if local_file_path == "":
+            # Use local working directory otherwise
+            print("Reverting to current directory as base")
+            local_file_path = os.getcwd()
+
+        print("Local directory: ", local_file_path)
+        set_local_file_path(local_file_path)
+
+        # OS specific changes
         if op_sys == 'Darwin':
             from Foundation import NSURL
             QtGui.QApplication.setGraphicsSystem('native')
 
-        app.setStyle('plastique')  # windows, motif, cde, plastique, windowsxp, macintosh
+        app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
 
-        # Pass arguments from the terminal (if any) into the main application
-        ex = WindowAndDecorators(args.image, args.roi, args.overlay)
+        # Initialise main GUI
+        ex = MainWindow(load_data=args.data, load_roi=args.roi)
 
         sys.exit(app.exec_())
 

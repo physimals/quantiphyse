@@ -18,6 +18,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
 from pkview.volumes.io import QpVolume
+from .utils import get_icon
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
@@ -258,6 +259,7 @@ class DataView:
         self.data_roi = data
         self.cmap = "jet"
         self.visible = True
+        self.alpha = 255
         self.roi_only = False
         self.cmap_range = data.range
 
@@ -276,6 +278,17 @@ class DataView:
             self.data_roi[np.logical_not(roi)] = roi_fillvalue
         else:
             self.data_roi = self.data
+
+class RoiView:
+    """
+    View of an ROI, storing details about visual parameters, e.g. contour plotting
+    """
+    def __init__(self, roi):
+        self.roi = roi
+        #self.cmap = "jet"
+        self.shade = True
+        self.contour = False
+        self.alpha = 150
 
 class OrthoView(pg.GraphicsView):
     """
@@ -399,47 +412,47 @@ class OrthoView(pg.GraphicsView):
         return out
 
     def _update_view_roi(self):
-        roi = self.ivm.current_roi
-        z = 0
-        if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
-
-        if roi is None:
+        roiview = self.iv.current_roi_view
+        n = 0 # Number of contours - required at end
+        if roiview is None:
             self.img_roi.setImage(np.zeros((1, 1)))
-            return
-        
-        pos = self.ivm.cim_pos
-        lut = roi.get_lut(self.iv.roi_alpha)
-        roi_levels = self.ivm.current_roi.range
-        
-        if self.iv.shade_roi:
-            self.img_roi.setImage(roi.pos_slice((self.zaxis, pos[self.zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
-            self.img_roi.setZValue(z)
         else:
-            self.img_roi.setImage(np.zeros((1, 1)))
+            roidata = roiview.roi
+            z = 0
+            if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
 
-        n = 0
-        if self.iv.contour_roi:
-            data = roi.pos_slice((self.zaxis, pos[self.zaxis]))
+            pos = self.ivm.cim_pos
+            lut = roidata.get_lut(roiview.alpha)
+            roi_levels = roidata.range
             
-            # Update data and level for existing contour items, and create new ones if needed
-            n_conts = len(self.contours)
-            create_new = False
-            for val in roi.regions:
-                pencol = roi.get_pencol(val)
-                if val != 0:
-                    if n == n_conts:
-                        create_new = True
+            if roiview.shade:
+                self.img_roi.setImage(roidata.pos_slice((self.zaxis, pos[self.zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
+                self.img_roi.setZValue(z)
+            else:
+                self.img_roi.setImage(np.zeros((1, 1)))
 
-                    if create_new:
-                        self.contours.append(pg.IsocurveItem())
-                        self.vb.addItem(self.contours[n])
+            if roiview.contour:
+                data = roidata.pos_slice((self.zaxis, pos[self.zaxis]))
+                
+                # Update data and level for existing contour items, and create new ones if needed
+                n_conts = len(self.contours)
+                create_new = False
+                for val in roidata.regions:
+                    pencol = roidata.get_pencol(val)
+                    if val != 0:
+                        if n == n_conts:
+                            create_new = True
 
-                    d = self._iso_prepare(data, val)
-                    self.contours[n].setData(d)
-                    self.contours[n].setLevel(1)
-                    self.contours[n].setPen(pg.mkPen(pencol, width=self.iv.roi_outline_width))
+                        if create_new:
+                            self.contours.append(pg.IsocurveItem())
+                            self.vb.addItem(self.contours[n])
 
-                n += 1
+                        d = self._iso_prepare(data, val)
+                        self.contours[n].setData(d)
+                        self.contours[n].setLevel(1)
+                        self.contours[n].setPen(pg.mkPen(pencol, width=self.iv.roi_outline_width))
+
+                    n += 1
 
         # Set data to None for any existing contour items that we are not using right now 
         # FIXME should we delete these?
@@ -523,7 +536,7 @@ class OrthoView(pg.GraphicsView):
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
-class ImageView(QtGui.QGraphicsView, object):
+class ImageView(QtGui.QSplitter):
     """
     QGraphicsView containing three orthogonal slice views and two histogram/LUT widgets
     """
@@ -535,32 +548,177 @@ class ImageView(QtGui.QGraphicsView, object):
     sig_sel_changed = QtCore.Signal(object)
 
     def __init__(self, ivm, opts):
-        super(ImageView, self).__init__()
+        super(ImageView, self).__init__(QtCore.Qt.Vertical)
 
         self.ivm = ivm
         self.opts = opts
         self.ivm.sig_current_overlay.connect(self.overlay_changed)
         self.ivm.sig_current_roi.connect(self.current_roi_changed)
         self.ivm.sig_main_volume.connect(self.main_volume_changed)
+        self.ivm.sig_all_rois.connect(self.rois_changed)
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
         self.opts.sig_options_changed.connect(self.update_ortho_views)
+        self.sig_focus_changed.connect(self.slider_scroll_mouse)
 
         # Viewer Options
-        self.shade_roi = True
-        self.contour_roi = False
         self.roi_outline_width = 3.0
         self.show_crosshairs = True
-        self.show_overlay = True
-        self.show_overlay_in_roi = False
-        self.roi_alpha = 150
         
-        # overlay data - may be restricted by ROI so need viewer copy
+        # Visualisation information for overlays and ROIs
         self.data_views = {}
         self.current_data_view = None
+        self.roi_views = {}
+        self.current_roi_view = None
+
+        # Create the navigation sliders
+        gBox2 = QtGui.QGroupBox("Navigation")
+        gBoxlay2 = QtGui.QGridLayout()
+
+        gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
+        self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld1.setMinimumWidth(100)
+        gBoxlay2.addWidget(self.sld1, 0, 1)
+        lab_p1 = QtGui.QLabel('0')
+        gBoxlay2.addWidget(lab_p1, 0, 2)
+
+        gBoxlay2.addWidget(QtGui.QLabel('Coronal'), 1, 0)
+        self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld2.setMinimumWidth(100)
+        gBoxlay2.addWidget(self.sld2, 1, 1)
+        lab_p2 = QtGui.QLabel('0')
+        gBoxlay2.addWidget(lab_p2, 1, 2)
+
+        gBoxlay2.addWidget(QtGui.QLabel('Sagittal'), 2, 0)
+        self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld3.setMinimumWidth(100)
+        gBoxlay2.addWidget(self.sld3, 2, 1)
+        lab_p3 = QtGui.QLabel('0')
+        gBoxlay2.addWidget(lab_p3, 2, 2)
+
+        gBoxlay2.addWidget(QtGui.QLabel('Volume'), 3, 0)
+        self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.sld4.setMinimumWidth(100)
+        gBoxlay2.addWidget(self.sld4, 3, 1)
+        lab_p4 = QtGui.QLabel('0')
+        gBoxlay2.addWidget(lab_p4, 3, 2)
+
+        gBoxlay2.setColumnStretch(0, 0)
+        gBoxlay2.setColumnStretch(1, 2)
+        gBox2.setLayout(gBoxlay2)
+
+        self.sld1.valueChanged[int].connect(self.set_pos(2))
+        self.sld2.valueChanged[int].connect(self.set_pos(0))
+        self.sld3.valueChanged[int].connect(self.set_pos(1))
+        self.sld4.valueChanged[int].connect(self.set_pos(3))
+        self.sld1.valueChanged[int].connect(lab_p1.setNum)
+        self.sld2.valueChanged[int].connect(lab_p2.setNum)
+        self.sld3.valueChanged[int].connect(lab_p3.setNum)
+        self.sld4.valueChanged[int].connect(lab_p4.setNum)
+
+        # Create the ROI/Overlay view controls
+        gBox = QtGui.QGroupBox("ROI")
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
+        self.roi_combo = QtGui.QComboBox()
+        grid.addWidget(self.roi_combo, 0, 1)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.roi_view_combo = QtGui.QComboBox()
+        self.roi_view_combo.addItem("Shaded")
+        self.roi_view_combo.addItem("Contour")
+        self.roi_view_combo.addItem("Both")
+        self.roi_view_combo.addItem("None")
+        grid.addWidget(self.roi_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
+        self.roi_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.roi_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.roi_alpha_sld.setRange(0, 255)
+        self.roi_alpha_sld.setValue(150)
+        grid.addWidget(self.roi_alpha_sld, 2, 1)
+        grid.setRowStretch(3, 1)
+        gBox.setLayout(grid)
+
+        self.roi_combo.currentIndexChanged.connect(self.roi_combo_changed)
+        self.roi_view_combo.currentIndexChanged.connect(self.roi_view_changed)
+        self.roi_alpha_sld.valueChanged.connect(self.roi_alpha_changed)
+
+        gBox3 = QtGui.QGroupBox("Overlay")
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
+        self.overlay_combo = QtGui.QComboBox()
+        grid.addWidget(self.overlay_combo, 0, 1)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.ov_view_combo = QtGui.QComboBox()
+        self.ov_view_combo.addItem("All")
+        self.ov_view_combo.addItem("Only in ROI")
+        self.ov_view_combo.addItem("None")
+        grid.addWidget(self.ov_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
+        self.ov_cmap_combo = QtGui.QComboBox()
+        self.ov_cmap_combo.addItem("jet")
+        self.ov_cmap_combo.addItem("hot")
+        self.ov_cmap_combo.addItem("gist_heat")
+        self.ov_cmap_combo.addItem("flame")
+        self.ov_cmap_combo.addItem("bipolar")
+        self.ov_cmap_combo.addItem("spectrum")
+        grid.addWidget(self.ov_cmap_combo, 2, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
+        self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.ov_alpha_sld.setRange(0, 255)
+        self.ov_alpha_sld.setValue(255)
+        grid.addWidget(self.ov_alpha_sld, 3, 1)
+        grid.setRowStretch(4, 1)
+        gBox3.setLayout(grid)
+
+        self.overlay_combo.currentIndexChanged.connect(self.overlay_combo_changed)
+        self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
+        self.ov_cmap_combo.currentIndexChanged.connect(self.overlay_cmap_changed)
+        self.ov_alpha_sld.valueChanged.connect(self.overlay_alpha_changed)
+
+        # Navigation controls layout
+        gBox_all = QtGui.QWidget()
+        gBoxlay_all = QtGui.QHBoxLayout()
+        gBoxlay_all.addWidget(gBox2)
+        gBoxlay_all.addWidget(gBox)
+        gBoxlay_all.addWidget(gBox3)
+        
+        # Data summary bar
+        hbox = QtGui.QHBoxLayout()
+        self.vol_name = QtGui.QLineEdit()
+        p = self.vol_name.sizePolicy()
+        p.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
+        self.vol_name.setSizePolicy(p)
+        hbox.addWidget(self.vol_name)
+        hbox.setStretchFactor(self.vol_name, 1)
+        self.vol_data = QtGui.QLineEdit()
+        self.vol_data.setFixedWidth(60)
+        hbox.addWidget(self.vol_data)
+        self.roi_region = QtGui.QLineEdit()
+        self.roi_region.setFixedWidth(30)
+        hbox.addWidget(self.roi_region)
+        self.ov_data = QtGui.QLineEdit()
+        self.ov_data.setFixedWidth(60)
+        hbox.addWidget(self.ov_data)
+        self.view_options_btn = QtGui.QPushButton()
+        self.view_options_btn.setIcon(QtGui.QIcon(get_icon("options.png")))
+        self.view_options_btn.setFixedSize(24, 24)
+        self.view_options_btn.clicked.connect(self.view_options)
+        hbox.addWidget(self.view_options_btn)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addLayout(hbox)
+        vbox.addLayout(gBoxlay_all)  
+        gBox_all.setLayout(vbox)  
 
         # For each view window, this is the volume indices of the x, y and z axes for the view
         self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
         self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
 
+        # Create three orthogonal views
         self.win = {}
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
@@ -582,8 +740,13 @@ class ImageView(QtGui.QGraphicsView, object):
         for i in range(3):
             self.h2.addImageItem(self.win[i].img_ovl)
 
-        # Main grid layout
+        # Main graphics layout
+        #gview = pg.GraphicsView(background='k')
+        gview = QtGui.QWidget()
         self.grid = QtGui.QGridLayout()
+        self.grid.setHorizontalSpacing(2)
+        self.grid.setVerticalSpacing(2)
+        self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.addWidget(self.win[1], 0, 0,)
         self.grid.addWidget(self.win[0], 0, 1)
         self.grid.addWidget(self.h1, 0, 2)
@@ -594,10 +757,18 @@ class ImageView(QtGui.QGraphicsView, object):
         self.grid.setColumnStretch(2, 1)
         self.grid.setRowStretch(0, 1)
         self.grid.setRowStretch(1, 1)
-        self.setLayout(self.grid)
+        gview.setLayout(self.grid)
+        self.addWidget(gview)
+        self.addWidget(gBox_all)
+        self.setStretchFactor(0, 5)
+        self.setStretchFactor(1, 1)
 
         self.picker = PointPicker(self) 
 
+    def view_options(self):
+        self.opts.show()
+        self.opts.raise_()
+        
     def view_focus(self, pos, win, is_click):
         if self.picker.win is not None and win != self.picker.win:
             # Bit of a hack. Ban focus changes in other windows when we 
@@ -653,28 +824,104 @@ class ImageView(QtGui.QGraphicsView, object):
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
-    def main_volume_changed(self):
-        if self.ivm.vol is not None:
+    def main_volume_changed(self, vol):
+        self.update_slider_range()
+        self.slider_scroll_mouse()
+        if vol is not None:
+            self.vol_name.setText(vol.md.basename)
             self.h1.setSourceData(self.ivm.vol, percentile=99)
+        else:
+            self.vol_name.setText("")
+
         self.update_ortho_views()
+
+    def roi_combo_changed(self, idx):
+        if idx >= 0:
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi, signal=True)
+
+    def rois_changed(self, rois):
+        # Repopulate ROI combo, without sending signals
+        try:
+            self.roi_combo.blockSignals(True)
+            self.roi_combo.clear()
+            for roi in rois:
+                self.roi_combo.addItem(roi)
+        finally:
+            self.roi_combo.blockSignals(False)
+        self.current_roi_changed(self.ivm.current_roi)
+        self.roi_combo.updateGeometry()
 
     def current_roi_changed(self, roi):
+        # Update ROI combo to show the current ROI
+        if roi is None:
+            self.roi_combo.setCurrentIndex(-1)
+            self.current_roi_view = None
+        else:
+            idx = self.roi_combo.findText(roi.name)
+            if idx != self.roi_combo.currentIndex():
+                try:
+                    self.roi_combo.blockSignals(True)
+                    self.roi_combo.setCurrentIndex(idx)
+                finally:
+                    self.roi_combo.blockSignals(False)
+
+            if roi.name not in self.roi_views:
+                # Create an ROI view if we don't already have one for this ROI
+                self.roi_views[roi.name] = RoiView(roi)
+            self.current_roi_view = self.roi_views[roi.name]
+
         if self.current_data_view is not None: 
             self.current_data_view.set_roi(roi)
+        self.update_view_widgets()
         self.update_ortho_views()
 
-    def set_roi_view(self, shade, contour):
-        self.shade_roi = shade
-        self.contour_roi = contour
+    def roi_view_changed(self, idx):
+        if self.current_roi_view is not None:
+            self.current_roi_view.shade = idx in (0, 2)
+            self.current_roi_view.contour = idx in (1, 2)
+        self.update_view_widgets()
         self.update_ortho_views()
 
     def roi_alpha_changed(self, alpha):
         """ Set the ROI transparency """
-        self.roi_alpha = alpha
+        if self.current_roi_view is not None:
+            self.current_roi_view.alpha = alpha
         self.update_ortho_views()
+
+    def overlay_combo_changed(self, idx):
+        if idx >= 0:
+            ov = self.overlay_combo.itemText(idx)
+            self.ivm.set_current_overlay(ov, signal=True)
+
+    def overlay_cmap_changed(self, idx):
+        cmap = self.ov_cmap_combo.itemText(idx)
+        self.current_data_view.cmap = cmap
+        self.update_view_widgets()
+
+    def overlays_changed(self, overlays):
+        # Repopulate overlays combo, without sending signals
+        try:
+            self.overlay_combo.blockSignals(True)
+            self.overlay_combo.clear()
+            for ov in overlays:
+                self.overlay_combo.addItem(ov)
+        finally:
+            self.overlay_combo.blockSignals(False)
+        self.overlay_changed(self.ivm.current_overlay)
+        self.overlay_combo.updateGeometry()
 
     def overlay_changed(self, ov):
         if ov is not None:
+            # Update the overlay combo to show the current overlay
+            idx = self.overlay_combo.findText(ov.name)
+            if idx != self.overlay_combo.currentIndex():
+                try:
+                    self.overlay_combo.blockSignals(True)
+                    self.overlay_combo.setCurrentIndex(idx)
+                finally:
+                    self.overlay_combo.blockSignals(False)
+
             if ov.name not in self.data_views:
                 # Create a data view if we don't already have one for this overlay
                 self.data_views[ov.name] = DataView(ov)
@@ -687,23 +934,81 @@ class ImageView(QtGui.QGraphicsView, object):
 
             self.current_data_view = self.data_views[ov.name]
             self.current_data_view.set_roi(self.ivm.current_roi)
-            self.update_from_dataview()
+            self.update_view_widgets()
         else:
+            self.overlay_combo.setCurrentIndex(-1)
             self.current_data_view = None
         self.update_ortho_views()
 
-    def update_from_dataview(self):
-        if self.current_data_view is not None:
+    def update_view_widgets(self):
+        if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
             self.h2.setSourceData(self.current_data_view.data_roi)
             self.h2.region.setRegion(self.current_data_view.cmap_range)
+            self.h2.setAlpha(self.current_data_view.alpha)
 
-    def set_overlay_view(self, visible=True, roi_only=False):
+            if not self.current_data_view.visible:
+                self.ov_view_combo.setCurrentIndex(2)
+            elif self.current_data_view.roi_only:
+                self.ov_view_combo.setCurrentIndex(1)
+            else:
+                self.ov_view_combo.setCurrentIndex(0)
+            idx = self.ov_cmap_combo.findText(self.current_data_view.cmap)
+            self.ov_cmap_combo.setCurrentIndex(idx)
+            self.ov_alpha_sld.setValue(self.current_data_view.alpha)
+
+        if self.current_roi_view:
+            if self.current_roi_view.shade and self.current_roi_view.contour:
+                self.roi_view_combo.setCurrentIndex(2)
+            elif self.current_roi_view.shade:
+                self.roi_view_combo.setCurrentIndex(0)
+            elif self.current_roi_view.contour:
+                self.roi_view_combo.setCurrentIndex(1)
+            else:
+                self.roi_view_combo.setCurrentIndex(3)
+            self.roi_alpha_sld.setValue(self.current_roi_view.alpha)
+
+    def overlay_view_changed(self, idx):
         if self.current_data_view is not None:
-            self.current_data_view.visible = visible
-            self.current_data_view.roi_only = roi_only
+            self.current_data_view.visible = idx in (0, 1)
+            self.current_data_view.roi_only = (idx == 1)
         self.overlay_changed(self.ivm.current_overlay)
 
     def overlay_alpha_changed(self, alpha):
         """ Set the overlay transparency """
-        self.h2.setAlpha(alpha)
+        if self.current_data_view is not None:
+            self.current_data_view.alpha = alpha
+        self.update_view_widgets()
+            
+    def update_slider_range(self):
+        try:
+            self.sld1.blockSignals(True)
+            self.sld2.blockSignals(True)
+            self.sld3.blockSignals(True)
+            self.sld4.blockSignals(True)
+            self.sld1.setRange(0, self.ivm.shape[2]-1)
+            self.sld2.setRange(0, self.ivm.shape[0]-1)
+            self.sld3.setRange(0, self.ivm.shape[1]-1)
+            if len(self.ivm.shape) == 4:
+                self.sld4.setRange(0, self.ivm.shape[3]-1)
+            else:
+                self.sld4.setRange(0, 0)
+        finally:
+            self.sld1.blockSignals(False)
+            self.sld2.blockSignals(False)
+            self.sld3.blockSignals(False)
+            self.sld4.blockSignals(False)
+        
+    def slider_scroll_mouse(self, pos=None):
+        # update slider positions
+        self.sld1.setValue(self.ivm.cim_pos[2])
+        self.sld2.setValue(self.ivm.cim_pos[0])
+        self.sld3.setValue(self.ivm.cim_pos[1])
+        self.sld4.setValue(self.ivm.cim_pos[3])
+        if self.ivm.vol is not None: 
+            self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
+        if self.ivm.current_roi is not None: 
+            self.roi_region.setText(self.ivm.current_roi.value_str(self.ivm.cim_pos))
+        if self.ivm.current_overlay is not None: 
+            self.ov_data.setText(self.ivm.current_overlay.value_str(self.ivm.cim_pos))
+            
