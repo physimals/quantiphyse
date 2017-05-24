@@ -35,10 +35,10 @@ class KMeansPCAProcess(Process):
         # 4D data
         if data_name is not None:
             img = self.ivm.overlays[data_name].astype(np.float32)
-        elif self.ivm.current_overlay is not None:
-            img = self.ivm.current_overlay.astype(np.float32)
+        elif self.ivm.vol is not None:
+            img = self.ivm.vol.astype(np.float32)
         else:
-            raise RuntimeError("No data specified and no current overlay")
+            raise RuntimeError("No data specified and no current volume")
 
         if len(img.shape) != 4:
             raise RuntimeError("Can only run PCA clustering on 4D data")
@@ -49,7 +49,7 @@ class KMeansPCAProcess(Process):
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
         else:
-            roi = np.ones(img.shape[:3])
+            roi = np.ones(img.shape[:3], dtype=np.bool)
             invert_roi = False
 
         if invert_roi:
@@ -130,7 +130,7 @@ class KMeans3DProcess(Process):
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
         else:
-            roi = np.ones(data.shape)
+            roi = np.ones(data.shape, dtype=np.bool)
             invert_roi = False
 
         if invert_roi:
