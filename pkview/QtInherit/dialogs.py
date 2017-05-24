@@ -17,10 +17,16 @@ class LogViewerDialog(QtGui.QDialog):
 
         self.setLayout(vbox)
 
-def error_dialog(msg, title="Warning", detail="", subtitle="Details:"):
+def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
     text = msg
-    if detail != "":
-        text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail)
+    if detail is not None:
+        detail_str = ""
+        try:
+            for item in detail:
+                detail_str += str(item).replace("\n", "<br>") + "<br>"
+        except:
+            detail_str = str(detail).replace("\n", "<br>")
+        text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail_str)
 
     QtGui.QMessageBox.warning(None, title, text, QtGui.QMessageBox.Close)
                    
