@@ -13,7 +13,7 @@ import numpy as np
 import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
-from pkview.analysis import Process
+from . import Process
 
 class KMeansPCAProcess(Process):
     """

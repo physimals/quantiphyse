@@ -17,7 +17,7 @@ import weakref
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
-from pkview.volumes.io import QpVolume
+from .volumes.io import QpVolume
 from .utils import get_icon
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):

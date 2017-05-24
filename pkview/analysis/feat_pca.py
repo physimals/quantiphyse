@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
-import pkview.analysis.image_normalisation as inorm
+from . import image_normalisation as inorm
 
 class PcaFeatReduce(object):
     """

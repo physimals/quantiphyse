@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 import numpy as np
 import scipy.ndimage as ndi
 
-from pkview.analysis.feat_pca import PcaFeatReduce
+from ...analysis.feat_pca import PcaFeatReduce
 from . import slic_feat
 import warnings
 

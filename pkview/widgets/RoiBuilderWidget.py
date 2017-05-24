@@ -8,11 +8,11 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 from PySide import QtCore, QtGui
 
-from pkview.QtInherit.dialogs import error_dialog
-from pkview.QtInherit import HelpButton
-from pkview.widgets import PkWidget
-from pkview.ImageView import PickMode
-from pkview.utils import get_icon
+from ..QtInherit.dialogs import error_dialog
+from ..QtInherit import HelpButton
+from ..ImageView import PickMode
+from ..utils import get_icon
+from . import PkWidget
 
 DESC = """
 Toolbox for building regions of interest
@@ -40,7 +40,6 @@ class RoiBuilderWidget(PkWidget):
         desc = QtGui.QLabel(DESC)
         desc.setWordWrap(True)
         layout.addWidget(desc)
-        layout.addWidget(QtGui.QLabel(""))
 
         # Toolbox buttons
         hbox = QtGui.QHBoxLayout()

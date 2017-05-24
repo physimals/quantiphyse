@@ -15,12 +15,12 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from pkview.ImageView import PickMode
-from pkview.utils import get_icon, copy_table
+from . import PkWidget
+from ..ImageView import PickMode
+from ..utils import get_icon, copy_table
 from ..QtInherit import HelpButton
-from pkview.widgets import PkWidget
-from pkview.analysis.overlay_analysis import OverlayAnalysis
-from pkview.analysis.misc import CalcVolumesProcess, SimpleMathsProcess
+from ..analysis.overlay_analysis import OverlayAnalysis
+from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):

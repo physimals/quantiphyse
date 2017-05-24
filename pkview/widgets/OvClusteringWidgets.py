@@ -10,10 +10,10 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 from PySide import QtCore, QtGui
 
-from pkview.QtInherit.dialogs import error_dialog
-from pkview.QtInherit import HelpButton
-from pkview.analysis.kmeans import KMeans3DProcess
-from pkview.widgets import PkWidget
+from ..QtInherit.dialogs import error_dialog
+from ..QtInherit import HelpButton
+from ..analysis.kmeans import KMeans3DProcess
+from . import PkWidget
 
 #TODO Hide other buttons until the clustering is performed.
 

@@ -11,8 +11,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 from skimage.segmentation import random_walker
 
-from pkview.analysis.feat_pca import PcaFeatReduce
-
+from ..analysis.feat_pca import PcaFeatReduce
 
 class RandomWalkerWidget(QtGui.QWidget):
 

@@ -14,13 +14,13 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from pkview.QtInherit import HelpButton
-from pkview.QtInherit.dialogs import LogViewerDialog, error_dialog
-from pkview.analysis import Process
-from pkview.analysis.fab import FabberProcess
-from pkview.widgets import PkWidget
-from pkview.widgets.fabber.views import *
-from pkview.widgets.fabber.dialogs import ModelOptionsDialog, MatrixEditDialog
+from ...QtInherit import HelpButton
+from ...QtInherit.dialogs import LogViewerDialog, error_dialog
+from ...analysis import Process
+from ...analysis.fab import FabberProcess
+from .. import PkWidget
+from .views import *
+from .dialogs import ModelOptionsDialog, MatrixEditDialog
 
 try:
     from fabber import FabberRunData, find_fabber

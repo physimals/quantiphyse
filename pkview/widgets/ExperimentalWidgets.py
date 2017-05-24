@@ -10,7 +10,7 @@ from __future__ import print_function, division
 import warnings
 
 from PySide import QtCore, QtGui
-from pkview.widgets import PkWidget
+from . import PkWidget
 
 class ImageExportWidget(PkWidget):
 

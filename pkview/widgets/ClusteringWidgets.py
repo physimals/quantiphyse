@@ -12,10 +12,10 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from sklearn.metrics import pairwise
 
-from pkview.QtInherit import HelpButton
-from pkview.QtInherit.dialogs import error_dialog
-from pkview.analysis.kmeans import KMeansPCAProcess
-from pkview.widgets import PkWidget
+from ..QtInherit import HelpButton
+from ..QtInherit.dialogs import error_dialog
+from ..analysis.kmeans import KMeansPCAProcess
+from . import PkWidget
 
 class CurveClusteringWidget(PkWidget):
     """

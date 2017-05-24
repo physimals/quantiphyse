@@ -2,8 +2,8 @@ import numpy as np
 
 from PySide import QtGui
 
-from pkview.utils import table_to_str
-from pkview.analysis import Process, BackgroundProcess
+from ..utils import table_to_str
+from . import Process, BackgroundProcess
 
 class CalcVolumesProcess(Process):
     """

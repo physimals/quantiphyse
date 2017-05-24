@@ -16,7 +16,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from pkview.QtInherit import HelpButton
+from ..QtInherit import HelpButton
 
 class ExampleWidget1(QtGui.QWidget):
     """

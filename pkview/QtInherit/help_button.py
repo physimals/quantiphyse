@@ -1,5 +1,6 @@
 from PySide import QtGui, QtCore
-from pkview.utils import get_icon
+
+from ..utils import get_icon
 
 class HelpButton(QtGui.QPushButton):
     """
