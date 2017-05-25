@@ -154,7 +154,7 @@ class PharmaView(PkWidget):
     """
 
     def __init__(self, **kwargs):
-        super(PharmaView, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="pk", **kwargs)
+        super(PharmaView, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="curve_view", **kwargs)
 
     def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()

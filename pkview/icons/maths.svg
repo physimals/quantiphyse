@@ -34,7 +34,7 @@
   <defs
      id="defs8" />
   <sodipodi:namedview
-     pagecolor="#ffffff"
+     pagecolor="#3c3937"
      bordercolor="#666666"
      borderopacity="1"
      objecttolerance="10"
@@ -47,7 +47,7 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="14.193761"
-     inkscape:cx="18.05192"
+     inkscape:cx="5.0180243"
      inkscape:cy="9.9758306"
      inkscape:window-x="65"
      inkscape:window-y="24"
@@ -63,28 +63,28 @@
      ry="2.2950706" />
   <text
      xml:space="preserve"
-     style="font-style:normal;font-weight:normal;font-size:26.10510826px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ea0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
-     x="3.7716522"
-     y="20.221285"
+     style="font-style:normal;font-weight:normal;font-size:22.61362076px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#e5e5e5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="4.8205442"
+     y="18.909643"
      id="text4134"
      sodipodi:linespacing="125%"
-     transform="scale(1.0418366,0.95984341)"><tspan
+     transform="scale(1.0461892,0.95585006)"><tspan
        sodipodi:role="line"
        id="tspan4136"
-       x="3.7716522"
-       y="20.221285"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:26.1048069px;line-height:125%;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ea0000;fill-opacity:1;">+</tspan></text>
+       x="4.8205442"
+       y="18.909643"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22.61335945px;line-height:125%;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">+</tspan></text>
   <text
      xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:23.78249931px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ea0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-     x="12.027814"
-     y="28.965996"
-     id="text4134-3"
+     style="font-style:normal;font-weight:normal;font-size:22.70850945px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#e5e5e5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="-6.2398067"
+     y="36.120457"
+     id="text4134-7"
      sodipodi:linespacing="125%"
-     transform="scale(1.0012611,0.99874048)"><tspan
+     transform="matrix(0.6993509,-0.70329553,0.70021489,0.72573296,0,0)"><tspan
        sodipodi:role="line"
-       id="tspan4136-6"
-       x="12.027814"
-       y="28.965996"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:23.78249884px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Bold';text-align:start;writing-mode:lr;text-anchor:start;fill:#ea0000;fill-opacity:1">×</tspan></text>
+       id="tspan4136-5"
+       x="-6.2398067"
+       y="36.120457"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22.70824814px;line-height:125%;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">+</tspan></text>
 </svg>
