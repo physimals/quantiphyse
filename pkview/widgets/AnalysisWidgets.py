@@ -19,8 +19,7 @@ from . import PkWidget
 from ..ImageView import PickMode
 from ..utils import get_icon, copy_table
 from ..QtInherit import HelpButton
-from ..analysis.overlay_analysis import OverlayAnalysis
-from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess
+from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):
@@ -291,9 +290,13 @@ class OverlayStatistics(PkWidget):
 
     def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
-        self.ia = OverlayAnalysis(ivm=self.ivm)
         self.setStatusTip("Load a ROI and overlay to analyse statistics")
 
+        self.process = OverlayStatisticsProcess(self.ivm)
+        self.process_ss = OverlayStatisticsProcess(self.ivm)
+        self.process_rp = RadialProfileProcess(self.ivm)
+        self.process_hist = HistogramProcess(self.ivm)
+        
         l1 = QtGui.QVBoxLayout()
 
         hbox = QtGui.QHBoxLayout()
@@ -314,17 +317,14 @@ class OverlayStatistics(PkWidget):
         self.win1.setVisible(False)
         self.plt1 = self.win1.addPlot(title="Overlay histogram")
 
-        self.tabmod1 = QtGui.QStandardItemModel()
-        self.tabmod1ss = QtGui.QStandardItemModel()
-
         self.tab1 = QtGui.QTableView()
         self.tab1.resizeColumnsToContents()
-        self.tab1.setModel(self.tabmod1)
+        self.tab1.setModel(self.process.model)
         self.tab1.setVisible(False)
 
         self.tab1ss = QtGui.QTableView()
         self.tab1ss.resizeColumnsToContents()
-        self.tab1ss.setModel(self.tabmod1ss)
+        self.tab1ss.setModel(self.process_ss.model)
         self.tab1ss.setVisible(False)
 
         l02 = QtGui.QHBoxLayout()
@@ -523,10 +523,10 @@ class OverlayStatistics(PkWidget):
             self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def copy_stats(self):
-        copy_table(self.tabmod1)
+        copy_table(self.process.model)
 
     def copy_stats_ss(self):
-        copy_table(self.tabmod1ss)
+        copy_table(self.process_ss.model)
         
     def show_overlay_stats(self):
         if self.tab1.isVisible():
@@ -575,66 +575,41 @@ class OverlayStatistics(PkWidget):
             self.rp_btn.setText("Hide")
 
     def update_radial_profile(self):
-        rp, xvals, binedges = self.ia.get_radial_profile(bins=self.rp_nbins.value())
-        self.rp_curve.setData(x=xvals, y=rp)
+        options = {"overlay" : self.ivm.current_overlay.name, 
+                   "no-artifact" : True, "bins" : self.rp_nbins.value()}
+        self.process_rp.run(options)
+        self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_overlay.name])
 
     def update_overlay_stats(self):
-        self.populate_stats_table(self.tabmod1)
+        self.populate_stats_table(self.process)
 
     def update_overlay_stats_current_slice(self):
         selected_slice = self.sscombo.currentIndex()
-        self.populate_stats_table(self.tabmod1ss, slice=selected_slice)
+        self.populate_stats_table(self.process_ss, slice=selected_slice)
 
     def update_histogram(self):
-        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
-            m1 = QtGui.QMessageBox()
-            m1.setWindowTitle("Histogram")
-            m1.setText("Histogram requires a ROI and overlay to be loaded")
-            m1.exec_()
+        if self.ivm.current_overlay is None:
+            error_dialog("No current overlay")
             return
 
-        # get analysis from analysis object
-        bins = self.nbinsSpin.value()
-        hist_range = (self.minSpin.value(), self.maxSpin.value())
-        stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(self.ivm.current_overlay, self.ivm.current_roi, hist_bins=bins, hist_range=hist_range)
+        options = {"overlay" : self.ivm.current_overlay.name, 
+                   "no-artifact" : True, "bins" : self.nbinsSpin.value(),
+                   "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
+        self.process_hist.run(options)
 
         self.win1.removeItem(self.plt1)
         self.plt1 = self.win1.addPlot(title="")
 
-        for ii in range(len(stats1['mean'])):
-            # FIXME This is basically duplicated from ImageView - not ideal
-            val = roi_labels[ii]
-            pencol = self.ivm.current_roi.get_pencol(val)
-            curve = pg.PlotCurveItem(hist1x[ii], hist1[ii], stepMode=True, pen=pg.mkPen(pencol, width=2))
+        for ov_name in self.process_hist.hist:
+            for region, yvals in self.process_hist.hist[ov_name].items():
+                pencol = self.ivm.current_roi.get_pencol(region)
+                curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
             self.plt1.addItem(curve)
 
-    def populate_stats_table(self, tabmod, **kwargs):
-        # Clear the previous labels
-        tabmod.clear()
-        tabmod.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-        tabmod.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        tabmod.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
-        tabmod.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-        tabmod.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
-
-        if self.ivm.current_overlay is None:
-            return
-        elif self.ovl_selection == self.CURRENT_OVERLAY:
-            ovs = [self.ivm.current_overlay,]
-        else:
-            ovs = self.ivm.overlays.values()
-            
-        col = 0
-        for ov in ovs:
-            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **kwargs)
-            for ii in range(len(stats1['mean'])):
-                tabmod.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
-                tabmod.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
-                tabmod.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.dps))))
-                tabmod.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.dps))))
-                tabmod.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.dps))))
-                tabmod.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.dps))))
-                col += 1
+    def populate_stats_table(self, process, **options):
+        if self.ivm.current_overlay is not None and self.ovl_selection == self.CURRENT_OVERLAY:
+            options["overlay"] = self.ivm.current_overlay.name
+        process.run(options)
 
 class RoiAnalysisWidget(PkWidget):
     """

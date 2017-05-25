@@ -1,0 +1,37 @@
+# Example config file for running Fabber
+
+OutputFolder: out
+Debug: True
+
+Processing:
+  - OverlayStats:
+        overlay: mean_c0
+        output-name: c0_stats
+
+  - RadialProfile:
+        overlay: mean_c1
+        centre: 20, 20, 20
+        output-name: c1_rp
+        
+  - Histogram:
+        overlay: mean_c0
+        bins: 10
+        output-name: c0_hist
+        roi: mask
+
+SaveArtifacts: 
+    c0_stats:
+    c1_rp:
+    c0_hist:
+
+Cases:
+    Subject1:
+        Folder:   c:\Users\ctsu0221\build\data
+        Volume:   test_data.nii
+        Rois:
+          mask: test_mask.nii
+        Overlays:  
+          mean_c0: mean_c0.nii
+          mean_c1: mean_c1.nii
+          
+
