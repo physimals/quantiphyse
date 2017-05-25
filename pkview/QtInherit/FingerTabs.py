@@ -47,7 +47,6 @@ class FingerTabBarWidget(QtGui.QTabBar):
                  # Click was inside close button
                  w = self.tab_widget.widget(idx)
                  if not w.default:
-                     w.deactivate()
                      w.visible = False
                      self.tab_widget.removeTab(idx)
         
