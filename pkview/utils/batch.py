@@ -14,7 +14,7 @@ from ..analysis.reg import RegProcess, McflirtProcess
 from ..analysis.pk import PkModellingProcess
 from ..analysis.t10 import T10Process
 from ..analysis.sv import SupervoxelsProcess
-from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess
+from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 from ..analysis.kmeans import KMeansPCAProcess
 
 from ..volumes.volume_management import ImageVolumeManagement
@@ -28,6 +28,9 @@ processes = {"Fabber"      : FabberProcess,
              "Reg"         : RegProcess,
              "Moco"        : RegProcess,
              "CalcVolumes" : CalcVolumesProcess,
+             "OverlayStats" : OverlayStatisticsProcess,
+             "RadialProfile" : RadialProfileProcess,
+             "Histogram" : HistogramProcess,
              "KMeansPCA"   : KMeansPCAProcess,
              "SimpleMaths" : SimpleMathsProcess}
 
@@ -109,6 +112,7 @@ class BatchCase:
         for process in self.root.get("Processing", []):
             name = process.keys()[0]
             params = process[name]
+            if params is None: params = {}
             params.update(self.case.get(name, {}))
             self.run_process(name, params)
 

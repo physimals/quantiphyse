@@ -40,7 +40,7 @@ def table_to_str(tabmod):
         rowdata = [tabmod.verticalHeaderItem(row).text(),] 
         rowdata += [tabmod.item(row, col).text() for col in cols]
         tsv += "\t".join(rowdata) + "\n"
-    print(tsv)
+    #print(tsv)
     return tsv
 
 def copy_table(tabmod):
