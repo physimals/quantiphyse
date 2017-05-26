@@ -8,14 +8,15 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import sys, os, warnings
 import time
 import traceback
+import re
 
 import nibabel as nib
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...QtInherit import HelpButton
-from ...QtInherit.dialogs import LogViewerDialog, error_dialog
+from ...QtInherit import HelpButton, BatchButton
+from ...QtInherit.dialogs import TextViewerDialog, error_dialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
 from .. import PkWidget
@@ -46,12 +47,29 @@ class FabberWidget(PkWidget):
         super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
                                            desc="Fabber Bayesian model fitting",
                                            **kwargs)
+    
+    def model_name(self, lib):
+        match = re.match(".*fabber_models_(.+)\..+", lib, re.I)
+        if match:
+            return match.group(1).upper()
+        else:
+            return lib
+    
+    def model_group_changed(self, idx):
+        if idx >= 0:
+            lib = self.modellibCombo.itemData(idx)
+            if lib != "":
+                self.rundata["loadmodels"] = lib
+            else:
+                del self.rundata["loadmodels"]
+            self.modellibCombo.setToolTip(lib)
+        
     def init_ui(self):
         mainGrid = QtGui.QVBoxLayout()
         self.setLayout(mainGrid)
 
         try:
-            self.fabber_lib = find_fabber()[1]
+            self.fabber_ex, self.fabber_lib, self.model_libs = find_fabber()
             if self.fabber_lib is None:
                 mainGrid.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"))
                 return
@@ -61,6 +79,18 @@ class FabberWidget(PkWidget):
 
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Fabber Bayesian Model Fitting</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
+        hbox.addWidget(HelpButton(self, "fabber"))
+        mainGrid.addLayout(hbox)
+        
+        cite = QtGui.QLabel(CITE)
+        cite.setWordWrap(True)
+        mainGrid.addWidget(cite)
+        mainGrid.addWidget(QtGui.QLabel(""))
+
         # Options box
         optionsBox = QtGui.QGroupBox()
         optionsBox.setTitle('Options')
@@ -68,19 +98,22 @@ class FabberWidget(PkWidget):
         grid = QtGui.QGridLayout()
         optionsBox.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("Extra models library"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Model group"), 0, 0)
         self.modellibCombo = QtGui.QComboBox(self)
         self.modellibCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-        grid.addWidget(self.modellibCombo, 2, 1)
-        self.modellibChangeBtn = QtGui.QPushButton('Choose External library', self)
-        grid.addWidget(self.modellibChangeBtn, 2, 2)
+        self.modellibCombo.addItem("GENERIC", "")
+        for lib in self.model_libs:
+            self.modellibCombo.addItem(self.model_name(lib), lib)
+        self.modellibCombo.currentIndexChanged.connect(self.model_group_changed)
+        self.modellibCombo.setCurrentIndex(0)
 
-        grid.addWidget(QtGui.QLabel("Forward model"), 3, 0)
+        grid.addWidget(self.modellibCombo, 0, 1)
+        grid.addWidget(QtGui.QLabel("Model"), 1, 0)
         self.modelCombo = QtGui.QComboBox(self)
         self.modelCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-        grid.addWidget(self.modelCombo, 3, 1)
+        grid.addWidget(self.modelCombo, 1, 1)
         self.modelOptionsBtn = QtGui.QPushButton('Model Options', self)
-        grid.addWidget(self.modelOptionsBtn, 3, 2)
+        grid.addWidget(self.modelOptionsBtn, 1, 2)
         
         grid.addWidget(QtGui.QLabel("Inference method"), 4, 0)
         self.methodCombo = QtGui.QComboBox(self)
@@ -97,6 +130,15 @@ class FabberWidget(PkWidget):
         self.generalOptionsBtn = QtGui.QPushButton('Edit', self)
         grid.addWidget(self.generalOptionsBtn, 6, 2)
         
+        mainGrid.addWidget(optionsBox)
+
+        # Model options box
+        #modelOptionsBox = QtGui.QGroupBox()
+        #modelOptionsBox.setTitle('Model Options')
+        #self.modelOptionsGrid = QtGui.QGridLayout()
+        #modelOptionsBox.setLayout(self.modelOptionsGrid)
+        #mainGrid.addWidget(modelOptionsBox)
+
         # Run box
         runBox = QtGui.QGroupBox()
         runBox.setTitle('Running')
@@ -129,6 +171,8 @@ class FabberWidget(PkWidget):
         self.savefilesCb.stateChanged.connect(btn.setEnabled)
         vbox.addLayout(hbox)
 
+        mainGrid.addWidget(runBox)
+
         # Load/save box
         fileBox = QtGui.QGroupBox()
         fileBox.setTitle('Load/Save options')
@@ -153,27 +197,8 @@ class FabberWidget(PkWidget):
         hbox.addWidget(btn)
         vbox.addLayout(hbox)
 
-        # Main layout
-        
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Fabber Bayesian Model Fitting</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(HelpButton(self, "fabber"))
-        mainGrid.addLayout(hbox)
-        
-        cite = QtGui.QLabel(CITE)
-        cite.setWordWrap(True)
-        mainGrid.addWidget(cite)
-
-        mainGrid.addWidget(QtGui.QLabel(""))
-        mainGrid.addWidget(optionsBox)
-        mainGrid.addWidget(runBox)
         mainGrid.addWidget(fileBox)
         mainGrid.addStretch(1)
-
-        # Register our custom view to handle image options
-        OPT_VIEW["IMAGE"] = ImageOptionView
-        OPT_VIEW["TIMESERIES"] = ImageOptionView
 
         # Keep references to the option dialogs so we can update any image option views as overlays change
         self.modelOpts = ModelOptionsView(dialog=ModelOptionsDialog(self), btn=self.modelOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
@@ -184,9 +209,6 @@ class FabberWidget(PkWidget):
         self.views = [
             ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
             self.modelOpts, self.methodOpts, self.generalOpts, self.priors,
-#            ChooseFileView("fabber_lib", changeBtn=self.libChangeBtn, edit=self.libEdit,
-#                           dialogTitle="Choose core library", defaultDir=os.path.dirname(self.fabber_lib)),
-            ChooseModelLib(changeBtn=self.modellibChangeBtn, combo=self.modellibCombo),
         ]
 
         self.generalOpts.ignore("output", "data", "mask", "data<n>", "overwrite", "method", "model", "help",
@@ -243,6 +265,9 @@ class FabberWidget(PkWidget):
         self.priors.overlays = overlays
         self.priors.repopulate()
 
+    def batch_options(self):
+        return "Fabber", self.rundata
+        
     def start_task(self):
         """
         Start running the Fabber modelling on button click
@@ -283,6 +308,6 @@ class FabberWidget(PkWidget):
         self.progress.setValue(100*complete)
 
     def view_log(self):
-         self.logview = LogViewerDialog(log=self.log, parent=self)
+         self.logview = TextViewerDialog(log=self.log, parent=self)
          self.logview.show()
          self.logview.raise_()

@@ -382,7 +382,8 @@ OPT_VIEW = {
     "INT" : IntegerOptionView,
     "BOOL": OptionView,
     "FILE": FileOptionView,
-    "IMAGE": FileOptionView,
+    "IMAGE": ImageOptionView,
+    "TIMESERIES" : ImageOptionView,
     "MVN": FileOptionView,
     "MATRIX": MatrixFileOptionView,
     "": StringOptionView,
@@ -401,6 +402,10 @@ class OptionsView(View):
         self.ignore_opts = set()
         self.btn.clicked.connect(self.show)
         self.desc_first = kwargs.get("desc_first", False)
+        if hasattr(self, "dialog"):
+            self.grid = self.dialog.grid
+            self.title_label = self.dialog.modelLabel
+            self.desc_label = self.dialog.descLabel
 
     def show(self):
         self.dialog.show()
@@ -421,7 +426,7 @@ class OptionsView(View):
                 w.widget().deleteLater()
                 
     def clear(self):
-        self.del_layout(self.dialog.grid)
+        self.del_layout(self.grid)
         self.views = {}
 
     def add_opts(self, opts, startrow):
@@ -439,14 +444,14 @@ class OptionsView(View):
                     if n > 1:
                         prev.add_dependent(view)
 
-                    view.add(self.dialog.grid, row + startrow)
+                    view.add(self.grid, row + startrow)
                     self.views[newopt["name"]] = view
                     prev = view
                     row += 1
             else:
                 view = get_option_view(opt, desc_first=self.desc_first)
                 view.mat_dialog = self.mat_dialog
-                view.add(self.dialog.grid, row+startrow)
+                view.add(self.grid, row+startrow)
                 self.views[opt["name"]] = view
                 row += 1
         return row
@@ -471,20 +476,20 @@ class OptionsView(View):
         req = [opt for opt in self.opts if not opt["optional"]]
         nonreq = [opt for opt in self.opts if opt["optional"]]
         
-        self.dialog.modelLabel.setText(self.title)
-        self.dialog.descLabel.setText(self.desc)
+        if hasattr(self, "title_label"): self.title_label.setText(self.title)
+        if hasattr(self, "desc_label"): self.desc_label.setText(self.desc)
         
         if req:
             label = get_label("Mandatory options", size=12, bold=True)
-            self.dialog.grid.addWidget(label, 0, 0)
+            self.grid.addWidget(label, 0, 0)
             self.add_opts(req, 1)
         if nonreq:
             label = get_label("Non-mandatory options", size=12, bold=True)
-            self.dialog.grid.addWidget(label, len(req)+1, 0)
+            self.grid.addWidget(label, len(req)+1, 0)
             self.add_opts(nonreq, len(req)+2)
 
-        self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
-        self.dialog.adjustSize()
+        self.grid.setAlignment(QtCore.Qt.AlignTop)
+        if hasattr(self, "dialog"): self.dialog.adjustSize()
         
 class ComponentOptionsView(OptionsView):
     """
@@ -665,25 +670,25 @@ class PriorsView(OptionsView):
     def repopulate(self):
         self.updating_widgets=True
         self.clear()
-        self.dialog.grid.setSpacing(20)
+        self.grid.setSpacing(20)
         self.prior_widgets = []
         
         self.dialog.modelLabel.setText("Model parameter priors")
         self.dialog.descLabel.setText("Describes optional prior information about each model parameter")
         
         if len(self.params) == 0:
-            self.dialog.grid.addWidget(QtGui.QLabel("No parameters found! Make sure model is properly configured"))
+            self.grid.addWidget(QtGui.QLabel("No parameters found! Make sure model is properly configured"))
 
         for idx, param in enumerate(self.params):
             self.prior_widgets.append(self.get_widgets(idx))
         
-            self.dialog.grid.addWidget(QtGui.QLabel("%s: " % param), idx, 0)
+            self.grid.addWidget(QtGui.QLabel("%s: " % param), idx, 0)
             for col, w in enumerate(self.prior_widgets[idx]):
-                self.dialog.grid.addWidget(w, idx, col+1)
+                self.grid.addWidget(w, idx, col+1)
 
         self.update_from_rundata()
         self.update_widgets()
-        self.dialog.grid.setAlignment(QtCore.Qt.AlignTop)
+        self.grid.setAlignment(QtCore.Qt.AlignTop)
         self.dialog.adjustSize()
         self.updating_widgets=False
         
@@ -705,50 +710,6 @@ class ChooseFileView(View):
             self.edit.setText(fname)
             self.rundata[self.opt] = fname
             self.defaultDir = os.path.dirname(fname)
-
-class ChooseModelLib(View):
-    def __init__(self, **kwargs):
-        self.opt = "loadmodels"
-        View.__init__(self, [self.opt, ], **kwargs)
-        ex, lib, model_libs = find_fabber()
-        self.defaultDir = os.path.dirname(lib)
-        for model_lib in model_libs:
-            self.combo.addItem(self.model_name(model_lib), model_lib)
-        self.combo.addItem("<No additional models>", "")
-        self.changeBtn.clicked.connect(self.choose_file)
-        self.combo.currentIndexChanged.connect(self.lib_changed)
-        self.combo.setCurrentIndex(-1)
-
-    def model_name(self, model_lib):
-        match = re.match(".*fabber_models_(.+)\..+", model_lib, re.I)
-        if match:
-            return match.group(1);
-        else:
-            return model_lib
-
-    def select_lib(self, lib):
-        if self.combo.findData(lib) < 0:
-            self.combo.addItem(self.model_name(lib), lib)
-        if self.combo.itemData(self.combo.currentIndex()) != lib:
-            self.combo.setCurrentIndex(self.combo.findData(lib))
-
-    def choose_file(self):
-        fname = QtGui.QFileDialog.getOpenFileName(None, "Choose model library", self.defaultDir)[0]
-        if fname:
-            self.defaultDir = os.path.dirname(fname)
-            self.select_lib(fname)
-
-    def lib_changed(self, idx):
-        if idx >= 0:
-            lib = self.combo.itemData(self.combo.currentIndex())
-            if lib != "":
-                self.rundata[self.opt] = lib
-            else:
-                del self.rundata[self.opt]
-            self.combo.setToolTip(lib)
-
-    def do_update(self):
-        self.select_lib(self.rundata.get(self.opt, ""))
 
 class FileView(View):
     def __init__(self, **kwargs):
