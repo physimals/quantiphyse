@@ -13,7 +13,7 @@
    inkscape:version="0.91 r13725"
    width="100%"
    height="100%"
-   sodipodi:docname="pick.svg"
+   sodipodi:docname="crosshairs.svg"
    inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/pick.png"
    inkscape:export-xdpi="1.7258519"
    inkscape:export-ydpi="1.7258519">
@@ -122,27 +122,16 @@
      inkscape:window-y="24"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg3025" />
-  <ellipse
-     style="opacity:1;fill:#e84444;fill-opacity:1;stroke:none;stroke-width:100;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="path4174"
-     cx="687.1864"
-     cy="1110.7797"
-     rx="550.50848"
-     ry="341.69492" />
-  <g
-     id="g4206"
-     transform="matrix(1.0301082,0.0080915,-0.00735441,0.9362704,313.63776,-32.409995)">
-    <path
-       sodipodi:nodetypes="cc"
-       inkscape:connector-curvature="0"
-       id="path4270"
-       d="M 1283.2543,-119.32204 455.59323,1133.5594"
-       style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:277.20001221;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       sodipodi:nodetypes="cccc"
-       inkscape:connector-curvature="0"
-       id="path10339"
-       d="M 356.88135,617.22035 258.16949,1414.5085 971.9322,1004.4746 349.28814,609.62712"
-       style="fill:#e5e5e5;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
-  </g>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#effb24;stroke-width:240.6000061;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:240.6000061, 240.6000061;stroke-dashoffset:0;stroke-opacity:1"
+     d="m 892.40678,-215.25424 0,1708.47464"
+     id="path4225"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cc" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#effb24;stroke-width:240.6000061;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:240.6000061, 240.6000061;stroke-dashoffset:0;stroke-opacity:1"
+     d="m 49.355916,624.81356 1708.474584,0"
+     id="path4225-3"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cc" />
 </svg>
