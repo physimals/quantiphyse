@@ -77,8 +77,6 @@ class FabberWidget(PkWidget):
             mainGrid.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"))
             return
 
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
-
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Fabber Bayesian Model Fitting</font>'))
         hbox.addStretch(1)
@@ -223,6 +221,12 @@ class FabberWidget(PkWidget):
         self.process.sig_finished.connect(self.run_finished_gui)
         self.process.sig_progress.connect(self.update_progress)
 
+    def activate(self):
+        self.ivm.sig_all_overlays.connect(self.overlays_changed)
+
+    def deactivate(self):
+        self.ivm.sig_all_overlays.disconnect(self.overlays_changed)
+
     def chooseOutputFolder(self):
         outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
@@ -267,7 +271,7 @@ class FabberWidget(PkWidget):
 
     def batch_options(self):
         return "Fabber", self.rundata
-        
+
     def start_task(self):
         """
         Start running the Fabber modelling on button click
