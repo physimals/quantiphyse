@@ -13,6 +13,7 @@ import argparse
 import traceback
 import requests
 import warnings
+import signal
 
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
@@ -864,6 +865,8 @@ def main():
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
         QtCore.QCoreApplication.setApplicationName("Quantiphyse")
         sys.excepthook = my_catch_exceptions
+        # Handle CTRL-C correctly
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         # Set the local file path, used for finding icons, etc
         local_file_path = ""
