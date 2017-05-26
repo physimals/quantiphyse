@@ -18,7 +18,7 @@ from scipy.interpolate import UnivariateSpline
 from . import PkWidget
 from ..ImageView import PickMode
 from ..utils import get_icon, copy_table
-from ..QtInherit import HelpButton
+from ..QtInherit import HelpButton, BatchButton
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
@@ -627,6 +627,7 @@ class RoiAnalysisWidget(PkWidget):
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
         hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
 
@@ -656,6 +657,9 @@ class RoiAnalysisWidget(PkWidget):
         self.ivm.sig_current_roi.disconnect(self.update)
         self.ivm.sig_all_rois.disconnect(self.update)
 
+    def batch_options(self):
+        return "CalcVolumes", {}
+
     def update(self):
         self.process.run({"no-artifact" : True})
         
@@ -684,6 +688,7 @@ class SimpleMathsWidget(PkWidget):
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Simple Maths</font>'))
         hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
         
@@ -713,6 +718,9 @@ class SimpleMathsWidget(PkWidget):
 
         layout.addStretch(1)
 
+    def batch_options(self):
+        return "SimpleMaths", {self.output_name_edit.text() : self.proc_edit.text()}
+
     def go(self):
-        options = {self.output_name_edit.text() : self.proc_edit.text()}
+        options = self.batch_options()[1]
         self.process.run(options)

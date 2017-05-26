@@ -2,7 +2,7 @@ from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
 
-from ..QtInherit import HelpButton
+from ..QtInherit import HelpButton, BatchButton
 from ..analysis.perfusionslic import PerfSLIC
 from ..analysis.overlay_analysis import OverlayAnalysis
 from . import PkWidget
@@ -45,6 +45,7 @@ class PerfSlicWidget(PkWidget):
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Supervoxel Generation</font>'))
         hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self, "sv"))
         layout.addLayout(hbox)
         
@@ -97,6 +98,12 @@ class PerfSlicWidget(PkWidget):
 
         self.roibox.setEnabled(False)
 
+    def batch_options(self):
+        options = {"n-components" : self.n_comp.spin.value(),
+                   "compactness" : self.compactness.spin.value(),
+                   "segment-size" :  self.segment_number.spin.value() }
+        return "Supervoxels", options
+
     def generate(self):
         if self.ivm.vol is None:
             QtGui.QMessageBox.warning(self, "No volume loaded", "Load a volume before generating supervoxels", QtGui.QMessageBox.Close)
@@ -105,13 +112,9 @@ class PerfSlicWidget(PkWidget):
         if self.ivm.current_roi is None:
             QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating supervoxels", QtGui.QMessageBox.Close)
             return
-        
-        options = {"n-components" : self.n_comp.spin.value(),
-                   "compactness" : self.compactness.spin.value(),
-                   "segment-size" :  self.segment_number.spin.value() }
 
         process = SupervoxelsProcess(self.ivm, sync=True)
-        process.run(options)
+        process.run(self.batch_options[1])
         if process.status != Process.SUCCEEDED:
             QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
                                       QtGui.QMessageBox.Close)
