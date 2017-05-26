@@ -8,6 +8,7 @@ class TextViewerDialog(QtGui.QDialog):
         vbox = QtGui.QVBoxLayout()
 
         self.text_browser = QtGui.QTextBrowser()
+        self.text_browser.setFontFamily("Courier")
         self.text_browser.setText(text)
         vbox.addWidget(self.text_browser)
         

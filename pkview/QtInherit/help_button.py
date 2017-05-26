@@ -54,7 +54,7 @@ class BatchButton(QtGui.QPushButton):
         if hasattr(self.widget, "batch_options"):
             proc_name, opts = self.widget.batch_options()
             text = "  - %s:\n" % proc_name
-            text += "\n".join(["  %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+            text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
             TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
         else:
             error_dialog("This widget does not provide a list of batch options")
