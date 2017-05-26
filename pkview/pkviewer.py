@@ -1,6 +1,6 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+Author: Benjamin Irving (benjamin.irv@gmail.com), Martin Craig (martin.craig@eng.ox.ac.uk)
+Copyright (c) 2013-2017 University of Oxford
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
@@ -135,6 +135,9 @@ def send_register_email(name, inst, email):
               "text": "Name: %s\nInstitution: %s\nEmail: %s\n" % (name, inst, email)})
 
 class RegisterDialog(QtGui.QDialog):
+    """
+    Dialog box which asks a first-time user to send a registration email
+    """
     def __init__(self, parent=None, scale=[]):
         QtGui.QDialog.__init__(self, parent)
         
@@ -206,6 +209,10 @@ class RegisterDialog(QtGui.QDialog):
         self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(state)
 
 class ScaleEditDialog(QtGui.QDialog):
+    """
+    Dialog used by the view options to allow the user to edit the 
+    scale of the 4th volume dimension
+    """
     def __init__(self, parent=None, scale=[]):
         QtGui.QDialog.__init__(self, parent)
         
@@ -271,7 +278,12 @@ class ScaleEditDialog(QtGui.QDialog):
         return scale
 
 class ViewOptions(QtGui.QDialog):
-
+    """
+    This class is both a dialog to edit viewing options, but also
+    the storage for the option values. For now this is convenient,
+    however it will probably be necessary to separate the two 
+    as the options become more extensive
+    """
     SCALE_VOXELS = 0
     ISOTROPIC = 1
 
@@ -431,8 +443,6 @@ class MainWindow(QtGui.QMainWindow):
     Loads data from command line options
     """
 
-    sig_dropped = QtCore.Signal(str)
-
     def __init__(self, load_data=None, load_roi=None):
         super(MainWindow, self).__init__()
         
@@ -466,7 +476,7 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
-        self.add_widget(RoiBuilderWidget, default=True)
+        self.add_widget(RoiBuilderWidget)
         
         # Initialize menu and tabs
         self.init_menu()
@@ -488,17 +498,8 @@ class MainWindow(QtGui.QMainWindow):
         self.setWindowTitle("Quantiphyse %s" % __version__)
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
         self.resize(1000, 700)
-
-        # OSx specific enhancments
         self.setUnifiedTitleAndToolBarOnMac(True)
-
-        # autoload any files that have been passed from the command line
-        if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
-        if load_roi is not None: self.load_data(fname=load_roi, ftype="ROI")
-
         self.setAcceptDrops(True)
-        self.sig_dropped.connect(self.drag_drop_dialog)
-
         self.show()
 
         settings = QtCore.QSettings()
@@ -513,6 +514,10 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 self.close()
                 QtCore.QCoreApplication.quit()
+
+        # autoload any files that have been passed from the command line
+        if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
+        if load_roi is not None: self.load_data(fname=load_roi, ftype="ROI")
 
     def init_tabs(self):
         self.tab_widget = FingerTabWidget(self)
@@ -548,11 +553,10 @@ class MainWindow(QtGui.QMainWindow):
         
     def init_menu(self):
         """
-        Set up the file menu system and the toolbar at the top
-        :return:
+        Set up the main window menus
         """
         
-        # File --> Load Image
+        # File --> Load Data
         load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d image')
@@ -578,12 +582,12 @@ class MainWindow(QtGui.QMainWindow):
         # About
         about_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
         about_action.setStatusTip('About Quantiphyse')
-        about_action.triggered.connect(self.about)
+        about_action.triggered.connect(self.show_about)
 
         # Help -- > Online help
         help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
-        help_action.triggered.connect(self.click_link)
+        help_action.triggered.connect(self.show_help)
 
         # Advanced --> Python Console
         console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
@@ -631,32 +635,31 @@ class MainWindow(QtGui.QMainWindow):
 
     def dropEvent(self, e):
         """
-        Drop files directly onto the widget
-
-        File locations are stored in fname
+        Called when a file or files are dropped on to the interface
         """
         if e.mimeData().hasUrls:
             e.setDropAction(QtCore.Qt.CopyAction)
             e.accept()
-            fname = []
+            fnames = []
             for url in e.mimeData().urls():
                 if op_sys == 'Darwin':
                     # OSx specific changes to allow drag and drop
                     filep = str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
-                    fname.append(filep)
+                    fnames.append(filep)
                 else:
-                    fname.append(str(url.toLocalFile()))
-            for name in fname:
-                # Signal that a file has been dropped
-                self.sig_dropped.emit(name)
+                    fnames.append(str(url.toLocalFile()))
+            self.raise_()
+            self.activateWindow()
+            for fname in fnames:
+                self.load_data(fname)
         else:
             e.ignore()
 
-    def click_link(self):
+    def show_help(self):
         """ Provide a clickable link to help files """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
 
-    def about(self):
+    def show_about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
@@ -803,15 +806,6 @@ class MainWindow(QtGui.QMainWindow):
     def load_roi(self):
         self.load_data(ftype="ROI")
 
-    @QtCore.Slot(str)
-    def drag_drop_dialog(self, fname):
-        """
-        Dialog for loading an overlay and specifying the type of overlay
-        """
-        self.raise_()
-        self.activateWindow()
-        self.load_data(fname)
-
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
         
@@ -845,7 +839,6 @@ def main():
     parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     args = parser.parse_args()
-
     print(pg.systemInfo())
 
     # Check whether any batch processing arguments have been called
@@ -885,7 +878,7 @@ def main():
         else:
             # Running from a script
             local_file_path = os.path.dirname(__file__)
-
+            
         if local_file_path == "":
             # Use local working directory otherwise
             warnings.warn("Reverting to current directory as local path")
