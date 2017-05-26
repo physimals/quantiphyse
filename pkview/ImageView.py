@@ -16,6 +16,7 @@ import weakref
 
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
+from PIL import Image, ImageDraw
 
 from .volumes.io import QpVolume
 from .utils import get_icon
@@ -135,14 +136,17 @@ class PickMode:
     """ Select rectangular regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
     RECT = 3
 
+    """ Select elliptical regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
+    ELLIPSE = 4
+
     """ Polygon lasso. pick_points contains line segment ends. Use get_pick_roi to get full set """
-    LASSO = 4
+    LASSO = 5
     
     """ Like LASSO but holding mouse down for continual freehand drawing."""
-    FREEHAND = 5
+    FREEHAND = 6
     
     """ Pick an ROI region. pick_points contains a single point. get_pick_roi gets the full region"""
-    ROI_REGION = 6
+    ROI_REGION = 7
 
 class Picker:
     def __init__(self, iv):
@@ -169,6 +173,7 @@ class PointPicker(Picker):
 
     def add_point(self, pos, win):
         self.points[self.col] = [tuple(pos),]
+        self.point = tuple(pos)
         self.iv.sig_sel_changed.emit(self)
 
 class MultiPicker(PointPicker):
@@ -192,7 +197,9 @@ class LassoPicker(Picker):
 
     def __init__(self, iv):
         Picker.__init__(self, iv)
+        self.roisel = None
         self.points = []
+        self.view = None
 
     def add_point(self, pos, win):
         if self.win is None: 
@@ -201,101 +208,176 @@ class LassoPicker(Picker):
             self.view = self.iv.win[self.win]
             self.view.vb.addItem(self.roisel)
         
-        self.points.append((float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5))
-        #print(self.points)
+        fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
+        self.points.append((fx, fy))
+
         self.roisel.setPoints(self.points)
 
-    def get_roi(self):
+    def get_roi(self, label=1):
         """ Get the selected points as an ROI"""
-        shape = self.view.img.image.shape
-        data = np.ones(shape)
-        ox = int(min(p[0] for p in self.points))
-        oy = int(min(p[1] for p in self.points))
-        
-        print(self.roisel.getArraySlice(data, self.view.img))
-        roi_slice = self.roisel.getArrayRegion(data, self.view.img)
+        if self.win is None: return None    
 
+        w, h = self.iv.ivm.shape[self.view.xaxis], self.iv.ivm.shape[self.view.yaxis]
+        img = Image.new('L', (w, h), 0)
+        ImageDraw.Draw(img).polygon(self.points, outline=label, fill=label)
+        
         ret = np.zeros(self.view.ivm.shape[:3])
+        slice_mask = np.array(img).view(QpVolume).T
         slices = [slice(None)] * 3
-        for ax in range(3):
-            if ax == self.view.xaxis:
-                slices[ax] = slice(ox, ox+roi_slice.shape[0])
-            elif ax == self.view.yaxis:
-                slices[ax] = slice(oy, oy+roi_slice.shape[1])
-            else:
-                slices[ax] = self.view.ivm.cim_pos[ax]
-        print(slices)
-        ret[slices] = roi_slice
+        slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
+        ret[slices] = slice_mask
         return ret
 
     def cleanup(self):
-        if self.win is not None: 
-            self.iv.win[self.win].vb.removeItem(self.roisel)
+        if self.view is not None: 
+            self.view.vb.removeItem(self.roisel)
         
-class FreehandPicker(LassoPicker): 
+class RectPicker(LassoPicker): 
 
     def __init__(self, iv):
-        Picker.__init__(self, iv)
-        self.points = []
+        LassoPicker.__init__(self, iv)
 
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
             self.view = self.iv.win[self.win]
+        
+        fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
+        self.points.append((fx, fy))
+
+        if self.roisel is None: 
+            self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 0))
             self.view.vb.addItem(self.roisel)
-            self.view.dragging = True
+            self.ox, self.oy = fx, fy
+        else:
+            sx, sy = fx-self.ox, fy-self.oy
+            self.roisel.setSize((sx, sy))
+            
+        self.points = [(self.ox, self.oy), (self.ox, fy), (fx, fy), (fx, self.oy)]
 
-        self.points.append((pos[self.view.xaxis], pos[self.view.yaxis]))
-        #print(self.points)
-        self.roisel.setPoints(self.points)
+class EllipsePicker(LassoPicker): 
 
+    def __init__(self, iv):
+        LassoPicker.__init__(self, iv)
+
+    def add_point(self, pos, win):
+        if self.win is None: 
+            self.win = win
+            self.view = self.iv.win[self.win]
+        
+        fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
+        self.points.append((fx, fy))
+
+        if self.roisel is None: 
+            self.roisel = pg.EllipseROI((fx, fy), (1, 1), pen=(255, 0, 0))
+            self.view.vb.addItem(self.roisel)
+            self.ox, self.oy = fx, fy
+        else:
+            sx, sy = fx-self.ox, fy-self.oy
+            if sx == 0: sx = 1
+            if sy == 0: sy = 1
+            self.roisel.setSize((sx, sy))
+            
+        self.points = [min(self.ox, fx), min(self.oy, fy), max(self.ox, fx), max(self.oy, fy)]
+
+    def get_roi(self, label=1):
+        """ Get the selected points as an ROI"""
+        if self.win is None: return None    
+
+        w, h = self.iv.ivm.shape[self.view.xaxis], self.iv.ivm.shape[self.view.yaxis]
+        img = Image.new('L', (w, h), 0)
+        ImageDraw.Draw(img).ellipse([int(p) for p in self.points], outline=label, fill=label)
+        
+        ret = np.zeros(self.view.ivm.shape[:3])
+        slice_mask = np.array(img).view(QpVolume).T
+        slices = [slice(None)] * 3
+        slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
+        ret[slices] = slice_mask
+        return ret
+
+class FreehandPicker(LassoPicker): 
+
+    def __init__(self, iv):
+        LassoPicker.__init__(self, iv)
+        self.path = None
+        self.pathitem = None
+
+    def add_point(self, pos, win):
+        if self.win is None: 
+            self.win = win
+            self.view = self.iv.win[self.win]
+            
+        fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
+        self.points.append((fx, fy))
+
+        if self.roisel is None: 
+            self.roisel = QtGui.QGraphicsPathItem()
+            self.view.vb.addItem(self.roisel)
+            self.path = QtGui.QPainterPath(QtCore.QPointF(fx, fy))
+        else:
+            self.path.lineTo(fx, fy)
+        self.roisel.setPath(self.path)
+        
 PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.MULTIPLE : MultiPicker,
            PickMode.LASSO : LassoPicker,
+           PickMode.RECT : RectPicker,
+           PickMode.ELLIPSE : EllipsePicker,
            PickMode.FREEHAND : FreehandPicker
            }
+
+class DragMode:
+    DEFAULT = 0
+    PICKER_DRAG = 1
 
 class DataView:
     """
     View of a data item, storing details about visual parameters, e.g.
     color map and min/max range for color mapping
     """
-    def __init__(self, data):
-        self.data = data
-        self.data_roi = data
+    def __init__(self, ivm, ov_name):
+        self.ivm = ivm
+        self.ov_name = ov_name
         self.cmap = "jet"
         self.visible = True
         self.alpha = 255
         self.roi_only = False
-        self.cmap_range = data.range
+        self.cmap_range = self.data().range
 
-    def set_roi(self, roi):
-        if self.roi_only and roi is not None:
+    def data(self):
+        if self.roi_only and self.ivm.current_roi is not None:
             # Restrict to data within ROI
-            self.data_roi = np.copy(self.data).view(QpVolume)
-            if self.data.ndim == 4:
-                roi = np.expand_dims(roi, 3).repeat(self.data.shape[3], 3)
+            roi = self.ivm.current_roi
+            data = self.ivm.overlays[self.ov_name]
+            data_in_roi = np.copy(data).view(QpVolume)
+            if data.ndim == 4:
+                roi = np.expand_dims(roi, 3).repeat(data.shape[3], 3)
 
-            within_roi =self.data_roi[np.array(roi, dtype=bool)]
+            within_roi = data_in_roi[np.array(roi, dtype=bool)]
             range_roi = [np.min(within_roi), np.max(within_roi)]
             # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
             # FIXME what if range is zero?
             roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
-            self.data_roi[np.logical_not(roi)] = roi_fillvalue
+            data_in_roi[np.logical_not(roi)] = roi_fillvalue
+            return data_in_roi
         else:
-            self.data_roi = self.data
+            return self.ivm.overlays[self.ov_name]
+
 
 class RoiView:
     """
     View of an ROI, storing details about visual parameters, e.g. contour plotting
     """
-    def __init__(self, roi):
-        self.roi = roi
+    def __init__(self, ivm, roi_name):
+        self.ivm = ivm
+        self.roi_name = roi_name
         #self.cmap = "jet"
         self.shade = True
         self.contour = False
         self.alpha = 150
+
+    def roi(self):
+        return self.ivm.rois[self.roi_name]
 
 class OrthoView(pg.GraphicsView):
     """
@@ -314,7 +396,6 @@ class OrthoView(pg.GraphicsView):
         self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
         self.dragging = False
-        self.drag_mode = False
         self.contours = []
         self.arrows = []
 
@@ -406,7 +487,7 @@ class OrthoView(pg.GraphicsView):
         if roiview is None:
             self.img_roi.setImage(np.zeros((1, 1)))
         else:
-            roidata = roiview.roi
+            roidata = roiview.roi()
             z = 0
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
 
@@ -453,7 +534,7 @@ class OrthoView(pg.GraphicsView):
         if oview is None or not oview.visible:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
-            ovdata = oview.data_roi
+            ovdata = oview.data()
             z = 1
             if self.iv.opts.display_order  == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
@@ -500,7 +581,7 @@ class OrthoView(pg.GraphicsView):
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
         if event.button() == QtCore.Qt.LeftButton:
-            self.dragging = self.drag_mode
+            self.dragging = (self.iv.drag_mode == DragMode.PICKER_DRAG)
             
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
@@ -540,11 +621,12 @@ class OrthoView(pg.GraphicsView):
             self.sig_maxmin.emit(self.zaxis)
 
     def mouseMoveEvent(self, event):
+        #print("move")
         if self.dragging:
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            #print(mx, my)
+            #print("drag", mx, my)
             pos = self.ivm.cim_pos[:]
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
@@ -781,6 +863,7 @@ class ImageView(QtGui.QSplitter):
         self.setStretchFactor(1, 1)
 
         self.picker = PointPicker(self) 
+        self.drag_mode = DragMode.DEFAULT
 
     def view_options(self):
         self.opts.show()
@@ -803,9 +886,10 @@ class ImageView(QtGui.QSplitter):
         # FIXME should this be a signal from IVM?
         self.sig_focus_changed.emit(pos)
 
-    def set_picker(self, pickmode):
+    def set_picker(self, pickmode, drag_mode = DragMode.DEFAULT):
         self.picker.cleanup()
         self.picker = PICKERS[pickmode](self)
+        self.drag_mode = drag_mode
         
     def max_min(self, win):
         """ Maximise/Minimise view window """
@@ -888,11 +972,9 @@ class ImageView(QtGui.QSplitter):
 
             if roi.name not in self.roi_views:
                 # Create an ROI view if we don't already have one for this ROI
-                self.roi_views[roi.name] = RoiView(roi)
+                self.roi_views[roi.name] = RoiView(self.ivm, roi.name)
             self.current_roi_view = self.roi_views[roi.name]
 
-        if self.current_data_view is not None: 
-            self.current_data_view.set_roi(roi)
         self.update_view_widgets()
         self.update_ortho_views()
 
@@ -944,16 +1026,14 @@ class ImageView(QtGui.QSplitter):
 
             if ov.name not in self.data_views:
                 # Create a data view if we don't already have one for this overlay
-                self.data_views[ov.name] = DataView(ov)
+                self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
             if self.current_data_view is not None:
                 # Update the view parameters from the existing overlay and free the within-ROI data
                 self.current_data_view.cmap_range = self.h2.region.getRegion()
                 self.current_data_view.cmap = self.h2.cmap_name
-                self.current_data_view.set_roi(None)
 
             self.current_data_view = self.data_views[ov.name]
-            self.current_data_view.set_roi(self.ivm.current_roi)
             self.update_view_widgets()
         else:
             self.overlay_combo.setCurrentIndex(-1)
@@ -976,7 +1056,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data_roi)
+            self.h2.setSourceData(self.current_data_view.data())
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 
@@ -1003,13 +1083,14 @@ class ImageView(QtGui.QSplitter):
 
     def update_slider_range(self):
         try:
-            self.sld1.blockSignals(True)
-            self.sld2.blockSignals(True)
-            self.sld3.blockSignals(True)
-            self.sld4.blockSignals(True)
-            self.sld1.setRange(0, self.ivm.shape[2]-1)
-            self.sld2.setRange(0, self.ivm.shape[0]-1)
-            self.sld3.setRange(0, self.ivm.shape[1]-1)
+            if len(self.ivm.shape) >= 3:
+                self.sld1.blockSignals(True)
+                self.sld2.blockSignals(True)
+                self.sld3.blockSignals(True)
+                self.sld4.blockSignals(True)
+                self.sld1.setRange(0, self.ivm.shape[2]-1)
+                self.sld2.setRange(0, self.ivm.shape[0]-1)
+                self.sld3.setRange(0, self.ivm.shape[1]-1)
             if len(self.ivm.shape) == 4:
                 self.sld4.setRange(0, self.ivm.shape[3]-1)
             else:
