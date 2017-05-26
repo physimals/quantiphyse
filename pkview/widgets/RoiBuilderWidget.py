@@ -5,6 +5,8 @@ Copyright (c) 2017 University of Oxford
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
+import collections
+
 import numpy as np
 from PySide import QtCore, QtGui
 
@@ -28,6 +30,7 @@ class Tool:
 
     def interface(self):
         grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0)
         return grid
 
 class PolygonTool(Tool):
@@ -39,37 +42,22 @@ class PolygonTool(Tool):
         self.ivl.set_picker(PickMode.LASSO)
 
     def interface(self):
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Click to add vertices"), 0, 0)
-
+        grid = Tool.interface(self)
         btn = QtGui.QPushButton("Add")
         btn.clicked.connect(self.done)
         grid.addWidget(btn, 1, 0)
         btn = QtGui.QPushButton("Discard")
         btn.clicked.connect(self.selected)
         grid.addWidget(btn, 1, 1)
-
         return grid
 
     def done(self):
         slice_zaxis = self.ivl.picker.view.zaxis
         slice_z = self.ivm.cim_pos[slice_zaxis]
+        print(self.label)
         roi_new = self.ivl.picker.get_roi(self.label)
-        if roi_new is None: return
-
-        if self.new_roi_name not in self.ivm.rois:
-            self.ivm.add_roi(self.new_roi_name, roi_new, make_current=True)
-        else:
-            roi_orig = self.ivm.rois[self.new_roi_name]
-            slices = [slice(None)] * 3
-            slices[slice_zaxis] = slice_z
-            slice_orig = roi_orig[slices]
-            slice_new = roi_new[slices]
-            slice_orig[slice_new > 0] = slice_new[slice_new > 0]
-            roi_orig[slices] = slice_orig
-            self.ivm.add_roi(self.new_roi_name, roi_orig, make_current=True)
-
+        self.builder.add_roi(slice_zaxis, slice_z, roi_new)
+        
         self.selected()
 
 class EraserTool(Tool):
@@ -94,14 +82,14 @@ class PickTool(Tool):
         Tool.__init__(self, "Pick", "Pick regions of an existing ROI")
 
     def interface(self):
-        grid = QtGui.QGridLayout()
+        grid = Tool.interface(self)
 
-        grid.addWidget(QtGui.QLabel("Existing ROI"), 0, 0)
+        grid.addWidget(QtGui.QLabel("Existing ROI"), 1, 0)
         combo = QtGui.QComboBox()
         for key in self.ivm.rois:
             combo.addItem(key)
         combo.currentIndexChanged.connect(self.existing_roi_changed)
-        grid.addWidget(combo, 0, 1)
+        grid.addWidget(combo, 1, 1)
 
         return grid
 
@@ -112,12 +100,10 @@ class PickTool(Tool):
 
 class PenTool(PolygonTool):
     def __init__(self):
-        Tool.__init__(self, "Pen", "Select regions by freehand drawing")
+        Tool.__init__(self, "Pen", "Draw around ROI region")
 
     def interface(self):
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Click and drag to encircle ROI region"), 0, 0)
+        grid = Tool.interface(self)
 
         btn = QtGui.QPushButton("Add")
         btn.clicked.connect(self.done)
@@ -133,12 +119,10 @@ class PenTool(PolygonTool):
      
 class RectTool(PolygonTool):
     def __init__(self):
-        Tool.__init__(self, "Rectangle", "Select rectangular regions")
+        Tool.__init__(self, "Rectangle", "Click and drag to select rectangular region")
 
     def interface(self):
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Click and drag to define rectangular ROI"), 0, 0)
+        grid =  Tool.interface(self)
 
         btn = QtGui.QPushButton("Add")
         btn.clicked.connect(self.done)
@@ -154,12 +138,10 @@ class RectTool(PolygonTool):
         
 class EllipseTool(PolygonTool):
     def __init__(self):
-        Tool.__init__(self, "Ellipse", "Select elliptical regions")
+        Tool.__init__(self, "Ellipse", "Click and drag to select elliptical region")
 
     def interface(self):
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Click and drag to define circular or elliptical ROI"), 0, 0)
+        grid  = Tool.interface(self)
 
         btn = QtGui.QPushButton("Add")
         btn.clicked.connect(self.done)
@@ -177,7 +159,7 @@ class CrosshairsTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Crosshairs", "Navigate data without adding to ROI")
 
-TOOLS = [CrosshairsTool(), RectTool(), EllipseTool(), PolygonTool(), EraserTool(), PenTool(), PickTool()]
+TOOLS = [CrosshairsTool(), RectTool(), EllipseTool(), PolygonTool(), EraserTool(), PenTool()]
 
 class RoiBuilderWidget(PkWidget):
     """
@@ -186,6 +168,7 @@ class RoiBuilderWidget(PkWidget):
 
     def __init__(self, **kwargs):
         super(RoiBuilderWidget, self).__init__(name="ROI Builder", icon="roi_builder", desc="Build ROIs", **kwargs)
+        self.history = collections.deque(maxlen=10)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -211,6 +194,7 @@ class RoiBuilderWidget(PkWidget):
         grid.addWidget(QtGui.QLabel("ROI name"), 0, 0)
         self.name_edit = QtGui.QLineEdit("ROI_BUILDER")
         self.name_edit.editingFinished.connect(self.name_changed)
+        self.new_roi_name = self.name_edit.text()
         grid.addWidget(self.name_edit, 0, 1)
 
         grid.addWidget(QtGui.QLabel("Current label"), 1, 0)
@@ -218,6 +202,10 @@ class RoiBuilderWidget(PkWidget):
         self.label_spin.setMinimum(1)
         self.label_spin.valueChanged.connect(self.label_changed)
         grid.addWidget(self.label_spin, 1, 1)
+
+        undo_btn = QtGui.QPushButton("Undo last change")
+        undo_btn.clicked.connect(self.undo)
+        grid.addWidget(undo_btn, 2, 0)
 
         hbox.addWidget(optbox)
         hbox.addStretch(1)
@@ -231,7 +219,7 @@ class RoiBuilderWidget(PkWidget):
         toolbox.setLayout(self.tools_grid)
 
         self.tool = None
-        x, y, cols = 0, 0, 4
+        x, y, cols = 0, 0, 6
         for tool in TOOLS:
             self.add_tool(tool, y, x)
             x += 1
@@ -268,6 +256,7 @@ class RoiBuilderWidget(PkWidget):
         tool.ivl = self.ivl
         tool.label = self.label_spin.value()
         tool.new_roi_name = self.name_edit.text()
+        tool.builder = self
         btn = QtGui.QPushButton()
         btn.setIcon(QtGui.QIcon(get_icon(tool.name.lower())))
         btn.setToolTip(tool.tooltip)
@@ -297,6 +286,31 @@ class RoiBuilderWidget(PkWidget):
             self.tool.label = label
         
     def name_changed(self, name):
+        self.new_roi_name = name
         if self.tool is not None:
             self.tool.new_roi_name = name
-        
+      
+    def add_roi(self, axis, pos, roi_new):
+        if self.new_roi_name not in self.ivm.rois:
+            self.ivm.add_roi(self.new_roi_name, np.zeros(self.ivm.shape[:3]), make_current=True)
+    
+        roi_orig = self.ivm.rois[self.new_roi_name]
+        slices = [slice(None)] * 3
+        slices[axis] = pos
+        slice_orig = roi_orig[slices]
+        slice_new = roi_new[slices]
+        self.history.append((self.new_roi_name, axis, pos, np.copy(slice_orig)))
+        slice_orig[slice_new > 0] = slice_new[slice_new > 0]
+        roi_orig[slices] = slice_orig
+        self.ivm.add_roi(self.new_roi_name, roi_orig, make_current=True)
+
+    def undo(self):
+        if len(self.history) == 0: return
+
+        roi_name, axis, pos, roi_slice_orig = self.history.pop()
+        if roi_name  in self.ivm.rois:
+            slices = [slice(None)] * 3
+            slices[axis] = pos
+            self.ivm.rois[roi_name][slices] = roi_slice_orig
+            self.ivm.add_roi(roi_name, self.ivm.rois[roi_name])
+  
