@@ -15,7 +15,7 @@ from ..analysis.pk import PkModellingProcess
 from ..analysis.t10 import T10Process
 from ..analysis.sv import SupervoxelsProcess
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
-from ..analysis.kmeans import KMeansPCAProcess
+from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 
 from ..volumes.volume_management import ImageVolumeManagement
 from ..volumes.io import load, save
@@ -32,6 +32,7 @@ processes = {"Fabber"      : FabberProcess,
              "RadialProfile" : RadialProfileProcess,
              "Histogram" : HistogramProcess,
              "KMeansPCA"   : KMeansPCAProcess,
+             "KMeans3D"   : KMeans3DProcess,
              "SimpleMaths" : SimpleMathsProcess}
 
 def run_batch(batchfile):

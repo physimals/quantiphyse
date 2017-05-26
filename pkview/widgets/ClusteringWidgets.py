@@ -12,7 +12,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from sklearn.metrics import pairwise
 
-from ..QtInherit import HelpButton
+from ..QtInherit import HelpButton, BatchButton
 from ..QtInherit.dialogs import error_dialog
 from ..analysis.kmeans import KMeansPCAProcess
 from . import PkWidget
@@ -27,11 +27,11 @@ class CurveClusteringWidget(PkWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
-        bhelp = HelpButton(self, "curve_cluster")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
-        lhelp.addWidget(bhelp)
+        lhelp.addWidget(BatchButton(self))
+        lhelp.addWidget(HelpButton(self, "curve_cluster"))
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
 
@@ -161,6 +161,17 @@ class CurveClusteringWidget(PkWidget):
     def deactivate(self):
         self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
+    def batch_options(self):
+        options = {
+                "n-clusters" : self.combo.value(),
+                "norm-data" : True,
+                "n-pca" : self.combo2.value(),
+                "reduction" : "pca",
+                "invert-roi" : False,
+                "output-name" : "clusters"
+            }
+        return "KMeansPCA", options
+
     def run_clustering(self):
         """
         Run kmeans clustering using normalised PCA modes
@@ -178,15 +189,7 @@ class CurveClusteringWidget(PkWidget):
         self.b1.setDisabled(1)
 
         try:
-            options = {
-                "n-clusters" : self.combo.value(),
-                "norm-data" : True,
-                "n-pca" : self.combo2.value(),
-                "reduction" : "pca",
-                "invert-roi" : False,
-                "output-name" : "clusters"
-            }
-            self.process.run(options)
+            self.process.run(self.batch_options()[1])
             self.update_voxel_count()
             self._plot()
         finally:

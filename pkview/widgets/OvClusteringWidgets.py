@@ -11,7 +11,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from ..QtInherit.dialogs import error_dialog
-from ..QtInherit import HelpButton
+from ..QtInherit import HelpButton, BatchButton
 from ..analysis.kmeans import KMeans3DProcess
 from . import PkWidget
 
@@ -31,11 +31,11 @@ class OvCurveClusteringWidget(PkWidget):
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Clustering of the current overlay </font>")
-        bhelp = HelpButton(self, "overlay_cluster")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title1)
         lhelp.addStretch(1)
-        lhelp.addWidget(bhelp)
+        lhelp.addWidget(BatchButton(self))
+        lhelp.addWidget(HelpButton(self, "overlay_cluster"))
 
         # Run clustering button
         self.b1 = QtGui.QPushButton('Run', self)
@@ -128,6 +128,14 @@ class OvCurveClusteringWidget(PkWidget):
     def focus_changed(self, pos):
         self.update_voxel_count()
 
+    def batch_options(self):
+        options = {
+                "n-clusters" : self.combo.value(),
+                "invert-roi" : False,
+                "output-name" : "overlay-clusters"
+            }
+        return "KMeans3D", options
+
     def run_clustering(self):
         """
         Run kmeans clustering on an overlay
@@ -153,12 +161,7 @@ class OvCurveClusteringWidget(PkWidget):
         self.b1.setDisabled(1)
 
         try:
-            options = {
-                "n-clusters" : self.combo.value(),
-                "invert-roi" : False,
-                "output-name" : "overlay-clusters"
-            }
-            self.process.run(options)
+            self.process.run(self.batch_options()[1])
             self.update_voxel_count()
         finally:
             # enable button again
