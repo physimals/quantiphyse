@@ -18,7 +18,7 @@ from scipy.interpolate import UnivariateSpline
 from . import PkWidget
 from ..ImageView import PickMode
 from ..utils import get_icon, copy_table
-from ..QtInherit import HelpButton
+from ..QtInherit import HelpButton, BatchButton
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
@@ -627,6 +627,7 @@ class RoiAnalysisWidget(PkWidget):
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
         hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
 
@@ -655,6 +656,9 @@ class RoiAnalysisWidget(PkWidget):
     def deactivate(self):
         self.ivm.sig_current_roi.disconnect(self.update)
         self.ivm.sig_all_rois.disconnect(self.update)
+
+    def batch_options(self):
+        return "CalcVolumes", {}
 
     def update(self):
         self.process.run({"no-artifact" : True})

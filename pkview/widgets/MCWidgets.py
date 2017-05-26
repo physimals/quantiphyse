@@ -5,7 +5,7 @@ import numpy as np
 from PySide import QtGui
 
 from ..QtInherit import HelpButton
-from ..QtInherit.dialogs import LogViewerDialog
+from ..QtInherit.dialogs import TextViewerDialog
 from ..analysis import Process
 from ..analysis.reg import RegProcess, McflirtProcess
 from . import PkWidget
@@ -403,7 +403,7 @@ class RegWidget(PkWidget):
         self.progress.setValue(100*complete)
 
     def view_log(self):
-        self.logview = LogViewerDialog(self, title="Registration Log", log=self.log)
+        self.logview = TextViewerDialog(self, title="Registration Log", text=self.log)
         self.logview.show()
         self.logview.raise_()
  

@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore
 
 from ..utils import get_icon
+from .dialogs import error_dialog, TextViewerDialog
 
 class HelpButton(QtGui.QPushButton):
     """
@@ -15,13 +16,12 @@ class HelpButton(QtGui.QPushButton):
         self.link = base + section
         self.setToolTip("Online Help")
 
-        b1icon = QtGui.QIcon(get_icon("question-mark"))
-        self.setIcon(b1icon)
+        icon = QtGui.QIcon(get_icon("question-mark"))
+        self.setIcon(icon)
         self.setIconSize(QtCore.QSize(14, 14))
 
         self.clicked.connect(self.click_link)
 
-    @QtCore.Slot()
     def click_link(self):
         """
         Provide a clickable link to help files
@@ -29,3 +29,32 @@ class HelpButton(QtGui.QPushButton):
         :return:
         """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(self.link, QtCore.QUrl.TolerantMode))
+
+class BatchButton(QtGui.QPushButton):
+    """
+    A button for online help
+    """
+
+    def __init__(self, widget):
+        super(BatchButton, self).__init__(widget)
+        self.widget = widget
+        
+        icon = QtGui.QIcon(get_icon("batch"))
+        self.setIcon(icon)
+        self.setIconSize(QtCore.QSize(14, 14))
+
+        self.setToolTip("Show batch mode options for this widget")
+
+        self.clicked.connect(self.show_batch_options)
+        
+    def show_batch_options(self):
+        """
+        Show a dialog box containing the batch options supplied by the parent
+        """
+        if hasattr(self.widget, "batch_options"):
+            proc_name, opts = self.widget.batch_options()
+            text = "  - %s:\n" % proc_name
+            text += "\n".join(["  %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+            TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
+        else:
+            error_dialog("This widget does not provide a list of batch options")
