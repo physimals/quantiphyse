@@ -14,9 +14,9 @@
    width="100%"
    height="100%"
    sodipodi:docname="crosshairs.svg"
-   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/pick.png"
-   inkscape:export-xdpi="1.7258519"
-   inkscape:export-ydpi="1.7258519">
+   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/crosshairs.png"
+   inkscape:export-xdpi="1.6900001"
+   inkscape:export-ydpi="1.6900001">
   <metadata
      id="metadata3035">
     <rdf:RDF>
@@ -25,7 +25,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -116,8 +116,8 @@
      id="namedview3031"
      showgrid="false"
      inkscape:zoom="0.13169643"
-     inkscape:cx="-2912"
-     inkscape:cy="896.00004"
+     inkscape:cx="-4316.7458"
+     inkscape:cy="896.00005"
      inkscape:window-x="65"
      inkscape:window-y="24"
      inkscape:window-maximized="1"
