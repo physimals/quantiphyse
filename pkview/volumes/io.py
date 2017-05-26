@@ -263,7 +263,8 @@ class QpVolume(np.ndarray):
         Get the colour look up table for the ROI.
         """
         cmap = getattr(cm, 'jet')
-        mx = max(self.regions)
+        if len(self.regions) == 0: mx = 1
+        else: mx = max(self.regions)
         lut = [[int(255 * rgb1) for rgb1 in cmap(float(v)/mx)[:3]] for v in range(mx+1)]
         lut = np.array(lut, dtype=np.ubyte)
 
