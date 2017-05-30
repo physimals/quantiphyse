@@ -48,3 +48,12 @@ def copy_table(tabmod):
     clipboard = QtGui.QApplication.clipboard()
     tsv = table_to-str(tabmod)
     clipboard.setText(tsv)
+
+def get_col(cmap, idx, out_of):
+    """ Get RGB color for an index within a range, using a Matplotlib colour map """
+    if out_of == 0: 
+        return [255, 0, 0]
+    else:
+        return [int(255 * rgbf) for rgbf in cmap(float(idx)/out_of)[:3]]
+
+    return lut
