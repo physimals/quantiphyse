@@ -568,10 +568,15 @@ class MainWindow(QtGui.QMainWindow):
         load_roi_action.triggered.connect(self.load_roi)
 
         # File --> Save Overlay
-        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save Current Overlay', self)
-        save_ovreg_action.setStatusTip('Save Current Overlay as a nifti file')
+        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current Overlay', self)
+        save_ovreg_action.setStatusTip('Save current Overlay as a NIFTI file')
         save_ovreg_action.triggered.connect(self.save_overlay)
         save_ovreg_action.setShortcut('Ctrl+S')
+
+        # File --> Save ROI
+        save_roi_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current ROI', self)
+        save_roi_action.setStatusTip('Save current ROI as a NIFTI file')
+        save_roi_action.triggered.connect(self.save_roi)
 
         # File --> Exit
         exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
@@ -603,6 +608,7 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(load_action)
         file_menu.addAction(load_roi_action)
         file_menu.addAction(save_ovreg_action)
+        file_menu.addAction(save_roi_action)
         file_menu.addAction(exit_action)
 
         for w in self.widgets:
@@ -797,8 +803,21 @@ class MainWindow(QtGui.QMainWindow):
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
                 save(self.ivm.current_overlay, fname)
-            else:
-                print('Warning: No file selected')
+            else: # Cancelled
+                pass
+
+    def save_roi(self):
+        """
+        Dialog for saving an ROI as a nifti file
+        """
+        if self.ivm.current_roi is None:
+            QtGui.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtGui.QMessageBox.Close)
+        else:
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
+            if fname != '':
+                save(self.ivm.current_roi, fname)
+            else: # Cancelled
+                pass
 
     def load_vol(self):
         self.load_data(ftype="DATA")
