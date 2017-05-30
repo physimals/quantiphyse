@@ -342,7 +342,8 @@ class DataView:
         self.visible = True
         self.alpha = 255
         self.roi_only = False
-        self.cmap_range = self.data().range
+        d = self.data()
+        self.cmap_range = [d.min(), d.max()]
 
     def data(self):
         if self.roi_only and self.ivm.current_roi is not None:
@@ -635,6 +636,42 @@ class OrthoView(pg.GraphicsView):
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
+class OvLevelsDialog(QtGui.QDialog):
+
+    def __init__(self, parent, dv, hist):
+        super(OvLevelsDialog, self).__init__(parent)
+        self.dv = dv
+        self.hist = hist
+
+        self.setWindowTitle("Levels for %s" % dv.ov_name)
+        vbox = QtGui.QVBoxLayout()
+
+        grid = QtGui.QGridLayout()
+        self.add_spin(grid, "Minimum", 0)
+        self.add_spin(grid, "Maximum", 1)   
+        vbox.addLayout(grid)
+
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.close)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
+    
+    def add_spin(self, grid, label, row):
+        grid.addWidget(QtGui.QLabel(label), row, 0)
+        spin = QtGui.QDoubleSpinBox()
+        spin.setMaximum(1e20)
+        spin.setMinimum(-1e20)
+        spin.setValue(self.dv.cmap_range[row])
+        spin.valueChanged.connect(self.val_changed(row))
+        grid.addWidget(spin, row, 1)
+
+    def val_changed(self, row):
+        def val_changed(val):
+            self.dv.cmap_range[row] = val
+            self.hist.region.setRegion(self.dv.cmap_range)
+        return val_changed
+
 class ImageView(QtGui.QSplitter):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
@@ -756,6 +793,7 @@ class ImageView(QtGui.QSplitter):
         self.ov_view_combo.addItem("None")
         grid.addWidget(self.ov_view_combo, 1, 1)
         grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
+        hbox = QtGui.QHBoxLayout()
         self.ov_cmap_combo = QtGui.QComboBox()
         self.ov_cmap_combo.addItem("jet")
         self.ov_cmap_combo.addItem("hot")
@@ -763,7 +801,13 @@ class ImageView(QtGui.QSplitter):
         self.ov_cmap_combo.addItem("flame")
         self.ov_cmap_combo.addItem("bipolar")
         self.ov_cmap_combo.addItem("spectrum")
-        grid.addWidget(self.ov_cmap_combo, 2, 1)
+        hbox.addWidget(self.ov_cmap_combo)
+        self.ov_levels_btn = QtGui.QPushButton()
+        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels")))
+        self.ov_levels_btn.setFixedSize(16, 16)
+        self.ov_levels_btn.clicked.connect(self.show_ov_levels)
+        hbox.addWidget(self.ov_levels_btn)
+        grid.addLayout(hbox, 2, 1)
         grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
         self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -869,6 +913,10 @@ class ImageView(QtGui.QSplitter):
         self.opts.show()
         self.opts.raise_()
         
+    def show_ov_levels(self):
+        dlg = OvLevelsDialog(self, self.current_data_view, self.h2)
+        dlg.exec_()
+
     def view_focus(self, pos, win, is_click):
         if self.picker.win is not None and win != self.picker.win:
             # Bit of a hack. Ban focus changes in other windows when we 
@@ -1030,7 +1078,7 @@ class ImageView(QtGui.QSplitter):
 
             if self.current_data_view is not None:
                 # Update the view parameters from the existing overlay and free the within-ROI data
-                self.current_data_view.cmap_range = self.h2.region.getRegion()
+                self.current_data_view.cmap_range = list(self.h2.region.getRegion())
                 self.current_data_view.cmap = self.h2.cmap_name
 
             self.current_data_view = self.data_views[ov.name]
