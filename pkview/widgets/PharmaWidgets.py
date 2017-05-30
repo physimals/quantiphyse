@@ -10,6 +10,7 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import time
 
 import numpy as np
+from matplotlib import cm
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
@@ -17,6 +18,7 @@ from ..QtInherit.dialogs import error_dialog
 from ..QtInherit import HelpButton
 from ..analysis import Process
 from ..analysis.pk import PkModellingProcess
+from ..utils import get_col
 from . import PkWidget
 
 class PharmaWidget(PkWidget):
@@ -148,23 +150,27 @@ class PharmaWidget(PkWidget):
             QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(output),
                                       QtGui.QMessageBox.Close)
 
-class PharmaView(PkWidget):
+class ModelCurves(PkWidget):
     """
-    View original data and generated signal curves side by side (just reverse the scale)
+    View original data and generated signal curves side by side
     """
 
     def __init__(self, **kwargs):
-        super(PharmaView, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="curve_view", **kwargs)
+        super(ModelCurves, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="curve_view", **kwargs)
 
     def init_ui(self):
+        self.cmap = getattr(cm, 'gist_rainbow')
+
         main_vbox = QtGui.QVBoxLayout()
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
         self.plot = win.addPlot(title="Model / Data Curves")
+        self.plot.addLegend()
         main_vbox.addWidget(win)
 
+        # Curve options
         hbox = QtGui.QHBoxLayout()
         opts_box = QtGui.QGroupBox()
         opts_box.setTitle('Curve options')
@@ -179,7 +185,7 @@ class PharmaView(PkWidget):
         self.norm_frames.setValue(3)
         self.norm_frames.setMinimum(1)
         self.norm_frames.setMaximum(100)
-        self.norm_frames.valueChanged.connect(self.replot_curves)
+        self.norm_frames.valueChanged.connect(self.update)
         self.norm_frames.setEnabled(False)
         hbox2.addWidget(self.norm_frames)
         hbox2.addWidget(QtGui.QLabel("frames as baseline"))
@@ -204,28 +210,22 @@ class PharmaView(PkWidget):
         main_vbox.addWidget(params_box)
 
         self.setLayout(main_vbox)
-
-        # initial plot colour
-        self.plot_color = (255, 0, 0)
-        self.plot_color2 = (0, 255, 0)
-
-        self.curve1 = None
     
     def activate(self):
-        self.ivl.sig_focus_changed.connect(self.replot_curves)
-        self.replot_curves()
+        self.ivl.sig_focus_changed.connect(self.update)
+        self.update()
 
     def deactivate(self):
-        self.ivl.sig_focus_changed.disconnect(self.replot_curves)
+        self.ivl.sig_focus_changed.disconnect(self.update)
 
     def options_changed(self, opts):
-        self.replot_curves()
+        self.update()
 
     def sig_enh_changed(self, opts):
         self.norm_frames.setEnabled(self.sig_en_cb.isChecked())
-        self.replot_curves()
+        self.update()
 
-    def replot_curves(self, pos=None):
+    def update(self, pos=None):
         self._plot()
         self._update_table()
 
@@ -234,6 +234,7 @@ class PharmaView(PkWidget):
         Set the overlay parameter values in the table based on the current point clicked
         """
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
+        self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
         for ii, ovl in enumerate(overlay_vals.keys()):
             if self.ivm.overlays[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
@@ -243,35 +244,30 @@ class PharmaView(PkWidget):
         """
         Plot the curve / curves
         """
+        self.plot.clear()
+        # Ugly and slow way to clear the legend but seems to be no better option
+        for sample, label in self.plot.legend.items:
+            self.plot.legend.removeItem(label.text)
+        
         sig, sig_ovl = self.ivm.get_current_enhancement()
 
-        values = np.array(sig, dtype=np.double)
-
-        # Setting x-values
+        # Get x scale
         xx = self.opts.t_scale
         frames1 = self.norm_frames.value()
-
-        if self.sig_en_cb.isChecked():
-            # Show signal enhancement for main data, rather than raw values
-            m1 = np.mean(values[:frames1])
-            if m1 != 0: values = values / m1 - 1
-
-        self.plot.clear()
-        self.curve1 = self.plot.plot(xx, values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-        self.curve2 = self.plot.plot(xx, values, pen=self.plot_color, width=4.0)
-
-        for ovl, sig_values in sig_ovl.items():
-            if self.sig_en_cb.isChecked():
-                m1 = np.mean(sig_values[:frames1])
-                if m1 != 0: sig_values = sig_values / m1 - 1
-            self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.plot.plot(xx, sig_values, pen=self.plot_color2, width=4.0)
+        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
         if self.sig_en_cb.isChecked():
             self.plot.setLabel('left', "Signal Enhancement")
         else:
             self.plot.setLabel('left', "Signal")
-        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-        #self.plot.setLogMode(x=False, y=False)
 
-
+        # Plot each data item
+        idx, n_ovls = 0, len(sig_ovl)
+        for ovl, sig_values in sig_ovl.items():
+            if self.sig_en_cb.isChecked():
+                # Show signal enhancement for main data, rather than raw values
+                m1 = np.mean(sig_values[:frames1])
+                if m1 != 0: sig_values = sig_values / m1 - 1
+            self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+            self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0, name=ovl)
+            idx += 1
