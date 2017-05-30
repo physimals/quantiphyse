@@ -38,7 +38,7 @@ from .ImageView import ImageView
 from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
-from .widgets.PharmaWidgets import PharmaWidget, PharmaView
+from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
@@ -463,7 +463,7 @@ class MainWindow(QtGui.QMainWindow):
         self.current_widget = None
         self.add_widget(OverviewWidget, default=True) 
         self.add_widget(SECurve, default=True)
-        self.add_widget(PharmaView) 
+        self.add_widget(ModelCurves) 
         self.add_widget(OverlayStatistics, default=True) 
         self.add_widget(RoiAnalysisWidget) 
         self.add_widget(SimpleMathsWidget) 
