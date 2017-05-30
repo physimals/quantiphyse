@@ -15,8 +15,8 @@
    height="100%"
    sodipodi:docname="levels.svg"
    inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/levels.png"
-   inkscape:export-xdpi="1.7"
-   inkscape:export-ydpi="1.7">
+   inkscape:export-xdpi="0.68000001"
+   inkscape:export-ydpi="0.68000001">
   <metadata
      id="metadata3035">
     <rdf:RDF>
@@ -25,7 +25,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -40,54 +40,45 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1546"
+     inkscape:window-width="1792"
      inkscape:window-height="771"
      id="namedview3031"
      showgrid="false"
      inkscape:zoom="0.13169643"
-     inkscape:cx="-1412.339"
-     inkscape:cy="896.00002"
-     inkscape:window-x="321"
+     inkscape:cx="-1030.9755"
+     inkscape:cy="896.00003"
+     inkscape:window-x="75"
      inkscape:window-y="201"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg3025" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 914.98305,-66.169439 0,1457.898339"
+     style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:173.72515869;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 1016.9831,-72.7457 0,1100"
      id="path4134"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="0.68000001"
+     inkscape:export-ydpi="0.68000001" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 1473.0847,-66.169439 0,1457.898339"
-     id="path4134-3"
-     inkscape:connector-curvature="0" />
-  <path
-     style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 356.88136,-66.169489 0,1457.898389"
+     style="fill:none;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:173.72515869;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 404.88136,-72.7457 0,1100"
      id="path4134-6"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="0.68000001"
+     inkscape:export-ydpi="0.68000001" />
   <rect
-     style="opacity:1;fill:none;fill-opacity:1;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     style="opacity:1;fill:none;fill-opacity:1;stroke:#e5e5e5;stroke-width:141.59992981;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect4157"
-     width="417.62711"
-     height="129.08475"
-     x="151.86443"
-     y="267.93222"
-     ry="1.26747" />
+     width="358.40005"
+     height="108.40007"
+     x="217.26439"
+     y="301.21695"
+     ry="1.0643692" />
   <rect
-     style="opacity:1;fill:none;fill-opacity:1;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     style="opacity:1;fill:none;fill-opacity:1;stroke:#e5e5e5;stroke-width:141.59992981;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect4157-5"
-     width="417.62711"
-     height="129.08475"
-     x="709.25427"
-     y="970.30505"
-     ry="1.26747" />
-  <rect
-     style="opacity:1;fill:none;fill-opacity:1;stroke:#e5e5e5;stroke-width:166.8;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="rect4157-3"
-     width="417.62711"
-     height="129.08475"
-     x="1262.644"
-     y="476.74573"
-     ry="1.26747" />
+     width="358.40005"
+     height="108.40007"
+     x="830.65424"
+     y="545.58978"
+     ry="1.0643692" />
 </svg>
