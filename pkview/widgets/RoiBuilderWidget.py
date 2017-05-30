@@ -203,9 +203,10 @@ class RoiBuilderWidget(PkWidget):
         self.label_spin.valueChanged.connect(self.label_changed)
         grid.addWidget(self.label_spin, 1, 1)
 
-        undo_btn = QtGui.QPushButton("Undo last change")
-        undo_btn.clicked.connect(self.undo)
-        grid.addWidget(undo_btn, 2, 0)
+        self.undo_btn = QtGui.QPushButton("Undo last change")
+        self.undo_btn.clicked.connect(self.undo)
+        self.undo_btn.setEnabled(False)
+        grid.addWidget(self.undo_btn, 2, 0)
 
         hbox.addWidget(optbox)
         hbox.addStretch(1)
@@ -313,4 +314,4 @@ class RoiBuilderWidget(PkWidget):
             slices[axis] = pos
             self.ivm.rois[roi_name][slices] = roi_slice_orig
             self.ivm.add_roi(roi_name, self.ivm.rois[roi_name])
-  
+        self.undo_btn.setEnabled(len(self.history) > 0)
