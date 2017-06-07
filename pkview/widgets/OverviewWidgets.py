@@ -66,7 +66,7 @@ class OverviewWidget(PkWidget):
             ok = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % self.vols.selected,
                                             QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             if ok:
-                if self.vols.selected_type == "Overlay":
+                if self.vols.selected_type.startswith("Overlay"):
                     self.ivm.delete_overlay(self.vols.selected)
                 elif self.vols.selected_type == "ROI":
                     self.ivm.delete_roi(self.vols.selected)
@@ -78,7 +78,7 @@ class OverviewWidget(PkWidget):
         if self.vols.selected is not None:
             text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % self.vols.selected, "New name")
             if result:
-                if self.vols.selected_type == "Overlay":
+                if self.vols.selected_type.startswith("Overlay"):
                     self.ivm.rename_overlay(self.vols.selected, text)
                 elif self.vols.selected_type == "ROI":
                     self.ivm.rename_roi(self.vols.selected, text)
@@ -133,13 +133,14 @@ class DataListWidget(QtGui.QTableWidget):
     def update_list(self, list1):
         try:
             self.blockSignals(True)
-            n = 1 + len(self.ivm.overlays) + len(self.ivm.rois)
+            n = len(self.ivm.overlays) + len(self.ivm.rois)
             self.setRowCount(n)
-            if self.ivm.vol is not None:
-                self.add_volume(0, "Main volume", self.ivm.vol)
-            row = 1
+            row = 0
             for ovl in self.ivm.overlays.values():
-                self.add_volume(row, "Overlay", ovl, self.ivm.is_current_overlay(ovl))
+                t = "Overlay"
+                if self.ivm.vol is not None and self.ivm.vol.name == ovl.name:
+                    t += "*"
+                self.add_volume(row, t, ovl, self.ivm.is_current_overlay(ovl))
                 row += 1
             for roi in self.ivm.rois.values():
                 self.add_volume(row, "ROI", roi, self.ivm.is_current_roi(roi))
@@ -150,7 +151,7 @@ class DataListWidget(QtGui.QTableWidget):
     def clicked(self, row, col):
         self.selected_type = self.item(row, 1).text()
         self.selected = self.item(row, 0).text()
-        if self.selected_type == "Overlay":
+        if self.selected_type.startswith("Overlay"):
             self.ivm.set_current_overlay(self.selected)
         elif self.selected_type == "ROI":
             self.ivm.set_current_roi(self.selected)
