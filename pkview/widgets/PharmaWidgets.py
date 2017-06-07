@@ -265,7 +265,6 @@ class ModelCurves(PkWidget):
         dmin, dmax, first = 0, 100, True
         for name in ovls:
             ovl = self.ivm.overlays[name]
-            print(ovl.name, ovl.min(), ovl.max())
             if first or ovl.min() < dmin: dmin = ovl.min()
             if first or ovl.max() > dmax: dmax = ovl.max()
             first = False
@@ -322,6 +321,7 @@ class ModelCurves(PkWidget):
                 # Show signal enhancement for main data, rather than raw values
                 m1 = np.mean(sig_values[:frames1])
                 if m1 != 0: sig_values = sig_values / m1 - 1
+            self.plot.legend.removeItem(ovl) # FIXME Hack to prevent multiple legend entries
             self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
             self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0, name=ovl)
             idx += 1
