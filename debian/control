@@ -1,11 +1,11 @@
-Source: pkview
+Source: quantiphyse
 Section: python
 Priority: extra
-Maintainer: Benjamin Irving <stuff@birving.com>
+Maintainer: Martin Craig <martin.craig@eng.ox.ac.uk>
 Build-Depends: debhelper (>= 9), python, python-all-dev, dh-virtualenv 
 Standards-Version: 3.9.5
 
-Package: pkview
+Package: quantiphyse
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python2.7-minimal | python2.6-minimal, ${misc:Pre-Depends}
 Depends: ${python:Depends}, ${misc:Depends}

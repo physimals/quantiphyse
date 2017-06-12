@@ -1,11 +1,11 @@
 [Desktop Entry]
-Version=0.15.2
-Name=PKView
+Version=0.36
+Name=Quantiphyse
 GenericName=PK modelling
 Comment=Visualisation of DCE-MRI
 Type=Application
 Categories=Education;Science;ImageProcessing;
-Exec=pkviewer2
+Exec=quantiphyse
 Terminal=false
 StartupNotify=true
-Icon=pkviewer2
+Icon=quantiphyse
