@@ -192,6 +192,33 @@ class ModelCurves(PkWidget):
         hbox2.addStretch(1)
         vbox.addLayout(hbox2)
 
+        # Y-axis scale
+        hbox2 = QtGui.QHBoxLayout()
+        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+        self.auto_y_cb.setChecked(True)
+        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
+        hbox2.addWidget(self.auto_y_cb)
+        self.min_lbl = QtGui.QLabel("Min")
+        self.min_lbl.setEnabled(False)
+        hbox2.addWidget(self.min_lbl)
+        self.min_spin = QtGui.QDoubleSpinBox()
+        self.min_spin.setMinimum(-1e20)
+        self.min_spin.setMaximum(1e20)
+        self.min_spin.valueChanged.connect(self.update)
+        self.min_spin.setEnabled(False)
+        hbox2.addWidget(self.min_spin)
+        self.max_lbl = QtGui.QLabel("Max")
+        self.max_lbl.setEnabled(False)
+        hbox2.addWidget(self.max_lbl)
+        self.max_spin = QtGui.QDoubleSpinBox()
+        self.max_spin.setMinimum(-1e20)
+        self.max_spin.setMaximum(1e20)
+        self.max_spin.valueChanged.connect(self.update)
+        self.max_spin.setEnabled(False)
+        hbox2.addWidget(self.max_spin)
+        hbox2.addStretch(1)
+        vbox.addLayout(hbox2)
+
         opts_box.setLayout(vbox)
         hbox.addWidget(opts_box)
         hbox.addStretch()
@@ -212,17 +239,38 @@ class ModelCurves(PkWidget):
         self.setLayout(main_vbox)
     
     def activate(self):
+        self.ivm.sig_all_overlays.connect(self.update_minmax)
         self.ivl.sig_focus_changed.connect(self.update)
-        self.update()
+        self.update_minmax(self.ivm.overlays.keys())
 
     def deactivate(self):
+        self.ivm.sig_all_overlays.disconnect(self.update_minmax)
         self.ivl.sig_focus_changed.disconnect(self.update)
 
     def options_changed(self, opts):
         self.update()
 
-    def sig_enh_changed(self, opts):
-        self.norm_frames.setEnabled(self.sig_en_cb.isChecked())
+    def sig_enh_changed(self, ch):
+        self.norm_frames.setEnabled(ch)
+        self.update()
+
+    def auto_y_changed(self, ch):
+        self.min_lbl.setEnabled(not ch)
+        self.min_spin.setEnabled(not ch)
+        self.max_lbl.setEnabled(not ch)
+        self.max_spin.setEnabled(not ch)
+        self.update()
+
+    def update_minmax(self, ovls):
+        dmin, dmax, first = 0, 100, True
+        for name in ovls:
+            ovl = self.ivm.overlays[name]
+            print(ovl.name, ovl.min(), ovl.max())
+            if first or ovl.min() < dmin: dmin = ovl.min()
+            if first or ovl.max() > dmax: dmax = ovl.max()
+            first = False
+        self.min_spin.setValue(dmin)
+        self.max_spin.setValue(dmax)
         self.update()
 
     def update(self, pos=None):
@@ -245,6 +293,12 @@ class ModelCurves(PkWidget):
         Plot the curve / curves
         """
         self.plot.clear()
+        if self.auto_y_cb.isChecked():
+            self.plot.enableAutoRange()
+        else: 
+            self.plot.disableAutoRange()
+            self.plot.setYRange(self.min_spin.value(), self.max_spin.value())
+
         # Ugly and slow way to clear the legend but seems to be no better option
         for sample, label in self.plot.legend.items:
             self.plot.legend.removeItem(label.text)
