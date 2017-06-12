@@ -75,18 +75,16 @@ class BatchCase:
     def load_volume(self):
         # Load main volume      
         vol_file = self.get("Volume", None)
-        if vol_file is None:
-            raise RuntimeError("No main volume defined")
-
-        vol = load(self.get_filepath(vol_file)).get_data()
-        multi = True
-        if vol.ndim == 2:
-                multi = False
-        if vol.ndim == 3:
-            multi = self.get("MultiVolumes", False)
-        elif vol.ndim != 4:
-            raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
-        self.ivm.add_overlay(vol.md.basename, vol, make_main=True)
+        if vol_file is not None:
+            vol = load(self.get_filepath(vol_file)).get_data()
+            multi = True
+            if vol.ndim == 2:
+                    multi = False
+            if vol.ndim == 3:
+                multi = self.get("MultiVolumes", False)
+            elif vol.ndim != 4:
+                raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
+            self.ivm.add_overlay(vol.md.basename, vol, make_main=True)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case
@@ -140,15 +138,18 @@ class BatchCase:
                     raise process.output
             except:
                 print("  - WARNING: process %s failed to run" % name)
+                #print(sys.exc_info()[1])
                 traceback.print_exc()
 
     def progress(self, complete):
         sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
 
     def save_text(self, text, fname, ext="txt"):
-        fname = os.path.join(self.outdir, "%s.%s" % (fname, ext))
-        with open(fname, "w") as f:
-            f.write(text)
+        if len(text) > 0:
+            if "." not in fname: fname = "%s.%s" % (fname, ext)
+            fname = os.path.join(self.outdir, fname)
+            with open(fname, "w") as f:
+                f.write(text)
 
     def save_output(self):
         if "SaveVolume" in self.root:
