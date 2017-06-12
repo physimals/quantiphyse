@@ -3,7 +3,7 @@ import numpy as np
 import skimage.segmentation as seg
 
 from ..QtInherit import HelpButton, BatchButton
-from ..analysis.perfusionslic import PerfSLIC
+from ..analysis.sv import SupervoxelsProcess
 from ..analysis.overlay_analysis import OverlayAnalysis
 from . import PkWidget
 
@@ -114,8 +114,8 @@ class PerfSlicWidget(PkWidget):
             return
 
         process = SupervoxelsProcess(self.ivm, sync=True)
-        process.run(self.batch_options[1])
-        if process.status != Process.SUCCEEDED:
+        process.run(self.batch_options()[1])
+        if process.status != SupervoxelsProcess.SUCCEEDED:
             QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
                                       QtGui.QMessageBox.Close)
 
@@ -259,7 +259,8 @@ class MeanValuesWidget(PkWidget):
             return
 
         oa = OverlayAnalysis(self.ivm)
-        stat1, roi_labels, hist1, hist1x = oa.get_roi_stats()
+
+        stat1, roi_labels, hist1, hist1x = oa.get_summary_stats(self.ivm.current_overlay, roi=self.ivm.current_roi)
 
         #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
         ov_name = self.ivm.current_overlay.name + "_means"
