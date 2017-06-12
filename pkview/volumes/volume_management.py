@@ -191,9 +191,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     def delete_overlay(self, name, signal=True):
         self._overlay_exists(name)
         del self.overlays[name]
-        if self.current_overlay.name == name:
+        if self.current_overlay is not None and self.current_overlay.name == name:
             self.current_overlay = None
             if signal: self.sig_current_overlay.emit(None)
+        if self.vol is not None and self.vol.name == name:
+            self.vol = None
+            if signal: self.sig_main_volume.emit(None)
         if signal: self.sig_all_overlays.emit(self.overlays.keys())
 
     def delete_roi(self, name, signal=True):
