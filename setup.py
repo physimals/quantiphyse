@@ -47,6 +47,7 @@ import platform
 import os
 import sys
 import re
+import glob
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -153,7 +154,7 @@ extensions.append(Extension("pkview.analysis.deeds",
                  language="c++"))
 
 # setup parameters
-setup(name='Quantiphyse',
+setup(name='quantiphyse',
       cmdclass={'build_ext': build_ext},
       version=version_str,
       description='MRI viewer and analysis tool',
@@ -164,19 +165,7 @@ setup(name='Quantiphyse',
       packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.icons', 'pkview.resources',
                 'pkview.utils', 'pkview.volumes', 'pkview.widgets'],
       include_package_data=True,
-      data_files=[('pkview/icons', ['pkview/icons/picture.svg',
-                                     'pkview/icons/pencil.svg',
-                                     'pkview/icons/clear.svg',
-                                     'pkview/icons/edit.svg',
-                                     'pkview/icons/clustering.svg',
-                                     'pkview/icons/main_icon.png',
-                                     'pkview/icons/voxel.svg',
-                                     'pkview/icons/picture.png',
-                                     'pkview/icons/pencil.png',
-                                     'pkview/icons/clear.png',
-                                     'pkview/icons/edit.png',
-                                     'pkview/icons/clustering.png',
-                                     'pkview/icons/voxel.png']),
+      data_files=[('pkview/icons', glob.glob('pkview/icons/*.svg') + glob.glob('pkview/icons/*.png')),
                   ('pkview/resources', ['pkview/resources/darkorange.stylesheet'])
                   ],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
