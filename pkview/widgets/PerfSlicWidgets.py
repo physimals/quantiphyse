@@ -2,9 +2,9 @@ from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
 
-from ..QtInherit import HelpButton, BatchButton
+from ..QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo
 from ..analysis.sv import SupervoxelsProcess
-from ..analysis.overlay_analysis import OverlayAnalysis
+from ..analysis.misc import MeanValuesProcess
 from . import PkWidget
 
 CITE = """
@@ -36,9 +36,6 @@ class PerfSlicWidget(PkWidget):
         super(PerfSlicWidget, self).__init__(name="Super Voxels", icon="sv", desc="Generate supervoxel clusters", **kwargs)
         
     def init_ui(self):
-        self.picking_roi = False
-        self.freehand_roi = False
-
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -59,152 +56,54 @@ class PerfSlicWidget(PkWidget):
         optbox.setTitle("Options")
         grid = QtGui.QGridLayout()
         optbox.setLayout(grid)
-        self.n_comp = NumericOption("Number of components", grid, 0, minval=1, maxval=3, default=3, intonly=True)
-        self.compactness = NumericOption("Compactness", grid, 1, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
-        self.segment_number = NumericOption("Number of supervoxels", grid, 2, minval=2, maxval=1000, default=20, intonly=True)
+        
+        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
+        self.ovl = OverlayCombo(self.ivm)
+        self.ovl.currentIndexChanged.connect(self.ovl_changed)
+        grid.addWidget(self.ovl, 0, 1)
+        grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
+        self.roi = RoiCombo(self.ivm)
+        grid.addWidget(self.roi, 1, 1)
 
-        btn = QtGui.QPushButton('Generate supervoxels', self)
+        self.n_comp = NumericOption("Number of components", grid, 2, minval=1, maxval=3, default=3, intonly=True)
+        self.compactness = NumericOption("Compactness", grid, 3, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
+        self.n_supervoxels = NumericOption("Number of supervoxels", grid, 4, minval=2, maxval=1000, default=20, intonly=True)
+
+        grid.addWidget(QtGui.QLabel("Output name"), 5, 0)
+        self.output_name = QtGui.QLineEdit("supervoxels")
+        grid.addWidget(self.output_name, 5, 1)
+
+        btn = QtGui.QPushButton('Generate', self)
         btn.clicked.connect(self.generate)
-        grid.addWidget(btn, 3, 0)
+        grid.addWidget(btn, 6, 0)
         hbox.addWidget(optbox)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.roibox = QtGui.QGroupBox()
-        self.roibox.setTitle("ROI from Supervoxels")
-        grid = QtGui.QGridLayout()
-        self.roibox.setLayout(grid)
-        grid.addWidget(QtGui.QLabel("Supervoxel Picking"), 0, 0)
-        self.pick_btn = QtGui.QPushButton("Start");
-        self.pick_btn.clicked.connect(self.pick_clicked)
-        grid.addWidget(self.pick_btn, 0, 1)
-        grid.addWidget(QtGui.QLabel("Rubber band tool"), 1, 0)
-        self.freehand_btn = QtGui.QPushButton("Start");
-        self.freehand_btn.clicked.connect(self.freehand_clicked)
-        grid.addWidget(self.freehand_btn, 1, 1)
-        btn = QtGui.QPushButton("Undo");
-        btn.clicked.connect(self.roi_undo)
-        grid.addWidget(btn, 2, 0)
-        btn = QtGui.QPushButton("Reset");
-        btn.clicked.connect(self.roi_reset)
-        grid.addWidget(btn, 2, 1)
-        hbox.addWidget(self.roibox)
-        hbox.addStretch(1)
-
-        # Disable supervoxel picking for now
-        #layout.addLayout(hbox)
         layout.addStretch(1)
 
-        self.roibox.setEnabled(False)
+    def ovl_changed(self, idx):
+        name = self.ovl.currentText()
+        if name:
+            ovl = self.ivm.overlays[name]
+            self.n_comp.label.setEnabled(ovl.ndim == 4)
+            self.n_comp.spin.setEnabled(ovl.ndim == 4)
 
     def batch_options(self):
-        options = {"n-components" : self.n_comp.spin.value(),
+        options = {"data" : self.ovl.currentText(),
+                   "roi" : self.roi.currentText(),
+                   "n-components" : self.n_comp.spin.value(),
                    "compactness" : self.compactness.spin.value(),
-                   "segment-size" :  self.segment_number.spin.value() }
+                   "n-supervoxels" :  self.n_supervoxels.spin.value(),
+                   "output-name" :  self.output_name.text() }
         return "Supervoxels", options
 
     def generate(self):
-        if self.ivm.vol is None:
-            QtGui.QMessageBox.warning(self, "No volume loaded", "Load a volume before generating supervoxels", QtGui.QMessageBox.Close)
-            return
-        
-        if self.ivm.current_roi is None:
-            QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating supervoxels", QtGui.QMessageBox.Close)
-            return
-
         process = SupervoxelsProcess(self.ivm, sync=True)
         process.run(self.batch_options()[1])
         if process.status != SupervoxelsProcess.SUCCEEDED:
             QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
                                       QtGui.QMessageBox.Close)
-
-    def pick_clicked(self):
-        if self.pick_btn.text() == "Start":
-            self.pick_btn.setText("Stop")
-            self.picking_roi = True
-            if self.freehand_roi:
-                self.freehand_btn.setText("Start")
-                self.freehand_roi = False
-                self.ivl.stop_roi_lasso("supervoxels")
-        elif self.pick_btn.text() == "Stop":
-            self.picking_roi = False
-            self.pick_btn.setText("Start")
-
-    def closest(self, num, collection):
-        return min(collection, key=lambda x: abs(x - num))
-
-    def freehand_clicked(self):
-        if self.freehand_btn.text() == "Start":
-            self.freehand_btn.setText("Stop")
-            self.freehand_roi = True
-            self.ivl.start_roi_lasso()
-            if self.picking_roi:
-                self.pick_btn.setText("Start")
-                self.picking_roi = False
-        elif self.freehand_btn.text() == "Stop":
-            self.freehand_roi = False
-            self.freehand_btn.setText("Start")
-            # PyQtGraph's ROI selection tool does interpolation
-            # so we get slightly odd results when applied to
-            # and integer overlay like 'supervoxels'
-            #
-            # This code first figures out what integer svoxels
-            # were in the selection, then replaces non-integer
-            # values in the selection with the closest supervoxel
-            # integer (note that this is NOT the closest integer!
-            sel = self.ivl.stop_roi_lasso("supervoxels")
-            svoxels = [v for v in np.unique(sel) if v == int(v)]
-            f = np.vectorize(lambda x: self.closest(x, svoxels))
-            sel = f(sel)
-            print(sel)
-            ovl = self.ivm.overlays["supervoxels"]
-            for val in svoxels:
-                self.roi = self.roi | np.where(ovl == val, 1, 0)
-                self.roi_regions.add(val)
-            self.roi_hist.append(svoxels)
-            self.ivm.add_roi("sv_roi", self.roi, make_current=True)
-
-    def roi_reset(self):
-        self.roi = np.zeros(self.ivm.vol.shape[:3], dtype=np.int8)
-        self.roi_hist = []
-        self.roi_regions = set()
-        self.picking_roi = False
-        self.freehand_roi = False
-        self.pick_btn.setText("Start")
-        self.freehand_btn.setText("Start")
-
-    def roi_undo(self):
-        last_change = self.roi_hist[-1]
-        ovl = self.ivm.overlays["supervoxels"]
-        for val in last_change:
-            if val < 0:
-                # Undo region removal, i.e. add it back
-                self.roi = self.roi | np.where(ovl == val, 1, 0)
-                self.roi_regions.add(val)
-            else:
-                # Undo region addition, i.e. remove it
-                self.roi = self.roi & np.where(ovl == val, 0, 1)
-                self.roi_regions.remove(val)
-        self.roi_hist = self.roi_hist[:-1]
-        self.ivm.add_roi("sv_roi", self.roi, make_current=True)
-
-    def sig_mouse_click(self, values):
-        pos = self.ivm.cim_pos[:3]
-        if self.picking_roi:
-            ovl = self.ivm.overlays["supervoxels"]
-            val = ovl[pos[0], pos[1], pos[2]]
-
-            if val in self.roi_regions:
-                self.roi = self.roi & np.where(ovl == val, 0, 1)
-                self.roi_hist.append([-val])
-                self.roi_regions.remove(val)
-            else:
-                self.roi = self.roi | np.where(ovl == val, 1, 0)
-                self.roi_hist.append([val])
-                self.roi_regions.add(val)
-            self.ivm.add_roi("sv_roi", self.roi, make_current=True)
-
 
 class MeanValuesWidget(PkWidget):
     """
@@ -228,46 +127,58 @@ class MeanValuesWidget(PkWidget):
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        gbox = QtGui.QGroupBox()
-        gbox.setTitle("Generate mean values overlay")
-
-        vbox = QtGui.QVBoxLayout()
-        gbox.setLayout(vbox)
-
         hbox = QtGui.QHBoxLayout()
-        b = QtGui.QPushButton('Generate', self)
-        b.clicked.connect(self.generate)
-        hbox.addWidget(b)
-        hbox.addStretch(1)
-        vbox.addLayout(hbox)
-        gbox.setLayout(vbox)
+        gbox = QtGui.QGroupBox()
+        gbox.setTitle("Options")
+        grid = QtGui.QGridLayout()
+        gbox.setLayout(grid)
+        
+        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
+        self.ovl = OverlayCombo(self.ivm)
+        self.ovl.currentIndexChanged.connect(self.ovl_changed)
+        grid.addWidget(self.ovl, 0, 1)
+        grid.addWidget(QtGui.QLabel("ROI regions"), 1, 0)
+        self.roi = RoiCombo(self.ivm)
+        grid.addWidget(self.roi, 1, 1)
+        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
+        self.output_name = QtGui.QLineEdit()
+        grid.addWidget(self.output_name, 2, 1)
 
-        layout.addWidget(gbox)
+        btn = QtGui.QPushButton('Generate', self)
+        btn.clicked.connect(self.generate)
+        grid.addWidget(btn, 2, 0)
+        hbox.addWidget(gbox)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
         layout.addStretch(1)
         self.setLayout(layout)
 
+    def ovl_changed(self):
+        name = self.ovl.currentText()
+        if name:
+            self.output_name.setText(name + "_means")
+
+    def batch_options(self):
+        options = {"roi" : self.roi.currentText(),
+                   "data" : self.ovl.currentText(),
+                   "output-name" :  self.output_name.text() }
+        return "MeanValues", options
+
     def generate(self):
-        roi = self.ivm.current_roi
-        if roi is None:
-            QtGui.QMessageBox.warning(self, "No ROI loaded", "Load an ROI before generating a mean values overlay",
-                                      QtGui.QMessageBox.Close)
+        options = self.batch_options()[1]
+
+        if not options["data"]:
+            QtGui.QMessageBox.warning(self, "No data selected", "Load data to generate mean values from", QtGui.QMessageBox.Close)
             return
-
-        if self.ivm.current_overlay is None:
-            QtGui.QMessageBox.warning(self, "No current overlay", "Load an overlay before generating a mean values overlay",
-                                      QtGui.QMessageBox.Close)
+        if not options["roi"]:
+            QtGui.QMessageBox.warning(self, "No ROI selected", "Load an ROI for mean value regions", QtGui.QMessageBox.Close)
             return
+        
+        process = MeanValuesProcess(self.ivm)
+        process.run(options)
+        if process.status != SupervoxelsProcess.SUCCEEDED:
+            QtGui.QMessageBox.warning(None, "Process error", "MeanValues process failed to run:\n\n" + str(process.output),
+                                      QtGui.QMessageBox.Close)
 
-        oa = OverlayAnalysis(self.ivm)
-
-        stat1, roi_labels, hist1, hist1x = oa.get_summary_stats(self.ivm.current_overlay, roi=self.ivm.current_roi)
-
-        #ov_name = "%s_in_%s" % (self.ivm.current_overlay.name, self.ivm.current_roi.name)
-        ov_name = self.ivm.current_overlay.name + "_means"
-        ov_data = np.copy(self.ivm.current_overlay)
-        for region, mean in zip(roi_labels, stat1["mean"]):
-            ov_data[roi == region] = mean
-
-        self.ivm.add_overlay(ov_name, ov_data, make_current=True)
 
 
