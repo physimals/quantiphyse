@@ -7,7 +7,7 @@ Processing:
   - Supervoxels:
       n-components: 3
       compactness: 0.02
-      segment-size: 1000
+      n-supervoxels: 30
 
 SaveRois:
     supervoxels:
