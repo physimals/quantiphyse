@@ -13,8 +13,8 @@ from ..analysis.fab import FabberProcess
 from ..analysis.reg import RegProcess, McflirtProcess
 from ..analysis.pk import PkModellingProcess
 from ..analysis.t10 import T10Process
-from ..analysis.sv import SupervoxelsProcess
-from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
+from ..analysis.sv import SupervoxelsProcess, Supervoxels4DProcess
+from ..analysis.misc import *
 from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 
 from ..volumes.volume_management import ImageVolumeManagement
@@ -33,6 +33,9 @@ processes = {"Fabber"      : FabberProcess,
              "Histogram" : HistogramProcess,
              "KMeansPCA"   : KMeansPCAProcess,
              "KMeans3D"   : KMeans3DProcess,
+             "MeanValues"   : MeanValuesProcess,
+             "RenameData"   : RenameDataProcess,
+             "RenameRoi"   : RenameRoiProcess,
              "SimpleMaths" : SimpleMathsProcess}
 
 def run_batch(batchfile):
@@ -112,6 +115,7 @@ class BatchCase:
             name = process.keys()[0]
             params = process[name]
             if params is None: params = {}
+            params = dict(params) # Make copy so process does not mess up shared config
             params.update(self.case.get(name, {}))
             self.run_process(name, params)
 
@@ -138,8 +142,9 @@ class BatchCase:
                     raise process.output
             except:
                 print("  - WARNING: process %s failed to run" % name)
-                #print(sys.exc_info()[1])
-                traceback.print_exc()
+                #raise
+                print(sys.exc_info())
+                print(sys.exc_info()[2])
 
     def progress(self, complete):
         sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
