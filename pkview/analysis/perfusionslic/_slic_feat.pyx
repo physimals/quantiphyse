@@ -99,7 +99,7 @@ def _slic_feat_cython(double[:, :, :, ::1] image_zyx,
     sy = spacing[1]
     sx = spacing[2]
 
-    print("n_features (x, y, z + feat): ", n_features)
+    #print("n_features (x, y, z + feat): ", n_features)
 
     # The colors are scaled before being passed to _slic_cython so
     # max_color_sq can be initialised as all ones
