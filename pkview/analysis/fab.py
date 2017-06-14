@@ -52,20 +52,28 @@ class FabberProcess(BackgroundProcess):
         BackgroundProcess.__init__(self, ivm, _run_fabber, **kwargs)
 
     def run(self, options):
+        data_name = options.pop("data", None)
+        if data_name is None:
+            data = self.ivm.vol
+        else:
+            data = self.ivm.overlays[data_name]
+
+        roi_name = options.pop("roi", None)
+        if roi_name is None:
+            roidata = self.ivm.current_roi
+        else:
+            roidata = self.ivm.rois[roi_name]
+
         # FIXME rundata requires all arguments to be strings!
         rundata = FabberRunData()
         for key, value in options.items():
             if value is not None: rundata[key] = str(value)
             else: rundata[key] = ""
-            
+
         # Pass in input data. To enable the multiprocessing module to split our volumes
         # up automatically we have to pass the arguments as a single list. This consists of
         # rundata, main data, roi and then each of the used overlays, name followed by data
-        if self.ivm.current_roi is not None:
-            roidata = self.ivm.current_roi
-        else:
-            roidata = None
-        input_args = [rundata, self.ivm.vol, roidata]
+        input_args = [rundata, data, roidata]
         run_overlays = {}
 
         # This is not perfect - we just grab all overlays matching an option value
@@ -79,7 +87,7 @@ class FabberProcess(BackgroundProcess):
             n = 1
         else:
             # Run one worker for each slice
-            n = self.ivm.vol.shape[0]
+            n = data.shape[0]
 
         if roidata is not None: self.voxels_todo = np.count_nonzero(self.ivm.current_roi)
         else: self.voxels_todo = self.ivm.vol.size
