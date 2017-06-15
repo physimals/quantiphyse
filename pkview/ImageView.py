@@ -587,7 +587,8 @@ class OrthoView(pg.GraphicsView):
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            #print(mx, my)
+            if mx < 0 or mx >= self.ivm.shape[self.xaxis]: return
+            if my < 0 or my >= self.ivm.shape[self.yaxis]: return
             pos = self.ivm.cim_pos[:]
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
@@ -803,7 +804,7 @@ class ImageView(QtGui.QSplitter):
         self.ov_cmap_combo.addItem("spectrum")
         hbox.addWidget(self.ov_cmap_combo)
         self.ov_levels_btn = QtGui.QPushButton()
-        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels")))
+        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
         self.ov_levels_btn.setFixedSize(16, 16)
         self.ov_levels_btn.clicked.connect(self.show_ov_levels)
         hbox.addWidget(self.ov_levels_btn)
