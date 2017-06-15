@@ -16,15 +16,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from .additional.processing import get_mpd
 
-
-def _seed_points_test(n_segments, mask):
-
-        slices = regular_grid(mask.shape, n_segments)
-        mask_ind = mask[slices]
-        segnum = np.sum(mask_ind)
-        return segnum
-
-
 def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
               seed_type='grid', spacing=None, multichannel=True, convert2lab=None,
               enforce_connectivity=False, min_size_factor=0.5, max_size_factor=3,
@@ -133,11 +124,10 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
 
     if mask is None and seed_type == 'nrandom':
         warnings.warn('nrandom assignment of seed points should only be used with an ROI. Changing seed type.')
-        seed_type = 'size'
+        seed_type = 'grid'
 
     if seed_type == 'nrandom' and recompute_seeds is False:
         warnings.warn('Seeds should be recomputed when seed points are randomly assigned')
-
 
     image = img_as_float(image)
     is_2d = False
@@ -249,7 +239,7 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
     # Only use values in the mask
     # segments = segments[mask_ind, :]
 
-    print("Number of supervoxels: ", segments.shape[0])
+    #print("Number of supervoxels: ", segments.shape[0])
     segments = np.ascontiguousarray(segments)
 
     # we do the scaling of ratio in the same way as in the SLIC paper
@@ -297,7 +287,7 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
         else:
             adj_mat, border_mat = _find_adjacency_map_mask(labels)
 
-        print(adj_mat.shape)
+        #print(adj_mat.shape)
         if is_2d:
             labels = labels[0]
         return labels, adj_mat, border_mat

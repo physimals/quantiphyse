@@ -312,6 +312,6 @@ class FabberWidget(PkWidget):
         self.progress.setValue(100*complete)
 
     def view_log(self):
-         self.logview = TextViewerDialog(log=self.log, parent=self)
+         self.logview = TextViewerDialog(text=self.log, parent=self)
          self.logview.show()
          self.logview.raise_()

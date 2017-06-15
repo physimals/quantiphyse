@@ -55,9 +55,9 @@ class KMeansPCAProcess(Process):
         if invert_roi:
             roi = np.logical_not(roi)
             
-        voxel_se = img[roi]
+        voxel_se = img[roi > 0]
         baseline1 = np.mean(img[:, :, :, :3], axis=-1)
-        baseline1sub = baseline1[roi]
+        baseline1sub = baseline1[roi > 0]
 
         # Normalisation of the image
         voxel_se = voxel_se / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img.shape[-1])) + 0.001) - 1
@@ -94,7 +94,7 @@ class KMeansPCAProcess(Process):
         self.log += "Elapsed time: %s" % (time.time() - start1)
 
         label_image = np.zeros(self.ivm.shape[:3])
-        label_image[roi] = kmeans.labels_ + 1
+        label_image[roi > 0] = kmeans.labels_ + 1
         self.ivm.add_roi(output_name, label_image, make_current=True)
 
         self.status = Process.SUCCEEDED
@@ -145,6 +145,6 @@ class KMeans3DProcess(Process):
         # label regions
         label_image = np.zeros_like(data, dtype=np.int)
         label_image[roi > 0] = kmeans.labels_ + 1
-        self.ivm.add_roi(output_name, label_image)
+        self.ivm.add_roi(output_name, label_image, make_current=True)
         
         self.status = Process.SUCCEEDED

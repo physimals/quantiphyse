@@ -435,7 +435,9 @@ class OrthoView(pg.GraphicsView):
         self.resizeEvent = self.resize_win
 
     def update(self):
-        if self.ivm.vol is None: return
+        if self.ivm.vol is None: 
+            self.img.setImage(np.zeros((1, 1)), autoLevels=False)
+            return
 
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
@@ -571,10 +573,11 @@ class OrthoView(pg.GraphicsView):
         Subclassed to remove scroll to zoom from pg.ImageItem
         and instead trigger a scroll through the volume
         """
+        if len(self.ivm.shape) == 0: return
         dz = int(event.delta()/120)
         pos = self.ivm.cim_pos[:]
         pos[self.zaxis] += dz
-        if pos[self.zaxis] >= self.ivm.vol.shape[self.zaxis] or pos[self.zaxis] < 0:
+        if pos[self.zaxis] >= self.ivm.shape[self.zaxis] or pos[self.zaxis] < 0:
             return
 
         self.sig_focus.emit(pos, self.zaxis, False)
@@ -650,6 +653,12 @@ class OvLevelsDialog(QtGui.QDialog):
         grid = QtGui.QGridLayout()
         self.add_spin(grid, "Minimum", 0)
         self.add_spin(grid, "Maximum", 1)   
+        grid.addWidget(QtGui.QLabel("Values outside range are"), 2, 0)
+        self.combo = QtGui.QComboBox()
+        self.combo.addItem("Transparent")
+        self.combo.addItem("Clamped to max/min colour")
+        self.combo.setEnabled(False)
+        grid.addWidget(self.combo, 2, 1)
         vbox.addLayout(grid)
 
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
@@ -806,7 +815,9 @@ class ImageView(QtGui.QSplitter):
         self.ov_levels_btn = QtGui.QPushButton()
         self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
         self.ov_levels_btn.setFixedSize(16, 16)
+        self.ov_levels_btn.setToolTip("Adjust colour map levels")
         self.ov_levels_btn.clicked.connect(self.show_ov_levels)
+        self.ov_levels_btn.setEnabled(False)
         hbox.addWidget(self.ov_levels_btn)
         grid.addLayout(hbox, 2, 1)
         grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
@@ -1063,6 +1074,7 @@ class ImageView(QtGui.QSplitter):
         self.overlay_combo.updateGeometry()
 
     def overlay_changed(self, ov):
+        self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
             # Update the overlay combo to show the current overlay
             idx = self.overlay_combo.findText(ov.name)

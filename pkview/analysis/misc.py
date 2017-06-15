@@ -6,6 +6,41 @@ from ..utils import table_to_str
 from . import Process, BackgroundProcess
 from .overlay_analysis import OverlayAnalysis
 
+class MeanValuesProcess(Process):
+    """
+    Create new overlay by replacing voxel values with mean within each ROI region
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        roi_name = options.pop('roi', None)
+        data_name = options.pop('data', None)
+        output_name = options.pop('output-name', None)
+
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        else:
+            roi = self.ivm.rois[roi_name]
+
+        if data_name is None:
+            data = self.ivm.vol
+        else:
+            data = self.ivm.overlays[data_name]
+
+        if output_name is None:
+            output_name = data.name + "_means"
+
+        ov_data = np.zeros(data.shape)
+        for region in roi.regions:
+            if data.ndim == 3:
+                ov_data[roi == region] = np.mean(data[roi == region])
+            else:
+                ov_data[roi == region] = np.mean(data[roi == region], axis=0)
+
+        self.ivm.add_overlay(output_name, ov_data, make_current=True)
+        self.status = Process.SUCCEEDED
+
 class CalcVolumesProcess(Process):
     """
     Calculate volume of ROI region or regions
@@ -200,6 +235,7 @@ class OverlayStatisticsProcess(Process):
         self.ia = OverlayAnalysis(ivm=self.ivm)
 
     def run(self, options):
+        roi_name = options.pop('roi', None)
         ov_name = options.pop('overlay', None)
         output_name = options.pop('output-name', "overlay-stats")
         no_artifact = options.pop('no-artifact', False)
@@ -208,6 +244,11 @@ class OverlayStatisticsProcess(Process):
         else:
             ovs = [self.ivm.overlays[ov_name]]
             
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        else:
+            roi = self.ivm.rois[roi_name]
+
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
@@ -217,7 +258,7 @@ class OverlayStatisticsProcess(Process):
 
         col = 0
         for ov in ovs:
-            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, self.ivm.current_roi, **options)
+            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, roi, **options)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
@@ -245,4 +286,20 @@ class SimpleMathsProcess(Process):
             result = eval(proc, globals)
             self.ivm.add_overlay(name, result)
        
+        self.status = Process.SUCCEEDED
+
+class RenameDataProcess(Process):
+    """ Rename data  """
+    def run(self, options):
+        for name, newname in options.items():
+            self.ivm.rename_overlay(name, newname)
+            
+        self.status = Process.SUCCEEDED
+
+class RenameRoiProcess(Process):
+    """ Rename ROI  """
+    def run(self, options):
+        for name, newname in options.items():
+            self.ivm.rename_roi(name, newname)
+            
         self.status = Process.SUCCEEDED

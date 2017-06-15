@@ -67,6 +67,7 @@ class BackgroundProcess(Process):
         self.fn = fn
         self.queue =  multiprocessing.Manager().Queue()
         self.sync = sync
+        self._timer = None
 
     def timeout(self):
         """
@@ -96,11 +97,12 @@ class BackgroundProcess(Process):
         for i in range(n):
             proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
             processes.append(proc)
-        self._restart_timer()
         
         if self.sync:
             for i in range(n):
                 processes[i].get()
+        else:
+            self._restart_timer()
     
     def split_args(self, n, args):
         """
@@ -130,8 +132,9 @@ class BackgroundProcess(Process):
         self._timer.start()
 
     def _timer_cb(self):
-        self.timeout()
-        self._restart_timer()
+        if self.status == Process.RUNNING:
+            self.timeout()
+            self._restart_timer()
 
     def _process_cb(self, result):
         worker_id, success, output = result
@@ -152,6 +155,5 @@ class BackgroundProcess(Process):
 
         if self.status != Process.RUNNING:
             self.timeout()
-            self._timer.cancel()
             self.finished()
             self.sig_finished.emit(self.status, self.output, self.log)

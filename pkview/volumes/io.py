@@ -248,7 +248,7 @@ class QpVolume(np.ndarray):
             ax = [i for i in range(self.ndim) if i != d]
             nonzero = np.any(self, axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
-            slices[d] = slice(s1, s2)
+            slices[d] = slice(s1, s2+1)
         
         return slices
 

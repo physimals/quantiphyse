@@ -110,7 +110,6 @@ class PerfSLIC(object):
         """
 
         # ~~~~~~~~~~~~~~~~~~~~~~ 3) SLIC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print("SLIC")
         n_segments = int(self.feat1_image.shape[0] * self.feat1_image.shape[1] * self.feat1_image.shape[2]/segment_size)
         self.segments, self.adj_mat, self.border_mat = slic_feat(self.feat1_image,
                                                                  n_segments=n_segments,
