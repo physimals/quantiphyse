@@ -951,15 +951,18 @@ class ImageView(QtGui.QSplitter):
         self.picker = PICKERS[pickmode](self)
         self.drag_mode = drag_mode
         
-    def max_min(self, win):
-        """ Maximise/Minimise view window """
+    def max_min(self, win, state=-1):
+        """ Maximise/Minimise view window
+        If state=1, maximise, 0=show all, -1=toggle """
         o1 = (win+1) % 3
         o2 = (win+2) % 3
-        if self.win[o1].isVisible():
+        if state == 1 or self.win[o1].isVisible():
+            # Maximise
             self.win[o1].setVisible(False)
             self.win[o2].setVisible(False)
             self.grid.addWidget(self.win[win], 0, 0, 2, 2)
-        else:
+        elif state == 0 or not self.win[o1].isVisible():
+            # Show all three
             self.grid.addWidget(self.win[1], 0, 0, )
             self.grid.addWidget(self.win[0], 0, 1)
             self.grid.addWidget(self.win[2], 1, 0)
@@ -998,6 +1001,12 @@ class ImageView(QtGui.QSplitter):
             self.vol_name.setText("")
 
         self.update_ortho_views()
+        
+        # If one of the dimensions has size 1 the data is 2D so 
+        # maximise the relevant slice
+        for d in range(3):
+            if vol.shape[d] == 1:
+                self.max_min(d, state=1)
 
     def roi_combo_changed(self, idx):
         if idx >= 0:
