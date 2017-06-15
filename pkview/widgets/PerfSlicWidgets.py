@@ -67,9 +67,10 @@ class PerfSlicWidget(PkWidget):
 
         self.n_comp = NumericOption("Number of components", grid, 2, minval=1, maxval=3, default=3, intonly=True)
         self.compactness = NumericOption("Compactness", grid, 3, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
-        self.n_supervoxels = NumericOption("Number of supervoxels", grid, 4, minval=2, maxval=1000, default=20, intonly=True)
+        self.sigma = NumericOption("Smoothing", grid, 4, minval=0, maxval=5, step=0.1, default=1, intonly=False)
+        self.n_supervoxels = NumericOption("Number of supervoxels", grid, 5, minval=2, maxval=1000, default=20, intonly=True)
 
-        grid.addWidget(QtGui.QLabel("Output name"), 5, 0)
+        grid.addWidget(QtGui.QLabel("Output name"), 6, 0)
         self.output_name = QtGui.QLineEdit("supervoxels")
         grid.addWidget(self.output_name, 5, 1)
 
@@ -94,6 +95,7 @@ class PerfSlicWidget(PkWidget):
                    "roi" : self.roi.currentText(),
                    "n-components" : self.n_comp.spin.value(),
                    "compactness" : self.compactness.spin.value(),
+                   "sigma" : self.sigma.spin.value(),
                    "n-supervoxels" :  self.n_supervoxels.spin.value(),
                    "output-name" :  self.output_name.text() }
         return "Supervoxels", options
