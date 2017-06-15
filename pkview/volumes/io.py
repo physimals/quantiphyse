@@ -310,6 +310,10 @@ class NiftiDataFile:
         else:
             md = self.md
 
+        if data.ndim == 2:
+            # Must be at least 3D
+            data = np.expand_dims(data, -1)
+            
         if force_t:
             data = np.expand_dims(data, 2)
 
