@@ -28,6 +28,9 @@ class Tool:
     def selected(self):
         self.ivl.set_picker(PickMode.SINGLE)
 
+    def deselected(self):
+        self.ivl.set_picker(PickMode.SINGLE)
+
     def interface(self):
         grid = QtGui.QGridLayout()
         grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0)
@@ -67,6 +70,10 @@ class EraserTool(Tool):
     def selected(self):
         self.ivl.set_picker(PickMode.SINGLE, DragMode.PICKER_DRAG)
         self.ivl.sig_sel_changed.connect(self.point_picked)
+
+    def deselected(self):
+        Tool.deselected(self)
+        self.ivl.sig_sel_changed.disconnect(self.point_picked)
 
     def point_picked(self, picker):
         pos = picker.point
@@ -251,6 +258,8 @@ class RoiBuilderWidget(PkWidget):
 
     def deactivate(self):
         self.ivl.set_picker(PickMode.SINGLE)
+        if self.tool is not None:
+            self.tool.deselected()
 
     def add_tool(self, tool, x, y):
         tool.ivm = self.ivm
@@ -270,6 +279,8 @@ class RoiBuilderWidget(PkWidget):
         def tool_clicked():
             if self.tool is not None:
                 self.tool.btn.setStyleSheet("")
+                self.tool.deselected()
+            
             self.tool = tool
             self.tool.btn.setStyleSheet("border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);")
             self.tool.selected()
