@@ -15,3 +15,4 @@ networkx
 pyaml
 PyYAML
 mock
+pillow
