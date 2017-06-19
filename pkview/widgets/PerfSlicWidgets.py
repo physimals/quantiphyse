@@ -72,11 +72,11 @@ class PerfSlicWidget(PkWidget):
 
         grid.addWidget(QtGui.QLabel("Output name"), 6, 0)
         self.output_name = QtGui.QLineEdit("supervoxels")
-        grid.addWidget(self.output_name, 5, 1)
+        grid.addWidget(self.output_name, 6, 1)
 
         btn = QtGui.QPushButton('Generate', self)
         btn.clicked.connect(self.generate)
-        grid.addWidget(btn, 6, 0)
+        grid.addWidget(btn, 7, 0)
         hbox.addWidget(optbox)
         hbox.addStretch(1)
         layout.addLayout(hbox)
