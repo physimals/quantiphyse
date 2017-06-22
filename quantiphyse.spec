@@ -18,6 +18,7 @@ added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources'), ('s
 
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
+hidden_imports.append('fabber')
 
 # Platform-specific configuration
 if sys.platform.startswith("win"):
