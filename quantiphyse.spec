@@ -35,6 +35,7 @@ if sys.platform.startswith("win"):
                            'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
+    hidden_imports.append('pywt._extensions._cwt')
     bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 elif sys.platform.startswith("darwin"):
