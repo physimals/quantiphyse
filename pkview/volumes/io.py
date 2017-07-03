@@ -12,9 +12,15 @@ from PySide import QtCore, QtGui
 from matplotlib import cm
 
 import nibabel as nib
-import dcmstack
 import numpy as np
 import nrrd
+
+HAVE_DCM = True
+try:
+    import dcmstack
+except:
+    HAVE_DCM = False
+    warnings.warn("DCMSTACK not found - will not be able to read DICOM folders")
 
 class FileMetadata(object):
     """ Metadata from file. Newly created data objects get their metadata from the main Volume
@@ -347,7 +353,7 @@ class NrrdDataFile:
         raise RuntimeError("NRRD support not currently enabled")
 
 def load(fname):
-    if os.path.isdir(fname):
+    if os.path.isdir(fname) and HAVE_DCMSTACK:
         return DicomFolder(fname)
     elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
         return NiftiDataFile(fname)

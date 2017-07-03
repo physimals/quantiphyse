@@ -18,10 +18,7 @@ import glob
 from PySide import QtCore, QtGui
 from matplotlib import cm
 
-import nibabel as nib
-import dcmstack
 import numpy as np
-import nrrd
 
 from .io import QpVolume, FileMetadata
 

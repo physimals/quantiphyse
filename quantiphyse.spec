@@ -18,6 +18,7 @@ added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources'), ('s
 
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
+hidden_imports.append('fabber')
 
 # Platform-specific configuration
 if sys.platform.startswith("win"):
@@ -35,6 +36,7 @@ if sys.platform.startswith("win"):
                            'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
+    hidden_imports.append('pywt._extensions._cwt')
     bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 elif sys.platform.startswith("darwin"):
