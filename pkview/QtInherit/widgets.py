@@ -63,10 +63,10 @@ class OverlayCombo(QtGui.QComboBox):
     """
     A combo box which gives a choice of overlays
     """
-    
-    def __init__(self, ivm, parent=None):
+    def __init__(self, ivm, parent=None, static_only=False):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
+        self.static_only=static_only
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
         self.overlays_changed()
     
@@ -75,16 +75,19 @@ class OverlayCombo(QtGui.QComboBox):
         self.clear()
             
         for ovl in self.ivm.overlays.values():
-            self.addItem(ovl.name)
+            if (ovl.ndim == 3 or not self.static_only):
+                self.addItem(ovl.name)
 
         idx = self.findText(current)
         self.setCurrentIndex(max(0, idx))
+        # Make sure names are visible even with drop down arrow
+        width = self.minimumSizeHint().width()
+        self.setMinimumWidth(width+50)
         
 class RoiCombo(QtGui.QComboBox):
     """
     A combo box which gives a choice of ROIs
     """
-    
     def __init__(self, ivm, parent=None):
         super(RoiCombo, self).__init__(parent)
         self.ivm = ivm
@@ -100,4 +103,22 @@ class RoiCombo(QtGui.QComboBox):
 
         idx = self.findText(current)
         self.setCurrentIndex(max(0, idx))
+        # Make sure names are visible even with drop down arrow
+        width = self.minimumSizeHint().width()
+        self.setMinimumWidth(width+50)
         
+class NumericOption(QtGui.QWidget):
+    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, intonly=False):
+        self.label = QtGui.QLabel(text)
+        if intonly:
+            self.spin = QtGui.QSpinBox()
+        else:
+            self.spin = QtGui.QDoubleSpinBox()
+
+        self.spin.setMinimum(minval)
+        self.spin.setMaximum(maxval)
+        self.spin.setValue(default)
+        self.spin.setSingleStep(step)
+
+        grid.addWidget(self.label, ypos, xpos)
+        grid.addWidget(self.spin, ypos, xpos+1)
