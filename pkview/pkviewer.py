@@ -56,6 +56,9 @@ from .utils import set_local_file_path, get_icon, get_local_file
 
 op_sys = platform.system()
 
+# ROIs with values larger than this will trigger a warning
+ROI_MAXVAL_WARN = 1000
+
 class DragOptions(QtGui.QDialog):
     """
     Interface for dealing with drag and drop
@@ -779,9 +782,19 @@ class MainWindow(QtGui.QMainWindow):
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
-            
+        
         # Now get the actual data and add it as data or an ROI
         vol = datafile.get_data(ignore_affine=ignore_affine, force_t=force_t)
+        
+        # Check for inappropriate ROI data
+        if ftype == "ROI" and np.max(vol) > ROI_MAXVAL_WARN:
+            msgBox = QtGui.QMessageBox()
+            warntxt = "\n  -".join(warnings)
+            msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
+            msgBox.setInformativeText("Are you sure this is an ROI file?")
+            msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
+            if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
         if name is None:
             name = os.path.basename(fname)
