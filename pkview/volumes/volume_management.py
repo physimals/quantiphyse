@@ -101,7 +101,9 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self._overlay_exists(name)
         
         self.vol = self.overlays[name]
-        self.voxel_sizes = self.vol.md.voxel_sizes_ras
+        self.voxel_sizes = list(self.vol.md.voxel_sizes_ras)
+        while (len(self.voxel_sizes) < 3):
+            self.voxel_sizes.append(1)
         self.update_shape(self.vol.shape)
 
         self.cim_pos = [int(d/2) for d in self.shape]
@@ -228,11 +230,12 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         Return enhancement curves for all 4D overlays whose 4th dimension matches that of the main volume
         """
         if self.vol is None: return [], {}
-        if self.vol.ndim != 4: raise RuntimeError("Main volume is not 4D")
+        if self.vol.ndim == 4:
+            main_sig = self.vol[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        else:
+            main_sig = []
 
-        main_sig = self.vol[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         ovl_sig = {}
-
         for ovl in self.overlays.values():
             if ovl.ndim == 4 and (ovl.shape[3] == self.vol.shape[3]):
                 ovl_sig[ovl.name] = ovl[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
