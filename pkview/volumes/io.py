@@ -85,7 +85,7 @@ class FileMetadata(object):
             # as it is. It probably means the affine transformation
             # is nothing like orthogonal and therefore the dimension
             # order is not a permutation
-            warnings.warn("Failed to re-orient - non-orthogonal affine?")
+            warnings.warn("Failed to re-orient dimdata - non-orthogonal affine?")
             warnings.warn("Affine was: " + str(self.affine))
             warnings.warn("transforms: " + str(self.dim_order) + ", " + str(self.dim_flip))
             return dimdata
@@ -98,7 +98,6 @@ class FileMetadata(object):
         """
         try:
             dim_order = self.dim_order[direction]
-            #print("re-orienting data to ", dim_order, self.dim_flip)
             if data.ndim == 4: dim_order.append(3)
             new_data = np.transpose(data, dim_order)
             for d in self.dim_flip[direction]:
@@ -109,8 +108,9 @@ class FileMetadata(object):
             # as it is. It probably means the affine transformation
             # is nothing like orthogonal and therefore the dimension
             # order is not a permutation
-            warnings.warn("Failed to re-orient - non-orthogonal affine?")
-            #raise
+            warnings.warn("Failed to re-orient data - non-orthogonal affine?")
+            warnings.warn("Affine was: " + str(self.affine))
+            warnings.warn("transforms: " + str(self.dim_order) + ", " + str(self.dim_flip))
             return data
             
     def get_transform(self, direction):
