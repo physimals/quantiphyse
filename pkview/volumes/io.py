@@ -15,11 +15,11 @@ import nibabel as nib
 import numpy as np
 import nrrd
 
-HAVE_DCM = True
+HAVE_DCMSTACK = True
 try:
-    import dcmstack
+    import dcmstack, dicom
 except:
-    HAVE_DCM = False
+    HAVE_DCMSTACK = False
     warnings.warn("DCMSTACK not found - will not be able to read DICOM folders")
 
 class FileMetadata(object):
@@ -77,7 +77,7 @@ class FileMetadata(object):
         """
         ret = []
         try:
-            ret = [dimdata[d] for d in self.dim_order[direction]]
+            ret = [dimdata[d] for d in self.dim_order[direction] if d < len(dimdata)]
             if len(dimdata) == 4: ret.append(dimdata[3])
             return ret
         except:
@@ -86,7 +86,8 @@ class FileMetadata(object):
             # is nothing like orthogonal and therefore the dimension
             # order is not a permutation
             warnings.warn("Failed to re-orient - non-orthogonal affine?")
-            #raise
+            warnings.warn("Affine was: " + str(self.affine))
+            warnings.warn("transforms: " + str(self.dim_order) + ", " + str(self.dim_flip))
             return dimdata
 
     def reorient_data(self, direction, data):
@@ -200,7 +201,7 @@ class QpVolume(np.ndarray):
         
     def set_as_data(self, name):
         self.name = name
-        self.range = (self.min(), self.max())
+        self.range = (float(self.min()), float(self.max()))
         self.dps = self._calc_dps()
         self.regions = []
 
@@ -316,11 +317,11 @@ class NiftiDataFile:
         else:
             md = self.md
 
-        if data.ndim == 2:
+        while data.ndim < 3:
             # Must be at least 3D
             data = np.expand_dims(data, -1)
             
-        if force_t:
+        if force_t and data.ndim < 4:
             data = np.expand_dims(data, 2)
 
         if not ignore_affine:
@@ -345,7 +346,7 @@ class DicomFolder(NiftiDataFile):
         sys.stdout.flush()
         # FIXME should we do this?
         if self.nii.shape[-1] == 1:
-            self.nii = nib.squeeze_image(nii)
+            self.nii = nib.squeeze_image(self.nii)
         self.md = NiftiMetadata(fname + ".nii", self.nii.header)
 
 class NrrdDataFile:
