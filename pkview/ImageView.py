@@ -324,7 +324,7 @@ PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.RECT : RectPicker,
            PickMode.ELLIPSE : EllipsePicker,
            PickMode.FREEHAND : FreehandPicker
-           }
+          }
 
 class DragMode:
     DEFAULT = 0
@@ -999,16 +999,17 @@ class ImageView(QtGui.QSplitter):
         if vol is not None:
             self.vol_name.setText(vol.md.basename)
             self.h1.setSourceData(self.ivm.vol, percentile=99)
+
+            # If one of the dimensions has size 1 the data is 2D so
+            # maximise the relevant slice
+            self.max_min(0, state=0)
+            for d in range(3):
+                if vol.shape[d] == 1:
+                    self.max_min(d, state=1)
         else:
             self.vol_name.setText("")
 
         self.update_ortho_views()
-        
-        # If one of the dimensions has size 1 the data is 2D so 
-        # maximise the relevant slice
-        for d in range(3):
-            if vol.shape[d] == 1:
-                self.max_min(d, state=1)
 
     def roi_combo_changed(self, idx):
         if idx >= 0:
