@@ -181,14 +181,14 @@ class RegisterDialog(QtGui.QDialog):
         layout.addWidget(QtGui.QLabel("<font size=5>\nLicense Agreement</font>"))
         edit = QtGui.QTextEdit()
         # FIXME
-        lic_file = open(get_local_file("../licence.md"), "r")
-        try:
-            for line in lic_file:
-                edit.append(line)
-        finally:
-            lic_file.close()
-        edit.moveCursor (QtGui.QTextCursor.Start)
-        edit.ensureCursorVisible()
+        #lic_file = open(get_local_file("../licence.md"), "r")
+        #try:
+        #    for line in lic_file:
+        #        edit.append(line)
+        #finally:
+        #    lic_file.close()
+        #edit.moveCursor (QtGui.QTextCursor.Start)
+        #edit.ensureCursorVisible()
         layout.addWidget(edit)
 
         l = QtGui.QLabel("""The Software is distributed "AS IS" under this Licence solely for non-commercial use. If you are interested in using the Software commercially, please contact the technology transfer company of the University, to negotiate a licence. Contact details are: enquiries@innovation.ox.ac.uk""")
