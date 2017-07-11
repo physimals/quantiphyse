@@ -584,6 +584,8 @@ class OrthoView(pg.GraphicsView):
 
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
+        if self.ivm.vol is None: return
+        
         if event.button() == QtCore.Qt.LeftButton:
             self.dragging = (self.iv.drag_mode == DragMode.PICKER_DRAG)
             
