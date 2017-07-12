@@ -958,12 +958,12 @@ class ImageView(QtGui.QSplitter):
         If state=1, maximise, 0=show all, -1=toggle """
         o1 = (win+1) % 3
         o2 = (win+2) % 3
-        if state == 1 or self.win[o1].isVisible():
+        if state == 1 or (state == -1 and self.win[o1].isVisible()):
             # Maximise
             self.win[o1].setVisible(False)
             self.win[o2].setVisible(False)
             self.grid.addWidget(self.win[win], 0, 0, 2, 2)
-        elif state == 0 or not self.win[o1].isVisible():
+        elif state == 0 or (state == -1 and not self.win[o1].isVisible()):
             # Show all three
             self.grid.addWidget(self.win[1], 0, 0, )
             self.grid.addWidget(self.win[0], 0, 1)
