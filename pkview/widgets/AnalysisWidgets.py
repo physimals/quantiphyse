@@ -46,7 +46,7 @@ class SEPlot:
             #tolerance does not scale by data value to scale input
             s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
             knots1 = s.get_knots()
-            print("Number of knots in B-spline smoothing: ", len(knots1))
+            #print("Number of knots in B-spline smoothing: ", len(knots1))
             line_values = s(r1)*pt_values.max()
         else:
             line_values = pt_values
@@ -476,6 +476,7 @@ class OverlayStatistics(PkWidget):
         self.ivm.sig_all_overlays.connect(self.update_all)
         self.ivm.sig_current_overlay.connect(self.update_all)
         self.ivl.sig_focus_changed.connect(self.focus_changed)
+        self.update_all()
 
     def deactivate(self):
         self.ivm.sig_current_roi.disconnect(self.update_all)
