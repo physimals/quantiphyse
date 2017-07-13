@@ -6,14 +6,19 @@ Copyright (c) 2017 University of Oxford
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import collections
+import time
 
 import numpy as np
+from skimage.segmentation import random_walker
+
 from PySide import QtCore, QtGui
 
 from ..QtInherit.dialogs import error_dialog
+from ..QtInherit.widgets import OverlayCombo, RoiCombo, NumericOption
 from ..QtInherit import HelpButton
 from ..ImageView import PickMode, DragMode
 from ..utils import get_icon
+from ..analysis.feat_pca import PcaFeatReduce
 from . import PkWidget
 
 DESC = """
@@ -33,7 +38,7 @@ class Tool:
 
     def interface(self):
         grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0)
+        grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0, 1, 2)
         return grid
 
 class PolygonTool(Tool):
@@ -59,7 +64,7 @@ class PolygonTool(Tool):
         slice_z = self.ivm.cim_pos[slice_zaxis]
         print(self.label)
         roi_new = self.ivl.picker.get_roi(self.label)
-        self.builder.add_roi(slice_zaxis, slice_z, roi_new)
+        self.builder.add_to_roi(roi_new, slice_zaxis, slice_z)
         
         self.selected()
 
@@ -77,33 +82,83 @@ class EraserTool(Tool):
 
     def point_picked(self, picker):
         pos = picker.point
-        print(pos)
-        if self.new_roi_name not in self.ivm.rois:
-            roi_new = np.zeros(self.ivm.shape[:3])
-            self.ivm.add_roi(self.new_roi_name, roi_new, make_current=True)
-        roi_new = self.ivm.rois[self.new_roi_name]
-        roi_new[pos[:3]] = 0
+        zaxis = 0
+        zpos = pos[zaxis]
+        sl = np.zeros(self.ivm.vol.shape[1:3])
+        sl[pos(1), pos(2)] = 0
+        self.builder.add_to_roi(sl, zaxis, zpos, erase=True)
 
 class PickTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Pick", "Pick regions of an existing ROI")
+        self.roi_name = ""
+        self.temp_name = "PickToolTempRoi"
 
     def interface(self):
         grid = Tool.interface(self)
 
         grid.addWidget(QtGui.QLabel("Existing ROI"), 1, 0)
-        combo = QtGui.QComboBox()
-        for key in self.ivm.rois:
-            combo.addItem(key)
-        combo.currentIndexChanged.connect(self.existing_roi_changed)
-        grid.addWidget(combo, 1, 1)
+        self.roi_combo = RoiCombo(self.ivm)
+        self.roi_combo.currentIndexChanged.connect(self.set_roi)
+        grid.addWidget(self.roi_combo, 1, 1)
+
+        self.ok_btn = QtGui.QPushButton("Accept")
+        self.ok_btn.setEnabled(False)
+        self.ok_btn.clicked.connect(self.accepted)
+        grid.addWidget(self.ok_btn, 2, 0)
+        self.cancel_btn = QtGui.QPushButton("Cancel")
+        self.cancel_btn.setEnabled(False)
+        self.cancel_btn.clicked.connect(self.reset)
+        grid.addWidget(self.cancel_btn, 2, 1)
 
         return grid
 
-    def existing_roi_changed(self, idx):
-        if idx >= 0:
-            roi = self.roi_combo.itemText(idx)
-            self.ivm.set_current_roi(roi, signal=True)
+    def set_roi(self):
+        self.roi_name = self.roi_combo.currentText()
+        self.show_roi()
+
+    def show_roi(self):
+        if self.roi_name != "":
+            self.ivm.set_current_roi(self.roi_name)
+
+    def selected(self):
+        self.ivl.set_picker(PickMode.SINGLE)
+        self.ivl.sig_sel_changed.connect(self.point_picked)
+        self.show_roi()
+
+    def deselected(self):
+        Tool.deselected(self)
+        self.ivl.sig_sel_changed.disconnect(self.point_picked)
+
+    def accepted(self):
+        self.builder.add_to_roi(self.roi_new)
+        self.reset()
+
+    def reset(self):
+        self.roi_new = None
+        self.ivm.delete_roi(self.temp_name)
+        self.ok_btn.setEnabled(False)
+        self.cancel_btn.setEnabled(False)
+        self.roi_combo.setEnabled(True)
+        self.selected()
+
+    def point_picked(self, picker):
+        if self.roi_name == "": return
+
+        pos = picker.point
+        print(pos)
+
+        roi_picked = self.ivm.rois[self.roi_name]
+        picked_region = roi_picked[pos[0], pos[1], pos[2]]
+        self.roi_new = np.zeros(roi_picked.shape)
+        self.roi_new[roi_picked==picked_region] = self.label
+
+        self.ivm.add_roi(self.temp_name, self.roi_new, make_current=True)
+        self.ok_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(True)
+        self.roi_combo.setEnabled(False)
+        self.ivl.sig_sel_changed.disconnect(self.point_picked)
+        
 
 class PenTool(PolygonTool):
     def __init__(self):
@@ -160,13 +215,126 @@ class EllipseTool(PolygonTool):
         return grid
 
     def selected(self):
-        self.ivl.set_picker(PickMode.ELLIPSE, DragMode.PICKER_DRAG)
+        self.ivl.set_picker(PickMode.MULTIPLE)
         
 class CrosshairsTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Crosshairs", "Navigate data without adding to ROI")
+     
+class WalkerTool(Tool):
+    def __init__(self):
+        Tool.__init__(self, "Walker", "Automatic segmentation using the random walk algorithm")
+        self.segmode = 0
+        self.pickmode = 0
 
-TOOLS = [CrosshairsTool(), RectTool(), EllipseTool(), PolygonTool(), EraserTool(), PenTool()]
+    def interface(self):
+        grid  = Tool.interface(self)
+
+        grid.addWidget(QtGui.QLabel("Source data: "), 1, 0)
+        self.ov_combo=OverlayCombo(self.ivm)
+        grid.addWidget(self.ov_combo)
+
+        grid.addWidget(QtGui.QLabel("Click to select points: "), 2, 0)
+        self.pickmode_combo = QtGui.QComboBox()
+        self.pickmode_combo.addItem("Inside the ROI")
+        self.pickmode_combo.addItem("Outside the ROI")
+        self.pickmode_combo.currentIndexChanged.connect(self.pickmode_changed)
+        grid.addWidget(self.pickmode_combo, 2, 1)
+        
+        grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
+        self.segmode_combo = QtGui.QComboBox()
+        self.segmode_combo.addItem("Slice")
+        self.segmode_combo.addItem("3D")
+        self.segmode_combo.currentIndexChanged.connect(self.segmode_changed)
+        grid.addWidget(self.segmode_combo, 3, 1)
+
+        self.beta = NumericOption("Diffusion difficulty", grid, 4, 0, intonly=True, maxval=20000, default=10000, step=1000)
+
+        btn = QtGui.QPushButton("Segment")
+        btn.clicked.connect(self.segment)
+        grid.addWidget(btn, 5, 0)
+        btn = QtGui.QPushButton("Clear points")
+        btn.clicked.connect(self.selected)
+        grid.addWidget(btn, 5, 1)
+
+        return grid
+
+    def pickmode_changed(self, idx=None):
+        self.pickmode = idx
+        if self.pickmode == 0:
+            self.ivl.picker.col = (255, 0, 0)
+        else:
+            self.ivl.picker.col = (255, 255, 255)
+
+    def segmode_changed(self, idx=None):
+        self.segmode = idx
+        self.selected()
+
+    def selected(self):
+        if self.segmode == 1:
+            self.ivl.set_picker(PickMode.MULTIPLE)
+        else:
+            self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
+            
+        self.ivl.sig_sel_changed.connect(self.points_changed)
+        self.labels = np.zeros(self.ivm.vol.shape[:3])
+        self.pickmode_changed(self.pickmode)
+        
+    def deselected(self):
+        Tool.deselected(self)
+        self.ivl.sig_sel_changed.disconnect(self.points_changed)
+
+    def points_changed(self):
+        for col, points in self.ivl.picker.points.items():
+            if (col == (255, 0, 0)):
+                label = 1
+            else:
+                label = 2
+
+            for p in points:
+                self.labels[p[0], p[1], p[2]] = label
+
+    def segment(self):
+        data = self.ivm.overlays[self.ov_combo.currentText()]
+        labels = self.labels
+
+        kwargs = {}
+        # Use voxel size correctly
+        spacing = [self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[0],
+                  self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[1],
+                  self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[2]]
+
+        if data.ndim > 3:
+            # Reduce 4D data to PCA modes
+            Pfeat = PcaFeatReduce(data)
+            data, labels1 = Pfeat.get_training_features(feature_volume=True, n_components=5)
+            kwargs["multichannel"] = True
+        else:
+            # Normalize data
+            data = (data / (np.max(data)-np.min(data))) + np.min(data)
+            kwargs["multichannel"] = False
+
+        if self.segmode == 0:
+            # Segment using 2D slice only
+            zaxis = self.ivl.picker.zaxis
+            zpos = self.ivl.picker.zpos
+            sl = [slice(None)] * 3
+            sl[zaxis] = zpos
+            data = data[sl]
+            labels = self.labels[sl]
+            del spacing[zaxis] 
+        else:
+            zpos, zaxis = None, None
+
+        seg = random_walker(data, labels, beta=self.beta.spin.value(), mode='cg_mg', spacing=spacing, **kwargs)
+
+        # Label 2 is used for 'outside region'
+        seg[seg==2] = 0
+        
+        self.builder.add_to_roi(seg, zaxis, zpos)
+        self.selected()
+        
+TOOLS = [CrosshairsTool(), PenTool(), WalkerTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool()]
 
 class RoiBuilderWidget(PkWidget):
     """
@@ -227,7 +395,7 @@ class RoiBuilderWidget(PkWidget):
         toolbox.setLayout(self.tools_grid)
 
         self.tool = None
-        x, y, cols = 0, 0, 6
+        x, y, cols = 0, 0, 4
         for tool in TOOLS:
             self.add_tool(tool, y, x)
             x += 1
@@ -277,6 +445,9 @@ class RoiBuilderWidget(PkWidget):
 
     def tool_clicked(self, tool):
         def tool_clicked():
+            if self.ivm.vol is None:
+                return
+
             if self.tool is not None:
                 self.tool.btn.setStyleSheet("")
                 self.tool.deselected()
@@ -294,26 +465,34 @@ class RoiBuilderWidget(PkWidget):
         return tool_clicked
     
     def label_changed(self, label):
-        if self.tool is not None:
-            self.tool.label = label
+        for tool in TOOLS:
+            tool.label = label
         
     def name_changed(self, name):
         self.new_roi_name = name
         if self.tool is not None:
             self.tool.new_roi_name = name
       
-    def add_roi(self, axis, pos, roi_new):
-        if self.new_roi_name not in self.ivm.rois:
-            self.ivm.add_roi(self.new_roi_name, np.zeros(self.ivm.shape[:3]), make_current=True)
-    
-        roi_orig = self.ivm.rois[self.new_roi_name]
+    def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
+        roi_orig = self.ivm.rois.get(self.new_roi_name, np.zeros(self.ivm.shape[:3]))
+
         slices = [slice(None)] * 3
-        slices[axis] = pos
-        slice_orig = roi_orig[slices]
-        slice_new = roi_new[slices]
+        if axis is not None and pos is not None:
+            slices[axis] = pos
+            slice_orig = roi_orig[slices]
+            slice_new = roi_new[slices]
+        else:
+            slice_orig = roi_orig
+            slice_new = roi_new
+
         self.history.append((self.new_roi_name, axis, pos, np.copy(slice_orig)))
-        slice_orig[slice_new > 0] = slice_new[slice_new > 0]
+        if erase:
+            slice_orig[slice_new == 0] = 0
+        else:
+            slice_orig[slice_new > 0] = slice_new[slice_new > 0]
+            
         roi_orig[slices] = slice_orig
+
         self.ivm.add_roi(self.new_roi_name, roi_orig, make_current=True)
         self.undo_btn.setEnabled(True)
 
@@ -323,7 +502,8 @@ class RoiBuilderWidget(PkWidget):
         roi_name, axis, pos, roi_slice_orig = self.history.pop()
         if roi_name  in self.ivm.rois:
             slices = [slice(None)] * 3
-            slices[axis] = pos
+            if axis is not None and pos is not None:
+                slices[axis] = pos
             self.ivm.rois[roi_name][slices] = roi_slice_orig
             self.ivm.add_roi(roi_name, self.ivm.rois[roi_name])
         self.undo_btn.setEnabled(len(self.history) > 0)
