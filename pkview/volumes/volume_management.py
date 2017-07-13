@@ -119,15 +119,16 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.update_shape(ov.shape)
         self.overlays[name] = ov
         
-        if signal:
-            self.sig_all_overlays.emit(self.overlays.keys())
-
         # Make main volume if requested, or if the first volume, or if the first 4d volume
         # If not the main volume, set as current overlay if requested
         if make_main or self.vol is None or (ov.ndim == 4 and self.vol.ndim == 3):
             self.set_main_volume(name)
-        elif make_current:
+        if signal:
+            self.sig_all_overlays.emit(self.overlays.keys())
+        if make_current:
             self.set_current_overlay(name, signal)
+
+
 
     def add_roi(self, name, roi, make_current=False, signal=True):
         roi = roi.astype(np.int32).view(QpVolume)
