@@ -133,20 +133,23 @@ class PickMode:
     """ Multi-point picking. pick_points contains a list of points """
     MULTIPLE = 2
 
+    """ Multi-point picking in a single slice """
+    SLICE_MULTIPLE = 3
+
     """ Select rectangular regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
-    RECT = 3
+    RECT = 4
 
     """ Select elliptical regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
-    ELLIPSE = 4
+    ELLIPSE = 5
 
     """ Polygon lasso. pick_points contains line segment ends. Use get_pick_roi to get full set """
-    LASSO = 5
+    LASSO = 6
     
     """ Like LASSO but holding mouse down for continual freehand drawing."""
-    FREEHAND = 6
+    FREEHAND = 7
     
     """ Pick an ROI region. pick_points contains a single point. get_pick_roi gets the full region"""
-    ROI_REGION = 7
+    ROI_REGION = 8
 
 class Picker:
     def __init__(self, iv):
@@ -192,6 +195,25 @@ class MultiPicker(PointPicker):
     def cleanup(self):
         for w in range(3):
             win = self.iv.win[w].remove_arrows()
+
+class SliceMultiPicker(MultiPicker):
+    def __init__(self, iv, col=(255, 0, 0)):
+        MultiPicker.__init__(self, iv, col)
+
+    def add_point(self, pos, win):
+        if self.col not in self.points: 
+            self.points[self.col] = []
+        
+        if self.win is None:
+            self.win = win
+            self.zaxis = self.iv.win[win].zaxis
+            self.zpos = pos[self.zaxis]
+
+        if win == self.win and pos[self.zaxis] == self.zpos:
+            self.points[self.col].append(tuple(pos))
+            self.iv.win[win].add_arrow(pos, self.col)
+
+        self.iv.sig_sel_changed.emit(self)
 
 class LassoPicker(Picker): 
 
@@ -320,6 +342,7 @@ class FreehandPicker(LassoPicker):
         
 PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.MULTIPLE : MultiPicker,
+           PickMode.SLICE_MULTIPLE : SliceMultiPicker,
            PickMode.LASSO : LassoPicker,
            PickMode.RECT : RectPicker,
            PickMode.ELLIPSE : EllipsePicker,
@@ -341,7 +364,7 @@ class DataView:
         self.cmap = "jet"
         self.visible = True
         self.alpha = 255
-        self.roi_only = False
+        self.roi_only = True
         d = self.data()
         self.cmap_range = [d.min(), d.max()]
 
