@@ -17,6 +17,7 @@ class TextViewerDialog(QtGui.QDialog):
         vbox.addWidget(self.buttonBox)
 
         self.setLayout(vbox)
+        self.resize(700, 500)
 
 def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
     text = msg
@@ -31,3 +32,52 @@ def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
 
     QtGui.QMessageBox.warning(None, title, text, QtGui.QMessageBox.Close)
 
+class MatrixViewerDialog(QtGui.QDialog):
+
+    def __init__(self, parent, vals, title="Data", text=""):
+        super(MatrixViewerDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+
+        self.table = QtGui.QTableWidget(len(vals), len(vals[0]))
+        vbox.addWidget(self.table)
+        for row, rvals in enumerate(vals):
+            for col, val in enumerate(rvals):
+                self.table.setItem(row, col, QtGui.QTableWidgetItem(str(val)))
+        
+        self.text = QtGui.QLabel(text)
+        vbox.addWidget(self.text)
+        
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
+        self.resize(500, 500)
+
+class GridEditDialog(QtGui.QDialog):
+
+    def __init__(self, parent, vals, col_headers=None, row_headers=None, title="Data", text="", expandable=True):
+        super(GridEditDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+
+        from .widgets import NumberGrid # prevent circular import dependency
+        self.table = NumberGrid(vals, col_headers=col_headers, row_headers=row_headers, expandable=expandable)
+        self.table.itemChanged.connect(self._table_changed)
+        vbox.addWidget(self.table)
+        
+        self.text = QtGui.QLabel(text)
+        vbox.addWidget(self.text)
+        
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
+        self.resize(500, 500)
+
+    def _table_changed(self):
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
