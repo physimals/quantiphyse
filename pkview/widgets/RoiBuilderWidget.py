@@ -315,6 +315,7 @@ class RoiBuilderWidget(PkWidget):
         slice_orig[slice_new > 0] = slice_new[slice_new > 0]
         roi_orig[slices] = slice_orig
         self.ivm.add_roi(self.new_roi_name, roi_orig, make_current=True)
+        self.undo_btn.setEnabled(True)
 
     def undo(self):
         if len(self.history) == 0: return

@@ -960,9 +960,10 @@ class ImageView(QtGui.QSplitter):
         o2 = (win+2) % 3
         if state == 1 or (state == -1 and self.win[o1].isVisible()):
             # Maximise
+            self.grid.addWidget(self.win[win], 0, 0, 2, 2)
             self.win[o1].setVisible(False)
             self.win[o2].setVisible(False)
-            self.grid.addWidget(self.win[win], 0, 0, 2, 2)
+            self.win[win].setVisible(True)
         elif state == 0 or (state == -1 and not self.win[o1].isVisible()):
             # Show all three
             self.grid.addWidget(self.win[1], 0, 0, )
@@ -970,6 +971,7 @@ class ImageView(QtGui.QSplitter):
             self.grid.addWidget(self.win[2], 1, 0)
             self.win[o1].setVisible(True)
             self.win[o2].setVisible(True)
+            self.win[win].setVisible(True)
 
     def update_ortho_views(self):
         """ Update the image viewer windows """
