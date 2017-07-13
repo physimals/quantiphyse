@@ -44,12 +44,11 @@ from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.fabber import FabberWidget, CESTWidget
 from .widgets.MCWidgets import RegWidget
-from .widgets.ExperimentalWidgets import ImageExportWidget
+#from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
 from .widgets.RoiBuilderWidget import RoiBuilderWidget
 from .volumes.io import load, save
 from .volumes.volume_management import ImageVolumeManagement
-from .widgets.ExampleWidgets import ExampleWidget1
 
 from .utils.batch import run_batch
 from .utils import set_local_file_path, get_icon, get_local_file
@@ -307,14 +306,14 @@ class ViewOptions(QtGui.QDialog):
         self.ivm.sig_main_volume.connect(self.vol_changed)
 
         # Options
-        self.size_scaling = 0
-        self.orientation = 0
+        self.size_scaling = self.SCALE_VOXELS
+        self.orientation = self.RADIOLOGICAL
         self.t_type = "Volume"
         self.t_unit = ""
         self.t_scale_type = 0
         self.t_res = 1.0
         self.t_scale = []
-        self.display_order = 0
+        self.display_order = self.ROI_ON_TOP
 
         grid = QtGui.QGridLayout()
         label = QtGui.QLabel('<font size="5">View Options</font>')
@@ -477,7 +476,7 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(CESTWidget) 
         self.add_widget(MeanValuesWidget) 
         self.add_widget(RegWidget) 
-        self.add_widget(ImageExportWidget) 
+        #self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
         self.add_widget(RoiBuilderWidget)
