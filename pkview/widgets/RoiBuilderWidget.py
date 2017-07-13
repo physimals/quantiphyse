@@ -159,7 +159,6 @@ class PickTool(Tool):
         self.roi_combo.setEnabled(False)
         self.ivl.sig_sel_changed.disconnect(self.point_picked)
         
-
 class PenTool(PolygonTool):
     def __init__(self):
         Tool.__init__(self, "Pen", "Draw around ROI region")
@@ -480,7 +479,10 @@ class RoiBuilderWidget(PkWidget):
         if axis is not None and pos is not None:
             slices[axis] = pos
             slice_orig = roi_orig[slices]
-            slice_new = roi_new[slices]
+            if roi_new.ndim == 3: 
+                slice_new = roi_new[slices]
+            else:
+                slice_new = roi_new
         else:
             slice_orig = roi_orig
             slice_new = roi_new
