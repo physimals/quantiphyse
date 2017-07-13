@@ -78,6 +78,7 @@ class SECurve(PkWidget):
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
 
+    def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
         title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
