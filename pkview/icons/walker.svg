@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   viewBox="0 -256 1792 1792"
+   id="svg3025"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   width="100%"
+   height="100%"
+   sodipodi:docname="walker.svg"
+   inkscape:export-filename="/home/ibmeuser/build/PkView/pkview/icons/walker.png"
+   inkscape:export-xdpi="1.76"
+   inkscape:export-ydpi="1.76">
+  <metadata
+     id="metadata3035">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3033" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1855"
+     inkscape:window-height="1176"
+     id="namedview3031"
+     showgrid="false"
+     inkscape:zoom="0.13169643"
+     inkscape:cx="-1514.8474"
+     inkscape:cy="896.00003"
+     inkscape:window-x="65"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3025" />
+  <circle
+     style="fill:#e5e5e5;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+     id="path3408"
+     cx="721.3559"
+     cy="2.1694946"
+     r="159.45763" />
+  <circle
+     style="fill:#e5e5e5;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-3"
+     cx="227.7966"
+     cy="252.74577"
+     r="159.45763" />
+  <circle
+     style="fill:#e5e5e5;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-6"
+     cx="1480.678"
+     cy="245.15256"
+     r="159.45763" />
+  <circle
+     style="fill:#e5e5e5;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-7"
+     cx="326.50848"
+     cy="1338.5763"
+     r="159.45763" />
+  <path
+     style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:100;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:100,100;stroke-dashoffset:0"
+     d="m 615.05084,305.89832 c 250.57627,-68.33898 387.25426,-68.33898 577.08476,37.9661 212.6102,136.67796 410.0339,280.94915 410.0339,470.77965 0,182.23729 121.4915,410.03383 7.5932,539.11863 -129.0847,91.1186 -235.3898,106.3051 -485.9661,37.9661 C 895.99999,1330.983 493.55931,1141.1525 387.25423,928.54236 273.35593,632.40677 394.84745,389.42374 615.05084,305.89832 Z"
+     id="path4237"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccccccc" />
+  <circle
+     style="fill:#ff0909;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-5"
+     cx="782.10168"
+     cy="548.88135"
+     r="159.45763" />
+  <circle
+     style="fill:#ff0909;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-5-3"
+     cx="979.52539"
+     cy="1004.4745"
+     r="159.45763" />
+  <circle
+     style="fill:#ff0909;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="path3408-5-5"
+     cx="1328.8136"
+     cy="799.45764"
+     r="159.45763" />
+</svg>
