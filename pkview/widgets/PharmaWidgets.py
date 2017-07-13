@@ -167,7 +167,6 @@ class ModelCurves(PkWidget):
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
         self.plot = win.addPlot(title="Model / Data Curves")
-        self.plot.addLegend()
         main_vbox.addWidget(win)
 
         # Curve options
@@ -298,10 +297,10 @@ class ModelCurves(PkWidget):
             self.plot.disableAutoRange()
             self.plot.setYRange(self.min_spin.value(), self.max_spin.value())
 
-        # Ugly and slow way to clear the legend but seems to be no better option
-        for sample, label in self.plot.legend.items:
-            self.plot.legend.removeItem(label.text)
-        
+        # Replaces any existing legend
+        if self.plot.legend: self.plot.legend.scene().removeItem(self.plot.legend)
+        legend = self.plot.addLegend()
+
         sig, sig_ovl = self.ivm.get_current_enhancement()
 
         # Get x scale
@@ -321,7 +320,8 @@ class ModelCurves(PkWidget):
                 # Show signal enhancement for main data, rather than raw values
                 m1 = np.mean(sig_values[:frames1])
                 if m1 != 0: sig_values = sig_values / m1 - 1
-            self.plot.legend.removeItem(ovl) # FIXME Hack to prevent multiple legend entries
+                
             self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0, name=ovl)
+            line = self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0)
+            legend.addItem(line, ovl)
             idx += 1
