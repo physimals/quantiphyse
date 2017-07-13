@@ -137,7 +137,7 @@ class SourceImageList(QtGui.QVBoxLayout):
 
     def add(self):
         if self.ivm.vol is None:
-            QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T10 map",
+            QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T1 map",
                                       QtGui.QMessageBox.Close)
             return
 
@@ -178,21 +178,23 @@ class SourceImageList(QtGui.QVBoxLayout):
 
 class T10Widget(PkWidget):
     """
-    Run T10 analysis on 3 input volumes
+    Generate T1 map from variable flip angle images
     """
     def __init__(self, **kwargs):
-        super(T10Widget, self).__init__(name="T10", desc="Generate T10 map", icon="t10", **kwargs)
+        super(T10Widget, self).__init__(name="T1", desc="Generate T1 map", icon="t10", **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
         hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">T10 map generation</font>'))
+        hbox.addWidget(QtGui.QLabel('<font size="5">T1 map generation</font>'))
         hbox.addStretch(1)
         hbox.addWidget(HelpButton(self, "t1"))
         layout.addLayout(hbox)
         
+        layout.addWidget(QtGui.QLabel('Generate T1 map from variable flip angle images'))
+
         fabox = QtGui.QGroupBox()
         fabox.setTitle("Flip angle images")
         self.fatable = SourceImageList("Flip angle", val_range=[0, 90])
@@ -240,7 +242,7 @@ class T10Widget(PkWidget):
         layout.addWidget(self.preclinGroup)
 
         hbox = QtGui.QHBoxLayout()
-        self.clamp = QtGui.QCheckBox("Clamp T10 values between")
+        self.clamp = QtGui.QCheckBox("Clamp T1 values between")
         self.clamp.stateChanged.connect(self.clamp_changed)
         self.clamp.setChecked(False)
         hbox.addWidget(self.clamp)
@@ -278,7 +280,7 @@ class T10Widget(PkWidget):
 
     def generate(self):
         if self.ivm.vol is None:
-            QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T10 map", QtGui.QMessageBox.Close)
+            QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T1 map", QtGui.QMessageBox.Close)
             return
         elif not self.trinp.valid:
             QtGui.QMessageBox.warning(self, "Invalid TR", "TR value is invalid", QtGui.QMessageBox.Close)
@@ -289,7 +291,7 @@ class T10Widget(PkWidget):
 
         fa_vols, fa_angles = self.fatable.get_images()
         if len(fa_vols) == 0:
-            QtGui.QMessageBox.warning(self, "No FA images", "Load FA images before generating T10 map",
+            QtGui.QMessageBox.warning(self, "No FA images", "Load FA images before generating T1 map",
                                       QtGui.QMessageBox.Close)
             return
 
