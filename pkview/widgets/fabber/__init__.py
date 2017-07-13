@@ -9,14 +9,15 @@ import sys, os, warnings
 import time
 import traceback
 import re
+import tempfile
 
 import nibabel as nib
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption
-from ...QtInherit.dialogs import TextViewerDialog, error_dialog
+from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers
+from ...QtInherit.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
 from .. import PkWidget
@@ -39,9 +40,6 @@ class FabberWidget(PkWidget):
     """
     Widget for running Fabber model fitting
     """
-
-    """ Signal emitted when async Fabber finished"""
-    sig_finished = QtCore.Signal(tuple)
 
     def __init__(self, **kwargs):
         super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
@@ -217,10 +215,6 @@ class FabberWidget(PkWidget):
         self.rundata["save-mean"] = ""
         self.reset()
 
-        self.process = FabberProcess(self.ivm)
-        self.process.sig_finished.connect(self.run_finished_gui)
-        self.process.sig_progress.connect(self.update_progress)
-
     def activate(self):
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
 
@@ -285,16 +279,18 @@ class FabberWidget(PkWidget):
         self.runBtn.setEnabled(False)
         self.logBtn.setEnabled(False)
 
+        self.process = FabberProcess(self.ivm)
+        self.process.sig_finished.connect(self.run_finished)
+        self.process.sig_progress.connect(self.update_progress)
         self.process.run(self.rundata)
 
-    def run_finished_gui(self, status, results, log):
+    def run_finished(self, status, results, log):
         """
         Callback called when an async fabber run completes
         """
         self.log = log
         if status == Process.SUCCEEDED:
-            save_files = self.savefilesCb.isChecked()     
-            if save_files:
+            if self.savefilesCb.isChecked():
                 save_folder = self.saveFolderEdit.text()       
                 for ovl in results[0].data:
                     self.ivm.overlays[ovl].save_nifti(os.path.join(save_folder, ovl.name))
@@ -306,7 +302,7 @@ class FabberWidget(PkWidget):
                                       QtGui.QMessageBox.Close)
 
         self.runBtn.setEnabled(True)
-        self.logBtn.setEnabled(status == Process.SUCCEEDED)
+        self.logBtn.setEnabled(True)
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
@@ -317,14 +313,16 @@ class FabberWidget(PkWidget):
          self.logview.raise_()
 
 CITE_CEST = """
-<i>Chemical Exchange Saturation Transfer - citation here...</i>
+Modelling for Chemical Exchange Saturation Transfer MRI<br><br>
+<i>Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J. (2012).<br>
+Quantitative Bayesian model-based analysis of amide proton transfer MRI. Magnetic Resonance in Medicine. doi:10.1002/mrm.24474</i>
 """
 
 # FIXME correct numbers
 CEST_POOLS = [
-    {"name" : "Water", "default" : True, "vals" : "1.2774e8     0       1.3     0.05"},
-    {"name" : "Amide", "default" : True, "vals" : "3.5          20      0.77    0.01"},
-    {"name" : "NOE", "default" : True, "vals" : "-2.34          40      1       0.0002"},
+    {"name" : "Water", "default" : True, "vals" : "4.00252e8     0       1.8     0.05"},
+    {"name" : "Amide", "default" : True, "vals" : "3.5          30      1.8    0.001"},
+    {"name" : "NOE", "default" : True, "vals" : "-2.41          20      1.8       0.0005"},
     {"name" : "MT", "default" : False, "vals" : "0 0 0 0"},
     {"name" : "Amine", "default" : False, "vals" : "0 0 0 0"},
 ]
@@ -333,9 +331,6 @@ class CESTWidget(FabberWidget):
     """
     CEST-specific widget, using the Fabber process
     """
-
-    """ Signal emitted when async Fabber finished"""
-    sig_finished = QtCore.Signal(tuple)
 
     def __init__(self, **kwargs):
         super(FabberWidget, self).__init__(name="CEST", icon="cest", 
@@ -369,24 +364,48 @@ class CESTWidget(FabberWidget):
 
         seqBox = QtGui.QGroupBox()
         seqBox.setTitle("Sequence")
-        seqVbox = QtGui.QVBoxLayout()
-        seqBox.setLayout(seqVbox)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("Frequency offsets"))
-        self.freq_offsets = QtGui.QLineEdit()
-        hbox.addWidget(self.freq_offsets)
-        self.load_freq_offsets = QtGui.QPushButton("Load")
-        hbox.addWidget(self.load_freq_offsets)
-        seqVbox.addLayout(hbox)
-
         grid = QtGui.QGridLayout()
-        self.pd = NumericOption("Pulse Duration (s)", grid, ypos=0, xpos=0, default=2.0)
-        self.b1 = NumericOption("B1 (mT)", grid, ypos=1, xpos=0, default=0.55)
-        self.pm = NumericOption("Pulse Magnitude", grid, ypos=0, xpos=2, default=1.0)
-        self.pr = NumericOption("Pulse Repetitions", grid, ypos=1, xpos=2, default=1, intonly=True)
-        seqVbox.addLayout(grid)
+        grid.setColumnStretch(2, 1)
+        seqBox.setLayout(grid)
 
+        grid.addWidget(QtGui.QLabel("Frequency offsets"), 0, 0)
+        self.freq_offsets = NumberList([1, 2, 3, 4, 5])
+        grid.addWidget(self.freq_offsets, 0, 1, 1, 2)
+        self.load_freq_offsets = LoadNumbers(self.freq_offsets)
+        grid.addWidget(self.load_freq_offsets, 0, 3)
+
+        self.b1 = NumericOption("B1 (\u03bcT)", grid, ypos=1, xpos=0, default=0.55, decimals=6)
+ #       self.b1.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+
+        grid.addWidget(QtGui.QLabel("Saturation"), 2, 0)
+        self.sat_combo = QtGui.QComboBox()
+        self.sat_combo.addItem("Continuous Saturation   ")
+        self.sat_combo.addItem("Pulsed Saturation   ")
+        self.sat_combo.currentIndexChanged.connect(self.update_ui)
+        self.sat_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+#        self.sat_combo.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        grid.addWidget(self.sat_combo, 2, 1)
+
+        # Continuous saturation
+        self.st = NumericOption("Saturation times (s)", grid, ypos=3, xpos=0, default=2.0)
+#        self.st.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+
+        # Pulsed saturation
+        self.pms_label = QtGui.QLabel("Pulse Magnitudes")
+        grid.addWidget(self.pms_label, 4, 0)
+        self.pms = NumberList([0, 0, 0, 0])
+        grid.addWidget(self.pms, 4, 1, 1, 2)
+        self.load_pms = LoadNumbers(self.pms)
+        grid.addWidget(self.load_pms, 4, 3)
+        self.pds_label = QtGui.QLabel("Pulse Durations (s)")
+        grid.addWidget(self.pds_label, 5, 0)
+        self.pds = NumberList([0, 0, 0, 0])
+        grid.addWidget(self.pds, 5, 1, 1, 2)
+        self.load_pds = LoadNumbers(self.pds)
+        grid.addWidget(self.load_pds, 5, 3)
+        self.pr = NumericOption("Pulse Repeats", grid, ypos=6, xpos=0, default=1, intonly=True)
+#        self.pr.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        
         vbox.addWidget(seqBox)
     
         poolBox = QtGui.QGroupBox()
@@ -402,12 +421,14 @@ class CESTWidget(FabberWidget):
             name = pool["name"]
             self.pool_cbs[name] = QtGui.QCheckBox(name)
             self.pool_cbs[name].setChecked(pool["default"])
-            self.pool_cbs[name].stateChanged.connect(self.update_poolmat)
             grid.addWidget(self.pool_cbs[name], row, col)
             row += 1
             if row == NUM_ROWS:
                 row = 0
                 col += 1
+        edit_btn = QtGui.QPushButton("Edit")
+        edit_btn.clicked.connect(self.edit_pools)
+        grid.addWidget(edit_btn, row+1, 0)
         poolVbox.addLayout(grid)
 
         anBox = QtGui.QGroupBox()
@@ -417,20 +438,22 @@ class CESTWidget(FabberWidget):
 
         grid = QtGui.QGridLayout()
         self.spatial_cb = QtGui.QCheckBox("Spatial smoothing")
-        self.spatial_cb.stateChanged.connect(self.update_options)
-        grid.addWidget(self.spatial_cb, 0, 0)
+        grid.addWidget(self.spatial_cb, 0, 0, 1, 2)
+        self.t12_cb = QtGui.QCheckBox("Allow uncertainty in T1/T2 values")
+        self.t12_cb.stateChanged.connect(self.update_ui)
+        grid.addWidget(self.t12_cb, 1, 0, 1, 2)
         self.t1_cb = QtGui.QCheckBox("T1 map")
-        self.t1_cb.stateChanged.connect(self.update_image_priors)
-        grid.addWidget(self.t1_cb, 1, 0)
+        self.t1_cb.stateChanged.connect(self.update_ui)
+        grid.addWidget(self.t1_cb, 2, 0)
         self.t1_ovl = OverlayCombo(self.ivm, static_only=True)
         self.t1_ovl.setEnabled(False)
-        grid.addWidget(self.t1_ovl, 1, 1)
+        grid.addWidget(self.t1_ovl, 2, 1)
         self.t2_cb = QtGui.QCheckBox("T2 map")
-        self.t2_cb.stateChanged.connect(self.update_image_priors)
-        grid.addWidget(self.t2_cb, 2, 0)
+        self.t2_cb.stateChanged.connect(self.update_ui)
+        grid.addWidget(self.t2_cb, 3, 0)
         self.t2_ovl = OverlayCombo(self.ivm, static_only=True)
         self.t2_ovl.setEnabled(False)
-        grid.addWidget(self.t2_ovl, 2, 1)
+        grid.addWidget(self.t2_ovl, 3, 1)
         anVbox.addLayout(grid)
 
         hbox = QtGui.QHBoxLayout()
@@ -448,7 +471,7 @@ class CESTWidget(FabberWidget):
 
         hbox = QtGui.QHBoxLayout()
         self.runBtn = QtGui.QPushButton('Run modelling', self)
-        self.runBtn.clicked.connect(self.start_task)
+        self.runBtn.clicked.connect(self.start_cest)
         hbox.addWidget(self.runBtn)
         self.progress = QtGui.QProgressBar(self)
         self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
@@ -472,91 +495,146 @@ class CESTWidget(FabberWidget):
         runVbox.addLayout(hbox)
 
         vbox.addWidget(runBox)
-
-        # Load/save box
-        fileBox = QtGui.QGroupBox()
-        fileBox.setTitle('Load/Save options')
-        fileBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
-        loadVbox = QtGui.QVBoxLayout()
-        fileBox.setLayout(loadVbox)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("Filename"))
-        self.fileEdit = QtGui.QLineEdit()
-        self.fileEdit.setReadOnly(True)
-        hbox.addWidget(self.fileEdit)
-        btn = QtGui.QPushButton("Open")
-        btn.clicked.connect(self.open_file)
-        hbox.addWidget(btn)
-        self.saveBtn = QtGui.QPushButton("Save")
-        self.saveBtn.clicked.connect(self.save_file)
-        self.saveBtn.setEnabled(False)
-        hbox.addWidget(self.saveBtn)
-        btn = QtGui.QPushButton("Save As")
-        btn.clicked.connect(self.save_as_file)
-        hbox.addWidget(btn)
-        loadVbox.addLayout(hbox)
-
-        vbox.addWidget(fileBox)
         vbox.addStretch(1)
 
         self.rundata = FabberRunData()
         self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
+        self.rundata["model"] = "cest"
 
         # Placeholders to be replaced with temp files
-        self.rundata["poolmat"] = "pools.mat"
+        self.rundata["pools"] = "pools.mat"
         self.rundata["ptrain"] = "ptrain.mat"
-        self.rundata["dataspec"] = "dataspec.mat"
+        self.rundata["spec"] = "dataspec.mat"
 
-        self.process = FabberProcess(self.ivm)
-        self.process.sig_finished.connect(self.run_finished_gui)
-        self.process.sig_progress.connect(self.update_progress)
+        self.update_ui()
 
-        self.update_dataspec()
-        self.update_poolmat()
-        self.update_ptrain()
-
-    def overlays_changed(self, overlays):
-        pass
-
-    def update_options():
-        #FIXME spatial VB
-        pass
-
-    def update_image_priors(self):
-        self.t1_ovl.setEnabled(self.t1_cb.isChecked())
-        self.t2_ovl.setEnabled(self.t2_cb.isChecked())
-        n = 1
-        if self.t1_cb.isChecked():
-            self.rundata["PSP_byname1"] = "t1" # FIXME
-            self.rundata["PSP_byname1_type"] = "I"
-            self.rundata["PSP_byname1_image"] = self.t1_ovl.currentText()
-            n += 1
-        
-        if self.t2_cb.isChecked():
-            self.rundata["PSP_byname%i" % n] = "t2" # FIXME
-            self.rundata["PSP_byname%i_type" % n] = "I"
-            self.rundata["PSP_byname%i_image % n"] = self.t2_ovl.currentText()
-        
-        if n ==1:
-            del self.rundata["PSP_byname2"]
-            del self.rundata["PSP_byname2_type"]
-            del self.rundata["PSP_byname2_image"]
-
-    def update_dataspec(self):
-        self.dataspec = ""
-        freqs = self.freq_offsets.text().replace(",", " ").split(" ")
-        for freq in freqs:
-            # FIXME need to check these - they are probably wrong
-            self.dataspec += "%s %f %f\n" % (freq, self.b1.spin.value()/1000, self.pd.spin.value())
-    
-    def update_ptrain(self):
-        # FIXME
-        pass
-    
-    def update_poolmat(self):
-        self.poolmat = ""
+    def edit_pools(self):
+        vals, pool_headers = [], []
         for pool in CEST_POOLS:
             if self.pool_cbs[pool["name"]].isChecked():
-                self.poolmat += "%s\n" % pool["vals"]
+                pool_headers.append(pool["name"])
+                rvals = [float(v) for v in pool["vals"].split()]
+                vals.append(rvals)
+        val_headers = ["PPM offset", "Exch rate", "T1", "T2"]
+        d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=False)
+        if d.exec_():
+            vals = d.table.values()
+            row = 0
+            for pool in CEST_POOLS:
+                if self.pool_cbs[pool["name"]].isChecked():
+                    rvals = vals[row]
+                    pool["vals"] = " ".join([str(v) for v in rvals])
+                    row += 1
+
+    def overlays_changed(self, overlays):
+        # Not required for CEST widget
+        pass
+
+    def update_options(self):
+        if self.spatial_cb.isChecked():
+            self.rundata["method"] = "spatialvb"
+            self.rundata["param-spatial-priors"] = "MN+"
+        else:
+            self.rundata["method"] = "vb"
+            del self.rundata["param-spatial-priors"]
+            
+        prior_num = 1
+        if self.t12_cb.isChecked():
+            self.rundata["t12prior"] = ""
+            if self.t1_cb.isChecked():
+                self.rundata["PSP_byname%i" % prior_num] = "T1a"
+                self.rundata["PSP_byname%i_type" % prior_num] = "I"
+                self.rundata["PSP_byname%i_image" % prior_num] = self.t1_ovl.currentText()
+                prior_num += 1
+
+            if self.t2_cb.isChecked():
+                self.rundata["PSP_byname%i" % prior_num] = "T2a"
+                self.rundata["PSP_byname%i_type" % prior_num] = "I"
+                self.rundata["PSP_byname%i_image" % prior_num] = self.t2_ovl.currentText()
+                prior_num += 1
+        else:
+            del self.rundata["t12prior"]
+            
+        for n in range(prior_num, len(CEST_POOLS)*2+1):
+            del self.rundata["PSP_byname%i" % n]
+            del self.rundata["PSP_byname%i_type" % n]
+            del self.rundata["PSP_byname%i_image" % n]
+
+    def update_ui(self):
+        """ Update visibility / enabledness of widgets """
+        self.pulsed = self.sat_combo.currentIndex() == 1
+        self.st.spin.setVisible(not self.pulsed)
+        self.st.label.setVisible(not self.pulsed)
+        self.pds.setVisible(self.pulsed)
+        self.pds_label.setVisible(self.pulsed)
+        self.load_pds.setVisible(self.pulsed)
+        self.pms.setVisible(self.pulsed)
+        self.pms_label.setVisible(self.pulsed)
+        self.load_pms.setVisible(self.pulsed)
+        self.pr.spin.setVisible(self.pulsed)
+        self.pr.label.setVisible(self.pulsed)
+        self.t1_cb.setEnabled(self.t12_cb.isChecked())
+        self.t2_cb.setEnabled(self.t12_cb.isChecked())
+        self.t1_ovl.setEnabled(self.t12_cb.isChecked() and self.t1_cb.isChecked())
+        self.t2_ovl.setEnabled(self.t12_cb.isChecked() and self.t2_cb.isChecked())
+
+    def get_dataspec(self):
+        dataspec = ""
+        freqs = self.freq_offsets.values()
+        for freq in freqs:
+            if self.pulsed:
+                repeats = self.pr.spin.value()
+            else:
+                repeats = 1
+            dataspec += "%g %g %i\n" % (freq, self.b1.spin.value()/1e6, repeats)
+        print(dataspec)
+        return dataspec
+
+    def get_ptrain(self):
+        ptrain = ""
+        if self.pulsed:
+            if not self.pms.valid() or not self.pms.valid():
+                raise RuntimeError("Non-numeric values in pulse specification")
+            pms = self.pms.values()
+            pds = self.pds.values()
+            if len(pms) != len(pds):
+                raise RuntimeError("Pulse magnitude and duration must contain the same number of values")
+            for pm, pd in zip(pms, pds):
+                ptrain += "%g %g\n" % (pm, pd)
+        else:
+            ptrain += "1 %g\n" % self.st.spin.value()
+        print(ptrain)
+        return ptrain
+
+    def get_poolmat(self):
+        poolmat = ""
+        for pool in CEST_POOLS:
+            if self.pool_cbs[pool["name"]].isChecked():
+                poolmat += "%s\n" % pool["vals"]
+        print(poolmat)
+        return poolmat
+
+    def write_temp(self, name, data):
+        f = tempfile.NamedTemporaryFile(prefix=name, delete=False)
+        f.write(data) 
+        f.close()
+        return f.name
+
+    def start_cest(self):
+        self.update_options()
+        self.rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
+        self.rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
+        self.rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
+        for item in self.rundata.items():
+            print("%s: %s" % item)
+        self.start_task()
+
+    def run_finished(self, status, results, log):
+        # Remove temp files after run completes
+        os.remove(self.rundata["ptrain"])
+        os.remove(self.rundata["spec"])
+        os.remove(self.rundata["pools"])
+
+        # Then do default Fabber actions
+        FabberWidget.run_finished(self, status, results, log)
