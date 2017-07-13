@@ -142,7 +142,7 @@ class BackgroundProcess(Process):
         
         if self.status == Process.FAILED:
             # If one process has already failed, ignore results of others
-            pass
+            return
         elif success:
             self.output[worker_id] = output
             if None not in self.output:
