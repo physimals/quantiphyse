@@ -248,7 +248,9 @@ class ModelCurves(PkWidget):
         self.ivl.sig_focus_changed.disconnect(self.update)
 
     def options_changed(self, opts):
-        self.update()
+        if hasattr(self, "plot"):
+            # Have we been initialized?
+            self.update()
 
     def sig_enh_changed(self, ch):
         self.norm_frames.setEnabled(ch)
