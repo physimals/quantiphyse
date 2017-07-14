@@ -369,7 +369,7 @@ class DataView:
         self.cmap_range = [d.min(), d.max()]
 
     def data(self):
-        if self.roi_only and self.ivm.current_roi is not None:
+        if self.roi_only and self.ivm.current_roi is not None and np.any(self.ivm.current_roi):
             # Restrict to data within ROI
             roi = self.ivm.current_roi
             data = self.ivm.overlays[self.ov_name]
@@ -961,7 +961,6 @@ class ImageView(QtGui.QSplitter):
             # visible in the pick window
             return
         if is_click:
-            #print("Adding point ", pos, win)
             self.picker.add_point(pos, win)
         
         self.ivm.cim_pos = pos
