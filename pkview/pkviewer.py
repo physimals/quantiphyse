@@ -73,7 +73,7 @@ class DragOptions(QtGui.QDialog):
         grid.addWidget(QtGui.QLabel("Name:"), 1, 0)
         self.name_combo = QtGui.QComboBox()
         def_name = os.path.split(fname)[1].split(".", 1)[0]
-        for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves', 'annotation']:
+        for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves']:
             self.name_combo.addItem(name)
         self.name_combo.setEditable(True)
         grid.addWidget(self.name_combo, 1, 1)

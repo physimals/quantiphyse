@@ -252,16 +252,3 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         can be written to a file
         """
         self.artifacts[name] = obj
-
-    def set_blank_annotation(self):
-        """
-        - Initialise the annotation overlay
-        - Set the annotation overlay to be the current overlay
-        """
-        ov = Overlay("annotation", np.zeros(self.vol.shape[:3]))
-        # little hack to normalise the image from 0 to 10 by listing possible labels in the corner
-        for ii in range(11):
-            ov[0, ii] = ii
-
-        self.add_overlay(ov, make_current=True, signal=True)
-
