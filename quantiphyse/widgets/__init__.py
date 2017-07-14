@@ -9,9 +9,9 @@ from PySide import QtGui
 
 from ..utils import get_icon
 
-class PkWidget(QtGui.QWidget):
+class QpWidget(QtGui.QWidget):
     """
-    Base class for a PkView widget
+    Base class for a Quantiphyse widget
 
     The following properties are set automatically from keyword args or defaults:
       self.ivm - Image Volume Management instance
@@ -22,7 +22,7 @@ class PkWidget(QtGui.QWidget):
       self.tabname - Name for the tab
     """
     def __init__(self, **kwargs):
-        super(PkWidget, self).__init__()
+        super(QpWidget, self).__init__()
         self.name = kwargs.get("name", "")
         self.description = kwargs.get("desc", self.name)
         self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", "")))

@@ -20,7 +20,7 @@ from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericO
 from ...QtInherit.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
-from .. import PkWidget
+from .. import QpWidget
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
 
@@ -36,7 +36,7 @@ CITE = """
 IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
 """
 
-class FabberWidget(PkWidget):
+class FabberWidget(QpWidget):
     """
     Widget for running Fabber model fitting
     """

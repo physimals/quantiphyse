@@ -19,9 +19,9 @@ from ..QtInherit import HelpButton
 from ..analysis import Process
 from ..analysis.pk import PkModellingProcess
 from ..utils import get_col
-from . import PkWidget
+from . import QpWidget
 
-class PharmaWidget(PkWidget):
+class PharmaWidget(QpWidget):
     """
     Widget for Pharmacokinetic modelling
     """
@@ -150,7 +150,7 @@ class PharmaWidget(PkWidget):
             QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(output),
                                       QtGui.QMessageBox.Close)
 
-class ModelCurves(PkWidget):
+class ModelCurves(QpWidget):
     """
     View original data and generated signal curves side by side
     """

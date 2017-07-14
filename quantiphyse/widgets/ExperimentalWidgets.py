@@ -10,9 +10,9 @@ from __future__ import print_function, division
 import warnings
 
 from PySide import QtCore, QtGui
-from . import PkWidget
+from . import QpWidget
 
-class ImageExportWidget(PkWidget):
+class ImageExportWidget(QpWidget):
 
     def __init__(self, **kwargs):
         super(ImageExportWidget, self).__init__(name="Image Export", desc="Export images and animations", icon="image_export", **kwargs)

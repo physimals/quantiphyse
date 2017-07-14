@@ -5,7 +5,7 @@ import skimage.segmentation as seg
 from ..QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo
 from ..analysis.sv import SupervoxelsProcess
 from ..analysis.misc import MeanValuesProcess
-from . import PkWidget
+from . import QpWidget
 
 CITE = """
 <i>Irving et al (2017)
@@ -28,7 +28,7 @@ class NumericOption:
         grid.addWidget(self.label, ypos, 0)
         grid.addWidget(self.spin, ypos, 1)
 
-class PerfSlicWidget(PkWidget):
+class PerfSlicWidget(QpWidget):
     """
     Generates supervoxels using SLIC method
     """
@@ -107,7 +107,7 @@ class PerfSlicWidget(PkWidget):
             QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
                                       QtGui.QMessageBox.Close)
 
-class MeanValuesWidget(PkWidget):
+class MeanValuesWidget(QpWidget):
     """
     Convert an overlay + multi-level ROI into mean values overlay
     """

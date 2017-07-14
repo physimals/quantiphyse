@@ -15,7 +15,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from . import PkWidget
+from . import QpWidget
 from ..ImageView import PickMode
 from ..utils import get_icon, copy_table
 from ..QtInherit import HelpButton, BatchButton
@@ -65,7 +65,7 @@ class SEPlot:
             plotwin.removeItem(self.pts)
             self.line, self.pts = None, None
 
-class SECurve(PkWidget):
+class SECurve(QpWidget):
     """
     Plots SE curve for current main data
     """
@@ -268,7 +268,7 @@ class SECurve(PkWidget):
         self.col = self.colors.get(text, (255, 255, 255))
         self.ivl.picker.col = self.col
 
-class OverlayStatistics(PkWidget):
+class OverlayStatistics(QpWidget):
 
     """
     Color overlay interaction
@@ -613,7 +613,7 @@ class OverlayStatistics(PkWidget):
             options["overlay"] = self.ivm.current_overlay.name
         process.run(options)
 
-class RoiAnalysisWidget(PkWidget):
+class RoiAnalysisWidget(QpWidget):
     """
     Analysis of ROIs
     """
@@ -679,7 +679,7 @@ resids = mydata - modelfit
 <br>
 """
 
-class SimpleMathsWidget(PkWidget):
+class SimpleMathsWidget(QpWidget):
     def __init__(self, **kwargs):
         super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="maths", desc="Simple mathematical operations on data", **kwargs)
 

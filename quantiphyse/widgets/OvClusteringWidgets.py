@@ -13,12 +13,12 @@ from PySide import QtCore, QtGui
 from ..QtInherit.dialogs import error_dialog
 from ..QtInherit import HelpButton, BatchButton
 from ..analysis.kmeans import KMeans3DProcess
-from . import PkWidget
+from . import QpWidget
 
 #TODO Hide other buttons until the clustering is performed.
 
 
-class OvCurveClusteringWidget(PkWidget):
+class OvCurveClusteringWidget(QpWidget):
     """
     Widget for clustering the tumour into various regions
     """

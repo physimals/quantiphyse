@@ -15,9 +15,9 @@ from sklearn.metrics import pairwise
 from ..QtInherit import HelpButton, BatchButton
 from ..QtInherit.dialogs import error_dialog
 from ..analysis.kmeans import KMeansPCAProcess
-from . import PkWidget
+from . import QpWidget
 
-class CurveClusteringWidget(PkWidget):
+class CurveClusteringWidget(QpWidget):
     """
     Widget for clustering the tumour into various regions
     """

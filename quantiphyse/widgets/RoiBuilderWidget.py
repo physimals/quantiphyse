@@ -19,7 +19,7 @@ from ..QtInherit import HelpButton
 from ..ImageView import PickMode, DragMode
 from ..utils import get_icon
 from ..analysis.feat_pca import PcaFeatReduce
-from . import PkWidget
+from . import QpWidget
 
 DESC = """
 Widget for creating test ROIs and basic manual segmentation
@@ -330,7 +330,7 @@ class WalkerTool(Tool):
         
 TOOLS = [CrosshairsTool(), PenTool(), WalkerTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool()]
 
-class RoiBuilderWidget(PkWidget):
+class RoiBuilderWidget(QpWidget):
     """
     Widget for building ROIs
     """

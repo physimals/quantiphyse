@@ -4,9 +4,9 @@ from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 from ..utils import get_icon
 from ..qpmain import __version__
-from . import PkWidget
+from . import QpWidget
 
-class OverviewWidget(PkWidget):
+class OverviewWidget(QpWidget):
 
     def __init__(self, **kwargs):
         super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", **kwargs)

@@ -8,7 +8,7 @@ from ..QtInherit import HelpButton
 from ..QtInherit.dialogs import TextViewerDialog
 from ..analysis import Process
 from ..analysis.reg import RegProcess, McflirtProcess
-from . import PkWidget
+from . import QpWidget
 
 class McflirtInterface:
     def __init__(self):
@@ -164,7 +164,7 @@ class DeedsInterface:
                 "randsamp" : self.randsamp.value(),
                 "levels" : self.levels.value()}
         
-class RegWidget(PkWidget):
+class RegWidget(QpWidget):
     """
     Generic registration / motion correction widget 
     """

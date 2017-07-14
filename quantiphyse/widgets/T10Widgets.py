@@ -8,7 +8,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 from ..QtInherit import HelpButton
 from ..analysis.t1_model import t10_map
-from . import PkWidget
+from . import QpWidget
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):
@@ -176,7 +176,7 @@ class SourceImageList(QtGui.QVBoxLayout):
                     vals.append(val)
         return vols, vals
 
-class T10Widget(PkWidget):
+class T10Widget(QpWidget):
     """
     Generate T1 map from variable flip angle images
     """
