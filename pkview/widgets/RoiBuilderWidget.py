@@ -62,7 +62,6 @@ class PolygonTool(Tool):
     def done(self):
         slice_zaxis = self.ivl.picker.view.zaxis
         slice_z = self.ivm.cim_pos[slice_zaxis]
-        print(self.label)
         roi_new = self.ivl.picker.get_roi(self.label)
         self.builder.add_to_roi(roi_new, slice_zaxis, slice_z)
         
@@ -82,11 +81,9 @@ class EraserTool(Tool):
 
     def point_picked(self, picker):
         pos = picker.point
-        zaxis = 0
-        zpos = pos[zaxis]
-        sl = np.zeros(self.ivm.vol.shape[1:3])
-        sl[pos(1), pos(2)] = 0
-        self.builder.add_to_roi(sl, zaxis, zpos, erase=True)
+        sl = np.ones(self.ivm.vol.shape[1:3])
+        sl[pos[1], pos[2]] = 0
+        self.builder.add_to_roi(sl, 0, pos[0], erase=True)
 
 class PickTool(Tool):
     def __init__(self):
@@ -146,8 +143,6 @@ class PickTool(Tool):
         if self.roi_name == "": return
 
         pos = picker.point
-        print(pos)
-
         roi_picked = self.ivm.rois[self.roi_name]
         picked_region = roi_picked[pos[0], pos[1], pos[2]]
         self.roi_new = np.zeros(roi_picked.shape)
@@ -467,10 +462,10 @@ class RoiBuilderWidget(PkWidget):
         for tool in TOOLS:
             tool.label = label
         
-    def name_changed(self, name):
-        self.new_roi_name = name
+    def name_changed(self):
+        self.new_roi_name = self.name_edit.text()
         if self.tool is not None:
-            self.tool.new_roi_name = name
+            self.tool.new_roi_name = self.new_roi_name
       
     def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
         roi_orig = self.ivm.rois.get(self.new_roi_name, np.zeros(self.ivm.shape[:3]))
