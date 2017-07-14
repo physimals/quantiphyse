@@ -14,6 +14,6 @@ if __name__ == '__main__':
     # Does nothing on other systems
     multiprocessing.freeze_support()
 
-    from pkview import pkviewer
-    pkviewer.main()
+    from pkview import qpmain
+    qpmain.main()
 

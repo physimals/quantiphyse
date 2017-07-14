@@ -3,7 +3,7 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 from ..utils import get_icon
-from ..pkviewer import __version__
+from ..qpmain import __version__
 from . import PkWidget
 
 class OverviewWidget(PkWidget):
@@ -122,7 +122,11 @@ class DataListWidget(QtGui.QTableWidget):
         self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
         if vol.md.fname is not None:
             self.setItem(row, 2, QtGui.QTableWidgetItem(vol.md.fname))
-            self.item(row, 0).setToolTip(vol.md.fname)
+            item = self.item(row, 0)
+            if item is not None:
+                item.setToolTip(vol.md.fname)
+            else:
+                print("Weird - item is None ", vol.name)
         if current:
             font = self.item(row, 0).font()
             font.setBold(True)
@@ -136,13 +140,15 @@ class DataListWidget(QtGui.QTableWidget):
             n = len(self.ivm.overlays) + len(self.ivm.rois)
             self.setRowCount(n)
             row = 0
-            for ovl in self.ivm.overlays.values():
+            for name in sorted(self.ivm.overlays.keys()):
+                ovl = self.ivm.overlays[name]
                 t = "Overlay"
                 if self.ivm.vol is not None and self.ivm.vol.name == ovl.name:
                     t += "*"
                 self.add_volume(row, t, ovl, self.ivm.is_current_overlay(ovl))
                 row += 1
-            for roi in self.ivm.rois.values():
+            for name in sorted(self.ivm.rois.keys()):
+                roi = self.ivm.rois[name]
                 self.add_volume(row, "ROI", roi, self.ivm.is_current_roi(roi))
                 row += 1
         finally:
