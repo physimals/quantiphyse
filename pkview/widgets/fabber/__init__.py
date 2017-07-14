@@ -498,8 +498,13 @@ class CESTWidget(FabberWidget):
         vbox.addStretch(1)
 
         self.rundata = FabberRunData()
+        
+        # General defaults
         self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
+        self.rundata["save-model-fit"] = ""
+        self.rundata["noise"] = "white"
+        self.rundata["max-iterations"] = "20"
         self.rundata["model"] = "cest"
 
         # Placeholders to be replaced with temp files
