@@ -283,7 +283,7 @@ class ModelCurves(PkWidget):
         """
         overlay_vals = self.ivm.get_overlay_value_curr_pos()
         self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
-        for ii, ovl in enumerate(overlay_vals.keys()):
+        for ii, ovl in enumerate(sorted(overlay_vals.keys())):
             if self.ivm.overlays[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
                 self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
