@@ -63,16 +63,17 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ftype=None, force_t_option=False):
+    def __init__(self, parent, fname, ivm, ftype=None, force_t_option=False):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
+        self.ivm = ivm
 
         layout = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
         grid.addWidget(QtGui.QLabel("Name:"), 1, 0)
         self.name_combo = QtGui.QComboBox()
-        def_name = os.path.split(fname)[1].split(".", 1)[0]
+        def_name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
         for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves']:
             self.name_combo.addItem(name)
         self.name_combo.setEditable(True)
@@ -112,12 +113,19 @@ class DragOptions(QtGui.QDialog):
             self.type = ret
             self.force_t = self.force_t_cb.isChecked()
             self.name = self.name_combo.currentText()
-            self.accept()
+            if self.name in self.ivm.overlays or self.name in self.ivm.rois:
+                btn = QtGui.QMessageBox.warning(self, "Name already exists",
+                    "Data already exists with this name - overwrite?",
+                    QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                if btn == QtGui.QMessageBox.Ok:
+                    self.accept()
+            else:
+                self.accept()
         return cb
 
     @staticmethod
-    def getImageChoice(parent, fname, ftype=None, force_t_option=False):
-        dialog = DragOptions(parent, fname, ftype=ftype, force_t_option=force_t_option)
+    def getImageChoice(parent, fname, ivm, ftype=None, force_t_option=False):
+        dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option)
         result = dialog.exec_()
         return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t
 
@@ -763,7 +771,7 @@ class MainWindow(QtGui.QMainWindow):
                 
         # If file type (ROI or data) is not already known, ask the user.
         if ftype is None or force_t_option:
-            ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, force_t_option=force_t_option)
+            ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
             if not ok: return
         if force_t_option: force_t = force_t_dialog
         
@@ -800,7 +808,6 @@ class MainWindow(QtGui.QMainWindow):
 
         if ftype == "DATA": add_fn = self.ivm.add_overlay
         else: add_fn = self.ivm.add_roi
-
         try:
             add_fn(name, vol, make_current=True)
         except:
