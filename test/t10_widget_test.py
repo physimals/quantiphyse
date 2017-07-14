@@ -6,8 +6,8 @@ from PySide import QtGui
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.dirname(TEST_DIR))
-from pkview.volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
-from pkview.widgets.T10Widgets import T10Widget
+from quantiphyse.volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
+from quantiphyse.widgets.T10Widgets import T10Widget
 
 TEST_VOLUME = "dce"
 TEST_OVERLAY = "overlay"

@@ -60,7 +60,7 @@ Quantiphyse
 
 # Get version info
 
-VERSIONFILE="pkview/_version.py"
+VERSIONFILE="quantiphyse/_version.py"
 version_line = open(VERSIONFILE, "rt").read()
 if version_line.startswith("__version__ ="):
     version_str = version_line.split("=")[1].strip()
@@ -71,8 +71,8 @@ extensions = []
 
 # PK modelling extension
 
-extensions.append(Extension("pkview.analysis.pk_model",
-                 sources=['pkview/analysis/pk_model.pyx',
+extensions.append(Extension("quantiphyse.analysis.pk_model",
+                 sources=['quantiphyse/analysis/pk_model.pyx',
                           'src/pkmodelling/Optimizer_class.cpp',
                           'src/pkmodelling/pkrun2.cpp',
                           'src/pkmodelling/ToftsOrton.cpp',
@@ -88,8 +88,8 @@ extensions.append(Extension("pkview.analysis.pk_model",
 
 # T1 map generation extension
 
-extensions.append(Extension("pkview.analysis.t1_model",
-                 sources=['pkview/analysis/t1_model.pyx',
+extensions.append(Extension("quantiphyse.analysis.t1_model",
+                 sources=['quantiphyse/analysis/t1_model.pyx',
                           'src/T10/linear_regression.cpp',
                           'src/T10/T10_calculation.cpp'],
                  include_dirs=['src/T10',
@@ -99,20 +99,20 @@ extensions.append(Extension("pkview.analysis.t1_model",
 
 # Supervoxel extensions
 
-extensions.append(Extension("pkview.analysis.perfusionslic.additional.bspline_smoothing",
-              sources=["pkview/analysis/perfusionslic/additional/bspline_smoothing.pyx"],
+extensions.append(Extension("quantiphyse.analysis.perfusionslic.additional.bspline_smoothing",
+              sources=["quantiphyse/analysis/perfusionslic/additional/bspline_smoothing.pyx"],
               include_dirs=[numpy.get_include()]))
 
-extensions.append(Extension("pkview.analysis.perfusionslic.additional.create_im",
-              sources=["pkview/analysis/perfusionslic/additional/create_im.pyx"],
+extensions.append(Extension("quantiphyse.analysis.perfusionslic.additional.create_im",
+              sources=["quantiphyse/analysis/perfusionslic/additional/create_im.pyx"],
               include_dirs=[numpy.get_include()]))
 
-extensions.append(Extension("pkview.analysis.perfusionslic._slic_feat",
-              sources=["pkview/analysis/perfusionslic/_slic_feat.pyx"],
+extensions.append(Extension("quantiphyse.analysis.perfusionslic._slic_feat",
+              sources=["quantiphyse/analysis/perfusionslic/_slic_feat.pyx"],
               include_dirs=[numpy.get_include()]))
 
-extensions.append(Extension("pkview.analysis.perfusionslic.additional.processing",
-              sources=["pkview/analysis/perfusionslic/additional/processing.pyx",
+extensions.append(Extension("quantiphyse.analysis.perfusionslic.additional.processing",
+              sources=["quantiphyse/analysis/perfusionslic/additional/processing.pyx",
                        "src/perfusionslic/processing.cpp"],
               include_dirs=["src/perfusionslic", numpy.get_include()],
               language="c++",
@@ -129,8 +129,8 @@ else:
 
 fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
-  extensions.append(Extension("pkview.analysis.mcflirt",
-                 sources=['pkview/analysis/mcflirt.pyx',
+  extensions.append(Extension("quantiphyse.analysis.mcflirt",
+                 sources=['quantiphyse/analysis/mcflirt.pyx',
                           'src/mcflirt/mcflirt.cc',
                           'src/mcflirt/Globaloptions.cc',
                           'src/mcflirt/Log.cc'],
@@ -147,8 +147,8 @@ else:
 
 # deedsReg extension
 
-extensions.append(Extension("pkview.analysis.deeds",
-                 sources=['pkview/analysis/deeds.pyx',
+extensions.append(Extension("quantiphyse.analysis.deeds",
+                 sources=['quantiphyse/analysis/deeds.pyx',
                           'src/deedsRegSSC/TMI2013/deedsMSTssc.cpp'],
                  include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/", extra_inc],
                  language="c++"))
@@ -162,11 +162,11 @@ setup(name='quantiphyse',
       author='Benjamin Irving',
       author_email='benjamin.irving@eng.ox.ac.uk',
       url='www.birving.com',
-      packages=['pkview', 'pkview.QtInherit', 'pkview.analysis', 'pkview.icons', 'pkview.resources',
-                'pkview.utils', 'pkview.volumes', 'pkview.widgets'],
+      packages=['quantiphyse', 'quantiphyse.QtInherit', 'quantiphyse.analysis', 'quantiphyse.icons', 'quantiphyse.resources',
+                'quantiphyse.utils', 'quantiphyse.volumes', 'quantiphyse.widgets'],
       include_package_data=True,
-      data_files=[('pkview/icons', glob.glob('pkview/icons/*.svg') + glob.glob('pkview/icons/*.png')),
-                  ('pkview/resources', ['pkview/resources/darkorange.stylesheet'])
+      data_files=[('quantiphyse/icons', glob.glob('quantiphyse/icons/*.svg') + glob.glob('quantiphyse/icons/*.png')),
+                  ('quantiphyse/resources', ['quantiphyse/resources/darkorange.stylesheet'])
                   ],
       #install_requires=['skimage', 'scikit-learn', 'numpy', 'scipy'],
       setup_requires=['Cython'],
@@ -185,7 +185,7 @@ setup(name='quantiphyse',
                    ],
       ext_modules=cythonize(extensions),
       entry_points={
-          'gui_scripts': ['quantiphyse = pkview.pkviewer:main'],
-          'console_scripts': ['quantiphyse = pkview.pkviewer:main']
+          'gui_scripts': ['quantiphyse = quantiphyse.qpmain:main'],
+          'console_scripts': ['quantiphyse = quantiphyse.qpmain:main']
       })
 

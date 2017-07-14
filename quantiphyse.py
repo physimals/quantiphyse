@@ -4,7 +4,7 @@ Main file
 
 To compile the resources, run:
 $ pyside-rcc resource -o resource.py
-from inside pkview/resources
+from inside quantiphyse/resources
 """
 
 import multiprocessing
@@ -14,6 +14,6 @@ if __name__ == '__main__':
     # Does nothing on other systems
     multiprocessing.freeze_support()
 
-    from pkview import qpmain
+    from quantiphyse import qpmain
     qpmain.main()
 

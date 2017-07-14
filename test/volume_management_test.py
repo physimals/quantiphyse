@@ -5,7 +5,7 @@ import numpy as np
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.dirname(TEST_DIR))
-from pkview.volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
+from quantiphyse.volumes.volume_management import Volume, Overlay, Roi, ImageVolumeManagement
 
 TEST_VOLUME = "dce"
 TEST_OVERLAY = "overlay"

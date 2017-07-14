@@ -14,7 +14,7 @@ osx_bundle = False
 block_cipher = None
 bin_files = []
 hidden_imports = []
-added_files = [('pkview/icons', 'icons'), ('pkview/resources', 'resources'), ('src', 'src')]
+added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src')]
 
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
@@ -73,7 +73,7 @@ if onefile:
               debug=False,
               upx=False,
               console=False,
-              icon='pkview/icons/main_icon.ico')
+              icon='quantiphyse/icons/main_icon.ico')
 else:
     exe = EXE(pyz,
               a.scripts,
@@ -83,7 +83,7 @@ else:
               strip=False,
               upx=False,
               console=False,
-              icon='pkview/icons/main_icon.ico')
+              icon='quantiphyse/icons/main_icon.ico')
 
     coll = COLLECT(exe,
                    a.binaries,
@@ -96,6 +96,6 @@ else:
         pkdir = os.path.dirname(os.path.abspath(SPEC))
         app = BUNDLE(coll,
              name='quantiphyse.app',
-             icon='%s/pkview/icons/pk.png' % pkdir,
+             icon='%s/quantiphyse/icons/pk.png' % pkdir,
              bundle_identifier=None)
 
