@@ -288,21 +288,22 @@ class FabberWidget(PkWidget):
         """
         Callback called when an async fabber run completes
         """
-        self.log = log
-        if status == Process.SUCCEEDED:
-            if self.savefilesCb.isChecked():
-                save_folder = self.saveFolderEdit.text()       
-                for ovl in results[0].data:
-                    self.ivm.overlays[ovl].save_nifti(os.path.join(save_folder, ovl.name))
-                    logfile = open(os.path.join(save_folder, "logfile"), "w")
-                    logfile.write(self.log)
-                    logfile.close()
-        else:
-            QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
-                                      QtGui.QMessageBox.Close)
-
-        self.runBtn.setEnabled(True)
-        self.logBtn.setEnabled(True)
+        try:
+            self.log = log
+            if status == Process.SUCCEEDED:
+                if self.savefilesCb.isChecked():
+                    save_folder = self.saveFolderEdit.text()       
+                    for ovl in results[0].data:
+                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl.name + ".nii"))
+                        logfile = open(os.path.join(save_folder, "logfile"), "w")
+                        logfile.write(self.log)
+                        logfile.close()
+            else:
+                QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
+                                        QtGui.QMessageBox.Close)
+        finally:
+            self.runBtn.setEnabled(True)
+            self.logBtn.setEnabled(True)
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
@@ -319,12 +320,29 @@ Quantitative Bayesian model-based analysis of amide proton transfer MRI. Magneti
 """
 
 # FIXME correct numbers
+CEST_POOLVAL_TYPES = ["3T", "9.4T"]
+
 CEST_POOLS = [
-    {"name" : "Water", "default" : True, "vals" : "4.00252e8     0       1.8     0.05"},
-    {"name" : "Amide", "default" : True, "vals" : "3.5          30      1.8    0.001"},
-    {"name" : "NOE", "default" : True, "vals" : "-2.41          20      1.8       0.0005"},
-    {"name" : "MT", "default" : False, "vals" : "0 0 0 0"},
-    {"name" : "Amine", "default" : False, "vals" : "0 0 0 0"},
+    {"name" : "Water", "default" : True, "vals" : 
+        ["4.00252e8     0       1.8     0.05", 
+         "1.2774e8      0       1.3     0.05"]
+    },
+    {"name" : "Amide", "default" : True, "vals" : 
+        ["3.5           30      1.8     0.001", 
+         "3.5           20      0.77    0.01"]
+    },
+    {"name" : "NOE", "default" : True, "vals" : 
+        ["-2.41          20     1.8     0.0005", 
+         "-2.34         40      1.0     0.0004"]
+    },
+    {"name" : "MT", "default" : False, "vals" : 
+        ["0 0 0 0", 
+         "0 0 0 0"]
+    },
+    {"name" : "Amine", "default" : False, "vals" : 
+        ["0 0 0 0", 
+         "0 0 0 0"]
+    },
 ]
 
 class CESTWidget(FabberWidget):
@@ -375,6 +393,18 @@ class CESTWidget(FabberWidget):
         grid.addWidget(self.load_freq_offsets, 0, 3)
 
         self.b1 = NumericOption("B1 (\u03bcT)", grid, ypos=1, xpos=0, default=0.55, decimals=6)
+        hbox = QtGui.QHBoxLayout()
+        self.unsat_cb = QtGui.QCheckBox("Unsaturated")
+        self.unsat_cb.stateChanged.connect(self.update_ui)
+        hbox.addWidget(self.unsat_cb)
+        self.unsat_combo = QtGui.QComboBox()
+        self.unsat_combo.addItem("first")
+        self.unsat_combo.addItem("last")
+        self.unsat_combo.addItem("first and last  ")
+        hbox.addWidget(self.unsat_combo)
+        hbox.addStretch(1)
+        grid.addLayout(hbox, 1, 2)
+        
  #       self.b1.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
 
         grid.addWidget(QtGui.QLabel("Saturation"), 2, 0)
@@ -416,19 +446,27 @@ class CESTWidget(FabberWidget):
         grid = QtGui.QGridLayout()
         row, col = 0, 0
         NUM_ROWS = 2
-        self.pool_cbs = {}
+        self.pool_cbs, self.custom_poolvals = {}, {}
         for pool in CEST_POOLS:
             name = pool["name"]
+            self.custom_poolvals[name] = pool["vals"][0]
             self.pool_cbs[name] = QtGui.QCheckBox(name)
             self.pool_cbs[name].setChecked(pool["default"])
+            self.pool_cbs[name].stateChanged.connect(self.update_pools)
             grid.addWidget(self.pool_cbs[name], row, col)
             row += 1
             if row == NUM_ROWS:
                 row = 0
                 col += 1
+        self.poolval_combo = QtGui.QComboBox()
+        for poolval_type in CEST_POOLVAL_TYPES:
+            self.poolval_combo.addItem("%s defaults" % poolval_type)
+        self.poolval_combo.addItem("custom")
+        self.poolval_combo.currentIndexChanged.connect(self.update_pools)
+        grid.addWidget(self.poolval_combo, row+1, 0, 1, 2)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
-        grid.addWidget(edit_btn, row+1, 0)
+        grid.addWidget(edit_btn, row+1, 2)
         poolVbox.addLayout(grid)
 
         anBox = QtGui.QGroupBox()
@@ -498,7 +536,7 @@ class CESTWidget(FabberWidget):
         vbox.addStretch(1)
 
         self.rundata = FabberRunData()
-        
+
         # General defaults
         self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
@@ -513,24 +551,38 @@ class CESTWidget(FabberWidget):
         self.rundata["spec"] = "dataspec.mat"
 
         self.update_ui()
+        self.update_pools()
+
+    def update_pools(self):
+        poolval_idx = self.poolval_combo.currentIndex()
+        self.pools = []
+        for pool in CEST_POOLS:
+            if self.pool_cbs[pool["name"]].isChecked():
+                if poolval_idx < self.poolval_combo.count()-1:
+                    # Using default values
+                    vals = pool["vals"][poolval_idx]
+                else:
+                    # Using custom values
+                    vals = self.custom_poolvals[pool["name"]]
+
+                self.pools.append((pool["name"], vals))
+        print(self.pools)
 
     def edit_pools(self):
         vals, pool_headers = [], []
-        for pool in CEST_POOLS:
-            if self.pool_cbs[pool["name"]].isChecked():
-                pool_headers.append(pool["name"])
-                rvals = [float(v) for v in pool["vals"].split()]
-                vals.append(rvals)
+        for name, pvals in self.pools:
+            pool_headers.append(name)
+            rvals = [float(v) for v in pvals.split()]
+            vals.append(rvals)
         val_headers = ["PPM offset", "Exch rate", "T1", "T2"]
         d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=False)
         if d.exec_():
             vals = d.table.values()
-            row = 0
-            for pool in CEST_POOLS:
-                if self.pool_cbs[pool["name"]].isChecked():
-                    rvals = vals[row]
-                    pool["vals"] = " ".join([str(v) for v in rvals])
-                    row += 1
+            for row, pool in enumerate(self.pools):
+                rvals = vals[row]
+                self.custom_poolvals[pool[0]] = " ".join([str(v) for v in rvals])
+            self.poolval_combo.setCurrentIndex(self.poolval_combo.count()-1)
+            self.update_pools()
 
     def overlays_changed(self, overlays):
         # Not required for CEST widget
@@ -583,16 +635,24 @@ class CESTWidget(FabberWidget):
         self.t2_cb.setEnabled(self.t12_cb.isChecked())
         self.t1_ovl.setEnabled(self.t12_cb.isChecked() and self.t1_cb.isChecked())
         self.t2_ovl.setEnabled(self.t12_cb.isChecked() and self.t2_cb.isChecked())
+        self.unsat_combo.setEnabled(self.unsat_cb.isChecked())
 
     def get_dataspec(self):
         dataspec = ""
         freqs = self.freq_offsets.values()
-        for freq in freqs:
+        for idx, freq in enumerate(freqs):
             if self.pulsed:
                 repeats = self.pr.spin.value()
             else:
                 repeats = 1
-            dataspec += "%g %g %i\n" % (freq, self.b1.spin.value()/1e6, repeats)
+            b1 = self.b1.spin.value()/1e6
+            if self.unsat_cb.isChecked():
+                print("Unsat", idx, self.unsat_combo.currentIndex())
+                if idx == 0 and self.unsat_combo.currentIndex() in (0, 2):
+                    b1 = 0
+                elif idx == len(freqs)-1 and self.unsat_combo.currentIndex() in (1, 2):
+                    b1 = 0
+            dataspec += "%g %g %i\n" % (freq, b1, repeats)
         print(dataspec)
         return dataspec
 
@@ -613,10 +673,7 @@ class CESTWidget(FabberWidget):
         return ptrain
 
     def get_poolmat(self):
-        poolmat = ""
-        for pool in CEST_POOLS:
-            if self.pool_cbs[pool["name"]].isChecked():
-                poolmat += "%s\n" % pool["vals"]
+        poolmat = "\n".join([p[1] for p in self.pools])
         print(poolmat)
         return poolmat
 
