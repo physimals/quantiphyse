@@ -17,27 +17,23 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from ..QtInherit import HelpButton
+from ..QtInherit.dialogs import error_dialog
 
-class ExampleWidget1(QtGui.QWidget):
+class ExampleWidget(PkWidget):
     """
     Widget for setting a threshold to the image data inside the ROI. This is saved as an overlay.
     """
+    def __init__(self, **kwargs):
+        super(ExampleWidget, self).__init__(name="Threshold", desc="Threshold data", icon="quantiphyse", **kwargs)
 
-    # emit reset command t
-    sig_emit_reset = QtCore.Signal(bool)
-
-    def __init__(self, local_file_path):
-        super(ExampleWidget1, self).__init__()
-
-        self.local_file_path = local_file_path
-
-        # self.setStatusTip("Click points on the 4D volume to see time curve")
-        title1 = QtGui.QLabel("<font size=5> Example 1: Threshold volume</font>")
-        bhelp = HelpButton(self)
-        lhelp = QtGui.QHBoxLayout()
-        lhelp.addWidget(title1)
-        lhelp.addStretch(1)
-        lhelp.addWidget(bhelp)
+    def init_ui(self):
+        main_vbox = QtGui.QVBoxLayout()
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Threshold volume</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self))
+        main_vbox.addLayout(hbox)
 
         explanation = QtGui.QLabel('This is a basic example of a \n'
                                    'widget for development purposes. \n'
@@ -45,73 +41,46 @@ class ExampleWidget1(QtGui.QWidget):
                                    'loaded normally and clicking run \n'
                                    'creates an overlay only shows values \n'
                                    'in the ROI above a defined threshold.')
+        main_vbox.addWidget(explanation)
 
-        # Run clustering button
+        hbox = QtGui.QHBoxLayout()
         self.b1 = QtGui.QPushButton('Process', self)
         self.b1.clicked.connect(self.run_threshold)
+        hbox.addWidget(self.b1)
+        hbox.addStretch(1)
 
-        t1 = QtGui.QLabel('ROI threshold value:')
+        hbox.addWidget(QtGui.QLabel('ROI threshold value:'))
         self.val_t1 = QtGui.QLineEdit('1', self)
-
-        s1 = QtGui.QLabel('Slice to threshold:')
+        hbox.addWidget(self.val_t1)
+        main_vbox.addLayout(hbox)
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addStretch(1)
+        hbox.addWidget(QtGui.QLabel('Slice to threshold:'))
         self.val_s1 = QtGui.QLineEdit('0', self)
+        hbox.addWidget(self.val_s1)
+        main_vbox.addLayout(hbox)
 
-        l03 = QtGui.QHBoxLayout()
-        l03.addWidget(self.b1)
-        l03.addStretch(1)
-        l03.addWidget(t1)
-        l03.addWidget(self.val_t1)
-
-        l04 = QtGui.QHBoxLayout()
-        l04.addStretch(1)
-        l04.addWidget(s1)
-        l04.addWidget(self.val_s1)
-
-        # Outer layout
-        l1 = QtGui.QVBoxLayout()
-        l1.addLayout(lhelp)
-        l1.addWidget(explanation)
-        l1.addLayout(l03)
-        l1.addLayout(l04)
-        l1.addStretch(1)
-        self.setLayout(l1)
-
-        # Initialisation
-        # Volume management widget
-        self.ivm = None
+        main_vbox.addStretch(1)
+        self.setLayout(main_vbox)
 
     def run_threshold(self):
-        """
-        Run kmeans clustering using normalised PCA modes
-        """
-
         # Check if an image and roi exists or otherwise throw an error
-        if self.ivm.get_image() is None:
+        if self.ivm.vol is None:
             error_dialog("No data loaded")
             return
 
-        if self.ivm.get_roi() is None:
+        if self.ivm.current_roi is None:
             error_dialog("No ROI loaded")
             return
 
-        img = self.ivm.get_image()
-        roi = self.ivm.get_roi()
-        roi = roi > 0
+        slice = int(self.val_s1.text())
+        thresh = float(self.val_t1.text())
 
-        slice1 = int(self.val_s1.text())
-        thresh1 = float(self.val_t1.text())
+        img = self.ivm.vol[:, :, :, slice1]
+        img = img * (self.ivm.current_roi > 0)
+        img[img1 < thresh] = 0
 
-        img1 = img[:, :, :, slice1]
-        img1 = img1 * roi
-        img1[img1 < thresh1] = 0
+        self.ivm.add_overlay(choice1='thresh', img, set_current=True)
 
-        # Save the new overlay with name clusters
-        # (force assigns it to the name specified
-        # even if that name doesn't exist in the dictionary)
-        self.ivm.set_overlay(choice1='clusters', ovreg=img1, force=True)
-        self.ivm.set_current_overlay(choice1='clusters')
-        # Tell the window to update the visualisation
-        self.sig_emit_reset.emit(1)
-
-        print("Done!")
 
