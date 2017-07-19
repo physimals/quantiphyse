@@ -211,7 +211,7 @@ class QpVolume(np.ndarray):
         number of decimal places"""
         return str(np.around(self[tuple(pos[:self.ndim])], self.dps))
 
-    def pos_slice(self, *axes):
+    def pos_slice(self, axes, mask=None, fill_value=None):
         """ 
         Get a slice at a given position
 
@@ -219,8 +219,18 @@ class QpVolume(np.ndarray):
         """
         sl = [slice(None)] * self.ndim
         for axis, pos in axes:
-            sl[axis] = pos
-        return self[sl]
+            if axis < self.ndim:
+                sl[axis] = pos
+        data = self[sl]
+
+        if mask is not None:
+            data = np.copy(data)
+            mask_slice = mask.pos_slice(axes)
+            if fill_value is None:
+                # Less than the minimum
+                fill_value = self.range[0] - 1
+            data[mask_slice == 0] = fill_value
+        return data
 
     def remove_nans(self):
         """
