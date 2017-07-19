@@ -209,7 +209,7 @@ class EllipseTool(PolygonTool):
         return grid
 
     def selected(self):
-        self.ivl.set_picker(PickMode.MULTIPLE)
+        self.ivl.set_picker(PickMode.ELLIPSE, DragMode.PICKER_DRAG)
         
 class CrosshairsTool(Tool):
     def __init__(self):
