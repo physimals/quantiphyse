@@ -385,3 +385,62 @@ class NumberGrid(QtGui.QTableWidget):
 
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
+
+class OrderList(QtGui.QListWidget):
+    """
+    Vertical list of items which can be re-ordered but not changed directly
+    """
+    def __init__(self, initial):
+        QtGui.QListWidget.__init__(self)
+        self.setItems(initial)
+        #self.setFixedHeight(self.rowHeight(0)+5)
+        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+
+    def setItems(self, items):
+        self.blockSignals(True)
+        try:
+            self.clear()
+            for r, item in enumerate(items):
+                self.addItem(item)
+        finally:
+            self.blockSignals(False)
+
+    def items(self):
+        return [self.item(r).text() for r in range(self.count())]
+
+    def currentUp(self):
+        """ Move currently selected item up"""
+        idx = self.currentRow()
+        if idx > 0:
+            items = self.items()
+            temp = items[idx-1]
+            items[idx-1] = items[idx]
+            items[idx] = temp
+            self.setItems(items)
+            self.setCurrentRow(idx-1)
+
+    def currentDown(self):
+        """ Move currently selected item down"""
+        idx = self.currentRow() 
+        if idx < self.count() - 1:
+            items = self.items()
+            temp = items[idx+1]
+            items[idx+1] = items[idx]
+            items[idx] = temp
+            self.setItems(items)
+            self.setCurrentRow(idx+1)
+
+class OrderListButtons(QtGui.QVBoxLayout):
+    def __init__(self, orderlist):
+        QtGui.QVBoxLayout.__init__(self)
+        self.list = orderlist
+        self.up_btn = QtGui.QPushButton("Up")
+        self.up_btn.clicked.connect(self.list.currentUp)
+        self.addWidget(self.up_btn)
+        self.down_btn = QtGui.QPushButton("Down")
+        self.down_btn.clicked.connect(self.list.currentDown)
+        self.addWidget(self.down_btn)
+        self.addStretch(1)
+        
