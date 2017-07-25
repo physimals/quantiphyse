@@ -157,6 +157,8 @@ class ModelCurves(QpWidget):
 
     def __init__(self, **kwargs):
         super(ModelCurves, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="curve_view", **kwargs)
+        self.data_enabled = {}
+        self.updating = False
 
     def init_ui(self):
         self.cmap = getattr(cm, 'gist_rainbow')
@@ -223,6 +225,21 @@ class ModelCurves(QpWidget):
         hbox.addStretch()
         main_vbox.addLayout(hbox)
 
+        hbox = QtGui.QHBoxLayout()
+
+        # Table showing RMS deviation
+        rms_box = QtGui.QGroupBox()
+        rms_box.setTitle('Timeseries data')
+        vbox = QtGui.QVBoxLayout()
+        self.rms_table = QtGui.QStandardItemModel()
+        self.rms_table.itemChanged.connect(self.data_table_changed)
+        tview = QtGui.QTableView()
+        tview.resizeColumnsToContents()
+        tview.setModel(self.rms_table)
+        vbox.addWidget(tview)
+        rms_box.setLayout(vbox)
+        hbox.addWidget(rms_box)
+
         # Table showing value of model parameters
         params_box = QtGui.QGroupBox()
         params_box.setTitle('Overlay values at current position')
@@ -233,8 +250,9 @@ class ModelCurves(QpWidget):
         tview.setModel(self.values_table)
         vbox2.addWidget(tview)
         params_box.setLayout(vbox2)
-        main_vbox.addWidget(params_box)
+        hbox.addWidget(params_box)
 
+        main_vbox.addLayout(hbox)
         self.setLayout(main_vbox)
     
     def activate(self):
@@ -274,19 +292,58 @@ class ModelCurves(QpWidget):
         self.update()
 
     def update(self, pos=None):
-        self._plot()
         self._update_table()
+        self._update_rms_table()
+        self._plot()
 
     def _update_table(self):
         """
         Set the overlay parameter values in the table based on the current point clicked
         """
-        overlay_vals = self.ivm.get_overlay_value_curr_pos()
+        self.values_table.clear()
         self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
+        overlay_vals = self.ivm.get_overlay_value_curr_pos()
         for ii, ovl in enumerate(sorted(overlay_vals.keys())):
             if self.ivm.overlays[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
                 self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
+
+    def _update_rms_table(self):
+        try:
+            self.updating = True # Hack to prevent plot being refreshed during table update
+            self.rms_table.clear()
+            self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
+            self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
+            idx = 0
+            for name in sorted(self.ivm.overlays.keys()):
+                ovl = self.ivm.overlays[name]
+                pos = self.ivm.cim_pos
+                if ovl.ndim == 4:
+                    rms = np.sqrt(np.mean(np.square(self.ivm.vol - ovl), 3))
+                    pos_rms = rms[pos[0], pos[1], pos[2]]
+                    mean_rms = np.mean(rms)
+                    name_item = QtGui.QStandardItem(name)
+                    name_item.setCheckable(True)
+                    name_item.setEditable(False)
+                    if name not in self.data_enabled:
+                        self.data_enabled[name] = QtCore.Qt.Checked
+                    name_item.setCheckState(self.data_enabled[name])
+                    self.rms_table.setItem(idx, 0, name_item)
+                    item = QtGui.QStandardItem(str(np.around(pos_rms, 10)))
+                    item.setEditable(False)
+                    self.rms_table.setItem(idx, 1, item)
+                    item = QtGui.QStandardItem(str(np.around(mean_rms, 10)))
+                    item.setEditable(False)
+                    self.rms_table.setItem(idx, 2, item)
+                    idx += 1
+        finally:
+            self.updating = False
+
+    def data_table_changed(self, item):
+        if not self.updating:
+            # A checkbox has been toggled
+            self.data_enabled[item.text()] = item.checkState()
+            self._plot()
 
     def _plot(self):
         """
@@ -318,12 +375,13 @@ class ModelCurves(QpWidget):
         # Plot each data item
         idx, n_ovls = 0, len(sig_ovl)
         for ovl, sig_values in sig_ovl.items():
-            if self.sig_en_cb.isChecked():
-                # Show signal enhancement for main data, rather than raw values
-                m1 = np.mean(sig_values[:frames1])
-                if m1 != 0: sig_values = sig_values / m1 - 1
-                
-            self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-            line = self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0)
-            legend.addItem(line, ovl)
-            idx += 1
+            if self.data_enabled[ovl] == QtCore.Qt.Checked:
+                if self.sig_en_cb.isChecked():
+                    # Show signal enhancement rather than raw values
+                    m1 = np.mean(sig_values[:frames1])
+                    if m1 != 0: sig_values = sig_values / m1 - 1
+                    
+                self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+                line = self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0)
+                legend.addItem(line, ovl)
+                idx += 1
