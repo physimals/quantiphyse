@@ -577,10 +577,11 @@ class OverlayStatistics(QpWidget):
             self.rp_btn.setText("Hide")
 
     def update_radial_profile(self):
-        options = {"overlay" : self.ivm.current_overlay.name, 
-                   "no-artifact" : True, "bins" : self.rp_nbins.value()}
-        self.process_rp.run(options)
-        self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_overlay.name])
+        if self.ivm.current_overlay is not None:
+            options = {"overlay" : self.ivm.current_overlay.name, 
+                       "no-artifact" : True, "bins" : self.rp_nbins.value()}
+            self.process_rp.run(options)
+            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_overlay.name])
 
     def update_overlay_stats(self):
         self.populate_stats_table(self.process)
@@ -590,23 +591,20 @@ class OverlayStatistics(QpWidget):
         self.populate_stats_table(self.process_ss, slice=selected_slice)
 
     def update_histogram(self):
-        if self.ivm.current_overlay is None:
-            error_dialog("No current overlay")
-            return
+        if self.ivm.current_overlay is not None:
+            options = {"overlay" : self.ivm.current_overlay.name, 
+                    "no-artifact" : True, "bins" : self.nbinsSpin.value(),
+                    "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
+            self.process_hist.run(options)
 
-        options = {"overlay" : self.ivm.current_overlay.name, 
-                   "no-artifact" : True, "bins" : self.nbinsSpin.value(),
-                   "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
-        self.process_hist.run(options)
+            self.win1.removeItem(self.plt1)
+            self.plt1 = self.win1.addPlot(title="")
 
-        self.win1.removeItem(self.plt1)
-        self.plt1 = self.win1.addPlot(title="")
-
-        for ov_name in self.process_hist.hist:
-            for region, yvals in self.process_hist.hist[ov_name].items():
-                pencol = self.ivm.current_roi.get_pencol(region)
-                curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
-            self.plt1.addItem(curve)
+            for ov_name in self.process_hist.hist:
+                for region, yvals in self.process_hist.hist[ov_name].items():
+                    pencol = self.ivm.current_roi.get_pencol(region)
+                    curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
+                self.plt1.addItem(curve)
 
     def populate_stats_table(self, process, **options):
         if self.ivm.current_overlay is not None and self.ovl_selection == self.CURRENT_OVERLAY:
