@@ -14,6 +14,8 @@ import os
 import math
 import warnings
 import glob
+import keyword
+import re
 
 from PySide import QtCore, QtGui
 from matplotlib import cm
@@ -97,6 +99,34 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         for d in range(len(self.shape), min(len(shape), 4)):
             self.shape.append(shape[d])
 
+    def suggest_name(self, name):
+        """
+        Suggest a name for new data that does not clash with existing names and is
+        suitable for use as a Python variable.
+        """
+        # Remove invalid characters
+        name = re.sub('[^0-9a-zA-Z_]', '', name)
+
+        # Remove leading characters until we find a letter or underscore
+        name = re.sub('^[^a-zA-Z_]+', '', name)
+
+        # Add underscore if it's a keyword
+        if keyword.iskeyword(name):
+            name += "_"
+
+        # Make it unique
+        n = 1
+        while 1:
+            if name not in self.overlays and name not in self.rois:
+                break
+            n += 1
+            name = "%s_%i" % (name, n)
+        return name
+
+    def _valid_name(self, name):
+        if not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
+            raise RuntimeError("'%s' is not a valid name" % name)
+
     def set_main_volume(self, name):
         self._overlay_exists(name)
         
@@ -111,6 +141,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         self.sig_main_volume.emit(self.vol)
 
     def add_overlay(self, name, ov, make_current=False, make_main=False, signal=True):
+        self._valid_name(name)
+
         ov = ov.view(QpVolume)
         ov.set_as_data(name)
         if ov.md is None:
@@ -131,6 +163,8 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
             self.sig_all_overlays.emit(self.overlays.keys())
 
     def add_roi(self, name, roi, make_current=False, signal=True):
+        self._valid_name(name)
+
         roi = roi.astype(np.int32).view(QpVolume)
         roi.set_as_roi(name)
         if roi.md is None:
