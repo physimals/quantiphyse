@@ -120,7 +120,13 @@ class ImageVolumeManagement(QtCore.QObject):
         self._data_exists(name)
         
         self.main = self.data[name]
-        self.grid = self.main.grid
+        self.grid = self.main.rawgrid.reorient_ras()
+        print("Main data raw grid")
+        print(self.main.rawgrid.affine)
+        print("RAS aligned")
+        print(self.grid.affine)
+
+        self.main.regrid(self.grid)
         
         self.cim_pos = [int(d/2) for d in self.grid.shape]
         if self.main.ndim == 4:
@@ -131,20 +137,18 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def add_qpdata(self, qpdata, make_current=False, make_main=False):
         self._valid_name(qpdata.name)
-
-        if self.grid is not None:
-            qpdata.regrid(self.grid)
-                
         self.data[qpdata.name] = qpdata
         
         # Make main data if requested, or if the first data, or if the first 4d data
-        # If not the main data, set as current data if requested
+        # If not, regrid it onto the current OTG
         make_main = make_main or self.main is None or (qpdata.ndim == 4 and self.main.ndim == 3)
         if make_main:
             self.set_main_data(qpdata.name)
-        elif make_current:
-            self.set_current_data(qpdata.name)
+        else:
+            qpdata.regrid(self.grid)
 
+        if make_current:
+            self.set_current_data(qpdata.name)
         self.sig_all_data.emit(self.data.keys())
 
     def add_npdata(self, name, npdata, make_current=False, make_main=False):
@@ -153,12 +157,11 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def add_qproi(self, qproi, make_current=False, signal=True):
         self._valid_name(qproi.name)
+        self.rois[qproi.name] = qproi
 
         if self.grid is not None:
             # FIXME regridding ROIs needs some thought!
             qproi.regrid(self.grid)
-
-        self.rois[qproi.name] = qproi
 
         if make_current:
             self.set_current_roi(qpdata.name)

@@ -48,7 +48,7 @@ class DicomFolder(QpData):
             self.nii = self.fallback_dcmstack(src_dcms)
 
         print("DONE\n")
-        grid = DataGrid(self.nii.shape, self.nii.header.get_best_affine())
+        grid = DataGrid(self.nii.shape[:3], self.nii.header.get_best_affine())
         QpData.__init__(self, fname, self.nii.get_data(), grid, fname=fname)
 
     def fallback_dcmstack(self, fnames):
@@ -117,7 +117,7 @@ class DicomFolder(QpData):
                 vidx += 1
 
         # FIXME do this or not?
-        for d in range(3): data = np.flip(data, d)
+        #for d in range(3): data = np.flip(data, d)
 
         nii = nib.Nifti1Image(data, dcm_affine)
         nii.update_header()

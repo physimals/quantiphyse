@@ -13,22 +13,26 @@ interpolation so analysis can be done on a grid.
 Basic concepts decided:
 
  - The One True Grid (OTG) is defined by the main volume. It consists of 
-   a 3D shape, and a 3D affine which maps grid co-ordinates onto RAS
-   coordinates.
- - All data is 3D or 4D. 2D (or 1D?) data will be expanded to 3D on load
+   a 3D shape, and a 3D affine which maps grid co-ordinates onto
+   coordinates in standard space.
+ - All data is 4D. 2D (or 1D?) data will be expanded to 4D on load
  - The 4th dimension is not part of the grid and has no impact on orientation.
  - Every data object may have raw data (e.g. from file) and is also regridded onto
    the OTG. The affine transformations associated with a grid are used for this
- - When the main volume is changed, all data is regridded on to the new OTG
- - Data objects may be created already on the standard grid, they will not be
-   regridded and the raw data / OTG data are the same
- - When a data object is set as the main data, its raw data is re-oriented
-   (but NOT regridded) to be in approximate RAS format so image display 
-   is consistent. Note that the transformations which describe the 
-   new grid are not approximated and the OTG is not exactly RAS aligned but the
-   image view labels (R/L, S/I, A/P) should be in roughly the right place.
+ - When a grid 'matches' the OTG (i.e. defines the same voxels, although possibly
+   with different axis order/directions), regridding will be implemented by
+   axis transpositions/flips to avoid the cost of regridding a large 4D volume 
+   using general affine transformations.
+ - If the regridding transformation 'looks' diagonal we will pass it to the
+   transform function as a sequence to reduce computational cost.
+ - When the main volume is changed, the OTG is changed to and approximately RAS oriented 
+   copy of the main data's raw grid. so the image view is consistent. All data is then 
+   regridded on to the new OTG. Note that the OTG will not be exactly RAS aligned
+   but the image view labels (R/L, S/I, A/P) should be in roughly the right place.
  - This means that if the main data was loaded from a file its raw data and
    OTG data are not necessarily the same.
+ - Data objects may be created already on the standard grid, they will not be
+   regridded and the raw data / OTG data are the same
 
 For consideration
  - Initially only OTG data will be used for viewing and analysis
@@ -44,53 +48,91 @@ For consideration
 """
 
 class DataGrid:
+    """
+    Defines a regular 3D grid in standard space
+
+    A grid consists of :
+      - A 4D affine matrix which describes the transformation from 
+        grid co-ordinates to standard space co-ordinates
+      - A 3D shape (number of points in x, y, z dimensions)
+
+    From the grid affine may be derived:
+      - The grid spacing in standard units (mm)
+      - The grid origin in standard space (last column of the affine)
+      - The grid 3D transformation matrix (first 3x3 submatrix of the affine)
+
+    The objects are not formally immutable but are not designed to be modified
+    """
+
     def __init__(self, shape, affine):
-        # Dimensionality of the grid -  3D only
+        # Dimensionality of the grid - 3D only
+        if len(shape) != 3: 
+            raise RuntimeError("Grid shape must be 3D")
         self.shape = list(shape)[:]
 
         # 3D Affine transformation from grid-space to standard space
         # This is a 4x4 matrix - includes constant offset
+        if len(affine.shape) != 2 or affine.shape[0] != 4 or affine.shape[1] != 4: 
+            raise RuntimeError("Grid afine must be 4x4 matrix")
         self.affine = np.copy(affine)
 
-        self._get_spacing()
+        self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
+
+    def matches(self, grid):
+        """ 
+        Determine if this grid matches another
+
+        Checks the affine and the shape to within a tolerance
+        value after re-orienting both to approximate RAS order
+        """
+        ALLOWED_ERROR = 0.01
+        g1 = self.reorient_ras()
+        g2 = grid.reorient_ras()
+        for s1, s2 in zip(g1.shape, g2.shape):
+            if s1 != s2: return False
+        for v1, v2 in zip(g1.affine.flatten(), g2.affine.flatten()):
+            if abs(v1 - v2) >= ALLOWED_ERROR: return False
+        return True
 
     def reorient_ras(self):
         """ 
-        Re-orient grid to approximate RAS order, by axis transposition
+        Return a new grid in approximate RAS order, by axis transposition
         and flipping only
+
+        The result is a grid which defines the same space as the original
+        with the same voxel spacing but where the x axis is increasing
+        left->right, the y axis increases posterior->anterior and the
+        z axis increases inferior->superior.
         """
-        print(self.affine)
-        print(self.shape, self.spacing)
-        space_affine = self.affine[:3,:3]
-        space_pos = np.absolute(space_affine)
+        dim_order, dim_flip, new_affine, new_shape = self._get_diag_transform(self.affine)
+        print(dim_order, dim_flip, new_shape)
+        print(new_affine)
+        return DataGrid(new_shape, new_affine)
+
+    def _swap_cols(self, mat, c1, c2):
+        # Swap columns of a matrix
+        mat[:,[c1, c2]] = mat[:,[c2, c1]]
+    
+    def _get_diag_transform(self, mat):
+        """ Get the transpositions/flips that will make a matrix as diagonal as possible """
         dim_order, dim_flip = [], []
+        absmat = np.absolute(mat)
         for d in range(3):
-            newd = np.argmax(space_pos[:,d])
+            newd = np.argmax(absmat[:,d])
             dim_order.append(newd)
-            if space_affine[newd, d] < 0:
+            if mat[newd, d] < 0:
                 dim_flip.append(d)
 
-        self.shape = [self.shape[d] for d in dim_order]
+        new_mat = np.copy(mat)
+        new_shape = [self.shape[d] for d in dim_order]
         for idx, d in enumerate(dim_order):
-            # Re-order columns to transpose axes
-            self._swap_cols(self.affine, idx, d)
+            new_mat[:,d] = mat[:,idx]
         for dim in dim_flip:
             # Change signs to positive and adjust origin to flip a dimension
-            self.affine[:,dim] = -self.affine[:,dim]
-            self.affine[dim,3] = self.affine[dim, 3] - self.affine[0,dim] * self.shape[dim]
+            new_mat[:,dim] = -new_mat[:,dim]
+            new_mat[dim,3] = new_mat[dim, 3] - new_mat[0,dim] * new_shape[dim]
 
-        # Update voxel spacing
-        self._get_spacing()
-        print(dim_order, dim_flip)
-        print(self.affine)
-        print(self.shape, self.spacing)
-
-    def _swap_cols(self, arr, c1, c2):
-        arr[:,[c1, c2]] = arr[:,[c2, c1]]
-
-    def _get_spacing(self):
-        # Grid spacing in mm - derived from affine
-        self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
+        return dim_order, dim_flip, new_mat, new_shape
 
 class QpData:
 
@@ -142,25 +184,49 @@ class QpData:
             self.data[nans] = 0
 
     def regrid(self, grid):
-        # Get the transform from raw co-ordinate space to standard space
-        transform = np.dot(np.linalg.inv(self.rawgrid.affine), grid.affine)
-        affine = transform[:3,:3]
-        offset = list(transform[:3,3])
-        output_shape = grid.shape
-        if self.ndim == 4:
-            affine = np.append(affine, [[0, 0, 0]], 0)
-            affine = np.append(affine, [[0],[0],[0],[1]],1)
-            offset.append(0)
-            output_shape.append(self.nvols)
+        tmatrix = np.dot(np.linalg.inv(self.rawgrid.affine), grid.affine)
+        print("Regridding", self.rawgrid.shape, grid.shape)
+        print(tmatrix)
+        # Try to turn the transformation matrix diagonal by flipping/permuting axes    
+        dim_order, dim_flip, new_tmatrix, new_shape = grid._get_diag_transform(tmatrix)
+        print("Diagonalized")
+        print(dim_order, dim_flip)
+        print(new_tmatrix)
+        if sorted(dim_order) == range(3):
+            print("Looks good, simplifying")
+            if self.ndim == 4: dim_order.append(3)
+            self.data = np.transpose(self.rawdata, dim_order)
+            tmatrix = new_tmatrix
+        
+        if self.rawgrid.matches(grid):
+            # In this case the flips/permutation is sufficient in itself
+            # and new_tmatrix should be the identity
+            print("Trivial transform - all done")
+        else:
+            affine = tmatrix[:3,:3]
+            offset = list(tmatrix[:3,3])
+            diagonal = np.diagonal(affine)
+            if np.count_nonzero(affine - np.diag(diagonal)) == 0:
+                # The transformation is diagonal, so use this sequence instead of 
+                # the full matrix - this will be faster
+                affine = diagonal
+                print("It's diagonal - using ", affine)
+            else:
+                print("Using general affine transform")
+                print(affine)
+            output_shape = grid.shape
+            if self.ndim == 4:
+                # Make 4D affine with identity transform in 4th dimension
+                affine = np.append(affine, [[0, 0, 0]], 0)
+                affine = np.append(affine, [[0],[0],[0],[1]],1)
+                offset.append(0)
+                output_shape.append(self.nvols)
 
-        print(affine)
-        print(offset)
-        self.data = scipy.ndimage.affine_transform(self.rawdata, affine, offset=offset, output_shape=output_shape)
-        self.grid = grid
-        print(self.data.shape)
-        print(self.rawdata.shape)
-        print(self.rawdata.min(), self.rawdata.max())
+            print("Offset = ", offset)
+            #print(np.linalg.eigh(affine))
+            self.data = scipy.ndimage.affine_transform(self.rawdata, affine, offset=offset, output_shape=output_shape)
         print(self.data.min(), self.data.max())
+        self.grid = grid
 
     def strval(self, pos):
         """ Return the data value at pos as a string to an appropriate
