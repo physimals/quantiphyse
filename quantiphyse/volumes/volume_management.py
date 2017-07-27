@@ -18,7 +18,6 @@ import keyword
 import re
 
 from PySide import QtCore, QtGui
-from matplotlib import cm
 
 import numpy as np
 
@@ -146,8 +145,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         ov = ov.view(QpVolume)
         ov.set_as_data(name)
         if ov.md is None:
-            ov.md = FileMetadata(name, shape=ov.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
-        
+            if self.vol is not None:
+                ov.md = FileMetadata(name, shape=ov.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+            else:
+                ov.md = FileMetadata(name, shape=ov.shape)
+                
         self.update_shape(ov.shape)
         self.overlays[name] = ov
         
@@ -168,8 +170,11 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         roi = roi.astype(np.int32).view(QpVolume)
         roi.set_as_roi(name)
         if roi.md is None:
-            roi.md = FileMetadata(name, shape=roi.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
-
+            if self.vol is not None:
+                roi.md = FileMetadata(name, shape=roi.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+            else:
+                roi.md = FileMetadata(name, shape=roi.shape)
+             
         if roi.range[0] < 0 or roi.range[1] > 2**32:
             raise RuntimeError("ROI must contain values between 0 and 2**32")
 
