@@ -1,6 +1,7 @@
 import sys, os
 import traceback
 import re
+import warnings
 
 from PySide import QtCore, QtGui
 
@@ -12,6 +13,8 @@ try:
     from fabber import View, FabberException, FabberLib, find_fabber
 except:
     # Stub to prevent import failure if Fabber not available
+    warnings.warn("Failed to import Fabber API - widget will be disabled")
+    traceback.print_exc()
     class View:
         pass
 

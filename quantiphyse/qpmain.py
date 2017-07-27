@@ -42,7 +42,7 @@ from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
 from .widgets.T10Widgets import T10Widget
 from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
-from .widgets.fabber import FabberWidget, CESTWidget
+from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
 from .widgets.MCWidgets import RegWidget
 #from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.OverviewWidgets import OverviewWidget
@@ -482,6 +482,7 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(PerfSlicWidget) 
         self.add_widget(FabberWidget) 
         self.add_widget(CESTWidget) 
+        self.add_widget(ASLWidget) 
         self.add_widget(MeanValuesWidget) 
         self.add_widget(RegWidget) 
         #self.add_widget(ImageExportWidget) 
