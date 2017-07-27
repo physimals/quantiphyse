@@ -1,4 +1,8 @@
+import math
+import warnings
+
 import numpy as np
+import scipy
 
 """
 Work-in-progress on Next Generation volume class
@@ -41,8 +45,8 @@ For consideration
 
 class DataGrid:
     def __init__(self, shape, affine):
-        # Dimensionality of the grid
-        self.shape = shape
+        # Dimensionality of the grid -  3D only
+        self.shape = list(shape)[:]
 
         # 3D Affine transformation from grid-space to standard space
         # This is a 4x4 matrix - includes constant offset
@@ -68,10 +72,14 @@ class DataGrid:
 
         self.shape = [self.shape[d] for d in dim_order]
         for idx, d in enumerate(dim_order):
+            # Re-order columns to transpose axes
             self._swap_cols(self.affine, idx, d)
         for dim in dim_flip:
+            # Change signs to positive and adjust origin to flip a dimension
             self.affine[:,dim] = -self.affine[:,dim]
             self.affine[dim,3] = self.affine[dim, 3] - self.affine[0,dim] * self.shape[dim]
+
+        # Update voxel spacing
         self._get_spacing()
         print(dim_order, dim_flip)
         print(self.affine)
@@ -86,7 +94,7 @@ class DataGrid:
 
 class QpData:
 
-    def __init__(self, name, data, grid, stdgrid=None, file=None):
+    def __init__(self, name, data, grid, stdgrid=None, fname=None):
         # Everyone needs a friendly name
         self.name = name
 
@@ -102,11 +110,13 @@ class QpData:
             self.regrid(stdgrid)
 
         # File it was loaded from, if relevant
-        self.file = file
+        self.fname = fname
 
         # Convenience attributes
         self.ndim = self.data.ndim
         self.range = (self.rawdata.min(), self.rawdata.max())
+        if self.ndim == 4: self.nvols = self.data.shape[3]
+        else: self.nvols = 1
 
         self.dps = self._calc_dps()
         self._remove_nans()
@@ -133,12 +143,25 @@ class QpData:
 
     def regrid(self, grid):
         # Get the transform from raw co-ordinate space to standard space
-        transform = np.dot(np.linalg.inv(grid.affine), self.rawgrid.affine)
+        transform = np.dot(np.linalg.inv(self.rawgrid.affine), grid.affine)
         affine = transform[:3,:3]
-        offset = transform[:3,3]
-        self.data = scipy.ndimage.affine_transform(self.rawdata, affine, offset=offset, output_shape=grid.shape)
+        offset = list(transform[:3,3])
+        output_shape = grid.shape
+        if self.ndim == 4:
+            affine = np.append(affine, [[0, 0, 0]], 0)
+            affine = np.append(affine, [[0],[0],[0],[1]],1)
+            offset.append(0)
+            output_shape.append(self.nvols)
+
+        print(affine)
+        print(offset)
+        self.data = scipy.ndimage.affine_transform(self.rawdata, affine, offset=offset, output_shape=output_shape)
         self.grid = grid
-        
+        print(self.data.shape)
+        print(self.rawdata.shape)
+        print(self.rawdata.min(), self.rawdata.max())
+        print(self.data.min(), self.data.max())
+
     def strval(self, pos):
         """ Return the data value at pos as a string to an appropriate
         number of decimal places"""
@@ -154,7 +177,7 @@ class QpData:
         for axis, pos in axes:
             if axis < self.ndim:
                 sl[axis] = pos
-        data = self[sl]
+        data = self.data[sl]
 
         if mask is not None:
             data = np.copy(data)
@@ -168,6 +191,13 @@ class QpData:
 class QpRoi(QpData):
 
     def __init__(self):
+        
+        #if roi.range[0] < 0 or roi.range[1] > 2**32:
+        #    raise RuntimeError("ROI must contain values between 0 and 2**32")
+        #
+        #if not np.equal(np.mod(roi, 1), 0).any():
+        #   raise RuntimeError("ROI contains non-integer values.")
+
         QpData.__init__(self)
         self.dps = 0
         self.regions = np.unique(self.rawdata)

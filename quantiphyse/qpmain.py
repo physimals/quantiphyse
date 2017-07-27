@@ -31,27 +31,30 @@ if (sys.version_info > (3, 0)):
 else:
     from .resources import resource_py3
 
+from ._version import __version__
+
 from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 
-from ._version import __version__
-from .ImageView import ImageView
-from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
-from .widgets.ClusteringWidgets import CurveClusteringWidget
-from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
-from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
-from .widgets.T10Widgets import T10Widget
-from .widgets.PerfSlicWidgets import MeanValuesWidget
-from .widgets.PerfSlicWidgets import PerfSlicWidget
-from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
-from .widgets.MCWidgets import RegWidget
-#from .widgets.ExperimentalWidgets import ImageExportWidget
-from .widgets.OverviewWidgets import OverviewWidget
-from .widgets.RoiBuilderWidget import RoiBuilderWidget
 from .volumes.io import load, save
 from .volumes.volume_management import ImageVolumeManagement
 
 from .utils.batch import run_batch
 from .utils import set_local_file_path, get_icon, get_local_file
+
+from .ImageView import ImageView
+
+from .widgets.OverviewWidgets import OverviewWidget
+#from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
+#from .widgets.ClusteringWidgets import CurveClusteringWidget
+#from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
+#from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
+#from .widgets.T10Widgets import T10Widget
+#from .widgets.PerfSlicWidgets import MeanValuesWidget
+#from .widgets.PerfSlicWidgets import PerfSlicWidget
+#from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
+#from .widgets.MCWidgets import RegWidget
+##from .widgets.ExperimentalWidgets import ImageExportWidget
+#from .widgets.RoiBuilderWidget import RoiBuilderWidget
 
 op_sys = platform.system()
 
@@ -113,7 +116,7 @@ class DragOptions(QtGui.QDialog):
             self.type = ret
             self.force_t = self.force_t_cb.isChecked()
             self.name = self.name_combo.currentText()
-            if self.name in self.ivm.overlays or self.name in self.ivm.rois:
+            if self.name in self.ivm.data or self.name in self.ivm.rois:
                 btn = QtGui.QMessageBox.warning(self, "Name already exists",
                     "Data already exists with this name - overwrite?",
                     QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
@@ -311,7 +314,7 @@ class ViewOptions(QtGui.QDialog):
         #self.setFixedSize(300, 300)
 
         self.ivm = ivm
-        self.ivm.sig_main_volume.connect(self.vol_changed)
+        self.ivm.sig_main_data.connect(self.vol_changed)
 
         # Options
         self.size_scaling = self.SCALE_VOXELS
@@ -397,9 +400,9 @@ class ViewOptions(QtGui.QDialog):
         we have a uniform scale, if not only do it if the number of points has
         changed (as a starting point for customisation)
         """
-        if self.ivm.vol is not None and self.ivm.vol.ndim == 4 and \
-           (self.t_scale_type == 0 or self.ivm.vol.shape[3] != len(self.t_scale)):
-            self.t_scale = [i*self.t_res for i in range(self.ivm.vol.shape[3])]
+        if self.ivm.main is not None and self.ivm.main.ndim == 4 and \
+           (self.t_scale_type == 0 or self.ivm.main.nvols != len(self.t_scale)):
+            self.t_scale = [i*self.t_res for i in range(self.ivm.main.nvols)]
 
     def orientation_changed(self, idx):
         self.orientation = idx
@@ -472,23 +475,23 @@ class MainWindow(QtGui.QMainWindow):
         self.widgets = []
         self.current_widget = None
         self.add_widget(OverviewWidget, default=True) 
-        self.add_widget(SECurve, default=True)
-        self.add_widget(ModelCurves) 
-        self.add_widget(OverlayStatistics, default=True) 
-        self.add_widget(RoiAnalysisWidget) 
-        self.add_widget(SimpleMathsWidget) 
-        self.add_widget(PharmaWidget) 
-        self.add_widget(T10Widget) 
-        self.add_widget(PerfSlicWidget) 
-        self.add_widget(FabberWidget) 
-        self.add_widget(CESTWidget) 
-        self.add_widget(ASLWidget) 
-        self.add_widget(MeanValuesWidget) 
-        self.add_widget(RegWidget) 
-        #self.add_widget(ImageExportWidget) 
-        self.add_widget(CurveClusteringWidget, default=True) 
-        self.add_widget(OvCurveClusteringWidget, default=True) 
-        self.add_widget(RoiBuilderWidget)
+        #self.add_widget(SECurve, default=True)
+        #self.add_widget(ModelCurves) 
+        #self.add_widget(OverlayStatistics, default=True) 
+        #self.add_widget(RoiAnalysisWidget) 
+        #self.add_widget(SimpleMathsWidget) 
+        #self.add_widget(PharmaWidget) 
+        #self.add_widget(T10Widget) 
+        #self.add_widget(PerfSlicWidget) 
+        #self.add_widget(FabberWidget) 
+        #self.add_widget(CESTWidget) 
+        #self.add_widget(ASLWidget) 
+        #self.add_widget(MeanValuesWidget) 
+        #self.add_widget(RegWidget) 
+        ##self.add_widget(ImageExportWidget) 
+        #self.add_widget(CurveClusteringWidget, default=True) 
+        #self.add_widget(OvCurveClusteringWidget, default=True) 
+        #self.add_widget(RoiBuilderWidget)
         
         # Initialize menu and tabs
         self.init_menu()
@@ -582,7 +585,7 @@ class MainWindow(QtGui.QMainWindow):
         # File --> Save Overlay
         save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current Overlay', self)
         save_ovreg_action.setStatusTip('Save current Overlay as a NIFTI file')
-        save_ovreg_action.triggered.connect(self.save_overlay)
+        save_ovreg_action.triggered.connect(self.save_data)
         save_ovreg_action.setShortcut('Ctrl+S')
 
         # File --> Save ROI
@@ -697,7 +700,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Places that the console has access to
         namespace = {'np': np, 'ivm': self.ivm, 'self': self}
-        for name, ovl in self.ivm.overlays.items():
+        for name, ovl in self.ivm.data.items():
             namespace[name] = ovl
         for name, roi in self.ivm.rois.items():
             namespace[name] = roi
@@ -730,8 +733,7 @@ class MainWindow(QtGui.QMainWindow):
         self.default_directory = os.path.dirname(fname)
 
         # Get metadata for file - shape and data type so we can assess fit
-        datafile = load(fname)
-        shape, shape_orig, dtype = datafile.get_info()
+        data = load(fname)
 
         # FIXME not doing this because a lot of ROIs seem to come in as float data? 
         #if ftype is None and issubclass(dtype.type, np.floating):
@@ -739,63 +741,28 @@ class MainWindow(QtGui.QMainWindow):
         #    print(dtype)
         #    ftype = "DATA"
 
-        # At this point we assess transformed and original shape to decide what advanced load options/warnings to offer
-        force_t_option = False
-        ignore_affine = False
+        force_t_option = (data.ndim == 3)
         force_t = False
-        if self.ivm.vol is None:
-            # We can add anything to an empty IVM - but if data is 3D, give discreet option to interpret
-            # it as 2D+time
-            force_t_option = (len(shape) == 3)
-        else:
-            # Try to add directly, as 2D+time, directly in original dims and finally 2D+time in original space 
-            if self.ivm.check_shape(shape):
-                pass
-            elif len(shape) == 3 and self.ivm.check_shape([shape[0], shape[1], 1, shape[2]]):
-                force_t = True
-            elif self.ivm.check_shape(shape_orig):
-                ignore_affine = True
-            elif len(shape) == 3 and self.ivm.check_shape([shape_orig[0], shape_orig[1], 1, shape_orig[2]]):
-                force_t = True
-                ignore_affine = True
-            else:
-                # Data already exists and shape is not consistent - only option is to empty and start again
-                msgBox = QtGui.QMessageBox()
-                msgBox.setText("A different shaped volume has already been loaded")
-                msgBox.setInformativeText("Do you want to clear all data and load this new volume?")
-                msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-                if msgBox.exec_() != QtGui.QMessageBox.Ok: return
                 
-                self.ivm.reset()
-                force_t_option = (len(shape) == 3)
-                
-        # If file type (ROI or data) is not already known, ask the user.
-        if ftype is None or force_t_option:
-            ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
-            if not ok: return
+        ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
+        if not ok: return
+        data.name = name
         if force_t_option: force_t = force_t_dialog
         
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         warnings = []
         if force_t:
-            warnings.append("Interpreted data as multiple 2D volumes although file contained 3D spatial data")
-        if ignore_affine:
-            warnings.append("Ignored space transformation from file")
-        if len(warnings) > 0:
+            warning = "Interpreted data as multiple 2D volumes although file contained 3D spatial data"
             msgBox = QtGui.QMessageBox()
-            warntxt = "\n  -".join(warnings)
-            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warntxt)
+            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warning)
             msgBox.setInformativeText("Add data anyway?")
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
-        
-        # Now get the actual data and add it as data or an ROI
-        vol = datafile.get_data(ignore_affine=ignore_affine, force_t=force_t)
+            data.force_t()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(vol) > ROI_MAXVAL_WARN:
+        if ftype == "ROI" and np.max(data.data) > ROI_MAXVAL_WARN:
             msgBox = QtGui.QMessageBox()
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
@@ -804,26 +771,21 @@ class MainWindow(QtGui.QMainWindow):
             msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
-        if name is None:
-            name = os.path.basename(fname)
+        if ftype == "DATA": 
+            self.ivm.add_qpdata(data, make_current=True)
+        else:
+            self.ivm.add_qproi(data, make_current=True)
 
-        if ftype == "DATA": add_fn = self.ivm.add_overlay
-        else: add_fn = self.ivm.add_roi
-        try:
-            add_fn(name, vol, make_current=True)
-        except:
-            raise
-
-    def save_overlay(self):
+    def save_data(self):
         """
-        Dialog for saving an overlay as a nifti file
+        Dialog for saving an data as a nifti file
         """
-        if self.ivm.current_overlay is None:
-            QtGui.QMessageBox.warning(self, "No overlay", "No current overlay to save", QtGui.QMessageBox.Close)
+        if self.ivm.current_data is None:
+            QtGui.QMessageBox.warning(self, "No data", "No current data to save", QtGui.QMessageBox.Close)
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
-                save(self.ivm.current_overlay, fname)
+                save(self.ivm.current_data, fname)
             else: # Cancelled
                 pass
 

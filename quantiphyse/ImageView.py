@@ -18,7 +18,6 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
-from .volumes.io import QpVolume
 from .utils import get_icon
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
@@ -239,12 +238,12 @@ class LassoPicker(Picker):
         """ Get the selected points as an ROI"""
         if self.win is None: return None    
 
-        w, h = self.iv.ivm.shape[self.view.xaxis], self.iv.ivm.shape[self.view.yaxis]
+        w, h = self.iv.ivm.grid.shape[self.view.xaxis], self.iv.ivm.grid.shape[self.view.yaxis]
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).polygon(self.points, outline=label, fill=label)
         
-        ret = np.zeros(self.view.ivm.shape[:3])
-        slice_mask = np.array(img).view(QpVolume).T
+        ret = np.zeros(self.view.ivm.grid.shape)
+        slice_mask = np.array(img).T
         slices = [slice(None)] * 3
         slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
         ret[slices] = slice_mask
@@ -306,12 +305,12 @@ class EllipsePicker(LassoPicker):
         """ Get the selected points as an ROI"""
         if self.win is None: return None    
 
-        w, h = self.iv.ivm.shape[self.view.xaxis], self.iv.ivm.shape[self.view.yaxis]
+        w, h = self.iv.ivm.grid.shape[self.view.xaxis], self.iv.ivm.grid.shape[self.view.yaxis]
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).ellipse([int(p) for p in self.points], outline=label, fill=label)
         
-        ret = np.zeros(self.view.ivm.shape[:3])
-        slice_mask = np.array(img).view(QpVolume).T
+        ret = np.zeros(self.view.ivm.grid.shape)
+        slice_mask = np.array(img).T
         slices = [slice(None)] * 3
         slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
         ret[slices] = slice_mask
@@ -368,16 +367,16 @@ class DataView:
         self.alpha = 255
         self.roi_only = True
         d = self.data()
-        self.cmap_range = [d.min(), d.max()]
+        self.cmap_range = d.range
 
     def get_slice(self, *axes):
         if self.roi_only:
-            return self.data().pos_slice(axes, mask=self.ivm.current_roi)
+            return self.data().get_slice(axes, mask=self.ivm.current_roi)
         else:
-            return self.data().pos_slice(axes)
+            return self.data().get_slice(axes)
 
     def data(self):
-        return self.ivm.overlays[self.ov_name]
+        return self.ivm.data[self.ov_name]
 
 class RoiView:
     """
@@ -396,7 +395,7 @@ class RoiView:
 
 class OrthoView(pg.GraphicsView):
     """
-    A single slice view of data, overlay and ROI
+    A single slice view of data and ROI
     """
 
     # Signals when point of focus is changed
@@ -449,13 +448,13 @@ class OrthoView(pg.GraphicsView):
         self.resizeEvent = self.resize_win
 
     def update(self):
-        if self.ivm.vol is None: 
+        if self.ivm.main is None: 
             self.img.setImage(np.zeros((1, 1)), autoLevels=False)
             return
 
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
-            self.vb.setAspectLocked(True, ratio=(self.ivm.voxel_sizes[self.xaxis] / self.ivm.voxel_sizes[self.yaxis]))
+            self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
         else:
             self.vb.setAspectLocked(True, ratio=1)
         for l in self.labels:
@@ -473,8 +472,8 @@ class OrthoView(pg.GraphicsView):
         # Plot image slices
         pos = self.ivm.cim_pos
         slices = [(self.zaxis, pos[self.zaxis])]
-        if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
-        self.img.setImage(self.ivm.vol.pos_slice(slices), autoLevels=False)
+        if self.ivm.main.ndim == 4: slices.append((3, pos[3]))
+        self.img.setImage(self.ivm.main.get_slice(slices), autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
         self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
@@ -513,13 +512,13 @@ class OrthoView(pg.GraphicsView):
             roi_levels = roidata.range
             
             if roiview.shade:
-                self.img_roi.setImage(roidata.pos_slice([(self.zaxis, pos[self.zaxis])]), lut=lut, autoLevels=False, levels=roi_levels)
+                self.img_roi.setImage(roidata.get_slice([(self.zaxis, pos[self.zaxis])]), lut=lut, autoLevels=False, levels=roi_levels)
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
 
             if roiview.contour:
-                data = roidata.pos_slice([(self.zaxis, pos[self.zaxis])])
+                data = roidata.get_slice([(self.zaxis, pos[self.zaxis])])
                 
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.contours)
@@ -577,18 +576,18 @@ class OrthoView(pg.GraphicsView):
         Subclassed to remove scroll to zoom from pg.ImageItem
         and instead trigger a scroll through the volume
         """
-        if len(self.ivm.shape) == 0: return
+        if self.ivm.grid is None: return
         dz = int(event.delta()/120)
         pos = self.ivm.cim_pos[:]
         pos[self.zaxis] += dz
-        if pos[self.zaxis] >= self.ivm.shape[self.zaxis] or pos[self.zaxis] < 0:
+        if pos[self.zaxis] >= self.ivm.grid.shape[self.zaxis] or pos[self.zaxis] < 0:
             return
 
         self.sig_focus.emit(pos, self.zaxis, False)
 
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
-        if self.ivm.vol is None: return
+        if self.ivm.main is None: return
         
         if event.button() == QtCore.Qt.LeftButton:
             self.dragging = (self.iv.drag_mode == DragMode.PICKER_DRAG)
@@ -596,8 +595,8 @@ class OrthoView(pg.GraphicsView):
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            if mx < 0 or mx >= self.ivm.shape[self.xaxis]: return
-            if my < 0 or my >= self.ivm.shape[self.yaxis]: return
+            if mx < 0 or mx >= self.ivm.grid.shape[self.xaxis]: return
+            if my < 0 or my >= self.ivm.grid.shape[self.yaxis]: return
             pos = self.ivm.cim_pos[:]
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
@@ -705,18 +704,18 @@ class ImageView(QtGui.QSplitter):
 
         self.ivm = ivm
         self.opts = opts
-        self.ivm.sig_current_overlay.connect(self.overlay_changed)
+        self.ivm.sig_current_data.connect(self.current_data_changed)
         self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_volume.connect(self.main_volume_changed)
+        self.ivm.sig_main_data.connect(self.main_volume_changed)
         self.ivm.sig_all_rois.connect(self.rois_changed)
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
+        self.ivm.sig_all_data.connect(self.data_changed)
         self.opts.sig_options_changed.connect(self.update_ortho_views)
 
         # Viewer Options
         self.roi_outline_width = 3.0
         self.show_crosshairs = True
         
-        # Visualisation information for overlays and ROIs
+        # Visualisation information for data and ROIs
         self.data_views = {}
         self.current_data_view = None
         self.roi_views = {}
@@ -894,7 +893,7 @@ class ImageView(QtGui.QSplitter):
         self.h1.addImageItem(self.win[2].img)
         self.h1.setBackground(background=None)
         
-        # Histogram which controls colour map and levels for overlay
+        # Histogram which controls colour map and levels for data
         self.h2 = MultiImageHistogramWidget(fillHistogram=False)
         self.h2.setBackground(background=None)
         self.h2.setGradientName("jet")
@@ -1002,14 +1001,14 @@ class ImageView(QtGui.QSplitter):
         self.update_slider_range()
         self.update_nav_sliders()
         if vol is not None:
-            self.vol_name.setText(vol.md.basename)
-            self.h1.setSourceData(self.ivm.vol, percentile=99)
+            self.vol_name.setText(vol.fname)
+            self.h1.setSourceData(self.ivm.main.data, percentile=99)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
             self.max_min(0, state=0)
             for d in range(3):
-                if vol.shape[d] == 1:
+                if vol.grid.shape[d] == 1:
                     self.max_min(d, state=1)
         else:
             self.vol_name.setText("")
@@ -1019,7 +1018,7 @@ class ImageView(QtGui.QSplitter):
     def roi_combo_changed(self, idx):
         if idx >= 0:
             roi = self.roi_combo.itemText(idx)
-            self.ivm.set_current_roi(roi, signal=True)
+            self.ivm.set_current_roi(roi)
 
     def rois_changed(self, rois):
         # Repopulate ROI combo, without sending signals
@@ -1071,29 +1070,30 @@ class ImageView(QtGui.QSplitter):
     def overlay_combo_changed(self, idx):
         if idx >= 0:
             ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_overlay(ov, signal=True)
+            self.ivm.set_current_data(ov)
 
     def overlay_cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
         self.current_data_view.cmap = cmap
         self.update_view_widgets()
 
-    def overlays_changed(self, overlays):
-        # Repopulate overlays combo, without sending signals
+    def data_changed(self, data):
+        # Repopulate data combo, without sending signals
         try:
             self.overlay_combo.blockSignals(True)
             self.overlay_combo.clear()
-            for ov in overlays:
+            for ov in data:
                 self.overlay_combo.addItem(ov)
         finally:
             self.overlay_combo.blockSignals(False)
-        self.overlay_changed(self.ivm.current_overlay)
+        self.current_data_changed(self.ivm.current_data)
         self.overlay_combo.updateGeometry()
 
-    def overlay_changed(self, ov):
+    def current_data_changed(self, ov):
         self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
             # Update the overlay combo to show the current overlay
+            print(ov)
             idx = self.overlay_combo.findText(ov.name)
             if idx != self.overlay_combo.currentIndex():
                 try:
@@ -1123,7 +1123,7 @@ class ImageView(QtGui.QSplitter):
         if self.current_data_view is not None:
             self.current_data_view.visible = idx in (0, 1)
             self.current_data_view.roi_only = (idx == 1)
-        self.overlay_changed(self.ivm.current_overlay)
+        self.current_data_changed(self.ivm.current_data)
 
     def overlay_alpha_changed(self, alpha):
         """ Set the overlay transparency """
@@ -1134,7 +1134,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data())
+            self.h2.setSourceData(self.current_data_view.data().data)
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 
@@ -1160,17 +1160,17 @@ class ImageView(QtGui.QSplitter):
             self.roi_alpha_sld.setValue(self.current_roi_view.alpha)
 
     def update_slider_range(self):
+        if self.ivm.grid is None: return
         try:
-            if len(self.ivm.shape) >= 3:
-                self.sld1.blockSignals(True)
-                self.sld2.blockSignals(True)
-                self.sld3.blockSignals(True)
-                self.sld4.blockSignals(True)
-                self.sld1.setRange(0, self.ivm.shape[2]-1)
-                self.sld2.setRange(0, self.ivm.shape[0]-1)
-                self.sld3.setRange(0, self.ivm.shape[1]-1)
-            if len(self.ivm.shape) == 4:
-                self.sld4.setRange(0, self.ivm.shape[3]-1)
+            self.sld1.blockSignals(True)
+            self.sld2.blockSignals(True)
+            self.sld3.blockSignals(True)
+            self.sld4.blockSignals(True)
+            self.sld1.setRange(0, self.ivm.grid.shape[2]-1)
+            self.sld2.setRange(0, self.ivm.grid.shape[0]-1)
+            self.sld3.setRange(0, self.ivm.grid.shape[1]-1)
+            if self.ivm.main.ndim == 4:
+                self.sld4.setRange(0, self.ivm.main.nvols)
             else:
                 self.sld4.setRange(0, 0)
         finally:
@@ -1184,10 +1184,10 @@ class ImageView(QtGui.QSplitter):
         self.sld2.setValue(self.ivm.cim_pos[0])
         self.sld3.setValue(self.ivm.cim_pos[1])
         self.sld4.setValue(self.ivm.cim_pos[3])
-        if self.ivm.vol is not None: 
-            self.vol_data.setText(self.ivm.vol.value_str(self.ivm.cim_pos))
+        if self.ivm.main is not None: 
+            self.vol_data.setText(self.ivm.main.strval(self.ivm.cim_pos))
         if self.ivm.current_roi is not None: 
-            self.roi_region.setText(self.ivm.current_roi.value_str(self.ivm.cim_pos))
-        if self.ivm.current_overlay is not None: 
-            self.ov_data.setText(self.ivm.current_overlay.value_str(self.ivm.cim_pos))
+            self.roi_region.setText(self.ivm.current_roi.strval(self.ivm.cim_pos))
+        if self.ivm.current_data is not None: 
+            self.ov_data.setText(self.ivm.current_data.strval(self.ivm.cim_pos))
             
