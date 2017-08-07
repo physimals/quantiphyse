@@ -772,9 +772,9 @@ class MainWindow(QtGui.QMainWindow):
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
         if ftype == "DATA": 
-            self.ivm.add_qpdata(data, make_current=True)
+            self.ivm.add_data(data, make_current=True)
         else:
-            self.ivm.add_qproi(data, make_current=True)
+            self.ivm.add_roi(data, make_current=True)
 
     def save_data(self):
         """
