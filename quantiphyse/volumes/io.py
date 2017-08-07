@@ -26,7 +26,10 @@ class NiftiData(QpData):
     def __init__(self, fname):
         self.nii = nib.load(fname)
         grid = DataGrid(self.nii.shape[:3], self.nii.header.get_best_affine())
-        QpData.__init__(self, fname, self.nii.get_data(), grid, fname=fname)
+        data = self.nii.get_data()
+        while data.ndim < 4:
+            data = np.expand_dims(data, -1)
+        QpData.__init__(self, fname, data, grid, fname=fname)
 
 class DicomFolder(QpData):
     def __init__(self, fname):
