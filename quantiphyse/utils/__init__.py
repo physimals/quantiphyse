@@ -1,5 +1,8 @@
 import os, sys
 
+from matplotlib import cm
+import numpy as np
+
 from PySide import QtCore, QtGui
 
 LOCAL_FILE_PATH=""
