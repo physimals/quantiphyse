@@ -18,7 +18,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
-from .utils import get_icon
+from .utils import get_icon, get_lut
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
@@ -471,8 +471,10 @@ class OrthoView(pg.GraphicsView):
         
         # Plot image slices
         pos = self.ivm.cim_pos
-        slices = [(self.zaxis, pos[self.zaxis])]
-        if self.ivm.main.ndim == 4: slices.append((3, pos[3]))
+        slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
+        slicedata = self.ivm.main.get_slice(slices)
+        #print(pos)
+        #print(slicedata.shape)
         self.img.setImage(self.ivm.main.get_slice(slices), autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
@@ -508,11 +510,12 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
 
             pos = self.ivm.cim_pos
-            lut = roidata.get_lut(roiview.alpha)
+            lut = get_lut(roidata, roiview.alpha)
             roi_levels = roidata.range
             
             if roiview.shade:
-                self.img_roi.setImage(roidata.get_slice([(self.zaxis, pos[self.zaxis])]), lut=lut, autoLevels=False, levels=roi_levels)
+                slicedata = roidata.get_slice([(self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])])
+                self.img_roi.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
@@ -556,6 +559,8 @@ class OrthoView(pg.GraphicsView):
             
             slicedata = oview.get_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
                                         (3, self.ivm.cim_pos[3]))
+            #print(self.ivm.cim_pos)
+            #print(slicedata.shape)
             self.img_ovl.setImage(slicedata, autoLevels=False)
 
     def resize_win(self, event):
@@ -1093,7 +1098,7 @@ class ImageView(QtGui.QSplitter):
         self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
             # Update the overlay combo to show the current overlay
-            print(ov)
+            #print(ov)
             idx = self.overlay_combo.findText(ov.name)
             if idx != self.overlay_combo.currentIndex():
                 try:
@@ -1169,10 +1174,7 @@ class ImageView(QtGui.QSplitter):
             self.sld1.setRange(0, self.ivm.grid.shape[2]-1)
             self.sld2.setRange(0, self.ivm.grid.shape[0]-1)
             self.sld3.setRange(0, self.ivm.grid.shape[1]-1)
-            if self.ivm.main.ndim == 4:
-                self.sld4.setRange(0, self.ivm.main.nvols)
-            else:
-                self.sld4.setRange(0, 0)
+            self.sld4.setRange(0, self.ivm.main.nvols-1)
         finally:
             self.sld1.blockSignals(False)
             self.sld2.blockSignals(False)
