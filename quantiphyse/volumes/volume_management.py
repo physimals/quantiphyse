@@ -113,7 +113,7 @@ class ImageVolumeManagement(QtCore.QObject):
         return name
 
     def _valid_name(self, name):
-        if not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
+        if name is None or not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
             raise RuntimeError("'%s' is not a valid name" % name)
 
     def set_main_data(self, name):
@@ -129,48 +129,47 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main.regrid(self.grid)
         
         self.cim_pos = [int(d/2) for d in self.grid.shape]
-        if self.main.ndim == 4:
-            self.cim_pos.append(int(self.main.nvols/2))
-        else:
-            self.cim_pos.append(0)
+        self.cim_pos.append(int(self.main.nvols/2))
         self.sig_main_data.emit(self.main)
 
-    def add_qpdata(self, qpdata, make_current=False, make_main=False):
-        self._valid_name(qpdata.name)
-        self.data[qpdata.name] = qpdata
+    def add_data(self, data, name=None, make_current=False, make_main=False):
+        if isinstance(data, np.ndarray):
+            """ Data provided as a Numpy array is presumed to be on the current grid """
+            data = QpData(name, data, self.grid)
+            
+        self._valid_name(data.name)
+        self.data[data.name] = data
         
         # Make main data if requested, or if the first data, or if the first 4d data
         # If not, regrid it onto the current OTG
-        make_main = make_main or self.main is None or (qpdata.ndim == 4 and self.main.ndim == 3)
+        make_main = make_main or self.main is None or (data.nvols > 1 and self.main.nvols == 1)
         if make_main:
-            self.set_main_data(qpdata.name)
+            self.set_main_data(data.name)
         else:
-            qpdata.regrid(self.grid)
+            data.regrid(self.grid)
 
         if make_current:
-            self.set_current_data(qpdata.name)
+            self.set_current_data(data.name)
         self.sig_all_data.emit(self.data.keys())
 
-    def add_npdata(self, name, npdata, make_current=False, make_main=False):
-        qpdata = QpData(name, npdata, self.grid)
-        self.add_qpdata(qpdata, make_current, make_main)
+    def add_roi(self, data, make_current=False, signal=True):
+        if isinstance(data, np.ndarray):
+            """ Data provided as a Numpy array is presumed to be on the current grid """
+            roi = QpRoi(name, data, self.grid)
+        else:
+            roi = data.as_roi()
 
-    def add_qproi(self, qproi, make_current=False, signal=True):
-        self._valid_name(qproi.name)
-        self.rois[qproi.name] = qproi
+        self._valid_name(roi.name)
+        self.rois[roi.name] = roi
 
         if self.grid is not None:
-            # FIXME regridding ROIs needs some thought!
-            qproi.regrid(self.grid)
+            # FIXME regridding ROIs needs some thought - need to remain integers!
+            roi.regrid(self.grid)
 
         if make_current:
-            self.set_current_roi(qpdata.name)
+            self.set_current_roi(roi.name)
             
         self.sig_all_rois.emit(self.rois.keys())
-
-    def add_nproi(self, name, nproi, make_current=False, make_main=False):
-        qproi = QpRoi(name, nproi, self.grid)
-        self.add_qproi(qproi, make_current, make_main)
 
     def _data_exists(self, name, invert=False):
         if name not in self.data:
@@ -242,7 +241,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # loop over all loaded data and save values in a dictionary
         for name, qpd in self.data.items():
-            if qpd.ndim == 3:
+            if qpd.vols == 1:
                 data_value[name] = qpd[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
 
         return data_value
@@ -252,14 +251,14 @@ class ImageVolumeManagement(QtCore.QObject):
         Return enhancement curves for all 4D data whose 4th dimension matches that of the main data
         """
         if self.main is None: return [], {}
-        if self.main.ndim == 4:
+        if self.main.nvols > 1:
             main_sig = self.main[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         else:
             main_sig = []
 
         qpd_sig = {}
         for qpd in self.data.values():
-            if qpd.ndim == 4 and (qpd.nvols == self.main.nvols):
+            if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
                 qpd_sig[qpd.name] = qpd[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, qpd_sig
