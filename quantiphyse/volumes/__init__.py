@@ -76,23 +76,10 @@ class DataGrid:
             raise RuntimeError("Grid afine must be 4x4 matrix")
         self.affine = np.copy(affine)
 
+        self.origin = affine[:3,3]
+        self.transform = affine[:3,:3]
+
         self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
-
-    def matches(self, grid):
-        """ 
-        Determine if this grid matches another
-
-        Checks the affine and the shape to within a tolerance
-        value after re-orienting both to approximate RAS order
-        """
-        ALLOWED_ERROR = 0.01
-        g1 = self.reorient_ras()
-        g2 = grid.reorient_ras()
-        for s1, s2 in zip(g1.shape, g2.shape):
-            if s1 != s2: return False
-        for v1, v2 in zip(g1.affine.flatten(), g2.affine.flatten()):
-            if abs(v1 - v2) >= ALLOWED_ERROR: return False
-        return True
 
     def reorient_ras(self):
         """ 
@@ -104,52 +91,142 @@ class DataGrid:
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
         """
-        dim_order, dim_flip, new_affine, new_shape = self._get_diag_transform(self.affine)
-        print(dim_order, dim_flip, new_shape)
-        print(new_affine)
-        return DataGrid(new_shape, new_affine)
+        rasgrid = DataGrid([1,1,1], np.identity(4))
+        t = Transform(rasgrid, self)
+        new_shape = [self.shape[d] for d in t.reorder]
+        return DataGrid(new_shape, t.tmatrix)
 
-    def _swap_cols(self, mat, c1, c2):
-        # Swap columns of a matrix
-        mat[:,[c1, c2]] = mat[:,[c2, c1]]
-    
-    def _get_diag_transform(self, mat):
-        """ Get the transpositions/flips that will make a matrix as diagonal as possible """
+class Transform:
+    """
+    Transforms data on one grid into another
+    """
+
+    # Tolerance for treating values as equal
+    # Used to determine if matrices are diagonal or identity
+    EQ_TOL = 1e-10
+
+    def __init__(self, in_grid, out_grid):
+        # Convert the transformation into optional re-ordering and flipping
+        # of axes and a final optional affine transformation
+        # This enables us to use faster methods in the case where the
+        # grids are essentially the same or scaled
+        self.in_grid = in_grid
+        self.out_grid = out_grid
+
+        # Affine transformation matrix from grid 2 to grid 1
+        self.tmatrix_raw = np.dot(np.linalg.inv(in_grid.affine), out_grid.affine)
+        self.output_shape = out_grid.shape[:]
+        print("Transform: output shape=", self.output_shape)
+
+        # Generate potentially simplified transformation using re-ordering and flipping
+        self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
+
+    def _is_diagonal(self, mat):
+        print("Is diagonal?")
+        print(np.abs(mat - np.diag(np.diag(mat))))
+        return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
+
+    def _is_identity(self, mat):
+        return np.all(np.abs(mat - np.identity(mat.shape[0])) < self.EQ_TOL)
+        
+    def _simplify_transforms(self):
+        # Flip/transpose the axes to put the biggest numbers on
+        # the diagonal and make negative diagonal elements positive
         dim_order, dim_flip = [], []
+        mat = self.tmatrix_raw
+        
         absmat = np.absolute(mat)
         for d in range(3):
             newd = np.argmax(absmat[:,d])
             dim_order.append(newd)
             if mat[newd, d] < 0:
                 dim_flip.append(d)
+     
+        if sorted(dim_order) == range(3):
+            # The transposition was consistent, so use it
+            print("Using re-order and flip: ", dim_order, dim_flip)
+            new_mat = np.copy(mat)
+            new_shape = [self.output_shape[d] for d in dim_order]
+            for idx, d in enumerate(dim_order):
+                new_mat[:,d] = mat[:,idx]
+            for dim in dim_flip:
+                # Change signs to positive to flip a dimension
+                new_mat[:,dim] = -new_mat[:,dim]
+            for dim in dim_flip:
+                # Adjust origin 
+                new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim] -1)
+            if self._is_identity(new_mat):
+                # The remaining matrix is the identity so do not need to use it
+                print("Remaining affine is identity - not using")
+                new_mat = None
+            else:
+                print("Remaining affine: ")
+                print(new_mat)
+            return dim_order, dim_flip, new_mat
+        else:
+            # Transposition was inconsistent, just go with general
+            # affine transform - this will work but might be slow
+            return None, None, mat
 
-        new_mat = np.copy(mat)
-        new_shape = [self.shape[d] for d in dim_order]
-        for idx, d in enumerate(dim_order):
-            new_mat[:,d] = mat[:,idx]
-        for dim in dim_flip:
-            # Change signs to positive and adjust origin to flip a dimension
-            new_mat[:,dim] = -new_mat[:,dim]
-            new_mat[dim,3] = new_mat[dim, 3] - new_mat[0,dim] * new_shape[dim]
+    def transform_data(self, data):
+        if self.reorder is not None:
+            if data.ndim == 4: self.reorder = self.reorder + [3]
+            #print("Re-ordering axes: ", self.reorder)
+            data = np.transpose(data, self.reorder)
+        if self.flip is not None:
+            #print("Flipping axes: ", self.flip)
+            for d in self.flip: data = np.flip(data, d)
+        if self.tmatrix is not None:
+            #print("Doing an affine transformation")
+            affine = self.tmatrix[:3,:3]
+            offset = list(self.tmatrix[:3,3])
+            output_shape = self.output_shape[:]
+            print("transform_data: output shape=", self.output_shape, output_shape)
+            if data.ndim == 4:
+                # Make 4D affine with identity transform in 4th dimension
+                affine = np.append(affine, [[0, 0, 0]], 0)
+                affine = np.append(affine, [[0],[0],[0],[1]],1)
+                offset.append(0)
+                output_shape.append(data.shape[3])
 
-        return dim_order, dim_flip, new_mat, new_shape
+            if self._is_diagonal(affine):
+                # The transformation is diagonal, so use this sequence instead of 
+                # the full matrix - this will be faster
+                affine = np.diagonal(affine)
+                print("Matrix is diagonal - ", affine)
+            else:
+                print("Matrix is not diagonal - using general affine transform")
+                print(affine)
+
+            print("Offset = ", offset)
+            print("affine_transform: output_shape=", output_shape)
+            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
+        return data
 
 class QpData:
+    """
+    3D or 4D data
 
-    def __init__(self, name, data, grid, stdgrid=None, fname=None):
+    Data is defined on a DataGrid instance which defines a uniform grid in standard space.
+    Data can be interpolated onto another grid for display or analysis purposes, however the
+    original raw data and grid are preserved so file save can be done consistently without
+    loss of information. In addition some visualisation or analysis may want to use the original
+    raw data.
+    """
+
+    def __init__(self, name, data, grid, fname=None):
+        if data.ndim != 4:
+            raise RuntimeError("QpData must be 4-dimensional (padded if necessary")
+        
         # Everyone needs a friendly name
         self.name = name
 
-        if stdgrid is None: 
-            # Data is not to be regridded (i.e. it is being supplied on the OTG)
-            self.data = data
-            self.grid = grid
-            self.rawdata = data
-            self.rawgrid = grid
-        else:
-            self.rawdata = data
-            self.rawgrid = rawgrid
-            self.regrid(stdgrid)
+        # Original data and the grid it was defined on. Set standard
+        # data to match, it will be changed when/if regrid() is called
+        self.rawdata = data
+        self.rawgrid = grid
+        self.data = data
+        self.grid = grid
 
         # File it was loaded from, if relevant
         self.fname = fname
@@ -183,91 +260,101 @@ class QpData:
             warnings.warn("Image contains nans")
             self.data[nans] = 0
 
-    def regrid(self, grid):
-        tmatrix = np.dot(np.linalg.inv(self.rawgrid.affine), grid.affine)
-        print("Regridding", self.rawgrid.shape, grid.shape)
-        print(tmatrix)
-        # Try to turn the transformation matrix diagonal by flipping/permuting axes    
-        dim_order, dim_flip, new_tmatrix, new_shape = grid._get_diag_transform(tmatrix)
-        print("Diagonalized")
-        print(dim_order, dim_flip)
-        print(new_tmatrix)
-        if sorted(dim_order) == range(3):
-            print("Looks good, simplifying")
-            if self.ndim == 4: dim_order.append(3)
-            self.data = np.transpose(self.rawdata, dim_order)
-            tmatrix = new_tmatrix
-        
-        if self.rawgrid.matches(grid):
-            # In this case the flips/permutation is sufficient in itself
-            # and new_tmatrix should be the identity
-            print("Trivial transform - all done")
-        else:
-            affine = tmatrix[:3,:3]
-            offset = list(tmatrix[:3,3])
-            diagonal = np.diagonal(affine)
-            if np.count_nonzero(affine - np.diag(diagonal)) == 0:
-                # The transformation is diagonal, so use this sequence instead of 
-                # the full matrix - this will be faster
-                affine = diagonal
-                print("It's diagonal - using ", affine)
-            else:
-                print("Using general affine transform")
-                print(affine)
-            output_shape = grid.shape
-            if self.ndim == 4:
-                # Make 4D affine with identity transform in 4th dimension
-                affine = np.append(affine, [[0, 0, 0]], 0)
-                affine = np.append(affine, [[0],[0],[0],[1]],1)
-                offset.append(0)
-                output_shape.append(self.nvols)
+    def make_2d_timeseries(self):
+        """
+        Force 3D static data into the form of a 2D + time
 
-            print("Offset = ", offset)
-            #print(np.linalg.eigh(affine))
-            self.data = scipy.ndimage.affine_transform(self.rawdata, affine, offset=offset, output_shape=output_shape)
-        print(self.data.min(), self.data.max())
+        This is useful for some broken NIFTI files. Note that the 3D extent of the grid
+        is completely ignored
+        """
+        if self.nvols != 1 or self.rawgrid.shape[2] == 1:
+            raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
+
+        raise RuntimeError("Not implemented yet")
+
+    def regrid(self, grid):
+        """
+        Update data onto the specified grid. The original raw data is not affected
+        """
+        print("Regridding, raw=%s, new=%s" % (str(self.rawgrid.shape), str(grid.shape)))
+        t = Transform(self.rawgrid, grid)
+        self.data = t.transform_data(self.rawdata)
         self.grid = grid
+        print("New data shape=", self.data.shape)
+        print("New data range=", self.data.min(), self.data.max())
 
     def strval(self, pos):
-        """ Return the data value at pos as a string to an appropriate
-        number of decimal places"""
-        return str(np.around(self.data[tuple(pos[:self.ndim])], self.dps))
+        """ 
+        Return the data value at pos as a string to an appropriate
+        number of decimal places
+        """
+        return str(np.around(self.val(pos), self.dps))
+
+    def val(self, pos):
+        """ 
+        Return the data value at pos 
+        """
+        if pos[3] > self.nvols: pos[3] = self.nvols-1
+        return self.data[tuple(pos[:self.ndim])]
 
     def get_slice(self, axes, mask=None, fill_value=None):
         """ 
         Get a slice at a given position
 
-        axes is a sequence of tuples of (axis number, position)
+        axes - a sequence of tuples of (axis number, position)
+        mask - if specified, data outside the mask is given a fixed fill value
+        fill_value - fill value, if not specified a value less than the data minimum is used
         """
         sl = [slice(None)] * self.ndim
         for axis, pos in axes:
-            if axis < self.ndim:
+            # Handle case where 4th dimension is out of range
+            if pos < self.data.shape[axis]:
                 sl[axis] = pos
+            else:
+                sl[axis] = self.data.shape[axis]-1
         data = self.data[sl]
 
         if mask is not None:
             data = np.copy(data)
-            mask_slice = mask.pos_slice(axes)
+            mask_slice = mask.get_slice(axes)
             if fill_value is None:
                 # Less than the minimum
-                fill_value = self.range[0] - 1
+                fill_value = self.range[0] - 0.000001
+                print("fillval = ", fill_value, self.range)
             data[mask_slice == 0] = fill_value
         return data
 
+    def as_roi(self):
+        return QpRoi(self.name, self.rawdata, self.rawgrid, self.fname)
+
 class QpRoi(QpData):
+    """
+    Subclass containing an ROI (region of interest)
 
-    def __init__(self):
+    ROIs must contain integers - each distinct value identifies 
+    a region, 0 is outside the ROI
+    """
+
+    def __init__(self, name, data, grid, fname=None):
+        if data.min() < 0 or data.max() > 2**32:
+            raise RuntimeError("ROI must contain values between 0 and 2**32")
         
-        #if roi.range[0] < 0 or roi.range[1] > 2**32:
-        #    raise RuntimeError("ROI must contain values between 0 and 2**32")
-        #
-        #if not np.equal(np.mod(roi, 1), 0).any():
-        #   raise RuntimeError("ROI contains non-integer values.")
+        if not np.equal(np.mod(data, 1), 0).any():
+           raise RuntimeError("ROI contains non-integer values.")
 
-        QpData.__init__(self)
+        QpData.__init__(self, name, data.astype(np.int32), grid, fname)
+
         self.dps = 0
         self.regions = np.unique(self.rawdata)
         self.regions = self.regions[self.regions > 0]
+
+    def regrid(self, grid):
+        """
+        When regridding an ROI need to make sure output data
+        is integers
+        """
+        QpData.regrid(self, grid)
+        print(self.data.min(), self.data.max())
 
     def get_bounding_box(self, ndim=None):
         """
