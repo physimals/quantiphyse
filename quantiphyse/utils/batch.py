@@ -87,7 +87,7 @@ class BatchCase:
                 multi = self.get("MultiVolumes", False)
             elif vol.ndim != 4:
                 raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
-            self.ivm.add_overlay(vol.md.basename, vol, make_main=True)
+            self.ivm.add_overlay(self.ivm.suggest_name(vol.md.basename), vol, make_main=True)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case
@@ -97,7 +97,7 @@ class BatchCase:
             filepath = self.get_filepath(overlays[key])
             if self.debug: print("  - Loading overlay '%s' from %s" % (key, filepath))
             ovl = load(filepath).get_data()
-            self.ivm.add_overlay(key, ovl, make_current=True)
+            self.ivm.add_overlay(self.ivm.suggest_name(key), ovl, make_current=True)
         
     def load_rois(self):
         # Load case ROIs followed by any root ROIs not overridden by case
@@ -107,7 +107,7 @@ class BatchCase:
             filepath = self.get_filepath(rois[key])
             if self.debug: print("  - Loading ROI '%s' from %s" % (key, filepath))
             roi = load(filepath).get_data()
-            self.ivm.add_roi(key, roi, make_current=True)
+            self.ivm.add_roi(self.ivm.suggest_name(key), roi, make_current=True)
         
     def run_processing_steps(self):
         # Run processing steps
