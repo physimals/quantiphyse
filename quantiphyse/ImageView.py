@@ -1007,13 +1007,13 @@ class ImageView(QtGui.QSplitter):
         self.update_nav_sliders()
         if vol is not None:
             self.vol_name.setText(vol.fname)
-            self.h1.setSourceData(self.ivm.main.data, percentile=99)
+            self.h1.setSourceData(self.ivm.main.std, percentile=99)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
             self.max_min(0, state=0)
             for d in range(3):
-                if vol.grid.shape[d] == 1:
+                if self.ivm.grid.shape[d] == 1:
                     self.max_min(d, state=1)
         else:
             self.vol_name.setText("")
@@ -1139,7 +1139,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data().data)
+            self.h2.setSourceData(self.current_data_view.data().std)
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 

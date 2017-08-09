@@ -80,6 +80,8 @@ class DataGrid:
         self.transform = affine[:3,:3]
 
         self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
+        self.nvoxels = 1
+        for d in range(3): self.nvoxels *= shape[d]
 
     def reorient_ras(self):
         """ 
@@ -221,20 +223,21 @@ class QpData:
         # Everyone needs a friendly name
         self.name = name
 
-        # Original data and the grid it was defined on. Set standard
-        # data to match, it will be changed when/if regrid() is called
-        self.rawdata = data
+        # Original data and the grid it was defined on. 
+        self.raw = data
         self.rawgrid = grid
-        self.data = data
-        self.grid = grid
+
+        # Set standard data to match, it will be changed when/if regrid() is called
+        self.std = data
+        self.stdgrid = grid
 
         # File it was loaded from, if relevant
         self.fname = fname
 
         # Convenience attributes
-        self.ndim = self.data.ndim
-        self.range = (self.rawdata.min(), self.rawdata.max())
-        if self.ndim == 4: self.nvols = self.data.shape[3]
+        self.ndim = self.std.ndim
+        self.range = (self.raw.min(), self.raw.max())
+        if self.ndim == 4: self.nvols = self.raw.shape[3]
         else: self.nvols = 1
 
         self.dps = self._calc_dps()
@@ -255,10 +258,10 @@ class QpData:
         """
         Check for and remove nans from images
         """
-        nans = np.isnan(self.data)
+        nans = np.isnan(self.std)
         if nans.sum() > 0:
             warnings.warn("Image contains nans")
-            self.data[nans] = 0
+            self.std[nans] = 0
 
     def make_2d_timeseries(self):
         """
@@ -277,11 +280,15 @@ class QpData:
         Update data onto the specified grid. The original raw data is not affected
         """
         print("Regridding, raw=%s, new=%s" % (str(self.rawgrid.shape), str(grid.shape)))
+        print("Raw grid")
+        print(self.rawgrid.affine)
+        print("New grid")
+        print(grid.affine)
         t = Transform(self.rawgrid, grid)
-        self.data = t.transform_data(self.rawdata)
-        self.grid = grid
-        print("New data shape=", self.data.shape)
-        print("New data range=", self.data.min(), self.data.max())
+        self.std = t.transform_data(self.raw)
+        self.stdgrid = grid
+        print("New data shape=", self.std.shape)
+        print("New data range=", self.std.min(), self.std.max())
 
     def strval(self, pos):
         """ 
@@ -295,7 +302,7 @@ class QpData:
         Return the data value at pos 
         """
         if pos[3] > self.nvols: pos[3] = self.nvols-1
-        return self.data[tuple(pos[:self.ndim])]
+        return self.std[tuple(pos[:self.ndim])]
 
     def get_slice(self, axes, mask=None, fill_value=None):
         """ 
@@ -308,11 +315,11 @@ class QpData:
         sl = [slice(None)] * self.ndim
         for axis, pos in axes:
             # Handle case where 4th dimension is out of range
-            if pos < self.data.shape[axis]:
+            if pos < self.std.shape[axis]:
                 sl[axis] = pos
             else:
-                sl[axis] = self.data.shape[axis]-1
-        data = self.data[sl]
+                sl[axis] = self.std.shape[axis]-1
+        data = self.std[sl]
 
         if mask is not None:
             data = np.copy(data)
@@ -325,7 +332,7 @@ class QpData:
         return data
 
     def as_roi(self):
-        return QpRoi(self.name, self.rawdata, self.rawgrid, self.fname)
+        return QpRoi(self.name, self.raw, self.rawgrid, self.fname)
 
 class QpRoi(QpData):
     """
@@ -345,7 +352,7 @@ class QpRoi(QpData):
         QpData.__init__(self, name, data.astype(np.int32), grid, fname)
 
         self.dps = 0
-        self.regions = np.unique(self.rawdata)
+        self.regions = np.unique(self.raw)
         self.regions = self.regions[self.regions > 0]
 
     def regrid(self, grid):
@@ -354,9 +361,9 @@ class QpRoi(QpData):
         is integers
         """
         QpData.regrid(self, grid)
-        print(self.data.min(), self.data.max())
+        print(self.std.min(), self.std.max())
 
-    def get_bounding_box(self, ndim=None):
+    def get_bounding_box(self,):
         """
         Returns a sequence of slice objects which
         describe the bounding box of this ROI.
@@ -370,16 +377,15 @@ class QpRoi(QpData):
 
         e.g. 
         slices = roi.get_bounding_box(img.ndim)
-        img_restric = img.data[slices]
+        img_restric = img.std[slices]
         ... process img_restict, returning out_restrict
         out_full = np.zeros(img.shape)
         out_full[slices] = out_restrict
         """
-        if ndim == None: ndim = self.ndim
-        slices = [slice(None)] * ndim
-        for d in range(min(ndim, self.ndim)):
-            ax = [i for i in range(self.ndim) if i != d]
-            nonzero = np.any(self, axis=tuple(ax))
+        slices = [slice(None)] * 4
+        for d in range(4):
+            ax = [i for i in range(4) if i != d]
+            nonzero = np.any(self.std, axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
             slices[d] = slice(s1, s2+1)
         

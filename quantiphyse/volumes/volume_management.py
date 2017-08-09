@@ -21,7 +21,7 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from . import QpData
+from . import QpData, QpRoi
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -152,7 +152,7 @@ class ImageVolumeManagement(QtCore.QObject):
             self.set_current_data(data.name)
         self.sig_all_data.emit(self.data.keys())
 
-    def add_roi(self, data, make_current=False, signal=True):
+    def add_roi(self, data, name=None, make_current=False, signal=True):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
             roi = QpRoi(name, data, self.grid)
@@ -242,8 +242,8 @@ class ImageVolumeManagement(QtCore.QObject):
         # loop over all loaded data and save values in a dictionary
         for name, qpd in self.data.items():
             if qpd.vols == 1:
-                data_value[name] = qpd[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
-
+                data_value[name] = qpd.val(self.cim_pos)
+                
         return data_value
 
     def get_current_enhancement(self):
@@ -259,7 +259,7 @@ class ImageVolumeManagement(QtCore.QObject):
         qpd_sig = {}
         for qpd in self.data.values():
             if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
-                qpd_sig[qpd.name] = qpd[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+                qpd_sig[qpd.name] = qpd.std[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, qpd_sig
 
