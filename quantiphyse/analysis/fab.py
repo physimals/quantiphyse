@@ -26,15 +26,15 @@ def _make_fabber_progress_cb(id, queue):
             queue.put((id, voxel, nvoxels))
     return progress_cb
 
-def _run_fabber(id, queue, rundata, main_data, roi, *overlays):
+def _run_fabber(id, queue, rundata, main_data, roi, *add_data):
     """
     Function to run Fabber in a multiprocessing environment
     """
     try:
         data = {"data" : main_data}
         n = 0
-        while n < len(overlays):
-            data[overlays[n]] = overlays[n+1]
+        while n < len(data):
+            data[add_data[n]] = add_data[n+1]
             n += 2
         lib = FabberLib(rundata=rundata, auto_load_models=True)
         run = lib.run_with_data(rundata, data, roi, progress_cb=_make_fabber_progress_cb(id, queue))
@@ -54,15 +54,15 @@ class FabberProcess(BackgroundProcess):
     def run(self, options):
         data_name = options.pop("data", None)
         if data_name is None:
-            data = self.ivm.vol
+            data = self.ivm.main.std
         else:
-            data = self.ivm.overlays[data_name]
+            data = self.ivm.data[data_name].std
 
         roi_name = options.pop("roi", None)
         if roi_name is None:
-            roidata = self.ivm.current_roi
+            roidata = self.ivm.current_roi.std
         else:
-            roidata = self.ivm.rois[roi_name]
+            roidata = self.ivm.rois[roi_name].std
 
         # FIXME rundata requires all arguments to be strings!
         rundata = FabberRunData()
@@ -72,15 +72,14 @@ class FabberProcess(BackgroundProcess):
 
         # Pass in input data. To enable the multiprocessing module to split our volumes
         # up automatically we have to pass the arguments as a single list. This consists of
-        # rundata, main data, roi and then each of the used overlays, name followed by data
+        # rundata, main data, roi and then each of the used additional data items, name followed by data
         input_args = [rundata, data, roidata]
-        run_overlays = {}
 
-        # This is not perfect - we just grab all overlays matching an option value
+        # This is not perfect - we just grab all data matching an option value
         for key, value in rundata.items():
-            if value in self.ivm.overlays:
+            if value in self.ivm.data:
                 input_args.append(value)
-                input_args.append(self.ivm.overlays[value])
+                input_args.append(self.ivm.data[value].std)
 
         if rundata["method"] == "spatialvb":
             # Spatial VB will not work properly in parallel
@@ -89,8 +88,8 @@ class FabberProcess(BackgroundProcess):
             # Run one worker for each slice
             n = data.shape[0]
 
-        if roidata is not None: self.voxels_todo = np.count_nonzero(self.ivm.current_roi)
-        else: self.voxels_todo = self.ivm.vol.size
+        if roidata is not None: self.voxels_todo = np.count_nonzero(roidata)
+        else: self.voxels_todo = self.ivm.main.grid.nvoxels
 
         self.voxels_done = [0, ] * n
         self.start(n, input_args)
@@ -114,5 +113,5 @@ class FabberProcess(BackgroundProcess):
             first = True
             for key in self.output[0].data:
                 recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
-                self.ivm.add_overlay(key, recombined_item, make_current=first)
+                self.ivm.add_data(recombined_item, name=key, make_current=first)
                 first = False

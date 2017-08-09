@@ -24,21 +24,21 @@ class MeanValuesProcess(Process):
             roi = self.ivm.rois[roi_name]
 
         if data_name is None:
-            data = self.ivm.vol
+            data = self.ivm.main.std
         else:
-            data = self.ivm.overlays[data_name]
+            data = self.ivm.data[data_name].std
 
         if output_name is None:
             output_name = data.name + "_means"
 
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
-            if data.ndim == 3:
-                ov_data[roi == region] = np.mean(data[roi == region])
+            if data.shape[3] > 1:
+                ov_data[roi == region] = np.mean(data[roi.std == region])
             else:
-                ov_data[roi == region] = np.mean(data[roi == region], axis=0)
+                ov_data[roi == region] = np.mean(data[roi.std == region], axis=0)
 
-        self.ivm.add_overlay(output_name, ov_data, make_current=True)
+        self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
 
 class CalcVolumesProcess(Process):
@@ -62,9 +62,9 @@ class CalcVolumesProcess(Process):
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
 
-        sizes = self.ivm.voxel_sizes
+        sizes = self.ivm.grid.spacing
         if roi is not None:
-            counts = np.bincount(roi.flatten())
+            counts = np.bincount(roi.std.flatten())
             for idx, region in enumerate(roi.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
@@ -101,23 +101,23 @@ class HistogramProcess(Process):
             roi = np.ones(self.ivm.shape[:3])
             roi_labels = [1,]
         elif roi_name is None:
-            roi = self.ivm.current_roi
+            roi = self.ivm.current_roi.std
             roi_labels = roi.regions
         else:
-            roi = self.ivm.rois[roi_name]
+            roi = self.ivm.rois[roi_name].std
             roi_labels = roi.regions
 
         if ov_name is None:
-            ovs = self.ivm.overlays.values()
+            ovs = self.ivm.data.values()
         else:
-            ovs = [self.ivm.overlays[ov_name]]
+            ovs = [self.ivm.data[ov_name]]
 
         self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem("x0"))
         self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem("x1"))  
         self.xvals, self.edges, self.hist = None, None, {}
         col = 2
         
-        for ov in ovs:
+        for ov in [qpd.std for qpd in ovs]:
             hrange = [dmin, dmax]
             if dmin is None: hrange[0] = ov.min()
             if dmax is None: hrange[1] = ov.max()
@@ -165,16 +165,16 @@ class RadialProfileProcess(Process):
         bins = options.pop('bins', 20)
 
         if roi_name is None:
-            roi = self.ivm.current_roi
+            roi = self.ivm.current_roi.std
         else:
-            roi = self.ivm.rois[roi_name]
+            roi = self.ivm.rois[roi_name].std
 
         if ov_name is None:
-            ovs = self.ivm.overlays.values()
+            ovs = self.ivm.data.values()
         else:
-            ovs = [self.ivm.overlays[ov_name]]
+            ovs = [self.ivm.data[ov_name]]
 
-        voxel_sizes = self.ivm.voxel_sizes
+        voxel_sizes = self.ivm.grid.spacing
 
         if centre is not None:
             centre = [int(v) for v in centre.split(",")]
@@ -186,7 +186,7 @@ class RadialProfileProcess(Process):
         
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1
-        x, y, z = np.indices((self.ivm.shape[:3]))
+        x, y, z = np.indices((self.ivm.grid.shape))
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         if roi is not None: 
             r[roi==0] = -1
@@ -205,7 +205,7 @@ class RadialProfileProcess(Process):
         for idx, xval in enumerate(self.xvals):
             self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(str(xval)))
 
-        for col, data in enumerate(ovs):
+        for col, data in enumerate([qpd.std for qpd in ovs]):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
                 
             # If overlay is 4d, get current 3d volume
@@ -227,7 +227,7 @@ class RadialProfileProcess(Process):
 
 class OverlayStatisticsProcess(Process):
     """
-    Calculate summary statistics on overlays
+    Calculate summary statistics on data
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -240,14 +240,16 @@ class OverlayStatisticsProcess(Process):
         output_name = options.pop('output-name', "overlay-stats")
         no_artifact = options.pop('no-artifact', False)
         if ov_name is None:
-            ovs = self.ivm.overlays.values()
+            ovs = self.ivm.data.values()
         else:
-            ovs = [self.ivm.overlays[ov_name]]
+            ovs = [self.ivm.data[ov_name]]
             
         if roi_name is None:
             roi = self.ivm.current_roi
+            print("Current=", roi)
         else:
             roi = self.ivm.rois[roi_name]
+            print("Specified=", roi)
 
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
@@ -280,11 +282,11 @@ class SimpleMathsProcess(Process):
 
     def run(self, options):
         globals = {'np': np, 'ivm': self.ivm}
-        for name, ovl in self.ivm.overlays.items():
-            globals[name] = ovl
+        for name, ovl in self.ivm.data.items():
+            globals[name] = ovl.std
         for name, proc in options.items():
             result = eval(proc, globals)
-            self.ivm.add_overlay(name, result)
+            self.ivm.add_data(result, name=name)
        
         self.status = Process.SUCCEEDED
 

@@ -17,7 +17,7 @@ from scipy.interpolate import UnivariateSpline
 
 from . import QpWidget
 from ..ImageView import PickMode
-from ..utils import get_icon, copy_table
+from ..utils import get_icon, copy_table, get_pencol
 from ..QtInherit import HelpButton, BatchButton
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
@@ -193,11 +193,11 @@ class SECurve(QpWidget):
         self.win1.setVisible(True)
         if self.p1 is not None: self.win1.removeItem(self.p1)
         self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        if self.ivm.vol is not None:
+        if self.ivm.main is not None:
             if self.cb3.isChecked():
-                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.vol.name)
+                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.main.name)
             else:
-                self.p1.setLabel('left', self.ivm.vol.name)
+                self.p1.setLabel('left', self.ivm.main.name)
             
         self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
@@ -243,12 +243,12 @@ class SECurve(QpWidget):
             allpoints += points
             for point in points:
                 if point not in self.plots:
-                    if self.ivm.vol.ndim == 3:
+                    if self.ivm.main.ndim == 3:
                         # FIXME this should take into account which window the picked point was from
                         warnings.warn("3D image so just calculating cross image profile")
-                        sig = self.ivm.vol[point[0], :, point[2]]
-                    elif self.ivm.vol.ndim == 4:
-                        sig = self.ivm.vol[point[0], point[1], point[2], :]
+                        sig = self.ivm.main[point[0], :, point[2]]
+                    elif self.ivm.main.ndim == 4:
+                        sig = self.ivm.main[point[0], point[1], point[2], :]
                     else:
                         warnings.warn("Image is not 3D or 4D")
                         continue
@@ -474,15 +474,15 @@ class OverlayStatistics(QpWidget):
 
     def activate(self):
         self.ivm.sig_current_roi.connect(self.update_all)
-        self.ivm.sig_all_overlays.connect(self.update_all)
-        self.ivm.sig_current_overlay.connect(self.update_all)
+        self.ivm.sig_all_data.connect(self.update_all)
+        self.ivm.sig_current_data.connect(self.update_all)
         self.ivl.sig_focus_changed.connect(self.focus_changed)
         self.update_all()
 
     def deactivate(self):
         self.ivm.sig_current_roi.disconnect(self.update_all)
-        self.ivm.sig_all_overlays.disconnect(self.update_all)
-        self.ivm.sig_current_overlay.connect(self.update_all)
+        self.ivm.sig_all_data.disconnect(self.update_all)
+        self.ivm.sig_current_data.connect(self.update_all)
         self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
     def mode_changed(self, idx):
@@ -496,11 +496,11 @@ class OverlayStatistics(QpWidget):
             self.update_overlay_stats_current_slice()
 
     def update_all(self):
-        if self.ivm.current_overlay is None:
+        if self.ivm.current_data is None:
             self.mode_combo.setItemText(0, "Current overlay")
         else:
-            self.mode_combo.setItemText(0, self.ivm.current_overlay.name)
-            self.rp_plt.setLabel('left', self.ivm.current_overlay.name)
+            self.mode_combo.setItemText(0, self.ivm.current_data.name)
+            self.rp_plt.setLabel('left', self.ivm.current_data.name)
 
         self.update_histogram_spins()
 
@@ -515,7 +515,7 @@ class OverlayStatistics(QpWidget):
 
     def update_histogram_spins(self):
         # Min and max set for overlay choice
-        ov = self.ivm.current_overlay
+        ov = self.ivm.current_data
         if ov is not None:
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
@@ -577,11 +577,11 @@ class OverlayStatistics(QpWidget):
             self.rp_btn.setText("Hide")
 
     def update_radial_profile(self):
-        if self.ivm.current_overlay is not None:
-            options = {"overlay" : self.ivm.current_overlay.name, 
+        if self.ivm.current_data is not None:
+            options = {"overlay" : self.ivm.current_data.name, 
                        "no-artifact" : True, "bins" : self.rp_nbins.value()}
             self.process_rp.run(options)
-            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_overlay.name])
+            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_data.name])
 
     def update_overlay_stats(self):
         self.populate_stats_table(self.process)
@@ -591,8 +591,8 @@ class OverlayStatistics(QpWidget):
         self.populate_stats_table(self.process_ss, slice=selected_slice)
 
     def update_histogram(self):
-        if self.ivm.current_overlay is not None:
-            options = {"overlay" : self.ivm.current_overlay.name, 
+        if self.ivm.current_data is not None:
+            options = {"overlay" : self.ivm.current_data.name, 
                     "no-artifact" : True, "bins" : self.nbinsSpin.value(),
                     "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
@@ -602,13 +602,13 @@ class OverlayStatistics(QpWidget):
 
             for ov_name in self.process_hist.hist:
                 for region, yvals in self.process_hist.hist[ov_name].items():
-                    pencol = self.ivm.current_roi.get_pencol(region)
+                    pencol = get_pencol(self.ivm.current_roi, region)
                     curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
                 self.plt1.addItem(curve)
 
     def populate_stats_table(self, process, **options):
-        if self.ivm.current_overlay is not None and self.ovl_selection == self.CURRENT_OVERLAY:
-            options["overlay"] = self.ivm.current_overlay.name
+        if self.ivm.current_data is not None and self.ovl_selection == self.CURRENT_OVERLAY:
+            options["overlay"] = self.ivm.current_data.name
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):

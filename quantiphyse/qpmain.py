@@ -44,15 +44,15 @@ from .utils import set_local_file_path, get_icon, get_local_file
 from .ImageView import ImageView
 
 from .widgets.OverviewWidgets import OverviewWidget
-#from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
-#from .widgets.ClusteringWidgets import CurveClusteringWidget
-#from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
+from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
+from .widgets.ClusteringWidgets import CurveClusteringWidget
+from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
 #from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
 #from .widgets.T10Widgets import T10Widget
 #from .widgets.PerfSlicWidgets import MeanValuesWidget
-#from .widgets.PerfSlicWidgets import PerfSlicWidget
+from .widgets.PerfSlicWidgets import PerfSlicWidget
 #from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
-#from .widgets.MCWidgets import RegWidget
+from .widgets.MCWidgets import RegWidget
 ##from .widgets.ExperimentalWidgets import ImageExportWidget
 #from .widgets.RoiBuilderWidget import RoiBuilderWidget
 
@@ -475,22 +475,22 @@ class MainWindow(QtGui.QMainWindow):
         self.widgets = []
         self.current_widget = None
         self.add_widget(OverviewWidget, default=True) 
-        #self.add_widget(SECurve, default=True)
+        self.add_widget(SECurve, default=True)
         #self.add_widget(ModelCurves) 
-        #self.add_widget(OverlayStatistics, default=True) 
-        #self.add_widget(RoiAnalysisWidget) 
-        #self.add_widget(SimpleMathsWidget) 
+        self.add_widget(OverlayStatistics, default=True) 
+        self.add_widget(RoiAnalysisWidget) 
+        self.add_widget(SimpleMathsWidget) 
         #self.add_widget(PharmaWidget) 
         #self.add_widget(T10Widget) 
-        #self.add_widget(PerfSlicWidget) 
+        self.add_widget(PerfSlicWidget) 
         #self.add_widget(FabberWidget) 
         #self.add_widget(CESTWidget) 
         #self.add_widget(ASLWidget) 
         #self.add_widget(MeanValuesWidget) 
-        #self.add_widget(RegWidget) 
+        self.add_widget(RegWidget) 
         ##self.add_widget(ImageExportWidget) 
-        #self.add_widget(CurveClusteringWidget, default=True) 
-        #self.add_widget(OvCurveClusteringWidget, default=True) 
+        self.add_widget(CurveClusteringWidget, default=True) 
+        self.add_widget(OvCurveClusteringWidget, default=True) 
         #self.add_widget(RoiBuilderWidget)
         
         # Initialize menu and tabs
@@ -762,7 +762,7 @@ class MainWindow(QtGui.QMainWindow):
             data.force_t()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.data) > ROI_MAXVAL_WARN:
+        if ftype == "ROI" and np.max(data.raw) > ROI_MAXVAL_WARN:
             msgBox = QtGui.QMessageBox()
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)

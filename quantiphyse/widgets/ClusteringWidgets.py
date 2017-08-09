@@ -176,7 +176,7 @@ class CurveClusteringWidget(QpWidget):
         """
         Run kmeans clustering using normalised PCA modes
         """
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             error_dialog("No data loaded")
             return
 
@@ -228,7 +228,7 @@ class CurveClusteringWidget(QpWidget):
             if np.sum(self.curves[region]) == 0:
                 continue
 
-            pencol = roi.get_pencol(region)
+            pencol = get_pencol(roi, region)
             name1 = "Region " + str(region)
             curve1.append(self.p1.plot(pen=pencol, width=8.0, name=name1))
             xx = np.arange(len(self.curves[region]))
@@ -244,16 +244,16 @@ class CurveClusteringWidget(QpWidget):
 
         self.curves = {}
         for region in regions:
-            mean = np.median(self.ivm.vol[roi == region], axis=0)
+            mean = np.median(self.ivm.main.std[roi.std == region], axis=0)
             self.curves[region] = mean
 
     def merge1(self, m1, m2):
         # relabel
-        roi = self.ivm.rois["clusters"]
-        roi[roi == m1] = m2
+        roi = self.ivm.rois["clusters"].std
+        roi[roi.std == m1] = m2
 
         # signal the change
-        self.ivm.add_roi('clusters', roi, make_current=True)
+        self.ivm.add_roi(roi, name='clusters', make_current=True)
 
         # replot
         self._plot()
@@ -268,7 +268,7 @@ class CurveClusteringWidget(QpWidget):
         # Use PCA features or true curves?
         # Mean features from each cluster
         # Distance matrix between features
-        curvemat = np.zeros((len(self.curves), self.ivm.vol.shape[-1]))
+        curvemat = np.zeros((len(self.curves), self.ivm.main.nvols))
         row_region = {}
         idx = 0
         for region, curve in self.curves.items():
@@ -295,11 +295,11 @@ class CurveClusteringWidget(QpWidget):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
             # Slice count
-            voxel_count_slice = np.sum(roi[:, :, self.ivm.cim_pos[2]] == ii)
+            voxel_count_slice = np.sum(roi.std[:, :, self.ivm.cim_pos[2]] == ii)
             self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
 
             # Volume count
-            voxel_count = np.sum(roi == ii)
+            voxel_count = np.sum(roi.std == ii)
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def show_options(self):

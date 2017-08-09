@@ -20,11 +20,10 @@ class Supervoxels4DProcess(Process):
         n_supervoxels = options['n-supervoxels']
         output_name = options.get('output-name', "supervoxels")
         
-        slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
-        roi_slices = slices[:self.ivm.current_roi.ndim]
-        img = self.ivm.vol[slices]
-        mask = self.ivm.current_roi[roi_slices]
-        vox_sizes = self.ivm.voxel_sizes[:3]
+        slices = self.ivm.current_roi.get_bounding_box()
+        img = self.ivm.main.std[slices]
+        mask = self.ivm.current_roi.std[slices]
+        vox_sizes = self.ivm.grid.spacing
 
         #print("Initialise the perf slic class")
         ps1 = PerfSLIC(img, vox_sizes, mask=mask)
@@ -38,9 +37,9 @@ class Supervoxels4DProcess(Process):
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
 
-        newroi = np.zeros(self.ivm.current_roi.shape)
-        newroi[roi_slices] = svdata
-        self.ivm.add_roi(output_name, newroi, make_current=True)
+        newroi = np.zeros(self.ivm.current_roi.std.shape)
+        newroi[slices] = svdata
+        self.ivm.add_roi(newroi, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
 
 class SupervoxelsProcess(Process):
@@ -75,45 +74,45 @@ class SupervoxelsProcess(Process):
         roi_name = options.pop('roi', None)
         output_name = options.get('output-name', "supervoxels")
         
+        if data_name is None:
+            img = self.ivm.main.std
+        else:
+            img = self.ivm.data[data_name].std
+    
         if roi_name is None and self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
         elif roi_name is not None:
             roi = self.ivm.rois[roi_name]
 
-        if data_name is None:
-            img = self.ivm.vol
-        else:
-            img = self.ivm.overlays[data_name]
-    
         if roi is not None:
-            slices = roi.get_bounding_box(ndim=self.ivm.vol.ndim)
-            img = img[slices[:img.ndim]]
-            mask =roi[slices[:roi.ndim]]
+            slices = roi.get_bounding_box()
+            img = img[slices]
+            mask = roi.std[slices]
         else:
             mask = None
 
-        if img.ndim == 4:
+        if img.shape[3] > 1:
             # For 4D data, use PCA to reduce down to 3D
             ncomp = options.pop('n-components', 3)
             img = self.preprocess_pca(img, ncomp)
         else:
             # For 3D data scale to a range of 0-1
-            img = img.astype(np.float)
+            img = np.squeeze(img, -1).astype(np.float)
             img = (img - img.min()) / (img.max() - img.min())
 
         # FIXME enforce_connectivity=True does not seem to work in ROI mode?
-        vox_sizes = [float(s)/self.ivm.voxel_sizes[0] for s in self.ivm.voxel_sizes[:3]]
+        vox_sizes = [float(s)/self.ivm.grid.spacing[0] for s in self.ivm.grid.spacing]
         
         labels = slic_feat(img, n_segments=n_supervoxels, compactness=comp, sigma=sigma,
                            seed_type=seed_type, multichannel=False, multifeat=True,
                            enforce_connectivity=False, return_adjacency=False, spacing=vox_sizes,
-                           mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
-        labels = np.array(labels, dtype=np.int) + 1
-        
+                           mask=np.squeeze(mask, -1), recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
+        labels = np.expand_dims(np.array(labels, dtype=np.int) + 1, -1)
+
         if roi is not None:
-            newroi = np.zeros(self.ivm.shape[:3])
-            newroi[slices[:newroi.ndim]] = labels
+            newroi = np.zeros(roi.std.shape)
+            newroi[slices] = labels
         else:
             newroi = labels
-        self.ivm.add_roi(output_name, newroi, make_current=True)
+        self.ivm.add_roi(newroi, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED

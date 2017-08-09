@@ -7,7 +7,7 @@ from PySide import QtGui
 from ..QtInherit import HelpButton
 from ..QtInherit.dialogs import TextViewerDialog
 from ..analysis import Process
-from ..analysis.reg import RegProcess, McflirtProcess
+from ..analysis.reg import RegProcess, McflirtProcess, REG_METHODS
 from . import QpWidget
 
 class McflirtInterface:
@@ -163,7 +163,7 @@ class DeedsInterface:
         return {"alpha" : self.alpha.value(),
                 "randsamp" : self.randsamp.value(),
                 "levels" : self.levels.value()}
-        
+
 class RegWidget(QpWidget):
     """
     Generic registration / motion correction widget 
@@ -172,8 +172,7 @@ class RegWidget(QpWidget):
         super(RegWidget, self).__init__(name="Registration", icon="reg", desc="Registration and Motion Correction", **kwargs)
 
     def init_ui(self):
-        self.reg_methods = {"DEEDS" : DeedsInterface(),
-                            "MCFLIRT" : McflirtInterface()}
+        self.REG_INTERFACES = {"deeds" : DeedsInterface(), "mcflirt" : McflirtInterface()}
 
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
@@ -204,8 +203,8 @@ class RegWidget(QpWidget):
 
         grid.addWidget(QtGui.QLabel("Method"), 1, 0)
         self.method_combo = QtGui.QComboBox()
-        for name, impl in self.reg_methods.items():
-            self.method_combo.addItem(name,impl)
+        for name in REG_METHODS:
+            self.method_combo.addItem(name, self.REG_INTERFACES[name])
         self.method_combo.currentIndexChanged.connect(self.method_changed)
         self.method_combo.setCurrentIndex(self.method_combo.findText("DEEDS"))
         grid.addWidget(self.method_combo, 1, 1)
@@ -256,11 +255,11 @@ class RegWidget(QpWidget):
 
         # Create the options boxes for reg methods - only one visible at a time!
         self.opt_boxes = {}
-        for name, impl in self.reg_methods.items():
+        for name in REG_METHODS:
             hbox = QtGui.QHBoxLayout()
             opt_box = QtGui.QGroupBox()
             opt_box.setTitle("%s Options" % name)
-            opt_box.setLayout(impl.options_layout)
+            opt_box.setLayout(self.REG_INTERFACES[name].options_layout)
             hbox.addWidget(opt_box)
             hbox.addStretch(1)
             opt_box.setVisible(False)
@@ -286,25 +285,26 @@ class RegWidget(QpWidget):
         self.method_changed(0)
 
     def activate(self):
-        self.ivm.sig_main_volume.connect(self.main_vol_changed)
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
+        self.ivm.sig_main_data.connect(self.main_data_changed)
+        self.ivm.sig_all_data.connect(self.data_changed)
 
     def deactivate(self):
-        self.ivm.sig_main_volume.disconnect(self.main_vol_changed)
-        self.ivm.sig_all_overlays.disconnect(self.overlays_changed)
+        self.ivm.sig_main_data.disconnect(self.main_data_changed)
+        self.ivm.sig_all_data.disconnect(self.data_changed)
 
-    def overlays_changed(self, ovls):
+    def data_changed(self, ovls):
         self.update()
 
-    def main_vol_changed(self, vol):
+    def main_data_changed(self, vol):
         self.update()
 
     def method_changed(self, idx):
         if idx >= 0:
             method_name = self.method_combo.currentText()
-            self.method = self.reg_methods[method_name]
-            for name, box in self.opt_boxes.items():
-                box.setVisible(name == method_name)
+            if method_name in self.REG_INTERFACES:
+                self.method = self.REG_INTERFACES[method_name]
+                for name, box in self.opt_boxes.items():
+                    box.setVisible(name == method_name)
 
     def mode_changed(self, idx):
         self.mode = idx
@@ -315,23 +315,23 @@ class RegWidget(QpWidget):
 
         self.regdata_label.setVisible(self.mode == 0)
         self.regdata.setVisible(self.mode == 0)
-        self.update() # Need to remove 3D overlays when doing Moco
+        self.update() # Need to remove 3D data when doing Moco
 
     def refdata_changed(self, idx):
         if idx >= 0:
-            vol = self.ivm.overlays[self.refdata.currentText()]
-            self.refvol_label.setVisible(vol.ndim == 4)
-            self.refvol.setVisible(vol.ndim == 4)
-            if vol.ndim == 4:
-                self.refidx.setMaximum(vol.shape[3]-1)
-                self.refidx.setValue(int(vol.shape[3]/2))
+            vol = self.ivm.data[self.refdata.currentText()]
+            self.refvol_label.setVisible(vol.nvols > 1)
+            self.refvol.setVisible(vol.nvols > 1)
+            if vol.nvols > 1:
+                self.refidx.setMaximum(vol.nvols-1)
+                self.refidx.setValue(int(vol.nvols/2))
             self.refvol_changed(self.refvol.currentIndex())
             if self.mode == 1: # MoCo
                 self.name_edit.setText("%s_reg" % vol.name)
 
     def regdata_changed(self, idx):
         if idx >= 0 and self.mode == 0:
-            self.name_edit.setText("%s_reg" % self.ivm.overlays[self.regdata.currentText()])
+            self.name_edit.setText("%s_reg" % self.ivm.data[self.regdata.currentText()])
 
     def refvol_changed(self, idx):
         self.refidx.setVisible(self.refvol.isVisible() and (idx == 2))
@@ -346,13 +346,10 @@ class RegWidget(QpWidget):
         currentReg = self.regdata.currentText()
         self.refdata.clear()
         self.regdata.clear()
-        vol = self.ivm.vol
-        if vol is not None:
-            self.refdata.addItem(vol.name)
             
-        for ovl in self.ivm.overlays.values():
-            if self.mode == 0 or ovl.ndim == 4: self.refdata.addItem(ovl.name)
-            if ovl.ndim == 3: self.regdata.addItem(ovl.name)
+        for ovl in self.ivm.data.values():
+            if self.mode == 0 or ovl.nvols > 1: self.refdata.addItem(ovl.name)
+            if ovl.nvols == 1: self.regdata.addItem(ovl.name)
 
         idx = self.refdata.findText(currentRef)
         self.refdata.setCurrentIndex(max(0, idx))
@@ -365,8 +362,8 @@ class RegWidget(QpWidget):
         options["method"] = self.method_combo.currentText()
         options["output-name"] = self.name_edit.text()
 
-        refdata = self.ivm.overlays[self.refdata.currentText()]
-        if refdata.ndim == 4:
+        refdata = self.ivm.data[self.refdata.currentText()]
+        if refdata.nvols > 1:
             refvol = self.refvol.currentIndex()
             if refvol == 0:
                 options["ref-vol"] = "median"

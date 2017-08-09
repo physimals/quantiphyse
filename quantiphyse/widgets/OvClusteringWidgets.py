@@ -17,15 +17,10 @@ from . import QpWidget
 
 #TODO Hide other buttons until the clustering is performed.
 
-
 class OvCurveClusteringWidget(QpWidget):
     """
     Widget for clustering the tumour into various regions
     """
-
-    # emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
-
     def __init__(self, **kwargs):
         super(OvCurveClusteringWidget, self).__init__(name="Overlay Cluster", icon="clustering", desc="Generate clusters from overlays", **kwargs)
 
@@ -140,7 +135,7 @@ class OvCurveClusteringWidget(QpWidget):
         """
         Run kmeans clustering on an overlay
         """
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             error_dialog("No data loaded")
             return
 
@@ -148,11 +143,11 @@ class OvCurveClusteringWidget(QpWidget):
             error_dialog("No ROI loaded - required for overlay clustering")
             return
 
-        if self.ivm.current_overlay is None:
+        if self.ivm.current_data is None:
             error_dialog("No overlay loaded")
             return
 
-        if self.ivm.current_overlay.ndim != 3:
+        if self.ivm.current_data.nvols != 1:
             error_dialog("Cannot run clustering on 4d overlays")
             return
 
@@ -173,11 +168,11 @@ class OvCurveClusteringWidget(QpWidget):
         m2 = int(self.val_m2.text())
 
         # relabel
-        roi = self.ivm.rois["overlay-clusters"]
+        roi = self.ivm.rois["overlay-clusters"].std
         roi[roi == m1] = m2
         
         # signal the change
-        self.ivm.add_roi("overlay-clusters", roi, make_current=True)
+        self.ivm.add_roi(roi, name="overlay-clusters", make_current=True)
         self.update_voxel_count()
 
     def update_voxel_count(self):
@@ -192,11 +187,11 @@ class OvCurveClusteringWidget(QpWidget):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
             # Slice count
-            voxel_count_slice = np.sum(roi[:, :, self.ivm.cim_pos[2]] == ii)
+            voxel_count_slice = np.sum(roi.std[:, :, self.ivm.cim_pos[2]] == ii)
             self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
 
             # Volume count
-            voxel_count = np.sum(roi == ii)
+            voxel_count = np.sum(roi.std == ii)
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
 
 

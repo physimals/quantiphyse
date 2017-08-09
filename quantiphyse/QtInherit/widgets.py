@@ -61,21 +61,21 @@ class BatchButton(QtGui.QPushButton):
 
 class OverlayCombo(QtGui.QComboBox):
     """
-    A combo box which gives a choice of overlays
+    A combo box which gives a choice of data
     """
     def __init__(self, ivm, parent=None, static_only=False):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
         self.static_only=static_only
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
-        self.overlays_changed()
+        self.ivm.sig_all_data.connect(self.data_changed)
+        self.data_changed()
     
-    def overlays_changed(self):
+    def data_changed(self):
         current = self.currentText()
         self.clear()
             
-        for ovl in self.ivm.overlays.values():
-            if (ovl.ndim == 3 or not self.static_only):
+        for ovl in self.ivm.data.values():
+            if (ovl.nvols == 1 or not self.static_only):
                 self.addItem(ovl.name)
 
         idx = self.findText(current)

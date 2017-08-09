@@ -45,20 +45,20 @@ class OverlayAnalysis(object):
         hist1x = []
 
         if slice is None:
-            ovldata = ovl
-            roidata = roi
+            ovldata = ovl.std
+            roidata = roi.std
         elif slice == 0:
             slicepos = self.ivm.cim_pos[2]
-            ovldata = ovl[:, :, slicepos]
-            roidata = roi[:, :, slicepos]
+            ovldata = ovl.std[:, :, slicepos]
+            roidata = roi.std[:, :, slicepos]
         elif slice == 1:
             slicepos = self.ivm.cim_pos[1]
-            ovldata = ovl[:, slicepos, :]
-            roidata = roi[:, slicepos, :]
+            ovldata = ovl.std[:, slicepos, :]
+            roidata = roi.std[:, slicepos, :]
         elif slice == 2:
             slicepos = self.ivm.cim_pos[0]
-            ovldata = ovl[slicepos, :, :]
-            roidata = roi[slicepos, :, :]
+            ovldata = ovl.std[slicepos, :, :]
+            roidata = roi.std[slicepos, :, :]
         else:
             raise RuntimeError("Invalid slice: " % slice)
 
@@ -84,14 +84,16 @@ class OverlayAnalysis(object):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             return []
 
-        data = self.ivm.current_overlay
-        voxel_sizes = self.ivm.voxel_sizes
-        roi = self.ivm.current_roi
+        data = self.ivm.current_overlay.std
+        voxel_sizes = self.ivm.grid.spacing
+        roi = self.ivm.current_roi.std
         centre = self.ivm.cim_pos
 
         # If overlay is 4d, get current 3d volume
-        if len(data.shape) == 4:
+        if data.shape[3] > 1:
             data = data[:, :, :, centre[3]]
+        else:
+            data = data[:,:,:,0]
 
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1

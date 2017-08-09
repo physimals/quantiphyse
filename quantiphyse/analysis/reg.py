@@ -6,8 +6,8 @@ import traceback
 import numpy as np
 
 from . import Process, BackgroundProcess
-from .deeds import deedsReg
-from .mcflirt import mcflirt
+
+REG_METHODS = {}
 
 def deeds_reg(regdata, refdata, options):
     return deedsReg(regdata, refdata, **options)
@@ -21,9 +21,17 @@ def mcflirt_reg(regdata, refdata, options):
     retdata, log = mcflirt(data, [1.0,] * data.ndim, **options)
     return retdata[:,:,:,0], log
 
-# Known registration methods (case-insensitive)
-methods = {"deeds" : deeds_reg,
-           "mcflirt" : mcflirt_reg}
+try:
+    from .deeds import deedsReg
+    REG_METHODS["deeds"] = deeds_reg
+except:
+    print("DEEDS not found")
+
+try:
+    from .mcflirt import mcflirt
+    REG_METHODS["mcflirt"] = mcflirt_reg
+except:
+    print("MCFLIRT not found")
 
 """
 Registration function for asynchronous process - used for moco and registration
@@ -36,7 +44,7 @@ def _run_reg(id, queue, method, options, regdata, refdata, ignore_idx=None):
         else:
             data_4d = True
         outdata = np.zeros(regdata.shape)
-        reg_fn = methods[method.lower()]
+        reg_fn = REG_METHODS[method.lower()]
 
         full_log = ""
         for t in range(regdata.shape[-1]):
@@ -71,38 +79,32 @@ class RegProcess(BackgroundProcess):
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
         self.method = options.pop("method", "deeds")
-        regdata_name = options.pop("reg", self.ivm.vol.name)
-        if regdata_name == self.ivm.vol.name:
-            reg_vols = self.ivm.vol
-        else:
-            reg_vols = self.ivm.overlays[regdata_name]
+        regdata_name = options.pop("reg", self.ivm.main.name)
+        reg_data = self.ivm.data[regdata_name].std
 
         self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
-        self.nvols = reg_vols.shape[-1]
+        self.nvols = reg_data.shape[-1]
 
         # Reference data defaults to same as reg data so MoCo can be
         # supported as self-registration
         refdata_name = options.pop("ref", regdata_name)
-        if refdata_name == self.ivm.vol.name:
-            ref_vols = self.ivm.vol
-        else:
-            ref_vols = self.ivm.overlays[refdata_name]
+        ref_vols = self.ivm.data[refdata_name]
 
-        if ref_vols.ndim == 4:
+        if ref_vols.nvols > 1:
             self.refvol = options.pop("ref-vol", "median")
             if self.refvol == "median":
-                refidx = ref_vols.shape[-1]/2
-                refdata = ref_vols[:,:,:,refidx]
+                refidx = ref_vols.nvols/2
+                refdata = ref_vols.std[:,:,:,refidx]
             elif self.refvol == "mean":
                 raise RuntimeException("Not yet implemented")
             else:
                 refidx = self.refvol
-                refdata = ref_vols[:,:,:,refidx]
+                refdata = ref_vols.std[:,:,:,refidx]
         else:
-            refdata = ref_vols
+            refdata = ref_vols.std
 
         # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, options, reg_vols, refdata])
+        self.start(1, [self.method, options, reg_data, refdata])
 
     def timeout(self):
         if self.queue.empty(): return
@@ -116,7 +118,7 @@ class RegProcess(BackgroundProcess):
         self.log = ""
         if self.status == Process.SUCCEEDED:
             output = self.output[0]
-            self.ivm.add_overlay(self.output_name, output[0], make_current=True)
+            self.ivm.add_data(output[0], name=self.output_name, make_current=True)
             self.log = output[1]
 
 class McflirtProcess(Process):
@@ -136,9 +138,9 @@ class McflirtProcess(Process):
             elif refvol != "median":
                 options["refvol"] = refvol
 
-            retdata, self.log = mcflirt(self.ivm.vol, self.ivm.voxel_sizes, **options)
-            if self.debug: print("Adding new overlay")
-            self.ivm.add_overlay(name, retdata, make_current=True, make_main=replace)
+            retdata, self.log = mcflirt(self.ivm.main, self.ivm.voxel_sizes, **options)
+            if self.debug: print("Adding new data")
+            self.ivm.add_data(retdata, name=name, make_current=True, make_main=replace)
             self.status = Process.SUCCEEDED
             self.output = [retdata, ]
         except:

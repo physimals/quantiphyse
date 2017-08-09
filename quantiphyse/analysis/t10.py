@@ -22,7 +22,7 @@ class T10Process(Process):
     def run(self, options):
         fa_vols, fas = [], []
         for fname, fa in options["vfa"].items():
-            vol =load(_get_filepath(fname, self.workdir)).get_data()
+            vol = load(_get_filepath(fname, self.workdir)).get_data()
             if isinstance(fa, list):
                 for i, a in enumerate(fa):
                     fas.append(a)
@@ -54,5 +54,5 @@ class T10Process(Process):
 
         if "clamp" in options:
             np.clip(T10, options["clamp"]["min"], options["clamp"]["max"], out=T10)
-        self.ivm.add_overlay("T10", T10)
+        self.ivm.add_data(T10, name="T10")
         self.status = Process.SUCCEEDED

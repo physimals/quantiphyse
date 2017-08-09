@@ -80,9 +80,9 @@ class PkModellingProcess(BackgroundProcess):
         BackgroundProcess.__init__(self, ivm, _run_pk, **kwargs)
 
     def run(self, options):
-        img1 = self.ivm.vol
-        roi1 = self.ivm.current_roi
-        t101 = self.ivm.overlays["T10"]
+        img1 = self.ivm.main.std
+        roi1 = self.ivm.current_roi.std
+        t101 = self.ivm.data["T10"].std
 
         R1 = options['r1']
         R2 = options['r2']
@@ -134,7 +134,7 @@ class PkModellingProcess(BackgroundProcess):
 
     def finished(self):
         """
-        Add output overlays to the IVM
+        Add output data to the IVM
         """
         self.log = ""
         if self.status == Process.SUCCEEDED:
@@ -186,12 +186,10 @@ class PkModellingProcess(BackgroundProcess):
             p = np.percentile(kep1vol, self.thresh1val)
             kep1vol[kep1vol > p] = p
 
-            #slices = self.ivm.current_roi.get_bounding_box(ndim=self.ivm.vol.ndim)
-            #roi_slices = slices[:self.ivm.current_roi.ndim]
-            self.ivm.add_overlay('ktrans', Ktrans1vol, make_current=True)
-            self.ivm.add_overlay('ve', ve1vol)
-            self.ivm.add_overlay('kep', kep1vol)
-            self.ivm.add_overlay('offset', offset1vol)
-            self.ivm.add_overlay('vp', vp1vol)
-            self.ivm.add_overlay("Model curves", estimated1vol)
+            self.ivm.add_data(Ktrans1vol, 'ktrans', make_current=True)
+            self.ivm.add_data(ve1vol, name='ve')
+            self.ivm.add_data(kep1vol, name='kep')
+            self.ivm.add_data(offset1vol, name='offset')
+            self.ivm.add_data(vp1vol, name='vp')
+            self.ivm.add_data(estimated1vol, name="Model curves")
             

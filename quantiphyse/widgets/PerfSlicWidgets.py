@@ -86,9 +86,9 @@ class PerfSlicWidget(QpWidget):
     def ovl_changed(self, idx):
         name = self.ovl.currentText()
         if name:
-            ovl = self.ivm.overlays[name]
-            self.n_comp.label.setEnabled(ovl.ndim == 4)
-            self.n_comp.spin.setEnabled(ovl.ndim == 4)
+            ovl = self.ivm.data[name]
+            self.n_comp.label.setEnabled(ovl.nvols > 1)
+            self.n_comp.spin.setEnabled(ovl.nvols > 1)
 
     def batch_options(self):
         options = {"data" : self.ovl.currentText(),

@@ -34,9 +34,9 @@ class KMeansPCAProcess(Process):
         
         # 4D data
         if data_name is not None:
-            img = self.ivm.overlays[data_name].astype(np.float32)
-        elif self.ivm.vol is not None:
-            img = self.ivm.vol.astype(np.float32)
+            img = self.ivm.data[data_name].std.astype(np.float32)
+        elif self.ivm.main is not None:
+            img = self.ivm.main.std.astype(np.float32)
         else:
             raise RuntimeError("No data specified and no current volume")
 
@@ -45,22 +45,25 @@ class KMeansPCAProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name]
+            roi = self.ivm.rois[roi_name].std
         elif self.ivm.current_roi is not None:
-            roi = self.ivm.current_roi
+            roi = self.ivm.current_roi.std
         else:
-            roi = np.ones(img.shape[:3], dtype=np.bool)
+            roi = np.ones(img.shape, dtype=np.bool)
             invert_roi = False
 
         if invert_roi:
             roi = np.logical_not(roi)
             
+        print(img.shape, roi.shape)
         voxel_se = img[roi > 0]
+        print(voxel_se.shape)
         baseline1 = np.mean(img[:, :, :, :3], axis=-1)
-        baseline1sub = baseline1[roi > 0]
+        baseline1sub = np.expand_dims(baseline1, axis=-1)[roi > 0]
+        print(baseline1sub.shape)
 
         # Normalisation of the image
-        voxel_se = voxel_se / (np.tile(np.expand_dims(baseline1sub, axis=-1), (1, img.shape[-1])) + 0.001) - 1
+        voxel_se = voxel_se / (np.tile(baseline1sub, (1, img.shape[-1])) + 0.001) - 1
 
         # Outputs
         self.log = ""
@@ -93,9 +96,9 @@ class KMeansPCAProcess(Process):
 
         self.log += "Elapsed time: %s" % (time.time() - start1)
 
-        label_image = np.zeros(self.ivm.shape[:3])
+        label_image = np.zeros(img.shape[:3])
         label_image[roi > 0] = kmeans.labels_ + 1
-        self.ivm.add_roi(output_name, label_image, make_current=True)
+        self.ivm.add_roi(label_image, name=output_name, make_current=True)
 
         self.status = Process.SUCCEEDED
 
@@ -115,9 +118,9 @@ class KMeans3DProcess(Process):
         
         # 3D data
         if data_name is not None:
-            data = self.ivm.overlays[data_name].astype(np.float32)
+            data = self.ivm.data[data_name].std.astype(np.float32)
         elif self.ivm.current_overlay is not None:
-            data = self.ivm.current_overlay.astype(np.float32)
+            data = self.ivm.current_overlay.std.astype(np.float32)
         else:
             raise RuntimeError("No data specified and no current overlay")
 
@@ -126,9 +129,9 @@ class KMeans3DProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name]
+            roi = self.ivm.rois[roi_name].std
         elif self.ivm.current_roi is not None:
-            roi = self.ivm.current_roi
+            roi = self.ivm.current_roi.std
         else:
             roi = np.ones(data.shape, dtype=np.bool)
             invert_roi = False
@@ -145,6 +148,6 @@ class KMeans3DProcess(Process):
         # label regions
         label_image = np.zeros_like(data, dtype=np.int)
         label_image[roi > 0] = kmeans.labels_ + 1
-        self.ivm.add_roi(output_name, label_image, make_current=True)
+        self.ivm.add_roi(label_image, name=output_name, make_current=True)
         
         self.status = Process.SUCCEEDED
