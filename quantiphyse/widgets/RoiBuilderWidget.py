@@ -81,7 +81,7 @@ class EraserTool(Tool):
 
     def point_picked(self, picker):
         pos = picker.point
-        sl = np.ones(self.ivm.vol.shape[1:3])
+        sl = np.ones(self.ivm.grid.shape[1:3])# FIXME looks very wrong
         sl[pos[1], pos[2]] = 0
         self.builder.add_to_roi(sl, 0, pos[0], erase=True)
 
@@ -143,12 +143,12 @@ class PickTool(Tool):
         if self.roi_name == "": return
 
         pos = picker.point
-        roi_picked = self.ivm.rois[self.roi_name]
+        roi_picked = self.ivm.rois[self.roi_name].std
         picked_region = roi_picked[pos[0], pos[1], pos[2]]
         self.roi_new = np.zeros(roi_picked.shape)
         self.roi_new[roi_picked==picked_region] = self.label
 
-        self.ivm.add_roi(self.temp_name, self.roi_new, make_current=True)
+        self.ivm.add_roi(self.roi_new, name=self.temp_name, make_current=True)
         self.ok_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
         self.roi_combo.setEnabled(False)
@@ -271,7 +271,7 @@ class WalkerTool(Tool):
             self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
             
         self.ivl.sig_sel_changed.connect(self.points_changed)
-        self.labels = np.zeros(self.ivm.vol.shape[:3])
+        self.labels = np.zeros(self.ivm.grid.shape)
         self.pickmode_changed(self.pickmode)
         
     def deselected(self):
@@ -289,14 +289,14 @@ class WalkerTool(Tool):
                 self.labels[p[0], p[1], p[2]] = label
 
     def segment(self):
-        data = self.ivm.overlays[self.ov_combo.currentText()]
+        data = self.ivm.data[self.ov_combo.currentText()].std
         labels = self.labels
 
         kwargs = {}
         # Use voxel size correctly
-        spacing = [self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[0],
-                  self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[1],
-                  self.ivm.voxel_sizes[0] / self.ivm.voxel_sizes[2]]
+        spacing = [self.ivm.grid.spacing[0] / self.ivm.grid.spacing[0],
+                  self.ivm.grid.spacing[0] / self.ivm.grid.spacing[1],
+                  self.ivm.grid.spacing[0] / self.ivm.grid.spacing[2]]
 
         if data.ndim > 3:
             # Reduce 4D data to PCA modes
@@ -439,7 +439,7 @@ class RoiBuilderWidget(QpWidget):
 
     def tool_clicked(self, tool):
         def tool_clicked():
-            if self.ivm.vol is None:
+            if self.ivm.main is None:
                 return
 
             if self.tool is not None:
@@ -468,7 +468,10 @@ class RoiBuilderWidget(QpWidget):
             self.tool.new_roi_name = self.new_roi_name
       
     def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
-        roi_orig = self.ivm.rois.get(self.new_roi_name, np.zeros(self.ivm.shape[:3]))
+        if self.new_roi_name in self.ivm.rois:
+            roi_orig = self.ivm.rois[self.new_roi_name].std
+        else:
+            roi_orig = np.zeros(self.ivm.grid.shape)
 
         slices = [slice(None)] * 3
         if axis is not None and pos is not None:
@@ -490,7 +493,7 @@ class RoiBuilderWidget(QpWidget):
             
         roi_orig[slices] = slice_orig
 
-        self.ivm.add_roi(self.new_roi_name, roi_orig, make_current=True)
+        self.ivm.add_roi(roi_orig, name=self.new_roi_name, make_current=True)
         self.undo_btn.setEnabled(True)
 
     def undo(self):
@@ -501,6 +504,6 @@ class RoiBuilderWidget(QpWidget):
             slices = [slice(None)] * 3
             if axis is not None and pos is not None:
                 slices[axis] = pos
-            self.ivm.rois[roi_name][slices] = roi_slice_orig
-            self.ivm.add_roi(roi_name, self.ivm.rois[roi_name])
+            self.ivm.rois[roi_name].std[slices] = roi_slice_orig
+            self.ivm.add_roi(self.ivm.rois[roi_name], name=roi_name)
         self.undo_btn.setEnabled(len(self.history) > 0)

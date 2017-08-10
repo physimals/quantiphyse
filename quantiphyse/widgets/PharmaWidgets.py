@@ -114,7 +114,7 @@ class PharmaWidget(QpWidget):
         """
         Start running the PK modelling on button click
         """
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             error_dialog("No data loaded")
             return
 
@@ -122,7 +122,7 @@ class PharmaWidget(QpWidget):
             error_dialog("No ROI loaded - required for Pk modelling")
             return
 
-        if "T10" not in self.ivm.overlays:
+        if "T10" not in self.ivm.data:
             error_dialog("No T10 map loaded - required for Pk modelling")
             return
 
@@ -256,12 +256,12 @@ class ModelCurves(QpWidget):
         self.setLayout(main_vbox)
     
     def activate(self):
-        self.ivm.sig_all_overlays.connect(self.update_minmax)
+        self.ivm.sig_all_data.connect(self.update_minmax)
         self.ivl.sig_focus_changed.connect(self.update)
-        self.update_minmax(self.ivm.overlays.keys())
+        self.update_minmax(self.ivm.data.keys())
 
     def deactivate(self):
-        self.ivm.sig_all_overlays.disconnect(self.update_minmax)
+        self.ivm.sig_all_data.disconnect(self.update_minmax)
         self.ivl.sig_focus_changed.disconnect(self.update)
 
     def options_changed(self, opts):
@@ -283,7 +283,7 @@ class ModelCurves(QpWidget):
     def update_minmax(self, ovls):
         dmin, dmax, first = 0, 100, True
         for name in ovls:
-            ovl = self.ivm.overlays[name]
+            ovl = self.ivm.data[name].std
             if first or ovl.min() < dmin: dmin = ovl.min()
             if first or ovl.max() > dmax: dmax = ovl.max()
             first = False
@@ -302,9 +302,9 @@ class ModelCurves(QpWidget):
         """
         self.values_table.clear()
         self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
-        overlay_vals = self.ivm.get_overlay_value_curr_pos()
+        overlay_vals = self.ivm.get_data_value_curr_pos()
         for ii, ovl in enumerate(sorted(overlay_vals.keys())):
-            if self.ivm.overlays[ovl].ndim == 3:
+            if self.ivm.data[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
                 self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
 
@@ -315,13 +315,17 @@ class ModelCurves(QpWidget):
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
             self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
             idx = 0
-            for name in sorted(self.ivm.overlays.keys()):
-                ovl = self.ivm.overlays[name]
+            for name in sorted(self.ivm.data.keys()):
+                ovl = self.ivm.data[name]
                 pos = self.ivm.cim_pos
                 if ovl.ndim == 4:
-                    rms = np.sqrt(np.mean(np.square(self.ivm.vol - ovl), 3))
+                    rms = np.sqrt(np.mean(np.square(self.ivm.main.std - ovl.std), 3))
+                    if self.ivm.current_roi is not None:
+                        rms[self.ivm.current_roi.std == 0] = 0
+                        mean_rms = np.mean(rms[self.ivm.current_roi.std > 0])
+                    else:
+                        mean_rms = np.mean(rms)
                     pos_rms = rms[pos[0], pos[1], pos[2]]
-                    mean_rms = np.mean(rms)
                     name_item = QtGui.QStandardItem(name)
                     name_item.setCheckable(True)
                     name_item.setEditable(False)

@@ -244,7 +244,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # loop over all loaded data and save values in a dictionary
         for name, qpd in self.data.items():
-            if qpd.vols == 1:
+            if qpd.nvols == 1:
                 data_value[name] = qpd.val(self.cim_pos)
                 
         return data_value
@@ -255,7 +255,7 @@ class ImageVolumeManagement(QtCore.QObject):
         """
         if self.main is None: return [], {}
         if self.main.nvols > 1:
-            main_sig = self.main[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+            main_sig = self.main.std[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         else:
             main_sig = []
 

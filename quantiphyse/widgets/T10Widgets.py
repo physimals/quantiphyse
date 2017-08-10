@@ -71,7 +71,7 @@ class SourceImageList(QtGui.QVBoxLayout):
                                           QtGui.QMessageBox.Close)
                 return []
 
-            if f.shape[:3] != self.ivm.vol.shape[:3]:
+            if f.shape[:3] != self.ivm.grid.shape[:3]:
                 QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
                                           QtGui.QMessageBox.Close)
                 return []
@@ -136,13 +136,13 @@ class SourceImageList(QtGui.QVBoxLayout):
                 break
 
     def add(self):
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T1 map",
                                       QtGui.QMessageBox.Close)
             return
 
         if self.dir is None:
-            self.dir = self.ivm.vol.dir
+            self.dir = os.dirname(self.ivm.main.fname)
 
         filename, junk = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
         if filename:
@@ -279,7 +279,7 @@ class T10Widget(QpWidget):
         self.clampMax.setEnabled(self.clamp.isChecked())
 
     def generate(self):
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T1 map", QtGui.QMessageBox.Close)
             return
         elif not self.trinp.valid:
@@ -315,4 +315,4 @@ class T10Widget(QpWidget):
         if self.clamp.isChecked():
             np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)
 
-        self.ivm.add_overlay("T10", T10, make_current=True)
+        self.ivm.add_data(T10, name="T10", make_current=True)

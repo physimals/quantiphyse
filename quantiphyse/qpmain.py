@@ -47,14 +47,14 @@ from .widgets.OverviewWidgets import OverviewWidget
 from .widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
 from .widgets.ClusteringWidgets import CurveClusteringWidget
 from .widgets.OvClusteringWidgets import OvCurveClusteringWidget
-#from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
-#from .widgets.T10Widgets import T10Widget
-#from .widgets.PerfSlicWidgets import MeanValuesWidget
+from .widgets.PharmaWidgets import PharmaWidget, ModelCurves
+from .widgets.T10Widgets import T10Widget
+from .widgets.PerfSlicWidgets import MeanValuesWidget
 from .widgets.PerfSlicWidgets import PerfSlicWidget
 from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
 from .widgets.MCWidgets import RegWidget
-##from .widgets.ExperimentalWidgets import ImageExportWidget
-#from .widgets.RoiBuilderWidget import RoiBuilderWidget
+#from .widgets.ExperimentalWidgets import ImageExportWidget
+from .widgets.RoiBuilderWidget import RoiBuilderWidget
 
 op_sys = platform.system()
 
@@ -476,22 +476,22 @@ class MainWindow(QtGui.QMainWindow):
         self.current_widget = None
         self.add_widget(OverviewWidget, default=True) 
         self.add_widget(SECurve, default=True)
-        #self.add_widget(ModelCurves) 
+        self.add_widget(ModelCurves) 
         self.add_widget(OverlayStatistics, default=True) 
         self.add_widget(RoiAnalysisWidget) 
         self.add_widget(SimpleMathsWidget) 
-        #self.add_widget(PharmaWidget) 
-        #self.add_widget(T10Widget) 
+        self.add_widget(PharmaWidget) 
+        self.add_widget(T10Widget) 
         self.add_widget(PerfSlicWidget) 
         self.add_widget(FabberWidget) 
         self.add_widget(CESTWidget) 
         self.add_widget(ASLWidget) 
-        #self.add_widget(MeanValuesWidget) 
+        self.add_widget(MeanValuesWidget) 
         self.add_widget(RegWidget) 
-        ##self.add_widget(ImageExportWidget) 
+        #self.add_widget(ImageExportWidget) 
         self.add_widget(CurveClusteringWidget, default=True) 
         self.add_widget(OvCurveClusteringWidget, default=True) 
-        #self.add_widget(RoiBuilderWidget)
+        self.add_widget(RoiBuilderWidget)
         
         # Initialize menu and tabs
         self.init_menu()
