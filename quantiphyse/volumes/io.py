@@ -27,7 +27,7 @@ class NiftiData(QpData):
         self.nii = nib.load(fname)
         grid = DataGrid(self.nii.shape[:3], self.nii.header.get_best_affine())
         data = self.nii.get_data()
-        while data.ndim < 4:
+        while data.ndim < 3:
             data = np.expand_dims(data, -1)
         QpData.__init__(self, fname, data, grid, fname=fname)
 
@@ -142,7 +142,7 @@ def load(fname):
         raise RuntimeError("%s: Unrecognized file type" % fname)
 
 def save(data, fname):
-    img = nib.Nifti1Image(data.rawdata, data.rawgrid.affine)
+    img = nib.Nifti1Image(data.raw, data.rawgrid.affine)
     img.update_header()
     img.to_filename(fname)
     data.fname = fname

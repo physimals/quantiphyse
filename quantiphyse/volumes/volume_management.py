@@ -126,10 +126,13 @@ class ImageVolumeManagement(QtCore.QObject):
         print("RAS aligned")
         print(self.grid.affine)
 
-        self.main.regrid(self.grid)
-        
         self.cim_pos = [int(d/2) for d in self.grid.shape]
         self.cim_pos.append(int(self.main.nvols/2))
+        for data in self.data.values():
+            data.regrid(self.grid)
+        for roi in self.rois.values():
+            roi.regrid(self.grid)
+
         self.sig_main_data.emit(self.main)
 
     def add_data(self, data, name=None, make_current=False, make_main=False):
@@ -148,7 +151,7 @@ class ImageVolumeManagement(QtCore.QObject):
         else:
             data.regrid(self.grid)
 
-        if make_current:
+        if (make_current and not make_main) or self.current_data is None:
             self.set_current_data(data.name)
         self.sig_all_data.emit(self.data.keys())
 

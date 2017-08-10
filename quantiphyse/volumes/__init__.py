@@ -217,8 +217,8 @@ class QpData:
     """
 
     def __init__(self, name, data, grid, fname=None):
-        if data.ndim != 4:
-            raise RuntimeError("QpData must be 4-dimensional (padded if necessary")
+        if data.ndim not in (3, 4):
+            raise RuntimeError("QpData must be 3D or 4D (padded if necessary")
         
         # Everyone needs a friendly name
         self.name = name
@@ -314,8 +314,10 @@ class QpData:
         """
         sl = [slice(None)] * self.ndim
         for axis, pos in axes:
-            # Handle case where 4th dimension is out of range
-            if pos < self.std.shape[axis]:
+            if axis >= self.ndim:
+                pass
+            elif pos < self.std.shape[axis]:
+                # Handle case where 4th dimension is out of range
                 sl[axis] = pos
             else:
                 sl[axis] = self.std.shape[axis]-1
@@ -327,7 +329,7 @@ class QpData:
             if fill_value is None:
                 # Less than the minimum
                 fill_value = self.range[0] - 0.000001
-                print("fillval = ", fill_value, self.range)
+                #print("fillval = ", fill_value, self.range)
             data[mask_slice == 0] = fill_value
         return data
 
@@ -343,6 +345,9 @@ class QpRoi(QpData):
     """
 
     def __init__(self, name, data, grid, fname=None):
+        if data.ndim != 3:
+           raise RuntimeError("ROIs must be static (single volume) 3D data")
+
         if data.min() < 0 or data.max() > 2**32:
             raise RuntimeError("ROI must contain values between 0 and 2**32")
         
@@ -363,7 +368,7 @@ class QpRoi(QpData):
         QpData.regrid(self, grid)
         print(self.std.min(), self.std.max())
 
-    def get_bounding_box(self,):
+    def get_bounding_box(self, ndim=None):
         """
         Returns a sequence of slice objects which
         describe the bounding box of this ROI.
@@ -382,9 +387,10 @@ class QpRoi(QpData):
         out_full = np.zeros(img.shape)
         out_full[slices] = out_restrict
         """
-        slices = [slice(None)] * 4
-        for d in range(4):
-            ax = [i for i in range(4) if i != d]
+        if ndim is None: ndim = self.ndim
+        slices = [slice(None)] * ndim
+        for d in range(min(ndim, self.ndim)):
+            ax = [i for i in range(self.ndim) if i != d]
             nonzero = np.any(self.std, axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
             slices[d] = slice(s1, s2+1)
