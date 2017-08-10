@@ -33,7 +33,9 @@ def _run_fabber(id, queue, rundata, main_data, roi, *add_data):
     try:
         data = {"data" : main_data}
         n = 0
-        while n < len(data):
+        if len(add_data) % 2 != 0:
+            raise Exception("Additional data has length %i - should be key then value" % len(add_data))
+        while n < len(add_data):
             data[add_data[n]] = add_data[n+1]
             n += 2
         lib = FabberLib(rundata=rundata, auto_load_models=True)

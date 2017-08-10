@@ -102,10 +102,10 @@ class HistogramProcess(Process):
             roi_labels = [1,]
         elif roi_name is None:
             roi = self.ivm.current_roi.std
-            roi_labels = roi.regions
+            roi_labels = self.ivm.current_roi.regions
         else:
             roi = self.ivm.rois[roi_name].std
-            roi_labels = roi.regions
+            roi_labels = self.ivm.rois[roi_name].regions
 
         if ov_name is None:
             ovs = self.ivm.data.values()
@@ -117,16 +117,16 @@ class HistogramProcess(Process):
         self.xvals, self.edges, self.hist = None, None, {}
         col = 2
         
-        for ov in [qpd.std for qpd in ovs]:
+        for ov in ovs:
             hrange = [dmin, dmax]
-            if dmin is None: hrange[0] = ov.min()
-            if dmax is None: hrange[1] = ov.max()
+            if dmin is None: hrange[0] = ov.std.min()
+            if dmax is None: hrange[1] = ov.std.max()
             for region in roi_labels:
                 if self.debug: print("Doing %s region %i" % (ov.name, region))
                 if sel_region is not None and region != sel_region:
                     if self.debug: print("Ignoring this region")
                     continue
-                region_data = ov[roi == region]
+                region_data = ov.std[roi == region]
                 yvals, edges = np.histogram(region_data, bins=bins, range=hrange)
                 if self.xvals is None:
                     self.edges = edges
@@ -205,15 +205,17 @@ class RadialProfileProcess(Process):
         for idx, xval in enumerate(self.xvals):
             self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(str(xval)))
 
-        for col, data in enumerate([qpd.std for qpd in ovs]):
+        for col, data in enumerate(ovs):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
                 
             # If overlay is 4d, get current 3d volume
-            if len(data.shape) == 4:
-                data = data[:, :, :, centre[3]]
+            if data.ndim == 4:
+                weights = data.std[:, :, :, centre[3]]
+            else:
+                weights = data.std
 
             # Generate histogram by distance, weighted by data
-            rpd, junk = np.histogram(r, weights=data, bins=bins, range=(rmin, r.max()))
+            rpd, junk = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
 
             # Divide by number of voxels in each bin to get average value by distance.
             rp = rpd / voxels_per_bin

@@ -246,9 +246,9 @@ class SECurve(QpWidget):
                     if self.ivm.main.ndim == 3:
                         # FIXME this should take into account which window the picked point was from
                         warnings.warn("3D image so just calculating cross image profile")
-                        sig = self.ivm.main[point[0], :, point[2]]
+                        sig = self.ivm.main.std[point[0], :, point[2]]
                     elif self.ivm.main.ndim == 4:
-                        sig = self.ivm.main[point[0], point[1], point[2], :]
+                        sig = self.ivm.main.std[point[0], point[1], point[2], :]
                     else:
                         warnings.warn("Image is not 3D or 4D")
                         continue

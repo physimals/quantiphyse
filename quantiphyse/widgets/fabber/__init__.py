@@ -16,7 +16,6 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...volumes.io import QpVolume, FileMetadata
 from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
 from ...QtInherit.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
@@ -222,10 +221,10 @@ class FabberWidget(QpWidget):
         return runBox
 
     def activate(self):
-        self.ivm.sig_all_overlays.connect(self.overlays_changed)
+        self.ivm.sig_all_data.connect(self.overlays_changed)
 
     def deactivate(self):
-        self.ivm.sig_all_overlays.disconnect(self.overlays_changed)
+        self.ivm.sig_all_data.disconnect(self.overlays_changed)
 
     def chooseOutputFolder(self):
         outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
@@ -276,7 +275,7 @@ class FabberWidget(QpWidget):
         """
         Start running the Fabber modelling on button click
         """
-        if self.ivm.vol is None:
+        if self.ivm.main is None:
             error_dialog("No data loaded")
             return
 
@@ -300,11 +299,12 @@ class FabberWidget(QpWidget):
                 if self.savefilesCb.isChecked():
                     save_folder = self.saveFolderEdit.text()       
                     for ovl in results[0].data:
-                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl.name + ".nii"))
+                        save(self.ivm.data[ovl], os.path.join(save_folder, ovl.name + ".nii"))
                         logfile = open(os.path.join(save_folder, "logfile"), "w")
                         logfile.write(self.log)
                         logfile.close()
             else:
+                raise results
                 QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
                                         QtGui.QMessageBox.Close)
         finally:
@@ -536,7 +536,7 @@ class CESTWidget(FabberWidget):
         Options should be handled much more cleanly than this!
         """
         freqs  = self.freq_offsets.values()
-        if self.ivm.vol.ndim == 4 and len(freqs) == self.ivm.vol.shape[3]:
+        if self.ivm.main.ndim == 4 and len(freqs) == self.ivm.main.nvols:
             self.opts.t_combo.setCurrentIndex(1)
             self.opts.t_scale = self.freq_offsets.values()
             self.opts.sig_options_changed.emit(self)
@@ -923,7 +923,7 @@ class ASLWidget(FabberWidget):
     def start_asl(self):
         # First preprocess the data to put it in the format the Fabber model expects.
         # This is outer grouping of TIs, then by repeats and finally tag/control pairs
-        nvols = self.ivm.vol.shape[3]
+        nvols = self.ivm.main.nvols
         ntis = len(self.plds.values())
         if nvols % ntis != 0:
             raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
@@ -941,7 +941,7 @@ class ASLWidget(FabberWidget):
             else:
                 ctpairs = True
 
-        asldata = np.zeros(list(self.ivm.vol.shape[:3]) + [nvols, ])
+        asldata = np.zeros(list(self.ivm.grid.shape) + [nvols, ])
         out_idx = 0
         for tidx in range(ntis):
             for ridx in range(nrepeats):
@@ -950,18 +950,18 @@ class ASLWidget(FabberWidget):
                     print("tidx=%i, ridx=%i, vidx=%i" % (tidx, ridx, in_idx))
                     # Do control - tag
                     print("Doing %i - %i" % (in_idx, in_idx+1))
-                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx] - self.ivm.vol[:,:,:,in_idx+1]
+                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx] - self.ivm.main.std[:,:,:,in_idx+1]
                 elif tcpairs:
                     in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 2)
                     # Do control - tag
-                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx+1] - self.ivm.vol[:,:,:,in_idx]
+                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx+1] - self.ivm.main.std[:,:,:,in_idx]
                 else:
                     in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 1)
-                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx]
+                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx]
                 out_idx += 1
         # FIXME temp
         meandiff = np.mean(asldata, 3)
-        self.ivm.add_overlay("diff", meandiff, make_current=True)
+        self.ivm.add_data(meandiff, name="diff", make_current=True)
         #asldata = asldata.view(QpVolume)
         #asldata.md = FileMetadata("asdldata", shape=asldata.shape, affine=self.ivm.vol.md.affine, voxel_sizes=self.ivm.voxel_sizes)
         #self.ivm.reset()

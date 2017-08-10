@@ -112,15 +112,15 @@ class KMeans3DProcess(Process):
     def run(self, options):
         n_clusters = options.pop('n-clusters', 5)
         invert_roi = options.pop('invert-roi', False)
-        output_name = options.pop('output-name', 'overlay-clusters')
+        output_name = options.pop('output-name', 'overlay_clusters')
         data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         
         # 3D data
         if data_name is not None:
             data = self.ivm.data[data_name].std.astype(np.float32)
-        elif self.ivm.current_overlay is not None:
-            data = self.ivm.current_overlay.std.astype(np.float32)
+        elif self.ivm.current_data is not None:
+            data = self.ivm.current_data.std.astype(np.float32)
         else:
             raise RuntimeError("No data specified and no current overlay")
 
