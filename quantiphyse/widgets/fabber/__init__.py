@@ -16,7 +16,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...volumes.io import QpVolume, FileMetadata
+from ...volumes.io import QpVolume, FileMetadata, save
 from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
 from ...QtInherit.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
@@ -300,7 +300,7 @@ class FabberWidget(QpWidget):
                 if self.savefilesCb.isChecked():
                     save_folder = self.saveFolderEdit.text()       
                     for ovl in results[0].data:
-                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl.name + ".nii"))
+                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl + ".nii"))
                         logfile = open(os.path.join(save_folder, "logfile"), "w")
                         logfile.write(self.log)
                         logfile.close()
