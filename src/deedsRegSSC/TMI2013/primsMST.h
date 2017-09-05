@@ -76,7 +76,7 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, 
 		for(int j=0;j<n;j++){
 			for(int i=0;i<m;i++){
 				for(int nb=0;nb<num_neighbours;nb++){
-					if((i+dy[nb])>=0&(i+dy[nb])<m&(j+dx[nb])>=0&(j+dx[nb])<n&(k+dz[nb])>=0&(k+dz[nb])<o){
+					if((i+dy[nb])>=0 && (i+dy[nb])<m && (j+dx[nb])>=0 && (j+dx[nb])<n && (k+dz[nb])>=0 && (k+dz[nb])<o){
 						index_neighbours[i+j*m+k*m*n+nb*num_vertices]=i+dy[nb]+(j+dx[nb])*m+(k+dz[nb])*m*n;
 						//float randv=((float)rand()/float(RAND_MAX));
 						//edgecost[i+j*m+k*m*n+nb*num_vertices]=randv;
@@ -98,10 +98,6 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, 
 			}
 		}
 	}
-	
-	float centrex=n/2;
-	float centrey=m/2;
-	float centrez=o/2;
 	
 	int root=m/2+n/2*m+o/2*m*n;
 	
@@ -140,7 +136,7 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, 
 			bool new2=vertices[minedge.vert2];
 			last=newEdge(minedge,edgeout,vertices); //return next valid vertex or -1 if edge exists already
 		}
-		cost+=edgeout.weight;
+		cost+=(float)edgeout.weight;
 		vertices[last]=true;
 		level[edgeout.vert2]=level[edgeout.vert1]+1;
 		parents[edgeout.vert2]=edgeout.vert1;

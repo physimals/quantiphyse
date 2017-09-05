@@ -94,8 +94,7 @@ extensions.append(Extension("quantiphyse.analysis.t1_model",
                           'src/T10/T10_calculation.cpp'],
                  include_dirs=['src/T10',
                                numpy.get_include()],
-                 language="c++",
-                 extra_compile_args=['-std=c++11']))
+                 language="c++"))
 
 # Supervoxel extensions
 
@@ -115,8 +114,7 @@ extensions.append(Extension("quantiphyse.analysis.perfusionslic.additional.proce
               sources=["quantiphyse/analysis/perfusionslic/additional/processing.pyx",
                        "src/perfusionslic/processing.cpp"],
               include_dirs=["src/perfusionslic", numpy.get_include()],
-              language="c++",
-              extra_compile_args=["-std=c++11"]))
+              language="c++"))
 
 # MCFlirt extension - requires FSL to build
 

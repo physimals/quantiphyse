@@ -8,10 +8,10 @@ void dt1sq(float *val,int* ind,int len,float offset,int k,int* v,float* z,float*
 	z[1]=INF;
 	v[0]=0;
 	for(int q=1;q<len;q++){
-		float s=((val[q*k]+pow((float)q+offset,(float)2.0))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0)))/(2.0*(float)(q-v[j]));
+		float s=(float)((val[q*k]+pow((float)q+offset,(float)2.0f))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0f)))/(2.0f*(float)(q-v[j]));
 		while(s<=z[j]){
 			j--;
-			s=((val[q*k]+pow((float)q+offset,(float)2.0))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0)))/(2.0*(float)(q-v[j]));
+			s=(float)((val[q*k]+pow((float)q+offset,(float)2.0f))-(val[v[j]*k]+pow((float)v[j]+offset,(float)2.0f)))/(2.0f*(float)(q-v[j]));
 		}
 		j++;
 		v[j]=q;

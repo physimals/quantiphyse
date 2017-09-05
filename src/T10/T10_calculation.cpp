@@ -39,10 +39,10 @@ double T10_single_linear(vector<double> &favox, vector<double> &fa_rad, ulong nu
 
     vector<double> x(num_fa, 0);
     vector<double> y(num_fa, 0);
-    double a, b, v1, v2;
+    double a, b, v1;
     double t1;
 
-    for (int ii=0; ii<num_fa; ii++){
+    for (ulong ii=0; ii<num_fa; ii++){
         x[ii] = favox[ii] / tan(fa_rad[ii]);
         y[ii] = favox[ii] / sin(fa_rad[ii]);
     }
@@ -90,7 +90,6 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
     // Flip angle in radiation
     double flip_angle = fa_afi * (M_PI/180);
-
 
     for (int ii=0; ii < num_voxels; ii++){
 
