@@ -96,8 +96,9 @@ class BatchCase:
         for key in overlays:
             filepath = self.get_filepath(overlays[key])
             if self.debug: print("  - Loading overlay '%s' from %s" % (key, filepath))
-            ovl = load(filepath).get_data()
-            self.ivm.add_overlay(key, ovl, make_current=True)
+            ovl = load(filepath)
+            ovl.name = key
+            self.ivm.add_data(ovl, make_current=True)
         
     def load_rois(self):
         # Load case ROIs followed by any root ROIs not overridden by case
@@ -106,8 +107,9 @@ class BatchCase:
         for key in rois:
             filepath = self.get_filepath(rois[key])
             if self.debug: print("  - Loading ROI '%s' from %s" % (key, filepath))
-            roi = load(filepath).get_data()
-            self.ivm.add_roi(key, roi, make_current=True)
+            roi = load(filepath)
+            roi.name = key
+            self.ivm.add_roi(roi, make_current=True)
         
     def run_processing_steps(self):
         # Run processing steps
@@ -143,8 +145,9 @@ class BatchCase:
             except:
                 print("  - WARNING: process %s failed to run" % name)
                 #raise
-                print(sys.exc_info())
-                print(sys.exc_info()[2])
+                #print(sys.exc_info())
+                #print(sys.exc_info()[2])
+                traceback.print_exc()
 
     def progress(self, complete):
         sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
@@ -164,8 +167,8 @@ class BatchCase:
 
         for name, fname in self.get("SaveOverlays", {}).items():
             if not fname: fname = name
-            if name in self.ivm.overlays:
-                self.save_data(self.ivm.overlays[name], fname)
+            if name in self.ivm.data:
+                self.save_data(self.ivm.data[name], fname)
             else:
                 print("  - WARNING: overlay %s not found - not saving" % name)
 

@@ -75,7 +75,13 @@ int deeds(char* fixedin,char* movingin,char* movingsegin,char* outputstem,int ra
 	delete[] header2;
 }*/
 
-std::string deeds(float* im1, float* im1b, int m, int n, int o, float *retbuf, 
+std::string deeds_warp(float *im, float *ux, float *vx, float *wx, int m, int n, int o, float *retbuf)
+{
+	warpImage(retbuf,im,ux,vx,wx,m,n,o);
+	return "";
+}
+
+std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float *vx, float *wx, 
                   float alpha=2.0, int randsamp2=50, int maxlevel=5)
 {
     // Options - just default for now
@@ -133,7 +139,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *retbuf,
     
 	//set initial flow-fields to 0; i indicates backward (inverse) transform
 	//u is in x-direction (2nd dimension), v in y-direction (1st dim) and w in z-direction (3rd dim)
-	float* ux=new float[sz]; float* vx=new float[sz]; float* wx=new float[sz];
 	float* uxi=new float[sz]; float* vxi=new float[sz]; float* wxi=new float[sz];
 	for(int i=0;i<sz;i++){
 		ux[i]=0.0; vx[i]=0.0; wx[i]=0.0;
@@ -340,7 +345,7 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *retbuf,
     }
     
     //float* warpout=new float[sz];
-    warpImage(retbuf,im1,ux,vx,wx,m,n,o);
+    //warpImage(retbuf,im1,ux,vx,wx,m,n,o);
 	
     //optionally write-out warped Labels
     /*
@@ -367,7 +372,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *retbuf,
 	delete[] flow1;
 	delete []u1; delete []v1; delete []w1;
 	delete []u1i; delete []v1i; delete []w1i;
-	delete []ux; delete []vx; delete []wx;
 	delete []uxi; delete []vxi; delete []wxi;
 	delete[] warped1;
     delete[] warped2;

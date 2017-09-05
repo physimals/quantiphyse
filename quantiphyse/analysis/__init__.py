@@ -95,6 +95,7 @@ class BackgroundProcess(Process):
         self.status = Process.RUNNING
         processes = []
         for i in range(n):
+            print("start: ", np.max(worker_args[i][4]), np.max(worker_args[i][5]), np.max(worker_args[i][6]))
             proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
             processes.append(proc)
         
@@ -118,8 +119,8 @@ class BackgroundProcess(Process):
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
-                #print("Splitting numpy array shape ", arg.shape)
                 split_args.append(np.array_split(arg, n, 0))
+                print("Splitting numpy array shape ", arg.shape, np.max(arg))
             else:
                 split_args.append([arg,] * n)
 

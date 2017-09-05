@@ -5,6 +5,7 @@ import numpy as np
 from PySide import QtGui
 
 from ..QtInherit import HelpButton
+from ..QtInherit.widgets import RoiCombo, OverlayCombo
 from ..QtInherit.dialogs import TextViewerDialog
 from ..analysis import Process
 from ..analysis.reg import RegProcess, McflirtProcess, REG_METHODS
@@ -238,15 +239,20 @@ class RegWidget(QpWidget):
         self.regdata.currentIndexChanged.connect(self.regdata_changed)
         grid.addWidget(self.regdata, 5, 1)
         
-        grid.addWidget(QtGui.QLabel("Replace data"), 6, 0)
+        self.regdata_label = QtGui.QLabel("Linked ROI")
+        grid.addWidget(self.regdata_label, 6, 0)
+        self.warproi = RoiCombo(self.ivm)
+        grid.addWidget(self.warproi, 6, 1)
+        
+        grid.addWidget(QtGui.QLabel("Replace data"), 7, 0)
         self.replace_cb = QtGui.QCheckBox()
         self.replace_cb.stateChanged.connect(self.replace_changed)
-        grid.addWidget(self.replace_cb, 6, 1)
+        grid.addWidget(self.replace_cb, 7, 1)
         
         self.name_label = QtGui.QLabel("New data name")
-        grid.addWidget(self.name_label, 7, 0)
+        grid.addWidget(self.name_label, 8, 0)
         self.name_edit = QtGui.QLineEdit()
-        grid.addWidget(self.name_edit, 7, 1)
+        grid.addWidget(self.name_edit, 8, 1)
 
         gbox.setLayout(grid)
         hbox.addWidget(gbox)
@@ -375,11 +381,12 @@ class RegWidget(QpWidget):
         if self.mode_combo.currentIndex() == 0:
             options["ref"] = self.refdata.currentText()
             options["reg"] = self.regdata.currentText()
-            process = RegProcess(self.ivm)
+            if self.warproi.currentText() != "":
+                options["warp-roi"] = self.warproi.currentText()
         else:
             options["reg"] = self.refdata.currentText()
-            process = RegProcess(self.ivm)
-        
+            
+        process = RegProcess(self.ivm)
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
         self.logBtn.setEnabled(False)
