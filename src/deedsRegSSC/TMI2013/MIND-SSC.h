@@ -166,7 +166,7 @@ void descriptor(float* mind,float* im1,int m,int n,int o,int qs){
 	
 	//subtract mininum
 	for(int i=0;i<sz1;i++){
-		sum1[i]=1e20;
+		sum1[i]=1e20f;
 		for(int l=0;l<len2;l++){
 			if(mind[i+l*sz1]<sum1[i]){
 				sum1[i]=mind[i+l*sz1];

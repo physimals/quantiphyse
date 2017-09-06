@@ -50,7 +50,7 @@ void OptimizeFunction::set_data(int n_par1, double R1, double R2,
     SEfit_init = new double [m_dat];
 
     // Initialise random number generation based on time
-    srand (time(NULL));
+    srand ((unsigned int)time(NULL));
 
 }
 

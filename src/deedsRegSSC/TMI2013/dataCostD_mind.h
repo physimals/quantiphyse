@@ -49,7 +49,7 @@ void *dataCost(void *threadarg)
 	float* costall=my_data->costall;
 	float alpha=my_data->alpha;
 	int hw=my_data->hw;
-	int step1=my_data->step1;
+	int step1=(int)my_data->step1;
 	float quant=my_data->quant;
     uint64_t* fixed_mind=my_data->fixed_mind;
     uint64_t* moving_mind=my_data->moving_mind;
@@ -79,13 +79,12 @@ void *dataCost(void *threadarg)
 	float alpha1=(float)step1/(alpha*(float)quant);
 	float randv=getrand(&state);
 
-	timeval time1,time2;
 	int m=my_data->m;
 	int n=my_data->n;
 	int o=my_data->o;
 	int sz=m*n*o;
 	
-	int step3=pow((float)step1,3);
+	int step3=(int)pow((float)step1,3);
 	int m1=m/step1;
 	int n1=n/step1;
 	int o1=o/step1;
@@ -94,7 +93,7 @@ void *dataCost(void *threadarg)
 	
 	//dense displacement space
 	int len=hw*2+1;
-	int len4=pow((float)len,3);
+	int len4=(int)pow((float)len,3);
 	float* xs=new float[len4];
 	float* ys=new float[len4];
 	float* zs=new float[len4];
@@ -138,12 +137,12 @@ void *dataCost(void *threadarg)
 		maxsamp=samples;
 	}
 	else{
-		maxsamp=pow((float)step1,3);
+		maxsamp=(int)pow((float)step1,3);
 	}
 	float* cost1=new float[len4];
 	float* costcount=new float[len4];
 	int frac=(int)(sz1/25);
-    float beta1=(1.0-beta);
+    float beta1=(1.0f-beta);
 	float alpha2=alpha1/(float)maxsamp;
 	int xx2,yy2,zz2;
 
@@ -161,16 +160,16 @@ void *dataCost(void *threadarg)
 		
 		bool boundaries=true; //check image boundaries to save min/max computations
 		if(subpixel){
-			if(x1*2+(step1-1)*2+hw2>=ni|y1*2+(step1-1)*2+hw2>=mi|z1*2+(step1-1)*2+hw2>=oi)
+			if(x1*2+(step1-1)*2+hw2>=ni || y1*2+(step1-1)*2+hw2>=mi || z1*2+(step1-1)*2+hw2>=oi)
 				boundaries=false;
-			if(x1*2-hw2<0|y1*2-hw2<0|z1*2-hw2<0)
+			if(x1*2-hw2<0 || y1*2-hw2<0 || z1*2-hw2<0)
 				boundaries=false;
 		}
 		
 		else{
-			if(x1+(step1-1)+hw2>=ni|y1+(step1-1)+hw2>=mi|z1+(step1-1)+hw2>=oi)
+			if(x1+(step1-1)+hw2>=ni || y1+(step1-1)+hw2>=mi || z1+(step1-1)+hw2>=oi)
 				boundaries=false;
-			if(x1-hw2<0|y1-hw2<0|z1-hw2<0)
+			if(x1-hw2<0 || y1-hw2<0 || z1-hw2<0)
 				boundaries=false;
 		}
 		
@@ -215,7 +214,7 @@ void *dataCost(void *threadarg)
 		}
 
 		for(int l=0;l<len4;l++){
-			costall[i+l*sz1]=0.5*alpha2*cost1[l];
+			costall[i+l*sz1]=0.5f*alpha2*cost1[l];
 		}
 	}
     

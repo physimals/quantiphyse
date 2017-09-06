@@ -21,19 +21,19 @@ void interp3(TypeI* interp,TypeI* input,float* x1,float* y1,float* z1,int m,int 
 	for(int k=0;k<o;k++){
 		for(int j=0;j<n;j++){
 			for(int i=0;i<m;i++){
-				int x=floor(x1[i+j*m+k*m*n]); int y=floor(y1[i+j*m+k*m*n]);  int z=floor(z1[i+j*m+k*m*n]); 
+				int x=(int)floor(x1[i+j*m+k*m*n]); int y=(int)floor(y1[i+j*m+k*m*n]);  int z=(int)floor(z1[i+j*m+k*m*n]); 
 				float dx=x1[i+j*m+k*m*n]-x; float dy=y1[i+j*m+k*m*n]-y; float dz=z1[i+j*m+k*m*n]-z;
 				
 				if(flag){
 					x+=j; y+=i; z+=k;
 				}
-				interp[i+j*m+k*m*n]=(1.0-dx)*(1.0-dy)*(1.0-dz)*input[min(max(y,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
-				(1.0-dx)*dy*(1.0-dz)*input[min(max(y+1,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
-				dx*(1.0-dy)*(1.0-dz)*input[min(max(y,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
-				(1.0-dx)*(1.0-dy)*dz*input[min(max(y,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
-				dx*dy*(1.0-dz)*input[min(max(y+1,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
-				(1.0-dx)*dy*dz*input[min(max(y+1,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
-				dx*(1.0-dy)*dz*input[min(max(y,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
+				interp[i+j*m+k*m*n]=(1.0f-dx)*(1.0f-dy)*(1.0f-dz)*input[min(max(y,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
+				(1.0f-dx)*dy*(1.0f-dz)*input[min(max(y+1,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
+				dx*(1.0f-dy)*(1.0f-dz)*input[min(max(y,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
+				(1.0f-dx)*(1.0f-dy)*dz*input[min(max(y,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
+				dx*dy*(1.0f-dz)*input[min(max(y+1,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z,0),o2-1)*m2*n2]+
+				(1.0f-dx)*dy*dz*input[min(max(y+1,0),m2-1)+min(max(x,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
+				dx*(1.0f-dy)*dz*input[min(max(y,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2]+
 				dx*dy*dz*input[min(max(y+1,0),m2-1)+min(max(x+1,0),n2-1)*m2+min(max(z+1,0),o2-1)*m2*n2];
 			}
 		}
@@ -42,7 +42,6 @@ void interp3(TypeI* interp,TypeI* input,float* x1,float* y1,float* z1,int m,int 
 
 void filter1(float* imagein,float* imageout,int m,int n,int o,float* filter,int length,int dim){
 	int i,j,k,f;
-	int i1,j1,k1;
 	int hw=(length-1)/2;
 	
 	for(i=0;i<(m*n*o);i++){
@@ -170,8 +169,8 @@ void diffeomorphic(float* u1,float* v1,float *w1,int m,int n,int o,int expsteps,
 	float* v2=new float[m*n*o];
 	float* w2=new float[m*n*o];
 	
-	float factor1=1.0/(float)factor;
-	float coeff=1.0/(float)pow(2.0,expsteps);
+	float factor1=(float)1.0/factor;
+	float coeff=(float)1.0/(float)pow(2.0,expsteps);
 	for(int i=0;i<m*n*o;i++){
 		u1b[i]=coeff*u1[i]*factor1;
 		v1b[i]=coeff*v1[i]*factor1;
@@ -203,7 +202,7 @@ void diffeomorphic(float* u1,float* v1,float *w1,int m,int n,int o,int expsteps,
 
 
 void symmetricMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,int m,int n,int o,int factor){
-	float factor1=1.0/(float)factor;
+	float factor1=(float)1.0/factor;
 	float* usym=new float[m*n*o];
 	float* vsym=new float[m*n*o];
 	float* wsym=new float[m*n*o];
@@ -212,12 +211,12 @@ void symmetricMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,i
 	float* wsym2=new float[m*n*o];
 
 	for(int i=0;i<m*n*o;i++){
-		usym[i]=u[i]*(factor1*0.5);
-		vsym[i]=v[i]*(factor1*0.5);
-		wsym[i]=w[i]*(factor1*0.5);
-		usym2[i]=u2[i]*(factor1*0.5);
-		vsym2[i]=v2[i]*(factor1*0.5);
-		wsym2[i]=w2[i]*(factor1*0.5);
+		usym[i]=u[i]*(factor1*0.5f);
+		vsym[i]=v[i]*(factor1*0.5f);
+		wsym[i]=w[i]*(factor1*0.5f);
+		usym2[i]=u2[i]*(factor1*0.5f);
+		vsym2[i]=v2[i]*(factor1*0.5f);
+		wsym2[i]=w2[i]*(factor1*0.5f);
 
 	}
 	float* ui=new float[m*n*o];
@@ -259,7 +258,7 @@ void symmetricMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,i
 }
 
 void consistentMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,int m,int n,int o,int factor){
-	float factor1=1.0/(float)factor;
+	float factor1=(float)1.0/factor;
 	float* us=new float[m*n*o];
 	float* vs=new float[m*n*o];
 	float* ws=new float[m*n*o];
@@ -277,18 +276,18 @@ void consistentMapping(float* u,float* v,float* w,float* u2,float* v2,float* w2,
         interp3(v,vs2,us,vs,ws,m,n,o,m,n,o,true);
         interp3(w,ws2,us,vs,ws,m,n,o,m,n,o,true);
         for(int i=0;i<m*n*o;i++){
-            u[i]=0.5*us[i]-0.5*u[i];
-            v[i]=0.5*vs[i]-0.5*v[i];
-            w[i]=0.5*ws[i]-0.5*w[i];
+            u[i]=0.5f*us[i]-0.5f*u[i];
+            v[i]=0.5f*vs[i]-0.5f*v[i];
+            w[i]=0.5f*ws[i]-0.5f*w[i];
             
         }
         interp3(u2,us,us2,vs2,ws2,m,n,o,m,n,o,true);
         interp3(v2,vs,us2,vs2,ws2,m,n,o,m,n,o,true);
         interp3(w2,ws,us2,vs2,ws2,m,n,o,m,n,o,true);
         for(int i=0;i<m*n*o;i++){
-            u2[i]=0.5*us2[i]-0.5*u2[i];
-            v2[i]=0.5*vs2[i]-0.5*v2[i];
-            w2[i]=0.5*ws2[i]-0.5*w2[i];
+            u2[i]=0.5f*us2[i]-0.5f*u2[i];
+            v2[i]=0.5f*vs2[i]-0.5f*v2[i];
+            w2[i]=0.5f*ws2[i]-0.5f*w2[i];
         }
         
         for(int i=0;i<m*n*o;i++){
@@ -365,7 +364,7 @@ float harmonicEnergy(float* u,float* v,float* w,int m,int n,int o){
 
 float jacobian(float* u1,float* v1,float* w1,int m,int n,int o,int factor, std::stringstream &log){
 	
-	float factor1=1.0/(float)factor;
+	float factor1=(float)1.0/factor;
 	float jmean=0.0;
 	float jstd=0.0;
 	int i;

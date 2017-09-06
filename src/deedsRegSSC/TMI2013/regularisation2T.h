@@ -62,8 +62,6 @@ void *regularisation(void *threadarg)
 	//inverse of regularisation weighting alpha
 	//includes (division by) distance of control points (step1) and quantisation
 
-	int xs1,ys1,zs1,xx,yy,zz,xx2,yy2,zz2;
-
 	for(int i=0;i<len2;i++){
 		cost1[i]=0;
 	}

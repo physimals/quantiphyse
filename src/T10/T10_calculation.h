@@ -7,7 +7,7 @@
 
 #include <vector>
 
-typedef unsigned long ulong;
+typedef size_t ulong;
 
 typedef std::vector< std::vector<double> > & dd;
 typedef std::vector<double> & d;

@@ -59,22 +59,6 @@ void minimumIndA(float *numbers,float &value,int &index,int length)
 #include <string>
 #include <sstream>
 
-/*
-int deeds(char* fixedin,char* movingin,char* movingsegin,char* outputstem,int randsamp2,
-          float alpha,int maxlevel,int* grid_step,int* label_hw,int* label_quant,bool segment,bool symmetric) {
-
-	float* im1; float* im1b;
-	int M,N,O,K;
-	char* header1;
-	char *header2;
-	
-	readNifti(fixedin,im1b,M,N,O,K,header1);
-	readNifti(movingin,im1,M,N,O,K,header2);
-	
-	delete[] header1;
-	delete[] header2;
-}*/
-
 std::string deeds_warp(float *im, float *ux, float *vx, float *wx, int m, int n, int o, float *retbuf)
 {
 	warpImage(retbuf,im,ux,vx,wx,m,n,o);
@@ -154,27 +138,22 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 		u1i[i]=0.0; v1i[i]=0.0; w1i[i]=0.0;
 	}
     
-    
     //uses two-threads, so that forward and backward transform are estimated simultaneously
     //if this uses too much memory it could be changed to a single-thread
     THREAD_ID thread1, thread2, thread1b, thread2b;
-    int  iret1, iret2;
     struct mind_data mind1,mind2;
-    
     
 	// Allocate space for MIND descriptors 
 	uint64_t* im1_mind=new uint64_t[sz];
 	uint64_t* im1b_mind=new uint64_t[sz];
         
-	//gettimeofday(&time1a, NULL);
-    
 	for(int level=0;level<maxlevel;level++){
-        quant1=label_quant[level];
+        quant1=(float)label_quant[level];
         
 		mind1.m=m; mind1.n=n; mind1.o=o;
-        mind1.im1=im1; mind1.mindq=im1_mind; mind1.qs=max(min(quant1,2.0f),1.0f); //qs determines size of patches for MIND
+        mind1.im1=im1; mind1.mindq=im1_mind; mind1.qs=(int)max(min(quant1,2.0f),1.0f); //qs determines size of patches for MIND
 		mind2.m=m; mind2.n=n; mind2.o=o;
-        mind2.im1=im1b; mind2.mindq=im1b_mind; mind2.qs=max(min(quant1,2.0f),1.0f);
+        mind2.im1=im1b; mind2.mindq=im1b_mind; mind2.qs=(int)max(min(quant1,2.0f),1.0f);
         
         create_thread(&thread1,quantisedMIND,(void *)&mind1);
         create_thread(&thread2,quantisedMIND,(void *)&mind2);
@@ -192,7 +171,7 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 		step1=grid_step[level];
 		hw1=label_hw[level];
 		
-		int len3=pow((float)hw1*2+1,3);
+		int len3=(int)pow((float)hw1*2+1,3);
 		m1=m/step1; n1=n/step1; o1=o/step1; sz1=m1*n1*o1;
 		
 		//resize flow from u1 to current scale (grid spacing)
@@ -223,20 +202,16 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         uint64_t* warped1_mind=new uint64_t[sz];
         uint64_t* warped2_mind=new uint64_t[sz];
         
-        mind1.im1=warped1; mind1.mindq=warped1_mind; mind1.qs=max(min(quant1,2.0f),1.0f);
-        mind2.im1=warped2; mind2.mindq=warped2_mind; mind2.qs=max(min(quant1,2.0f),1.0f);
+        mind1.im1=warped1; mind1.mindq=warped1_mind; mind1.qs=(int)max(min(quant1,2.0f),1.0f);
+        mind2.im1=warped2; mind2.mindq=warped2_mind; mind2.qs=(int)max(min(quant1,2.0f),1.0f);
         
         create_thread(&thread1,quantisedMIND,(void *)&mind1);
         create_thread(&thread2,quantisedMIND,(void *)&mind2);
         join_thread(thread1);
         join_thread(thread2);
 
-		//gettimeofday(&time2, NULL);
-		//float timeMIND=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//log<<"Start similarity computation! (Time for MIND: "<<timeMIND<<" secs)\n";
-		//log<<"==================================================\n";
-		//gettimeofday(&time1, NULL);
-        
+		log<<"Start similarity computation\n";
+    
 		//data-cost/similarity computation 4-threaded (uses plenty of memory)
 		float* costall1=new float[sz1*len3];
 		float* costall2=new float[sz1*len3];
@@ -245,23 +220,23 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 		cosd1.rand_samples = randsamp2;
 		cosd1.im1=im1b; cosd1.im1b=warped1; cosd1.alpha=alpha; cosd1.costall=costall1;
         cosd1.fixed_mind=im1b_mind; cosd1.moving_mind=warped1_mind;
-		cosd1.hw=hw1; cosd1.step1=step1; cosd1.quant=quant1; cosd1.istart=0; cosd1.iend=sz1/2;
+		cosd1.hw=hw1; cosd1.step1=(float)step1; cosd1.quant=quant1; cosd1.istart=0; cosd1.iend=sz1/2;
 		cosd2.m=m;cosd2.n=n;cosd2.o=o;
 		cosd2.rand_samples = randsamp2;
 		cosd2.im1=im1; cosd2.im1b=warped2; cosd2.alpha=alpha; cosd2.costall=costall2;
         cosd2.fixed_mind=im1_mind; cosd2.moving_mind=warped2_mind;
-		cosd2.hw=hw1; cosd2.step1=step1; cosd2.quant=quant1; cosd2.istart=0; cosd2.iend=sz1/2;
+		cosd2.hw=hw1; cosd2.step1=(float)step1; cosd2.quant=quant1; cosd2.istart=0; cosd2.iend=sz1/2;
         
 		cosd1b.m=m;cosd1b.n=n;cosd1b.o=o;
 		cosd1b.rand_samples = randsamp2;
 		cosd1b.im1=im1b; cosd1b.im1b=warped1; cosd1b.alpha=alpha; cosd1b.costall=costall1;
         cosd1b.fixed_mind=im1b_mind; cosd1b.moving_mind=warped1_mind;
-		cosd1b.hw=hw1; cosd1b.step1=step1; cosd1b.quant=quant1; cosd1b.istart=sz1/2; cosd1b.iend=sz1;
+		cosd1b.hw=hw1; cosd1b.step1=(float)step1; cosd1b.quant=quant1; cosd1b.istart=sz1/2; cosd1b.iend=sz1;
 		cosd2b.m=m;cosd2b.n=n;cosd2b.o=o;
 		cosd2b.rand_samples = randsamp2;
 		cosd2b.im1=im1; cosd2b.im1b=warped2; cosd2b.alpha=alpha; cosd2b.costall=costall2;
         cosd2b.fixed_mind=im1_mind; cosd2b.moving_mind=warped2_mind;
-		cosd2b.hw=hw1; cosd2b.step1=step1; cosd2b.quant=quant1; cosd2b.istart=sz1/2; cosd2b.iend=sz1;
+		cosd2b.hw=hw1; cosd2b.step1=(float)step1; cosd2b.quant=quant1; cosd2b.istart=sz1/2; cosd2b.iend=sz1;
         
 		create_thread( &thread1, dataCost, (void *) &cosd1);
 		create_thread( &thread2, dataCost, (void *) &cosd2);
@@ -272,14 +247,9 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 		join_thread( thread1b);
 		join_thread( thread2b);
 		
-		//gettimeofday(&time2, NULL);
-		//float timeData=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//log<<"\nTime for data cost: "<<timeData<<"\nSpeed: "<<(float)sz1*(float)len3*(float)RAND_SAMPLES/timeData<<" dof/s\n";
-		
 		//incremental diffusion regularisation
 		log<<"\nStart regularisation on MST!\n";
 		log<<"==================================================\n";
-		//gettimeofday(&time1, NULL);
         
 		reg1.m=m; reg1.n=n; reg1.o=o;
 		reg1.u1=u1; reg1.v1=v1; reg1.w1=w1; reg1.costall=costall1;
@@ -310,10 +280,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         //consistent mapping according to the MICCAI 2013 paper
         consistentMapping(u1,v1,w1,u1i,v1i,w1i,m1,n1,o1,step1);
         
-        //gettimeofday(&time2, NULL);
-		//float timeSmooth=time2.tv_sec+time2.tv_usec/1e6-(time1.tv_sec+time1.tv_usec/1e6);
-		//log<<"\nComputation time for smoothness terms : "<<timeSmooth<<" secs.\nSpeed: "<<(float)sz1*(float)len3/timeSmooth<<" dof/s\n";
-        
 		//upsample deformations from grid-resolution to high-resolution (trilinear=1st-order spline)
 		upsampleDeformations2(ux,vx,wx,u1,v1,w1,m,n,o,m1,n1,o1);
 		upsampleDeformations2(uxi,vxi,wxi,u1i,v1i,w1i,m,n,o,m1,n1,o1);
@@ -321,10 +287,7 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         float energy=harmonicEnergy(ux,vx,wx,m,n,o);
 		log<<"harmonic energy of deformation field: "<<energy<<"\n";
         
-		//warpImage(warped1,im1,im1b,ux,vx,wx);
-		//log<<"SSD before registration: "<<SSD0<<" and after "<<SSD1<<"\n";
 		m2=m1; n2=n1; o2=o1;
-		log<<"\n";
         
         delete[] warped1_mind;
         delete[] warped2_mind;
@@ -344,9 +307,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         flow1[i]=u1[i]; flow1[i+sz1]=v1[i]; flow1[i+sz1*2]=w1[i];
     }
     
-    //float* warpout=new float[sz];
-    //warpImage(retbuf,im1,ux,vx,wx,m,n,o);
-	
     //optionally write-out warped Labels
     /*
 	if(segment){
@@ -362,12 +322,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         
         writeNiftiShort(output3,warpedseg,header,sz);
     }*/
-   
-    //writeOutput(flow1,output2,sz1*3);
-   
-    //gettimeofday(&time2a, NULL);
-    //timeP=(time2a.tv_sec+time2a.tv_usec/1e6-(time1a.tv_sec+time1a.tv_usec/1e6));
-    //printf("Total registration time: %f secs.\n",timeP);
 
 	delete[] flow1;
 	delete []u1; delete []v1; delete []w1;
@@ -376,7 +330,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 	delete[] warped1;
     delete[] warped2;
 
-	//cout << log.str() << endl;
 	return log.str();
 }
 

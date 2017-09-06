@@ -36,7 +36,7 @@ Computation of Ct with weinmann AIF (extended Tofts model with vp*Cp)
 double Ct_with_weinmann_vp_aif(double a1, double a2, double m1, double m2, double offset, 
 	double Ktrans, double kep, double time1, double offset_pk, double vp, double Dose)
 {
-    double time0, tB, tmp1, tmp2, ftm, ftkep;
+    double time0;
     double Ct, Cp;
 
     time0=time1 -offset - offset_pk;

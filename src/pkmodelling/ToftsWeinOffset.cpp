@@ -35,7 +35,7 @@ Computation of Ct with orton AIF
 double Ct_with_weinmann_aif2(double a1, double a2, double m1, double m2, double offset, 
 	double Ktrans, double kep, double time1, double offset_pk, double Dose)
 {
-    double time0, tB, tmp1, tmp2, ftm, ftkep;
+    double time0;
     double Ct;
 
     time0=time1 -offset - offset_pk;

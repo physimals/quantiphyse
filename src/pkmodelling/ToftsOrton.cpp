@@ -47,7 +47,7 @@ Computation of Ct with orton AIF
 */
 double Ct_with_orton_aif(double a1, double a2, double m1, double m2, double offset, double Ktrans, double kep, double time1)
 {
-    double time0, tB, tmp1, tmp2, ftm, ftkep;
+    double time0, tB, tmp1, tmp2;
     double Ct;
 
     time0=time1 -offset;

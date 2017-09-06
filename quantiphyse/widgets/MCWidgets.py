@@ -293,6 +293,7 @@ class RegWidget(QpWidget):
     def activate(self):
         self.ivm.sig_main_data.connect(self.main_data_changed)
         self.ivm.sig_all_data.connect(self.data_changed)
+        self.update()
 
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.main_data_changed)
@@ -337,7 +338,7 @@ class RegWidget(QpWidget):
 
     def regdata_changed(self, idx):
         if idx >= 0 and self.mode == 0:
-            self.name_edit.setText("%s_reg" % self.ivm.data[self.regdata.currentText()])
+            self.name_edit.setText("%s_reg" % self.ivm.data[self.regdata.currentText()].name)
 
     def refvol_changed(self, idx):
         self.refidx.setVisible(self.refvol.isVisible() and (idx == 2))
