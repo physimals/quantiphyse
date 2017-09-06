@@ -593,6 +593,11 @@ class MainWindow(QtGui.QMainWindow):
         save_roi_action.setStatusTip('Save current ROI as a NIFTI file')
         save_roi_action.triggered.connect(self.save_roi)
 
+        # File --> Clear all
+        save_roi_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
+        save_roi_action.setStatusTip('Remove all data from the viewer')
+        save_roi_action.triggered.connect(self.clear)
+
         # File --> Exit
         exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
@@ -801,6 +806,17 @@ class MainWindow(QtGui.QMainWindow):
                 save(self.ivm.current_roi, fname)
             else: # Cancelled
                 pass
+
+    def clear(self):
+         # Check for inappropriate ROI data
+        if len(self.ivm.data) != 0:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText("Clear all data")
+            msgBox.setInformativeText("Are you sure you want to clear all data?")
+            msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
+            msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
+            if msgBox.exec_() != QtGui.QMessageBox.Yes: return
+        self.ivm.reset()
 
     def load_vol(self):
         self.load_data(ftype="DATA")

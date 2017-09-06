@@ -376,7 +376,7 @@ class DataView:
             return self.data().get_slice(axes)
 
     def data(self):
-        return self.ivm.data[self.ov_name]
+        return self.ivm.data.get(self.ov_name, None)
 
 class RoiView:
     """
@@ -391,7 +391,7 @@ class RoiView:
         self.alpha = 150
 
     def roi(self):
-        return self.ivm.rois[self.roi_name]
+        return self.ivm.rois.get(self.roi_name, None)
 
 class OrthoView(pg.GraphicsView):
     """
@@ -450,32 +450,29 @@ class OrthoView(pg.GraphicsView):
     def update(self):
         if self.ivm.main is None: 
             self.img.setImage(np.zeros((1, 1)), autoLevels=False)
-            return
-
-        # Adjust axis scaling depending on whether voxel size scaling is enabled
-        if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
-            self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
         else:
-            self.vb.setAspectLocked(True, ratio=1)
-        for l in self.labels:
-            l.setVisible(True)
+            # Adjust axis scaling depending on whether voxel size scaling is enabled
+            if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
+                self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
+            else:
+                self.vb.setAspectLocked(True, ratio=1)
+            for l in self.labels:
+                l.setVisible(True)
 
-        # Flip left/right depending on the viewing convention selected
-        if self.xaxis == 0:
-            # X-axis is left/right
-            self.vb.invertX(self.iv.opts.orientation == 0)
-            if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL: l, r = 1, 0
-            else: l, r = 0, 1
-            self.labels[r].setText("R")
-            self.labels[l].setText("L")
-        
-        # Plot image slices
-        pos = self.ivm.cim_pos
-        slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
-        slicedata = self.ivm.main.get_slice(slices)
-        #print(pos)
-        #print(slicedata.shape)
-        self.img.setImage(self.ivm.main.get_slice(slices), autoLevels=False)
+            # Flip left/right depending on the viewing convention selected
+            if self.xaxis == 0:
+                # X-axis is left/right
+                self.vb.invertX(self.iv.opts.orientation == 0)
+                if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL: l, r = 1, 0
+                else: l, r = 0, 1
+                self.labels[r].setText("R")
+                self.labels[l].setText("L")
+            
+            # Plot image slice
+            pos = self.ivm.cim_pos
+            slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
+            slicedata = self.ivm.main.get_slice(slices)
+            self.img.setImage(self.ivm.main.get_slice(slices), autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
         self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
@@ -502,7 +499,7 @@ class OrthoView(pg.GraphicsView):
     def _update_view_roi(self):
         roiview = self.iv.current_roi_view
         n = 0 # Number of contours - required at end
-        if roiview is None:
+        if roiview is None or roiview.roi() is None:
             self.img_roi.setImage(np.zeros((1, 1)))
         else:
             roidata = roiview.roi()
@@ -550,7 +547,7 @@ class OrthoView(pg.GraphicsView):
 
     def _update_view_overlay(self):
         oview = self.iv.current_data_view
-        if oview is None or not oview.visible:
+        if oview is None or not oview.visible or oview.data() is None:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
             z = 1
@@ -559,8 +556,6 @@ class OrthoView(pg.GraphicsView):
             
             slicedata = oview.get_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
                                         (3, self.ivm.cim_pos[3]))
-            #print(self.ivm.cim_pos)
-            #print(slicedata.shape)
             self.img_ovl.setImage(slicedata, autoLevels=False)
 
     def resize_win(self, event):
@@ -1098,7 +1093,6 @@ class ImageView(QtGui.QSplitter):
         self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
             # Update the overlay combo to show the current overlay
-            #print(ov)
             idx = self.overlay_combo.findText(ov.name)
             if idx != self.overlay_combo.currentIndex():
                 try:
@@ -1121,6 +1115,7 @@ class ImageView(QtGui.QSplitter):
         else:
             self.overlay_combo.setCurrentIndex(-1)
             self.current_data_view = None
+            self.h2.region.setRegion((0, 1))
         self.update_ortho_views()
 
     def overlay_view_changed(self, idx):
