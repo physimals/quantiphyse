@@ -152,7 +152,8 @@ class ImageVolumeManagement(QtCore.QObject):
         else:
             data.regrid(self.grid)
 
-        if (make_current and not make_main) or self.current_data is None:
+        # Make current if requested, or if first overlay
+        if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
         self.sig_all_data.emit(self.data.keys())
 
