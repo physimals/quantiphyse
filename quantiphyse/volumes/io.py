@@ -25,10 +25,13 @@ except:
 class NiftiData(QpData):
     def __init__(self, fname):
         self.nii = nib.load(fname)
-        grid = DataGrid(self.nii.shape[:3], self.nii.header.get_best_affine())
         data = self.nii.get_data()
+        shape = list(self.nii.shape)
         while data.ndim < 3:
+            shape.append(1)
             data = np.expand_dims(data, -1)
+            
+        grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
         QpData.__init__(self, fname, data, grid, fname=fname)
 
 class DicomFolder(QpData):
