@@ -222,7 +222,7 @@ class LassoPicker(Picker):
         self.roisel = None
         self.points = []
         self.view = None
-
+           
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
@@ -268,7 +268,7 @@ class RectPicker(LassoPicker):
         self.points.append((fx, fy))
 
         if self.roisel is None: 
-            self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 0))
+            self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 255))
             self.view.vb.addItem(self.roisel)
             self.ox, self.oy = fx, fy
         else:
@@ -333,7 +333,9 @@ class FreehandPicker(LassoPicker):
         self.points.append((fx, fy))
 
         if self.roisel is None: 
-            self.roisel = QtGui.QGraphicsPathItem()
+            self.roisel = QtGui.QGraphicsPathItem() 
+            self.pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.BevelJoin)
+            self.roisel.setPen(self.pen)
             self.view.vb.addItem(self.roisel)
             self.path = QtGui.QPainterPath(QtCore.QPointF(fx, fy))
         else:
@@ -368,25 +370,14 @@ class DataView:
         d = self.data()
         self.cmap_range = [d.min(), d.max()]
 
-    def data(self):
-        if self.roi_only and self.ivm.current_roi is not None and np.any(self.ivm.current_roi):
-            # Restrict to data within ROI
-            roi = self.ivm.current_roi
-            data = self.ivm.overlays[self.ov_name]
-            data_in_roi = np.copy(data).view(QpVolume)
-            if data.ndim == 4:
-                roi = np.expand_dims(roi, 3).repeat(data.shape[3], 3)
-
-            within_roi = data_in_roi[np.array(roi, dtype=bool)]
-            range_roi = [np.min(within_roi), np.max(within_roi)]
-            # Set region outside the ROI to be slightly lower than the minimum value inside the ROI
-            # FIXME what if range is zero?
-            roi_fillvalue = -0.01 * (range_roi[1] - range_roi[0]) + range_roi[0]
-            data_in_roi[np.logical_not(roi)] = roi_fillvalue
-            return data_in_roi
+    def get_slice(self, *axes):
+        if self.roi_only:
+            return self.data().pos_slice(axes, mask=self.ivm.current_roi)
         else:
-            return self.ivm.overlays[self.ov_name]
+            return self.data().pos_slice(axes)
 
+    def data(self):
+        return self.ivm.overlays[self.ov_name]
 
 class RoiView:
     """
@@ -483,7 +474,7 @@ class OrthoView(pg.GraphicsView):
         pos = self.ivm.cim_pos
         slices = [(self.zaxis, pos[self.zaxis])]
         if self.ivm.vol.ndim == 4: slices.append((3, pos[3]))
-        self.img.setImage(self.ivm.vol.pos_slice(*slices), autoLevels=False)
+        self.img.setImage(self.ivm.vol.pos_slice(slices), autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
         self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
@@ -522,13 +513,13 @@ class OrthoView(pg.GraphicsView):
             roi_levels = roidata.range
             
             if roiview.shade:
-                self.img_roi.setImage(roidata.pos_slice((self.zaxis, pos[self.zaxis])), lut=lut, autoLevels=False, levels=roi_levels)
+                self.img_roi.setImage(roidata.pos_slice([(self.zaxis, pos[self.zaxis])]), lut=lut, autoLevels=False, levels=roi_levels)
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
 
             if roiview.contour:
-                data = roidata.pos_slice((self.zaxis, pos[self.zaxis]))
+                data = roidata.pos_slice([(self.zaxis, pos[self.zaxis])])
                 
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.contours)
@@ -560,23 +551,13 @@ class OrthoView(pg.GraphicsView):
         if oview is None or not oview.visible:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
-            ovdata = oview.data()
             z = 1
-            if self.iv.opts.display_order  == self.iv.opts.ROI_ON_TOP: z=0
+            if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            if ovdata.ndim == 4:
-                slicedata = ovdata.pos_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
-                                            (3, self.ivm.cim_pos[3]))
-                if self.ivm.current_overlay.shape[3] == 3:
-                    # RGB or RGBA image
-                    self.img_ovl.setImage(np.squeeze(slicedata), autoLevels=False)
-                else:
-                    # Timeseries
-                    self.img_ovl.setImage(slicedata, autoLevels=False)
-            else:
-                slicedata = ovdata.pos_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]))
-                self.img_ovl.setImage(slicedata, autoLevels=False)
+            slicedata = oview.get_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
+                                        (3, self.ivm.cim_pos[3]))
+            self.img_ovl.setImage(slicedata, autoLevels=False)
 
     def resize_win(self, event):
         """

@@ -16,7 +16,8 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers
+from ...volumes.io import QpVolume, FileMetadata, save
+from ...QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
 from ...QtInherit.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
@@ -136,36 +137,7 @@ class FabberWidget(QpWidget):
         #mainGrid.addWidget(modelOptionsBox)
 
         # Run box
-        runBox = QtGui.QGroupBox()
-        runBox.setTitle('Running')
-        runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
-        vbox = QtGui.QVBoxLayout()
-        runBox.setLayout(vbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton('Run modelling', self)
-        self.runBtn.clicked.connect(self.start_task)
-        hbox.addWidget(self.runBtn)
-        self.progress = QtGui.QProgressBar(self)
-        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
-        hbox.addWidget(self.progress)
-        self.logBtn = QtGui.QPushButton('View log', self)
-        self.logBtn.clicked.connect(self.view_log)
-        self.logBtn.setEnabled(False)
-        hbox.addWidget(self.logBtn)
-        vbox.addLayout(hbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.savefilesCb = QtGui.QCheckBox("Save copy of output data")
-        hbox.addWidget(self.savefilesCb)
-        self.saveFolderEdit = QtGui.QLineEdit()
-        hbox.addWidget(self.saveFolderEdit)
-        btn = QtGui.QPushButton("Choose folder")
-        btn.clicked.connect(self.chooseOutputFolder)
-        hbox.addWidget(btn)
-        self.savefilesCb.stateChanged.connect(self.saveFolderEdit.setEnabled)
-        self.savefilesCb.stateChanged.connect(btn.setEnabled)
-        vbox.addLayout(hbox)
+        runBox = self.run_box(self.start_task)
 
         mainGrid.addWidget(runBox)
 
@@ -214,6 +186,40 @@ class FabberWidget(QpWidget):
         self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
         self.reset()
+
+    def run_box(self, start_fn):
+        runBox = QtGui.QGroupBox()
+        runBox.setTitle('Running')
+        runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        runVbox = QtGui.QVBoxLayout()
+        runBox.setLayout(runVbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.runBtn = QtGui.QPushButton('Run modelling', self)
+        self.runBtn.clicked.connect(start_fn)
+        hbox.addWidget(self.runBtn)
+        self.progress = QtGui.QProgressBar(self)
+        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
+        hbox.addWidget(self.progress)
+        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn.clicked.connect(self.view_log)
+        self.logBtn.setEnabled(False)
+        hbox.addWidget(self.logBtn)
+        runVbox.addLayout(hbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.savefilesCb = QtGui.QCheckBox("Save copy of output data")
+        hbox.addWidget(self.savefilesCb)
+        self.saveFolderEdit = QtGui.QLineEdit()
+        hbox.addWidget(self.saveFolderEdit)
+        btn = QtGui.QPushButton("Choose folder")
+        btn.clicked.connect(self.chooseOutputFolder)
+        hbox.addWidget(btn)
+        self.savefilesCb.stateChanged.connect(self.saveFolderEdit.setEnabled)
+        self.savefilesCb.stateChanged.connect(btn.setEnabled)
+        runVbox.addLayout(hbox)
+
+        return runBox
 
     def activate(self):
         self.ivm.sig_all_overlays.connect(self.overlays_changed)
@@ -294,7 +300,7 @@ class FabberWidget(QpWidget):
                 if self.savefilesCb.isChecked():
                     save_folder = self.saveFolderEdit.text()       
                     for ovl in results[0].data:
-                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl.name + ".nii"))
+                        save(self.ivm.overlays[ovl], os.path.join(save_folder, ovl + ".nii"))
                         logfile = open(os.path.join(save_folder, "logfile"), "w")
                         logfile.write(self.log)
                         logfile.close()
@@ -500,38 +506,7 @@ class CESTWidget(FabberWidget):
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        # Run box
-        runBox = QtGui.QGroupBox()
-        runBox.setTitle('Running')
-        runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
-        runVbox = QtGui.QVBoxLayout()
-        runBox.setLayout(runVbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton('Run modelling', self)
-        self.runBtn.clicked.connect(self.start_cest)
-        hbox.addWidget(self.runBtn)
-        self.progress = QtGui.QProgressBar(self)
-        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
-        hbox.addWidget(self.progress)
-        self.logBtn = QtGui.QPushButton('View log', self)
-        self.logBtn.clicked.connect(self.view_log)
-        self.logBtn.setEnabled(False)
-        hbox.addWidget(self.logBtn)
-        runVbox.addLayout(hbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.savefilesCb = QtGui.QCheckBox("Save copy of output data")
-        hbox.addWidget(self.savefilesCb)
-        self.saveFolderEdit = QtGui.QLineEdit()
-        hbox.addWidget(self.saveFolderEdit)
-        btn = QtGui.QPushButton("Choose folder")
-        btn.clicked.connect(self.chooseOutputFolder)
-        hbox.addWidget(btn)
-        self.savefilesCb.stateChanged.connect(self.saveFolderEdit.setEnabled)
-        self.savefilesCb.stateChanged.connect(btn.setEnabled)
-        runVbox.addLayout(hbox)
-
+        runBox = self.run_box(self.start_cest)
         vbox.addWidget(runBox)
         vbox.addStretch(1)
 
@@ -552,6 +527,19 @@ class CESTWidget(FabberWidget):
 
         self.update_ui()
         self.update_pools()
+
+    def update_volumes_axis(self):
+        """ 
+        Update 'volumes' axis to use the frequency offsets in 
+        graphs etc.
+        
+        Options should be handled much more cleanly than this!
+        """
+        freqs  = self.freq_offsets.values()
+        if self.ivm.vol.ndim == 4 and len(freqs) == self.ivm.vol.shape[3]:
+            self.opts.t_combo.setCurrentIndex(1)
+            self.opts.t_scale = self.freq_offsets.values()
+            self.opts.sig_options_changed.emit(self)
 
     def update_pools(self):
         poolval_idx = self.poolval_combo.currentIndex()
@@ -688,6 +676,8 @@ class CESTWidget(FabberWidget):
         self.rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
         self.rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
         self.rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
+        self.rundata["debug"] = ""
+
         for item in self.rundata.items():
             print("%s: %s" % item)
         self.start_task()
@@ -700,3 +690,342 @@ class CESTWidget(FabberWidget):
 
         # Then do default Fabber actions
         FabberWidget.run_finished(self, status, results, log)
+
+        # Update 'volumes' axis to contain frequencies
+        # FIXME removed as effectively requires frequencies to be
+        # ordered and doesn't seem to look very good either
+        #if status == Process.SUCCEEDED:
+        #    self.update_volumes_axis()    
+
+CITE_ASL = """
+Modelling for Arterial Spin Labelling MRI<br><br>
+<i>Chappell MA, Groves AR, Whitcher B, Woolrich MW. Variational Bayesian inference for a non-linear forward model. 
+IEEE Transactions on Signal Processing 57(1):223-236, 2009.</i><br><br>
+<b>This widget is a UI preview and is not yet functional</b>
+"""
+
+class AslDataPreview(QtGui.QWidget):
+    def __init__(self, order, tagfirst, parent=None):
+        QtGui.QWidget.__init__(self, parent)
+        self.set_order(order, tagfirst)
+        self.hfactor = 0.95
+        self.vfactor = 0.95
+        self.cols = {"R" : (128, 128, 255, 128), "T" : (255, 128, 128, 128), "P" : (128, 255, 128, 128)}
+        self.setFixedHeight(self.fontMetrics().height()*4)
+    
+    def set_order(self, order, tagfirst):
+        self.order = order
+        self.tagfirst = tagfirst
+        self.labels = {"R" : ("Repeat ", "R"), "T" : ("TI " , "TI")}
+        if tagfirst:
+            self.labels["P"] = (("Tag", "Control"), ("T", "C"))
+        else:
+            self.labels["P"] = (("Control", "Tag"), ("C", "T"))
+        self.repaint()
+
+    def get_label(self, code, short):
+        labels = self.labels[code]
+        if short: return labels[1]
+        else: return labels[0]
+        
+    def draw_groups(self, p, groups, ox, oy, width, height, cont=False):
+        if len(groups) == 0: return
+        else:
+            small = width < 100
+            group = groups[0]
+            label = self.get_label(group, small)
+            col = self.cols[group]
+            if cont:
+                p.fillRect(ox, oy, width-1, height-1, QtGui.QBrush(QtGui.QColor(*col)))
+                p.drawText(ox, oy, width-1, height, QtCore.Qt.AlignHCenter, "...")
+                self.draw_groups(p, groups[1:], ox, oy+height, width, height, cont=True)
+            elif group == "P":
+                w = width/2
+                for c in range(2):
+                    p.fillRect(ox+c*w, oy, w-1, height-1, QtGui.QBrush(QtGui.QColor(*col)))
+                    p.drawText(ox+c*w, oy, w-1, height, QtCore.Qt.AlignHCenter, label[c])
+                    self.draw_groups(p, groups[1:], ox+c*w, oy+height, w, height)
+            else:
+                w = 2*width/5
+                for c in range(2):
+                    p.fillRect(ox+c*w, oy, w-1, height-1, QtGui.QBrush(QtGui.QColor(*col)))
+                    p.drawText(ox+c*w, oy, w-1, height, QtCore.Qt.AlignHCenter, label + str(c+1))
+                    self.draw_groups(p, groups[1:], ox+c*w, oy+height, w, height)
+                self.draw_groups(p, groups, ox+2*w, oy, w/2, height, cont=True)
+
+    def paintEvent(self, ev):
+        h, w = self.height(), self.width()
+        group_height = h*self.vfactor / len(self.order)
+        group_width = self.hfactor*w
+        ox = w*(1-self.hfactor)/2
+        oy = h*(1-self.vfactor)/2
+        p = QtGui.QPainter(self)
+#        p.begin()
+        self.draw_groups(p, self.order, ox, oy, group_width, group_height)
+ #       p.end()
+        
+class ASLWidget(FabberWidget):
+    """
+    ASL-specific widget, using the Fabber process
+    """
+
+    def __init__(self, **kwargs):
+        super(FabberWidget, self).__init__(name="ASL", icon="fabber", 
+                                           desc="ASL analysis",
+                                           **kwargs)
+        self.groups = {"P" : "Tag/Control pairs", "R" : "Repeats", "T" : "TIs"}
+        self.default_order = "PRT"
+
+    def init_ui(self):
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        try:
+            self.fabber_ex, self.fabber_lib, self.model_libs = find_fabber()
+            if self.fabber_lib is None:
+                vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install FSL and Fabber to use this widget"))
+                return
+        except:
+            vbox.addWidget(QtGui.QLabel("Could not load Fabber Python API.\n\n You must install FSL and Fabber to use this widget"))
+            return
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">ASL</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(BatchButton(self))
+        hbox.addWidget(HelpButton(self, "asl"))
+        vbox.addLayout(hbox)
+        
+        cite = QtGui.QLabel(CITE_ASL)
+        cite.setWordWrap(True)
+        vbox.addWidget(cite)
+
+        preprocBox = QtGui.QGroupBox("Preprocessing")
+        grid = QtGui.QGridLayout()
+        preprocBox.setLayout(grid)
+
+        grid.addWidget(QtGui.QLabel("Data format"), 0, 0)
+        self.tc_combo = QtGui.QComboBox()
+        self.tc_combo.addItem("Tag-control pairs")
+        self.tc_combo.addItem("Tag-control subtracted")
+        self.tc_combo.currentIndexChanged.connect(self.update_ui)
+        grid.addWidget(self.tc_combo, 0, 1)
+        self.tc_ord_combo = QtGui.QComboBox()
+        self.tc_ord_combo.addItem("Tag first")
+        self.tc_ord_combo.addItem("Control first")
+        self.tc_ord_combo.currentIndexChanged.connect(self.update_ui)
+        grid.addWidget(self.tc_ord_combo, 0, 2)
+
+        grid.addWidget(QtGui.QLabel("Data grouping\n(top = outermost)"), 1, 0, alignment=QtCore.Qt.AlignTop)
+        self.group_list = OrderList([self.groups[g] for g in self.default_order])
+        self.group_list.sig_changed.connect(self.update_ui)
+        grid.addWidget(self.group_list, 1, 1)
+        self.list_btns = OrderListButtons(self.group_list)
+        grid.addLayout(self.list_btns, 1, 2)
+        self.group_list.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        
+        self.data_preview = AslDataPreview(self.default_order, True)
+        grid.addWidget(self.data_preview, 2, 0, 1, 3)
+
+        vbox.addWidget(preprocBox)
+
+        dataBox = QtGui.QGroupBox("Acquisition")
+        grid = QtGui.QGridLayout()
+        dataBox.setLayout(grid)
+
+        # FIXME add multiband readout options?
+
+        grid.addWidget(QtGui.QLabel("Labelling"), 0, 0)
+        self.lbl_combo = QtGui.QComboBox()
+        self.lbl_combo.addItem("cASL/pcASL")
+        self.lbl_combo.addItem("pASL")
+        grid.addWidget(self.lbl_combo, 0, 1)
+
+        grid.addWidget(QtGui.QLabel("PLDs"), 1, 0)
+        self.plds = NumberList([2.9,])
+        grid.addWidget(self.plds, 1, 1, 1, 2)
+
+        grid.addWidget(QtGui.QLabel("Bolus Durations"), 2, 0)
+        self.taus = NumberList([1.4,])
+        grid.addWidget(self.taus, 2, 1, 1, 2)
+
+        vbox.addWidget(dataBox)
+
+        analysisBox = QtGui.QGroupBox("Analysis")
+        grid = QtGui.QGridLayout()
+        analysisBox.setLayout(grid)
+
+        self.bat = NumericOption("Bolus arrival time (s)", grid, ypos=0, xpos=0, default=1.3, decimals=2)
+        self.ie = NumericOption("Inversion efficiency", grid, ypos=1, xpos=0, default=0.85, decimals=2)
+        self.t1 = NumericOption("T1 (s)", grid, ypos=0, xpos=2, default=1.3, decimals=2)
+        self.t1b = NumericOption("T1b (s)", grid, ypos=1, xpos=2, default=1.65, decimals=2)
+
+        self.spatial_cb = QtGui.QCheckBox("Spatial smoothing")
+        grid.addWidget(self.spatial_cb, 4, 0, 1, 2)
+        self.t1_cb = QtGui.QCheckBox("Allow uncertainty in T1 values")
+        grid.addWidget(self.t1_cb, 5, 0, 1, 2)
+        self.mv_cb = QtGui.QCheckBox("Include macro vascular component")
+        grid.addWidget(self.mv_cb, 6, 0, 1, 2)
+        self.fixtau_cb = QtGui.QCheckBox("Fix bolus duration")
+        grid.addWidget(self.fixtau_cb, 4, 2, 1, 2)
+        #self.pvc_cb = QtGui.QCheckBox("Partial volume correction")
+        #grid.addWidget(self.pvc_cb, 5, 2, 1, 2)
+
+        vbox.addWidget(analysisBox)
+
+        runBox = self.run_box(self.start_asl)
+        vbox.addWidget(runBox)
+        vbox.addStretch(1)
+
+        self.rundata = FabberRunData()
+
+        # General defaults
+        self.rundata["fabber_lib"] = self.fabber_lib
+        self.rundata["save-mean"] = ""
+        self.rundata["save-model-fit"] = ""
+        self.rundata["noise"] = "white"
+        self.rundata["max-iterations"] = "20"
+        self.rundata["model"] = "aslrest"
+
+        self.update_ui()
+
+    def overlays_changed(self, overlays):
+        # Not required for ASL widget
+        pass
+
+    def update_ui(self):
+        """ Update visibility / enabledness of widgets """
+        self.tc_ord_combo.setEnabled(self.tc_combo.currentIndex() == 0)
+        tagfirst = self.tc_ord_combo.currentIndex() == 0
+        order = ""
+        for item in self.group_list.items():
+            code = [k for k, v in self.groups.items() if v == item][0]
+            print(item, code)
+            order += code
+        print(order)
+        self.data_preview.set_order(order, tagfirst)
+
+    def get_vol_idx(self, tidx, ntis, ridx, nrepeats, tcidx, ntcs):
+        idx = 0
+        for code in self.data_preview.order:
+#            print(code, idx)
+            if code == "R":
+                idx *= nrepeats
+                idx += ridx
+            elif code == "T":
+                idx *= ntis
+                idx += tidx
+            else:
+                idx *= ntcs
+                idx += tcidx
+        return idx
+
+    def start_asl(self):
+        # First preprocess the data to put it in the format the Fabber model expects.
+        # This is outer grouping of TIs, then by repeats and finally tag/control pairs
+        nvols = self.ivm.vol.shape[3]
+        ntis = len(self.plds.values())
+        if nvols % ntis != 0:
+            raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
+        nrepeats = nvols / ntis
+
+        tcpairs = ctpairs = False
+        if self.tc_combo.currentIndex() == 0:
+            # Need to do tag/control subtraction
+            if nrepeats % 2 != 0:
+                raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs and tag/control pairs" % (nvols, ntis))
+            nvols = int(nvols/2)
+            nrepeats = int(nrepeats/2)
+            if self.tc_ord_combo.currentIndex() == 0:
+                tcpairs = True
+            else:
+                ctpairs = True
+
+        asldata = np.zeros(list(self.ivm.vol.shape[:3]) + [nvols, ])
+        out_idx = 0
+        for tidx in range(ntis):
+            for ridx in range(nrepeats):
+                if ctpairs:
+                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 2)
+                    print("tidx=%i, ridx=%i, vidx=%i" % (tidx, ridx, in_idx))
+                    # Do control - tag
+                    print("Doing %i - %i" % (in_idx, in_idx+1))
+                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx] - self.ivm.vol[:,:,:,in_idx+1]
+                elif tcpairs:
+                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 2)
+                    # Do control - tag
+                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx+1] - self.ivm.vol[:,:,:,in_idx]
+                else:
+                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 1)
+                    asldata[:,:,:,out_idx] = self.ivm.vol[:,:,:,in_idx]
+                out_idx += 1
+        # FIXME temp
+        meandiff = np.mean(asldata, 3)
+        self.ivm.add_overlay("diff", meandiff, make_current=True)
+        #asldata = asldata.view(QpVolume)
+        #asldata.md = FileMetadata("asdldata", shape=asldata.shape, affine=self.ivm.vol.md.affine, voxel_sizes=self.ivm.voxel_sizes)
+        #self.ivm.reset()
+        #self.ivm.add_overlay("asdldata", asldata)
+        #return
+
+        # Acquisition parameters
+        if self.lbl_combo.currentIndex() == 0:
+            self.rundata["casl"] = ""
+        else:
+            del self.rundata["casl"]
+
+        tis = self.plds.values()
+        taus = self.taus.values()
+        if len(tis) != len(taus) and len(taus) != 1:
+            raise RuntimeError("Number of bolus durations must match number TIs if more than one value given")
+        
+        for idx, ti in enumerate(tis):
+            self.rundata["ti%i" % (idx+1)] = str(ti)
+
+        if len(taus) > 1:
+            for idx, tau in enumerate(tau):
+                self.rundata["tau%i" % (idx+1)] = str(tau)
+        else:
+            self.rundata["tau"] = str(taus[0])
+
+        # Starting values
+        self.rundata["t1"] = str(self.t1.spin.value())
+        self.rundata["t1b"] = str(self.t1b.spin.value())
+        self.rundata["bat"] = str(self.bat.spin.value())
+        # FIXME inversion efficiency?
+        # FIXME batsd
+
+        # Analysis options
+        self.rundata["infertiss"] = ""
+        self.rundata["inctiss"] = ""
+
+        if self.spatial_cb.isChecked():
+            self.rundata["method"] = "spatialvb"
+        else:
+            self.rundata["method"] = "vb"
+
+        if self.t1_cb.isChecked():
+            self.rundata["infert1"] = ""
+            self.rundata["inct1"] = ""
+        else:
+            del self.rundata["infert1"]
+            del self.rundata["inct1"]
+
+        if self.mv_cb.isChecked():
+            self.rundata["inferart"] = ""
+            self.rundata["incart"] = ""
+        else:
+            del self.rundata["inferart"]
+            del self.rundata["incart"]
+            
+        if self.fixtau_cb.isChecked():
+            self.rundata["infertau"] = ""
+            self.rundata["inctau"] = ""
+        else:
+            del self.rundata["infetau"]
+            del self.rundata["inctau"]
+
+        for item in self.rundata.items():
+            print("%s: %s" % item)
+        self.start_task()
+

@@ -12,6 +12,7 @@ from PySide import QtCore, QtGui
 from matplotlib import cm
 
 import nibabel as nib
+import nibabel.nicom.dicomwrappers as nib_dcm
 import numpy as np
 import nrrd
 
@@ -20,7 +21,7 @@ try:
     import dcmstack, dicom
 except:
     HAVE_DCMSTACK = False
-    warnings.warn("DCMSTACK not found - will not be able to read DICOM folders")
+    warnings.warn("DCMSTACK not found - may not be able to read DICOM folders")
 
 class FileMetadata(object):
     """ Metadata from file. Newly created data objects get their metadata from the main Volume
@@ -210,7 +211,7 @@ class QpVolume(np.ndarray):
         number of decimal places"""
         return str(np.around(self[tuple(pos[:self.ndim])], self.dps))
 
-    def pos_slice(self, *axes):
+    def pos_slice(self, axes, mask=None, fill_value=None):
         """ 
         Get a slice at a given position
 
@@ -218,8 +219,18 @@ class QpVolume(np.ndarray):
         """
         sl = [slice(None)] * self.ndim
         for axis, pos in axes:
-            sl[axis] = pos
-        return self[sl]
+            if axis < self.ndim:
+                sl[axis] = pos
+        data = self[sl]
+
+        if mask is not None:
+            data = np.copy(data)
+            mask_slice = mask.pos_slice(axes)
+            if fill_value is None:
+                # Less than the minimum
+                fill_value = self.range[0] - 1
+            data[mask_slice == 0] = fill_value
+        return data
 
     def remove_nans(self):
         """
@@ -336,25 +347,107 @@ class NiftiDataFile:
 class DicomFolder(NiftiDataFile):
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti
-        sys.stdout.write("Converting DICOMS in %s..." % (os.path.basename(fname)))
-        sys.stdout.flush()
-        src_dcms = glob.glob('%s/*.dcm' % fname)
-        stacks = dcmstack.parse_and_stack(src_dcms)
-        stack = stacks.values()[0]
-        self.nii = stack.to_nifti()
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
+        print("Converting DICOMS in %s..." % (os.path.basename(fname)))
+        src_dcms = glob.glob('%s/*' % fname)
+        self.nii = None
+        try:
+            if HAVE_DCMSTACK:
+                # Give DCMSTACK a chance to do its thing
+                raise "no"
+                stacks = dcmstack.parse_and_stack(src_dcms)
+                stack = stacks.values()[0]
+                self.nii = stack.to_nifti()
+        except:
+            warnings.warn("DCMSTACK failed - trying our method")
+        if self.nii is None:
+            # Try our top-secret in-house method
+            self.nii = self.fallback_dcmstack(src_dcms)
+
+        print("DONE\n")
         # FIXME should we do this?
         if self.nii.shape[-1] == 1:
             self.nii = nib.squeeze_image(self.nii)
         self.md = NiftiMetadata(fname + ".nii", self.nii.header)
+    
+    def fallback_dcmstack(self, fnames):
+        """
+        Create NIFTI from DCM files. Quick and dirty method
+        for when DCMSTACK does not exist or fails.
 
+        Basically we determine the sequence using the InstanceNumber tag
+        but make sure we put slices together into volumes using the SliceLocation tag
+        """
+        ignored_files = []
+        first = True
+        dcms = []
+        slices = set()
+        ss, rs, ri = 1, 1, 0 # Pixel value scaling
+        sys.stdout.write("  0%")
+        for idx, fname in enumerate(fnames):
+            try:
+                dcm = dicom.read_file(fname)
+            except:
+                ignored_files.append(fname)
+                continue
+            slices.add(float(dcm.SliceLocation))
+            dcms.append(dcm)
+
+            if first:
+                dcm1 = nib_dcm.wrapper_from_file(fname)
+                dcm_affine = dcm1.get_affine()
+                print(dcm_affine)
+                try:
+                    # Need all three of these to be of use
+                    ss = dcm[0x2005,0x100e].value
+                    rs = dcm[0x2005,0x140a].value
+                    ri = dcm[0x2005,0x1409].value
+                except:
+                    pass
+                first = False
+
+            percent = 100*float(idx+1) / len(fnames)
+            sys.stdout.write("\b\b\b\b%3i%%" % int(percent))
+            sys.stdout.flush()
+        
+        n_vols = int(len(dcms) / len(slices))
+        if n_vols * len(slices) != len(dcms):
+            raise RuntimeError("Could not parse DICOMS - unable to determine fixed number of volumes")
+
+        print("\n")
+        print("%i Volumes" % n_vols)
+        print("Ignored (non-DICOM) files: %i" % len(ignored_files))
+        print("Slice locations are: " + ", ".join([str(s) for s in slices]))
+        print("RescaleSlope: %f" % rs)
+        print("RescaleIntercept: %f" % ri)
+        print("ScaleSlope: %f" % ss)
+        for sidx, s in enumerate(sorted(slices)):
+            for idx, dcm in enumerate(sorted([d for d in dcms if d.SliceLocation == s], key=lambda x: x.InstanceNumber)):
+                dcm.GlobalIndex = sidx + len(slices) * idx
+            
+        print("Creating NIFTI...")
+        data = np.zeros([dcm1.image_shape[0], dcm1.image_shape[1], len(slices), int(n_vols)])
+        sidx, vidx = 0, 0
+        for dcm in sorted(dcms, key=lambda x: x.GlobalIndex):
+            data[:,:,sidx, vidx] = (np.squeeze(dcm.pixel_array)*rs + ri)/ss
+            sidx += 1
+            if sidx == len(slices):
+                sidx = 0
+                vidx += 1
+
+        # FIXME do this or not?
+        for d in range(3): data = np.flip(data, d)
+
+        nii = nib.Nifti1Image(data, dcm_affine)
+        nii.update_header()
+        print("DONE")
+        return nii
+        
 class NrrdDataFile:
     def __init__(self, fname):
         raise RuntimeError("NRRD support not currently enabled")
 
 def load(fname):
-    if os.path.isdir(fname) and HAVE_DCMSTACK:
+    if os.path.isdir(fname):
         return DicomFolder(fname)
     elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
         return NiftiDataFile(fname)

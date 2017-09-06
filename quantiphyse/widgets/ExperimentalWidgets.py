@@ -17,13 +17,24 @@ class ImageExportWidget(QpWidget):
     def __init__(self, **kwargs):
         super(ImageExportWidget, self).__init__(name="Image Export", desc="Export images and animations", icon="image_export", **kwargs)
 
-        #Clear curves button
-        b1 = QtGui.QPushButton('Generate temporal animation', self)
-        b1.clicked.connect(self.run_time_window_capture)
+    def init_ui(self):
+        main_vbox = QtGui.QVBoxLayout()
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">Export animation</font>'))
+        hbox.addStretch(1)
+        hbox.addWidget(HelpButton(self))
+        main_vbox.addLayout(hbox)
 
-        l1 = QtGui.QVBoxLayout()
-        l1.addWidget(b1)
-        self.setLayout(l1)
+        hbox = QtGui.QHBoxLayout()
+        b1 = QtGui.QPushButton('Generate', self)
+        b1.clicked.connect(self.run_time_window_capture)
+        hbox.addWidget(b1)
+        hbox.addStretch(1)
+        main_vbox.addLayout(hbox)
+
+        main_vbox.addStretch(1)
+        self.setLayout(main_vbox)
 
     @QtCore.Slot()
     def run_time_window_capture(self):
@@ -31,18 +42,17 @@ class ImageExportWidget(QpWidget):
         Capture 4D changes over time
         """
         if self.ivm.vol is None:
-            QtGui.QMessageBox.warning(self, "No volume", "Can't generate animation without main volume loaded",
-                                      QtGui.QMessageBox.Close)
+            error_dialog("No data loaded")
             return
 
-        imshape = self.ivm.vol.shape
+        shape = self.ivm.vol.shape
 
         # Choose a folder to save images
         fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
         if fname == '':
             return
 
-        for ii in range(imshape[-1]):
+        for ii in range(shape[-1]):
             print("Frame number:", ii)
             self.ivl.set_time_pos(ii)
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
