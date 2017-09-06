@@ -805,7 +805,7 @@ class MainWindow(QtGui.QMainWindow):
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
         if name is None:
-            name = os.path.basename(fname)
+            name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
 
         if ftype == "DATA": add_fn = self.ivm.add_overlay
         else: add_fn = self.ivm.add_roi
