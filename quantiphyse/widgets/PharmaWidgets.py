@@ -10,7 +10,6 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import time
 
 import numpy as np
-from matplotlib import cm
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
@@ -18,7 +17,7 @@ from ..QtInherit.dialogs import error_dialog
 from ..QtInherit import HelpButton
 from ..analysis import Process
 from ..analysis.pk import PkModellingProcess
-from ..utils import get_col
+from ..utils import get_kelly_col
 from . import QpWidget
 
 class PharmaWidget(QpWidget):
@@ -161,8 +160,6 @@ class ModelCurves(QpWidget):
         self.updating = False
 
     def init_ui(self):
-        self.cmap = getattr(cm, 'gist_rainbow')
-
         main_vbox = QtGui.QVBoxLayout()
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
@@ -380,8 +377,9 @@ class ModelCurves(QpWidget):
                     # Show signal enhancement rather than raw values
                     m1 = np.mean(sig_values[:frames1])
                     if m1 != 0: sig_values = sig_values / m1 - 1
-                    
+                
                 self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-                line = self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0)
+                pen = get_kelly_col(idx)
+                line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
                 legend.addItem(line, ovl)
                 idx += 1
