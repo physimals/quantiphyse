@@ -76,7 +76,8 @@ class OverviewWidget(QpWidget):
 
     def rename(self):
         if self.vols.selected is not None:
-            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % self.vols.selected, "New name")
+            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % self.vols.selected, "New name", 
+                                                      QtGui.QLineEdit.Normal, self.vols.selected)
             if result:
                 if self.vols.selected_type.startswith("Data"):
                     self.ivm.rename_data(self.vols.selected, text)
