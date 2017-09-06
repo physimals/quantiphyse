@@ -366,17 +366,14 @@ class DataView:
         self.visible = True
         self.alpha = 255
         self.roi_only = True
-        d = self.data()
-        self.cmap_range = d.range
+        self.data = self.ivm.data.get(self.ov_name, None)
+        self.cmap_range = self.data.range
 
     def get_slice(self, *axes):
         if self.roi_only:
-            return self.data().get_slice(axes, mask=self.ivm.current_roi)
+            return self.data.get_slice(axes, mask=self.ivm.current_roi)
         else:
-            return self.data().get_slice(axes)
-
-    def data(self):
-        return self.ivm.data.get(self.ov_name, None)
+            return self.data.get_slice(axes)
 
 class RoiView:
     """
@@ -547,7 +544,7 @@ class OrthoView(pg.GraphicsView):
 
     def _update_view_overlay(self):
         oview = self.iv.current_data_view
-        if oview is None or not oview.visible or oview.data() is None:
+        if oview is None or not oview.visible:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
             z = 1
@@ -1129,12 +1126,12 @@ class ImageView(QtGui.QSplitter):
         """ Set the overlay transparency """
         if self.current_data_view is not None:
             self.current_data_view.alpha = alpha
-        self.update_view_widgets()
+        self.h2.setAlpha(self.current_data_view.alpha)
             
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data().std)
+            self.h2.setSourceData(self.current_data_view.data.std)
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 
