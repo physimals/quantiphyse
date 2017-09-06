@@ -68,6 +68,10 @@ else:
     raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 
 extensions = []
+compile_args = []
+
+if sys.platform.startswith('win'):
+       compile_args.append('/EHsc')
 
 # PK modelling extension
 
@@ -84,7 +88,7 @@ extensions.append(Extension("quantiphyse.analysis.pk_model",
                  include_dirs=['src/pkmodelling/lmlib/',
                                'src/pkmodelling/',
                                numpy.get_include()],
-                 language="c++"))
+                 language="c++", extra_compile_args=compile_args))
 
 # T1 map generation extension
 
@@ -94,7 +98,7 @@ extensions.append(Extension("quantiphyse.analysis.t1_model",
                           'src/T10/T10_calculation.cpp'],
                  include_dirs=['src/T10',
                                numpy.get_include()],
-                 language="c++"))
+                 language="c++", extra_compile_args=compile_args))
 
 # Supervoxel extensions
 
@@ -114,7 +118,7 @@ extensions.append(Extension("quantiphyse.analysis.perfusionslic.additional.proce
               sources=["quantiphyse/analysis/perfusionslic/additional/processing.pyx",
                        "src/perfusionslic/processing.cpp"],
               include_dirs=["src/perfusionslic", numpy.get_include()],
-              language="c++"))
+              language="c++", extra_compile_args=compile_args))
 
 # MCFlirt extension - requires FSL to build
 
@@ -139,7 +143,7 @@ if fsldir:
                                numpy.get_include(), extra_inc],
                  libraries=['newimage', 'miscmaths', 'fslio', 'niftiio', 'newmat', 'znz', zlib],
                  library_dirs=[os.path.join(fsldir, "lib"),os.path.join(fsldir, "extras/lib")],
-                 language="c++"))
+                 language="c++", extra_compile_args=compile_args))
 else:
     print("FSLDIR not set - not building MCFLIRT extension")
 
@@ -149,7 +153,7 @@ extensions.append(Extension("quantiphyse.analysis.deeds",
                  sources=['quantiphyse/analysis/deeds.pyx',
                           'src/deedsRegSSC/TMI2013/deedsMSTssc.cpp'],
                  include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/", extra_inc],
-                 language="c++"))
+                 language="c++", extra_compile_args=compile_args))
 
 # setup parameters
 setup(name='quantiphyse',

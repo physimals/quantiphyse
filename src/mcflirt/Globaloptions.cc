@@ -209,15 +209,15 @@ void Globaloptions::parse_command_line(int argc,char** argv)
       n+=2;
       continue;
     } else if ( arg == "-scaling") {
-      scaling = atof(argv[n+1]);
+      scaling = (float)atof(argv[n+1]);
       n+=2;
       continue;
     } else if ( arg == "-smooth") {
-      smoothsize = atof(argv[n+1]);
+      smoothsize = (float)atof(argv[n+1]);
       n+=2;
       continue;
     } else if (arg == "-rotation") {
-      rot_param = atof(argv[n+1]);
+      rot_param = (float)atof(argv[n+1]);
       n+=2;
       continue;
     } else if ( arg == "-stages") {

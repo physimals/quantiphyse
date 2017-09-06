@@ -173,8 +173,8 @@ int affmat2vector(const Matrix& aff, int n, ColumnVector& params)
    Globaloptions& globalopts = Globaloptions::getInstance();
        // Tolerances are: 0.57 degrees (0.005 radians), 0.2mm translation
        //    0.02 scale and 0.001 skew
-   float diagonal[12]={0.005, 0.005, 0.005, 0.2, 0.2, 0.2, 0.002, 0.002, 0.002,
-   		      0.001, 0.001, 0.001};
+   float diagonal[12]={0.005f, 0.005f, 0.005f, 0.2f, 0.2f, 0.2f, 0.002f, 0.002f, 0.002f,
+   		      0.001f, 0.001f, 0.001f};
    if (param_tol.Nrows()<no_params) {
      param_tol.ReSize(no_params);
    }
@@ -356,7 +356,7 @@ void usrsetscale(volume<float>& newrefvol, volume<float>& newtestvol, int usrsca
    volume<float> result;
    
    result = testvol;
-   volume<float> g_kern = gaussian_kernel3D(1.933, 8);
+   volume<float> g_kern = gaussian_kernel3D(1.933f, 8);
    testvol.setextrapolationmethod(mirror);
    result = convolve(testvol, g_kern);
    testvol = result;
@@ -389,7 +389,7 @@ void fix2D(volume<float>& vol)
   
   if ( (vol.zsize()<3) || (vol.zsize()*vol.zdim()<fov) || (bool)(Globaloptions::getInstance().twodcorrect)) {     
     Globaloptions::getInstance().twodcorrect = 1;
-    Globaloptions::getInstance().smoothsize = 0.1;
+    Globaloptions::getInstance().smoothsize = 0.1f;
 
     double_end_slices(vol);
   }
@@ -636,7 +636,7 @@ std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float
 
   // Default constructor sets default values
   Globaloptions& globalopts = Globaloptions::getInstance();
-  float current_scale=8.0, new_tolerance=0.8;
+  float current_scale=8.0f, new_tolerance=0.8f;
   int mat_index[3];
   ColumnVector centre(3);
   vector<Matrix> mat_array0, mat_array1, mat_array2;
@@ -690,7 +690,7 @@ std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float
   for (int mean_its = 0; mean_its < 1 + globalopts. meanvol; mean_its++) {
     if (globalopts. no_stages>=1) {
       if (!globalopts. no_reporting) log <<"first iteration - 8mm scaling, set tolerance" << endl;
-      new_tolerance=8*0.2*0.5; current_scale=8.0; mat_index[0] = (int) (new_tolerance*current_scale);
+      new_tolerance=8*0.2f*0.5f; current_scale=8.0f; mat_index[0] = (int) (new_tolerance*current_scale);
 
       if (mean_its == 0) {
         if (globalopts. reffileflag) {
@@ -753,7 +753,7 @@ std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float
     }
     if (globalopts. no_stages>=2) {
       if (!globalopts. no_reporting) log <<endl << "second iteration - drop to 4mm scaling" << endl;
-      new_tolerance=4*0.2; current_scale=4.0; mat_index[1] = (int) (new_tolerance*current_scale);
+      new_tolerance=4*0.2f; current_scale=4.0f; mat_index[1] = (int) (new_tolerance*current_scale);
 
       if (!globalopts. no_reporting) log <<"Rescaling reference volume [" << globalopts. refnum << "] to "
 					  << current_scale << " mm pixels" << endl;
@@ -781,7 +781,7 @@ std::string mcflirt_run (float *vol, std::vector<int> &extent, std::vector<float
 
     if (globalopts. no_stages>=3) {
       if (!globalopts. no_reporting) log << endl << "third iteration - 4mm scaling, eighth tolerance" << endl;
-      new_tolerance = 0.1; mat_index[2] = (int) (new_tolerance*current_scale);
+      new_tolerance = 0.1f; mat_index[2] = (int) (new_tolerance*current_scale);
 
       if (!globalopts. no_reporting) log <<"Registering volumes ... ";
       correct(1, refvol, timeseries, current_scale, new_tolerance, mat_array2, mat_array1, mean_cond, log);
