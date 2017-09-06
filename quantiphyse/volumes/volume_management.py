@@ -105,12 +105,13 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # Make it unique
         n = 1
+        test_name = name
         while 1:
-            if name not in self.data and name not in self.rois:
+            if test_name not in self.data and test_name not in self.rois:
                 break
             n += 1
-            name = "%s_%i" % (name, n)
-        return name
+            test_name = "%s_%i" % (name, n)
+        return test_name
 
     def _valid_name(self, name):
         if name is None or not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):

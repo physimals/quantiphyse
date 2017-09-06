@@ -9,7 +9,6 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
 
 from . import image_normalisation as inorm
 
@@ -180,27 +179,29 @@ class PcaFeatReduce(object):
         print("Variance explained by 5 modes: ", var5)
         print("Variance explained by 10 modes: ", var10)
 
-    def plot_curve_modes(self, num1=4):
-
-        time1 = 12.5*np.arange(len(self.pca.mean_))
-        plt.plot(time1, self.pca.mean_, linestyle='--',  color='k', linewidth=3, label='mean')
-        colors1 = ['b', 'g', 'c', 'm', 'r']
-
-        for ii in range(num1):
-            if ii == 0:
-                stddev = 1.0
-            else:
-                stddev = 2.0
-            plt.plot(time1, self.pca.mean_ + stddev * np.sqrt(self.pca.explained_variance_[ii]) * self.pca.components_[ii, :],
-                     color=colors1[ii], label='mode' + str(ii+1), linewidth=2)
-            plt.plot(time1, self.pca.mean_ - stddev * np.sqrt(self.pca.explained_variance_[ii]) * self.pca.components_[ii, :],
-                     color=colors1[ii], linewidth=2)
-
-        l1 = plt.legend()
-        plt.xlabel('Time (s)')
-        plt.ylabel('Normalised signal')
-
-        plt.show()
+#import matplotlib.pyplot as plt
+#
+#    def plot_curve_modes(self, num1=4):
+#
+#        time1 = 12.5*np.arange(len(self.pca.mean_))
+#        plt.plot(time1, self.pca.mean_, linestyle='--',  color='k', linewidth=3, label='mean')
+#        colors1 = ['b', 'g', 'c', 'm', 'r']
+#
+#        for ii in range(num1):
+#            if ii == 0:
+#                stddev = 1.0
+#            else:
+#                stddev = 2.0
+#            plt.plot(time1, self.pca.mean_ + stddev * np.sqrt(self.pca.explained_variance_[ii]) * self.pca.components_[ii, :],
+#                     color=colors1[ii], label='mode' + str(ii+1), linewidth=2)
+#            plt.plot(time1, self.pca.mean_ - stddev * np.sqrt(self.pca.explained_variance_[ii]) * self.pca.components_[ii, :],
+#                     color=colors1[ii], linewidth=2)
+#
+#        l1 = plt.legend()
+#        plt.xlabel('Time (s)')
+#        plt.ylabel('Normalised signal')
+#
+#        plt.show()
 
 
 

@@ -87,7 +87,7 @@ class BatchCase:
                 multi = self.get("MultiVolumes", False)
             elif vol.ndim != 4:
                 raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
-            self.ivm.add_overlay(vol.md.basename, vol, make_main=True)
+            self.ivm.add_overlay(self.ivm.suggest_name(vol.md.basename), vol, make_main=True)
 
     def load_overlays(self):
         # Load case overlays followed by any root overlays not overridden by case
