@@ -521,14 +521,18 @@ class MainWindow(QtGui.QMainWindow):
         reg = settings.value("registered", 0)
         #reg = 0
         if not reg:
-            dlg = RegisterDialog(self)
-            res = dlg.exec_()
-            if res:
-                settings.setValue("registered", 1)
-                send_register_email(dlg.name_edit.text(), dlg.inst_edit.text(), dlg.email_edit.text())
-            else:
-                self.close()
-                QtCore.QCoreApplication.quit()
+            try:
+                dlg = RegisterDialog(self)
+                res = dlg.exec_()
+                if res:
+                    send_register_email(dlg.name_edit.text(), dlg.inst_edit.text(), dlg.email_edit.text())
+                    settings.setValue("registered", 1)
+                else:
+                    self.close()
+                    QtCore.QCoreApplication.quit()
+            except:
+                # On failure, allow program to continue but do not mark user as registered
+                pass
 
         # autoload any files that have been passed from the command line
         if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
