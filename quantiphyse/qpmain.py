@@ -598,9 +598,9 @@ class MainWindow(QtGui.QMainWindow):
         save_roi_action.triggered.connect(self.save_roi)
 
         # File --> Clear all
-        save_roi_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
-        save_roi_action.setStatusTip('Remove all data from the viewer')
-        save_roi_action.triggered.connect(self.clear)
+        clear_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
+        clear_action.setStatusTip('Remove all data from the viewer')
+        clear_action.triggered.connect(self.clear)
 
         # File --> Exit
         exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
@@ -633,6 +633,7 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(load_roi_action)
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(save_roi_action)
+        file_menu.addAction(clear_action)
         file_menu.addAction(exit_action)
 
         for w in self.widgets:
