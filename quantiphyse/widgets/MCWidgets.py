@@ -239,8 +239,8 @@ class RegWidget(QpWidget):
         self.regdata.currentIndexChanged.connect(self.regdata_changed)
         grid.addWidget(self.regdata, 5, 1)
         
-        self.regdata_label = QtGui.QLabel("Linked ROI")
-        grid.addWidget(self.regdata_label, 6, 0)
+        self.warproi_label = QtGui.QLabel("Linked ROI")
+        grid.addWidget(self.warproi_label, 6, 0)
         self.warproi = RoiCombo(self.ivm)
         grid.addWidget(self.warproi, 6, 1)
         
