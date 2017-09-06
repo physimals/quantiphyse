@@ -132,7 +132,7 @@ class OvCurveClusteringWidget(QpWidget):
         options = {
                 "n-clusters" : self.combo.value(),
                 "invert-roi" : False,
-                "output-name" : "overlay-clusters"
+                "output-name" : "overlay_clusters"
             }
         return "KMeans3D", options
 
@@ -173,11 +173,11 @@ class OvCurveClusteringWidget(QpWidget):
         m2 = int(self.val_m2.text())
 
         # relabel
-        roi = self.ivm.rois["overlay-clusters"]
+        roi = self.ivm.rois["overlay_clusters"]
         roi[roi == m1] = m2
         
         # signal the change
-        self.ivm.add_roi("overlay-clusters", roi, make_current=True)
+        self.ivm.add_roi("overlay_clusters", roi, make_current=True)
         self.update_voxel_count()
 
     def update_voxel_count(self):
@@ -185,9 +185,9 @@ class OvCurveClusteringWidget(QpWidget):
         self.tabmod1.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
         self.tabmod1.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
 
-        if "overlay-clusters" not in self.ivm.rois: return
+        if "overlay_clusters" not in self.ivm.rois: return
         
-        roi = self.ivm.rois["overlay-clusters"]
+        roi = self.ivm.rois["overlay_clusters"]
         for cc, ii in enumerate(roi.regions):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
