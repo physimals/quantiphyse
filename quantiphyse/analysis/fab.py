@@ -108,7 +108,6 @@ class FabberProcess(BackgroundProcess):
 
     def finished(self):
         """ Add output data to the IVM and set the combined log """
-        self.log = ""
         if self.status == Process.SUCCEEDED:
             self.log = "\n\n".join([o.log for o in self.output])
 
@@ -117,3 +116,7 @@ class FabberProcess(BackgroundProcess):
                 recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
                 self.ivm.add_data(recombined_item, name=key, make_current=first)
                 first = False
+        elif hasattr(self.output, "log"):
+            self.log = self.output.log
+        else:
+            self.log = ""
