@@ -62,7 +62,10 @@ class FabberProcess(BackgroundProcess):
 
         roi_name = options.pop("roi", None)
         if roi_name is None:
-            roidata = self.ivm.current_roi.std
+            if self.ivm.current_roi is not None:
+                roidata = self.ivm.current_roi.std
+            else:
+                roidata = np.ones(data.shape[:3])
         else:
             roidata = self.ivm.rois[roi_name].std
 
