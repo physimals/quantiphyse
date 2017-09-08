@@ -893,6 +893,11 @@ def main():
         run_batch(args.batch)
         #sys.exit(app.exec_())
     else:
+        # OS specific changes
+        if op_sys == 'Darwin':
+            from Foundation import NSURL
+            QtGui.QApplication.setGraphicsSystem('native')
+
         app = QtGui.QApplication(sys.argv)
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
@@ -926,11 +931,6 @@ def main():
 
         print("Local directory: ", local_file_path)
         set_local_file_path(local_file_path)
-
-        # OS specific changes
-        if op_sys == 'Darwin':
-            from Foundation import NSURL
-            QtGui.QApplication.setGraphicsSystem('native')
 
         # Create window and start main loop
         app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
