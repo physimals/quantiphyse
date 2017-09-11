@@ -703,7 +703,7 @@ class ImageView(QtGui.QSplitter):
         self.opts = opts
         self.ivm.sig_current_data.connect(self.current_data_changed)
         self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_data.connect(self.main_volume_changed)
+        self.ivm.sig_main_data.connect(self.main_data_changed)
         self.ivm.sig_all_rois.connect(self.rois_changed)
         self.ivm.sig_all_data.connect(self.data_changed)
         self.opts.sig_options_changed.connect(self.update_ortho_views)
@@ -994,11 +994,12 @@ class ImageView(QtGui.QSplitter):
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
-    def main_volume_changed(self, vol):
+    def main_data_changed(self, vol):
         self.update_slider_range()
         self.update_nav_sliders()
         if vol is not None:
-            self.vol_name.setText(vol.fname)
+            if vol.fname is not None: self.vol_name.setText(vol.fname)
+            else: self.vol_name.setText(vol.name)
             self.h1.setSourceData(self.ivm.main.std, percentile=99)
 
             # If one of the dimensions has size 1 the data is 2D so
