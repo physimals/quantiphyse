@@ -90,7 +90,8 @@ class RegProcess(BackgroundProcess):
         reg_data = self.ivm.data[regdata_name].std
 
         self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
-        self.nvols = reg_data.shape[-1]
+        if reg_data.ndim == 4: self.nvols = reg_data.shape[-1]
+        else: self.nvols = 1
 
         # Reference data defaults to same as reg data so MoCo can be
         # supported as self-registration
