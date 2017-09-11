@@ -393,12 +393,13 @@ class OrderList(QtGui.QListWidget):
     
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial):
+    def __init__(self, initial=[]):
         QtGui.QListWidget.__init__(self)
-        self.setItems(initial)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        self.setItems(initial)
 
     def setItems(self, items):
         self.blockSignals(True)
@@ -406,10 +407,11 @@ class OrderList(QtGui.QListWidget):
             self.clear()
             for r, item in enumerate(items):
                 self.addItem(item)
-            if len(items) > 0:
-                rowheight = self.rectForIndex(self.indexFromItem(self.item(0))).height()
-                print(rowheight)
-                self.setFixedHeight(rowheight * (len(items)+1))
+            height = 0
+            for r in range(len(items)):
+                height += self.rectForIndex(self.indexFromItem(self.item(r))).height()
+                print(height)
+            self.setFixedHeight(height + 2*len(items))
         finally:
             self.blockSignals(False)
             self.sig_changed.emit()
