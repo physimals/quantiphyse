@@ -318,7 +318,7 @@ class ModelCurves(QpWidget):
             for name in sorted(self.ivm.data.keys()):
                 ovl = self.ivm.data[name]
                 pos = self.ivm.cim_pos
-                if ovl.ndim == 4:
+                if ovl.ndim == 4 and ovl.nvols == self.ivm.main.nvols:
                     rms = np.sqrt(np.mean(np.square(self.ivm.main.std - ovl.std), 3))
                     if self.ivm.current_roi is not None:
                         rms[self.ivm.current_roi.std == 0] = 0
