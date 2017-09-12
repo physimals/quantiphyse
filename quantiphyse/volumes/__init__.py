@@ -118,14 +118,14 @@ class Transform:
         # Affine transformation matrix from grid 2 to grid 1
         self.tmatrix_raw = np.dot(np.linalg.inv(in_grid.affine), out_grid.affine)
         self.output_shape = out_grid.shape[:]
-        print("Transform: output shape=", self.output_shape)
+        #print("Transform: output shape=", self.output_shape)
 
         # Generate potentially simplified transformation using re-ordering and flipping
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
 
     def _is_diagonal(self, mat):
-        print("Is diagonal?")
-        print(np.abs(mat - np.diag(np.diag(mat))))
+        #print("Is diagonal?")
+        #print(np.abs(mat - np.diag(np.diag(mat))))
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
 
     def _is_identity(self, mat):
@@ -146,7 +146,7 @@ class Transform:
      
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            print("Using re-order and flip: ", dim_order, dim_flip)
+            #print("Using re-order and flip: ", dim_order, dim_flip)
             new_mat = np.copy(mat)
             new_shape = [self.output_shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
@@ -157,13 +157,6 @@ class Transform:
             for dim in dim_flip:
                 # Adjust origin 
                 new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim] -1)
-            if self._is_identity(new_mat):
-                # The remaining matrix is the identity so do not need to use it
-                print("Remaining affine is identity - not using")
-                new_mat = None
-            else:
-                print("Remaining affine: ")
-                print(new_mat)
             return dim_order, dim_flip, new_mat
         else:
             # Transposition was inconsistent, just go with general
@@ -178,12 +171,12 @@ class Transform:
         if self.flip is not None:
             #print("Flipping axes: ", self.flip)
             for d in self.flip: data = np.flip(data, d)
-        if self.tmatrix is not None:
+        if not self._is_identity(self.tmatrix):
             #print("Doing an affine transformation")
             affine = self.tmatrix[:3,:3]
             offset = list(self.tmatrix[:3,3])
             output_shape = self.output_shape[:]
-            print("transform_data: output shape=", self.output_shape, output_shape)
+            #print("transform_data: output shape=", self.output_shape, output_shape)
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
                 affine = np.append(affine, [[0, 0, 0]], 0)
@@ -195,14 +188,18 @@ class Transform:
                 # The transformation is diagonal, so use this sequence instead of 
                 # the full matrix - this will be faster
                 affine = np.diagonal(affine)
-                print("Matrix is diagonal - ", affine)
+                #print("Matrix is diagonal - ", affine)
             else:
-                print("Matrix is not diagonal - using general affine transform")
-                print(affine)
+                pass
+                #print("Matrix is not diagonal - using general affine transform")
+                #print(affine)
 
-            print("Offset = ", offset)
-            print("affine_transform: output_shape=", output_shape)
+            #print("Offset = ", offset)
+            #print("affine_transform: output_shape=", output_shape)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
+        else:
+            pass
+            #print("Remaining affine is identity - not using")
         return data
 
 class QpData:
@@ -220,6 +217,10 @@ class QpData:
         if data.ndim not in (3, 4):
             raise RuntimeError("QpData must be 3D or 4D (padded if necessary")
         
+        # Unlikely but possible that first data is added from the console
+        if grid is None:
+            grid = DataGrid(data.shape[:3], np.identity(4))
+
         # Everyone needs a friendly name
         self.name = name
 
@@ -279,16 +280,16 @@ class QpData:
         """
         Update data onto the specified grid. The original raw data is not affected
         """
-        print("Regridding, raw=%s, new=%s" % (str(self.rawgrid.shape), str(grid.shape)))
-        print("Raw grid")
-        print(self.rawgrid.affine)
-        print("New grid")
-        print(grid.affine)
+        #print("Regridding, raw=%s, new=%s" % (str(self.rawgrid.shape), str(grid.shape)))
+        #print("Raw grid")
+        #print(self.rawgrid.affine)
+        #print("New grid")
+        #print(grid.affine)
         t = Transform(self.rawgrid, grid)
         self.std = t.transform_data(self.raw)
         self.stdgrid = grid
-        print("New data shape=", self.std.shape)
-        print("New data range=", self.std.min(), self.std.max())
+        #print("New data shape=", self.std.shape)
+        #print("New data range=", self.std.min(), self.std.max())
 
     def strval(self, pos):
         """ 
@@ -366,7 +367,7 @@ class QpRoi(QpData):
         is integers
         """
         QpData.regrid(self, grid)
-        print(self.std.min(), self.std.max())
+        #print(self.std.min(), self.std.max())
 
     def get_bounding_box(self, ndim=None):
         """
