@@ -122,10 +122,10 @@ class ImageVolumeManagement(QtCore.QObject):
         
         self.main = self.data[name]
         self.grid = self.main.rawgrid.reorient_ras()
-        print("Main data raw grid")
-        print(self.main.rawgrid.affine)
-        print("RAS aligned")
-        print(self.grid.affine)
+        #print("Main data raw grid")
+        #print(self.main.rawgrid.affine)
+        #print("RAS aligned")
+        #print(self.grid.affine)
 
         self.cim_pos = [int(d/2) for d in self.grid.shape]
         self.cim_pos.append(int(self.main.nvols/2))
