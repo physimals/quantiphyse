@@ -9,6 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 from ..QtInherit import HelpButton
 from ..analysis.t1_model import t10_map
 from . import QpWidget
+from ..volumes.io import load
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):
@@ -65,22 +66,24 @@ class SourceImageList(QtGui.QVBoxLayout):
         and must have shape consistent with the main volume
         """
         try:
-            f = load(filename).get_data()
-            if len(f.shape) not in (3, 4):
+            f = load(filename)
+            if len(f.rawgrid.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
-                return []
+                raise
+                return 0
 
-            if f.shape[:3] != self.ivm.grid.shape[:3]:
-                QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
-                                          QtGui.QMessageBox.Close)
-                return []
+            #if f.grid.shape[:3] != self.ivm.grid.shape[:3]:
+            #    QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
+            #                              QtGui.QMessageBox.Close)
+            #    return []
         except:
             QtGui.QMessageBox.warning(None, "Invalid file", "Files must be NIFTI volumes",
                                       QtGui.QMessageBox.Close)
-            return []
+            raise
+            return 0
 
-        return f.shape
+        return f.nvols
 
     def load_image(self, filename):
         # Try to guess the value from the filename - if it ends in a number, go with that
@@ -142,15 +145,15 @@ class SourceImageList(QtGui.QVBoxLayout):
             return
 
         if self.dir is None:
-            self.dir = os.dirname(self.ivm.main.fname)
+            self.dir = os.path.dirname(self.ivm.main.fname)
 
         filename, junk = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
         if filename:
-            dims = self.check_file(filename)
-            if len(dims) == 3:
+            nvols = self.check_file(filename)
+            if nvols == 1:
                 self.load_image(filename)
-            elif len(dims) == 4:
-                self.load_multi_images(filename, dims[3])
+            else:
+                self.load_multi_images(filename, nvols)
 
     def remove(self):
         row = self.table.currentRow()
@@ -164,14 +167,15 @@ class SourceImageList(QtGui.QVBoxLayout):
             filename = self.table.item(i, 0).text()
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
             # NB need to pass main volume affine to ensure consistant orientation
-            vol = load(filename).get_data()
+            vol = load(filename)
+            vol.regrid(self.ivm.grid)
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
-                vols.append(vol)
+                vols.append(vol.std)
                 vals.append(file_vals[0])
             else:
                 for i, val in enumerate(file_vals):
-                    subvol=vol[...,i]
+                    subvol=vol.std[...,i]
                     vols.append(subvol)
                     vals.append(val)
         return vols, vals
