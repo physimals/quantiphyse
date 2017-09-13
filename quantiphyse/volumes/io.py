@@ -25,7 +25,12 @@ except:
 class NiftiData(QpData):
     def __init__(self, fname):
         self.nii = nib.load(fname)
-        data = self.nii.get_data()
+        
+        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
+        # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
+        # memmap has been designed to save space on ram by keeping the array on the disk but does
+        # horrible things with performance, and analysis especially when the data is on the network.
+        data = np.asarray(self.nii.get_data())
         shape = list(self.nii.shape)
         while data.ndim < 3:
             shape.append(1)
