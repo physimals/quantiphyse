@@ -89,8 +89,8 @@ public:
     void calculate_CNR();
 
     // run the pk model
-    void rinit(int model1, double injtmins);
-    double run(int pause1);
+    std::string rinit(int model1, double injtmins);
+    std::string run(int pause1);
 
     const std::vector<std::vector<double> > get_parameters();
     std::vector<std::vector<double> > get_fitted_curve();

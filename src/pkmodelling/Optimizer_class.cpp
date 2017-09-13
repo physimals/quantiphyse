@@ -65,7 +65,7 @@ void OptimizeFunction::SetModel(int model11)
 
     if (model1==1)
     {
-        cout << "Using Tofts model with orton AIF (with offset)" << endl;
+        //cout << "Using Tofts model with orton AIF (with offset)" << endl;
         PKfunc=Tofts_model_with_orton_aif_offset;
         // Set number of variables to fit that this function has
         n_par_specific=3;
@@ -75,7 +75,7 @@ void OptimizeFunction::SetModel(int model11)
     }
     else if (model1==2)
     {
-        cout << "Using Tofts model with orton AIF (without offset)" << endl;
+        //cout << "Using Tofts model with orton AIF (without offset)" << endl;
         PKfunc=Tofts_model_with_orton_aif;
         // Set number of variables to fit that this function has
         n_par_specific=2;
@@ -84,7 +84,7 @@ void OptimizeFunction::SetModel(int model11)
     }
     else if (model1==3)
     {
-        cout << "Using Tofts model with weinmann AIF (with offset)" << endl;
+        //cout << "Using Tofts model with weinmann AIF (with offset)" << endl;
         PKfunc=Tofts_model_with_weinmann_aif_offset;
         // Set number of variables to fit that this function has
         n_par_specific=3;
@@ -93,7 +93,7 @@ void OptimizeFunction::SetModel(int model11)
     }
     else if (model1==4)
     {
-        cout << "Using Tofts model with weinmann AIF (with offset and vp)" << endl;
+        //cout << "Using Tofts model with weinmann AIF (with offset and vp)" << endl;
         PKfunc=Tofts_model_with_weinmann_aif_offset_vp;
         n_par_specific=4;
         P1.n_par=n_par_specific;

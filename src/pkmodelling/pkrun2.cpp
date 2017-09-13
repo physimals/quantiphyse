@@ -10,6 +10,8 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 #include "pkrun2.h"
 
+#include <sstream>
+
 using namespace pkmodellingspace;
 using namespace std;
 
@@ -98,10 +100,11 @@ void Pkrun2::calculate_CNR()
 // TODO : calculate the CNR and return it as a volume
 }
 
-void Pkrun2::rinit(int model1, double injtmins)
+string Pkrun2::rinit(int model1, double injtmins)
 {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~Pass all the data to the optimizer object ~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Set the AIF and model type
+    string log;
 
     if (model1 ==1)
     {
@@ -109,22 +112,22 @@ void Pkrun2::rinit(int model1, double injtmins)
         // AIF[1] = aG (1.36 /min) in Orton 2008?
         // AIF[2] = muB in Orton 2008 (22.8 / min)
         // AIF[3] = muG in Orton 2008 (0.171 / min)
-        cout << "Orton with offset (Clinical) \n";
+        log = "Orton with offset (Clinical) \n";
         AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=injtmins;
     }
     else if (model1 ==2)
     {
-        cout << "Orton without offset (Clinical) \n";
+        log = "Orton without offset (Clinical) \n";
         AIF[0]=2.65; AIF[1]=1.51; AIF[2]=22.40; AIF[3]=0.23; AIF[4]=injtmins;
     }
     else if (model1 ==3)
     {
-        cout << "Weinmann with offset (Pre-clinical) \n";
+        log = "Weinmann with offset (Pre-clinical) \n";
         AIF[0]=9.2; AIF[1]=4.2; AIF[2]=2.3; AIF[3]=0.05; AIF[4]=injtmins;
     }
     else if (model1 ==4)
     {
-        cout << "Weinmann with offset and vp (Pre-clinical) \n";
+        log = "Weinmann with offset and vp (Pre-clinical) \n";
         AIF[0]=9.2; AIF[1]=4.2; AIF[2]=2.3; AIF[3]=0.05; AIF[4]=injtmins;
     }
 
@@ -133,17 +136,13 @@ void Pkrun2::rinit(int model1, double injtmins)
     // Choosing model
     OTofts.SetModel(model1);
 
-    /*
-    1) Orton with Offset
-    2) Orton without Offset
-    3) Weinmann with offset
-    4) Weinmann with offset and vp
-    */
-
+    return log;
 }
 
-double Pkrun2::run(int pause1)
+string Pkrun2::run(int pause1)
 {
+    stringstream log;
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Looping through voxels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     for (pp=pcur; pp<mrows; pp++)
     {
@@ -204,14 +203,13 @@ double Pkrun2::run(int pause1)
         //Print number and position
         if ((pp % pause1 == 0) && (pp>0))
         {
-            cout << "Pixel num " << pp << "/" << mrows << endl;
+            log << "Pixel num " << pp << "/" << mrows << endl;
             pcur = pp+1;
-            return ((double) pp / (double) mrows);
+            return log.str();
         }
     }
 
-    return 1;
-
+    return log.str();
 }
 
 // Returns the Pk parameters for each voxel (Ktrans, ve, offset, vp)
