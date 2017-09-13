@@ -22,7 +22,12 @@ class T10Process(Process):
     def run(self, options):
         fa_vols, fas = [], []
         for fname, fa in options["vfa"].items():
-            vol = load(_get_filepath(fname, self.workdir)).get_data()
+            if fname in self.ivm.data:
+                vol = self.ivm.data[fname].std
+            else:
+                data = load(_get_filepath(fname, self.workdir))
+                data.regrid(self.ivm.grid)
+                vol = data.std
             if isinstance(fa, list):
                 for i, a in enumerate(fa):
                     fas.append(a)
@@ -35,7 +40,12 @@ class T10Process(Process):
             # We are doing a B0 correction (preclinical)
             afi_vols, trs = [], []
             for fname, tr in options["afi"].items():
-                vol = load(_get_filepath(fname, self.workdir)).get_data()
+                if fname in self.ivm.data:
+                    vol = self.ivm.data[fname].std
+                else:
+                    data = load(_get_filepath(fname, self.workdir))
+                    data.regrid(self.ivm.grid)
+                    vol = data.std
                 if isinstance(tr, list):
                     for i, a in enumerate(tr):
                         trs.append(a)
