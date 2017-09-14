@@ -91,9 +91,6 @@ double Tofts_model_with_orton_aif(double t, const double *x, params_for_optimisa
     double ve=x[1];
     double kep=Ktrans/ve;
 
-    // [NB] Currently not used in this optimisation version
-    double offset_pk=x[2];
-
     // Other parameters
     double T10=P1.T10;
     //AIF

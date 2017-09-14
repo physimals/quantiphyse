@@ -13,7 +13,7 @@
 #else
   float getrand(unsigned int *state) {
       // But not in POSIX, so use rand_r instead with the local state
-      return ((float)rand_r(state))/(RAND_MAX+1);
+      return float(rand_r(state))/(float(RAND_MAX)+1);
   }
 #endif
 
@@ -30,6 +30,7 @@ int popcount_3(uint64_t x)
     return (x*h01)>>56;
 }
 
+/*
 unsigned char wordbits[65536];
 static int popcount32(uint32_t i)
 {
@@ -39,12 +40,13 @@ static int popcount32(uint32_t i)
 static int popcount64(uint64_t i){
     return( wordbits[i&0xFFFF] + wordbits[(i>>16)&0xFFFF] + wordbits[(i>>32)&0xFFFF] + wordbits[i>>48]);
 }
+*/
 
 void *dataCost(void *threadarg)
 {
 	struct cost_data *my_data;
 	my_data = (struct cost_data *) threadarg;
-	float* fixed=my_data->im1;
+	//float* fixed=my_data->im1;
 	float* moving=my_data->im1b;
 	float* costall=my_data->costall;
 	float alpha=my_data->alpha;
@@ -55,7 +57,7 @@ void *dataCost(void *threadarg)
     uint64_t* moving_mind=my_data->moving_mind;
     int istart=my_data->istart;
     int iend=my_data->iend;
-	int beta=1; // MSC: This was a global but is used nowhere else. No idea what it is for.
+	//int beta=1; // MSC: This was a global but is used nowhere else. No idea what it is for.
 
 	// We need local state for the rand_r() function, because
 	// rand() is not threadsafe on POSIX
@@ -77,14 +79,14 @@ void *dataCost(void *threadarg)
         //    wordbits[i1]=__builtin_popcount(i1);
     }
 	float alpha1=(float)step1/(alpha*(float)quant);
-	float randv=getrand(&state);
+	//float randv=getrand(&state);
 
 	int m=my_data->m;
 	int n=my_data->n;
 	int o=my_data->o;
 	int sz=m*n*o;
 	
-	int step3=(int)pow((float)step1,3);
+	//int step3=(int)pow((float)step1,3);
 	int m1=m/step1;
 	int n1=n/step1;
 	int o1=o/step1;
@@ -141,8 +143,8 @@ void *dataCost(void *threadarg)
 	}
 	float* cost1=new float[len4];
 	float* costcount=new float[len4];
-	int frac=(int)(sz1/25);
-    float beta1=(1.0f-beta);
+	//int frac=(int)(sz1/25);
+    //float beta1=(1.0f-beta);
 	float alpha2=alpha1/(float)maxsamp;
 	int xx2,yy2,zz2;
 
@@ -236,6 +238,6 @@ void *dataCost(void *threadarg)
 template <typename TypeW>
 
 void warpImage(TypeW* warped,TypeW* im1,float* u1,float* v1,float* w1, int m, int n, int o){
-    int sz=m*n*o;
+    //int sz=m*n*o;
     interp3(warped,im1,u1,v1,w1,m,n,o,m,n,o,true);
 }

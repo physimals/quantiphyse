@@ -68,7 +68,7 @@ private:
     double AIF[5];
     double *t, *y;
     double T10;
-    double res_min, res_count;
+    double res_min;
 
     OptimizeFunction OTofts;
 

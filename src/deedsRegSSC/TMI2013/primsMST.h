@@ -57,7 +57,7 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, 
 	int o=o2/step1;
 	
 	int num_vertices=m*n*o;
-	int len=m*n*o;
+	//nt len=m*n*o;
 	//timeval time1,time2;
 	int num_neighbours=6;
 	float* edgecost=new float[num_vertices*num_neighbours]; 
@@ -132,8 +132,8 @@ void primsGraph(float* im1,int* ordered,int* parents,int step1, int m2, int n2, 
 			minedge=priority.front();
 			pop_heap(priority.begin(),priority.end());
 			priority.pop_back();
-			bool new1=vertices[minedge.vert1]; //is either vertex already part of MST?
-			bool new2=vertices[minedge.vert2];
+			//bool new1=vertices[minedge.vert1]; //is either vertex already part of MST?
+			//bool new2=vertices[minedge.vert2];
 			last=newEdge(minedge,edgeout,vertices); //return next valid vertex or -1 if edge exists already
 		}
 		cost+=(float)edgeout.weight;

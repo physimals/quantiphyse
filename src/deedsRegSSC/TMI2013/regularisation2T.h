@@ -15,7 +15,7 @@ void *regularisation(void *threadarg)
 	float* v0 = my_data->v0;
 	float* w0 = my_data->w0;
 	float* costall=my_data->costall;
-	float alpha=my_data->alpha;
+	//float alpha=my_data->alpha;
 	int hw=my_data->hw;
 	int step1=my_data->step1;
 	float quant=my_data->quant;
@@ -58,7 +58,7 @@ void *regularisation(void *threadarg)
 	int *inds=new int[len2];
 	//gettimeofday(&time1, NULL);
 	
-	float alpha1=(float)step1/(alpha*quant);
+	//float alpha1=(float)step1/(alpha*quant);
 	//inverse of regularisation weighting alpha
 	//includes (division by) distance of control points (step1) and quantisation
 
@@ -66,7 +66,7 @@ void *regularisation(void *threadarg)
 		cost1[i]=0;
 	}
 	
-	int frac=(int)(sz/25);
+	//int frac=(int)(sz/25);
 	//calculate mst-cost
 	for(int i=(sz-1);i>0;i--){ //do for each control point
 		//if((i%frac)==0){

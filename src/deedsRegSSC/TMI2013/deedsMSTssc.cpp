@@ -85,7 +85,7 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 	int s_grid[10]={7,6,5,4,3,2,2,2,2,2};
     int s_search[10]={6,5,4,3,2,1,1,1,1,1};
     int s_quant[10]={3,2,2,1,1,1,1,1,1,1};
-    char levelstr[]="%dx%dx%dx%dx%dx%dx%dx%dx%dx%d";
+    //char levelstr[]="%dx%dx%dx%dx%dx%dx%dx%dx%dx%d";
 
 	if (!grid_step) grid_step = s_grid;
 	if (!label_hw) label_hw = s_search;
@@ -283,7 +283,7 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 		//upsample deformations from grid-resolution to high-resolution (trilinear=1st-order spline)
 		upsampleDeformations2(ux,vx,wx,u1,v1,w1,m,n,o,m1,n1,o1);
 		upsampleDeformations2(uxi,vxi,wxi,u1i,v1i,w1i,m,n,o,m1,n1,o1);
-		float jac=jacobian(u1,v1,w1,m1,n1,o1,step1, log);
+		//float jac=jacobian(u1,v1,w1,m1,n1,o1,step1, log);
         float energy=harmonicEnergy(ux,vx,wx,m,n,o);
 		log<<"harmonic energy of deformation field: "<<energy<<"\n";
         
