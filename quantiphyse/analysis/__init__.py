@@ -9,13 +9,16 @@ import multiprocessing
 import multiprocessing.pool
 import threading
 
-from PySide import QtCore
+from PySide import QtCore, QtGui
 
 _pool = None
 
 # Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major
 # by default
 SPLIT_AXIS = 0
+
+# Whether to use multiprocessing - can be disabled for debugging
+MULTIPROC = False
 
 def _init_pool():
     global _pool
@@ -48,9 +51,10 @@ class Process(QtCore.QObject):
         self.ivm = ivm
         self.log = ""
         self.status = Process.NOTSTARTED
-        self.debug = kwargs.get("debug", False)
-        self.folder = kwargs.get("indir", "")
-        self.outdir = kwargs.get("outdir", "")
+        self.name = kwargs.pop("name", None)
+        self.debug = kwargs.pop("debug", False)
+        self.folder = kwargs.pop("indir", "")
+        self.outdir = kwargs.pop("outdir", "")
 
     def run(self, options):
         """ Override to run the process """
@@ -62,11 +66,12 @@ class BackgroundProcess(Process):
     """
 
     def __init__(self, ivm, fn, sync=False, **kwargs):
-        super(BackgroundProcess, self).__init__(ivm)
+        super(BackgroundProcess, self).__init__(ivm, **kwargs)
         _init_pool()
         self.fn = fn
         self.queue =  multiprocessing.Manager().Queue()
-        self.sync = sync
+        self.sync = kwargs.get("sync", False)
+        self.multiproc = MULTIPROC and kwargs.get("multiproc", True)
         self._timer = None
 
     def timeout(self):
@@ -93,17 +98,25 @@ class BackgroundProcess(Process):
         worker_args = self.split_args(n, args)
         self.output = [None, ] * n
         self.status = Process.RUNNING
-        processes = []
-        for i in range(n):
-            proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
-            processes.append(proc)
-        
-        if self.sync:
+        if self.multiproc:
+            processes = []
             for i in range(n):
-                processes[i].get()
+                proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
+                processes.append(proc)
+            
+            if self.sync:
+                for i in range(n):
+                    processes[i].get()
+            else:
+                self._restart_timer()
         else:
-            self._restart_timer()
-    
+            for i in range(n):
+                result = self.fn(*worker_args[i])
+                self.timeout()
+                if QtGui.qApp is not None: QtGui.qApp.processEvents()
+                self._process_cb(result)
+                if self.status != Process.RUNNING: break
+
     def split_args(self, n, args):
         """
         Split function arguments up across workers. 
@@ -137,7 +150,7 @@ class BackgroundProcess(Process):
 
     def _process_cb(self, result):
         worker_id, success, output = result
-        #print("Finished: id=", worker_id, success, str(output))
+        if self.debug: print("Finished: id=", worker_id, success, str(output))
         
         if self.status == Process.FAILED:
             # If one process has already failed, ignore results of others
