@@ -139,7 +139,7 @@ class ImageVolumeManagement(QtCore.QObject):
     def add_data(self, data, name=None, make_current=False, make_main=False):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
-            data = QpData(name, data, self.grid)
+            data = QpData(name, data.astype(np.float32), self.grid)
             
         self._valid_name(data.name)
         self.data[data.name] = data
