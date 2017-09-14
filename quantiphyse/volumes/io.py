@@ -25,7 +25,7 @@ except:
 class NiftiData(QpData):
     def __init__(self, fname):
         self.nii = nib.load(fname)
-        
+
         # NB: np.asarray appears to convert to an array instead of a numpy memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
@@ -150,7 +150,7 @@ def load(fname):
         raise RuntimeError("%s: Unrecognized file type" % fname)
 
 def save(data, fname):
-    img = nib.Nifti1Image(data.raw, data.rawgrid.affine)
+    img = nib.Nifti1Image(data.std, data.stdgrid.affine)
     img.update_header()
     img.to_filename(fname)
     data.fname = fname
