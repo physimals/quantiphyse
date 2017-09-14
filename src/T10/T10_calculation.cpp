@@ -132,14 +132,13 @@ vector<double> T10mapping( vector< std::vector<double> > & favols, vector<double
     vector<double> t10vec(num_voxels, 0);
 
     // Convert flip angles to radians
-    cout << "Converting flip angles to radians \n";
     int cc = 0;
     for (vector<double>::iterator iter = fa.begin(); iter != fa.end(); iter++) {
         fa_rad[cc] = (*iter * (M_PI/180));
         cc++;
     }
 
-    cout << "t10 calculation for " << num_voxels << " voxels \n";
+    //cout << "t10 calculation for " << num_voxels << " voxels \n";
     // Loop through all voxels
     for (int jj=0; jj < num_voxels; jj++){
 

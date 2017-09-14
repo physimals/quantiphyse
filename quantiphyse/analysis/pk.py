@@ -10,6 +10,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
     """
     #print("pk modelling worker started")
     try:
+        log = ""
         t1 = np.arange(0, img1sub.shape[-1])*delt
         # conversion to minutes
         t1 = t1/60.0
@@ -37,7 +38,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
 
         # Initialise fitting
         # Choose model type and injection time
-        Pkclass.rinit(model_choice, injtmins)
+        log += Pkclass.rinit(model_choice, injtmins)
 
         # Iteratively process 5000 points at a time
         # (this can be performed as a multiprocess soon)
@@ -57,9 +58,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
                 queue.put((num_row, progress))
 
             time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-            x = Pkclass.run(size_step)
-            # print(x)
-        #print("Done")
+            log += Pkclass.run(size_step)
 
         # Get outputs
         res1 = np.array(Pkclass.get_residual())
@@ -69,7 +68,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         # final update to progress bar
         queue.put((num_row, 100))
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
-        return id, True, (res1, fcurve1, params2)
+        return id, True, (res1, fcurve1, params2, log)
     except:
         #print("PK worker error: %s" % sys.exc_info()[0])
         return id, False, sys.exc_info()[0]
@@ -80,6 +79,7 @@ class PkModellingProcess(BackgroundProcess):
         BackgroundProcess.__init__(self, ivm, _run_pk, **kwargs)
 
     def run(self, options):
+        self.log = ""
         img1 = self.ivm.main.std
         roi1 = self.ivm.current_roi.std
         t101 = self.ivm.data["T10"].std
@@ -97,7 +97,7 @@ class PkModellingProcess(BackgroundProcess):
 
         # Baseline defaults to time points prior to injection
         baseline_tpts = int(1 + InjT / DelT)
-        #print("First %i time points used for baseline normalisation" % baseline_tpts)
+        self.log += "First %i time points used for baseline normalisation\n" % baseline_tpts
         baseline = np.mean(img1[:, :, :, :baseline_tpts], axis=-1)
 
         #print("Convert to list of enhancing voxels")
@@ -136,10 +136,10 @@ class PkModellingProcess(BackgroundProcess):
         """
         Add output data to the IVM
         """
-        self.log = ""
         if self.status == Process.SUCCEEDED:
             # Only one worker - get its output
             var1 = self.output[0]
+            self.log += var1[3]
 
             #make sure that we are accessing whole array
             roi1v = self.roi1vec
@@ -191,5 +191,5 @@ class PkModellingProcess(BackgroundProcess):
             self.ivm.add_data(kep1vol, name='kep')
             self.ivm.add_data(offset1vol, name='offset')
             self.ivm.add_data(vp1vol, name='vp')
-            self.ivm.add_data(estimated1vol, name="Model curves")
+            self.ivm.add_data(estimated1vol, name="model_curves")
             

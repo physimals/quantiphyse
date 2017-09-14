@@ -53,7 +53,8 @@ class BatchCase:
         self.case = case
         self.debug = self.get("Debug", False)
         self.folder = self.get("Folder", "")
-        self.outdir = os.path.join(self.get("OutputFolder", ""), id)
+        self.output_id = self.get("OutputId", id)
+        self.outdir = os.path.join(self.get("OutputFolder", ""), self.output_id)
         self.ivm = ImageVolumeManagement()
         
     def get_filepath(self, fname, folder=None):
@@ -134,16 +135,17 @@ class BatchCase:
                 process.debug = self.debug
                 process.workdir = self.folder
                 process.outdir = self.outdir
+                process.name = params.get("name", name)
                 #process.sig_progress.connect(self.progress)
-                sys.stdout.write("  - Running %s   0%%" % name)
+                sys.stdout.write("  - Running %s   0%%" % process.name)
                 process.run(params)
                 print("\b\b\b\bDONE")
                 if process.status == Process.SUCCEEDED:
-                    self.save_text(process.log, name, "log")
+                    self.save_text(process.log, process.name, "log")
                 else:
                     raise process.output
             except:
-                print("  - WARNING: process %s failed to run" % name)
+                print("  - WARNING: process %s failed to run" % process.name)
                 #raise
                 #print(sys.exc_info())
                 #print(sys.exc_info()[2])

@@ -11,6 +11,7 @@ import numpy as np
 cimport numpy as np
 
 from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 # c++ interface to cython
 cdef extern from "pkrun2.h" namespace "pkmodellingspace":
@@ -19,8 +20,8 @@ cdef extern from "pkrun2.h" namespace "pkmodellingspace":
         void set_bounds(vector[double] & ub1, vector[double] & lb1)
         void set_parameters(double R1in, double R2in, double dce_flip_anglein,
                             double dce_TRin, double dce_TEin, double Dosein)
-        void rinit(int model1, double injtmins)
-        double run(int pause1)
+        string rinit(int model1, double injtmins)
+        string run(int pause1)
         vector[vector[double] ] get_parameters()
         vector[vector[double] ] get_fitted_curve()
         vector[double] get_residual()
@@ -37,7 +38,7 @@ cdef class PyPk:
     def set_parameters(self, R1in, R2in, dce_flip_anglein, dce_TRin, dce_TEin, Dosein):
         self.thisptr.set_parameters(R1in, R2in, dce_flip_anglein, dce_TRin, dce_TEin, Dosein)
     def rinit(self, model1, injtmins):
-        self.thisptr.rinit(model1, injtmins)
+        return self.thisptr.rinit(model1, injtmins)
     def run(self, pause1):
         return self.thisptr.run(pause1)
     def get_parameters(self):
