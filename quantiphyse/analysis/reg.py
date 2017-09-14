@@ -9,12 +9,12 @@ from . import Process, BackgroundProcess
 
 REG_METHODS = {}
 
-def deeds_reg(regdata, refdata, warp_roi, options):
-    return deedsReg(regdata, refdata, warp_roi, **options)
+def deeds_reg(regdata, refdata, warp_rois, options):
+    return deedsReg(regdata, refdata, warp_rois, **options)
 
-def mcflirt_reg(regdata, refdata, warp_roi, options):
-    if warp_roi is not None:
-        raise RuntimeError("Linked ROI not supported for MCFLIRT")
+def mcflirt_reg(regdata, refdata, warp_rois, options):
+    if warp_rois is not None:
+        raise RuntimeError("Linked ROIs not supported for MCFLIRT")
     # MCFLIRT wants to do motion correction so we stack the reg and ref
     # data together and tell it to use the second as the reference.
     data = np.stack((regdata, refdata), -1)
@@ -38,7 +38,7 @@ except:
 """
 Registration function for asynchronous process - used for moco and registration
 """
-def _run_reg(id, queue, method, options, regdata, refdata, warp_roi, ignore_idx=None):
+def _run_reg(id, queue, method, options, regdata, refdata, warp_rois, ignore_idx=None):
     try:
         full_log = ""
         if regdata.ndim == 3: 
@@ -48,10 +48,10 @@ def _run_reg(id, queue, method, options, regdata, refdata, warp_roi, ignore_idx=
             data_4d = True
         regdata_out = np.zeros(regdata.shape)
 
-        if warp_roi is not None: 
-            warp_roi_out = np.zeros(warp_roi.shape)
-            full_log += "add data input max=%f\n" % np.max(warp_roi)
-        else: warp_roi_out = None
+        if warp_rois is not None: 
+            warp_rois_out = np.zeros(warp_rois.shape)
+            full_log += "Warp ROIs max=%f\n" % np.max(warp_rois)
+        else: warp_rois_out = None
         reg_fn = REG_METHODS[method.lower()]
 
         for t in range(regdata.shape[-1]):
@@ -60,19 +60,19 @@ def _run_reg(id, queue, method, options, regdata, refdata, warp_roi, ignore_idx=
             if t == ignore_idx:
                 regdata_out[:,:,:,t] = regvol
             else:
-                outvol, roivol, log = reg_fn(regvol, refdata, warp_roi, options)
+                outvol, roivol, log = reg_fn(regvol, refdata, warp_rois, options)
                 full_log += log
                 regdata_out[:,:,:,t] = outvol
-                if warp_roi is not None: 
-                    warp_roi_out = roivol
+                if warp_rois is not None: 
+                    warp_rois_out = roivol
                     full_log += "add data max=%f\n" % np.max(roivol)
             queue.put(t)
         if not data_4d: 
             regdata_out = np.squeeze(regdata_out, -1)
-            if warp_roi is not None: 
-                warp_roi_out = (warp_roi_out > 0.5).astype(np.int)
+            if warp_rois is not None: 
+                warp_rois_out = (warp_rois_out > 0.5).astype(np.int)
             
-        return id, True, (regdata_out, warp_roi_out, full_log)
+        return id, True, (regdata_out, warp_rois_out, full_log)
     except:
         return id, False, sys.exc_info()[1]
 
@@ -111,21 +111,27 @@ class RegProcess(BackgroundProcess):
         else:
             refdata = ref_vols.std
 
-        # A linked ROI (just one at the moment) can be specified which 
-        # will be warped in the same way as the main registration data. Useful
-        # for masks defined on an unregistered volume.
-        roi_name = options.pop("warp-roi", None)
-        if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std
-            print("roi=", roi_name, np.max(roi))
-            if roi.shape != roi.shape:
-                raise RuntimeError("ROI has different shape to registration data")
+        # Linked ROIS can be specified which will be warped in the same way as the main 
+        # registration data. Useful for masks defined on an unregistered volume.
+        # We handle multiple warp ROIs by building 4D data in which each volume is
+        # a separate ROI. This is then unpacked at the end.
+        self.warp_roi_names = options.pop("warp-rois", [])
+        warp_roi_name = options.pop("warp-roi", None)
+        if warp_roi_name is not None:  self.warp_roi_names.append(warp_roi_name)
+
+        if len(self.warp_roi_names) > 0:
+            warp_rois = np.zeros(list(refdata.shape) + [len(self.warp_roi_names)])
+            for idx, roi_name in enumerate(self.warp_roi_names):
+                roi = self.ivm.rois[roi_name].std
+                if roi.shape != refdata.shape:
+                    raise RuntimeError("Warp ROI %s has different shape to registration data" % roi_name)
+                warp_rois[:,:,:,idx] = roi
+            if self.debug: print("Have %i warped ROIs" % len(self.warp_roi_names))
         else:
-            roi = None
+            warp_rois = None
 
         # Function input data must be passed as list of arguments for multiprocessing
-
-        self.start(1, [self.method, options, reg_data, refdata, roi])
+        self.start(1, [self.method, options, reg_data, refdata, warp_rois])
 
     def timeout(self):
         if self.queue.empty(): return
@@ -141,10 +147,11 @@ class RegProcess(BackgroundProcess):
             output = self.output[0]
             self.ivm.add_data(output[0], name=self.output_name, make_current=True)
             if output[1] is not None: 
-                print("adding roi", np.max(output[1]))
-                self.ivm.add_roi(output[1], name=self.output_name+"_roi", make_current=False)
+                for idx, roi_name in enumerate(self.warp_roi_names):
+                    roi = output[1][:,:,:,idx]
+                    if self.debug: print("Adding warped ROI: %s" % (roi_name+"_warp"))
+                    self.ivm.add_roi(roi, name=roi_name+"_warp", make_current=False)
             self.log = output[2]
-            print(self.log)
 
 class McflirtProcess(Process):
     """
@@ -164,7 +171,6 @@ class McflirtProcess(Process):
                 options["refvol"] = refvol
 
             retdata, self.log = mcflirt(self.ivm.main, self.ivm.voxel_sizes, **options)
-            if self.debug: print("Adding new data")
             self.ivm.add_data(retdata, name=name, make_current=True, make_main=replace)
             self.status = Process.SUCCEEDED
             self.output = [retdata, ]
