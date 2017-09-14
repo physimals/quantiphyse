@@ -309,12 +309,14 @@ class T10Widget(QpWidget):
                                           QtGui.QMessageBox.Close)
                 return
             fa_afi = self.fainp.val
+            # TR is expected in seconds but UI asks for it in ms
+            afi_trs = [v/1000 for v in afi_trs]
             T10 = t10_map(fa_vols, fa_angles, TR=tr,
                       afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)
             if self.smooth.isChecked():
                 T10 = gaussian_filter(T10, sigma=self.sigma.value(), truncate=self.truncate.value())
         else:
-            T10 = t10_map(fa_vols, fa_angles, TR=tr)
+           T10 = t10_map(fa_vols, fa_angles, TR=tr)
 
         if self.clamp.isChecked():
             np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)

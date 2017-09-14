@@ -5,7 +5,7 @@ OutputFolder: out
 
 Processing:
   - T10:
-      tr: 0.0014 # seconds
+      tr: 1.4 # ms
       #smooth:
       #  sigma: 2
       #  truncate: 3

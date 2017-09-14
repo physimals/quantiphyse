@@ -5,7 +5,7 @@ OutputFolder: out
 
 Processing:
   - T10:
-      tr: 0.0035 # seconds
+      tr: 3.5 # ms
       clamp:
         min: 0
         max: 5
