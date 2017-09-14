@@ -98,6 +98,12 @@ class DataGrid:
         new_shape = [self.shape[d] for d in t.reorder]
         return DataGrid(new_shape, t.tmatrix)
 
+    def matches(self, grid):
+        """
+        Return True if grid is identical to this grid
+        """
+        return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
+
 class Transform:
     """
     Transforms data on one grid into another
@@ -105,7 +111,7 @@ class Transform:
 
     # Tolerance for treating values as equal
     # Used to determine if matrices are diagonal or identity
-    EQ_TOL = 1e-10
+    EQ_TOL = 1e-5
 
     def __init__(self, in_grid, out_grid):
         # Convert the transformation into optional re-ordering and flipping
@@ -195,7 +201,7 @@ class Transform:
                 #print(affine)
 
             #print("Offset = ", offset)
-            #print("affine_transform: output_shape=", output_shape)
+            print("WARNING: affine_transform: ", affine)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
         else:
             pass
@@ -224,8 +230,7 @@ class QpData:
         # Everyone needs a friendly name
         self.name = name
 
-        # Original data and the grid it was defined on. 
-        self.raw = data
+        # Original grid the data was defined on. 
         self.rawgrid = grid
 
         # Set standard data to match, it will be changed when/if regrid() is called
@@ -237,8 +242,8 @@ class QpData:
 
         # Convenience attributes
         self.ndim = self.std.ndim
-        self.range = (self.raw.min(), self.raw.max())
-        if self.ndim == 4: self.nvols = self.raw.shape[3]
+        self.range = (data.min(), data.max())
+        if self.ndim == 4: self.nvols = data.shape[3]
         else: self.nvols = 1
 
         self.dps = self._calc_dps()
@@ -280,14 +285,18 @@ class QpData:
         """
         Update data onto the specified grid. The original raw data is not affected
         """
-        #print("Regridding, raw=%s, new=%s" % (str(self.rawgrid.shape), str(grid.shape)))
+        #print("Regridding, orig size=", self.std.nbytes)
         #print("Raw grid")
         #print(self.rawgrid.affine)
         #print("New grid")
         #print(grid.affine)
-        t = Transform(self.rawgrid, grid)
-        self.std = t.transform_data(self.raw)
+        if self.stdgrid.matches(grid):
+            return
+        t = Transform(self.stdgrid, grid)
+        self.std = t.transform_data(self.std)
         self.stdgrid = grid
+        #print("DONE")
+        #print("new size: ", self.std.nbytes)
         #print("New data shape=", self.std.shape)
         #print("New data range=", self.std.min(), self.std.max())
 
@@ -335,7 +344,7 @@ class QpData:
         return data
 
     def as_roi(self):
-        return QpRoi(self.name, self.raw, self.rawgrid, self.fname)
+        return QpRoi(self.name, self.std, self.stdgrid, self.fname)
 
 class QpRoi(QpData):
     """
@@ -358,7 +367,7 @@ class QpRoi(QpData):
         QpData.__init__(self, name, data.astype(np.int32), grid, fname)
 
         self.dps = 0
-        self.regions = np.unique(self.raw)
+        self.regions = np.unique(data)
         self.regions = self.regions[self.regions > 0]
 
     def regrid(self, grid):
