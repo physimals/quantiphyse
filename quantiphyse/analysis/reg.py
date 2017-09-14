@@ -12,15 +12,17 @@ REG_METHODS = {}
 
 try:
     from .deeds import deedsReg
-    def deeds_reg(regdata, refdata, options):
-        return deedsReg(regdata, refdata, **options)
+    def deeds_reg(regdata, refdata, warp_rois, options):
+        return deedsReg(regdata, refdata, warp_rois, **options)
     REG_METHODS["deeds"] = deeds_reg
 except:
     print("WARNING: deeds registration method not found")
 
 try:
     from .mcflirt import mcflirt
-    def mcflirt_reg(regdata, refdata, options):
+    def mcflirt_reg(regdata, refdata, warp_rois, options):
+        if warp_rois is not None:
+            raise RuntimeError("MCFLIRT does not yet support warping ROIs")
         # MCFLIRT wants to do motion correction so we stack the reg and ref
         # data together and tell it to use the second as the reference.
         data = np.stack((regdata, refdata), -1)
