@@ -21,7 +21,8 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from . import QpData, QpRoi
+from .io import NumpyData
+from . import DEBUG
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -122,10 +123,11 @@ class ImageVolumeManagement(QtCore.QObject):
         
         self.main = self.data[name]
         self.grid = self.main.rawgrid.reorient_ras()
-        #print("Main data raw grid")
-        #print(self.main.rawgrid.affine)
-        #print("RAS aligned")
-        #print(self.grid.affine)
+        if DEBUG: 
+            print("Main data raw grid")
+            print(self.main.rawgrid.affine)
+            print("RAS aligned")
+            print(self.grid.affine)
 
         self.cim_pos = [int(d/2) for d in self.grid.shape]
         self.cim_pos.append(int(self.main.nvols/2))
@@ -133,13 +135,13 @@ class ImageVolumeManagement(QtCore.QObject):
             data.regrid(self.grid)
         for roi in self.rois.values():
             roi.regrid(self.grid)
-
+        
         self.sig_main_data.emit(self.main)
 
     def add_data(self, data, name=None, make_current=False, make_main=False):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
-            data = QpData(name, data.astype(np.float32), self.grid)
+            data = NumpyData(data.astype(np.float32), self.grid, name)
             
         self._valid_name(data.name)
         self.data[data.name] = data
@@ -155,14 +157,16 @@ class ImageVolumeManagement(QtCore.QObject):
         # Make current if requested, or if first overlay
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
+
         self.sig_all_data.emit(self.data.keys())
 
     def add_roi(self, data, name=None, make_current=False, signal=True):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
-            roi = QpRoi(name, data, self.grid)
+            roi = NumpyData(data, self.grid, name, roi=True)
         else:
-            roi = data.as_roi()
+            data.set_roi(True)
+            roi = data
 
         self._valid_name(roi.name)
         self.rois[roi.name] = roi
@@ -257,14 +261,14 @@ class ImageVolumeManagement(QtCore.QObject):
         """
         if self.main is None: return [], {}
         if self.main.nvols > 1:
-            main_sig = self.main.std[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+            main_sig = self.main.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         else:
             main_sig = []
 
         qpd_sig = {}
         for qpd in self.data.values():
             if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
-                qpd_sig[qpd.name] = qpd.std[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+                qpd_sig[qpd.name] = qpd.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
         return main_sig, qpd_sig
 

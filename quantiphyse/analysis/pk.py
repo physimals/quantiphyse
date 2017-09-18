@@ -80,9 +80,9 @@ class PkModellingProcess(BackgroundProcess):
 
     def run(self, options):
         self.log = ""
-        img1 = self.ivm.main.std
-        roi1 = self.ivm.current_roi.std
-        t101 = self.ivm.data["T10"].std
+        img1 = self.ivm.main.std()
+        roi1 = self.ivm.current_roi.std()
+        t101 = self.ivm.data["T10"].std()
 
         R1 = options['r1']
         R2 = options['r2']

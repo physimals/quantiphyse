@@ -171,11 +171,11 @@ class SourceImageList(QtGui.QVBoxLayout):
             vol.regrid(self.ivm.grid)
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
-                vols.append(vol.std)
+                vols.append(vol.std())
                 vals.append(file_vals[0])
             else:
                 for i, val in enumerate(file_vals):
-                    subvol=vol.std[...,i]
+                    subvol=vol.std()[...,i]
                     vols.append(subvol)
                     vals.append(val)
         return vols, vals

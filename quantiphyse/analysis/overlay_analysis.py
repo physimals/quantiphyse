@@ -33,7 +33,7 @@ class OverlayAnalysis(object):
             roi_labels = roi.regions
             roi_labels = roi_labels[roi_labels > 0]
         else:
-            roi = np.ones(ovl.shape[:3])
+            roi = np.ones(ovl.stdgrid.shape[:3])
             roi_labels = [1,]
 
         if (ovl is None):
@@ -45,20 +45,20 @@ class OverlayAnalysis(object):
         hist1x = []
 
         if slice is None:
-            ovldata = ovl.std
-            roidata = roi.std
+            ovldata = ovl.std()
+            roidata = roi.std()
         elif slice == 0:
             slicepos = self.ivm.cim_pos[2]
-            ovldata = ovl.std[:, :, slicepos]
-            roidata = roi.std[:, :, slicepos]
+            ovldata = ovl.std()[:, :, slicepos]
+            roidata = roi.std()[:, :, slicepos]
         elif slice == 1:
             slicepos = self.ivm.cim_pos[1]
-            ovldata = ovl.std[:, slicepos, :]
-            roidata = roi.std[:, slicepos, :]
+            ovldata = ovl.std()[:, slicepos, :]
+            roidata = roi.std()[:, slicepos, :]
         elif slice == 2:
             slicepos = self.ivm.cim_pos[0]
-            ovldata = ovl.std[slicepos, :, :]
-            roidata = roi.std[slicepos, :, :]
+            ovldata = ovl.std()[slicepos, :, :]
+            roidata = roi.std()[slicepos, :, :]
         else:
             raise RuntimeError("Invalid slice: " % slice)
 
@@ -84,9 +84,9 @@ class OverlayAnalysis(object):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             return []
 
-        data = self.ivm.current_overlay.std
+        data = self.ivm.current_overlay.std()
         voxel_sizes = self.ivm.grid.spacing
-        roi = self.ivm.current_roi.std
+        roi = self.ivm.current_roi.std()
         centre = self.ivm.cim_pos
 
         # If overlay is 4d, get current 3d volume

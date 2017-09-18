@@ -22,15 +22,14 @@ class T10Process(Process):
     def run(self, options):
         # TR specified in ms but pass in s
         tr = float(options["tr"])/1000
-
         fa_vols, fas = [], []
         for fname, fa in options["vfa"].items():
             if fname in self.ivm.data:
-                vol = self.ivm.data[fname].std
+                vol = self.ivm.data[fname].std()
             else:
                 data = load(_get_filepath(fname, self.workdir))
                 data.regrid(self.ivm.grid)
-                vol = data.std
+                vol = data.std()
             if isinstance(fa, list):
                 for i, a in enumerate(fa):
                     fas.append(a)
@@ -44,11 +43,11 @@ class T10Process(Process):
             afi_vols, trs = [], []
             for fname, tr in options["afi"].items():
                 if fname in self.ivm.data:
-                    vol = self.ivm.data[fname].std
+                    vol = self.ivm.data[fname].std()
                 else:
                     data = load(_get_filepath(fname, self.workdir))
                     data.regrid(self.ivm.grid)
-                    vol = data.std
+                    vol = data.std()
                 if isinstance(tr, list):
                     for i, a in enumerate(tr):
                         trs.append(float(a)/1000)

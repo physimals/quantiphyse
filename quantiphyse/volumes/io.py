@@ -1,4 +1,14 @@
+"""
+Subclasses of QpData for handling different sources
 
+A subclass of QpData must implement the raw() method to return the actual
+data on its original grid. This may be stored internally or retrieved on-demand.
+We use the latter for NIFTI files since it avoids keeping the data in memory
+when we use the standard grid data for viewing and analysis
+
+NumpyData is used for data generated internally on the current grid and stored
+as a Numpy array
+"""
 from __future__ import division, print_function
 
 import sys
@@ -22,45 +32,77 @@ except:
     HAVE_DCMSTACK = False
     warnings.warn("DCMSTACK not found - may not be able to read DICOM folders")
 
+class NumpyData(QpData):
+    def __init__(self, data, grid, name, **kwargs):
+        self.rawdata = data
+        
+        if data.ndim > 3:
+            nvols = data.shape[3]
+        else:
+            nvols = 1
+
+        QpData.__init__(self, name, grid, nvols, **kwargs)
+    
+    def raw(self):
+        return self.rawdata
+
 class NiftiData(QpData):
     def __init__(self, fname):
-        self.nii = nib.load(fname)
+        nii = nib.load(fname)
+        shape = list(nii.shape)
+        while len(shape) < 3:
+            shape.append(1)
 
-        # NB: np.asarray appears to convert to an array instead of a numpy memmap.
+        if len(shape) > 3:
+            nvols = shape[3]
+        else:
+            nvols = 1
+
+        grid = DataGrid(shape[:3], nii.header.get_best_affine())
+        QpData.__init__(self, fname, grid, nvols, fname=fname)
+
+    def raw(self):
+        # NB: np.asarray convert data to an in-memory array instead of a numpy file memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
-        data = np.asarray(self.nii.get_data())
-        shape = list(self.nii.shape)
+        nii = nib.load(self.fname)
+        data = np.asarray(nii.get_data())
         while data.ndim < 3:
-            shape.append(1)
             data = np.expand_dims(data, -1)
-            
-        grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
-        QpData.__init__(self, fname, data, grid, fname=fname)
+        return data
 
 class DicomFolder(QpData):
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti
         print("Converting DICOMS in %s..." % (os.path.basename(fname)))
         src_dcms = glob.glob('%s/*' % fname)
-        self.nii = None
+        nii = None
         try:
             if HAVE_DCMSTACK:
                 # Give DCMSTACK a chance to do its thing
                 raise "no"
                 stacks = dcmstack.parse_and_stack(src_dcms)
                 stack = stacks.values()[0]
-                self.nii = stack.to_nifti()
+                nii = stack.to_nifti()
         except:
             warnings.warn("DCMSTACK failed - trying our method")
-        if self.nii is None:
+        if nii is None:
             # Try our top-secret in-house method
-            self.nii = self.fallback_dcmstack(src_dcms)
+            nii = self.fallback_dcmstack(src_dcms)
 
         print("DONE\n")
-        grid = DataGrid(self.nii.shape[:3], self.nii.header.get_best_affine())
-        QpData.__init__(self, fname, self.nii.get_data(), grid, fname=fname)
+        if len(nii.shape) > 3:
+            nvols = nii.shape[3]
+        else:
+            nvols = 1
+
+        grid = DataGrid(nii.shape[:3], nii.header.get_best_affine())
+        self.dcmdata = nii.get_data()
+        QpData.__init__(self, fname, grid, nvols, fname=fname)
+
+    def raw(self):
+        return self.dcmdata
 
     def fallback_dcmstack(self, fnames):
         """
@@ -127,9 +169,6 @@ class DicomFolder(QpData):
                 sidx = 0
                 vidx += 1
 
-        # FIXME do this or not?
-        #for d in range(3): data = np.flip(data, d)
-
         nii = nib.Nifti1Image(data, dcm_affine)
         nii.update_header()
         print("DONE")
@@ -150,7 +189,7 @@ def load(fname):
         raise RuntimeError("%s: Unrecognized file type" % fname)
 
 def save(data, fname):
-    img = nib.Nifti1Image(data.std, data.stdgrid.affine)
+    img = nib.Nifti1Image(data.std(), data.stdgrid.affine)
     img.update_header()
     img.to_filename(fname)
     data.fname = fname

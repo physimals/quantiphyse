@@ -37,7 +37,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
 
     def setSourceData(self, arr, percentile=100):
         """
-        Set the source data for the histogram widget. This is likely to be a
+        Set the source data for the histogram widget. This will be a
         3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
         methods to extract a histogram
 
@@ -48,12 +48,13 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.region.setRegion([np.min(arr), np.max(arr)])
         self.region.setBounds([np.min(arr), None])
         self.region.lines[0].setValue(np.min(arr))
-        self.region.lines[1].setValue(np.percentile(arr, percentile))
-        fdim = 1
-        for dim in arr.shape[1:]:
-            fdim *= dim
-        newarr = arr.reshape(arr.shape[0], fdim)
-        ii = pg.ImageItem(newarr)
+        flat = arr.reshape(-1)
+        #flat = np.getbuffer(arr)
+        #flat = np.frombuffer(flat, dtype=arr.dtype)
+        skip = int(len(flat)/1000000)
+        flat = flat[::skip]
+        if percentile < 100: self.region.lines[1].setValue(np.percentile(flat, percentile))
+        ii = pg.ImageItem(flat.reshape([1, -1]))
         h = ii.getHistogram()
         if h[0] is None: return
         self.plot.setData(*h)
@@ -1000,7 +1001,7 @@ class ImageView(QtGui.QSplitter):
         if vol is not None:
             if vol.fname is not None: self.vol_name.setText(vol.fname)
             else: self.vol_name.setText(vol.name)
-            self.h1.setSourceData(self.ivm.main.std, percentile=99)
+            self.h1.setSourceData(self.ivm.main.std(), percentile=99)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
@@ -1010,7 +1011,6 @@ class ImageView(QtGui.QSplitter):
                     self.max_min(d, state=1)
         else:
             self.vol_name.setText("")
-
         self.update_ortho_views()
 
     def roi_combo_changed(self, idx):
@@ -1132,7 +1132,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data.std)
+            self.h2.setSourceData(self.current_data_view.data.std())
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 

@@ -86,7 +86,7 @@ class RegProcess(BackgroundProcess):
         self.replace = options.pop("replace-vol", False)
         self.method = options.pop("method", "deeds")
         regdata_name = options.pop("reg", self.ivm.main.name)
-        reg_data = self.ivm.data[regdata_name].std
+        reg_data = self.ivm.data[regdata_name].std()
 
         self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
         if reg_data.ndim == 4: self.nvols = reg_data.shape[-1]
@@ -101,14 +101,14 @@ class RegProcess(BackgroundProcess):
             self.refvol = options.pop("ref-vol", "median")
             if self.refvol == "median":
                 refidx = ref_vols.nvols/2
-                refdata = ref_vols.std[:,:,:,refidx]
+                refdata = ref_vols.std()[:,:,:,refidx]
             elif self.refvol == "mean":
                 raise RuntimeException("Not yet implemented")
             else:
                 refidx = self.refvol
-                refdata = ref_vols.std[:,:,:,refidx]
+                refdata = ref_vols.std()[:,:,:,refidx]
         else:
-            refdata = ref_vols.std
+            refdata = ref_vols.std()
 
         # Linked ROIS can be specified which will be warped in the same way as the main 
         # registration data. Useful for masks defined on an unregistered volume.
@@ -121,7 +121,7 @@ class RegProcess(BackgroundProcess):
         if len(self.warp_roi_names) > 0:
             warp_rois = np.zeros(list(refdata.shape) + [len(self.warp_roi_names)])
             for idx, roi_name in enumerate(self.warp_roi_names):
-                roi = self.ivm.rois[roi_name].std
+                roi = self.ivm.rois[roi_name].std()
                 if roi.shape != refdata.shape:
                     raise RuntimeError("Warp ROI %s has different shape to registration data" % roi_name)
                 warp_rois[:,:,:,idx] = roi

@@ -400,7 +400,7 @@ class ViewOptions(QtGui.QDialog):
         we have a uniform scale, if not only do it if the number of points has
         changed (as a starting point for customisation)
         """
-        if self.ivm.main is not None and self.ivm.main.ndim == 4 and \
+        if self.ivm.main is not None and self.ivm.main.nvols > 1 and \
            (self.t_scale_type == 0 or self.ivm.main.nvols != len(self.t_scale)):
             self.t_scale = [i*self.t_res for i in range(self.ivm.main.nvols)]
 
@@ -751,7 +751,7 @@ class MainWindow(QtGui.QMainWindow):
         #    print(dtype)
         #    ftype = "DATA"
 
-        force_t_option = (data.ndim == 3)
+        force_t_option = (data.nvols == 1)
         force_t = False
                 
         ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
@@ -772,7 +772,7 @@ class MainWindow(QtGui.QMainWindow):
             data.force_t()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.raw) > ROI_MAXVAL_WARN:
+        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
             msgBox = QtGui.QMessageBox()
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)

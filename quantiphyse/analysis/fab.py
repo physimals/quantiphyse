@@ -56,18 +56,18 @@ class FabberProcess(BackgroundProcess):
     def run(self, options):
         data_name = options.pop("data", None)
         if data_name is None:
-            data = self.ivm.main.std
+            data = self.ivm.main.std()
         else:
-            data = self.ivm.data[data_name].std
+            data = self.ivm.data[data_name].std()
 
         roi_name = options.pop("roi", None)
         if roi_name is None:
             if self.ivm.current_roi is not None:
-                roidata = self.ivm.current_roi.std
+                roidata = self.ivm.current_roi.std()
             else:
                 roidata = np.ones(data.shape[:3])
         else:
-            roidata = self.ivm.rois[roi_name].std
+            roidata = self.ivm.rois[roi_name].std()
 
         # FIXME rundata requires all arguments to be strings!
         rundata = FabberRunData()
@@ -84,7 +84,7 @@ class FabberProcess(BackgroundProcess):
         for key, value in rundata.items():
             if value in self.ivm.data:
                 input_args.append(value)
-                input_args.append(self.ivm.data[value].std)
+                input_args.append(self.ivm.data[value].std())
 
         if rundata["method"] == "spatialvb":
             # Spatial VB will not work properly in parallel

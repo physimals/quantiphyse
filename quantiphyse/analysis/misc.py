@@ -24,9 +24,9 @@ class MeanValuesProcess(Process):
             roi = self.ivm.rois[roi_name]
 
         if data_name is None:
-            data = self.ivm.main.std
+            data = self.ivm.main.std()
         else:
-            data = self.ivm.data[data_name].std
+            data = self.ivm.data[data_name].std()
 
         if output_name is None:
             output_name = data.name + "_means"
@@ -34,9 +34,9 @@ class MeanValuesProcess(Process):
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
             if data.shape[3] > 1:
-                ov_data[roi == region] = np.mean(data[roi.std == region])
+                ov_data[roi == region] = np.mean(data[roi.std() == region])
             else:
-                ov_data[roi == region] = np.mean(data[roi.std == region], axis=0)
+                ov_data[roi == region] = np.mean(data[roi.std() == region], axis=0)
 
         self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
@@ -64,7 +64,7 @@ class CalcVolumesProcess(Process):
 
         sizes = self.ivm.grid.spacing
         if roi is not None:
-            counts = np.bincount(roi.std.flatten())
+            counts = np.bincount(roi.std().flatten())
             for idx, region in enumerate(roi.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
@@ -98,13 +98,13 @@ class HistogramProcess(Process):
         no_artifact = options.pop('no-artifact', False)
 
         if roi_name is None and self.ivm.current_roi is None:
-            roi = np.ones(self.ivm.shape[:3])
+            roi = np.ones(self.ivm.grid.shape[:3])
             roi_labels = [1,]
         elif roi_name is None:
-            roi = self.ivm.current_roi.std
+            roi = self.ivm.current_roi.std()
             roi_labels = self.ivm.current_roi.regions
         else:
-            roi = self.ivm.rois[roi_name].std
+            roi = self.ivm.rois[roi_name].std()
             roi_labels = self.ivm.rois[roi_name].regions
 
         if ov_name is None:
@@ -119,14 +119,14 @@ class HistogramProcess(Process):
         
         for ov in ovs:
             hrange = [dmin, dmax]
-            if dmin is None: hrange[0] = ov.std.min()
-            if dmax is None: hrange[1] = ov.std.max()
+            if dmin is None: hrange[0] = ov.std().min()
+            if dmax is None: hrange[1] = ov.std().max()
             for region in roi_labels:
                 if self.debug: print("Doing %s region %i" % (ov.name, region))
                 if sel_region is not None and region != sel_region:
                     if self.debug: print("Ignoring this region")
                     continue
-                region_data = ov.std[roi == region]
+                region_data = ov.std()[roi == region]
                 yvals, edges = np.histogram(region_data, bins=bins, range=hrange)
                 if self.xvals is None:
                     self.edges = edges
@@ -165,9 +165,9 @@ class RadialProfileProcess(Process):
         bins = options.pop('bins', 20)
 
         if roi_name is None:
-            roi = self.ivm.current_roi.std
+            roi = self.ivm.current_roi.std()
         else:
-            roi = self.ivm.rois[roi_name].std
+            roi = self.ivm.rois[roi_name].std()
 
         if ov_name is None:
             ovs = self.ivm.data.values()
@@ -210,9 +210,9 @@ class RadialProfileProcess(Process):
                 
             # If overlay is 4d, get current 3d volume
             if data.ndim == 4:
-                weights = data.std[:, :, :, centre[3]]
+                weights = data.std()[:, :, :, centre[3]]
             else:
-                weights = data.std
+                weights = data.std()
 
             # Generate histogram by distance, weighted by data
             rpd, junk = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
@@ -285,7 +285,7 @@ class SimpleMathsProcess(Process):
     def run(self, options):
         globals = {'np': np, 'ivm': self.ivm}
         for name, ovl in self.ivm.data.items():
-            globals[name] = ovl.std
+            globals[name] = ovl.std()
         for name, proc in options.items():
             result = eval(proc, globals)
             self.ivm.add_data(result, name=name)

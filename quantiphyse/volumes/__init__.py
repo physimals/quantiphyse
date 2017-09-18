@@ -47,6 +47,9 @@ For consideration
 
 """
 
+# Enable lots of debug output
+DEBUG = True
+
 class DataGrid:
     """
     Defines a regular 3D grid in standard space
@@ -111,7 +114,7 @@ class Transform:
 
     # Tolerance for treating values as equal
     # Used to determine if matrices are diagonal or identity
-    EQ_TOL = 1e-5
+    EQ_TOL = 1e-3
 
     def __init__(self, in_grid, out_grid):
         # Convert the transformation into optional re-ordering and flipping
@@ -124,14 +127,11 @@ class Transform:
         # Affine transformation matrix from grid 2 to grid 1
         self.tmatrix_raw = np.dot(np.linalg.inv(in_grid.affine), out_grid.affine)
         self.output_shape = out_grid.shape[:]
-        #print("Transform: output shape=", self.output_shape)
 
         # Generate potentially simplified transformation using re-ordering and flipping
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
 
     def _is_diagonal(self, mat):
-        #print("Is diagonal?")
-        #print(np.abs(mat - np.diag(np.diag(mat))))
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
 
     def _is_identity(self, mat):
@@ -152,7 +152,6 @@ class Transform:
      
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            #print("Using re-order and flip: ", dim_order, dim_flip)
             new_mat = np.copy(mat)
             new_shape = [self.output_shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
@@ -172,17 +171,15 @@ class Transform:
     def transform_data(self, data):
         if self.reorder is not None:
             if data.ndim == 4: self.reorder = self.reorder + [3]
-            #print("Re-ordering axes: ", self.reorder)
+            if DEBUG: print("Re-ordering axes: ", self.reorder)
             data = np.transpose(data, self.reorder)
         if self.flip is not None:
-            #print("Flipping axes: ", self.flip)
+            if DEBUG: print("Flipping axes: ", self.flip)
             for d in self.flip: data = np.flip(data, d)
         if not self._is_identity(self.tmatrix):
-            #print("Doing an affine transformation")
             affine = self.tmatrix[:3,:3]
             offset = list(self.tmatrix[:3,3])
             output_shape = self.output_shape[:]
-            #print("transform_data: output shape=", self.output_shape, output_shape)
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
                 affine = np.append(affine, [[0, 0, 0]], 0)
@@ -197,15 +194,12 @@ class Transform:
                 #print("Matrix is diagonal - ", affine)
             else:
                 pass
-                #print("Matrix is not diagonal - using general affine transform")
-                #print(affine)
-
-            #print("Offset = ", offset)
-            print("WARNING: affine_transform: ", affine)
+            print("WARNING: affine_transform: ")
+            print(affine)
+            print("Offset = ", offset)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
         else:
             pass
-            #print("Remaining affine is identity - not using")
         return data
 
 class QpData:
@@ -219,10 +213,7 @@ class QpData:
     raw data.
     """
 
-    def __init__(self, name, data, grid, fname=None):
-        if data.ndim not in (3, 4):
-            raise RuntimeError("QpData must be 3D or 4D (padded if necessary")
-        
+    def __init__(self, name, grid, nvols, fname=None, roi=False):
         # Unlikely but possible that first data is added from the console
         if grid is None:
             grid = DataGrid(data.shape[:3], np.identity(4))
@@ -230,44 +221,33 @@ class QpData:
         # Everyone needs a friendly name
         self.name = name
 
-        # Original grid the data was defined on. 
+        # Grid the data was defined on. 
         self.rawgrid = grid
 
-        # Set standard data to match, it will be changed when/if regrid() is called
-        self.std = data
-        self.stdgrid = grid
+        # Number of volumes (1=3D data)
+        self.nvols = nvols
+        if self.nvols == 1: self.ndim = 3
+        else: self.ndim = 4
 
         # File it was loaded from, if relevant
         self.fname = fname
 
-        # Convenience attributes
-        self.ndim = self.std.ndim
-        self.range = (data.min(), data.max())
-        if self.ndim == 4: self.nvols = data.shape[3]
-        else: self.nvols = 1
+        # Set standard grid to match raw grid, it will be changed when/if regrid() is called
+        self.stddata = None
+        self.stdgrid = grid
+        self.range = (0, 1)
+        self.dps = 1
 
-        self.dps = self._calc_dps()
-        self._remove_nans()
+        # Whether to treat as an ROI data set
+        self.set_roi(roi)
 
-    def _calc_dps(self):
-        """
-        Return appropriate number of decimal places for presenting data values
-        """
-        if self.range[0] == self.range[1]:
-            # Pathological case where data is uniform
-            return 0
-        else:
-            # Look at range of data and allow decimal places to give at least 1% steps
-            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
+    def raw(self):
+        raise NotImplementedError("Internal Error: raw() has not been implemented. This is a bug - please inform the authors")
 
-    def _remove_nans(self):
-        """
-        Check for and remove nans from images
-        """
-        nans = np.isnan(self.std)
-        if nans.sum() > 0:
-            warnings.warn("Image contains nans")
-            self.std[nans] = 0
+    def std(self):
+        if self.stddata is None:
+            self._update_stddata()
+        return self.stddata
 
     def make_2d_timeseries(self):
         """
@@ -283,22 +263,15 @@ class QpData:
 
     def regrid(self, grid):
         """
-        Update data onto the specified grid. The original raw data is not affected
+        Set the standard grid - i.e. the grid on which data returned
+        by std() is defined.
         """
-        #print("Regridding, orig size=", self.std.nbytes)
-        #print("Raw grid")
-        #print(self.rawgrid.affine)
-        #print("New grid")
-        #print(grid.affine)
-        if self.stdgrid.matches(grid):
-            return
-        t = Transform(self.stdgrid, grid)
-        self.std = t.transform_data(self.std)
-        self.stdgrid = grid
-        #print("DONE")
-        #print("new size: ", self.std.nbytes)
-        #print("New data shape=", self.std.shape)
-        #print("New data range=", self.std.min(), self.std.max())
+        if not self.stdgrid.matches(grid):
+            if DEBUG: print("Regridding")
+            self.stdgrid = grid
+            self._update_stddata()
+        else:
+            if DEBUG: print("Not bothering to regrid - no change")
 
     def strval(self, pos):
         """ 
@@ -312,7 +285,7 @@ class QpData:
         Return the data value at pos 
         """
         if pos[3] > self.nvols: pos[3] = self.nvols-1
-        return self.std[tuple(pos[:self.ndim])]
+        return self.std()[tuple(pos[:self.ndim])]
 
     def get_slice(self, axes, mask=None, fill_value=None):
         """ 
@@ -322,63 +295,39 @@ class QpData:
         mask - if specified, data outside the mask is given a fixed fill value
         fill_value - fill value, if not specified a value less than the data minimum is used
         """
-        sl = [slice(None)] * self.ndim
+        #print("Getting slice for %s" % self.name)
+        vol_data = self.std()
+        #print("Got data")
+        sl = [slice(None)] * vol_data.ndim
         for axis, pos in axes:
-            if axis >= self.ndim:
+            if axis >= vol_data.ndim:
                 pass
-            elif pos < self.std.shape[axis]:
+            elif pos < vol_data.shape[axis]:
                 # Handle case where 4th dimension is out of range
                 sl[axis] = pos
             else:
-                sl[axis] = self.std.shape[axis]-1
-        data = self.std[sl]
+                sl[axis] = vol_data.shape[axis]-1
+        slice_data = vol_data[sl]
 
         if mask is not None:
-            data = np.copy(data)
+            #print("Masking")
+            slice_data = np.copy(slice_data)
             mask_slice = mask.get_slice(axes)
             if fill_value is None:
                 # Less than the minimum
                 fill_value = self.range[0] - 0.000001
-                #print("fillval = ", fill_value, self.range)
-            data[mask_slice == 0] = fill_value
-        return data
+            slice_data[mask_slice == 0] = fill_value
+        #print("Done")
+        return slice_data
 
-    def as_roi(self):
-        return QpRoi(self.name, self.std, self.stdgrid, self.fname)
+    def set_roi(self, roi):
+        self.roi = roi
+        if self.roi:
+            if self.nvols != 1:
+                raise RuntimeError("ROIs must be static (single volume) 3D data")
+            self._update_stddata()
 
-class QpRoi(QpData):
-    """
-    Subclass containing an ROI (region of interest)
-
-    ROIs must contain integers - each distinct value identifies 
-    a region, 0 is outside the ROI
-    """
-
-    def __init__(self, name, data, grid, fname=None):
-        if data.ndim != 3:
-           raise RuntimeError("ROIs must be static (single volume) 3D data")
-
-        if data.min() < 0 or data.max() > 2**32:
-            raise RuntimeError("ROI must contain values between 0 and 2**32")
-        
-        if not np.equal(np.mod(data, 1), 0).any():
-           raise RuntimeError("ROI contains non-integer values.")
-
-        QpData.__init__(self, name, data.astype(np.int32), grid, fname)
-
-        self.dps = 0
-        self.regions = np.unique(data)
-        self.regions = self.regions[self.regions > 0]
-
-    def regrid(self, grid):
-        """
-        When regridding an ROI need to make sure output data
-        is integers
-        """
-        QpData.regrid(self, grid)
-        #print(self.std.min(), self.std.max())
-
-    def get_bounding_box(self, ndim=None):
+    def get_bounding_box(self, ndim=3):
         """
         Returns a sequence of slice objects which
         describe the bounding box of this ROI.
@@ -392,17 +341,69 @@ class QpRoi(QpData):
 
         e.g. 
         slices = roi.get_bounding_box(img.ndim)
-        img_restric = img.std[slices]
+        img_restric = img.stddata[slices]
         ... process img_restict, returning out_restrict
         out_full = np.zeros(img.shape)
         out_full[slices] = out_restrict
         """
-        if ndim is None: ndim = self.ndim
+        if not self.roi:
+            raise RuntimeError("get_bounding_box() called on non-ROI data")
+            
         slices = [slice(None)] * ndim
-        for d in range(min(ndim, self.ndim)):
-            ax = [i for i in range(self.ndim) if i != d]
-            nonzero = np.any(self.std, axis=tuple(ax))
+        for d in range(min(ndim, 3)):
+            ax = [i for i in range(3) if i != d]
+            nonzero = np.any(self.std(), axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
             slices[d] = slice(s1, s2+1)
         
         return slices
+
+    def _calc_dps(self):
+        """
+        Return appropriate number of decimal places for presenting data values
+        """
+        if self.range[0] == self.range[1]:
+            # Pathological case where data is uniform
+            return 0
+        else:
+            # Look at range of data and allow decimal places to give at least 1% steps
+            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
+
+    def _remove_nans(self, data):
+        """
+        Check for and remove nans from images
+        """
+        nans = np.isnan(data)
+        if np.any(nans):
+            warnings.warn("Image contains nans")
+            data[nans] = 0
+
+    def _update_stddata(self):
+        if DEBUG: print("Updating stddata for %s" % self.name)
+        t = Transform(self.rawgrid, self.stdgrid)
+        if DEBUG: print("Raw grid: ")
+        if DEBUG: print(self.rawgrid.affine)
+        if DEBUG: print("Std grid: ")
+        if DEBUG: print(self.stdgrid.affine)
+        rawdata = self.raw()
+        if rawdata.ndim not in (3, 4):
+            raise RuntimeError("Data must be 3D or 4D (padded if necessary")
+        self.stddata = t.transform_data(rawdata)
+        self._remove_nans(self.stddata)  
+
+        if self.roi:
+            if self.stddata.min() < 0 or self.stddata.max() > 2**32:
+                raise RuntimeError("ROIs must contain values between 0 and 2**32")
+            if not np.equal(np.mod(self.stddata, 1), 0).any():
+                raise RuntimeError("ROIs must contain integers only")
+            self.stddata = self.stddata.astype(np.int32)
+            self.dps = 0
+            self.regions = np.unique(self.stddata)
+            self.regions = self.regions[self.regions > 0]
+        else:   
+            self.dps = self._calc_dps()
+            self.regions = []
+
+        self.range = (self.stddata.min(), self.stddata.max())
+        if DEBUG: print("Done")
+        
