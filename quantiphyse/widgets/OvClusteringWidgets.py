@@ -168,7 +168,7 @@ class OvCurveClusteringWidget(QpWidget):
         m2 = int(self.val_m2.text())
 
         # relabel
-        roi = self.ivm.rois["overlay_clusters"].std
+        roi = self.ivm.rois["overlay_clusters"].std()
         roi[roi == m1] = m2
         
         # signal the change
@@ -187,11 +187,11 @@ class OvCurveClusteringWidget(QpWidget):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
             # Slice count
-            voxel_count_slice = np.sum(roi.std[:, :, self.ivm.cim_pos[2]] == ii)
+            voxel_count_slice = np.sum(roi.std()[:, :, self.ivm.cim_pos[2]] == ii)
             self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
 
             # Volume count
-            voxel_count = np.sum(roi.std == ii)
+            voxel_count = np.sum(roi.std() == ii)
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
 
 

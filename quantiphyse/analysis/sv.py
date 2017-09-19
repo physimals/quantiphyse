@@ -21,8 +21,8 @@ class Supervoxels4DProcess(Process):
         output_name = options.get('output-name', "supervoxels")
         
         slices = self.ivm.current_roi.get_bounding_box()
-        img = self.ivm.main.std[slices]
-        mask = self.ivm.current_roi.std[slices]
+        img = self.ivm.main.std()[slices]
+        mask = self.ivm.current_roi.std()[slices]
         vox_sizes = self.ivm.grid.spacing
 
         #print("Initialise the perf slic class")
@@ -37,7 +37,7 @@ class Supervoxels4DProcess(Process):
         # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
         svdata = np.array(segments, dtype=np.int) + 1
 
-        newroi = np.zeros(self.ivm.current_roi.std.shape)
+        newroi = np.zeros(self.ivm.current_roi.std().shape)
         newroi[slices] = svdata
         self.ivm.add_roi(newroi, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
@@ -75,9 +75,9 @@ class SupervoxelsProcess(Process):
         output_name = options.get('output-name', "supervoxels")
         
         if data_name is None:
-            img = self.ivm.main.std
+            img = self.ivm.main.std()
         else:
-            img = self.ivm.data[data_name].std
+            img = self.ivm.data[data_name].std()
     
         if roi_name is None and self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
@@ -87,7 +87,7 @@ class SupervoxelsProcess(Process):
         if roi is not None:
             slices = roi.get_bounding_box()
             img = img[slices]
-            mask = roi.std[slices]
+            mask = roi.std()[slices]
         else:
             mask = None
 
@@ -110,7 +110,7 @@ class SupervoxelsProcess(Process):
         labels = np.expand_dims(np.array(labels, dtype=np.int) + 1, -1)
 
         if roi is not None:
-            newroi = np.zeros(roi.std.shape)
+            newroi = np.zeros(roi.std().shape)
             newroi[slices] = labels
         else:
             newroi = labels

@@ -245,13 +245,13 @@ class CurveClusteringWidget(QpWidget):
 
         self.curves = {}
         for region in regions:
-            mean = np.median(self.ivm.main.std[roi.std == region], axis=0)
+            mean = np.median(self.ivm.main.std()[roi.std() == region], axis=0)
             self.curves[region] = mean
 
     def merge1(self, m1, m2):
         # relabel
-        roi = self.ivm.rois["clusters"].std
-        roi[roi.std == m1] = m2
+        roi = self.ivm.rois["clusters"].std()
+        roi[roi.std() == m1] = m2
 
         # signal the change
         self.ivm.add_roi(roi, name='clusters', make_current=True)
@@ -296,11 +296,11 @@ class CurveClusteringWidget(QpWidget):
             self.tabmod1.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
             # Slice count
-            voxel_count_slice = np.sum(roi.std[:, :, self.ivm.cim_pos[2]] == ii)
+            voxel_count_slice = np.sum(roi.std()[:, :, self.ivm.cim_pos[2]] == ii)
             self.tabmod1.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
 
             # Volume count
-            voxel_count = np.sum(roi.std == ii)
+            voxel_count = np.sum(roi.std() == ii)
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def show_options(self):

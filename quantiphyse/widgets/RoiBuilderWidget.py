@@ -143,7 +143,7 @@ class PickTool(Tool):
         if self.roi_name == "": return
 
         pos = picker.point
-        roi_picked = self.ivm.rois[self.roi_name].std
+        roi_picked = self.ivm.rois[self.roi_name].std()
         picked_region = roi_picked[pos[0], pos[1], pos[2]]
         self.roi_new = np.zeros(roi_picked.shape)
         self.roi_new[roi_picked==picked_region] = self.label
@@ -289,7 +289,7 @@ class WalkerTool(Tool):
                 self.labels[p[0], p[1], p[2]] = label
 
     def segment(self):
-        data = self.ivm.data[self.ov_combo.currentText()].std
+        data = self.ivm.data[self.ov_combo.currentText()].std()
         labels = self.labels
 
         kwargs = {}
@@ -469,7 +469,7 @@ class RoiBuilderWidget(QpWidget):
       
     def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
         if self.new_roi_name in self.ivm.rois:
-            roi_orig = self.ivm.rois[self.new_roi_name].std
+            roi_orig = self.ivm.rois[self.new_roi_name].std()
         else:
             roi_orig = np.zeros(self.ivm.grid.shape)
 
@@ -504,6 +504,6 @@ class RoiBuilderWidget(QpWidget):
             slices = [slice(None)] * 3
             if axis is not None and pos is not None:
                 slices[axis] = pos
-            self.ivm.rois[roi_name].std[slices] = roi_slice_orig
+            self.ivm.rois[roi_name].std()[slices] = roi_slice_orig
             self.ivm.add_roi(self.ivm.rois[roi_name], name=roi_name)
         self.undo_btn.setEnabled(len(self.history) > 0)

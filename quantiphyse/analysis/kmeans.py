@@ -34,9 +34,9 @@ class KMeansPCAProcess(Process):
         
         # 4D data
         if data_name is not None:
-            img = self.ivm.data[data_name].std.astype(np.float32)
+            img = self.ivm.data[data_name].std().astype(np.float32)
         elif self.ivm.main is not None:
-            img = self.ivm.main.std.astype(np.float32)
+            img = self.ivm.main.std().astype(np.float32)
         else:
             raise RuntimeError("No data specified and no current volume")
 
@@ -45,9 +45,9 @@ class KMeansPCAProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std
+            roi = self.ivm.rois[roi_name].std()
         elif self.ivm.current_roi is not None:
-            roi = self.ivm.current_roi.std
+            roi = self.ivm.current_roi.std()
         else:
             roi = np.ones(img.shape, dtype=np.bool)
             invert_roi = False
@@ -118,9 +118,9 @@ class KMeans3DProcess(Process):
         
         # 3D data
         if data_name is not None:
-            data = self.ivm.data[data_name].std.astype(np.float32)
+            data = self.ivm.data[data_name].std().astype(np.float32)
         elif self.ivm.current_data is not None:
-            data = self.ivm.current_data.std.astype(np.float32)
+            data = self.ivm.current_data.std().astype(np.float32)
         else:
             raise RuntimeError("No data specified and no current overlay")
 
@@ -129,9 +129,9 @@ class KMeans3DProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std
+            roi = self.ivm.rois[roi_name].std()
         elif self.ivm.current_roi is not None:
-            roi = self.ivm.current_roi.std
+            roi = self.ivm.current_roi.std()
         else:
             roi = np.ones(data.shape, dtype=np.bool)
             invert_roi = False
