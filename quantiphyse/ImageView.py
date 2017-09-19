@@ -366,15 +366,24 @@ class DataView:
         self.cmap = "jet"
         self.visible = True
         self.alpha = 255
-        self.roi_only = True
-        self.data = self.ivm.data.get(self.ov_name, None)
-        self.cmap_range = self.data.range
+        self.roi_only = False
+
+        # Initial colourmap range. 
+        self.cmap_range = self.data().range
+
+    def data(self):
+        # We do not keep a reference to the data object as it may change underneath us!
+        data = self.ivm.data.get(self.ov_name, None)
+        if data is None:
+            raise RuntimeError("Tried to get slice of data which does not exist")
+        else:
+            return data
 
     def get_slice(self, *axes):
         if self.roi_only:
-            return self.data.get_slice(axes, mask=self.ivm.current_roi)
+            return self.data().get_slice(axes, mask=self.ivm.current_roi)
         else:
-            return self.data.get_slice(axes)
+            return self.data().get_slice(axes)
 
 class RoiView:
     """
@@ -1077,6 +1086,7 @@ class ImageView(QtGui.QSplitter):
 
     def data_changed(self, data):
         # Repopulate data combo, without sending signals
+        print("Data changed")
         try:
             self.overlay_combo.blockSignals(True)
             self.overlay_combo.clear()
@@ -1084,6 +1094,9 @@ class ImageView(QtGui.QSplitter):
                 self.overlay_combo.addItem(ov)
         finally:
             self.overlay_combo.blockSignals(False)
+
+        # Discard DataView instances for data which has been deleted
+
         self.current_data_changed(self.ivm.current_data)
         self.overlay_combo.updateGeometry()
 
@@ -1104,7 +1117,7 @@ class ImageView(QtGui.QSplitter):
                 self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
             if self.current_data_view is not None:
-                # Update the view parameters from the existing overlay and free the within-ROI data
+                # Update the view parameters from the existing overlay before we switch
                 self.current_data_view.cmap_range = list(self.h2.region.getRegion())
                 self.current_data_view.cmap = self.h2.cmap_name
 
@@ -1132,7 +1145,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data.std())
+            self.h2.setSourceData(self.current_data_view.data().std())
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 
