@@ -47,7 +47,7 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(("%s/lib/libfabber*.dylib" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 
-a = Analysis(['quantiphyse.py'],
+a = Analysis(['qp.py'],
              pathex=[],
              binaries=bin_files,
              datas=added_files,

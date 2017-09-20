@@ -7,23 +7,11 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import sys
 import os
-import os.path
-import platform
-import argparse
-import traceback
 import requests
-import warnings
-import signal
 
 from PySide import QtCore, QtGui
-import pyqtgraph as pg
 import pyqtgraph.console
 import numpy as np
-
-if sys.platform.startswith("darwin"):
-    from Cocoa import NSURL
-
-from .QtInherit.dialogs import error_dialog
 
 # required to use resources in theme. Check if 2 or 3.
 if (sys.version_info > (3, 0)):
@@ -38,8 +26,7 @@ from .QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
 from .volumes.io import load, save
 from .volumes.volume_management import ImageVolumeManagement
 
-from .utils.batch import run_batch
-from .utils import set_local_file_path, get_icon, get_local_file
+from .utils import get_icon, get_local_file
 
 from .ImageView import ImageView
 
@@ -55,8 +42,6 @@ from .widgets.fabber import FabberWidget, CESTWidget, ASLWidget
 from .widgets.MCWidgets import RegWidget
 #from .widgets.ExperimentalWidgets import ImageExportWidget
 from .widgets.RoiBuilderWidget import RoiBuilderWidget
-
-op_sys = platform.system()
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -431,12 +416,9 @@ class ViewOptions(QtGui.QDialog):
         self.sig_options_changed.emit(self)
 
     def t_res_changed(self):
-        try:
-            self.t_res = float(self.t_res_edit.text())
-            self.update_scale()
-            self.sig_options_changed.emit(self)
-        except:
-            traceback.print_exc()
+        self.t_res = float(self.t_res_edit.text())
+        self.update_scale()
+        self.sig_options_changed.emit(self)
             
     def t_combo_changed(self, idx):
         self.t_scale_type = idx
@@ -673,8 +655,9 @@ class MainWindow(QtGui.QMainWindow):
             e.accept()
             fnames = []
             for url in e.mimeData().urls():
-                if op_sys == 'Darwin':
+                if sys.platform.startswith("darwin"):
                     # OSx specific changes to allow drag and drop
+                    from Cocoa import NSURL
                     filep = str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
                     fnames.append(filep)
                 else:
@@ -728,7 +711,7 @@ class MainWindow(QtGui.QMainWindow):
               ivm: Access to all the stored image data
 
             """)
-        self.con1 = pg.console.ConsoleWidget(namespace=namespace, text=text)
+        self.con1 = pyqtgraph.console.ConsoleWidget(namespace=namespace, text=text)
         self.con1.setWindowTitle('Quantiphyse Console')
         self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
         self.con1.show()
@@ -829,9 +812,6 @@ class MainWindow(QtGui.QMainWindow):
     def load_roi(self):
         self.load_data(ftype="ROI")
 
-def my_catch_exceptions(type, value, tb):
-    error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
-        
 """
 def get_run_batch(script):
     def run():
@@ -850,75 +830,3 @@ class BatchThread(QtCore.QThread):
     def run(self):
         run_batch(self.script)
 """
-
-def main():
-    """
-    Parse any input arguments and run the application
-    """
-
-    # Parse input arguments to pass info to GUI
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--data', help='Load data file', default=None, type=str)
-    parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
-    parser.add_argument('--batch', help='Run batch file', default=None, type=str)
-    args = parser.parse_args()
-    print(pg.systemInfo())
-
-    # Check whether any batch processing arguments have been called
-    if (args.batch is not None):
-        #app = QtCore.QCoreApplication(sys.argv)
-        #timer = threading.Timer(1, get_run_batch(args.batch))
-        #timer.daemon = True
-        #timer.start()
-        #QtCore.QTimer.singleShot(0, get_run_batch(args.batch))
-        #t = BatchThread(args.batch)
-        #t.start()
-        run_batch(args.batch)
-        #sys.exit(app.exec_())
-    else:
-        # OS specific changes
-        if op_sys == 'Darwin':
-            from Foundation import NSURL
-            QtGui.QApplication.setGraphicsSystem('native')
-            
-        app = QtGui.QApplication(sys.argv)
-        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
-        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
-        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-        sys.excepthook = my_catch_exceptions
-        # Handle CTRL-C correctly
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-        # Set the local file path, used for finding icons, etc
-        local_file_path = ""
-        if hasattr(sys, 'frozen'):
-            # File is frozen (packaged apps)
-            print("Frozen executable")
-            if hasattr(sys, '_MEIPASS'):
-                local_file_path = sys._MEIPASS
-            elif hasattr(sys, '_MEIPASS2'):
-                local_file_path = sys._MEIPASS2
-            elif sys.frozen == 'macosx_app':
-                local_file_path = os.getcwd() + '/quantiphyse'
-            else:
-                local_file_path = os.path.dirname(sys.executable)
-            os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
-        else:
-            # Running from a script
-            local_file_path = os.path.dirname(__file__)
-            
-        if local_file_path == "":
-            # Use local working directory otherwise
-            warnings.warn("Reverting to current directory as local path")
-            local_file_path = os.getcwd()
-
-        print("Local directory: ", local_file_path)
-        set_local_file_path(local_file_path)
-
-        # Create window and start main loop
-        app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
-        ex = MainWindow(load_data=args.data, load_roi=args.roi)
-        sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()
