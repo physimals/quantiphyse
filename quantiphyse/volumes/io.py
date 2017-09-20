@@ -81,7 +81,6 @@ class DicomFolder(QpData):
         try:
             if HAVE_DCMSTACK:
                 # Give DCMSTACK a chance to do its thing
-                raise "no"
                 stacks = dcmstack.parse_and_stack(src_dcms)
                 stack = stacks.values()[0]
                 nii = stack.to_nifti()

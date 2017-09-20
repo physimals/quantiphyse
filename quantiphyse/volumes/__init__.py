@@ -148,20 +148,29 @@ class Transform:
             newd = np.argmax(absmat[:,d])
             dim_order.append(newd)
             if mat[newd, d] < 0:
-                dim_flip.append(d)
+                dim_flip.append(newd)
      
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
             new_mat = np.copy(mat)
+            print("Before simplification")
+            print(new_mat)
+            print(self.output_shape)
             new_shape = [self.output_shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
                 new_mat[:,d] = mat[:,idx]
+            print("After transpose", dim_order)
+            print(new_mat)
             for dim in dim_flip:
                 # Change signs to positive to flip a dimension
                 new_mat[:,dim] = -new_mat[:,dim]
+            print("After flip", dim_flip)
+            print(new_mat)
             for dim in dim_flip:
                 # Adjust origin 
                 new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim] -1)
+            print("After adjust origin", new_shape)
+            print(new_mat)
             return dim_order, dim_flip, new_mat
         else:
             # Transposition was inconsistent, just go with general
