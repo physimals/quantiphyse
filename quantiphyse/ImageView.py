@@ -27,15 +27,20 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     and multiple image item views which are affected by changes to the
     levels or LUT
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ivm, ivl, *args, **kwargs):
         super(MultiImageHistogramWidget, self).__init__(*args, **kwargs)
+        self.ivm = ivm
+        self.ivl = ivl
+        self.ivl.sig_focus_changed.connect(self._focus_changed)
+        self.vol = 0
         self.imgs = []
+        self.data_name = None
         self.sigLevelChangeFinished.connect(self.levels_changed)
         self.sigLevelsChanged.connect(self.levels_changed)
         self.sigLookupTableChanged.connect(self.lut_changed)
         self.alpha = 255
 
-    def setSourceData(self, arr, percentile=100):
+    def setSourceData(self, data_name, percentile=100):
         """
         Set the source data for the histogram widget. This will be a
         3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
@@ -45,15 +50,32 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         percentile of the data - for main volume it is useful to set this 
         to 99% to improve visibility
         """
+        self.data_name = data_name
+        self.percentile = percentile
+
+        # Initialize colormap region
+        arr = self.ivm.data[self.data_name].std()
         self.region.setRegion([np.min(arr), np.max(arr)])
         self.region.setBounds([np.min(arr), None])
         self.region.lines[0].setValue(np.min(arr))
+
+        self._update_histogram()
+
+    def _focus_changed(self, pos):
+        if self.vol != pos[3]:
+            self.vol = pos[3]
+            if self.data_name is not None:
+                self._update_histogram()
+    
+    def _update_histogram(self):
+        data = self.ivm.data[self.data_name]
+        if data.nvols > 1:
+            arr = data.std()[:,:,:,self.vol]
+        else:
+            arr = data.std()
+
         flat = arr.reshape(-1)
-        #flat = np.getbuffer(arr)
-        #flat = np.frombuffer(flat, dtype=arr.dtype)
-        skip = int(len(flat)/1000000)
-        flat = flat[::skip]
-        if percentile < 100: self.region.lines[1].setValue(np.percentile(flat, percentile))
+        if self.percentile < 100: self.region.lines[1].setValue(np.percentile(flat, self.percentile))
         ii = pg.ImageItem(flat.reshape([1, -1]))
         h = ii.getHistogram()
         if h[0] is None: return
@@ -375,7 +397,9 @@ class DataView:
         # We do not keep a reference to the data object as it may change underneath us!
         data = self.ivm.data.get(self.ov_name, None)
         if data is None:
-            raise RuntimeError("Tried to get slice of data which does not exist")
+            # Data no longer exists! Shouldn't really happen but currently does
+            warnings.warning("Tried to get slice of data which does not exist")
+            return np.zeros([1, 1])
         else:
             return data
 
@@ -894,14 +918,14 @@ class ImageView(QtGui.QSplitter):
             self.win[win.zaxis] = win
 
         # Histogram which controls colour map and levels for main volume
-        self.h1 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h1 = MultiImageHistogramWidget(self.ivm, self, fillHistogram=False)
         self.h1.addImageItem(self.win[0].img)
         self.h1.addImageItem(self.win[1].img)
         self.h1.addImageItem(self.win[2].img)
         self.h1.setBackground(background=None)
         
         # Histogram which controls colour map and levels for data
-        self.h2 = MultiImageHistogramWidget(fillHistogram=False)
+        self.h2 = MultiImageHistogramWidget(self.ivm, self, fillHistogram=False)
         self.h2.setBackground(background=None)
         self.h2.setGradientName("jet")
         for i in range(3):
@@ -991,6 +1015,7 @@ class ImageView(QtGui.QSplitter):
             if self.ivm.cim_pos[dim] != value:
                 # Don't do any updating if the value has not changed
                 self.ivm.cim_pos[dim] = value
+                self.sig_focus_changed.emit(self.ivm.cim_pos)
                 self.update_ortho_views()
         return set_pos
 
@@ -1010,7 +1035,7 @@ class ImageView(QtGui.QSplitter):
         if vol is not None:
             if vol.fname is not None: self.vol_name.setText(vol.fname)
             else: self.vol_name.setText(vol.name)
-            self.h1.setSourceData(self.ivm.main.std(), percentile=99)
+            self.h1.setSourceData(self.ivm.main.name, percentile=99)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
@@ -1086,7 +1111,6 @@ class ImageView(QtGui.QSplitter):
 
     def data_changed(self, data):
         # Repopulate data combo, without sending signals
-        print("Data changed")
         try:
             self.overlay_combo.blockSignals(True)
             self.overlay_combo.clear()
@@ -1145,7 +1169,7 @@ class ImageView(QtGui.QSplitter):
     def update_view_widgets(self):
         if self.current_data_view:
             self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.data().std())
+            self.h2.setSourceData(self.current_data_view.ov_name)
             self.h2.region.setRegion(self.current_data_view.cmap_range)
             self.h2.setAlpha(self.current_data_view.alpha)
 
