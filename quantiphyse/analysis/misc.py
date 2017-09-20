@@ -33,7 +33,7 @@ class MeanValuesProcess(Process):
 
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
-            if data.shape[3] > 1:
+            if data.ndim > 3:
                 ov_data[roi == region] = np.mean(data[roi.std() == region])
             else:
                 ov_data[roi == region] = np.mean(data[roi.std() == region], axis=0)

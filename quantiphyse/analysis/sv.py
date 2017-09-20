@@ -91,13 +91,14 @@ class SupervoxelsProcess(Process):
         else:
             mask = None
 
-        if img.shape[3] > 1:
+        if img.ndim > 3 and img.shape[3] > 1:
             # For 4D data, use PCA to reduce down to 3D
             ncomp = options.pop('n-components', 3)
             img = self.preprocess_pca(img, ncomp)
         else:
             # For 3D data scale to a range of 0-1
-            img = np.squeeze(img, -1).astype(np.float)
+            if img.ndim > 3: img = np.squeeze(img, -1)
+            img = img.astype(np.float32)
             img = (img - img.min()) / (img.max() - img.min())
 
         # FIXME enforce_connectivity=True does not seem to work in ROI mode?
@@ -106,8 +107,8 @@ class SupervoxelsProcess(Process):
         labels = slic_feat(img, n_segments=n_supervoxels, compactness=comp, sigma=sigma,
                            seed_type=seed_type, multichannel=False, multifeat=True,
                            enforce_connectivity=False, return_adjacency=False, spacing=vox_sizes,
-                           mask=np.squeeze(mask, -1), recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
-        labels = np.expand_dims(np.array(labels, dtype=np.int) + 1, -1)
+                           mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
+        labels = np.array(labels, dtype=np.int) + 1
 
         if roi is not None:
             newroi = np.zeros(roi.std().shape)

@@ -90,9 +90,9 @@ class OverlayAnalysis(object):
         centre = self.ivm.cim_pos
 
         # If overlay is 4d, get current 3d volume
-        if data.shape[3] > 1:
+        if data.ndim > 3 and data.shape[3] > 1:
             data = data[:, :, :, centre[3]]
-        else:
+        elif data.ndim > 3:
             data = data[:,:,:,0]
 
         # Generate an array whose entries are integer values of the distance
