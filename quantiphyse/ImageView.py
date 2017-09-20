@@ -18,7 +18,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
-from .utils import get_icon, get_lut
+from .utils import get_icon, get_lut, get_pencol
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
@@ -531,7 +531,7 @@ class OrthoView(pg.GraphicsView):
                 n_conts = len(self.contours)
                 create_new = False
                 for val in roidata.regions:
-                    pencol = roidata.get_pencol(val)
+                    pencol = get_pencol(roidata, val)
                     if val != 0:
                         if n == n_conts:
                             create_new = True
