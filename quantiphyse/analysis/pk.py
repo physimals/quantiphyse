@@ -80,8 +80,17 @@ class PkModellingProcess(BackgroundProcess):
 
     def run(self, options):
         self.log = ""
+        roi_name = options.pop('roi', None)
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        elif roi_name is not None:
+            roi = self.ivm.rois[roi_name]
+
+        self.suffix = options.pop('suffix', '')
+        if self.suffix != "": self.suffix = "_" + self.suffix
+
         img1 = self.ivm.main.std()
-        roi1 = self.ivm.current_roi.std()
+        roi1 = roi.std()
         t101 = self.ivm.data["T10"].std()
 
         R1 = options['r1']
@@ -186,10 +195,10 @@ class PkModellingProcess(BackgroundProcess):
             p = np.percentile(kep1vol, self.thresh1val)
             kep1vol[kep1vol > p] = p
 
-            self.ivm.add_data(Ktrans1vol, 'ktrans', make_current=True)
-            self.ivm.add_data(ve1vol, name='ve')
-            self.ivm.add_data(kep1vol, name='kep')
-            self.ivm.add_data(offset1vol, name='offset')
-            self.ivm.add_data(vp1vol, name='vp')
-            self.ivm.add_data(estimated1vol, name="model_curves")
+            self.ivm.add_data(Ktrans1vol, 'ktrans'+self.suffix, make_current=True)
+            self.ivm.add_data(ve1vol, name='ve'+self.suffix)
+            self.ivm.add_data(kep1vol, name='kep'+self.suffix)
+            self.ivm.add_data(offset1vol, name='offset'+self.suffix)
+            self.ivm.add_data(vp1vol, name='vp'+self.suffix)
+            self.ivm.add_data(estimated1vol, name="model_curves"+self.suffix)
             
