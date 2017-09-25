@@ -398,16 +398,19 @@ class DataView:
         data = self.ivm.data.get(self.ov_name, None)
         if data is None:
             # Data no longer exists! Shouldn't really happen but currently does
-            warnings.warning("Tried to get slice of data which does not exist")
-            return np.zeros([1, 1])
+            warnings.warn("Tried to get slice of data which does not exist")
+            return None
         else:
             return data
 
     def get_slice(self, *axes):
-        if self.roi_only:
-            return self.data().get_slice(axes, mask=self.ivm.current_roi)
+        data = self.data()
+        if data is None:
+            return np.zeros([1, 1])
+        elif self.roi_only:
+            return data.get_slice(axes, mask=self.ivm.current_roi)
         else:
-            return self.data().get_slice(axes)
+            return data.get_slice(axes)
 
 class RoiView:
     """
