@@ -19,11 +19,10 @@ import glob
 import types
 
 import nibabel as nib
-import nibabel.nicom.dicomwrappers as nib_dcm
 import numpy as np
 import nrrd
 
-from ..volumes import DataGrid, QpData
+from ..volumes import DataGrid, QpData, Transform
 
 HAVE_DCMSTACK = True
 try:
@@ -111,6 +110,7 @@ class DicomFolder(QpData):
         Basically we determine the sequence using the InstanceNumber tag
         but make sure we put slices together into volumes using the SliceLocation tag
         """
+        import nibabel.nicom.dicomwrappers as nib_dcm
         ignored_files = []
         first = True
         dcms = []
@@ -187,8 +187,15 @@ def load(fname):
     else:
         raise RuntimeError("%s: Unrecognized file type" % fname)
 
-def save(data, fname):
-    img = nib.Nifti1Image(data.std(), data.stdgrid.affine)
+def save(data, fname, grid=None):
+    if grid is None:
+        grid = data.stdgrid
+        arr = data.std()
+    else:
+        t = Transform(data.stdgrid, grid)
+        arr = t.transform_data(data.std())
+
+    img = nib.Nifti1Image(arr, grid.affine)
     img.update_header()
     img.to_filename(fname)
     data.fname = fname

@@ -778,7 +778,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
-                save(self.ivm.current_data, fname)
+                save(self.ivm.current_data, fname, self.ivm.main.rawgrid)
             else: # Cancelled
                 pass
 
@@ -791,7 +791,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
             if fname != '':
-                save(self.ivm.current_roi, fname)
+                save(self.ivm.current_roi, fname, self.ivm.main.rawgrid)
             else: # Cancelled
                 pass
 
