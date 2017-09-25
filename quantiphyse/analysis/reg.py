@@ -114,9 +114,14 @@ class RegProcess(BackgroundProcess):
         # registration data. Useful for masks defined on an unregistered volume.
         # We handle multiple warp ROIs by building 4D data in which each volume is
         # a separate ROI. This is then unpacked at the end.
-        self.warp_roi_names = options.pop("warp-rois", [])
+        self.warp_roi_names = dict(options.pop("warp-rois", {}))
         warp_roi_name = options.pop("warp-roi", None)
-        if warp_roi_name is not None:  self.warp_roi_names.append(warp_roi_name)
+        if warp_roi_name is not None:  self.warp_roi_names[warp_roi_name] = warp_roi_name + "_warp"
+
+        for roi_name in self.warp_roi_names.keys():
+            if roi_name not in self.ivm.rois:
+                print("WARNING: removing non-existant ROI: %s" % roi_name)
+                del self.warp_roi_names[roi_name]
 
         if len(self.warp_roi_names) > 0:
             warp_rois = np.zeros(list(refdata.shape) + [len(self.warp_roi_names)])
@@ -128,6 +133,7 @@ class RegProcess(BackgroundProcess):
             if self.debug: print("Have %i warped ROIs" % len(self.warp_roi_names))
         else:
             warp_rois = None
+        print(self.warp_roi_names)
 
         # Function input data must be passed as list of arguments for multiprocessing
         self.start(1, [self.method, options, reg_data, refdata, warp_rois])
@@ -148,8 +154,8 @@ class RegProcess(BackgroundProcess):
             if output[1] is not None: 
                 for idx, roi_name in enumerate(self.warp_roi_names):
                     roi = output[1][:,:,:,idx]
-                    if self.debug: print("Adding warped ROI: %s" % (roi_name+"_warp"))
-                    self.ivm.add_roi(roi, name=roi_name+"_warp", make_current=False)
+                    if self.debug: print("Adding warped ROI: %s" % self.warp_roi_names[roi_name])
+                    self.ivm.add_roi(roi, name=self.warp_roi_names[roi_name], make_current=False)
             self.log = output[2]
 
 class McflirtProcess(Process):
