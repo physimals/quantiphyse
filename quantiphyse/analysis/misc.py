@@ -34,9 +34,9 @@ class MeanValuesProcess(Process):
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
             if data.ndim > 3:
-                ov_data[roi == region] = np.mean(data[roi.std() == region])
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
             else:
-                ov_data[roi == region] = np.mean(data[roi.std() == region], axis=0)
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region], axis=0)
 
         self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
@@ -296,7 +296,7 @@ class RenameDataProcess(Process):
     """ Rename data  """
     def run(self, options):
         for name, newname in options.items():
-            self.ivm.rename_overlay(name, newname)
+            self.ivm.rename_data(name, newname)
             
         self.status = Process.SUCCEEDED
 
