@@ -96,11 +96,14 @@ class BatchCase:
         overlays.update(self.root.get("Overlays", {}))
         for key in overlays:
             filepath = self.get_filepath(overlays[key])
-            if self.debug: print("  - Loading overlay '%s' from %s" % (key, filepath))
-            ovl = load(filepath)
-            ovl.name = key
-            self.ivm.add_data(ovl, make_current=True)
-        
+            if self.debug: print("  - Loading data '%s' from %s" % (key, filepath))
+            try:
+                ovl = load(filepath)
+                ovl.name = key
+                self.ivm.add_data(ovl, make_current=True)
+            except:
+                print("  - WARNING: failed to load data: %s" % filepath)
+                
     def load_rois(self):
         # Load case ROIs followed by any root ROIs not overridden by case
         rois = self.case.get("Rois", {})
@@ -108,10 +111,13 @@ class BatchCase:
         for key in rois:
             filepath = self.get_filepath(rois[key])
             if self.debug: print("  - Loading ROI '%s' from %s" % (key, filepath))
-            roi = load(filepath)
-            roi.name = key
-            self.ivm.add_roi(roi, make_current=True)
-        
+            try:
+                roi = load(filepath)
+                roi.name = key
+                self.ivm.add_roi(roi, make_current=True)
+            except:
+                print("  - WARNING: failed to load ROI: %s" % filepath)
+
     def run_processing_steps(self):
         # Run processing steps
         for process in self.root.get("Processing", []):
@@ -164,8 +170,8 @@ class BatchCase:
     def save_output(self):
         if "SaveVolume" in self.root:
             fname = self.root["SaveVolume"]
-            if not fname: fname = self.ivm.vol.name
-            self.save_data(self.ivm.vol, fname)
+            if not fname: fname = self.ivm.main.name
+            self.save_data(self.ivm.main, fname)
 
         for name, fname in self.get("SaveOverlays", {}).items():
             if not fname: fname = name
@@ -194,7 +200,7 @@ class BatchCase:
         if not os.path.isabs(fname):
             fname = os.path.join(self.outdir, fname)
         print("  - Saving %s" % fname)
-        save(vol, fname)
+        save(vol, fname, self.ivm.main.rawgrid)
 
     def run(self):
         print("Processing case: %s" % self.id)
