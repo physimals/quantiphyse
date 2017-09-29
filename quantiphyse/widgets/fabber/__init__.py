@@ -184,6 +184,8 @@ class FabberWidget(QpWidget):
         self.rundata = FabberRunData()
         self.rundata["fabber_lib"] = self.fabber_lib
         self.rundata["save-mean"] = ""
+        self.rundata["save-model-fit"] = ""
+        self.rundata["save-model-extras"] = ""
         self.reset()
 
     def run_box(self, start_fn):
@@ -774,7 +776,7 @@ class ASLWidget(FabberWidget):
                                            desc="ASL analysis",
                                            **kwargs)
         self.groups = {"P" : "Tag/Control pairs", "R" : "Repeats", "T" : "TIs"}
-        self.default_order = "PRT"
+        self.default_order = "TRP"
 
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
@@ -817,13 +819,14 @@ class ASLWidget(FabberWidget):
         grid.addWidget(self.tc_ord_combo, 0, 2)
 
         grid.addWidget(QtGui.QLabel("Data grouping\n(top = outermost)"), 1, 0, alignment=QtCore.Qt.AlignTop)
-        self.group_list = OrderList([self.groups[g] for g in self.default_order])
-        self.group_list.sig_changed.connect(self.update_ui)
+        self.group_list = OrderList()
         grid.addWidget(self.group_list, 1, 1)
         self.list_btns = OrderListButtons(self.group_list)
         grid.addLayout(self.list_btns, 1, 2)
-        self.group_list.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
-        
+        # Have to set items after adding to grid or sizing doesn't work right
+        self.group_list.setItems([self.groups[g] for g in self.default_order])
+        self.group_list.sig_changed.connect(self.update_ui)
+
         self.data_preview = AslDataPreview(self.default_order, True)
         grid.addWidget(self.data_preview, 2, 0, 1, 3)
 
@@ -839,10 +842,12 @@ class ASLWidget(FabberWidget):
         self.lbl_combo = QtGui.QComboBox()
         self.lbl_combo.addItem("cASL/pcASL")
         self.lbl_combo.addItem("pASL")
+        self.lbl_combo.currentIndexChanged.connect(self.update_ui)
         grid.addWidget(self.lbl_combo, 0, 1)
 
-        grid.addWidget(QtGui.QLabel("PLDs"), 1, 0)
-        self.plds = NumberList([2.9,])
+        self.plds_label = QtGui.QLabel("PLDs")
+        grid.addWidget(self.plds_label, 1, 0)
+        self.plds = NumberList([1.5,])
         grid.addWidget(self.plds, 1, 1, 1, 2)
 
         grid.addWidget(QtGui.QLabel("Bolus Durations"), 2, 0)
@@ -904,11 +909,15 @@ class ASLWidget(FabberWidget):
             order += code
         print(order)
         self.data_preview.set_order(order, tagfirst)
+        casl = self.lbl_combo.currentIndex() == 0
+        if casl:
+            self.plds_label.setText("PLDs")
+        else:
+            self.plds_label.setText("TIs")
 
     def get_vol_idx(self, tidx, ntis, ridx, nrepeats, tcidx, ntcs):
         idx = 0
         for code in self.data_preview.order:
-#            print(code, idx)
             if code == "R":
                 idx *= nrepeats
                 idx += ridx
@@ -927,7 +936,7 @@ class ASLWidget(FabberWidget):
         ntis = len(self.plds.values())
         if nvols % ntis != 0:
             raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
-        nrepeats = nvols / ntis
+        nrepeats = int(nvols / ntis)
 
         tcpairs = ctpairs = False
         if self.tc_combo.currentIndex() == 0:
@@ -941,33 +950,32 @@ class ASLWidget(FabberWidget):
             else:
                 ctpairs = True
 
+        print("ntis=%i, nrepeats=%i, tcpairs=%i, ctpairs=%i, nvols=%i" % (ntis, nrepeats, tcpairs, ctpairs, nvols))
         asldata = np.zeros(list(self.ivm.grid.shape) + [nvols, ])
         out_idx = 0
+        if tcpairs or ctpairs: npairs = 2
+        else: npairs = 1
         for tidx in range(ntis):
             for ridx in range(nrepeats):
+                idx1 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, npairs)
+                idx2 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 1, npairs)
+                print("tidx=%i, ridx=%i, vidx=%i" % (tidx, ridx, in_idx))
                 if ctpairs:
-                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 2)
-                    print("tidx=%i, ridx=%i, vidx=%i" % (tidx, ridx, in_idx))
                     # Do control - tag
-                    print("Doing %i - %i" % (in_idx, in_idx+1))
-                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx] - self.ivm.main.std[:,:,:,in_idx+1]
+                    print("Doing %i - %i" % (idx1, idx2))
+                    asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx1] - self.ivm.main.std()[:,:,:,idx2]
                 elif tcpairs:
-                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 2)
                     # Do control - tag
-                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx+1] - self.ivm.main.std[:,:,:,in_idx]
+                    print("Doing %i - %i" % (idx2, idx1))
+                    asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx2] - self.ivm.main.std()[:,:,:,idx1]
                 else:
-                    in_idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, 1)
-                    asldata[:,:,:,out_idx] = self.ivm.main.std[:,:,:,in_idx]
+                    asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx1]
                 out_idx += 1
-        # FIXME temp
-        meandiff = np.mean(asldata, 3)
-        self.ivm.add_data(meandiff, name="diff", make_current=True)
-        #asldata = asldata.view(QpVolume)
-        #asldata.md = FileMetadata("asdldata", shape=asldata.shape, affine=self.ivm.vol.md.affine, voxel_sizes=self.ivm.voxel_sizes)
-        #self.ivm.reset()
-        #self.ivm.add_overlay("asdldata", asldata)
-        #return
 
+#        meandiff = np.mean(asldata, 3)
+#        self.ivm.add_data(meandiff, name="diff", make_current=True)
+        self.ivm.add_data(asldata, name="asldata", make_main=True)
+        
         # Acquisition parameters
         if self.lbl_combo.currentIndex() == 0:
             self.rundata["casl"] = ""
@@ -976,17 +984,23 @@ class ASLWidget(FabberWidget):
 
         tis = self.plds.values()
         taus = self.taus.values()
-        if len(tis) != len(taus) and len(taus) != 1:
+        singletau = None
+        if len(taus) == 1:
+            singletau = taus[0]
+            self.rundata["tau"] = str(singletau)
+        elif len(tis) != len(taus):
             raise RuntimeError("Number of bolus durations must match number TIs if more than one value given")
-        
-        for idx, ti in enumerate(tis):
-            self.rundata["ti%i" % (idx+1)] = str(ti)
-
-        if len(taus) > 1:
+        else:
             for idx, tau in enumerate(tau):
                 self.rundata["tau%i" % (idx+1)] = str(tau)
-        else:
-            self.rundata["tau"] = str(taus[0])
+        
+        for idx, ti in enumerate(tis):
+            if "casl" in self.rundata:
+                if singletau is not None: ti += singletau
+                else: ti += taus[idx]
+            self.rundata["ti%i" % (idx+1)] = str(ti)
+
+        self.rundata["repeats"] = str(nrepeats)
 
         # Starting values
         self.rundata["t1"] = str(self.t1.spin.value())
@@ -1018,7 +1032,7 @@ class ASLWidget(FabberWidget):
             del self.rundata["inferart"]
             del self.rundata["incart"]
             
-        if self.fixtau_cb.isChecked():
+        if not self.fixtau_cb.isChecked():
             self.rundata["infertau"] = ""
             self.rundata["inctau"] = ""
         else:
@@ -1028,4 +1042,6 @@ class ASLWidget(FabberWidget):
         for item in self.rundata.items():
             print("%s: %s" % item)
         self.start_task()
+        self.tc_combo.setCurrentIndex(1)
+
 
