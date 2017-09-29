@@ -1,3 +1,5 @@
+from __future__ import division, print_function
+
 import os, sys
 
 from matplotlib import cm
@@ -6,6 +8,20 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 LOCAL_FILE_PATH=""
+DEBUG = False
+
+def set_debug(debug):
+    global DEBUG
+    DEBUG = debug
+    print("Debug=", DEBUG)
+
+def debug(*msgs):
+    if DEBUG:
+        print(*msgs)
+
+def warn(msg):
+    sys.stderr.write("WARNING: %s\n" % str(msg))
+    sys.stderr.flush()
 
 def set_local_file_path(path):
     global LOCAL_FILE_PATH
