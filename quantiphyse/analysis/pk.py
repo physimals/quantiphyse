@@ -1,5 +1,8 @@
+import sys
 import time
 import numpy as np
+
+from ..utils import debug
 
 from . import Process, BackgroundProcess
 from .pk_model import PyPk
@@ -8,7 +11,6 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
     """
     Simple function to run the c++ pk modelling code. Must be a function to work with multiprocessing
     """
-    #print("pk modelling worker started")
     try:
         log = ""
         t1 = np.arange(0, img1sub.shape[-1])*delt
@@ -31,6 +33,8 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         img1sub = np.ascontiguousarray(img1sub)
         t101sub = np.ascontiguousarray(t101sub)
         t1 = np.ascontiguousarray(t1)
+        if len(img1sub) == 0:
+            raise RuntimeError("Pk Modelling - no unmasked data!")
 
         Pkclass = PyPk(t1, img1sub, t101sub)
         Pkclass.set_bounds(ub, lb)
@@ -48,13 +52,12 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         steps1 = np.around(size_tot/size_step)
         num_row = 1.0  # Just a placeholder for the meanwhile
 
-        #print("Number of voxels per step: ", size_step)
-        #print("Number of steps: ", steps1)
+        debug("Number of voxels per step: ", size_step)
+        debug("Number of steps: ", steps1)
         queue.put((num_row, 1))
         for ii in range(int(steps1)):
             if ii > 0:
                 progress = float(ii) / float(steps1) * 100
-                # print(progress)
                 queue.put((num_row, progress))
 
             time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
@@ -70,7 +73,6 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
         return id, True, (res1, fcurve1, params2, log)
     except:
-        #print("PK worker error: %s" % sys.exc_info()[0])
         return id, False, sys.exc_info()[0]
 
 class PkModellingProcess(BackgroundProcess):
@@ -109,19 +111,17 @@ class PkModellingProcess(BackgroundProcess):
         self.log += "First %i time points used for baseline normalisation\n" % baseline_tpts
         baseline = np.mean(img1[:, :, :, :baseline_tpts], axis=-1)
 
-        #print("Convert to list of enhancing voxels")
+        debug("Convert to list of enhancing voxels")
         img1vec = np.reshape(img1, (-1, img1.shape[-1]))
         T10vec = np.reshape(t101, (-1))
         roi1vec = np.array(np.reshape(roi1, (-1)), dtype=bool)
         baseline = np.reshape(baseline, (-1))
 
-        #print("Make sure the type is correct")
         img1vec = np.array(img1vec, dtype=np.double)
         T101vec = np.array(T10vec, dtype=np.double)
         self.roi1vec = np.array(roi1vec, dtype=bool)
 
-        #print("subset")
-        # Subset within the ROI and
+        debug("subset")
         img1sub = img1vec[roi1vec, :]
         T101sub = T101vec[roi1vec]
         self.baseline = baseline[roi1vec]
@@ -129,7 +129,6 @@ class PkModellingProcess(BackgroundProcess):
         # Normalisation of the image - convert to signal enhancement
         img1sub = img1sub / (np.tile(np.expand_dims(self.baseline, axis=-1), (1, img1.shape[-1])) + 0.001) - 1
 
-        #print("Running pk")
         self.shape = img1.shape
         args = [img1sub, T101sub, R1, R2, DelT, InjT, TR, TE, FA, Dose, model_choice]
         self.start(1, args)
@@ -138,7 +137,6 @@ class PkModellingProcess(BackgroundProcess):
         if self.queue.empty(): return
         while not self.queue.empty():
             num_row, progress = self.queue.get()
-        print(progress)
         self.sig_progress.emit(float(progress)/100)
 
     def finished(self):
