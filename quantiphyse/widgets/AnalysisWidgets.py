@@ -16,7 +16,7 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from . import QpWidget
-from ..ImageView import PickMode
+from ..gui.ImageView import PickMode
 from ..utils import get_icon, copy_table, get_pencol
 from ..QtInherit import HelpButton, BatchButton
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess

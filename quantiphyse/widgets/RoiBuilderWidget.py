@@ -16,7 +16,7 @@ from PySide import QtCore, QtGui
 from ..QtInherit.dialogs import error_dialog
 from ..QtInherit.widgets import OverlayCombo, RoiCombo, NumericOption
 from ..QtInherit import HelpButton
-from ..ImageView import PickMode, DragMode
+from ..gui.ImageView import PickMode, DragMode
 from ..utils import get_icon
 from ..analysis.feat_pca import PcaFeatReduce
 from . import QpWidget

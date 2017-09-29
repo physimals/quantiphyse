@@ -3,7 +3,7 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from ..QtInherit import HelpButton
 from ..utils import get_icon
-from ..qpmain import __version__
+from .._version import __version__
 from . import QpWidget
 
 class OverviewWidget(QpWidget):
