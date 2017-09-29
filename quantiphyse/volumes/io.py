@@ -143,6 +143,9 @@ class DicomFolder(QpData):
             sys.stdout.write("\b\b\b\b%3i%%" % int(percent))
             sys.stdout.flush()
         
+        if len(slices) < 0:
+            raise RuntimeError("This doesn't seem to be a DICOM folder")
+            
         n_vols = int(len(dcms) / len(slices))
         if n_vols * len(slices) != len(dcms):
             raise RuntimeError("Could not parse DICOMS - unable to determine fixed number of volumes")
