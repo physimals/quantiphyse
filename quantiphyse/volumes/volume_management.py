@@ -22,7 +22,7 @@ from PySide import QtCore, QtGui
 import numpy as np
 
 from .io import NumpyData
-from . import DEBUG
+from ..utils import debug
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -123,11 +123,10 @@ class ImageVolumeManagement(QtCore.QObject):
         
         self.main = self.data[name]
         self.grid = self.main.rawgrid.reorient_ras()
-        if DEBUG: 
-            print("Main data raw grid")
-            print(self.main.rawgrid.affine)
-            print("RAS aligned")
-            print(self.grid.affine)
+        debug("Main data raw grid")
+        debug(self.main.rawgrid.affine)
+        debug("RAS aligned")
+        debug(self.grid.affine)
 
         self.cim_pos = [int(d/2) for d in self.grid.shape]
         self.cim_pos.append(int(self.main.nvols/2))
@@ -154,11 +153,11 @@ class ImageVolumeManagement(QtCore.QObject):
         else:
             data.regrid(self.grid)
 
+        self.sig_all_data.emit(self.data.keys())
+
         # Make current if requested, or if first overlay
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
-
-        self.sig_all_data.emit(self.data.keys())
 
     def add_roi(self, data, name=None, make_current=False, signal=True):
         if isinstance(data, np.ndarray):
@@ -175,11 +174,11 @@ class ImageVolumeManagement(QtCore.QObject):
             # FIXME regridding ROIs needs some thought - need to remain integers!
             roi.regrid(self.grid)
 
+        self.sig_all_rois.emit(self.rois.keys())
+
         if make_current:
             self.set_current_roi(roi.name)
             
-        self.sig_all_rois.emit(self.rois.keys())
-
     def _data_exists(self, name, invert=False):
         if name not in self.data:
             raise RuntimeError("data %s does not exist" % name)
