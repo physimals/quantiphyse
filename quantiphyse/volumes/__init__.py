@@ -4,6 +4,8 @@ import warnings
 import numpy as np
 import scipy
 
+from ..utils import debug
+
 """
 Work-in-progress on Next Generation volume class
 
@@ -46,9 +48,6 @@ For consideration
  - We could expand the OTG to accommodate data outside its range?
 
 """
-
-# Enable lots of debug output
-DEBUG = True
 
 class DataGrid:
     """
@@ -117,6 +116,11 @@ class Transform:
     EQ_TOL = 1e-3
 
     def __init__(self, in_grid, out_grid):
+        debug("Transforming from")
+        debug(in_grid.affine)
+        debug("To")
+        debug(out_grid.affine)
+
         # Convert the transformation into optional re-ordering and flipping
         # of axes and a final optional affine transformation
         # This enables us to use faster methods in the case where the
@@ -130,6 +134,7 @@ class Transform:
 
         # Generate potentially simplified transformation using re-ordering and flipping
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
+        #self.reorder, self.flip, self.tmatrix = range(3), [], self.tmatrix_raw
 
     def _is_diagonal(self, mat):
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
@@ -150,41 +155,51 @@ class Transform:
             if mat[newd, d] < 0:
                 dim_flip.append(newd)
      
+        new_mat = np.copy(mat)
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            new_mat = np.copy(mat)
-            print("Before simplification")
-            print(new_mat)
-            print(self.output_shape)
+            debug("Before simplification")
+            debug(new_mat)
+            debug(self.output_shape)
             new_shape = [self.output_shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
                 new_mat[:,d] = mat[:,idx]
-            print("After transpose", dim_order)
-            print(new_mat)
+            debug("After transpose", dim_order)
+            debug(new_mat)
             for dim in dim_flip:
                 # Change signs to positive to flip a dimension
                 new_mat[:,dim] = -new_mat[:,dim]
-            print("After flip", dim_flip)
-            print(new_mat)
+            debug("After flip", dim_flip)
+            debug(new_mat)
             for dim in dim_flip:
-                # Adjust origin 
-                new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim] -1)
-            print("After adjust origin", new_shape)
-            print(new_mat)
-            return dim_order, dim_flip, new_mat
+                # Adjust origin
+                new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
+                
+            debug("After adjust origin", new_shape)
+            debug(new_mat)
+
+            if not self._is_identity(new_mat):
+                # If we haven't succeeded in doing the transformation by
+                # flips and transposition, then we might as well do the
+                # full affine
+                return range(3), [], np.copy(mat)
+            else:
+                return dim_order, dim_flip, np.identity(4)
         else:
             # Transposition was inconsistent, just go with general
             # affine transform - this will work but might be slow
-            return None, None, mat
+            return range(3), [], new_mat
 
     def transform_data(self, data):
-        if self.reorder is not None:
+        if self.reorder != range(3):
             if data.ndim == 4: self.reorder = self.reorder + [3]
-            if DEBUG: print("Re-ordering axes: ", self.reorder)
+            debug("Re-ordering axes: ", self.reorder)
             data = np.transpose(data, self.reorder)
-        if self.flip is not None:
-            if DEBUG: print("Flipping axes: ", self.flip)
+
+        if len(self.flip) != 0:
+            debug("Flipping axes: ", self.flip)
             for d in self.flip: data = np.flip(data, d)
+
         if not self._is_identity(self.tmatrix):
             affine = self.tmatrix[:3,:3]
             offset = list(self.tmatrix[:3,3])
@@ -200,12 +215,12 @@ class Transform:
                 # The transformation is diagonal, so use this sequence instead of 
                 # the full matrix - this will be faster
                 affine = np.diagonal(affine)
-                #print("Matrix is diagonal - ", affine)
+                #debug("Matrix is diagonal - ", affine)
             else:
                 pass
-            print("WARNING: affine_transform: ")
-            print(affine)
-            print("Offset = ", offset)
+            debug("WARNING: affine_transform: ")
+            debug(affine)
+            debug("Offset = ", offset)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
         else:
             pass
@@ -276,11 +291,11 @@ class QpData:
         by std() is defined.
         """
         if not self.stdgrid.matches(grid):
-            if DEBUG: print("Regridding")
+            debug("Regridding")
             self.stdgrid = grid
             self._update_stddata()
         else:
-            if DEBUG: print("Not bothering to regrid - no change")
+            debug("Not bothering to regrid - no change")
 
     def strval(self, pos):
         """ 
@@ -304,9 +319,9 @@ class QpData:
         mask - if specified, data outside the mask is given a fixed fill value
         fill_value - fill value, if not specified a value less than the data minimum is used
         """
-        #print("Getting slice for %s" % self.name)
+        #debug("Getting slice for %s" % self.name)
         vol_data = self.std()
-        #print("Got data")
+        #debug("Got data")
         sl = [slice(None)] * vol_data.ndim
         for axis, pos in axes:
             if axis >= vol_data.ndim:
@@ -319,14 +334,14 @@ class QpData:
         slice_data = vol_data[sl]
 
         if mask is not None:
-            #print("Masking")
+            #debug("Masking")
             slice_data = np.copy(slice_data)
             mask_slice = mask.get_slice(axes)
             if fill_value is None:
                 # Less than the minimum
                 fill_value = self.range[0] - 0.000001
             slice_data[mask_slice == 0] = fill_value
-        #print("Done")
+        #debug("Done")
         return slice_data
 
     def set_roi(self, roi):
@@ -388,12 +403,12 @@ class QpData:
             data[nans] = 0
 
     def _update_stddata(self):
-        if DEBUG: print("Updating stddata for %s" % self.name)
+        debug("Updating stddata for %s" % self.name)
         t = Transform(self.rawgrid, self.stdgrid)
-        if DEBUG: print("Raw grid: ")
-        if DEBUG: print(self.rawgrid.affine)
-        if DEBUG: print("Std grid: ")
-        if DEBUG: print(self.stdgrid.affine)
+        debug("Raw grid: ")
+        debug(self.rawgrid.affine)
+        debug("Std grid: ")
+        debug(self.stdgrid.affine)
         rawdata = self.raw()
         if rawdata.ndim not in (3, 4):
             raise RuntimeError("Data must be 3D or 4D (padded if necessary")
@@ -414,5 +429,5 @@ class QpData:
             self.regions = []
 
         self.range = (self.stddata.min(), self.stddata.max())
-        if DEBUG: print("Done")
+        debug("Done")
         
