@@ -283,7 +283,7 @@ class ModelCurves(QpWidget):
     def update_minmax(self, ovls):
         dmin, dmax, first = 0, 100, True
         for name in ovls:
-            ovl = self.ivm.data[name].std
+            ovl = self.ivm.data[name].std()
             if first or ovl.min() < dmin: dmin = ovl.min()
             if first or ovl.max() > dmax: dmax = ovl.max()
             first = False
@@ -313,19 +313,21 @@ class ModelCurves(QpWidget):
             self.updating = True # Hack to prevent plot being refreshed during table update
             self.rms_table.clear()
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
-            self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
+            #self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
             idx = 0
             for name in sorted(self.ivm.data.keys()):
                 ovl = self.ivm.data[name]
                 pos = self.ivm.cim_pos
                 if ovl.ndim == 4 and ovl.nvols == self.ivm.main.nvols:
-                    rms = np.sqrt(np.mean(np.square(self.ivm.main.std - ovl.std), 3))
-                    if self.ivm.current_roi is not None:
-                        rms[self.ivm.current_roi.std == 0] = 0
-                        mean_rms = np.mean(rms[self.ivm.current_roi.std > 0])
-                    else:
-                        mean_rms = np.mean(rms)
-                    pos_rms = rms[pos[0], pos[1], pos[2]]
+                    #rms = np.sqrt(np.mean(np.square(self.ivm.main.std() - ovl.std()), 3))
+                    #if self.ivm.current_roi is not None:
+                    #    rms[self.ivm.current_roi.std() == 0] = 0
+                    #    mean_rms = np.mean(rms[self.ivm.current_roi.std() > 0])
+                    #else:
+                    #    mean_rms = np.mean(rms)
+                    pos_curve = ovl.std()[pos[0], pos[1], pos[2],:]
+                    main_curve = self.ivm.main.std()[pos[0], pos[1], pos[2],:]
+                    pos_rms = np.sqrt(np.mean(np.square(main_curve - pos_curve)))
                     name_item = QtGui.QStandardItem(name)
                     name_item.setCheckable(True)
                     name_item.setEditable(False)
@@ -336,9 +338,9 @@ class ModelCurves(QpWidget):
                     item = QtGui.QStandardItem(str(np.around(pos_rms, 10)))
                     item.setEditable(False)
                     self.rms_table.setItem(idx, 1, item)
-                    item = QtGui.QStandardItem(str(np.around(mean_rms, 10)))
-                    item.setEditable(False)
-                    self.rms_table.setItem(idx, 2, item)
+                    #item = QtGui.QStandardItem(str(np.around(mean_rms, 10)))
+                    #item.setEditable(False)
+                    #self.rms_table.setItem(idx, 2, item)
                     idx += 1
         finally:
             self.updating = False
