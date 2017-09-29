@@ -28,7 +28,7 @@ Pkrun2::Pkrun2(std::vector<double> & tt1, std::vector< std::vector<double> > & y
     mrows = (int)y1.size();
     ncols = (int)y1[0].size();
     n_t101 = (int)T101.size();
-
+    
     // Assign memory to variable arrays and populate temporal array for a single instance
     t = new double [m_t1];
     y = new double [m_t1];
@@ -75,7 +75,6 @@ Pkrun2::~Pkrun2()
 
 void Pkrun2::set_bounds(vector<double> & ub1, vector<double> & lb1)
 {
-    cout << "Setting bounds \n";
     // Sets the maximum number of parameters that we can use
     ub[0]= ub1.at(0); ub[1]=ub1.at(1); ub[2]=ub1.at(2); ub[3]=ub1.at(3);
     lb[0]= lb1.at(0); lb[1]=lb1.at(1); lb[2]=lb1.at(2); lb[3]=lb1.at(3);
