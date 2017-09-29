@@ -1,11 +1,11 @@
 import sys
 import os
-import warnings
 import traceback
 
 import numpy as np
 
 from . import Process, BackgroundProcess
+from ..utils import debug, warn
 
 # Known registration methods (case-insensitive)
 REG_METHODS = {}
@@ -16,7 +16,7 @@ try:
         return deedsReg(regdata, refdata, warp_rois, **options)
     REG_METHODS["deeds"] = deeds_reg
 except:
-    print("WARNING: deeds registration method not found")
+    warn("deeds registration method not found")
 
 try:
     from .mcflirt import mcflirt
@@ -32,7 +32,7 @@ try:
         return retdata[:,:,:,0], log
     REG_METHODS["mcflirt"] = mcflirt_reg
 except:
-    print("WARNING: mcflirt registration method not found")
+    warn("mcflirt registration method not found")
 
 """
 Registration function for asynchronous process - used for moco and registration
@@ -120,7 +120,7 @@ class RegProcess(BackgroundProcess):
 
         for roi_name in self.warp_roi_names.keys():
             if roi_name not in self.ivm.rois:
-                print("WARNING: removing non-existant ROI: %s" % roi_name)
+                warn("removing non-existant ROI: %s" % roi_name)
                 del self.warp_roi_names[roi_name]
 
         if len(self.warp_roi_names) > 0:
@@ -130,10 +130,10 @@ class RegProcess(BackgroundProcess):
                 if roi.shape != refdata.shape:
                     raise RuntimeError("Warp ROI %s has different shape to registration data" % roi_name)
                 warp_rois[:,:,:,idx] = roi
-            if self.debug: print("Have %i warped ROIs" % len(self.warp_roi_names))
+            debug("Have %i warped ROIs" % len(self.warp_roi_names))
         else:
             warp_rois = None
-        print(self.warp_roi_names)
+        debug(self.warp_roi_names)
 
         # Function input data must be passed as list of arguments for multiprocessing
         self.start(1, [self.method, options, reg_data, refdata, warp_rois])
@@ -154,7 +154,7 @@ class RegProcess(BackgroundProcess):
             if output[1] is not None: 
                 for idx, roi_name in enumerate(self.warp_roi_names):
                     roi = output[1][:,:,:,idx]
-                    if self.debug: print("Adding warped ROI: %s" % self.warp_roi_names[roi_name])
+                    debug("Adding warped ROI: %s" % self.warp_roi_names[roi_name])
                     self.ivm.add_roi(roi, name=self.warp_roi_names[roi_name], make_current=False)
             self.log = output[2]
 
