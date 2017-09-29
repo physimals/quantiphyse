@@ -18,7 +18,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
-from .utils import get_icon, get_lut, get_pencol
+from ..utils import get_icon, get_lut, get_pencol, debug
 
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
@@ -27,22 +27,26 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     and multiple image item views which are affected by changes to the
     levels or LUT
     """
-    def __init__(self, ivm, ivl, *args, **kwargs):
+    def __init__(self, ivm, ivl, imgs, *args, **kwargs):
+        self.percentile = kwargs.pop("percentile", 100)
+        kwargs["fillHistogram"] = False
         super(MultiImageHistogramWidget, self).__init__(*args, **kwargs)
+        self.setBackground(None)
         self.ivm = ivm
         self.ivl = ivl
         self.ivl.sig_focus_changed.connect(self._focus_changed)
         self.vol = 0
-        self.imgs = []
-        self.data_name = None
-        self.sigLevelChangeFinished.connect(self.levels_changed)
-        self.sigLevelsChanged.connect(self.levels_changed)
-        self.sigLookupTableChanged.connect(self.lut_changed)
-        self.alpha = 255
+        self.imgs = imgs
+        self.dv = None
+        self.sigLevelChangeFinished.connect(self._update_region)
+        self.sigLevelsChanged.connect(self._update_region)
+        self.sigLookupTableChanged.connect(self._update_lut)
+        self._update_lut()
+        self._update_region()
 
-    def setSourceData(self, data_name, percentile=100):
+    def set_data_view(self, dv):
         """
-        Set the source data for the histogram widget. This will be a
+        Set the source data viewfor the histogram widget. This will be a
         3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
         methods to extract a histogram
 
@@ -50,25 +54,45 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         percentile of the data - for main volume it is useful to set this 
         to 99% to improve visibility
         """
-        self.data_name = data_name
-        self.percentile = percentile
+        if self.dv is not None:
+            self.dv.sig_changed.disconnect(self._update)
+        self.dv = dv
 
-        # Initialize colormap region
-        arr = self.ivm.data[self.data_name].std()
-        self.region.setRegion([np.min(arr), np.max(arr)])
-        self.region.setBounds([np.min(arr), None])
-        self.region.lines[0].setValue(np.min(arr))
+        if self.dv is not None:
+            self._update(dv)
 
-        self._update_histogram()
+            # Only needs to be done once for a new DV
+            self._update_histogram()
+            arr = dv.data().std()
+            self.region.setBounds([np.min(arr), None])
+            self.dv.sig_changed.connect(self._update)
+        else:
+            self.plot.setData([], [])
+            self.region.setRegion([0, 1])
 
-    def _focus_changed(self, pos):
-        if self.vol != pos[3]:
-            self.vol = pos[3]
-            if self.data_name is not None:
-                self._update_histogram()
-    
+    def _update(self, dv):
+        try:
+            self.gradient.loadPreset(self.dv.cmap)
+        except KeyError:
+            self._setMatplotlibGradient(self.dv.cmap)
+        self.region.setRegion(self.dv.cmap_range)
+        self.lut = None
+        self._update_lut()
+
+    def _update_region(self):
+        for img in self.imgs:
+            if img is not None:
+                img.setLevels(self.region.getRegion())
+        if self.dv is not None:
+            self.dv.cmap_range = list(self.region.getRegion())
+
+    def _update_lut(self):
+        for img in self.imgs:
+            if img is not None:
+                img.setLookupTable(self._get_image_lut, update=True)
+
     def _update_histogram(self):
-        data = self.ivm.data[self.data_name]
+        data = self.dv.data()
         if data.nvols > 1:
             arr = data.std()[:,:,:,self.vol]
         else:
@@ -81,19 +105,23 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         if h[0] is None: return
         self.plot.setData(*h)
 
-    def setAlpha(self, alpha):
-        self.alpha = alpha
-        self.lut = None
-        self.lut_changed()
+    def _focus_changed(self, pos):
+        if self.vol != pos[3]:
+            self.vol = pos[3]
+            if self.dv is not None:
+                self._update_histogram()
+    
+    def _get_image_lut(self, img):
+        lut = self.getLookupTable(img, alpha=True)
+        if self.dv is not None:
+            for row in lut[1:]:
+                row[3] = self.dv.alpha
 
-    def setGradientName(self, name):
-        self.cmap_name = name
-        try:
-            self.gradient.loadPreset(name)
-        except KeyError:
-            self.setMatplotlibGradient(name)
+        lut[0][3] = 0
+        self.lut = lut
+        return lut
 
-    def setMatplotlibGradient(self, name):
+    def _setMatplotlibGradient(self, name):
         """
         Slightly hacky method to copy MatPlotLib gradients to pyqtgraph.
 
@@ -104,31 +132,6 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         cmap = getattr(cm, name)
         ticks = [(pos, [255 * v for v in cmap(pos)]) for pos in np.linspace(0, 1, 10)]
         self.gradient.restoreState({'ticks': ticks, 'mode': 'rgb'})
-
-    def getImageLut(self, img):
-        lut = self.getLookupTable(img, alpha=True)
-
-        for row in lut[1:]:
-            row[3] = self.alpha
-
-        lut[0][3] = 0
-        self.lut = lut
-        return lut
-
-    def addImageItem(self, img):
-        self.imgs.append(weakref.ref(img))
-        img.setLookupTable(self.getImageLut)
-        img.setLevels(self.region.getRegion())
-
-    def levels_changed(self):
-        for img in self.imgs:
-            if img() is not None:
-                img().setLevels(self.region.getRegion())
-
-    def lut_changed(self):
-        for img in self.imgs:
-            if img() is not None:
-                img().setLookupTable(self.getImageLut, update=True)
 
 """
 How should picking work?
@@ -377,25 +380,31 @@ class DragMode:
     DEFAULT = 0
     PICKER_DRAG = 1
 
-class DataView:
+class DataView(QtCore.QObject):
     """
     View of a data item, storing details about visual parameters, e.g.
     color map and min/max range for color mapping
     """
-    def __init__(self, ivm, ov_name):
+
+    # Signals when view parameters are changed
+    sig_changed = QtCore.Signal(object)
+
+    def __init__(self, ivm, name):
+        super(DataView, self).__init__()
         self.ivm = ivm
-        self.ov_name = ov_name
+        self.name = name
         self.cmap = "jet"
         self.visible = True
         self.alpha = 255
         self.roi_only = False
 
         # Initial colourmap range. 
-        self.cmap_range = self.data().range
-
+        data = self.data().std()
+        self.cmap_range = list(self.data().range)
+        
     def data(self):
         # We do not keep a reference to the data object as it may change underneath us!
-        data = self.ivm.data.get(self.ov_name, None)
+        data = self.ivm.data.get(self.name, None)
         if data is None:
             # Data no longer exists! Shouldn't really happen but currently does
             warnings.warn("Tried to get slice of data which does not exist")
@@ -419,7 +428,6 @@ class RoiView:
     def __init__(self, ivm, roi_name):
         self.ivm = ivm
         self.roi_name = roi_name
-        #self.cmap = "jet"
         self.shade = True
         self.contour = False
         self.alpha = 150
@@ -665,28 +673,24 @@ class OrthoView(pg.GraphicsView):
             self.sig_maxmin.emit(self.zaxis)
 
     def mouseMoveEvent(self, event):
-        #print("move")
         if self.dragging:
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            #print("drag", mx, my)
             pos = self.ivm.cim_pos[:]
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
             self.sig_focus.emit(pos, self.zaxis, True)
-            #print("drag=", event)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
 class OvLevelsDialog(QtGui.QDialog):
 
-    def __init__(self, parent, dv, hist):
+    def __init__(self, parent, dv):
         super(OvLevelsDialog, self).__init__(parent)
         self.dv = dv
-        self.hist = hist
 
-        self.setWindowTitle("Levels for %s" % dv.ov_name)
+        self.setWindowTitle("Levels for %s" % dv.name)
         vbox = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
@@ -718,7 +722,7 @@ class OvLevelsDialog(QtGui.QDialog):
     def val_changed(self, row):
         def val_changed(val):
             self.dv.cmap_range[row] = val
-            self.hist.region.setRegion(self.dv.cmap_range)
+            self.dv.sig_changed.emit(self.dv)
         return val_changed
 
 class ImageView(QtGui.QSplitter):
@@ -921,18 +925,10 @@ class ImageView(QtGui.QSplitter):
             self.win[win.zaxis] = win
 
         # Histogram which controls colour map and levels for main volume
-        self.h1 = MultiImageHistogramWidget(self.ivm, self, fillHistogram=False)
-        self.h1.addImageItem(self.win[0].img)
-        self.h1.addImageItem(self.win[1].img)
-        self.h1.addImageItem(self.win[2].img)
-        self.h1.setBackground(background=None)
+        self.h1 = MultiImageHistogramWidget(self.ivm, self, imgs=[w.img for w in self.win.values()], percentile=99)
         
         # Histogram which controls colour map and levels for data
-        self.h2 = MultiImageHistogramWidget(self.ivm, self, fillHistogram=False)
-        self.h2.setBackground(background=None)
-        self.h2.setGradientName("jet")
-        for i in range(3):
-            self.h2.addImageItem(self.win[i].img_ovl)
+        self.h2 = MultiImageHistogramWidget(self.ivm, self, imgs=[w.img_ovl for w in self.win.values()])
 
         # Main graphics layout
         #gview = pg.GraphicsView(background='k')
@@ -965,7 +961,7 @@ class ImageView(QtGui.QSplitter):
         self.opts.raise_()
         
     def show_ov_levels(self):
-        dlg = OvLevelsDialog(self, self.current_data_view, self.h2)
+        dlg = OvLevelsDialog(self, self.current_data_view)
         dlg.exec_()
 
     def view_focus(self, pos, win, is_click):
@@ -1038,7 +1034,9 @@ class ImageView(QtGui.QSplitter):
         if vol is not None:
             if vol.fname is not None: self.vol_name.setText(vol.fname)
             else: self.vol_name.setText(vol.name)
-            self.h1.setSourceData(self.ivm.main.name, percentile=99)
+            main_dv = DataView(self.ivm, self.ivm.main.name)
+            main_dv.cmap = "grey"
+            self.h1.set_data_view(main_dv)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
@@ -1064,6 +1062,14 @@ class ImageView(QtGui.QSplitter):
                 self.roi_combo.addItem(roi)
         finally:
             self.roi_combo.blockSignals(False)
+
+        # Discard RoiView instances for data which has been deleted
+        for name in self.roi_views.keys():
+            if name not in rois:
+                if self.roi_views[name] == self.current_roi_view:
+                    self.current_roi_view = None
+                del self.roi_views[name]
+
         self.current_roi_changed(self.ivm.current_roi)
         self.roi_combo.updateGeometry()
 
@@ -1110,10 +1116,12 @@ class ImageView(QtGui.QSplitter):
     def overlay_cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
         self.current_data_view.cmap = cmap
-        self.update_view_widgets()
+        self.current_data_view.sig_changed.emit(self.current_data_view)
+        #self.update_view_widgets()
 
     def data_changed(self, data):
         # Repopulate data combo, without sending signals
+        debug("New data: ", data)
         try:
             self.overlay_combo.blockSignals(True)
             self.overlay_combo.clear()
@@ -1123,8 +1131,13 @@ class ImageView(QtGui.QSplitter):
             self.overlay_combo.blockSignals(False)
 
         # Discard DataView instances for data which has been deleted
+        for name in self.data_views.keys():
+            if name not in data:
+                del self.data_views[name]
 
-        self.current_data_changed(self.ivm.current_data)
+        if self.current_data_view is not None and self.current_data_view.name not in data:
+            self.current_data_changed(self.ivm.current_data)
+
         self.overlay_combo.updateGeometry()
 
     def current_data_changed(self, ov):
@@ -1132,6 +1145,7 @@ class ImageView(QtGui.QSplitter):
         if ov is not None:
             # Update the overlay combo to show the current overlay
             idx = self.overlay_combo.findText(ov.name)
+            debug("New current data: ", ov.name, idx)
             if idx != self.overlay_combo.currentIndex():
                 try:
                     self.overlay_combo.blockSignals(True)
@@ -1143,17 +1157,12 @@ class ImageView(QtGui.QSplitter):
                 # Create a data view if we don't already have one for this overlay
                 self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
-            if self.current_data_view is not None:
-                # Update the view parameters from the existing overlay before we switch
-                self.current_data_view.cmap_range = list(self.h2.region.getRegion())
-                self.current_data_view.cmap = self.h2.cmap_name
-
             self.current_data_view = self.data_views[ov.name]
             self.update_view_widgets()
         else:
             self.overlay_combo.setCurrentIndex(-1)
             self.current_data_view = None
-            self.h2.region.setRegion((0, 1))
+        self.h2.set_data_view(self.current_data_view)
         self.update_ortho_views()
 
     def overlay_view_changed(self, idx):
@@ -1167,15 +1176,10 @@ class ImageView(QtGui.QSplitter):
         """ Set the overlay transparency """
         if self.current_data_view is not None:
             self.current_data_view.alpha = alpha
-        self.h2.setAlpha(self.current_data_view.alpha)
-            
+            self.current_data_view.sig_changed.emit(self.current_data_view)
+
     def update_view_widgets(self):
         if self.current_data_view:
-            self.h2.setGradientName(self.current_data_view.cmap)
-            self.h2.setSourceData(self.current_data_view.ov_name)
-            self.h2.region.setRegion(self.current_data_view.cmap_range)
-            self.h2.setAlpha(self.current_data_view.alpha)
-
             if not self.current_data_view.visible:
                 self.ov_view_combo.setCurrentIndex(2)
             elif self.current_data_view.roi_only:
