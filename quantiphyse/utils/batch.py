@@ -36,7 +36,8 @@ processes = {"Fabber"      : FabberProcess,
              "MeanValues"   : MeanValuesProcess,
              "RenameData"   : RenameDataProcess,
              "RenameRoi"   : RenameRoiProcess,
-             "SimpleMaths" : SimpleMathsProcess}
+             "SimpleMaths" : SimpleMathsProcess,
+             "RoiCleanup" : RoiCleanupProcess}
 
 def run_batch(batchfile):
     """ Run a YAML batch file """

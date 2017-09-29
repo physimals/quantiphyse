@@ -1,8 +1,9 @@
 import numpy as np
+import scipy
 
 from PySide import QtGui
 
-from ..utils import table_to_str
+from ..utils import table_to_str, debug
 from . import Process, BackgroundProcess
 from .overlay_analysis import OverlayAnalysis
 
@@ -50,33 +51,35 @@ class CalcVolumesProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        roi_name = options.pop('roi', None)
-        sel_region = options.pop('region', None)
-
-        if roi_name is None:
-            roi = self.ivm.current_roi
-        else:
-            roi = self.ivm.rois[roi_name]
-
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
 
-        sizes = self.ivm.grid.spacing
-        if roi is not None:
-            counts = np.bincount(roi.std().flatten())
-            for idx, region in enumerate(roi.regions):
-                if sel_region is None or region == sel_region:
-                    nvoxels = counts[region]
-                    vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
-                    self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
-                    self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
-                    self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
+        if self.ivm.main is not None:
+            roi_name = options.pop('roi', None)
+            sel_region = options.pop('region', None)
 
-        no_artifact = options.pop('no-artifact', False)
-        if not no_artifact: 
-            output_name = options.pop('output-name', "roi-vols")
-            self.ivm.add_artifact(output_name, table_to_str(self.model))
+            if roi_name is None:
+                roi = self.ivm.current_roi
+            else:
+                roi = self.ivm.rois[roi_name]
+
+            sizes = self.ivm.grid.spacing
+            if roi is not None:
+                counts = np.bincount(roi.std().flatten())
+                for idx, region in enumerate(roi.regions):
+                    if sel_region is None or region == sel_region:
+                        nvoxels = counts[region]
+                        vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
+                        self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
+                        self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
+                        self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
+
+            no_artifact = options.pop('no-artifact', False)
+            if not no_artifact: 
+                output_name = options.pop('output-name', "roi-vols")
+                self.ivm.add_artifact(output_name, table_to_str(self.model))
+
         self.status = Process.SUCCEEDED
 
 class HistogramProcess(Process):
@@ -122,9 +125,9 @@ class HistogramProcess(Process):
             if dmin is None: hrange[0] = ov.std().min()
             if dmax is None: hrange[1] = ov.std().max()
             for region in roi_labels:
-                if self.debug: print("Doing %s region %i" % (ov.name, region))
+                debug("Doing %s region %i" % (ov.name, region))
                 if sel_region is not None and region != sel_region:
-                    if self.debug: print("Ignoring this region")
+                    debug("Ignoring this region")
                     continue
                 region_data = ov.std()[roi == region]
                 yvals, edges = np.histogram(region_data, bins=bins, range=hrange)
@@ -143,7 +146,7 @@ class HistogramProcess(Process):
                 col += 1
 
         if not no_artifact: 
-            if self.debug: print("Adding %s" % output_name)
+            debug("Adding %s" % output_name)
             self.ivm.add_artifact(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
@@ -248,10 +251,10 @@ class OverlayStatisticsProcess(Process):
             
         if roi_name is None:
             roi = self.ivm.current_roi
-            print("Current=", roi)
+            debug("Current=", roi)
         else:
             roi = self.ivm.rois[roi_name]
-            print("Specified=", roi)
+            debug("Specified=", roi)
 
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
@@ -283,9 +286,11 @@ class SimpleMathsProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        globals = {'np': np, 'ivm': self.ivm}
+        globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
         for name, ovl in self.ivm.data.items():
             globals[name] = ovl.std()
+        for name, roi in self.ivm.rois.items():
+            globals[name] = roi.std()
         for name, proc in options.items():
             result = eval(proc, globals)
             self.ivm.add_data(result, name=name)
@@ -306,4 +311,37 @@ class RenameRoiProcess(Process):
         for name, newname in options.items():
             self.ivm.rename_roi(name, newname)
             
+        self.status = Process.SUCCEEDED
+
+class RoiCleanupProcess(Process):
+    """
+    Fill holes, etc in ROI
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+        self.model = QtGui.QStandardItemModel()
+        self.ia = OverlayAnalysis(ivm=self.ivm)
+
+    def run(self, options):
+        roi_name = options.pop('roi', None)
+        output_name = options.pop('output-name', "roi-cleaned")
+        fill_holes_slice = options.pop('fill-holes-by-slice', None)
+
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        else:
+            roi = self.ivm.rois[roi_name]
+
+        if roi is not None:
+            if fill_holes_slice is not None:
+                # slice-by-slice hole filling, appropriate when ROIs defined slice-by-slice
+                d = fill_holes_slice
+                new = np.copy(roi.std())
+                for sl in range(new.shape[int(d)]):
+                    slices = [slice(None), slice(None), slice(None)]
+                    slices[d] = sl
+                    new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
+            
+                self.ivm.add_roi(new, name=output_name)
+        
         self.status = Process.SUCCEEDED
