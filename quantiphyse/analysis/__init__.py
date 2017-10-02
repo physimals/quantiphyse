@@ -11,6 +11,8 @@ import threading
 
 from PySide import QtCore, QtGui
 
+from ..utils import debug
+
 _pool = None
 
 # Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major
@@ -52,7 +54,6 @@ class Process(QtCore.QObject):
         self.log = ""
         self.status = Process.NOTSTARTED
         self.name = kwargs.pop("name", None)
-        self.debug = kwargs.pop("debug", False)
         self.folder = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
 
@@ -150,7 +151,7 @@ class BackgroundProcess(Process):
 
     def _process_cb(self, result):
         worker_id, success, output = result
-        if self.debug: print("Finished: id=", worker_id, success, str(output))
+        debug("Finished: id=", worker_id, success, str(output))
         
         if self.status == Process.FAILED:
             # If one process has already failed, ignore results of others

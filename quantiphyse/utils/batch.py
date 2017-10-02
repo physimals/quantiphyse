@@ -20,6 +20,8 @@ from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 from ..volumes.volume_management import ImageVolumeManagement
 from ..volumes.io import load, save
 
+from . import debug, warn, set_debug
+
 processes = {"Fabber"      : FabberProcess,
              "MCFlirt"     : McflirtProcess,
              "T10"         : T10Process,
@@ -52,7 +54,7 @@ class BatchCase:
         self.id = id
         self.root = root
         self.case = case
-        self.debug = self.get("Debug", False)
+        if self.get("Debug", False): set_debug(True) # Don't override command line debug flag
         self.folder = self.get("Folder", "")
         self.output_id = self.get("OutputId", id)
         self.outdir = os.path.join(self.get("OutputFolder", ""), self.output_id)
@@ -73,7 +75,7 @@ class BatchCase:
             os.makedirs(self.outdir)
         except OSError as exc:
             if exc.errno == errno.EEXIST and os.path.isdir(self.outdir):
-                print("  - WARNING: Output directory %s already exists" % self.outdir)
+                warn("Output directory %s already exists" % self.outdir)
             else:
                 raise
 
@@ -97,13 +99,13 @@ class BatchCase:
         overlays.update(self.root.get("Overlays", {}))
         for key in overlays:
             filepath = self.get_filepath(overlays[key])
-            if self.debug: print("  - Loading data '%s' from %s" % (key, filepath))
+            debug("  - Loading data '%s' from %s" % (key, filepath))
             try:
                 ovl = load(filepath)
                 ovl.name = key
                 self.ivm.add_data(ovl, make_current=True)
             except:
-                print("  - WARNING: failed to load data: %s" % filepath)
+                warn("Failed to load data: %s" % filepath)
                 
     def load_rois(self):
         # Load case ROIs followed by any root ROIs not overridden by case
@@ -111,13 +113,13 @@ class BatchCase:
         rois.update(self.root.get("Rois", {}))
         for key in rois:
             filepath = self.get_filepath(rois[key])
-            if self.debug: print("  - Loading ROI '%s' from %s" % (key, filepath))
+            debug("  - Loading ROI '%s' from %s" % (key, filepath))
             try:
                 roi = load(filepath)
                 roi.name = key
                 self.ivm.add_roi(roi, make_current=True)
             except:
-                print("  - WARNING: failed to load ROI: %s" % filepath)
+                warn("Failed to load ROI: %s" % filepath)
 
     def run_processing_steps(self):
         # Run processing steps
@@ -132,30 +134,27 @@ class BatchCase:
     def run_process(self, name, params):
         proc = processes.get(name, None)
         if proc is None:
-            print("  - WARNING: skipping unknown process: %s" % name)
+            warn("Skipping unknown process: %s" % name)
         else:
             try:
-                if self.debug:
-                    for key, value in params.items():
-                        print("      %s=%s" % (key, str(value)))
+                for key, value in params.items():
+                    debug("      %s=%s" % (key, str(value)))
                 process = proc(self.ivm, sync=True)
-                process.debug = self.debug
                 process.workdir = self.folder
                 process.outdir = self.outdir
                 process.name = params.get("name", name)
                 #process.sig_progress.connect(self.progress)
-                sys.stdout.write("  - Running %s   0%%" % process.name)
+                sys.stdout.write("  - Running %s..." % process.name)
                 process.run(params)
-                print("\b\b\b\bDONE")
                 if process.status == Process.SUCCEEDED:
+                    print("DONE")
                     self.save_text(process.log, process.name, "log")
                 else:
+                    print("FAILED")
                     raise process.output
             except:
-                print("  - WARNING: process %s failed to run" % process.name)
+                warn("Process %s failed to run" % process.name)
                 #raise
-                #print(sys.exc_info())
-                #print(sys.exc_info()[2])
                 traceback.print_exc()
 
     def progress(self, complete):
@@ -179,21 +178,21 @@ class BatchCase:
             if name in self.ivm.data:
                 self.save_data(self.ivm.data[name], fname)
             else:
-                print("  - WARNING: overlay %s not found - not saving" % name)
+                warn("Overlay %s not found - not saving" % name)
 
         for name, fname in self.get("SaveRois", {}).items():
             if not fname: fname = name
             if name in self.ivm.rois:
                 self.save_data(self.ivm.rois[name], fname)
             else:
-                print("  - WARNING: ROI %s not found - not saving" % name)
+                warn("ROI %s not found - not saving" % name)
 
         for name, fname in self.get("SaveArtifacts", {}).items():
             if not fname: fname = name
             if name in self.ivm.artifacts:
                 self.save_text(str(self.ivm.artifacts[name]), fname)
             else:
-                print("  - WARNING: Artifact %s not found - not saving" % name)
+                warn("Artifact %s not found - not saving" % name)
 
     def save_data(self, vol, fname):
         if not fname.endswith(".nii"): 

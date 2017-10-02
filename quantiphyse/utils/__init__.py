@@ -13,7 +13,6 @@ DEBUG = False
 def set_debug(debug):
     global DEBUG
     DEBUG = debug
-    print("Debug=", DEBUG)
 
 def debug(*msgs):
     if DEBUG:

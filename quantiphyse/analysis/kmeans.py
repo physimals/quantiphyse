@@ -55,12 +55,9 @@ class KMeansPCAProcess(Process):
         if invert_roi:
             roi = np.logical_not(roi)
             
-        print(img.shape, roi.shape)
         voxel_se = img[roi > 0]
-        print(voxel_se.shape)
         baseline1 = np.mean(img[:, :, :, :3], axis=-1)
         baseline1sub = np.expand_dims(baseline1, axis=-1)[roi > 0]
-        print(baseline1sub.shape)
 
         # Normalisation of the image
         voxel_se = voxel_se / (np.tile(baseline1sub, (1, img.shape[-1])) + 0.001) - 1
