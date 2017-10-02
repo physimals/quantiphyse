@@ -7,7 +7,7 @@ import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
 from ..QtInherit import HelpButton
-from ..analysis.t1_model import t10_map
+from ..analysis.t10 import T10Process
 from . import QpWidget
 from ..volumes.io import load
 
@@ -168,10 +168,11 @@ class SourceImageList(QtGui.QVBoxLayout):
             file_vals = [float(v) for v in self.table.item(i, 1).text().split(",")]
             # NB need to pass main volume affine to ensure consistant orientation
             vol = load(filename)
-            vol.regrid(self.ivm.grid)
+            vol.name = "fa%i" % file_vals[0]
+            self.ivm.add_data(vol)
             if len(file_vals) == 1:
                 # FIXME need to check dimensions against volume?
-                vols.append(vol.std())
+                vols.append(vol.name)
                 vals.append(file_vals[0])
             else:
                 for i, val in enumerate(file_vals):
@@ -271,6 +272,8 @@ class T10Widget(QpWidget):
         self.fatable.ivm = self.ivm
         self.trtable.ivm = self.ivm
 
+        self.process = T10Process(self.ivm)
+        
     def smooth_changed(self):
         self.sigma.setEnabled(self.smooth.isChecked())
         self.truncate.setEnabled(self.smooth.isChecked())
@@ -293,32 +296,32 @@ class T10Widget(QpWidget):
             QtGui.QMessageBox.warning(self, "Invalid FA", "FA value for B0 correction is invalid", QtGui.QMessageBox.Close)
             return
 
+        options = {"tr" : self.trinp.val,
+                   "smooth" : self.smooth.isChecked()}
+
         fa_vols, fa_angles = self.fatable.get_images()
         if len(fa_vols) == 0:
             QtGui.QMessageBox.warning(self, "No FA images", "Load FA images before generating T1 map",
                                       QtGui.QMessageBox.Close)
             return
 
-        # TR is expected in seconds but UI asks for it in ms
-        tr = self.trinp.val / 1000
-
+        vfa = {}
+        for vol, fa in zip(fa_vols, fa_angles):
+            vfa[vol] = fa
+        options["vfa"] = vfa
+        
         if self.preclin.isChecked():
+            options["fa-afi"] = self.fainp.val
+
             afi_vols, afi_trs = self.trtable.get_images()
             if len(afi_vols) == 0:
                 QtGui.QMessageBox.warning(self, "No AFI images", "Load AFI images before using B0 correction",
                                           QtGui.QMessageBox.Close)
                 return
-            fa_afi = self.fainp.val
-            # TR is expected in seconds but UI asks for it in ms
-            afi_trs = [v/1000 for v in afi_trs]
-            T10 = t10_map(fa_vols, fa_angles, TR=tr,
-                      afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=afi_trs)
-            if self.smooth.isChecked():
-                T10 = gaussian_filter(T10, sigma=self.sigma.value(), truncate=self.truncate.value())
-        else:
-           T10 = t10_map(fa_vols, fa_angles, TR=tr)
+            afi = {}
+            for vol, tr in zip(afi_vols, afi_trs):
+                afi[vol] = tr
+            options["afi"] = afi
 
-        if self.clamp.isChecked():
-            np.clip(T10, self.clampMin.value(), self.clampMax.value(), out=T10)
-
-        self.ivm.add_data(T10, name="T10", make_current=True)
+        self.process.run(options)
+        
