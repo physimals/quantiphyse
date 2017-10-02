@@ -251,7 +251,7 @@ class CurveClusteringWidget(QpWidget):
     def merge1(self, m1, m2):
         # relabel
         roi = self.ivm.rois["clusters"].std()
-        roi[roi.std() == m1] = m2
+        roi[roi == m1] = m2
 
         # signal the change
         self.ivm.add_roi(roi, name='clusters', make_current=True)
