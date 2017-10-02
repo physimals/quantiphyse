@@ -1135,9 +1135,7 @@ class ImageView(QtGui.QSplitter):
             if name not in data:
                 del self.data_views[name]
 
-        if self.current_data_view is not None and self.current_data_view.name not in data:
-            self.current_data_changed(self.ivm.current_data)
-
+        self.current_data_changed(self.ivm.current_data)
         self.overlay_combo.updateGeometry()
 
     def current_data_changed(self, ov):
