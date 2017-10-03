@@ -81,8 +81,10 @@ class SupervoxelsProcess(Process):
     
         if roi_name is None and self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
-        elif roi_name is not None:
+        elif roi_name in self.ivm.rois:
             roi = self.ivm.rois[roi_name]
+        else:
+            roi = None
 
         if roi is not None:
             slices = roi.get_bounding_box()
