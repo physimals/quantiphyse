@@ -62,21 +62,33 @@ class BatchButton(QtGui.QPushButton):
 class OverlayCombo(QtGui.QComboBox):
     """
     A combo box which gives a choice of data
+
+    Really ugly hacks to make it work for data / rois
     """
-    def __init__(self, ivm, parent=None, static_only=False):
+    def __init__(self, ivm, parent=None, static_only=False, none_option=False, rois=False):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
-        self.static_only=static_only
-        self.ivm.sig_all_data.connect(self.data_changed)
-        self.data_changed()
+        self.static_only = static_only
+        self.none_option = none_option
+        self.rois = rois
+        if self.rois:
+            self.ivm.sig_all_rois.connect(self.data_changed)
+            self.data_changed(self.ivm.rois.values())
+        else:
+            self.ivm.sig_all_data.connect(self.data_changed)
+            self.data_changed(self.ivm.data.values())
     
-    def data_changed(self):
+    def data_changed(self, data):
         current = self.currentText()
         self.clear()
-            
-        for ovl in self.ivm.data.values():
-            if (ovl.nvols == 1 or not self.static_only):
-                self.addItem(ovl.name)
+        if self.none_option:
+            self.addItem("<none>")
+
+        for name in data:
+            if self.rois: d = self.ivm.rois[name]
+            else: d = self.ivm.data[name]
+            if (d.nvols == 1 or not self.static_only):
+                self.addItem(d.name)
 
         idx = self.findText(current)
         self.setCurrentIndex(max(0, idx))
@@ -84,29 +96,14 @@ class OverlayCombo(QtGui.QComboBox):
         width = self.minimumSizeHint().width()
         self.setMinimumWidth(width+50)
         
-class RoiCombo(QtGui.QComboBox):
+class RoiCombo(OverlayCombo):
     """
     A combo box which gives a choice of ROIs
     """
-    def __init__(self, ivm, parent=None):
-        super(RoiCombo, self).__init__(parent)
-        self.ivm = ivm
-        self.ivm.sig_all_rois.connect(self.rois_changed)
-        self.rois_changed()
+    def __init__(self, *args, **kwargs):
+        kwargs["rois"] = True
+        super(RoiCombo, self).__init__(*args, **kwargs)
     
-    def rois_changed(self):
-        current = self.currentText()
-        self.clear()
-            
-        for roi in self.ivm.rois.values():
-            self.addItem(roi.name)
-
-        idx = self.findText(current)
-        self.setCurrentIndex(max(0, idx))
-        # Make sure names are visible even with drop down arrow
-        width = self.minimumSizeHint().width()
-        self.setMinimumWidth(width+50)
-        
 class NumericOption(QtGui.QWidget):
     def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False):
         QtGui.QWidget.__init__(self)
