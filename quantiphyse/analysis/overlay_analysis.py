@@ -11,6 +11,7 @@ Benjamin Irving
 
 import numpy as np
 
+from ..volumes.io import NumpyData
 
 class OverlayAnalysis(object):
     """
@@ -31,9 +32,8 @@ class OverlayAnalysis(object):
         # Checks if either ROI or overlay is None
         if roi is not None:
             roi_labels = roi.regions
-            roi_labels = roi_labels[roi_labels > 0]
         else:
-            roi = np.ones(ovl.stdgrid.shape[:3])
+            roi = NumpyData(np.ones(ovl.stdgrid.shape[:3]), ovl.stdgrid, "temp", roi=True)
             roi_labels = [1,]
 
         if (ovl is None):
@@ -47,18 +47,11 @@ class OverlayAnalysis(object):
         if slice is None:
             ovldata = ovl.std()
             roidata = roi.std()
-        elif slice == 0:
-            slicepos = self.ivm.cim_pos[2]
-            ovldata = ovl.std()[:, :, slicepos]
-            roidata = roi.std()[:, :, slicepos]
-        elif slice == 1:
-            slicepos = self.ivm.cim_pos[1]
-            ovldata = ovl.std()[:, slicepos, :]
-            roidata = roi.std()[:, slicepos, :]
-        elif slice == 2:
-            slicepos = self.ivm.cim_pos[0]
-            ovldata = ovl.std()[slicepos, :, :]
-            roidata = roi.std()[slicepos, :, :]
+        elif slice in (0, 1, 2):
+            axis = 2-slice
+            slicepos = self.ivm.cim_pos[axis]
+            ovldata = ovl.get_slice([(axis, slicepos)])
+            roidata = roi.get_slice([(axis, slicepos)])
         else:
             raise RuntimeError("Invalid slice: " % slice)
 
