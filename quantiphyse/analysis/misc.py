@@ -168,7 +168,10 @@ class RadialProfileProcess(Process):
         bins = options.pop('bins', 20)
 
         if roi_name is None:
-            roi = self.ivm.current_roi.std()
+            if self.ivm.current_roi is not None:
+                roi = self.ivm.current_roi.std()
+            else:
+                roi = np.ones(self.ivm.grid.shape)
         else:
             roi = self.ivm.rois[roi_name].std()
 

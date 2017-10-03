@@ -139,12 +139,8 @@ class OvCurveClusteringWidget(QpWidget):
             error_dialog("No data loaded")
             return
 
-        if self.ivm.current_roi is None:
-            error_dialog("No ROI loaded - required for overlay clustering")
-            return
-
         if self.ivm.current_data is None:
-            error_dialog("No overlay loaded")
+            error_dialog("No overlay selected")
             return
 
         if self.ivm.current_data.nvols != 1:

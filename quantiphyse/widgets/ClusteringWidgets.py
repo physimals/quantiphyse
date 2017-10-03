@@ -181,10 +181,6 @@ class CurveClusteringWidget(QpWidget):
             error_dialog("No data loaded")
             return
 
-        if self.ivm.current_roi is None:
-            error_dialog("An ROI must be loaded")
-            return
-
         # Disable button
         self.b1.setDown(1)
         self.b1.setDisabled(1)

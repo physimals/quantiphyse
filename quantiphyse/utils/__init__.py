@@ -80,7 +80,10 @@ def get_pencol(roi, region):
     """
     Get an RGB pen colour for a given ROI region
     """
-    return get_lut(roi)[region]
+    if roi is None:
+        return (255, 0, 0)
+    else:
+        return get_lut(roi)[region]
 
 def get_lut(roi, alpha=None):
     """
