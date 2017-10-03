@@ -241,7 +241,7 @@ class RegWidget(QpWidget):
         
         self.warproi_label = QtGui.QLabel("Linked ROI")
         grid.addWidget(self.warproi_label, 6, 0)
-        self.warproi = RoiCombo(self.ivm)
+        self.warproi = RoiCombo(self.ivm, none_option=True)
         grid.addWidget(self.warproi, 6, 1)
         
         grid.addWidget(QtGui.QLabel("Replace data"), 7, 0)
