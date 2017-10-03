@@ -93,10 +93,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
 
     def _update_histogram(self):
         data = self.dv.data()
-        if data.nvols > 1:
-            arr = data.std()[:,:,:,self.vol]
-        else:
-            arr = data.std()
+        arr = data.get_slice([(3, self.vol),])
 
         flat = arr.reshape(-1)
         if self.percentile < 100: self.region.lines[1].setValue(np.percentile(flat, self.percentile))
