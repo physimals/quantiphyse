@@ -14,6 +14,7 @@ from ..analysis.reg import RegProcess, McflirtProcess
 from ..analysis.pk import PkModellingProcess
 from ..analysis.t10 import T10Process
 from ..analysis.sv import SupervoxelsProcess, Supervoxels4DProcess
+from ..analysis.io import *
 from ..analysis.misc import *
 from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 
@@ -39,7 +40,11 @@ processes = {"Fabber"      : FabberProcess,
              "RenameData"   : RenameDataProcess,
              "RenameRoi"   : RenameRoiProcess,
              "SimpleMaths" : SimpleMathsProcess,
-             "RoiCleanup" : RoiCleanupProcess}
+             "RoiCleanup" : RoiCleanupProcess,
+             "Load" : LoadProcess,
+             "Save" : SaveProcess,
+             "LoadData" : LoadDataProcess,
+             "LoadRois" : LoadRoisProcess}
 
 def run_batch(batchfile):
     """ Run a YAML batch file """
