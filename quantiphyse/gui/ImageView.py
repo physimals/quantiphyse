@@ -7,6 +7,7 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 
 import sys
 import matplotlib
+import collections
 
 from matplotlib import cm
 from PySide import QtCore, QtGui
@@ -18,117 +19,8 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
+from .HistogramWidget import MultiImageHistogramWidget
 from ..utils import get_icon, get_lut, get_pencol, debug
-
-class MultiImageHistogramWidget(pg.HistogramLUTWidget):
-    """
-    A histogram widget which has one array of 'source' data
-    (which it gets the histogram itself and the initial levels from)
-    and multiple image item views which are affected by changes to the
-    levels or LUT
-    """
-    def __init__(self, ivm, ivl, imgs, *args, **kwargs):
-        self.percentile = kwargs.pop("percentile", 100)
-        kwargs["fillHistogram"] = False
-        super(MultiImageHistogramWidget, self).__init__(*args, **kwargs)
-        self.setBackground(None)
-        self.ivm = ivm
-        self.ivl = ivl
-        self.ivl.sig_focus_changed.connect(self._focus_changed)
-        self.vol = 0
-        self.imgs = imgs
-        self.dv = None
-        self.sigLevelChangeFinished.connect(self._update_region)
-        self.sigLevelsChanged.connect(self._update_region)
-        self.sigLookupTableChanged.connect(self._update_lut)
-        self._update_lut()
-        self._update_region()
-
-    def set_data_view(self, dv):
-        """
-        Set the source data viewfor the histogram widget. This will be a
-        3d or 4d volume, so we flatten it to 2d in order to use the PyQtGraph
-        methods to extract a histogram
-
-        @percentile specifies that the initial LUT range should be set to this
-        percentile of the data - for main volume it is useful to set this 
-        to 99% to improve visibility
-        """
-        if self.dv is not None:
-            self.dv.sig_changed.disconnect(self._update)
-        self.dv = dv
-
-        if self.dv is not None:
-            self._update(dv)
-
-            # Only needs to be done once for a new DV
-            self._update_histogram()
-            arr = dv.data().std()
-            self.region.setBounds([np.min(arr), None])
-            self.dv.sig_changed.connect(self._update)
-        else:
-            self.plot.setData([], [])
-            self.region.setRegion([0, 1])
-
-    def _update(self, dv):
-        try:
-            self.gradient.loadPreset(self.dv.cmap)
-        except KeyError:
-            self._setMatplotlibGradient(self.dv.cmap)
-        self.region.setRegion(self.dv.cmap_range)
-        self.lut = None
-        self._update_lut()
-
-    def _update_region(self):
-        for img in self.imgs:
-            if img is not None:
-                img.setLevels(self.region.getRegion())
-        if self.dv is not None:
-            self.dv.cmap_range = list(self.region.getRegion())
-
-    def _update_lut(self):
-        for img in self.imgs:
-            if img is not None:
-                img.setLookupTable(self._get_image_lut, update=True)
-
-    def _update_histogram(self):
-        data = self.dv.data()
-        arr = data.get_slice([(3, self.vol),])
-
-        flat = arr.reshape(-1)
-        if self.percentile < 100: self.region.lines[1].setValue(np.percentile(flat, self.percentile))
-        ii = pg.ImageItem(flat.reshape([1, -1]))
-        h = ii.getHistogram()
-        if h[0] is None: return
-        self.plot.setData(*h)
-
-    def _focus_changed(self, pos):
-        if self.vol != pos[3]:
-            self.vol = pos[3]
-            if self.dv is not None:
-                self._update_histogram()
-    
-    def _get_image_lut(self, img):
-        lut = self.getLookupTable(img, alpha=True)
-        if self.dv is not None:
-            for row in lut[1:]:
-                row[3] = self.dv.alpha
-
-        lut[0][3] = 0
-        self.lut = lut
-        return lut
-
-    def _setMatplotlibGradient(self, name):
-        """
-        Slightly hacky method to copy MatPlotLib gradients to pyqtgraph.
-
-        Is not perfect because Matplotlib specifies gradients in a different way to pyqtgraph
-        (specifically there is a separate list of ticks for R, G and B). So we just sample
-        the colormap at 10 points which is OK for most slowly varying gradients.
-        """
-        cmap = getattr(cm, name)
-        ticks = [(pos, [255 * v for v in cmap(pos)]) for pos in np.linspace(0, 1, 10)]
-        self.gradient.restoreState({'ticks': ticks, 'mode': 'rgb'})
 
 """
 How should picking work?
@@ -405,18 +297,7 @@ class DataView(QtCore.QObject):
         if data is None:
             # Data no longer exists! Shouldn't really happen but currently does
             warnings.warn("Tried to get slice of data which does not exist")
-            return None
-        else:
-            return data
-
-    def get_slice(self, *axes):
-        data = self.data()
-        if data is None:
-            return np.zeros([1, 1])
-        elif self.roi_only:
-            return data.get_slice(axes, mask=self.ivm.current_roi)
-        else:
-            return data.get_slice(axes)
+        return data
 
 class RoiView:
     """
@@ -432,6 +313,30 @@ class RoiView:
     def roi(self):
         return self.ivm.rois.get(self.roi_name, None)
 
+class MaskableImage(pg.ImageItem):
+    """
+    Minor addition to ImageItem to allow it to be masked by an RoiView
+    """
+    def __init__(self, image=None, **kwargs):
+        pg.ImageItem.__init__(self, image, **kwargs)
+        self.mask = None
+
+    def render(self):
+        """
+        Custom masked renderer based on PyQtGraph code
+        """
+        if self.image is None or self.image.size == 0:
+            return
+        if isinstance(self.lut, collections.Callable):
+            lut = self.lut(self.image)
+        else:
+            lut = self.lut
+            
+        argb, alpha = pg.functions.makeARGB(self.image, lut=lut, levels=self.levels)
+        if self.mask is not None:
+            argb[:,:,3][self.mask == 0] = 0
+        self.qimage = pg.functions.makeQImage(argb, alpha)
+    
 class OrthoView(pg.GraphicsView):
     """
     A single slice view of data and ROI
@@ -454,7 +359,7 @@ class OrthoView(pg.GraphicsView):
 
         self.img = pg.ImageItem(border='k')
         self.img_roi = pg.ImageItem(border='k')
-        self.img_ovl = pg.ImageItem(border='k')
+        self.img_ovl = MaskableImage(border='k')
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
         self.vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
@@ -511,7 +416,7 @@ class OrthoView(pg.GraphicsView):
             pos = self.ivm.cim_pos
             slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
             slicedata = self.ivm.main.get_slice(slices)
-            self.img.setImage(self.ivm.main.get_slice(slices), autoLevels=False)
+            self.img.setImage(slicedata, autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
         self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
@@ -593,8 +498,11 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            slicedata = oview.get_slice((self.zaxis, self.ivm.cim_pos[self.zaxis]),
-                                        (3, self.ivm.cim_pos[3]))
+            slices = (self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])
+            slicedata = oview.data().get_slice(slices)
+            if oview.roi_only and self.ivm.current_roi is not None:
+                mask = self.ivm.current_roi.get_slice(slices)
+                self.img_ovl.mask = mask
             self.img_ovl.setImage(slicedata, autoLevels=False)
 
     def resize_win(self, event):
