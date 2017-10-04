@@ -33,6 +33,9 @@ except:
 
 class NumpyData(QpData):
     def __init__(self, data, grid, name, **kwargs):
+        if data.dtype.kind in np.typecodes["AllFloat"]:
+            # Use float32 rather than default float64 to reduce storage
+            data = data.astype(np.float32)
         self.rawdata = data
         
         if data.ndim > 3:
@@ -69,6 +72,12 @@ class NiftiData(QpData):
         data = np.asarray(nii.get_data())
         while data.ndim < 3:
             data = np.expand_dims(data, -1)
+
+        if self.raw_2dt:
+            # Single-slice, interpret 3rd dimension as time
+            if len(data.shape) == 3:    
+                data = np.expand_dims(data, 2)
+
         return data
 
 class DicomFolder(QpData):

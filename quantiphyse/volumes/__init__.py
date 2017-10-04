@@ -4,6 +4,8 @@ import warnings
 import numpy as np
 import scipy
 
+from PySide import QtGui
+
 from ..utils import debug
 
 """
@@ -46,7 +48,6 @@ For consideration
    off with crude workaround (e.g. if it doesn't just use the first volume)
    and think about how multiple 4D data could be accommodated.
  - We could expand the OTG to accommodate data outside its range?
-
 """
 
 class DataGrid:
@@ -136,6 +137,56 @@ class Transform:
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
         #self.reorder, self.flip, self.tmatrix = range(3), [], self.tmatrix_raw
 
+    def transform_data(self, data):
+        if self.reorder != range(3):
+            if data.ndim == 4: self.reorder = self.reorder + [3]
+            debug("Re-ordering axes: ", self.reorder)
+            data = np.transpose(data, self.reorder)
+
+        if len(self.flip) != 0:
+            debug("Flipping axes: ", self.flip)
+            for d in self.flip: data = np.flip(data, d)
+
+        if not self._is_identity(self.tmatrix):
+            affine = self.tmatrix[:3,:3]
+            offset = list(self.tmatrix[:3,3])
+            output_shape = self.output_shape[:]
+            if data.ndim == 4:
+                # Make 4D affine with identity transform in 4th dimension
+                affine = np.append(affine, [[0, 0, 0]], 0)
+                affine = np.append(affine, [[0],[0],[0],[1]],1)
+                offset.append(0)
+                output_shape.append(data.shape[3])
+
+            if self._is_diagonal(affine):
+                # The transformation is diagonal, so use this sequence instead of 
+                # the full matrix - this will be faster
+                affine = np.diagonal(affine)
+                #debug("Matrix is diagonal - ", affine)
+            else:
+                pass
+            debug("WARNING: affine_transform: ")
+            debug(affine)
+            debug("Offset = ", offset)
+            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
+        else:
+            pass
+        return data
+
+    def qtransform(self, zaxis):
+        """
+        Return a QTransform object for a 2D slice through this grid with z-axis given
+        """
+        a = np.copy(self.tmatrix_raw)
+        a = np.delete(a, zaxis, 0)
+        a = np.delete(a, zaxis, 1)
+        debug("Original transform:")
+        debug(self.tmatrix_raw)
+        debug("Transform in %i axis" % zaxis)
+        debug(a)
+        a = a.flatten()
+        return QtGui.QTransform(*a)
+    
     def _is_diagonal(self, mat):
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
 
@@ -190,42 +241,6 @@ class Transform:
             # affine transform - this will work but might be slow
             return range(3), [], new_mat
 
-    def transform_data(self, data):
-        if self.reorder != range(3):
-            if data.ndim == 4: self.reorder = self.reorder + [3]
-            debug("Re-ordering axes: ", self.reorder)
-            data = np.transpose(data, self.reorder)
-
-        if len(self.flip) != 0:
-            debug("Flipping axes: ", self.flip)
-            for d in self.flip: data = np.flip(data, d)
-
-        if not self._is_identity(self.tmatrix):
-            affine = self.tmatrix[:3,:3]
-            offset = list(self.tmatrix[:3,3])
-            output_shape = self.output_shape[:]
-            if data.ndim == 4:
-                # Make 4D affine with identity transform in 4th dimension
-                affine = np.append(affine, [[0, 0, 0]], 0)
-                affine = np.append(affine, [[0],[0],[0],[1]],1)
-                offset.append(0)
-                output_shape.append(data.shape[3])
-
-            if self._is_diagonal(affine):
-                # The transformation is diagonal, so use this sequence instead of 
-                # the full matrix - this will be faster
-                affine = np.diagonal(affine)
-                #debug("Matrix is diagonal - ", affine)
-            else:
-                pass
-            debug("WARNING: affine_transform: ")
-            debug(affine)
-            debug("Offset = ", offset)
-            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
-        else:
-            pass
-        return data
-
 class QpData:
     """
     3D or 4D data
@@ -259,8 +274,13 @@ class QpData:
         # Set standard grid to match raw grid, it will be changed when/if regrid() is called
         self.stddata = None
         self.stdgrid = grid
+
+        # Basic default, updated when stddata is evaluated
         self.range = (0, 1)
         self.dps = 1
+
+        # Whether raw data is 2d + time incorrectly returned as 3D
+        self.raw_2dt = False
 
         # Whether to treat as an ROI data set
         self.set_roi(roi)
@@ -273,17 +293,19 @@ class QpData:
             self._update_stddata()
         return self.stddata
 
-    def make_2d_timeseries(self):
+    def set_2dt(self):
         """
         Force 3D static data into the form of a 2D + time
 
         This is useful for some broken NIFTI files. Note that the 3D extent of the grid
-        is completely ignored
+        is completely ignored. In order to work, the underlying class must implement the
+        change in raw().
         """
         if self.nvols != 1 or self.rawgrid.shape[2] == 1:
             raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
 
-        raise RuntimeError("Not implemented yet")
+        self.raw_2dt = True
+        self.stddata = None
 
     def regrid(self, grid):
         """
@@ -311,7 +333,7 @@ class QpData:
         if pos[3] > self.nvols: pos[3] = self.nvols-1
         return self.std()[tuple(pos[:self.ndim])]
 
-    def get_slice(self, axes, mask=None, fill_value=None):
+    def get_slice(self, axes):
         """ 
         Get a slice at a given position
 
@@ -332,15 +354,6 @@ class QpData:
             else:
                 sl[axis] = vol_data.shape[axis]-1
         slice_data = vol_data[sl]
-
-        if mask is not None:
-            #debug("Masking")
-            slice_data = np.copy(slice_data)
-            mask_slice = mask.get_slice(axes)
-            if fill_value is None:
-                # Less than the minimum
-                fill_value = self.range[0] - 0.000001
-            slice_data[mask_slice == 0] = fill_value
         #debug("Done")
         return slice_data
 
