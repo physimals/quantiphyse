@@ -40,9 +40,11 @@ processes = {"Fabber"      : FabberProcess,
              "RenameData"   : RenameDataProcess,
              "RenameRoi"   : RenameRoiProcess,
              "SimpleMaths" : SimpleMathsProcess,
+             "Exec" : ExecProcess,
              "RoiCleanup" : RoiCleanupProcess,
              "Load" : LoadProcess,
              "Save" : SaveProcess,
+             "SaveAndDelete" : SaveDeleteProcess,
              "LoadData" : LoadDataProcess,
              "LoadRois" : LoadRoisProcess}
 
@@ -158,10 +160,9 @@ class BatchCase:
                     print("FAILED")
                     raise process.output
             except:
-                warn("Process %s failed to run" % process.name)
-                #raise
-                traceback.print_exc()
-
+                print("FAILED")
+                warn(str(sys.exc_info()[1]))
+                
     def progress(self, complete):
         sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
 

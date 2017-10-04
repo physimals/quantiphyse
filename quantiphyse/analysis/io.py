@@ -80,3 +80,19 @@ class SaveProcess(Process):
                 raise
 
         self.status = Process.SUCCEEDED
+
+class SaveDeleteProcess(SaveProcess):
+    """
+    Save data to file and then delete it
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        SaveProcess.run(self, options)
+
+        for name in options:
+            if name in self.ivm.data: self.ivm.delete_data(name)
+            if name in self.ivm.rois: self.ivm.delete_roi(name)
+
+        self.status = Process.SUCCEEDED
