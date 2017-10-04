@@ -85,13 +85,21 @@ class PkModellingProcess(BackgroundProcess):
         roi_name = options.pop('roi', None)
         if roi_name is None:
             roi = self.ivm.current_roi
-        elif roi_name is not None:
+        elif roi_name in self.ivm.rois:
             roi = self.ivm.rois[roi_name]
-
+        else:
+            raise RuntimeError("Specified ROI not found")
+                        
         self.suffix = options.pop('suffix', '')
         if self.suffix != "": self.suffix = "_" + self.suffix
 
+        if self.ivm.main is None:
+            raise RuntimeError("No data loaded")
+
         img1 = self.ivm.main.std()
+        if len(img1.shape) != 4: 
+            raise RuntimeError("Data must be 4D for DCE PK modelling")
+
         roi1 = roi.std()
         t101 = self.ivm.data["T10"].std()
 
