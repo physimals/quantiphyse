@@ -19,7 +19,7 @@ from .Register import RegisterDialog
 from .ImageView import ImageView
 
 from .._version import __version__
-from ..QtInherit.FingerTabs import FingerTabBarWidget, FingerTabWidget
+from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
 from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
 from ..utils import get_icon, get_local_file
@@ -409,7 +409,8 @@ class MainWindow(QtGui.QMainWindow):
             if not fname: return
         self.default_directory = os.path.dirname(fname)
 
-        # Get metadata for file - shape and data type so we can assess fit
+        # Data is not loaded at this point, however basic metadata is so we can tailor the
+        # options we offer
         data = load(fname)
 
         # FIXME not doing this because a lot of ROIs seem to come in as float data? 
@@ -418,7 +419,9 @@ class MainWindow(QtGui.QMainWindow):
         #    print(dtype)
         #    ftype = "DATA"
 
-        force_t_option = (data.nvols == 1)
+        # If we have apparently 3d data then we have the 'advanced' option of treating the
+        # third dimension as time - some broken NIFTI files require this.
+        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
         force_t = False
                 
         ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
@@ -436,7 +439,7 @@ class MainWindow(QtGui.QMainWindow):
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
-            data.force_t()
+            data.set_2dt()
         
         # Check for inappropriate ROI data
         if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:

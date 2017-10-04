@@ -14,8 +14,8 @@ from matplotlib import cm
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..QtInherit.dialogs import error_dialog
-from ..QtInherit import HelpButton
+from ..gui.dialogs import error_dialog
+from ..gui.widgets import HelpButton
 from ..analysis import Process
 from ..analysis.pk import PkModellingProcess
 from ..utils import get_col

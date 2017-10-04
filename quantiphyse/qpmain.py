@@ -20,7 +20,7 @@ import pyqtgraph as pg
 from .gui.MainWindow import MainWindow
 from .utils.batch import run_batch
 from .utils import set_local_file_path, set_debug
-from .QtInherit.dialogs import error_dialog
+from .gui.dialogs import error_dialog
 
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))

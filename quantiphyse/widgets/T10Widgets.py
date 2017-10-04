@@ -6,7 +6,7 @@ from PySide import QtGui
 import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
-from ..QtInherit import HelpButton
+from ..gui.widgets import HelpButton
 from ..analysis.t10 import T10Process
 from . import QpWidget
 from ..volumes.io import load

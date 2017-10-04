@@ -4,9 +4,8 @@ import numpy as np
 
 from PySide import QtGui
 
-from ..QtInherit import HelpButton
-from ..QtInherit.widgets import RoiCombo, OverlayCombo
-from ..QtInherit.dialogs import TextViewerDialog
+from ..gui.widgets import HelpButton, RoiCombo, OverlayCombo
+from ..gui.dialogs import TextViewerDialog
 from ..analysis import Process
 from ..analysis.reg import RegProcess, McflirtProcess, REG_METHODS
 from . import QpWidget

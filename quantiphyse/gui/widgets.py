@@ -3,11 +3,70 @@ from PySide import QtGui, QtCore
 from ..utils import get_icon
 from .dialogs import error_dialog, TextViewerDialog, MatrixViewerDialog
 
+class FingerTabBarWidget(QtGui.QTabBar):
+    """
+    Vertical tab bar used for the analysis widget setSelectionMode
+    """
+    def __init__(self, tab_widget, parent=None, *args, **kwargs):
+        self.tabSize = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
+        QtGui.QTabBar.__init__(self, parent, *args, **kwargs)
+        self.close_icon = QtGui.QIcon(get_icon("close"))
+        self.tab_widget = tab_widget
+
+    def paintEvent(self, event):
+        painter = QtGui.QStylePainter(self)
+        option = QtGui.QStyleOptionTab()
+ 
+        for index in range(self.count()):
+            self.initStyleOption(option, index)
+            tabRect = self.tabRect(index)
+            tabRect.moveLeft(10)
+            painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)
+            painter.drawText(tabRect, QtCore.Qt.AlignVCenter |
+                             QtCore.Qt.AlignHCenter,
+                             self.tabText(index))
+            painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
+                                   self.tabIcon(index).pixmap(20, 20))
+            w = self.tab_widget.widget(index)
+            if not w.default:
+                tabRect.moveLeft(-5)
+                tabRect.moveTop(tabRect.top()+5)
+                painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignRight | QtCore.Qt.AlignTop,
+                                    self.close_icon.pixmap(10, 10))
+        painter.end()
+
+    def mousePressEvent(self, evt):
+        QtGui.QTabBar.mousePressEvent(self, evt)
+        idx = self.tabAt(evt.pos())
+        if idx >= 0 and evt.button() == QtCore.Qt.LeftButton:
+             tabRect = self.tabRect(idx)
+             oy = evt.pos().y() - tabRect.top() - 5
+             ox = tabRect.right() - evt.pos().x() - 5
+             if ox > 0 and ox < 10 and oy > 0 and oy < 10:
+                 # Click was inside close button
+                 w = self.tab_widget.widget(idx)
+                 if not w.default:
+                     w.visible = False
+                     self.tab_widget.removeTab(idx)
+        
+    def tabSizeHint(self,index):
+        return self.tabSize
+
+class FingerTabWidget(QtGui.QTabWidget):
+    """
+    A QTabWidget equivalent which uses our FingerTabBarWidget
+    """
+    def __init__(self, parent, *args):
+        QtGui.QTabWidget.__init__(self, parent, *args)
+        self.setTabBar(FingerTabBarWidget(self, width=110, height=50))
+        self.setTabPosition(QtGui.QTabWidget.West)
+        self.setMovable(False)
+        self.setIconSize(QtCore.QSize(16, 16))
+    
 class HelpButton(QtGui.QPushButton):
     """
     A button for online help
     """
-
     def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
 
         super(HelpButton, self).__init__(parent)
@@ -32,9 +91,8 @@ class HelpButton(QtGui.QPushButton):
 
 class BatchButton(QtGui.QPushButton):
     """
-    A button for online help
+    A button which displays the batch file code for the current analysis widget
     """
-
     def __init__(self, widget):
         super(BatchButton, self).__init__(widget)
         self.widget = widget
@@ -73,10 +131,10 @@ class OverlayCombo(QtGui.QComboBox):
         self.rois = rois
         if self.rois:
             self.ivm.sig_all_rois.connect(self.data_changed)
-            self.data_changed(self.ivm.rois.values())
+            self.data_changed(self.ivm.rois.keys())
         else:
             self.ivm.sig_all_data.connect(self.data_changed)
-            self.data_changed(self.ivm.data.values())
+            self.data_changed(self.ivm.data.keys())
     
     def data_changed(self, data):
         current = self.currentText()
@@ -100,9 +158,9 @@ class RoiCombo(OverlayCombo):
     """
     A combo box which gives a choice of ROIs
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ivm, *args, **kwargs):
         kwargs["rois"] = True
-        super(RoiCombo, self).__init__(*args, **kwargs)
+        super(RoiCombo, self).__init__(ivm, *args, **kwargs)
     
 class NumericOption(QtGui.QWidget):
     def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False):

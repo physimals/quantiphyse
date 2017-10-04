@@ -2,7 +2,7 @@ from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
 
-from ..QtInherit.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo
+from ..gui.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo
 from ..analysis.sv import SupervoxelsProcess
 from ..analysis.misc import MeanValuesProcess
 from . import QpWidget

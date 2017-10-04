@@ -12,8 +12,8 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from sklearn.metrics import pairwise
 
-from ..QtInherit import HelpButton, BatchButton
-from ..QtInherit.dialogs import error_dialog
+from ..gui.widgets import HelpButton, BatchButton
+from ..gui.dialogs import error_dialog
 from ..analysis.kmeans import KMeansPCAProcess
 from ..utils import get_pencol
 from . import QpWidget

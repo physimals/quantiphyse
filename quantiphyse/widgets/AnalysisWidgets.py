@@ -18,7 +18,7 @@ from scipy.interpolate import UnivariateSpline
 from . import QpWidget
 from ..gui.ImageView import PickMode
 from ..utils import get_icon, copy_table, get_pencol
-from ..QtInherit import HelpButton, BatchButton
+from ..gui.widgets import RoiCombo, HelpButton, BatchButton
 from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
@@ -631,9 +631,17 @@ class RoiAnalysisWidget(QpWidget):
         hbox.addWidget(HelpButton(self))
         layout.addLayout(hbox)
 
-        info = QtGui.QLabel("<i><br>Calculate size and volume of the current ROI<br></i>")
+        info = QtGui.QLabel("<i><br>Calculate size and volume of an ROI<br></i>")
         info.setWordWrap(True)
         layout.addWidget(info)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('ROI: '))
+        self.combo = RoiCombo(self.ivm)
+        self.combo.currentIndexChanged.connect(self.update)
+        hbox.addWidget(self.combo)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
 
         self.table = QtGui.QTableView()
         self.table.resizeColumnsToContents()
@@ -649,19 +657,24 @@ class RoiAnalysisWidget(QpWidget):
         layout.addStretch(1)
 
     def activate(self):
-        self.ivm.sig_current_roi.connect(self.update)
+        self.ivm.sig_current_roi.connect(self.current_roi_changed)
         self.ivm.sig_all_rois.connect(self.update)
         self.update()
 
     def deactivate(self):
-        self.ivm.sig_current_roi.disconnect(self.update)
+        self.ivm.sig_current_roi.disconnect(self.current_roi_changed)
         self.ivm.sig_all_rois.disconnect(self.update)
 
     def batch_options(self):
-        return "CalcVolumes", {}
+        return "CalcVolumes", {"roi" : self.combo.currentText()}
+
+    def current_roi_changed(self, roi):
+        self.combo.setCurrentIndex(self.combo.findText(roi.name))
 
     def update(self):
-        self.process.run({"no-artifact" : True})
+        roi = self.combo.currentText()
+        if roi in self.ivm.rois:
+            self.process.run({"roi" : roi, "no-artifact" : True})
         
     def copy_stats(self):
         copy_table(self.process.model)

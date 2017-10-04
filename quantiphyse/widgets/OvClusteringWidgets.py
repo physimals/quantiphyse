@@ -10,8 +10,8 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import numpy as np
 from PySide import QtCore, QtGui
 
-from ..QtInherit.dialogs import error_dialog
-from ..QtInherit import HelpButton, BatchButton
+from ..gui.dialogs import error_dialog
+from ..gui.widgets import HelpButton, BatchButton
 from ..analysis.kmeans import KMeans3DProcess
 from . import QpWidget
 

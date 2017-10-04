@@ -13,9 +13,8 @@ from skimage.segmentation import random_walker
 
 from PySide import QtCore, QtGui
 
-from ..QtInherit.dialogs import error_dialog
-from ..QtInherit.widgets import OverlayCombo, RoiCombo, NumericOption
-from ..QtInherit import HelpButton
+from ..gui.dialogs import error_dialog
+from ..gui.widgets import HelpButton, OverlayCombo, RoiCombo, NumericOption
 from ..gui.ImageView import PickMode, DragMode
 from ..utils import get_icon
 from ..analysis.feat_pca import PcaFeatReduce

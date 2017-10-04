@@ -16,8 +16,8 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..QtInherit import HelpButton
-from ..QtInherit.dialogs import error_dialog
+from ..gui.widgets import HelpButton
+from ..gui.dialogs import error_dialog
 
 class ExampleWidget(PkWidget):
     """
