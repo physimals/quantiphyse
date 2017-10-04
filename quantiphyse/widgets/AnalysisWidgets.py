@@ -19,7 +19,7 @@ from . import QpWidget
 from ..gui.ImageView import PickMode
 from ..utils import get_icon, copy_table, get_pencol
 from ..gui.widgets import RoiCombo, HelpButton, BatchButton
-from ..analysis.misc import CalcVolumesProcess, SimpleMathsProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
+from ..analysis.misc import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):
@@ -709,7 +709,7 @@ class SimpleMathsWidget(QpWidget):
         info.setWordWrap(True)
         layout.addWidget(info)
 
-        self.process = SimpleMathsProcess(self.ivm)
+        self.process = ExecProcess(self.ivm)
 
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel("Set"))

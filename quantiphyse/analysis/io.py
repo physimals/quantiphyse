@@ -96,3 +96,29 @@ class SaveDeleteProcess(SaveProcess):
             if name in self.ivm.rois: self.ivm.delete_roi(name)
 
         self.status = Process.SUCCEEDED
+
+class SaveArtifactsProcess(Process):
+    """
+    Save data to file and then delete it
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        SaveProcess.run(self, options)
+
+        for name, fname in options.items():
+            if not fname: fname = name
+            if name in self.ivm.artifacts: 
+                self._save_text(str(self.ivm.artifacts[name]), fname)
+            else:
+                warn("Artifact %s not found - not saving" % name)
+
+        self.status = Process.SUCCEEDED
+
+    def _save_text(self, text, fname, ext="txt"):
+        if len(text) > 0:
+            if "." not in fname: fname = "%s.%s" % (fname, ext)
+            fname = os.path.join(self.workdir, fname)
+            with open(fname, "w") as f:
+                f.write(text)
