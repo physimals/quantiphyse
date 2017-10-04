@@ -282,7 +282,7 @@ class OverlayStatisticsProcess(Process):
             self.ivm.add_artifact(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
-class SimpleMathsProcess(Process):
+class ExecProcess(Process):
     
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -301,24 +301,6 @@ class SimpleMathsProcess(Process):
             else:
                 result = eval(proc, globals)
                 self.ivm.add_data(result, name=name)
-       
-        self.status = Process.SUCCEEDED
-
-class ExecProcess(Process):
-    
-    def __init__(self, ivm, **kwargs):
-        Process.__init__(self, ivm, **kwargs)
-        self.model = QtGui.QStandardItemModel()
-
-    def run(self, options):
-        globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
-        for name, ovl in self.ivm.data.items():
-            globals[name] = ovl.std()
-        for name, roi in self.ivm.rois.items():
-            globals[name] = roi.std()
-        for code in options.pop("code", []):
-            print(code)
-            exec(code, globals)
        
         self.status = Process.SUCCEEDED
 
