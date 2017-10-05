@@ -29,7 +29,7 @@ try:
         options["refvol"] = 1
         # FIXME voxel sizes?
         retdata, log = mcflirt(data, [1.0,] * data.ndim, **options)
-        return retdata[:,:,:,0], log
+        return retdata[:,:,:,0], None, log
     REG_METHODS["mcflirt"] = mcflirt_reg
 except:
     warn("mcflirt registration method not found")
