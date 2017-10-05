@@ -66,7 +66,7 @@ class BackgroundProcess(Process):
     A serial (non parallelized) asynchronous process
     """
 
-    def __init__(self, ivm, fn, sync=False, **kwargs):
+    def __init__(self, ivm, fn, **kwargs):
         super(BackgroundProcess, self).__init__(ivm, **kwargs)
         _init_pool()
         self.fn = fn
@@ -93,7 +93,7 @@ class BackgroundProcess(Process):
         """
         Start worker processes. Should be called by run()
 
-        n = number of workers
+        n = number of tasks
         args = list of run arguments - will be split up amongst workers by split_args()
         """
         worker_args = self.split_args(n, args)
@@ -102,13 +102,16 @@ class BackgroundProcess(Process):
         if self.multiproc:
             processes = []
             for i in range(n):
+                debug("starting task %i..." % n)
                 proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
                 processes.append(proc)
             
             if self.sync:
+                debug("synchronous")
                 for i in range(n):
                     processes[i].get()
             else:
+                debug("async - restarting timer")
                 self._restart_timer()
         else:
             for i in range(n):
@@ -117,6 +120,7 @@ class BackgroundProcess(Process):
                 if QtGui.qApp is not None: QtGui.qApp.processEvents()
                 self._process_cb(result)
                 if self.status != Process.RUNNING: break
+        debug("done start")
 
     def split_args(self, n, args):
         """
@@ -145,6 +149,7 @@ class BackgroundProcess(Process):
         self._timer.start()
 
     def _timer_cb(self):
+        debug("timer CB")
         if self.status == Process.RUNNING:
             self.timeout()
             self._restart_timer()
