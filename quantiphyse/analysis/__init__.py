@@ -20,13 +20,13 @@ _pool = None
 SPLIT_AXIS = 0
 
 # Whether to use multiprocessing - can be disabled for debugging
-MULTIPROC = False
+MULTIPROC = True
 
 def _init_pool():
     global _pool
     if _pool is None: 
         n_workers = multiprocessing.cpu_count()
-        #print("Initializing multiprocessing using %i workers" % n_workers)
+        debug("Initializing multiprocessing using %i workers" % n_workers)
         _pool = multiprocessing.Pool(n_workers)
 
 class Process(QtCore.QObject):
