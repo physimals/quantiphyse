@@ -105,8 +105,6 @@ class SaveArtifactsProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        SaveProcess.run(self, options)
-
         for name, fname in options.items():
             if not fname: fname = name
             if name in self.ivm.artifacts: 
