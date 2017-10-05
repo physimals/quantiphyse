@@ -158,11 +158,11 @@ class BatchCase:
                     print("DONE")
                     self.save_text(process.log, process.name, "log")
                 else:
-                    print("FAILED")
                     raise process.output
             except:
                 print("FAILED")
                 warn(str(sys.exc_info()[1]))
+                debug(traceback.format_exc())
                 
     def progress(self, complete):
         sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))

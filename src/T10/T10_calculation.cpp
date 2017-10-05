@@ -169,7 +169,7 @@ vector<double> T10mapping( dd favols, d fa, double TR, dd afivols, double fa_afi
     // AFI calculation
     vector<double> k = afimapping(afivols, fa_afi, TR_afi);
 
-    cout << "t10 calculation for " << num_voxels << " voxels \n";
+    //cout << "t10 calculation for " << num_voxels << " voxels \n";
     // Loop through all voxels
     for (int jj=0; jj < num_voxels; jj++){
 

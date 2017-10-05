@@ -10,6 +10,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from sklearn.decomposition import PCA
 
+from ..utils import debug
 from . import image_normalisation as inorm
 
 class PcaFeatReduce(object):
@@ -88,13 +89,13 @@ class PcaFeatReduce(object):
         if self.opt_normimage == 1:
             self.voxel_se = self.normalise_im(self.voxel_se, self.norm_type)
 
-        print("Using PCA dimensionality reduction")
+        debug("Using PCA dimensionality reduction")
         self.pca = PCA(n_components=n_components)
         reduced_data = self.pca.fit_transform(self.voxel_se)
-        print("Number of components", reduced_data.shape[1])
+        debug("Number of components", reduced_data.shape[1])
 
         if opt_normdata == 1:
-            print("Normalising PCA modes between 0 and 1")
+            debug("Normalising PCA modes between 0 and 1")
             #TODO should maybe normalise based on lambda instead
             self.min1 = np.min(reduced_data, axis=0)
             reduced_data = reduced_data - np.tile(np.expand_dims(self.min1, axis=0),
@@ -138,11 +139,11 @@ class PcaFeatReduce(object):
 
         #Projecting the data using training set PCA
         if voxel_se_test.shape[1] > self.pca.mean_.shape[0]:
-            print("Warning: reducing input vector length")
+            debug("Warning: reducing input vector length")
             voxel_se_test = voxel_se_test[:, :self.pca.mean_.shape[0]]
 
         elif voxel_se_test.shape[1] < self.pca.mean_.shape[0]:
-            print("Warning: increasing input vector length")
+            debug("Warning: increasing input vector length")
             voxel_se_test = voxel_se_test[:, :self.pca.mean_.shape[0]]
             diff = self.pca.mean_.shape[0] - voxel_se_test.shape[1]
             add1 = np.expand_dims(voxel_se_test[:, -1], axis=1)
@@ -153,7 +154,7 @@ class PcaFeatReduce(object):
 
         # Scaling features
         if self.opt_normdata == 1:
-            print("Normalising PCA modes")
+            debug("Normalising PCA modes")
             reduced_data_test = reduced_data_test - np.tile(np.expand_dims(self.min1, axis=0),
                                                             (reduced_data_test.shape[0], 1))
             reduced_data_test = reduced_data_test / np.tile(np.expand_dims(self.max1, axis=0),
@@ -175,9 +176,9 @@ class PcaFeatReduce(object):
         var5 = np.sum(self.pca.explained_variance_ratio_[:5])
         var10 = np.sum(self.pca.explained_variance_ratio_[:10])
 
-        print("Variance: ", self.pca.explained_variance_ratio_)
-        print("Variance explained by 5 modes: ", var5)
-        print("Variance explained by 10 modes: ", var10)
+        debug("Variance: ", self.pca.explained_variance_ratio_)
+        debug("Variance explained by 5 modes: ", var5)
+        debug("Variance explained by 10 modes: ", var10)
 
 #import matplotlib.pyplot as plt
 #

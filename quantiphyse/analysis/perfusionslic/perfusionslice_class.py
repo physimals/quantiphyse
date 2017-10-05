@@ -7,6 +7,7 @@ import numpy as np
 import scipy.ndimage as ndi
 
 from ...analysis.feat_pca import PcaFeatReduce
+from ...utils import debug
 from . import slic_feat
 import warnings
 
@@ -49,7 +50,7 @@ class PerfSLIC(object):
 
         # ~~~~~~~~~~~~~~~~~~~~~ 1) Normalise enhancement curves (optional) ~~~~~~~~~~~~~~~~~~~~~~
 
-        print("Image norm")
+        debug("Image norm")
         baseline1 = np.mean(self.img1[:, :, :, :3], axis=-1)
         self.img1 = self.img1 - np.tile(np.expand_dims(baseline1, axis=-1), (1, 1, 1, self.img1.shape[-1]))
 
@@ -139,7 +140,7 @@ class PerfSLIC(object):
         """
 
         # saving nearest neighbour data
-        print("Converting neighbour array to list...")
+        debug("Converting neighbour array to list...")
         neigh_store = []
         for pp in range(self.adj_mat.shape[0]):
             n1_ar = np.array(self.adj_mat[int(pp), :] == 1)
