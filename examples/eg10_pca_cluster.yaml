@@ -1,21 +1,22 @@
-# Example config file for running Fabber
+# Example config file for clustering
 
 OutputFolder: out
-Debug: True
+Debug: False
 
 Processing:
+  - LoadData:
   - KMeansPCA:
         n-clusters: 3
         n-pca: 5
         output-name: test_clusters
         
-SaveVolume:
-SaveRois:
-   test_clusters :
+  - Save:
+        test_clusters:
 
 Cases:
     Subject1:
         Folder:   c:\Users\ctsu0221\build\data
-        Volume:   test_data.nii
+        LoadData:   
+            test_data.nii:
 
 

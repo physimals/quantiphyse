@@ -1,23 +1,24 @@
 ### Illustration of proposed YAML-based batch file format
 
-# Default data and options. This is overridden by any match data/options
-# specified in a data case.
-# Note that data is loaded separately for each case
-# and the main volume is always loaded first, so no worries about 
-# loading an overlay without a main volume
-
+# Global output folder - each case is output in a separate subfolder
 OutputFolder: out
-Debug: True
-#Overlays:
-#  T10: c:\Users\ctsu0221\build\data\mean_c0.nii
+
+# Setting to True will create LOTS of debugging output
+Debug: False
 
 # Defines the processing to be done on each case
 # This is given as a list so the order of tasks is preserved
-
 Processing:
-  - MCFlirt:
-      cost: normcorr
+
+  # Load data - file names are relative to case folder. Can define data to be loaded
+  # globally or individually per case
+  - Load: 
+
+  # Run some processing steps - in this case motion correction followed by model fitting
+  - Moco:
+      method: mcflirt
       replace-vol: True
+      cost: normcorr
 
   - Fabber:
       loadmodels: c:\Users\ctsu0221\fsl_x64_release\bin\fabber_models_dce.dll
@@ -27,34 +28,29 @@ Processing:
       degree: 2 
       save-mean:
 
-# Output data. Can opt to save the whole workspace, or just key volumes
-# Note that the output folder is used to form the filename
-
-#SaveWorkspace
-SaveVolume:
-SaveOverlays:
-    mean_c0 :
-    mean_c1:
-    mean_c2:
-SaveRois:
-    mask: seg
+  # Output data
+  # Note that the output folder is used to form the filename
+  - Save:
+      mean_c0 :
+      mean_c1:
+      mean_c2:
+      mask: seg.nii
 
 # List of cases to apply the processing to
-
 Cases:
     MrX:
+        # Note that the folder is used to form input filenames
         Folder:   c:\Users\ctsu0221\build\data\
-        Volume:   test_data.nii
-        Rois:
-          mask: test_mask.nii
+
+        # Data to load for this case
+        Load:
+          data:
+            test_data.nii
+          rois:
+            test_mask.nii : mask
 
         # Can override processing defaults here
         MCFlirt:
           refvol: 10 
-
-    #MrsY:
-    #    Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
-    #    Volume:     qiba_lesst_20.nii
-    #    Roi:      qiba_mask.nii
 
 

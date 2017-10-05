@@ -1,9 +1,15 @@
 # Example config file for running Fabber
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
+  - Load:
+        data:
+            test_data.nii:
+        rois:
+            test_mask.nii: mask
+
   - Fabber:
         method: vb
         max-iterations: 30
@@ -12,19 +18,13 @@ Processing:
         degree: 2 
         save-mean:
 
-SaveVolume:
-SaveOverlays:
-    mean_c0 :
-    mean_c1:
-    mean_c2:
-SaveRois:
-    mask:
+  - Save:
+        mean_c0 :
+        mean_c1:
+        mean_c2:
+        mask:
 
 Cases:
     Subject1:
         Folder:   c:\Users\ctsu0221\build\data
-        Volume:   test_data.nii
-        Rois:
-          mask:   test_mask.nii
-
-
+        

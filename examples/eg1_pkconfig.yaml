@@ -7,36 +7,39 @@
 #  Model 4: Weinmann with offset and vp (Pre-clinical)
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
+  - Load:
+  
   - PkModelling:
-      model:      1
+      model:      1      # Model (see above)
       fa:         30     # degrees
-      tr:         5.0    # ms
-      te:         2.2    # ms
+      tr:         3.5    # ms
+      te:         1.6    # ms
       dt:         0.5    # temporal resolution (s)
       r1:         3.7    # T1 Relaxivity of contrast agent
       r2:         4.8    # T2 Relaxivity of contrast agent
-      ve-thresh:   99.8   # Ktrans/kep percentile threshold
+      ve-thresh:  99.8   # Ktrans/kep percentile threshold
       tinj:       60     # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
       #smoothing:  1      # Smoothing of the PK maps - TODO
 
-SaveOverlays:
-  kep:
-  ktrans:
-  ve:
-  vp:
-  offset:
-  Model curves:
+  - Save:
+      kep:
+      ktrans:
+      ve:
+      vp:
+      offset:
+      model_curves:
 
 Cases:
     QIBA1:
         Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
-        Volume:   qiba_67tpts.nii
-        Overlays:
-          T10: qiba_t10.nii
-        Rois:
-          mask: qiba_mask.nii
+        Load:
+          data:
+            qiba_67tpts.nii:
+            qiba_t10.nii: T10
+          rois:
+            qiba_mask.nii: mask
 
 

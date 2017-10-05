@@ -1,9 +1,17 @@
-# Example config file for running Fabber
+# Example config file for calculating various overlay statistics
 
 OutputFolder: out
-Debug: True
+Debug: False
 
 Processing:
+  - Load:
+        data:
+            test_data.nii:
+            mean_c0.nii:
+            mean_c1.nii:
+        rois:
+            test_mask.nii: mask
+          
   - OverlayStats:
         overlay: mean_c0
         output-name: c0_stats
@@ -19,19 +27,12 @@ Processing:
         output-name: c0_hist
         roi: mask
 
-SaveArtifacts: 
-    c0_stats:
-    c1_rp:
-    c0_hist:
+  - SaveArtifacts: 
+        c0_stats:
+        c1_rp:
+        c0_hist:
 
 Cases:
     Subject1:
         Folder:   c:\Users\ctsu0221\build\data
-        Volume:   test_data.nii
-        Rois:
-          mask: test_mask.nii
-        Overlays:  
-          mean_c0: mean_c0.nii
-          mean_c1: mean_c1.nii
-          
 
