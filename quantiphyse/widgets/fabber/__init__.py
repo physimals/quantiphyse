@@ -20,6 +20,7 @@ from ...gui.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption,
 from ...gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
+from ...utils import debug
 from .. import QpWidget
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
@@ -556,7 +557,7 @@ class CESTWidget(FabberWidget):
                     vals = self.custom_poolvals[pool["name"]]
 
                 self.pools.append((pool["name"], vals))
-        print(self.pools)
+        debug(self.pools)
 
     def edit_pools(self):
         vals, pool_headers = [], []
@@ -637,13 +638,13 @@ class CESTWidget(FabberWidget):
                 repeats = 1
             b1 = self.b1.spin.value()/1e6
             if self.unsat_cb.isChecked():
-                print("Unsat", idx, self.unsat_combo.currentIndex())
+                debug("Unsat", idx, self.unsat_combo.currentIndex())
                 if idx == 0 and self.unsat_combo.currentIndex() in (0, 2):
                     b1 = 0
                 elif idx == len(freqs)-1 and self.unsat_combo.currentIndex() in (1, 2):
                     b1 = 0
             dataspec += "%g %g %i\n" % (freq, b1, repeats)
-        print(dataspec)
+        debug(dataspec)
         return dataspec
 
     def get_ptrain(self):
@@ -659,12 +660,12 @@ class CESTWidget(FabberWidget):
                 ptrain += "%g %g\n" % (pm, pd)
         else:
             ptrain += "1 %g\n" % self.st.spin.value()
-        print(ptrain)
+        debug(ptrain)
         return ptrain
 
     def get_poolmat(self):
         poolmat = "\n".join([p[1] for p in self.pools])
-        print(poolmat)
+        debug(poolmat)
         return poolmat
 
     def write_temp(self, name, data):
@@ -681,7 +682,7 @@ class CESTWidget(FabberWidget):
         self.rundata["debug"] = ""
 
         for item in self.rundata.items():
-            print("%s: %s" % item)
+            debug("%s: %s" % item)
         self.start_task()
 
     def run_finished(self, status, results, log):
@@ -905,9 +906,9 @@ class ASLWidget(FabberWidget):
         order = ""
         for item in self.group_list.items():
             code = [k for k, v in self.groups.items() if v == item][0]
-            print(item, code)
+            debug(item, code)
             order += code
-        print(order)
+        debug(order)
         self.data_preview.set_order(order, tagfirst)
         casl = self.lbl_combo.currentIndex() == 0
         if casl:
@@ -950,7 +951,7 @@ class ASLWidget(FabberWidget):
             else:
                 ctpairs = True
 
-        print("ntis=%i, nrepeats=%i, tcpairs=%i, ctpairs=%i, nvols=%i" % (ntis, nrepeats, tcpairs, ctpairs, nvols))
+        debug("ntis=%i, nrepeats=%i, tcpairs=%i, ctpairs=%i, nvols=%i" % (ntis, nrepeats, tcpairs, ctpairs, nvols))
         asldata = np.zeros(list(self.ivm.grid.shape) + [nvols, ])
         out_idx = 0
         if tcpairs or ctpairs: npairs = 2
@@ -959,14 +960,14 @@ class ASLWidget(FabberWidget):
             for ridx in range(nrepeats):
                 idx1 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, npairs)
                 idx2 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 1, npairs)
-                print("tidx=%i, ridx=%i, vidx=%i" % (tidx, ridx, in_idx))
+                debug("tidx=%i, ridx=%i, tc1=%i, tc2=%i" % (tidx, ridx, idx1, idx2))
                 if ctpairs:
                     # Do control - tag
-                    print("Doing %i - %i" % (idx1, idx2))
+                    debug("Doing %i - %i" % (idx1, idx2))
                     asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx1] - self.ivm.main.std()[:,:,:,idx2]
                 elif tcpairs:
                     # Do control - tag
-                    print("Doing %i - %i" % (idx2, idx1))
+                    debug("Doing %i - %i" % (idx2, idx1))
                     asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx2] - self.ivm.main.std()[:,:,:,idx1]
                 else:
                     asldata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx1]
@@ -1040,7 +1041,7 @@ class ASLWidget(FabberWidget):
             del self.rundata["inctau"]
 
         for item in self.rundata.items():
-            print("%s: %s" % item)
+            debug("%s: %s" % item)
         self.start_task()
         self.tc_combo.setCurrentIndex(1)
 
