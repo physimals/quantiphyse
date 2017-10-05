@@ -491,7 +491,7 @@ class OrthoView(pg.GraphicsView):
 
     def _update_view_overlay(self):
         oview = self.iv.current_data_view
-        if oview is None or not oview.visible:
+        if oview is None or not oview.visible or oview.data() is None:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
             z = 1
