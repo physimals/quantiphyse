@@ -41,19 +41,19 @@ class T10Process(Process):
         if "afi" in options:
             # We are doing a B0 correction (preclinical)
             afi_vols, trs = [], []
-            for fname, tr in options["afi"].items():
+            for fname, t in options["afi"].items():
                 if fname in self.ivm.data:
                     vol = self.ivm.data[fname].std()
                 else:
                     data = load(_get_filepath(fname, self.workdir))
                     data.regrid(self.ivm.grid)
                     vol = data.std()
-                if isinstance(tr, list):
-                    for i, a in enumerate(tr):
+                if isinstance(t, list):
+                    for i, a in enumerate(t):
                         trs.append(float(a)/1000)
                         afi_vols.append(vol[:,:,:,i])
                 else:
-                    trs.append(tr)
+                    trs.append(t)
                     afi_vols.append(vol)
 
             fa_afi = options["fa-afi"]
