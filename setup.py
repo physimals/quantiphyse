@@ -58,14 +58,10 @@ Description = """/
 Quantiphyse
 """
 
-# Get version info
-
-VERSIONFILE="quantiphyse/_version.py"
-version_line = open(VERSIONFILE, "rt").read()
-if version_line.startswith("__version__ ="):
-    version_str = version_line.split("=")[1].strip()
-else:
-    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+# Update version info from git tags and return a standardized version
+# of it for packaging
+from update_version import get_std_version
+version_str = get_std_version()
 
 extensions = []
 compile_args = []

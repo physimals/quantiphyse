@@ -46,6 +46,14 @@ def get_local_file(name):
     global LOCAL_FILE_PATH
     return os.path.join(LOCAL_FILE_PATH, name)
 
+def get_version():
+    try:
+        from .._version import __version__
+        return __version__
+    except:
+        warn(sys.exc_info()[1])
+        return "<version not found>"
+
 def table_to_str(tabmod):
     """ Turn a QT table model into a TSV string """
     tsv = ""

@@ -18,11 +18,10 @@ from .ViewOptions import ViewOptions
 from .Register import RegisterDialog
 from .ImageView import ImageView
 
-from .._version import __version__
 from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
 from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file
+from ..utils import get_icon, get_local_file, get_version
 
 from ..widgets.OverviewWidgets import OverviewWidget
 from ..widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
@@ -176,7 +175,7 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(main_widget)
         
         # General properties of main window
-        self.setWindowTitle("Quantiphyse %s" % __version__)
+        self.setWindowTitle("Quantiphyse %s" % get_version())
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
         self.resize(1000, 700)
         self.setUnifiedTitleAndToolBarOnMac(True)
@@ -366,7 +365,7 @@ class MainWindow(QtGui.QMainWindow):
         <p align="center">Benjamin Irving</p>
         <p align="center">Martin Craig</p>
         <p align="center">Michael Chappell</p>
-        """ % __version__
+        """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
     def show_console(self):

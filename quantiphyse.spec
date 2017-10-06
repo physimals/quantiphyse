@@ -16,6 +16,10 @@ bin_files = []
 hidden_imports = []
 added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src')]
 
+# Update version info from git tags and get standardized version for packages
+from update_version import get_std_version
+version_str = get_std_version()
+
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
 hidden_imports.append('fabber')
