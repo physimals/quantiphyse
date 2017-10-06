@@ -81,6 +81,6 @@ class ExampleWidget(PkWidget):
         img = img * (self.ivm.current_roi > 0)
         img[img1 < thresh] = 0
 
-        self.ivm.add_overlay(choice1='thresh', img, set_current=True)
+        self.ivm.add_overlay('thresh', img, set_current=True)
 
 

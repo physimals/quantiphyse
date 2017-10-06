@@ -22,7 +22,7 @@ class OvCurveClusteringWidget(QpWidget):
     Widget for clustering the tumour into various regions
     """
     def __init__(self, **kwargs):
-        super(OvCurveClusteringWidget, self).__init__(name="Overlay Cluster", icon="clustering", desc="Generate clusters from overlays", **kwargs)
+        super(OvCurveClusteringWidget, self).__init__(name="Overlay Cluster", icon="clustering", desc="Generate clusters from overlays", default=True, **kwargs)
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> Clustering of the current overlay </font>")
@@ -190,4 +190,4 @@ class OvCurveClusteringWidget(QpWidget):
             voxel_count = np.sum(roi.std() == ii)
             self.tabmod1.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
 
-
+WIDGETS = [OvCurveClusteringWidget,]

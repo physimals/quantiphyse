@@ -506,3 +506,5 @@ class RoiBuilderWidget(QpWidget):
             self.ivm.rois[roi_name].std()[slices] = roi_slice_orig
             self.ivm.add_roi(self.ivm.rois[roi_name], name=roi_name)
         self.undo_btn.setEnabled(len(self.history) > 0)
+        
+WIDGETS = [RoiBuilderWidget,]

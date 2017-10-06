@@ -59,6 +59,8 @@ class ImageExportWidget(QpWidget):
             self.ivl.capture_view_as_image(1, output_name)
 
 
+WIDGETS = [ImageExportWidget,]
+
 
 
 

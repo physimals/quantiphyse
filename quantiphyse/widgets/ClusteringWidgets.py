@@ -24,7 +24,7 @@ class CurveClusteringWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(CurveClusteringWidget, self).__init__(name="Curve Cluster", icon="clustering", desc="Generate clusters from enhancement curves", **kwargs)
+        super(CurveClusteringWidget, self).__init__(name="Curve Cluster", icon="clustering", desc="Generate clusters from enhancement curves", default=True, **kwargs)
 
         # self.setStatusTip("Click points on the 4D volume to see time curve")
         title1 = QtGui.QLabel("<font size=5> PCA clustering of DCE-MRI </font>")
@@ -307,5 +307,4 @@ class CurveClusteringWidget(QpWidget):
             self.g_merge.setVisible(True)
             self.g_stats.setVisible(True)
 
-
-
+WIDGETS = [CurveClusteringWidget,]

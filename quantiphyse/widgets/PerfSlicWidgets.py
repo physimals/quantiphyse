@@ -182,5 +182,4 @@ class MeanValuesWidget(QpWidget):
             QtGui.QMessageBox.warning(None, "Process error", "MeanValues process failed to run:\n\n" + str(process.output),
                                       QtGui.QMessageBox.Close)
 
-
-
+WIDGETS = [MeanValuesWidget, PerfSlicWidget]
