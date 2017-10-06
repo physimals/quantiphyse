@@ -21,12 +21,12 @@ def get_std_version():
     Get standardized version string in form maj.min.patch-release
     """
     v = update_version()
-    p = re.compile("v?(\d+\.\d+\.\d+-\d+).*")
+    p = re.compile("v?(\d+\.\d+\.\d+(-\d+)?).*")
     m = p.match(v)
     if m is not None:
         return  m.group(1)
     else:
-        raise RuntimeError("Failed to parse version string %s" % version)
+        raise RuntimeError("Failed to parse version string %s" % v)
 
 if __name__ == '__main__':
     print("Version updated to %s" % update_version())
