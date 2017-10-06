@@ -2,6 +2,22 @@
 import sys
 import os
 import struct
+import subprocess
+import re
+
+# This is copied from update_version for now until we sort out how to import it...
+def get_std_version():
+    """ 
+    Get standardized version string in form maj.min.patch-release
+    """
+    v = subprocess.check_output('git describe --dirty').strip(" \n")
+    p = re.compile("v?(\d+\.\d+\.\d+(-\d+)?).*")
+    m = p.match(v)
+    if m is not None:
+        return  m.group(1)
+    else:
+        raise RuntimeError("Failed to parse version string %s" % v)
+
 
 # See if we are 32 bit or 64 bit
 bits = struct.calcsize("P") * 8
@@ -17,7 +33,6 @@ hidden_imports = []
 added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src')]
 
 # Update version info from git tags and get standardized version for packages
-from update_version import get_std_version
 version_str = get_std_version()
 
 fsldir = os.environ.get("FSLDIR")
