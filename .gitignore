@@ -5,7 +5,8 @@ dist/
 build/
 debian/quantiphyse
 .eggs/
-/quantiphyse/analysis/pk_model.cpp
+quantiphyse/analysis/pk_model.cpp
+quantiphyse/_version.py
 *.sh
 *.so
 *~
