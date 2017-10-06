@@ -674,6 +674,12 @@ class CESTWidget(FabberWidget):
         f.close()
         return f.name
 
+    def batch_options(self):
+        support_files = [("poolmat.mat", self.get_poolmat()),
+                         ("dataspec.mat", self.get_dataspec()),
+                         ("ptrain.mat", self.get_ptrain())]
+        return "Fabber", self.rundata, support_files
+
     def start_cest(self):
         self.update_options()
         self.rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())

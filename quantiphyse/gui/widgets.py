@@ -1,7 +1,7 @@
 from PySide import QtGui, QtCore
 
 from ..utils import get_icon
-from .dialogs import error_dialog, TextViewerDialog, MatrixViewerDialog
+from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
 class FingerTabBarWidget(QtGui.QTabBar):
     """
@@ -110,10 +110,20 @@ class BatchButton(QtGui.QPushButton):
         Show a dialog box containing the batch options supplied by the parent
         """
         if hasattr(self.widget, "batch_options"):
-            proc_name, opts = self.widget.batch_options()
-            text = "  - %s:\n" % proc_name
-            text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
-            TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
+            batchopts = self.widget.batch_options()
+            if len(batchopts) == 2:
+                proc_name, opts = batchopts
+
+                text = "  - %s:\n" % proc_name
+                text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
+            elif len(batchopts) == 3:
+                proc_name, opts, support_files = batchopts
+                text = "  - %s:\n" % proc_name
+                text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                support_files.insert(0, ("Batch code", text))
+                MultiTextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, 
+                                      pages=support_files).show()     
         else:
             error_dialog("This widget does not provide a list of batch options")
 

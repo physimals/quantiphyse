@@ -1,5 +1,32 @@
 from PySide import QtGui
 
+class MultiTextViewerDialog(QtGui.QDialog):
+
+    def __init__(self, parent, title="Log", pages=[]):
+        super(MultiTextViewerDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+
+        self.tabs = QtGui.QTabWidget()
+        for heading, content in pages:
+            browser = self._text_browser(content)
+            self.tabs.addTab(browser, heading)
+
+        vbox.addWidget(self.tabs)
+        
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.close)
+        vbox.addWidget(self.buttonBox)
+
+        self.setLayout(vbox)
+        self.resize(700, 500)
+
+    def _text_browser(self, content):
+        tb = QtGui.QTextBrowser()
+        tb.setFontFamily("Courier")
+        tb.setText(content)
+        return tb
+        
 class TextViewerDialog(QtGui.QDialog):
 
     def __init__(self, parent, title="Log", text=""):
