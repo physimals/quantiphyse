@@ -1,7 +1,7 @@
 ### Example config file for preclinical T10 modelling with B0 correction
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
   - LoadData:

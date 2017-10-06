@@ -45,9 +45,9 @@ Cases:
         # Data to load for this case
         Load:
           data:
-            test_data.nii
+            test_data.nii:
           rois:
-            test_mask.nii : mask
+            test_mask.nii: mask
 
         # Can override processing defaults here
         MCFlirt:
