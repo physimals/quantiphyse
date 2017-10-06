@@ -138,18 +138,22 @@ class Transform:
         #self.reorder, self.flip, self.tmatrix = range(3), [], self.tmatrix_raw
 
     def transform_data(self, data):
-        if self.reorder != range(3):
-            if data.ndim == 4: self.reorder = self.reorder + [3]
-            debug("Re-ordering axes: ", self.reorder)
-            data = np.transpose(data, self.reorder)
+        
+        if self._is_identity(self.tmatrix):
+            # Transformation was reduced to flips/transpositions
+            if self.reorder != range(3):
+                if data.ndim == 4: self.reorder = self.reorder + [3]
+                debug("Re-ordering axes: ", self.reorder)
+                data = np.transpose(data, self.reorder)
 
-        if len(self.flip) != 0:
-            debug("Flipping axes: ", self.flip)
-            for d in self.flip: data = np.flip(data, d)
-
-        if not self._is_identity(self.tmatrix):
-            affine = self.tmatrix[:3,:3]
-            offset = list(self.tmatrix[:3,3])
+            if len(self.flip) != 0:
+                debug("Flipping axes: ", self.flip)
+                for d in self.flip: data = np.flip(data, d)
+        else:
+            # We were not able to reduce the transformation down to flips/transpositions
+            # so we will go with the raw affine matrix
+            affine = self.tmatrix_raw[:3,:3]
+            offset = list(self.tmatrix_raw[:3,3])
             output_shape = self.output_shape[:]
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
@@ -168,9 +172,10 @@ class Transform:
             debug("WARNING: affine_transform: ")
             debug(affine)
             debug("Offset = ", offset)
-            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape)
-        else:
-            pass
+            debug("Input shape=", data.shape, data.min(), data.max())
+            debug("Output shape=", output_shape)
+            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape, order=0)
+        
         return data
 
     def qtransform(self, zaxis):
@@ -229,13 +234,7 @@ class Transform:
             debug("After adjust origin", new_shape)
             debug(new_mat)
 
-            if not self._is_identity(new_mat):
-                # If we haven't succeeded in doing the transformation by
-                # flips and transposition, then we might as well do the
-                # full affine
-                return range(3), [], np.copy(mat)
-            else:
-                return dim_order, dim_flip, np.identity(4)
+            return dim_order, dim_flip, new_mat
         else:
             # Transposition was inconsistent, just go with general
             # affine transform - this will work but might be slow
@@ -420,12 +419,16 @@ class QpData:
         t = Transform(self.rawgrid, self.stdgrid)
         debug("Raw grid: ")
         debug(self.rawgrid.affine)
+        debug(self.rawgrid.shape)
         debug("Std grid: ")
         debug(self.stdgrid.affine)
+        debug(self.stdgrid.shape)
         rawdata = self.raw()
         if rawdata.ndim not in (3, 4):
             raise RuntimeError("Data must be 3D or 4D (padded if necessary")
+        debug("Raw data range: ", rawdata.min(), rawdata.max())
         self.stddata = t.transform_data(rawdata)
+        debug("Std data range: ", self.stddata.min(), self.stddata.max())
         self._remove_nans(self.stddata)  
 
         if self.roi:
