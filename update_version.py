@@ -9,7 +9,7 @@ def update_version():
     script_dir = os.path.dirname(__file__)
     qpdir = os.path.abspath(os.path.join(script_dir, "quantiphyse"))
 
-    version = subprocess.check_output('git describe --dirty').strip(" \n")
+    version = subprocess.check_output('git describe --dirty', shell=True).strip(" \n")
 
     vfile = open(os.path.join(qpdir, "_version.py"), "w")
     vfile.write("__version__='%s'" % version)
