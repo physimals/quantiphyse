@@ -11,16 +11,21 @@ import sys
 import argparse
 import multiprocessing
 import signal
-import warnings
 import traceback
 
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
-from .gui.MainWindow import MainWindow
 from .utils.batch import run_batch
-from .utils import set_local_file_path, set_debug
+from .utils import debug, warn, set_local_file_path, set_debug
+from .gui.MainWindow import MainWindow
 from .gui.dialogs import error_dialog
+
+# Required to use resources in theme. Check if 2 or 3.
+if sys.version_info[0] > 2:
+    from .resources import resource_py3
+else:
+    from .resources import resource_py2
 
 def my_catch_exceptions(type, value, tb):
     error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
@@ -41,9 +46,9 @@ def main():
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     parser.add_argument('--debug', help='Activate debug mode', action="store_true")
     args = parser.parse_args()
-    print(pg.systemInfo())
 
     set_debug(args.debug)
+    if args.debug: pg.systemInfo()
 
     # Check whether any batch processing arguments have been called
     if (args.batch is not None):
@@ -89,10 +94,10 @@ def main():
             
         if local_file_path == "":
             # Use local working directory otherwise
-            warnings.warn("Reverting to current directory as local path")
+            warn("Reverting to current directory as local path")
             local_file_path = os.getcwd()
 
-        print("Local directory: ", local_file_path)
+        debug("Local directory: ", local_file_path)
         set_local_file_path(local_file_path)
 
         # Create window and start main loop
