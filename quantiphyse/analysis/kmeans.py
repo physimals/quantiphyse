@@ -45,7 +45,9 @@ class KMeansPCAProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std()
+            roi = self.ivm.rois.get(roi_name, None)
+            if roi is not None: roi = roi.std()
+            else: roi = np.ones(img.shape[:3], dtype=np.bool)
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi.std()
         else:
@@ -58,6 +60,7 @@ class KMeansPCAProcess(Process):
         # Normalisation of the image. The first 3 volumes (if present) are averaged to 
         # give the baseline
         voxel_se = img[roi > 0]
+        print("ROI=", roi_name, "voxels=", voxel_se.shape)
         baseline1 = np.mean(img[:, :, :, :min(3, img.shape[3])], axis=-1)
         baseline1sub = np.expand_dims(baseline1, axis=-1)[roi > 0]
 
@@ -127,7 +130,9 @@ class KMeans3DProcess(Process):
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std()
+            roi = self.ivm.rois.get(roi_name, None)
+            if roi is not None: roi = roi.std()
+            else: roi = np.ones(data.shape, dtype=np.bool)
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi.std()
         else:
