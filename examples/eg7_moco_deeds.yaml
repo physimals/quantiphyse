@@ -1,4 +1,4 @@
-### Illustration of proposed YAML-based batch file format
+# Example config file for motion correction using DEEDS
 
 OutputFolder: out
 Debug: False
