@@ -47,8 +47,6 @@ PCA reduction is used on 4D data to extract representative curves
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        hbox = QtGui.QHBoxLayout()
-
         gbox = QtGui.QGroupBox()
         gbox.setTitle('Clustering options')
 
@@ -66,20 +64,21 @@ PCA reduction is used on 4D data to extract representative curves
         grid.addWidget(self.roi_combo, 1, 1)
 
         # Number of clusters inside the ROI
-        self.n_clusters = NumericOption("Number of clusters", grid, 2, minval=2, maxval=20, default=4, intonly=True)
+        self.n_clusters = NumericOption("Number of clusters", grid, xpos=2, ypos=0, minval=2, maxval=20, default=4, intonly=True)
         self.n_clusters.spin.setToolTip("")
 
         # Number of PCA modes
-        self.n_pca = NumericOption("Number of PCA modes", grid, 3, minval=1, maxval=10, default=3, intonly=True)
+        self.n_pca = NumericOption("Number of PCA modes", grid, xpos=2, ypos=1, minval=1, maxval=10, default=3, intonly=True)
         self.n_pca.spin.setToolTip("")
 
         # Output ROI name
-        grid.addWidget(QtGui.QLabel("Output name"), 4, 0)
+        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
         self.output_name = QtGui.QLineEdit("clusters")
-        grid.addWidget(self.output_name, 4, 1)
-        hbox.addWidget(gbox)
+        grid.addWidget(self.output_name, 2, 1)
+        layout.addWidget(gbox)
 
         # Run clustering button
+        hbox = QtGui.QHBoxLayout()
         self.run_btn = QtGui.QPushButton('Run', self)
         self.run_btn.clicked.connect(self.run_clustering)
         hbox.addWidget(self.run_btn)
