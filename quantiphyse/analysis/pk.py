@@ -3,6 +3,7 @@ import time
 import numpy as np
 
 from ..utils import debug
+from ..utils.exceptions import QpException
 
 from . import Process, BackgroundProcess
 from .pk_model import PyPk
@@ -34,7 +35,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         t101sub = np.ascontiguousarray(t101sub)
         t1 = np.ascontiguousarray(t1)
         if len(img1sub) == 0:
-            raise RuntimeError("Pk Modelling - no unmasked data!")
+            raise QpException("Pk Modelling - no unmasked data found!")
 
         Pkclass = PyPk(t1, img1sub, t101sub)
         Pkclass.set_bounds(ub, lb)
@@ -88,17 +89,17 @@ class PkModellingProcess(BackgroundProcess):
         elif roi_name in self.ivm.rois:
             roi = self.ivm.rois[roi_name]
         else:
-            raise RuntimeError("Specified ROI not found")
+            raise QpException("Specified ROI not found")
                         
         self.suffix = options.pop('suffix', '')
         if self.suffix != "": self.suffix = "_" + self.suffix
 
         if self.ivm.main is None:
-            raise RuntimeError("No data loaded")
+            raise QpException("No data loaded")
 
         img1 = self.ivm.main.std()
         if len(img1.shape) != 4: 
-            raise RuntimeError("Data must be 4D for DCE PK modelling")
+            raise QpException("Data must be 4D for DCE PK modelling")
 
         roi1 = roi.std()
         t101 = self.ivm.data["T10"].std()

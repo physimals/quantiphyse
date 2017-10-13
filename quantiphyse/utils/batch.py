@@ -8,6 +8,8 @@ import errno
 import traceback
 import yaml
 
+from ..utils.exceptions import QpException
+
 from ..analysis import Process
 from ..analysis.fab import FabberProcess
 from ..analysis.reg import RegProcess, McflirtProcess
@@ -98,7 +100,7 @@ class BatchCase:
             if vol.ndim == 3:
                 multi = self.get("MultiVolumes", False)
             elif vol.ndim != 4:
-                raise RuntimeError("Main volume is invalid number of dimensions: %i" % vol.ndim)
+                raise QpException("Main volume is invalid number of dimensions: %i" % vol.ndim)
             self.ivm.add_overlay(self.ivm.suggest_name(vol.md.basename), vol, make_main=True)
 
     def load_overlays(self):

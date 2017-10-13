@@ -21,8 +21,10 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from .io import NumpyData
 from ..utils import debug
+from ..utils.exceptions import QpException
+
+from .io import NumpyData
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -116,7 +118,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def _valid_name(self, name):
         if name is None or not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
-            raise RuntimeError("'%s' is not a valid name" % name)
+            raise QpException("'%s' is not a valid name" % name)
 
     def set_main_data(self, name):
         self._data_exists(name)
@@ -181,11 +183,11 @@ class ImageVolumeManagement(QtCore.QObject):
             
     def _data_exists(self, name, invert=False):
         if name not in self.data:
-            raise RuntimeError("data %s does not exist" % name)
+            raise RuntimeError("Data '%s' does not exist" % name)
 
     def _roi_exists(self, name):
         if name not in self.rois:
-            raise RuntimeError("ROI %s does not exist" % name)
+            raise RuntimeError("ROI '%s' does not exist" % name)
 
     def is_main_data(self, qpd):
         return self.main is not None and qpd is not None and self.main.name == qpd.name

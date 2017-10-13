@@ -22,6 +22,7 @@ import nibabel as nib
 import numpy as np
 import nrrd
 
+from ..utils.exceptions import QpException
 from ..volumes import DataGrid, QpData, Transform
 
 HAVE_DCMSTACK = True
@@ -153,11 +154,11 @@ class DicomFolder(QpData):
             sys.stdout.flush()
         
         if len(slices) < 0:
-            raise RuntimeError("This doesn't seem to be a DICOM folder")
+            raise QpException("This doesn't seem to be a DICOM folder")
             
         n_vols = int(len(dcms) / len(slices))
         if n_vols * len(slices) != len(dcms):
-            raise RuntimeError("Could not parse DICOMS - unable to determine fixed number of volumes")
+            raise QpException("Could not parse DICOMS - unable to determine fixed number of volumes")
 
         print("\n")
         print("%i Volumes" % n_vols)
@@ -197,7 +198,7 @@ def load(fname):
     elif fname.endswith(".nrrd"):
         return NttrData(fname)
     else:
-        raise RuntimeError("%s: Unrecognized file type" % fname)
+        raise QpException("%s: Unrecognized file type" % fname)
 
 def save(data, fname, grid=None):
     if grid is None:

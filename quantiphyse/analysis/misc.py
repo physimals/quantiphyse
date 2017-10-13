@@ -1,9 +1,12 @@
 import numpy as np
 import scipy
+import sys
 
 from PySide import QtGui
 
 from ..utils import table_to_str, debug
+from ..utils.exceptions import QpException
+
 from . import Process, BackgroundProcess
 from .overlay_analysis import OverlayAnalysis
 
@@ -297,10 +300,16 @@ class ExecProcess(Process):
         for name, proc in options.items():
             if name == "exec":
                 for code in proc:
-                    exec(code, globals)
+                    try:
+                        exec(code, globals)
+                    except:
+                        raise QpException("'%s' is not valid Python code (Reason: %s)" % (code, sys.exc_info()[1]))
             else:
-                result = eval(proc, globals)
-                self.ivm.add_data(result, name=name)
+                try:
+                    result = eval(proc, globals)
+                    self.ivm.add_data(result, name=name)
+                except:
+                    raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
        
         self.status = Process.SUCCEEDED
 

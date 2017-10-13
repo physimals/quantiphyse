@@ -1,4 +1,29 @@
+import os
+
 from PySide import QtGui
+
+from ..utils import debug
+
+MAINWIN = None
+
+def set_main_window(w):
+    """ Set the main window widget so it can be a parent to dialogs to make style match"""
+    global MAINWIN
+    MAINWIN = w
+
+def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
+    text = msg.replace(os.linesep, "<br>")
+    if detail is not None:
+        detail_str = ""
+        try:
+            for item in detail:
+                detail_str += str(item) + os.linesep
+        except:
+            detail_str = str(detail)
+        detail_str = detail_str.replace(os.linesep, "<br>")
+        text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail_str)
+
+    QtGui.QMessageBox.warning(MAINWIN, title, text, QtGui.QMessageBox.Close)
 
 class MultiTextViewerDialog(QtGui.QDialog):
 
@@ -45,19 +70,6 @@ class TextViewerDialog(QtGui.QDialog):
 
         self.setLayout(vbox)
         self.resize(700, 500)
-
-def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
-    text = msg
-    if detail is not None:
-        detail_str = ""
-        try:
-            for item in detail:
-                detail_str += str(item).replace("\n", "<br>") + "<br>"
-        except:
-            detail_str = str(detail).replace("\n", "<br>")
-        text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail_str)
-
-    QtGui.QMessageBox.warning(None, title, text, QtGui.QMessageBox.Close)
 
 class MatrixViewerDialog(QtGui.QDialog):
 

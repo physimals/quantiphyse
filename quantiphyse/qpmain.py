@@ -17,9 +17,10 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
 from .utils.batch import run_batch
+from .utils.exceptions import QpException
 from .utils import debug, warn, set_local_file_path, set_debug
 from .gui.MainWindow import MainWindow
-from .gui.dialogs import error_dialog
+from .gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.
 if sys.version_info[0] > 2:
@@ -27,8 +28,12 @@ if sys.version_info[0] > 2:
 else:
     from .resources import resource_py2
 
-def my_catch_exceptions(type, value, tb):
-    error_dialog(str(value), title="Error", detail=traceback.format_exception(type, value, tb))
+def my_catch_exceptions(exc_type, exc, tb):
+    if issubclass(exc_type, QpException):
+        detail = exc.detail
+    else:
+        detail = traceback.format_exception(exc_type, exc, tb)
+    error_dialog(str(exc), title="Error", detail=detail)
         
 def main():
     """
@@ -102,6 +107,8 @@ def main():
 
         # Create window and start main loop
         app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
-        ex = MainWindow(load_data=args.data, load_roi=args.roi)
+        win = MainWindow(load_data=args.data, load_roi=args.roi)
+        set_main_window(win)
+
         sys.exit(app.exec_())
 
