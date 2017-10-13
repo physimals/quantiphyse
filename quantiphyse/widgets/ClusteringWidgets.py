@@ -159,14 +159,18 @@ PCA reduction is used on 4D data to extract representative curves
         self.ivm.sig_main_data.disconnect(self.main_data_changed)
 
     def current_roi_changed(self, roi):
-        if roi.name != self.output_name.text():
+        if roi is not None and roi.name != self.output_name.text():
             self.roi_combo.setCurrentIndex(self.roi_combo.findText(roi.name))
         
     def main_data_changed(self, data):
-        self.data_combo.setCurrentIndex(self.data_combo.findText(data.name))
+        if data is not None:
+            idx = self.data_combo.findText(data.name)
+        else:
+            idx = 0
+        self.data_combo.setCurrentIndex(idx)
 
     def data_changed(self):
-        data = self.ivm.data.get(self.data_combo.currentText())
+        data = self.ivm.data.get(self.data_combo.currentText(), None)
         if data is not None:
             is4d = data.nvols > 1
             debug("Number of vols", data.nvols, is4d)
