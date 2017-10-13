@@ -18,7 +18,7 @@ from ..gui.dialogs import error_dialog
 from ..gui.widgets import HelpButton
 from ..analysis import Process
 from ..analysis.pk import PkModellingProcess
-from ..utils import get_col
+from ..utils import get_kelly_col
 from . import QpWidget
 
 class PharmaWidget(QpWidget):
@@ -388,6 +388,7 @@ class ModelCurves(QpWidget):
                     if m1 != 0: sig_values = sig_values / m1 - 1
                     
                 self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-                line = self.plot.plot(xx, sig_values, pen=get_col(self.cmap, idx, n_ovls), width=4.0)
+                pen = get_kelly_col(idx)
+                line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
                 legend.addItem(line, ovl)
                 idx += 1
