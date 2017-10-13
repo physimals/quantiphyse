@@ -72,7 +72,7 @@ def table_to_str(tabmod):
 def copy_table(tabmod):
     """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
     clipboard = QtGui.QApplication.clipboard()
-    tsv = table_to-str(tabmod)
+    tsv = table_to_str(tabmod)
     clipboard.setText(tsv)
 
 def get_col(cmap, idx, out_of):
