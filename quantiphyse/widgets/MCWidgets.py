@@ -8,6 +8,7 @@ from ..gui.widgets import HelpButton, RoiCombo, OverlayCombo
 from ..gui.dialogs import TextViewerDialog
 from ..analysis import Process
 from ..analysis.reg import RegProcess, McflirtProcess, REG_METHODS
+from ..utils.exceptions import QpException
 from . import QpWidget
 
 class McflirtInterface:
@@ -206,7 +207,7 @@ class RegWidget(QpWidget):
         for name in REG_METHODS:
             self.method_combo.addItem(name, self.REG_INTERFACES[name])
         self.method_combo.currentIndexChanged.connect(self.method_changed)
-        self.method_combo.setCurrentIndex(self.method_combo.findText("DEEDS"))
+        self.method_combo.setCurrentIndex(self.method_combo.findText(REG_METHODS.keys()[0]))
         grid.addWidget(self.method_combo, 1, 1)
 
         self.refdata_label = QtGui.QLabel("Reference data")
@@ -311,6 +312,8 @@ class RegWidget(QpWidget):
                 self.method = self.REG_INTERFACES[method_name]
                 for name, box in self.opt_boxes.items():
                     box.setVisible(name == method_name)
+            else:
+                self.method = None
 
     def mode_changed(self, idx):
         self.mode = idx
@@ -363,12 +366,18 @@ class RegWidget(QpWidget):
         self.regdata.setCurrentIndex(max(0, idx))
 
     def run(self):
+        if self.method is None:
+            raise QpException("No registration method has been chosen")
+
         options = self.method.getOptions()
 
         options["method"] = self.method_combo.currentText()
         options["output-name"] = self.name_edit.text()
 
-        refdata = self.ivm.data[self.refdata.currentText()]
+        
+        refdata = self.ivm.data.get(self.refdata.currentText(), None)
+        if refdata is None: raise QpException("Reference data not found: '%s'" % self.refdata.currentText())
+
         if refdata.nvols > 1:
             refvol = self.refvol.currentIndex()
             if refvol == 0:

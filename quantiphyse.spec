@@ -10,7 +10,7 @@ def get_std_version():
     """ 
     Get standardized version string in form maj.min.patch-release
     """
-    v = subprocess.check_output('git describe --dirty').strip(" \n")
+    v = subprocess.check_output('git describe --dirty', shell=True).strip(" \n")
     p = re.compile("v?(\d+\.\d+\.\d+(-\d+)?).*")
     m = p.match(v)
     if m is not None:

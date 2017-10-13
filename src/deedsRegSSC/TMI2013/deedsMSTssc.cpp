@@ -302,11 +302,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
 	delete[] im1_mind;
 	delete[] im1b_mind;
 
-    float* flow1=new float[sz1*3];
-	for(int i=0;i<sz1;i++){
-        flow1[i]=u1[i]; flow1[i+sz1]=v1[i]; flow1[i+sz1*2]=w1[i];
-    }
-    
     //optionally write-out warped Labels
     /*
 	if(segment){
@@ -323,7 +318,6 @@ std::string deeds(float* im1, float* im1b, int m, int n, int o, float *ux, float
         writeNiftiShort(output3,warpedseg,header,sz);
     }*/
 
-	delete[] flow1;
 	delete []u1; delete []v1; delete []w1;
 	delete []u1i; delete []v1i; delete []w1i;
 	delete []uxi; delete []vxi; delete []wxi;

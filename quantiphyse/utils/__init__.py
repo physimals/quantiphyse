@@ -72,7 +72,7 @@ def table_to_str(tabmod):
 def copy_table(tabmod):
     """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
     clipboard = QtGui.QApplication.clipboard()
-    tsv = table_to-str(tabmod)
+    tsv = table_to_str(tabmod)
     clipboard.setText(tsv)
 
 def get_col(cmap, idx, out_of):
@@ -98,9 +98,9 @@ def get_lut(roi, alpha=None):
     Get the colour look up table for the ROI.
     """
     cmap = getattr(cm, 'jet')
-    if len(roi.regions) == 0: mx = 1
-    else: mx = max(roi.regions)
-    lut = [[int(255 * rgb1) for rgb1 in cmap(float(v)/mx)[:3]] for v in range(mx+1)]
+    mx = max(roi.regions)
+    if mx < 3: mx = 3
+    lut = [[0, 0, 0],] + [[int(255 * rgb1) for rgb1 in cmap(float(v+1)/mx)[:3]] for v in range(mx-1, -1, -1)]
     lut = np.array(lut, dtype=np.ubyte)
 
     if alpha is not None:
@@ -111,3 +111,38 @@ def get_lut(roi, alpha=None):
         lut = np.hstack((lut, alpha1))
 
     return lut
+
+# Kelly (1965) - set of 20 contrasting colours
+# We alter the order a bit to prioritize those that give good contrast to our dark background
+# plus we add an 'off white' at the start
+KELLY_COLORS = [("off_white", (230, 230, 230)),
+                ("vivid_yellow", (255, 179, 0)),
+                ("vivid_orange", (255, 104, 0)),
+                ("very_light_blue", (166, 189, 215)),
+                ("vivid_red", (193, 0, 32)),
+                ("grayish_yellow", (206, 162, 98)),
+                ("medium_gray", (129, 112, 102)),
+                ("strong_purple", (128, 62, 117)),
+
+                # these aren't good for people with defective color vision:
+                ("vivid_green", (0, 125, 52)),
+                ("strong_purplish_pink", (246, 118, 142)),
+                ("strong_blue", (0, 83, 138)),
+                ("strong_yellowish_pink", (255, 122, 92)),
+                ("strong_violet", (83, 55, 122)),
+                ("vivid_orange_yellow", (255, 142, 0)),
+                ("strong_purplish_red", (179, 40, 81)),
+                ("vivid_greenish_yellow", (244, 200, 0)),
+                ("strong_reddish_brown", (127, 24, 13)),
+                ("vivid_yellowish_green", (147, 170, 0)),
+                ("deep_yellowish_brown", (89, 51, 21)),
+                ("vivid_reddish_orange", (241, 58, 19)),
+                ("dark_olive_green", (35, 44, 22))
+]
+
+def get_kelly_col(idx, wrap=True):
+    baseidx = idx % len(KELLY_COLORS)
+    basecol = KELLY_COLORS[baseidx][1]
+    if not wrap:
+        raise RuntimeError("Not implemented yet")
+    return basecol

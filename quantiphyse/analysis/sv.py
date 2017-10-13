@@ -5,6 +5,7 @@ from . import Process
 from .perfusionslic import PerfSLIC
 from .feat_pca import PcaFeatReduce
 from .perfusionslic import slic_feat
+from ..utils.exceptions import QpException
 
 class Supervoxels4DProcess(Process):
     """
@@ -76,9 +77,11 @@ class SupervoxelsProcess(Process):
         
         if data_name is None:
             img = self.ivm.main.std()
-        else:
+        elif data_name in self.ivm.data:
             img = self.ivm.data[data_name].std()
-    
+        else:
+            raise QpException("Data not found: '%s'" % data_name)
+
         if roi_name is None and self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
         elif roi_name in self.ivm.rois:

@@ -16,7 +16,7 @@ from PySide import QtCore, QtGui
 from ..gui.dialogs import error_dialog
 from ..gui.widgets import HelpButton, OverlayCombo, RoiCombo, NumericOption
 from ..gui.ImageView import PickMode, DragMode
-from ..utils import get_icon
+from ..utils import get_icon, debug
 from ..analysis.feat_pca import PcaFeatReduce
 from . import QpWidget
 
@@ -94,7 +94,7 @@ class PickTool(Tool):
         grid = Tool.interface(self)
 
         grid.addWidget(QtGui.QLabel("Existing ROI"), 1, 0)
-        self.roi_combo = RoiCombo(self.ivm)
+        self.roi_combo = RoiCombo(self.ivm, none_option=True)
         self.roi_combo.currentIndexChanged.connect(self.set_roi)
         grid.addWidget(self.roi_combo, 1, 1)
 
@@ -106,6 +106,10 @@ class PickTool(Tool):
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self.reset)
         grid.addWidget(self.cancel_btn, 2, 1)
+        self.done_btn = QtGui.QPushButton("Done")
+        self.done_btn.setEnabled(False)
+        self.done_btn.clicked.connect(self.done)
+        grid.addWidget(self.done_btn, 2, 2)
 
         return grid
 
@@ -114,7 +118,7 @@ class PickTool(Tool):
         self.show_roi()
 
     def show_roi(self):
-        if self.roi_name != "":
+        if self.roi_name in self.ivm.rois:
             self.ivm.set_current_roi(self.roi_name)
 
     def selected(self):
@@ -123,6 +127,7 @@ class PickTool(Tool):
         self.show_roi()
 
     def deselected(self):
+        self.done()
         Tool.deselected(self)
         self.ivl.sig_sel_changed.disconnect(self.point_picked)
 
@@ -130,11 +135,15 @@ class PickTool(Tool):
         self.builder.add_to_roi(self.roi_new)
         self.reset()
 
+    def done(self):
+        self.ivm.set_current_roi(self.builder.new_roi_name)
+
     def reset(self):
         self.roi_new = None
         self.ivm.delete_roi(self.temp_name)
         self.ok_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
+        self.done_btn.setEnabled(True)
         self.roi_combo.setEnabled(True)
         self.selected()
 
@@ -150,6 +159,7 @@ class PickTool(Tool):
         self.ivm.add_roi(self.roi_new, name=self.temp_name, make_current=True)
         self.ok_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
+        self.done_btn.setEnabled(False)
         self.roi_combo.setEnabled(False)
         self.ivl.sig_sel_changed.disconnect(self.point_picked)
         
@@ -496,13 +506,17 @@ class RoiBuilderWidget(QpWidget):
         self.undo_btn.setEnabled(True)
 
     def undo(self):
+        debug("ROI undo: ", len(self.history))
         if len(self.history) == 0: return
 
         roi_name, axis, pos, roi_slice_orig = self.history.pop()
-        if roi_name  in self.ivm.rois:
+        debug("Undoing: ", roi_name, axis, pos)
+        roi = self.ivm.rois.get(roi_name, None)
+        if roi is not None:
+            data = roi.std()
             slices = [slice(None)] * 3
             if axis is not None and pos is not None:
                 slices[axis] = pos
-            self.ivm.rois[roi_name].std()[slices] = roi_slice_orig
-            self.ivm.add_roi(self.ivm.rois[roi_name], name=roi_name)
+            data[slices] = roi_slice_orig
+            self.ivm.add_roi(data, name=roi_name, make_current=True)
         self.undo_btn.setEnabled(len(self.history) > 0)

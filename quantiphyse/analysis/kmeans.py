@@ -14,6 +14,7 @@ import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
 from . import Process
+from ..utils.exceptions import QpException
 
 class KMeansPCAProcess(Process):
     """
@@ -38,14 +39,16 @@ class KMeansPCAProcess(Process):
         elif self.ivm.main is not None:
             img = self.ivm.main.std().astype(np.float32)
         else:
-            raise RuntimeError("No data specified and no current volume")
+            raise QpException("No data specified and no current volume")
 
         if len(img.shape) != 4:
-            raise RuntimeError("Can only run PCA clustering on 4D data")
+            raise QpException("Can only run PCA clustering on 4D data - '%s' is 3D" % data_name)
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std()
+            roi = self.ivm.rois.get(roi_name, None)
+            if roi is not None: roi = roi.std()
+            else: roi = np.ones(img.shape[:3], dtype=np.bool)
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi.std()
         else:
@@ -58,6 +61,7 @@ class KMeansPCAProcess(Process):
         # Normalisation of the image. The first 3 volumes (if present) are averaged to 
         # give the baseline
         voxel_se = img[roi > 0]
+        print("ROI=", roi_name, "voxels=", voxel_se.shape)
         baseline1 = np.mean(img[:, :, :, :min(3, img.shape[3])], axis=-1)
         baseline1sub = np.expand_dims(baseline1, axis=-1)[roi > 0]
 
@@ -120,14 +124,16 @@ class KMeans3DProcess(Process):
         elif self.ivm.current_data is not None:
             data = self.ivm.current_data.std().astype(np.float32)
         else:
-            raise RuntimeError("No data specified and no current overlay")
+            raise QpException("No data specified and no current overlay")
 
         if len(data.shape) != 3:
-            raise RuntimeError("Can only run clustering on 3D data")
+            raise QpException("Can only run clustering on 3D data")
             
         # ROI to process
         if roi_name is not None:
-            roi = self.ivm.rois[roi_name].std()
+            roi = self.ivm.rois.get(roi_name, None)
+            if roi is not None: roi = roi.std()
+            else: roi = np.ones(data.shape, dtype=np.bool)
         elif self.ivm.current_roi is not None:
             roi = self.ivm.current_roi.std()
         else:

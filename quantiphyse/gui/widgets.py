@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore
 
 from ..utils import get_icon
+from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
 class FingerTabBarWidget(QtGui.QTabBar):
@@ -133,11 +134,12 @@ class OverlayCombo(QtGui.QComboBox):
 
     Really ugly hacks to make it work for data / rois
     """
-    def __init__(self, ivm, parent=None, static_only=False, none_option=False, rois=False):
+    def __init__(self, ivm, parent=None, static_only=False, none_option=False, all_option=False, rois=False):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
         self.static_only = static_only
         self.none_option = none_option
+        self.all_option = all_option
         self.rois = rois
         if self.rois:
             self.ivm.sig_all_rois.connect(self.data_changed)
@@ -157,6 +159,9 @@ class OverlayCombo(QtGui.QComboBox):
             else: d = self.ivm.data[name]
             if (d.nvols == 1 or not self.static_only):
                 self.addItem(d.name)
+
+        if self.all_option:
+            self.addItem("<all>")
 
         idx = self.findText(current)
         self.setCurrentIndex(max(0, idx))

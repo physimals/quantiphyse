@@ -21,6 +21,7 @@ from ...gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from ...analysis import Process
 from ...analysis.fab import FabberProcess
 from ...utils import debug
+from ...utils.exceptions import QpException
 from .. import QpWidget
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
@@ -651,11 +652,11 @@ class CESTWidget(FabberWidget):
         ptrain = ""
         if self.pulsed:
             if not self.pms.valid() or not self.pms.valid():
-                raise RuntimeError("Non-numeric values in pulse specification")
+                raise QpException("Non-numeric values in pulse specification")
             pms = self.pms.values()
             pds = self.pds.values()
             if len(pms) != len(pds):
-                raise RuntimeError("Pulse magnitude and duration must contain the same number of values")
+                raise QpException("Pulse magnitude and duration must contain the same number of values")
             for pm, pd in zip(pms, pds):
                 ptrain += "%g %g\n" % (pm, pd)
         else:
@@ -942,14 +943,14 @@ class ASLWidget(FabberWidget):
         nvols = self.ivm.main.nvols
         ntis = len(self.plds.values())
         if nvols % ntis != 0:
-            raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
+            raise QpException("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
         nrepeats = int(nvols / ntis)
 
         tcpairs = ctpairs = False
         if self.tc_combo.currentIndex() == 0:
             # Need to do tag/control subtraction
             if nrepeats % 2 != 0:
-                raise RuntimeError("Number of volumes (%i) not consistent with %i PLDs and tag/control pairs" % (nvols, ntis))
+                raise QpException("Number of volumes (%i) not consistent with %i PLDs and tag/control pairs" % (nvols, ntis))
             nvols = int(nvols/2)
             nrepeats = int(nrepeats/2)
             if self.tc_ord_combo.currentIndex() == 0:
@@ -996,7 +997,7 @@ class ASLWidget(FabberWidget):
             singletau = taus[0]
             self.rundata["tau"] = str(singletau)
         elif len(tis) != len(taus):
-            raise RuntimeError("Number of bolus durations must match number TIs if more than one value given")
+            raise QpException("Number of bolus durations must match number TIs if more than one value given")
         else:
             for idx, tau in enumerate(tau):
                 self.rundata["tau%i" % (idx+1)] = str(tau)

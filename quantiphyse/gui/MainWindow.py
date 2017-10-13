@@ -25,8 +25,7 @@ from ..utils import get_icon, get_local_file, get_version
 
 from ..widgets.OverviewWidgets import OverviewWidget
 from ..widgets.AnalysisWidgets import SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget
-from ..widgets.ClusteringWidgets import CurveClusteringWidget
-from ..widgets.OvClusteringWidgets import OvCurveClusteringWidget
+from ..widgets.ClusteringWidgets import ClusteringWidget
 from ..widgets.PharmaWidgets import PharmaWidget, ModelCurves
 from ..widgets.T10Widgets import T10Widget
 from ..widgets.PerfSlicWidgets import MeanValuesWidget
@@ -154,8 +153,7 @@ class MainWindow(QtGui.QMainWindow):
         self.add_widget(MeanValuesWidget) 
         self.add_widget(RegWidget) 
         #self.add_widget(ImageExportWidget) 
-        self.add_widget(CurveClusteringWidget, default=True) 
-        self.add_widget(OvCurveClusteringWidget, default=True) 
+        self.add_widget(ClusteringWidget, default=True) 
         self.add_widget(RoiBuilderWidget)
         
         # Initialize menu and tabs

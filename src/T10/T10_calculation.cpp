@@ -14,8 +14,7 @@
 
 using namespace std;
 
-#if defined(_WIN32) || defined(__APPLE__)
-// Complex inverse cosine is part of C++11 so for Python 2.7 on Windows we need
+// Complex inverse cosine is part of C++11 so for Python 2.7 we need
 // to define it. See Wolfram for details. This uses the same branch cut
 // as the C++11 standard library function and has been tested for 
 // agreement
@@ -27,7 +26,6 @@ static complex<double> acos_impl(complex<double> z)
 {
 	return PI2 + I*log(I * z + sqrt(ONE - z*z));
 }
-#endif
 
 
 // TODO write a nonlinear version
@@ -39,7 +37,7 @@ double T10_single_linear(vector<double> &favox, vector<double> &fa_rad, ulong nu
 
     vector<double> x(num_fa, 0);
     vector<double> y(num_fa, 0);
-    double a, b, v1;
+    double b, v1;
     double t1;
 
     for (ulong ii=0; ii<num_fa; ii++){
@@ -49,7 +47,6 @@ double T10_single_linear(vector<double> &favox, vector<double> &fa_rad, ulong nu
 
     // Return intercept and gradient from linear regression.
     pair<double, double> ab = linreg(y, x);
-    a = ab.first;
     b = ab.second;
 
     // requiring gradient to be greater than 0
@@ -91,7 +88,7 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
     // Flip angle in radiation
     double flip_angle = fa_afi * (M_PI/180);
 
-    for (int ii=0; ii < num_voxels; ii++){
+    for (unsigned int ii=0; ii < num_voxels; ii++){
 
 //        cout << ii << endl;
 
@@ -103,11 +100,7 @@ vector <double> afimapping(vector<vector<double> > afivols, double fa_afi, vecto
 
         // Eq 6 of Ref 1
         complex<double> cmpl ((r*n - 1) / (n-r), 0);
-#if defined(_WIN32) || defined(__APPLE__)
         alphac = acos_impl(cmpl);
-#else
-        alphac = acos(cmpl);
-#endif
         alpha = alphac.real();
 
         // Ration of actual flip angle and angle
@@ -140,10 +133,10 @@ vector<double> T10mapping( vector< std::vector<double> > & favols, vector<double
 
     //cout << "t10 calculation for " << num_voxels << " voxels \n";
     // Loop through all voxels
-    for (int jj=0; jj < num_voxels; jj++){
+    for (unsigned int jj=0; jj < num_voxels; jj++){
 
         // Store value at each fa
-        for (int kk=0; kk < num_fa; kk++){
+        for (unsigned int kk=0; kk < num_fa; kk++){
             favox[kk] = favols.at(kk).at(jj);
         }
 
@@ -171,14 +164,14 @@ vector<double> T10mapping( dd favols, d fa, double TR, dd afivols, double fa_afi
 
     //cout << "t10 calculation for " << num_voxels << " voxels \n";
     // Loop through all voxels
-    for (int jj=0; jj < num_voxels; jj++){
+    for (unsigned int jj=0; jj < num_voxels; jj++){
 
-        for (int ii =0; ii < num_fa; ii++) {
+        for (unsigned int ii =0; ii < num_fa; ii++) {
             fa_rad[ii] = (fa[ii] * k.at(jj) * (M_PI/180));
         }
 
         // Store value at each fa
-        for (int kk=0; kk < num_fa; kk++){
+        for (unsigned int kk=0; kk < num_fa; kk++){
             favox[kk] = favols.at(kk).at(jj);
         }
 

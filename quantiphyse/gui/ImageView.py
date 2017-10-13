@@ -452,7 +452,7 @@ class OrthoView(pg.GraphicsView):
 
             pos = self.ivm.cim_pos
             lut = get_lut(roidata, roiview.alpha)
-            roi_levels = roidata.range
+            roi_levels = [0, len(lut)-1]
             
             if roiview.shade:
                 slicedata = roidata.get_slice([(self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])])

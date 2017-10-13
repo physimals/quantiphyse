@@ -18,7 +18,7 @@ from scipy.interpolate import UnivariateSpline
 from . import QpWidget
 from ..gui.ImageView import PickMode
 from ..utils import get_icon, copy_table, get_pencol
-from ..gui.widgets import RoiCombo, HelpButton, BatchButton
+from ..gui.widgets import RoiCombo, HelpButton, BatchButton, OverlayCombo
 from ..analysis.misc import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
@@ -73,7 +73,7 @@ class SECurve(QpWidget):
     sig_clear_pnt = QtCore.Signal(bool)
 
     def __init__(self, **kwargs):
-        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal enhancement curves", **kwargs)
+        super(SECurve, self).__init__(name="Time Series", icon="voxel", desc="Display signal curves", **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -81,7 +81,7 @@ class SECurve(QpWidget):
     def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
-        title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
+        title = QtGui.QLabel("<font size=5>Time series curves</font>")
         bhelp = HelpButton(self, "curve_compare")
         lhelp = QtGui.QHBoxLayout()
         lhelp.addWidget(title)
@@ -303,12 +303,10 @@ class OverlayStatistics(QpWidget):
         hbox = QtGui.QHBoxLayout()
         title1 = QtGui.QLabel("<font size=5>Overlay statistics: </font>")
         hbox.addWidget(title1)
-        self.mode_combo = QtGui.QComboBox()
-        self.mode_combo.addItem("Current overlay")
-        self.mode_combo.addItem("All overlays")
-        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
-        hbox.addWidget(self.mode_combo)
-        self.ovl_selection = self.CURRENT_OVERLAY
+        self.ovl_combo = OverlayCombo(self.ivm, all_option=True)
+        self.ovl_combo.currentIndexChanged.connect(self.ovl_changed)
+        self.data_name = self.ovl_combo.currentText()
+        hbox.addWidget(self.ovl_combo)
         hbox.addStretch(1)
         bhelp = HelpButton(self, "overlay_stats")
         hbox.addWidget(bhelp)
@@ -485,37 +483,34 @@ class OverlayStatistics(QpWidget):
         self.ivm.sig_current_data.connect(self.update_all)
         self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
-    def mode_changed(self, idx):
-        self.ovl_selection = idx
+    def ovl_changed(self, idx):
+        self.data_name = self.ovl_combo.currentText()
         self.update_all()
 
     def focus_changed(self, pos):
+        data = self.ivm.data.get(self.data_name, None)
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.tab1ss.isVisible():
-            self.update_overlay_stats_current_slice()
+            self.update_overlay_stats_current_slice(data)
 
     def update_all(self):
-        if self.ivm.current_data is None:
-            self.mode_combo.setItemText(0, "Current overlay")
-        else:
-            self.mode_combo.setItemText(0, self.ivm.current_data.name)
-            self.rp_plt.setLabel('left', self.ivm.current_data.name)
-
-        self.update_histogram_spins()
+        data = self.ivm.data.get(self.data_name, None)
+        if data is not None:
+            self.rp_plt.setLabel('left', data.name)
+            self.update_histogram_spins(data)
 
         if self.rp_win.isVisible():
-            self.update_radial_profile()
+            self.update_radial_profile(data)
         if self.tab1.isVisible():
-            self.update_overlay_stats()
+            self.update_overlay_stats(data)
         if self.tab1ss.isVisible():
-            self.update_overlay_stats_current_slice()
+            self.update_overlay_stats_current_slice(data)
         if self.win1.isVisible():
-            self.update_histogram()
+            self.update_histogram(data)
 
-    def update_histogram_spins(self):
+    def update_histogram_spins(self, ov):
         # Min and max set for overlay choice
-        ov = self.ivm.current_data
         if ov is not None:
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
@@ -531,17 +526,19 @@ class OverlayStatistics(QpWidget):
         copy_table(self.process_ss.model)
         
     def show_overlay_stats(self):
+        data = self.ivm.data.get(self.data_name, None)
         if self.tab1.isVisible():
             self.tab1.setVisible(False)
             self.copy_btn.setVisible(False)
             self.butgen.setText("Show")
         else:
-            self.update_overlay_stats()
+            self.update_overlay_stats(data)
             self.tab1.setVisible(True)
             self.copy_btn.setVisible(True)
             self.butgen.setText("Hide")
 
     def show_overlay_stats_current_slice(self):
+        data = self.ivm.data.get(self.data_name, None)
         if self.tab1ss.isVisible():
             self.tab1ss.setVisible(False)
             self.slice_dir_label.setVisible(False)
@@ -549,7 +546,7 @@ class OverlayStatistics(QpWidget):
             self.copy_btn_ss.setVisible(False)
             self.butgenss.setText("Show")
         else:
-            self.update_overlay_stats_current_slice()
+            self.update_overlay_stats_current_slice(data)
             self.tab1ss.setVisible(True)
             self.slice_dir_label.setVisible(True)
             self.sscombo.setVisible(True)
@@ -576,23 +573,23 @@ class OverlayStatistics(QpWidget):
             self.rp_win.setVisible(True)
             self.rp_btn.setText("Hide")
 
-    def update_radial_profile(self):
-        if self.ivm.current_data is not None:
-            options = {"overlay" : self.ivm.current_data.name, 
+    def update_radial_profile(self, data):
+        if data is not None:
+            options = {"overlay" : data.name, 
                        "no-artifact" : True, "bins" : self.rp_nbins.value()}
             self.process_rp.run(options)
-            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_data.name])
+            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[data.name])
 
-    def update_overlay_stats(self):
-        self.populate_stats_table(self.process)
+    def update_overlay_stats(self, data):
+        self.populate_stats_table(data, self.process)
 
-    def update_overlay_stats_current_slice(self):
+    def update_overlay_stats_current_slice(self, data):
         selected_slice = self.sscombo.currentIndex()
-        self.populate_stats_table(self.process_ss, slice=selected_slice)
+        self.populate_stats_table(data, self.process_ss, slice=selected_slice)
 
-    def update_histogram(self):
-        if self.ivm.current_data is not None:
-            options = {"overlay" : self.ivm.current_data.name, 
+    def update_histogram(self, data):
+        if data is not None:
+            options = {"overlay" : data.name, 
                     "no-artifact" : True, "bins" : self.nbinsSpin.value(),
                     "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
@@ -606,9 +603,9 @@ class OverlayStatistics(QpWidget):
                     curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
                 self.plt1.addItem(curve)
 
-    def populate_stats_table(self, process, **options):
-        if self.ivm.current_data is not None and self.ovl_selection == self.CURRENT_OVERLAY:
-            options["overlay"] = self.ivm.current_data.name
+    def populate_stats_table(self, data, process, **options):
+        if data is not None:
+            options["overlay"] = data.name
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):

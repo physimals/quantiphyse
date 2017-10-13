@@ -5,6 +5,7 @@
 #ifndef INC_25_T10_CALCULATION_T10_CALCULATION_H
 #define INC_25_T10_CALCULATION_T10_CALCULATION_H
 
+#include <sys/types.h>
 #include <vector>
 
 typedef size_t ulong;
