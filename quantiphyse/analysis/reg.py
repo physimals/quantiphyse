@@ -4,8 +4,10 @@ import traceback
 
 import numpy as np
 
-from . import Process, BackgroundProcess
 from ..utils import debug, warn
+from ..utils.exceptions import QpException
+
+from . import Process, BackgroundProcess
 
 # Known registration methods (case-insensitive)
 REG_METHODS = {}
@@ -22,7 +24,7 @@ try:
     from .mcflirt import mcflirt
     def mcflirt_reg(regdata, refdata, warp_rois, options):
         if warp_rois is not None:
-            raise RuntimeError("MCFLIRT does not yet support warping ROIs")
+            raise QpException("MCFLIRT does not yet support warping ROIs")
         # MCFLIRT wants to do motion correction so we stack the reg and ref
         # data together and tell it to use the second as the reference.
         data = np.stack((regdata, refdata), -1)

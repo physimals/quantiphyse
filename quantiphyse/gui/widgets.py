@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore
 
 from ..utils import get_icon
+from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
 class FingerTabBarWidget(QtGui.QTabBar):

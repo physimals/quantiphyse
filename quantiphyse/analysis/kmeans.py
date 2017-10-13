@@ -14,6 +14,7 @@ import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
 from . import Process
+from ..utils.exceptions import QpException
 
 class KMeansPCAProcess(Process):
     """
@@ -38,10 +39,10 @@ class KMeansPCAProcess(Process):
         elif self.ivm.main is not None:
             img = self.ivm.main.std().astype(np.float32)
         else:
-            raise RuntimeError("No data specified and no current volume")
+            raise QpException("No data specified and no current volume")
 
         if len(img.shape) != 4:
-            raise RuntimeError("Can only run PCA clustering on 4D data")
+            raise QpException("Can only run PCA clustering on 4D data - '%s' is 3D" % data_name)
             
         # ROI to process
         if roi_name is not None:
@@ -123,10 +124,10 @@ class KMeans3DProcess(Process):
         elif self.ivm.current_data is not None:
             data = self.ivm.current_data.std().astype(np.float32)
         else:
-            raise RuntimeError("No data specified and no current overlay")
+            raise QpException("No data specified and no current overlay")
 
         if len(data.shape) != 3:
-            raise RuntimeError("Can only run clustering on 3D data")
+            raise QpException("Can only run clustering on 3D data")
             
         # ROI to process
         if roi_name is not None:

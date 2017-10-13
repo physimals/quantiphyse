@@ -7,6 +7,7 @@ import scipy
 from PySide import QtGui
 
 from ..utils import debug
+from ..utils.exceptions import QpException
 
 """
 Work-in-progress on Next Generation volume class
@@ -433,9 +434,9 @@ class QpData:
 
         if self.roi:
             if self.stddata.min() < 0 or self.stddata.max() > 2**32:
-                raise RuntimeError("ROIs must contain values between 0 and 2**32")
+                raise QpException("ROIs must contain values between 0 and 2**32")
             if not np.equal(np.mod(self.stddata, 1), 0).any():
-                raise RuntimeError("ROIs must contain integers only")
+                raise QpException("ROIs must contain integers only")
             self.stddata = self.stddata.astype(np.int32)
             self.dps = 0
             self.regions = np.unique(self.stddata)

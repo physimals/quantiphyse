@@ -5,6 +5,8 @@ import warnings
 
 from PySide import QtCore, QtGui
 
+from ...utils.exceptions import QpException
+
 # Current overlays list from the IVM object. Global so that all the ImageOptionView instances
 # can see what overlays to offer as options
 CURRENT_OVERLAYS = []
@@ -211,7 +213,7 @@ class MatrixFileOptionView(FileOptionView):
             if f is not None: f.close()
 
         if not in_matrix: 
-            raise RuntimeError("Not a VEST matrix")
+            raise QpException("File '%s' does not contain a VEST matrix" % fname)
         else:
             return mat, ""
 
