@@ -4,6 +4,7 @@ import os
 import struct
 import subprocess
 import re
+import shutil
 
 # This is copied from update_version for now until we sort out how to import it...
 def get_std_version():
@@ -18,7 +19,6 @@ def get_std_version():
     else:
         raise RuntimeError("Failed to parse version string %s" % v)
 
-
 # See if we are 32 bit or 64 bit
 bits = struct.calcsize("P") * 8
 
@@ -31,6 +31,8 @@ block_cipher = None
 bin_files = []
 hidden_imports = []
 added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src')]
+qpdir = os.path.dirname(os.path.abspath(SPEC))
+archive_method="zip"
 
 # Update version info from git tags and get standardized version for packages
 version_str = get_std_version()
@@ -41,6 +43,7 @@ hidden_imports.append('fabber')
 
 # Platform-specific configuration
 if sys.platform.startswith("win"):
+    sysname="win32"
     home_dir = os.environ.get("USERPROFILE", "")
     anaconda_dir='%s/AppData/Local/Continuum/Anaconda2/' % home_dir
     bin_files.append(('%s/Library/bin/mkl_avx2.dll' % anaconda_dir, '.' ))
@@ -54,11 +57,14 @@ if sys.platform.startswith("win"):
                            'packaging.specifiers', 'packaging.utils',
                            'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
+    sysname="ubuntu" # FIXME!
+    archive_method="gztar"
     hidden_imports.append('FileDialog')
     hidden_imports.append('pywt._extensions._cwt')
     bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
-elif sys.platform.startswith("darwin"):
+elif sys.platform.startswith("darwin"):#
+    sysname="osx"
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
     anaconda_dir='%s/anaconda2/' % home_dir
@@ -115,9 +121,12 @@ else:
                    upx=False,
                    name='quantiphyse')
     if osx_bundle:
-        pkdir = os.path.dirname(os.path.abspath(SPEC))
         app = BUNDLE(coll,
              name='quantiphyse.app',
-             icon='%s/quantiphyse/icons/pk.png' % pkdir,
+             icon='%s/quantiphyse/icons/pk.png' % qpdir,
              bundle_identifier=None)
 
+    # Create versioned packages
+    distdir = os.path.join(qpdir, "dist")
+    shutil.make_archive("%s/quantiphyse-%s-%s" % (distdir, version_str, sysname), 
+                        archive_method, "%s/quantiphyse" % distdir)
