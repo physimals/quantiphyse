@@ -98,9 +98,9 @@ def get_lut(roi, alpha=None):
     Get the colour look up table for the ROI.
     """
     cmap = getattr(cm, 'jet')
-    if len(roi.regions) == 0: mx = 1
-    else: mx = max(roi.regions)
-    lut = [[int(255 * rgb1) for rgb1 in cmap(float(v)/mx)[:3]] for v in range(mx+1)]
+    mx = max(roi.regions)
+    if mx < 3: mx = 3
+    lut = [[0, 0, 0],] + [[int(255 * rgb1) for rgb1 in cmap(float(v+1)/mx)[:3]] for v in range(mx-1, -1, -1)]
     lut = np.array(lut, dtype=np.ubyte)
 
     if alpha is not None:
