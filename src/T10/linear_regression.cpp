@@ -41,7 +41,7 @@ pair<double, double> linreg (vector<double> y, vector<double> x)
     // Calculate the covariance and variance
     Sx = 0;
     Sxy = 0;
-    for (int ii=0; ii<y.size(); ii++) {
+    for (unsigned int ii=0; ii<y.size(); ii++) {
         Sx += (x.at(ii) - x_mean) * (x.at(ii) - x_mean);
         Sxy += (x.at(ii) - x_mean) * (y.at(ii) - y_mean);
     }
