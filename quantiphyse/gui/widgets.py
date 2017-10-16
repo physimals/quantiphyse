@@ -29,7 +29,7 @@ class FingerTabBarWidget(QtGui.QTabBar):
             painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
                                    self.tabIcon(index).pixmap(20, 20))
             w = self.tab_widget.widget(index)
-            if not w.default:
+            if w.group != "DEFAULT":
                 tabRect.moveLeft(-5)
                 tabRect.moveTop(tabRect.top()+5)
                 painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignRight | QtCore.Qt.AlignTop,
@@ -46,7 +46,7 @@ class FingerTabBarWidget(QtGui.QTabBar):
              if ox > 0 and ox < 10 and oy > 0 and oy < 10:
                  # Click was inside close button
                  w = self.tab_widget.widget(idx)
-                 if not w.default:
+                 if w.group != "DEFAULT":
                      w.visible = False
                      self.tab_widget.removeTab(idx)
         
