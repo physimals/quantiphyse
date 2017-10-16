@@ -46,7 +46,7 @@ def _load_plugins(dirname, pkgname):
                     widgets += m.QP_WIDGETS
                 if hasattr(m, "QP_PROCESSES"):
                     debug(modname, m.QP_PROCESSES)
-                    processes += info["PROCESSES"]
+                    processes += m.QP_PROCESSES
             except:
                 warn("Error loading widget: %s" % modname)
                 raise
