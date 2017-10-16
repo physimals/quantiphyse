@@ -5,6 +5,7 @@ import struct
 import subprocess
 import re
 import shutil
+import platform
 
 # This is copied from update_version for now until we sort out how to import it...
 def get_std_version():
@@ -57,7 +58,7 @@ if sys.platform.startswith("win"):
                            'packaging.specifiers', 'packaging.utils',
                            'packaging.requirements', 'packaging.markers'],
 elif sys.platform.startswith("linux"):
-    sysname="ubuntu" # FIXME!
+    sysname=platform.linux_distribution()[0].split()[0].lower()
     archive_method="gztar"
     hidden_imports.append('FileDialog')
     hidden_imports.append('pywt._extensions._cwt')
