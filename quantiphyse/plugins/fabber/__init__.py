@@ -22,7 +22,7 @@ from ...analysis import Process
 from ...analysis.fab import FabberProcess
 from ...utils import debug
 from ...utils.exceptions import QpException
-from .. import QpWidget
+from ...widgets import QpWidget
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
 
