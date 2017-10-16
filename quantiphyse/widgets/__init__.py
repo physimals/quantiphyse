@@ -12,6 +12,11 @@ from PySide import QtGui
 
 from ..utils import debug, warn, get_icon
 
+def _merge_into_dict(d1, d2):
+    for key, values in d2.items():
+        if key not in d1: d1[key] = []
+        d1[key] += values
+
 def _possible_module(f):
     if f.endswith("__init__.py"): 
         return None
@@ -36,25 +41,33 @@ def _load_plugins(dirname, pkgname):
             modname = "%s.%s" % (pkgname, mod)
             try:
                 m = importlib.import_module(modname)
-                if hasattr(m, "WIDGETS"):
-                    debug(modname, m.WIDGETS)
-                    widgets += m.WIDGETS
-                if hasattr(m, "PROCESSES"):
-                    debug(modname, m.PROCESSES)
-                    processes += m.PROCESSES
+                if hasattr(m, "QP_WIDGETS"):
+                    debug(modname, m.QP_WIDGETS)
+                    widgets += m.QP_WIDGETS
+                if hasattr(m, "QP_PROCESSES"):
+                    debug(modname, m.QP_PROCESSES)
+                    processes += info["PROCESSES"]
             except:
                 warn("Error loading widget: %s" % modname)
+                raise
     debug(widgets)
     debug(processes)
     return widgets, processes
 
 def get_known_widgets():
     """
-    Beginning of plugin system - load widgets dynamically from this package
-
-    Will be extended to load widgets and processes from some specified plugins directory
+    Beginning of plugin system - load widgets dynamically from specified plugins directory
     """
-    widgets, processes = _load_plugins(os.path.dirname(__file__), "quantiphyse.widgets")
+    widgets = []
+
+    base_dir = os.path.dirname(__file__)
+    base_widgets, base_processes = _load_plugins(base_dir, "quantiphyse.widgets")
+    widgets += base_widgets
+    
+    plugin_dir = os.path.join(base_dir, os.pardir, "plugins")
+    plugin_widgets, plugin_processes = _load_plugins(plugin_dir, "quantiphyse.plugins")
+    widgets += plugin_widgets
+    
     return widgets
 
 class QpWidget(QtGui.QWidget):
@@ -69,6 +82,7 @@ class QpWidget(QtGui.QWidget):
       self.description - Longer description (for tooltip)
       self.tabname - Name for the tab
     """
+
     def __init__(self, **kwargs):
         super(QpWidget, self).__init__()
         self.name = kwargs.get("name", "")
@@ -78,7 +92,8 @@ class QpWidget(QtGui.QWidget):
         self.ivm = kwargs.get("ivm", None)
         self.ivl = kwargs.get("ivl", None)
         self.opts = kwargs.get("opts", None)
-        self.default = kwargs.get("default", False)
+        self.group = kwargs.get("group", "")
+        self.position = kwargs.get("position", 999)
         self.visible = False
         if self.opts:
                 self.opts.sig_options_changed.connect(self.options_changed)

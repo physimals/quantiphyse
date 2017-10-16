@@ -18,8 +18,9 @@ from PySide import QtCore, QtGui
 
 from ..gui.widgets import HelpButton
 from ..gui.dialogs import error_dialog
+from . import QpWidget
 
-class ExampleWidget(PkWidget):
+class ExampleWidget(QpWidget):
     """
     Widget for setting a threshold to the image data inside the ROI. This is saved as an overlay.
     """

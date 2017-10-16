@@ -9,7 +9,7 @@ from . import QpWidget
 class OverviewWidget(QpWidget):
 
     def __init__(self, **kwargs):
-        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", default=True, **kwargs)
+        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", group="DEFAULT", position=0, **kwargs)
 
         layout = QtGui.QVBoxLayout()
 
@@ -163,4 +163,4 @@ class DataListWidget(QtGui.QTableWidget):
         elif self.selected_type == "ROI":
             self.ivm.set_current_roi(self.selected)
 
-WIDGETS = [OverviewWidget,]
+QP_WIDGETS =  [OverviewWidget]

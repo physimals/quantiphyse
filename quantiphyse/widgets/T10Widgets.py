@@ -325,4 +325,4 @@ class T10Widget(QpWidget):
 
         self.process.run(options)
         
-WIDGETS = [T10Widget,]
+QP_WIDGETS = [T10Widget]

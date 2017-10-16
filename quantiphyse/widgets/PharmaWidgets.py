@@ -392,4 +392,4 @@ class ModelCurves(QpWidget):
                 legend.addItem(line, ovl)
                 idx += 1
 
-WIDGETS = [PharmaWidget, ModelCurves]
+QP_WIDGETS = [PharmaWidget, ModelCurves]
