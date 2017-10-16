@@ -269,7 +269,6 @@ class SECurve(QpWidget):
         self.ivl.picker.col = self.col
 
 class OverlayStatistics(QpWidget):
-
     """
     Color overlay interaction
     """
@@ -287,7 +286,7 @@ class OverlayStatistics(QpWidget):
     sig_range_change = QtCore.Signal(int)
 
     def __init__(self, **kwargs):
-        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", **kwargs)
+        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", default=True, group="DEFAULT", position=1, **kwargs)
 
     def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
@@ -734,3 +733,5 @@ class SimpleMathsWidget(QpWidget):
     def go(self):
         options = self.batch_options()[1]
         self.process.run(options)
+
+QP_WIDGETS = [SECurve, RoiAnalysisWidget, SimpleMathsWidget, OverlayStatistics]

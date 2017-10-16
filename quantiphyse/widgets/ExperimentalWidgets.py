@@ -58,6 +58,7 @@ class ImageExportWidget(QpWidget):
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
             self.ivl.capture_view_as_image(1, output_name)
 
+QP_WIDGETS = [ImageExportWidget]
 
 
 

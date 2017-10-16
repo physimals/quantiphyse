@@ -520,3 +520,5 @@ class RoiBuilderWidget(QpWidget):
             data[slices] = roi_slice_orig
             self.ivm.add_roi(data, name=roi_name, make_current=True)
         self.undo_btn.setEnabled(len(self.history) > 0)
+        
+QP_WIDGETS = [RoiBuilderWidget]   

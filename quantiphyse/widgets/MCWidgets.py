@@ -420,3 +420,4 @@ class RegWidget(QpWidget):
         self.logview.show()
         self.logview.raise_()
  
+QP_WIDGETS = [RegWidget]

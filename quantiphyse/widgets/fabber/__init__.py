@@ -1052,4 +1052,4 @@ class ASLWidget(FabberWidget):
         self.start_task()
         self.tc_combo.setCurrentIndex(1)
 
-
+QP_WIDGETS = [FabberWidget, CESTWidget, ASLWidget]

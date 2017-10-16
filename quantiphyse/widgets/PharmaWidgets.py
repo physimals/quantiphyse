@@ -392,3 +392,5 @@ class ModelCurves(QpWidget):
                 line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
                 legend.addItem(line, ovl)
                 idx += 1
+
+QP_WIDGETS = [PharmaWidget, ModelCurves]

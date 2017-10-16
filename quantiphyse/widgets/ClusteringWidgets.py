@@ -24,7 +24,7 @@ class ClusteringWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(ClusteringWidget, self).__init__(name="Data Clustering", icon="clustering", desc="Generate clusters from 3D or 4D data", **kwargs)
+        super(ClusteringWidget, self).__init__(name="Data Clustering", icon="clustering", desc="Generate clusters from 3D or 4D data", group="DEFAULT", position=2, **kwargs)
 
     def init_ui(self):
         self.process_4d = KMeansPCAProcess(self.ivm)
@@ -353,5 +353,4 @@ PCA reduction is used on 4D data to extract representative curves
             self.update_plot()
             self.update_voxel_count()
 
-
-
+QP_WIDGETS = [ClusteringWidget]
