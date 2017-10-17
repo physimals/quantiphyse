@@ -50,6 +50,8 @@ class FabberProcess(BackgroundProcess):
     Asynchronous background process to run Fabber
     """
 
+    PROCESS_NAME = "Fabber"
+
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_fabber, **kwargs)
 
