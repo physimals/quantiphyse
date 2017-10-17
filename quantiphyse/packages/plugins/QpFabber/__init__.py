@@ -20,10 +20,10 @@ from PySide import QtCore, QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
-from quantiphyse.analysis.fab import FabberProcess
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 
+from .process import FabberProcess
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
 
@@ -1048,3 +1048,4 @@ class ASLWidget(FabberWidget):
         self.tc_combo.setCurrentIndex(1)
 
 QP_WIDGETS = [FabberWidget, CESTWidget, ASLWidget]
+QP_PROCESSES = [FabberProcess]

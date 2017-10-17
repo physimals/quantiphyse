@@ -9,7 +9,6 @@ import traceback
 import yaml
 
 from ..analysis import Process
-from ..analysis.fab import FabberProcess
 from ..analysis.reg import RegProcess, McflirtProcess
 from ..analysis.pk import PkModellingProcess
 from ..analysis.t10 import T10Process
@@ -24,9 +23,7 @@ from ..volumes.io import load, save
 from . import debug, warn, set_debug, get_plugins
 from .exceptions import QpException
 
-processes = {"Fabber"      : FabberProcess,
-             "MCFlirt"     : McflirtProcess,
-             "T10"         : T10Process,
+processes = {"T10"         : T10Process,
              "Supervoxels" : SupervoxelsProcess,
              "PkModelling" : PkModellingProcess,
              "Reg"         : RegProcess,
@@ -231,5 +228,5 @@ class BatchCase:
         self.run_processing_steps()
         self.save_output()
         os.chdir(cwd_prev)
-        
+
         

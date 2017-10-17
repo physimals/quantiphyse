@@ -5,7 +5,7 @@ import traceback
 
 import numpy as np
 
-from . import Process, BackgroundProcess
+from quantiphyse.analysis import Process, BackgroundProcess
 
 try:
     if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
