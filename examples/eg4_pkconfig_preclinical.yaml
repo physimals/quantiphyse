@@ -34,13 +34,11 @@ Processing:
       model_curves:
 
 Cases:
-    QIBA1:
-        Folder:   /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/
+    Preclinical:
+        Folder:   Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
         Load:
           data:
             C91R2_dcex110_gd11.nii:
             T10_corr.nii: T10
-          rois:
-            Seg.nii: mask
 
 
