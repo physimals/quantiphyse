@@ -16,9 +16,8 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..gui.widgets import HelpButton
-from ..gui.dialogs import error_dialog
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton
+from quantiphyse.gui.dialogs import error_dialog
 
 class ExampleWidget(QpWidget):
     """

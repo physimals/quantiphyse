@@ -1,6 +1,13 @@
+"""
+Rag-bag of utility functions - some should probably be moved
+into more specific modules
+"""
 from __future__ import division, print_function
 
 import os, sys
+import glob
+import importlib
+import traceback
 
 from matplotlib import cm
 import numpy as np
@@ -66,7 +73,7 @@ def table_to_str(tabmod):
         rowdata = [tabmod.verticalHeaderItem(row).text(),] 
         rowdata += [tabmod.item(row, col).text() for col in cols]
         tsv += "\t".join(rowdata) + "\n"
-    #print(tsv)
+    debug(tsv)
     return tsv
 
 def copy_table(tabmod):
@@ -146,3 +153,52 @@ def get_kelly_col(idx, wrap=True):
     if not wrap:
         raise RuntimeError("Not implemented yet")
     return basecol
+
+def _possible_module(f):
+    if f.endswith("__init__.py"): 
+        return None
+    elif os.path.isdir(f): 
+        return os.path.basename(f)
+    elif f.endswith(".py") or f.endswith(".dll") or f.endswith(".so"):
+        return os.path.basename(f).rsplit(".", 1)[0]
+
+def _load_plugins_from_dir(dirname, pkgname, widgets, processes):
+    """
+    Beginning of plugin system - load modules dynamically from the specified directory
+
+    Then check in module for widgets and/or processes to return
+    """
+    submodules = glob.glob(os.path.join(dirname, "*"))
+    done = set()
+    sys.path.append(dirname)
+    for f in submodules:
+        mod = _possible_module(f)
+        if mod is not None and mod not in done:
+            done.add(mod)
+            try:
+                debug("Trying to import", mod)
+                m = importlib.import_module(mod, pkgname)
+                if hasattr(m, "QP_WIDGETS"):
+                    debug("Widgets found:", mod, m.QP_WIDGETS)
+                    widgets += m.QP_WIDGETS
+                if hasattr(m, "QP_PROCESSES"):
+                    debug("Processes found:", mod, m.QP_PROCESSES)
+                    processes += m.QP_PROCESSES
+            except:
+                warn("Error loading plugin: %s" % mod)
+                traceback.print_exc()
+
+def get_plugins():
+    """
+    Beginning of plugin system - load widgets dynamically from specified plugins directory
+    """
+    global LOCAL_FILE_PATH
+    widgets, processes = [], []
+
+    core_dir = os.path.join(LOCAL_FILE_PATH, "packages", "core")
+    _load_plugins_from_dir(core_dir, "quantiphyse.packages.core", widgets, processes)
+
+    plugin_dir = os.path.join(LOCAL_FILE_PATH, "packages", "plugins")
+    _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", widgets, processes)
+    
+    return widgets, processes

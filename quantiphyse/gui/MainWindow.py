@@ -21,9 +21,7 @@ from .ImageView import ImageView
 from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
 from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version
-
-from ..widgets import get_known_widgets
+from ..utils import get_icon, get_local_file, get_version, get_plugins
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -129,7 +127,7 @@ class MainWindow(QtGui.QMainWindow):
         self.widget_groups = {}
         self.current_widget = None
 
-        widgets = get_known_widgets()
+        widgets = get_plugins()[0]
         for wclass in widgets:
             w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
             if w.group not in self.widget_groups:

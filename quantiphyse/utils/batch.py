@@ -8,8 +8,6 @@ import errno
 import traceback
 import yaml
 
-from ..utils.exceptions import QpException
-
 from ..analysis import Process
 from ..analysis.fab import FabberProcess
 from ..analysis.reg import RegProcess, McflirtProcess
@@ -23,7 +21,8 @@ from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 from ..volumes.volume_management import ImageVolumeManagement
 from ..volumes.io import load, save
 
-from . import debug, warn, set_debug
+from . import debug, warn, set_debug, get_plugins
+from .exceptions import QpException
 
 processes = {"Fabber"      : FabberProcess,
              "MCFlirt"     : McflirtProcess,
@@ -53,6 +52,12 @@ processes = {"Fabber"      : FabberProcess,
 
 def run_batch(batchfile):
     """ Run a YAML batch file """
+
+    # Register plugin processes FIXME use this mechanism for all processes
+    plugin_procs = get_plugins()[1]
+    for p in plugin_procs:
+        processes[p.PROCESS_NAME] = p
+
     with open(batchfile, "r") as f:
         root = yaml.load(f)
         for id, case in root["Cases"].items():
@@ -79,6 +84,11 @@ class BatchCase:
 
     def get(self, param, default=None):
         return self.case.get(param, self.root.get(param, default))
+
+    def chdir(self):
+        cwd_prev = os.getcwd()
+        if self.folder: os.chdir(self.folder)
+        return cwd_prev
 
     def create_outdir(self):
         try:
@@ -213,10 +223,13 @@ class BatchCase:
 
     def run(self):
         print("Processing case: %s" % self.id)
+        cwd_prev = self.chdir()
         self.create_outdir()
         self.load_volume()
         self.load_overlays()
         self.load_rois()
         self.run_processing_steps()
         self.save_output()
+        os.chdir(cwd_prev)
+        
         

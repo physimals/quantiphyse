@@ -31,7 +31,8 @@ osx_bundle = False
 block_cipher = None
 bin_files = []
 hidden_imports = []
-added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src')]
+added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src'),
+               ('quantiphyse/packages', 'packages')]
 qpdir = os.path.dirname(os.path.abspath(SPEC))
 archive_method="zip"
 

@@ -6,10 +6,9 @@ from PySide import QtGui
 import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
-from ..gui.widgets import HelpButton
-from ..analysis.t10 import T10Process
-from . import QpWidget
-from ..volumes.io import load
+from quantiphyse.gui.widgets import HelpButton, QpWidget
+from quantiphyse.analysis.t10 import T10Process
+from quantiphyse.volumes.io import load
 
 class NumberInput(QtGui.QHBoxLayout):
     def __init__(self, text, initial_val):

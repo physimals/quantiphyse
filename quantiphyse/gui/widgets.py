@@ -1,8 +1,64 @@
 from PySide import QtGui, QtCore
 
-from ..utils import get_icon
+from ..utils import debug, warn, get_icon
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
+
+class QpWidget(QtGui.QWidget):
+    """
+    Base class for a Quantiphyse widget
+
+    The following properties are set automatically from keyword args or defaults:
+      self.ivm - Image Volume Management instance
+      self.ivl - ImageView instance
+      self.icon - QIcon for the menu/tab
+      self.name - Name for the menu
+      self.description - Longer description (for tooltip)
+      self.tabname - Name for the tab
+    """
+
+    def __init__(self, **kwargs):
+        super(QpWidget, self).__init__()
+        self.name = kwargs.get("name", "")
+        self.description = kwargs.get("desc", self.name)
+        self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", "")))
+        self.tabname = kwargs.get("tabname", self.name.replace(" ", "\n"))
+        self.ivm = kwargs.get("ivm", None)
+        self.ivl = kwargs.get("ivl", None)
+        self.opts = kwargs.get("opts", None)
+        self.group = kwargs.get("group", "")
+        self.position = kwargs.get("position", 999)
+        self.visible = False
+        if self.opts:
+                self.opts.sig_options_changed.connect(self.options_changed)
+
+    def init_ui(self):
+        """
+        Called when widget is first shown. Widgets should ideally override this to build their
+        UI widgets when required, rather than in the constructor which is called at startup
+        """
+        pass
+
+    def activate(self):
+        """
+        Called when widget is made active, so can for example connect signals to the 
+        volume management or view classes, and update it's current state
+        """
+        pass
+
+    def deactivate(self):
+        """
+        Called when widget is made inactive, so should for example disconnect signals and remove 
+        any related selections from the view
+        """
+        pass
+
+    def options_changed(self):
+        """
+        Override to respond to global option changes
+        """
+        pass
+
 
 class FingerTabBarWidget(QtGui.QTabBar):
     """
@@ -480,7 +536,6 @@ class OrderList(QtGui.QListWidget):
             height = 0
             for r in range(len(items)):
                 height += self.rectForIndex(self.indexFromItem(self.item(r))).height()
-                print(height)
             self.setFixedHeight(height + 2*len(items))
         finally:
             self.blockSignals(False)

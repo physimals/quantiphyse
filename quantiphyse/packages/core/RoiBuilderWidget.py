@@ -13,12 +13,11 @@ from skimage.segmentation import random_walker
 
 from PySide import QtCore, QtGui
 
-from ..gui.dialogs import error_dialog
-from ..gui.widgets import HelpButton, OverlayCombo, RoiCombo, NumericOption
-from ..gui.ImageView import PickMode, DragMode
-from ..utils import get_icon, debug
-from ..analysis.feat_pca import PcaFeatReduce
-from . import QpWidget
+from quantiphyse.gui.dialogs import error_dialog
+from quantiphyse.gui.widgets import QpWidget, HelpButton, OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.gui.ImageView import PickMode, DragMode
+from quantiphyse.utils import get_icon, debug
+from quantiphyse.analysis.feat_pca import PcaFeatReduce
 
 DESC = """
 Widget for creating test ROIs and basic manual segmentation
@@ -520,5 +519,5 @@ class RoiBuilderWidget(QpWidget):
             data[slices] = roi_slice_orig
             self.ivm.add_roi(data, name=roi_name, make_current=True)
         self.undo_btn.setEnabled(len(self.history) > 0)
-        
+
 QP_WIDGETS = [RoiBuilderWidget]   

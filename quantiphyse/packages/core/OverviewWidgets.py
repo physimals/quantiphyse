@@ -1,9 +1,8 @@
 from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
-from ..gui.widgets import HelpButton
-from ..utils import get_icon, get_version
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton
+from quantiphyse.utils import get_icon, get_version
 
 class OverviewWidget(QpWidget):
 

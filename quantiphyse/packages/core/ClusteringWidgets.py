@@ -13,10 +13,9 @@ from sklearn.metrics import pairwise
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..gui.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
-from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
-from ..utils import get_pencol, debug
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
+from quantiphyse.utils import get_pencol, debug
 
 class ClusteringWidget(QpWidget):
     """

@@ -14,12 +14,11 @@ from matplotlib import cm
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ..gui.dialogs import error_dialog
-from ..gui.widgets import HelpButton
-from ..analysis import Process
-from ..analysis.pk import PkModellingProcess
-from ..utils import get_kelly_col
-from . import QpWidget
+from quantiphyse.gui.dialogs import error_dialog
+from quantiphyse.gui.widgets import QpWidget, HelpButton
+from quantiphyse.analysis import Process
+from quantiphyse.analysis.pk import PkModellingProcess
+from quantiphyse.utils import get_kelly_col
 
 class PharmaWidget(QpWidget):
     """

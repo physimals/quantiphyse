@@ -5,7 +5,8 @@ Copyright (c) 2016-2017 University of Oxford, Martin Craig
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-import sys, os, warnings
+import sys
+import os
 import time
 import traceback
 import re
@@ -16,20 +17,20 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from ...gui.widgets import HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
-from ...gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
-from ...analysis import Process
-from ...analysis.fab import FabberProcess
-from ...utils import debug
-from ...utils.exceptions import QpException
-from ...widgets import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
+from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
+from quantiphyse.analysis import Process
+from quantiphyse.analysis.fab import FabberProcess
+from quantiphyse.utils import debug, warn
+from quantiphyse.utils.exceptions import QpException
+
 from .views import *
 from .dialogs import ModelOptionsDialog, MatrixEditDialog
 
 try:
     from fabber import FabberRunData, find_fabber
 except:
-    warnings.warn("Failed to import Fabber API - widget will be disabled")
+    warn("Failed to import Fabber API - widget will be disabled")
     traceback.print_exc()
 
 CITE = """

@@ -4,12 +4,11 @@ import numpy as np
 
 from PySide import QtGui
 
-from ..gui.widgets import HelpButton, RoiCombo, OverlayCombo
-from ..gui.dialogs import TextViewerDialog
-from ..analysis import Process
-from ..analysis.reg import RegProcess, McflirtProcess, REG_METHODS
-from ..utils.exceptions import QpException
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo
+from quantiphyse.gui.dialogs import TextViewerDialog
+from quantiphyse.analysis import Process
+from quantiphyse.analysis.reg import RegProcess, McflirtProcess, REG_METHODS
+from quantiphyse.utils.exceptions import QpException
 
 class McflirtInterface:
     def __init__(self):

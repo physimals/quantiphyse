@@ -5,7 +5,7 @@ import warnings
 
 from PySide import QtCore, QtGui
 
-from ...utils.exceptions import QpException
+from quantiphyse.utils.exceptions import QpException
 
 # Current overlays list from the IVM object. Global so that all the ImageOptionView instances
 # can see what overlays to offer as options

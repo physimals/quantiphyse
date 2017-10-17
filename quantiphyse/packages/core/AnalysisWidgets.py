@@ -15,11 +15,10 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from . import QpWidget
-from ..gui.ImageView import PickMode
-from ..utils import get_icon, copy_table, get_pencol
-from ..gui.widgets import RoiCombo, HelpButton, BatchButton
-from ..analysis.misc import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
+from quantiphyse.gui.ImageView import PickMode
+from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton
+from quantiphyse.utils import get_icon, copy_table, get_pencol
+from quantiphyse.analysis.misc import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
     def __init__(self, sig, **kwargs):

@@ -2,10 +2,9 @@ from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
 
-from ..gui.widgets import HelpButton, BatchButton, OverlayCombo, RoiCombo
-from ..analysis.sv import SupervoxelsProcess
-from ..analysis.misc import MeanValuesProcess
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo
+from quantiphyse.analysis.sv import SupervoxelsProcess
+from quantiphyse.analysis.misc import MeanValuesProcess
 
 CITE = """
 <i>Irving et al (2017)

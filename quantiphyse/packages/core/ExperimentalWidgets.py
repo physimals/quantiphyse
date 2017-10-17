@@ -10,7 +10,7 @@ from __future__ import print_function, division
 import warnings
 
 from PySide import QtCore, QtGui
-from . import QpWidget
+from quantiphyse.gui.widgets import QpWidget
 
 class ImageExportWidget(QpWidget):
 
