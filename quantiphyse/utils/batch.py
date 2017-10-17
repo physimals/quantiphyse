@@ -67,9 +67,9 @@ class BatchCase:
         self.root = root
         self.case = case
         if self.get("Debug", False): set_debug(True) # Don't override command line debug flag
-        self.folder = self.get("Folder", "")
+        self.folder = os.path.abspath(self.get("Folder", ""))
         self.output_id = self.get("OutputId", id)
-        self.outdir = os.path.join(self.get("OutputFolder", ""), self.output_id)
+        self.outdir = os.path.abspath(os.path.join(self.get("OutputFolder", ""), self.output_id))
         self.ivm = ImageVolumeManagement()
         
     def get_filepath(self, fname, folder=None):
