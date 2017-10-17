@@ -29,12 +29,9 @@ Processing:
   - Save:
         mean_B1_off:
         mean_ppm_off:
-        mean_ppm_c:
         mean_M0a:
         mean_M0b_r:
-        mean_M0c_r:
         mean_kba:
-        mean_kca:
         modelfit:
 
 Cases:
