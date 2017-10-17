@@ -17,7 +17,9 @@ All artwork is also copyright of the contributers.
 
 Contributers:
 
+Martin Craig (martin.craig@eng.ox.ac.uk)
 Benjamin Irving (benjamin.irving@eng.ox.ac.uk)
+Michael Chappell (michael.chappell@eng.ox.ac.uk)
 
 # Dependencies
 
