@@ -6,7 +6,7 @@ import sys
 import os
 import glob
 
-script_dir = os.path.dirname(__file__)
+script_dir = os.path.abspath(os.path.dirname(__file__))
 
 qpdir = os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir))
 
