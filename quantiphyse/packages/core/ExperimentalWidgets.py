@@ -9,7 +9,7 @@ from __future__ import print_function, division
 
 from PySide import QtCore, QtGui
 
-from quantiphyse.gui.widgets import QpWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton
 from quantiphyse.utils import debug
 
 class ImageExportWidget(QpWidget):
@@ -58,7 +58,7 @@ class ImageExportWidget(QpWidget):
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
             self.ivl.capture_view_as_image(1, output_name)
 
-QP_WIDGETS = [ImageExportWidget]
+QP_WIDGETS = []
 
 
 
