@@ -21,3 +21,5 @@ quantiphyse/analysis/perfusionslic/*.c
 quantiphyse/analysis/perfusionslic/*.pyd
 quantiphyse/analysis/*.pyd
 quantiphyse/analysis/*.cpp
+test/system_tests/test_data
+out
