@@ -1,3 +1,6 @@
+import os
+import inspect
+
 from PySide import QtGui, QtCore
 
 from ..utils import debug, warn, get_icon
@@ -19,18 +22,26 @@ class QpWidget(QtGui.QWidget):
 
     def __init__(self, **kwargs):
         super(QpWidget, self).__init__()
+
+        # Basic metadata
         self.name = kwargs.get("name", "")
-        self.description = kwargs.get("desc", self.name)
-        self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", "")))
         self.tabname = kwargs.get("tabname", self.name.replace(" ", "\n"))
+        self.group = kwargs.get("group", "")
+        self.position = kwargs.get("position", 999)
+        self.description = kwargs.get("desc", self.name)
+        self.visible = False
+
+        # This attempts to return the directory where the derived widget is defined - 
+        # so we can look there for icons as well as in the default location
+        self.pkgdir = os.path.abspath(os.path.dirname(inspect.getmodule(self).__file__))
+        self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", ""), self.pkgdir))
+
+        # References to core classes
         self.ivm = kwargs.get("ivm", None)
         self.ivl = kwargs.get("ivl", None)
         self.opts = kwargs.get("opts", None)
-        self.group = kwargs.get("group", "")
-        self.position = kwargs.get("position", 999)
-        self.visible = False
         if self.opts:
-                self.opts.sig_options_changed.connect(self.options_changed)
+            self.opts.sig_options_changed.connect(self.options_changed)
 
     def init_ui(self):
         """
