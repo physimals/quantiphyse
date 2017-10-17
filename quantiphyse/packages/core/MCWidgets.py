@@ -8,6 +8,7 @@ from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo
 from quantiphyse.gui.dialogs import TextViewerDialog
 from quantiphyse.analysis import Process
 from quantiphyse.analysis.reg import RegProcess, McflirtProcess, REG_METHODS
+from quantiphyse.utils import debug
 from quantiphyse.utils.exceptions import QpException
 
 class McflirtInterface:
@@ -111,7 +112,7 @@ class McflirtInterface:
         if final_interp != 0: opts[self.final.itemData(final_interp)] = ""
 
         for key, value in opts.items():
-            print(key, value)
+            debug(key, value)
         return opts
         
 class DeedsInterface:

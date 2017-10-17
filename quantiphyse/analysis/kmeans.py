@@ -61,7 +61,6 @@ class KMeansPCAProcess(Process):
         # Normalisation of the image. The first 3 volumes (if present) are averaged to 
         # give the baseline
         voxel_se = img[roi > 0]
-        print("ROI=", roi_name, "voxels=", voxel_se.shape)
         baseline1 = np.mean(img[:, :, :, :min(3, img.shape[3])], axis=-1)
         baseline1sub = np.expand_dims(baseline1, axis=-1)[roi > 0]
 

@@ -7,10 +7,10 @@ Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
 from __future__ import print_function, division
 
-import warnings
-
 from PySide import QtCore, QtGui
+
 from quantiphyse.gui.widgets import QpWidget
+from quantiphyse.utils import debug
 
 class ImageExportWidget(QpWidget):
 
@@ -53,7 +53,7 @@ class ImageExportWidget(QpWidget):
             return
 
         for ii in range(shape[-1]):
-            print("Frame number:", ii)
+            debug("Frame number:", ii)
             self.ivl.set_time_pos(ii)
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
             self.ivl.capture_view_as_image(1, output_name)

@@ -2,7 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
 from quantiphyse.gui.widgets import QpWidget, HelpButton
-from quantiphyse.utils import get_icon, get_version
+from quantiphyse.utils import debug, get_icon, get_version
 
 class OverviewWidget(QpWidget):
 
@@ -125,7 +125,7 @@ class DataListWidget(QtGui.QTableWidget):
             if item is not None:
                 item.setToolTip(vol.fname)
             else:
-                print("Weird - item is None ", vol.name)
+                debug("Weird - item is None ", vol.name)
         if current:
             font = self.item(row, 0).font()
             font.setBold(True)

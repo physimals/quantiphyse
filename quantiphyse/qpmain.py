@@ -83,7 +83,7 @@ def main():
         local_file_path = ""
         if hasattr(sys, 'frozen'):
             # File is frozen (packaged apps)
-            print("Frozen executable")
+            debug("Frozen executable")
             if hasattr(sys, '_MEIPASS'):
                 local_file_path = sys._MEIPASS
             elif hasattr(sys, '_MEIPASS2'):
