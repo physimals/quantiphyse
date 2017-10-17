@@ -4,28 +4,20 @@ OutputFolder: out
 Debug: False
 
 Processing:
-    - LoadData:
+    - Load:
+        data:
+            testdata_4d_moving.nii.gz: data
     
     - Moco:
         method: deeds
         replace-vol: False
-        ref-vol: 14
-        output-name: dce1_moco
+        ref-vol: median
+        output-name: data_moco_deeds
 
     - Save:
-        dce1_moco:
+        data:
+        data_moco_deeds:
 
 Cases:
-    #RhythmExample:
-        #Folder:   C:\Users\ctsu0221\build\Tessa_RHB_processing\rhythm_data_old\RHB103\010414
-        #Volume:   dce1.nii
-    PreclinicalExample:
-        Folder:   C:\Users\ctsu0221\build\data\Martin_test_data\C96_R1L1_D3_modelling
-        LoadData:   
-          DCE.nii:
-    FslExample:
-        Folder:   C:\Users\ctsu0221\build\data\
-        LoadData:   
-          test_data.nii:
-
-
+    Subject1:
+        Folder:   test/system_tests/test_data   
