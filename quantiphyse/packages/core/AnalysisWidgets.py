@@ -615,7 +615,8 @@ class RoiAnalysisWidget(QpWidget):
     Analysis of ROIs
     """
     def __init__(self, **kwargs):
-        super(RoiAnalysisWidget, self).__init__(name="ROI Analysis", icon="roi", desc="Analysis of ROIs", **kwargs)
+        super(RoiAnalysisWidget, self).__init__(name="ROI Analysis", icon="roi", desc="Analysis of ROIs", 
+                                                group="ROIs", **kwargs)
         
     def init_ui(self):
         self.process = CalcVolumesProcess(self.ivm)

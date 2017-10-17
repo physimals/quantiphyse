@@ -26,7 +26,7 @@ class ExamplePluginWidget(QpWidget):
     def __init__(self, **kwargs):
         super(ExamplePluginWidget, self).__init__(name="Example Plugin", 
                                                   desc="An example plugin",
-                                                  group="plugins", **kwargs)
+                                                  group="Examples", **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()

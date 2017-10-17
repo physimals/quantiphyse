@@ -276,15 +276,18 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(clear_action)
         file_menu.addAction(exit_action)
 
-        for group, widgets in self.widget_groups.items():
+        widget_submenus = {"" : widget_menu}
+        for group in sorted(self.widget_groups.keys()):
             if group != "DEFAULT":
-                for w in widgets:
-                    # FIXME create group submenus
+                if group not in widget_submenus:
+                    widget_submenus[group] = widget_menu.addMenu(group)
+                    
+                for w in self.widget_groups[group]:
                     action = QtGui.QAction(w.icon, '&%s' % w.name, self)
                     action.setStatusTip(w.description)
                     action.widget = w
                     action.triggered.connect(self.show_widget)
-                    widget_menu.addAction(action)
+                    widget_submenus[group].addAction(action)
 
         help_menu.addAction(help_action)
         help_menu.addAction(about_action)

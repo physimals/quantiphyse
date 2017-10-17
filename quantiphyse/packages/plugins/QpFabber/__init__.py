@@ -43,11 +43,9 @@ class FabberWidget(QpWidget):
     """
     Widget for running Fabber model fitting
     """
-
     def __init__(self, **kwargs):
-        super(FabberWidget, self).__init__(name="Fabber", icon="fabber", 
-                                           desc="Fabber Bayesian model fitting",
-                                           **kwargs)
+        QpWidget.__init__(self, name="Fabber", icon="fabber", group="Fabber",
+                          desc="Fabber Bayesian model fitting", **kwargs)
     
     def model_name(self, lib):
         match = re.match(".*fabber_models_(.+)\..+", lib, re.I)
@@ -362,9 +360,7 @@ class CESTWidget(FabberWidget):
     """
 
     def __init__(self, **kwargs):
-        super(FabberWidget, self).__init__(name="CEST", icon="cest", 
-                                           desc="CEST analysis",
-                                           **kwargs)
+        QpWidget.__init__(self, name="CEST", icon="cest", group="Fabber", desc="CEST analysis", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
@@ -781,9 +777,7 @@ class ASLWidget(FabberWidget):
     """
 
     def __init__(self, **kwargs):
-        super(FabberWidget, self).__init__(name="ASL", icon="fabber", 
-                                           desc="ASL analysis",
-                                           **kwargs)
+        QpWidget.__init__(self, name="ASL", icon="fabber",  group="Fabber", desc="ASL analysis", **kwargs)
         self.groups = {"P" : "Tag/Control pairs", "R" : "Repeats", "T" : "TIs"}
         self.default_order = "TRP"
 

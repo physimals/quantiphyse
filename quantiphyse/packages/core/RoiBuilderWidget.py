@@ -344,7 +344,8 @@ class RoiBuilderWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(RoiBuilderWidget, self).__init__(name="ROI Builder", icon="roi_builder", desc="Build ROIs", **kwargs)
+        super(RoiBuilderWidget, self).__init__(name="ROI Builder", icon="roi_builder", desc="Build ROIs",  
+                                               group="ROIs", **kwargs)
         self.history = collections.deque(maxlen=10)
 
     def init_ui(self):

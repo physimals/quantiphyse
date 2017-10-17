@@ -26,7 +26,8 @@ class PharmaWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", icon="pk", **kwargs)
+        super(PharmaWidget, self).__init__(name="PK Modelling", desc="Pharmacokinetic Modelling", 
+                                           icon="pk", group="DCE-MRI", **kwargs)
 
     def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
