@@ -16,6 +16,8 @@ from PySide import QtCore, QtGui
 
 LOCAL_FILE_PATH=""
 DEBUG = False
+WIDGETS = None
+PROCESSES = None
 
 def set_debug(debug):
     global DEBUG
@@ -33,7 +35,7 @@ def set_local_file_path(path):
     global LOCAL_FILE_PATH
     LOCAL_FILE_PATH = path
 
-def get_icon(name):
+def get_icon(name, dir=None):
     """
     Get path to the named icon
     """
@@ -44,7 +46,12 @@ def get_icon(name):
             extension = ".png"
         else:
             extension = ".svg"
-    return os.path.join(LOCAL_FILE_PATH, "icons/%s%s" % (name, extension))
+    tries = []
+    if dir is not None: 
+        tries.append(os.path.join(dir, "%s%s" % (name, extension)))
+    tries.append(os.path.join(LOCAL_FILE_PATH, "icons", "%s%s" % (name, extension)))
+    for t in tries:
+        if os.path.isfile(t): return t
 
 def get_local_file(name):
     """
@@ -192,13 +199,14 @@ def get_plugins():
     """
     Beginning of plugin system - load widgets dynamically from specified plugins directory
     """
-    global LOCAL_FILE_PATH
-    widgets, processes = [], []
+    global LOCAL_FILE_PATH, WIDGETS, PROCESSES
+    if WIDGETS is None or PROCESSES is None:
+        WIDGETS, PROCESSES = [], []
 
-    core_dir = os.path.join(LOCAL_FILE_PATH, "packages", "core")
-    _load_plugins_from_dir(core_dir, "quantiphyse.packages.core", widgets, processes)
+        core_dir = os.path.join(LOCAL_FILE_PATH, "packages", "core")
+        _load_plugins_from_dir(core_dir, "quantiphyse.packages.core", WIDGETS, PROCESSES)
 
-    plugin_dir = os.path.join(LOCAL_FILE_PATH, "packages", "plugins")
-    _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", widgets, processes)
+        plugin_dir = os.path.join(LOCAL_FILE_PATH, "packages", "plugins")
+        _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", WIDGETS, PROCESSES)
     
-    return widgets, processes
+    return WIDGETS, PROCESSES
