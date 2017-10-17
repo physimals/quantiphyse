@@ -74,7 +74,7 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
         time.sleep(0.2)  # sleeping seems to allow queue to be flushed out correctly
         return id, True, (res1, fcurve1, params2, log)
     except:
-        return id, False, sys.exc_info()[0]
+        return id, False, sys.exc_info()[1]
 
 class PkModellingProcess(BackgroundProcess):
 
@@ -101,7 +101,11 @@ class PkModellingProcess(BackgroundProcess):
         if len(img1.shape) != 4: 
             raise QpException("Data must be 4D for DCE PK modelling")
 
-        roi1 = roi.std()
+        if roi is not None:
+            roi1 = roi.std()
+        else:
+            roi1 = np.ones(img1.shape[:3])
+
         t101 = self.ivm.data["T10"].std()
 
         R1 = options['r1']
