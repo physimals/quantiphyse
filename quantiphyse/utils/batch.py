@@ -9,13 +9,8 @@ import traceback
 import yaml
 
 from ..analysis import Process
-from ..analysis.reg import RegProcess, McflirtProcess
-from ..analysis.pk import PkModellingProcess
-from ..analysis.t10 import T10Process
-from ..analysis.sv import SupervoxelsProcess, Supervoxels4DProcess
 from ..analysis.io import *
 from ..analysis.misc import *
-from ..analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 
 from ..volumes.volume_management import ImageVolumeManagement
 from ..volumes.io import load, save
@@ -23,22 +18,9 @@ from ..volumes.io import load, save
 from . import debug, warn, set_debug, get_plugins
 from .exceptions import QpException
 
-processes = {"T10"         : T10Process,
-             "Supervoxels" : SupervoxelsProcess,
-             "PkModelling" : PkModellingProcess,
-             "Reg"         : RegProcess,
-             "Moco"        : RegProcess,
-             "CalcVolumes" : CalcVolumesProcess,
-             "OverlayStats" : OverlayStatisticsProcess,
-             "RadialProfile" : RadialProfileProcess,
-             "Histogram" : HistogramProcess,
-             "KMeansPCA"   : KMeansPCAProcess,
-             "KMeans3D"   : KMeans3DProcess,
-             "MeanValues"   : MeanValuesProcess,
-             "RenameData"   : RenameDataProcess,
+# Default basic processes - all others are imported from packages
+processes = {"RenameData"   : RenameDataProcess,
              "RenameRoi"   : RenameRoiProcess,
-             "SimpleMaths" : ExecProcess,
-             "Exec" : ExecProcess,
              "RoiCleanup" : RoiCleanupProcess,
              "Load" : LoadProcess,
              "Save" : SaveProcess,
@@ -50,7 +32,7 @@ processes = {"T10"         : T10Process,
 def run_batch(batchfile):
     """ Run a YAML batch file """
 
-    # Register plugin processes FIXME use this mechanism for all processes
+    # Register packages processes FIXME use this mechanism for all processes
     plugin_procs = get_plugins()[1]
     for p in plugin_procs:
         processes[p.PROCESS_NAME] = p

@@ -3,8 +3,8 @@ import numpy as np
 import skimage.segmentation as seg
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo
-from quantiphyse.analysis.sv import SupervoxelsProcess
-from quantiphyse.analysis.misc import MeanValuesProcess
+
+from .process import SupervoxelsProcess, MeanValuesProcess
 
 CITE = """
 <i>Irving et al (2017)
@@ -182,3 +182,4 @@ class MeanValuesWidget(QpWidget):
                                       QtGui.QMessageBox.Close)
 
 QP_WIDGETS = [MeanValuesWidget, PerfSlicWidget]
+QP_PROCESSES = [SupervoxelsProcess, MeanValuesProcess]

@@ -10,7 +10,8 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from sklearn.decomposition import PCA
 
-from ..utils import debug
+from quantiphyse.utils import debug
+
 from . import image_normalisation as inorm
 
 class PcaFeatReduce(object):

@@ -1,10 +1,9 @@
 import os
 
-from PySide import QtGui
+from quantiphyse.utils import debug, warn
+from quantiphyse.volumes.io import load, save
 
 from . import Process
-from ..utils import debug, warn
-from ..volumes.io import load, save
 
 class LoadProcess(Process):
     """

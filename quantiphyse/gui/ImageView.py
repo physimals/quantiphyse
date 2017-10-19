@@ -881,7 +881,8 @@ class ImageView(QtGui.QSplitter):
         self.ivm.cim_pos = pos
         self.update_nav_sliders()
         self.update_ortho_views()
-
+        self.ivm.grid.grid_to_world(pos[:3])
+        
         # FIXME should this be a signal from IVM?
         self.sig_focus_changed.emit(pos)
 

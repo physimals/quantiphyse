@@ -13,13 +13,16 @@ import numpy as np
 import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
-from . import Process
-from ..utils.exceptions import QpException
+from quantiphyse.analysis import Process
+from quantiphyse.utils.exceptions import QpException
 
 class KMeansPCAProcess(Process):
     """
     Clustering for a 4D volume
     """
+
+    PROCESS_NAME = "KMeansPCA"
+
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
 
@@ -107,6 +110,9 @@ class KMeans3DProcess(Process):
     """
     Clustering process for 3D data
     """
+
+    PROCESS_NAME = "KMeans3D"
+    
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
 

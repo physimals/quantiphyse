@@ -11,7 +11,7 @@ from __future__ import division, print_function
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 
-from ..utils import debug
+from quantiphyse.utils import debug
 
 class ImNorm(object):
 

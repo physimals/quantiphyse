@@ -4,10 +4,10 @@ import traceback
 
 import numpy as np
 
-from ..utils import debug, warn
-from ..utils.exceptions import QpException
+from quantiphyse.utils import debug, warn
+from quantiphyse.utils.exceptions import QpException
 
-from . import Process, BackgroundProcess
+from quantiphyse.analysis import Process, BackgroundProcess
 
 # Known registration methods (case-insensitive)
 REG_METHODS = {}
@@ -81,6 +81,9 @@ class RegProcess(BackgroundProcess):
     """
     Asynchronous background process to run registration / motion correction
     """
+
+    PROCESS_NAME = "Reg"
+
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
 
@@ -160,29 +163,9 @@ class RegProcess(BackgroundProcess):
                     self.ivm.add_roi(roi, name=self.warp_roi_names[roi_name], make_current=False)
             self.log = output[2]
 
-class McflirtProcess(Process):
+class MocoProcess(RegProcess):
     """
-    Process to run MCFLIRT motion correction DEPRECATED
+    MoCo is identical to registration but has different batch name
     """
-    def __init__(self, ivm, **kwargs):
-        Process.__init__(self, ivm, **kwargs)
 
-    def run(self, options):
-        try:
-            replace = options.pop("replace-vol", False)
-            name = options.pop("output-name", "moco")
-            refvol = options.pop("ref-vol", "median")
-            if refvol == "mean":
-                options["meanvol"] = ""
-            elif refvol != "median":
-                options["refvol"] = refvol
-
-            retdata, self.log = mcflirt(self.ivm.main, self.ivm.voxel_sizes, **options)
-            self.ivm.add_data(retdata, name=name, make_current=True, make_main=replace)
-            self.status = Process.SUCCEEDED
-            self.output = [retdata, ]
-        except:
-            self.output = sys.exc_info()[1]
-            self.status = Process.FAILED
-
-        self.sig_finished.emit(self.status,self.output, self.log)
+    PROCESS_NAME = "Moco"

@@ -1,52 +1,18 @@
 import numpy as np
 import skimage.segmentation 
 
-from . import Process
-from .perfusionslic import PerfSLIC
-from .feat_pca import PcaFeatReduce
-from .perfusionslic import slic_feat
-from ..utils.exceptions import QpException
+from quantiphyse.utils.exceptions import QpException
 
-class Supervoxels4DProcess(Process):
-    """
-    Process to run supervoxel generation
-    """
+from quantiphyse.analysis import Process
+from quantiphyse.analysis.feat_pca import PcaFeatReduce
 
-    def __init__(self, ivm, **kwargs):
-        Process.__init__(self, ivm, **kwargs)
-
-    def run(self, options):
-        ncomp = options['n-components']
-        comp = options['compactness']
-        n_supervoxels = options['n-supervoxels']
-        output_name = options.get('output-name', "supervoxels")
-        
-        slices = self.ivm.current_roi.get_bounding_box()
-        img = self.ivm.main.std()[slices]
-        mask = self.ivm.current_roi.std()[slices]
-        vox_sizes = self.ivm.grid.spacing
-
-        #print("Initialise the perf slic class")
-        ps1 = PerfSLIC(img, vox_sizes, mask=mask)
-        #print("Normalising image...")
-        ps1.normalise_curves()
-        #print("Extracting features...")
-        ps1.feature_extraction(n_components=ncomp)
-        #print("Extracting supervoxels...")
-        segments = ps1.supervoxel_extraction(compactness=comp, seed_type='nrandom',
-                                            recompute_seeds=True, n_random_seeds=n_supervoxels)
-        # Add 1 to the supervoxel IDs as 0 is used as 'empty' value
-        svdata = np.array(segments, dtype=np.int) + 1
-
-        newroi = np.zeros(self.ivm.current_roi.std().shape)
-        newroi[slices] = svdata
-        self.ivm.add_roi(newroi, name=output_name, make_current=True)
-        self.status = Process.SUCCEEDED
+from .perfusionslic import PerfSLIC, slic_feat
 
 class SupervoxelsProcess(Process):
     """
     Process to run 3d supervoxel generation
     """
+    PROCESS_NAME = "Supervoxels"
 
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -121,4 +87,41 @@ class SupervoxelsProcess(Process):
         else:
             newroi = labels
         self.ivm.add_roi(newroi, name=output_name, make_current=True)
+        self.status = Process.SUCCEEDED
+
+class MeanValuesProcess(Process):
+    """
+    Create new overlay by replacing voxel values with mean within each ROI region
+    """
+    PROCESS_NAME="MeanValues"
+    
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        roi_name = options.pop('roi', None)
+        data_name = options.pop('data', None)
+        output_name = options.pop('output-name', None)
+
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        else:
+            roi = self.ivm.rois[roi_name]
+
+        if data_name is None:
+            data = self.ivm.main.std()
+        else:
+            data = self.ivm.data[data_name].std()
+
+        if output_name is None:
+            output_name = data.name + "_means"
+
+        ov_data = np.zeros(data.shape)
+        for region in roi.regions:
+            if data.ndim > 3:
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
+            else:
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region], axis=0)
+
+        self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED

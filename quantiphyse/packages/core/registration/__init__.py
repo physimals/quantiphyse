@@ -6,10 +6,13 @@ from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo
 from quantiphyse.gui.dialogs import TextViewerDialog
+
 from quantiphyse.analysis import Process
-from quantiphyse.analysis.reg import RegProcess, McflirtProcess, REG_METHODS
+
 from quantiphyse.utils import debug
 from quantiphyse.utils.exceptions import QpException
+
+from .process import RegProcess, MocoProcess, REG_METHODS
 
 class McflirtInterface:
     def __init__(self):
@@ -421,3 +424,4 @@ class RegWidget(QpWidget):
         self.logview.raise_()
  
 QP_WIDGETS = [RegWidget]
+QP_PROCESSES = [RegProcess, MocoProcess]

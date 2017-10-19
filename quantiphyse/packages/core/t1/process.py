@@ -4,8 +4,9 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from ..volumes.io import load
-from . import Process
+from quantiphyse.volumes.io import load
+from quantiphyse.analysis import Process
+
 from .t1_model import t10_map
 
 def _get_filepath(fname, folder):
@@ -16,6 +17,8 @@ def _get_filepath(fname, folder):
 
 class T10Process(Process):
 
+    PROCESS_NAME = "T10"
+    
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
 

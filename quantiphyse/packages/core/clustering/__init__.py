@@ -14,8 +14,9 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
-from quantiphyse.analysis.kmeans import KMeansPCAProcess, KMeans3DProcess
 from quantiphyse.utils import get_pencol, debug
+
+from .kmeans import KMeansPCAProcess, KMeans3DProcess
 
 class ClusteringWidget(QpWidget):
     """
@@ -353,3 +354,4 @@ PCA reduction is used on 4D data to extract representative curves
             self.update_voxel_count()
 
 QP_WIDGETS = [ClusteringWidget]
+QP_PROCESSES = [KMeans3DProcess, KMeansPCAProcess]

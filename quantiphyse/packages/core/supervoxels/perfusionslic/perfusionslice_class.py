@@ -1,15 +1,17 @@
 from __future__ import division, print_function, unicode_literals
 
+import warnings
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.cm as cm
 import numpy as np
 import scipy.ndimage as ndi
 
-from ...analysis.feat_pca import PcaFeatReduce
-from ...utils import debug
+from quantiphyse.analysis.feat_pca import PcaFeatReduce
+from quantiphyse.utils import debug
+
 from . import slic_feat
-import warnings
 
 class PerfSLIC(object):
 

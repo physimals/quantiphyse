@@ -2,10 +2,11 @@ import sys
 import time
 import numpy as np
 
-from ..utils import debug
-from ..utils.exceptions import QpException
+from quantiphyse.utils import debug
+from quantiphyse.utils.exceptions import QpException
 
-from . import Process, BackgroundProcess
+from quantiphyse.analysis import Process, BackgroundProcess
+
 from .pk_model import PyPk
 
 def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_angle, dose, model_choice):
@@ -78,6 +79,8 @@ def _run_pk(id, queue, img1sub, t101sub, r1, r2, delt, injt, tr1, te1, dce_flip_
 
 class PkModellingProcess(BackgroundProcess):
 
+    PROCESS_NAME = "PkModelling"
+    
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_pk, **kwargs)
 

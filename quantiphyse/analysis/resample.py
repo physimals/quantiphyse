@@ -5,7 +5,7 @@ from ..volumes.io import load
 
 class ResampleProcess(Process):
     """
-    Advanced resampling of data from file
+    Advanced resampling of data from file FIXME unfinished
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)

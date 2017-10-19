@@ -87,6 +87,13 @@ class DataGrid:
         self.nvoxels = 1
         for d in range(3): self.nvoxels *= shape[d]
 
+    def grid_to_world(self, coords):
+        c2 = np.dot(self.transform, [float(c) for c in coords])
+        debug(c2)
+        c2 += self.origin
+        debug(c2)
+        return np.dot(self.transform, coords) + self.origin
+
     def reorient_ras(self):
         """ 
         Return a new grid in approximate RAS order, by axis transposition
