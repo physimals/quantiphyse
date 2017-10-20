@@ -312,6 +312,9 @@ class QpData:
             raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
 
         self.raw_2dt = True
+        # FIXME hack because it's not clear what to do with the grid apart from make sure it's 2D
+        self.nvols = self.rawgrid.shape[2]
+        self.rawgrid.shape[2] = 1
         self.stddata = None
 
     def regrid(self, grid):

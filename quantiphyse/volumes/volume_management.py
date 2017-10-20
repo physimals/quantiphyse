@@ -130,12 +130,13 @@ class ImageVolumeManagement(QtCore.QObject):
         debug("RAS aligned")
         debug(self.grid.affine)
 
-        self.cim_pos = [int(d/2) for d in self.grid.shape]
-        self.cim_pos.append(int(self.main.nvols/2))
         for data in self.data.values():
             data.regrid(self.grid)
         for roi in self.rois.values():
             roi.regrid(self.grid)
+        
+        self.cim_pos = [int(d/2) for d in self.grid.shape]
+        self.cim_pos.append(int(self.main.nvols/2))
         
         self.sig_main_data.emit(self.main)
 
