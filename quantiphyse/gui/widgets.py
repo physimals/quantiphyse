@@ -644,6 +644,22 @@ class Citation(QtGui.QWidget):
         # FIXME implement to google reference
         pass
 
+class TitleWidget(QtGui.QWidget):
+    def __init__(self, title, subtitle="", help="", help_btn=True, batch_btn=True):
+        QtGui.QWidget.__init__(self)
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox) 
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('<font size="5">%s</font>' % title))   
+        hbox.addStretch(1)
+        if batch_btn: hbox.addWidget(BatchButton(self))
+        if help_btn: hbox.addWidget(HelpButton(self, help))
+        vbox.addLayout(hbox)
+
+        if subtitle != "":
+            vbox.addWidget(QtGui.QLabel(subtitle))     
+
 class RunBox(QtGui.QGroupBox):
     """
     Box containing a 'run' button, a progress bar, a 'cancel' button and a 'view log' button 
