@@ -681,6 +681,7 @@ class RunBox(QtGui.QGroupBox):
         hbox.addWidget(self.progress)
         self.cancelBtn = QtGui.QPushButton('Cancel', self)
         self.cancelBtn.clicked.connect(self.cancel)
+        self.cancelBtn.setEnabled(False)
         hbox.addWidget(self.cancelBtn)
         self.logBtn = QtGui.QPushButton('View log', self)
         self.logBtn.clicked.connect(self.view_log)
@@ -695,21 +696,17 @@ class RunBox(QtGui.QGroupBox):
         """
         Start running the process
         """
-        process = self.get_process_fn()
+        self.process = self.get_process_fn()
         rundata = self.get_rundata_fn()
 
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
-        self.cancelBtn.setEnabled(False)
+        self.cancelBtn.setEnabled(True)
         self.logBtn.setEnabled(False)
 
-        process.sig_finished.connect(self.finished)
-        process.sig_progress.connect(self.update_progress)
-        try:
-            process.run(rundata)
-        finally:
-            process.sig_finished.disconnect(self.finished)
-            process.sig_progress.disconnect(self.update_progress)
+        self.process.sig_finished.connect(self.finished)
+        self.process.sig_progress.connect(self.update_progress)
+        self.process.run(rundata)
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
@@ -722,6 +719,9 @@ class RunBox(QtGui.QGroupBox):
         try:
             self.log = log
         finally:
+            self.process.sig_finished.disconnect(self.finished)
+            self.process.sig_progress.disconnect(self.update_progress)
+            self.process = None
             self.runBtn.setEnabled(True)
             self.logBtn.setEnabled(True)
             self.cancelBtn.setEnabled(False)
