@@ -17,7 +17,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn
@@ -33,11 +33,9 @@ except:
     warn("Failed to import Fabber API - widget will be disabled")
     traceback.print_exc()
 
-CITE = """
-<i>Chappell, M.A., Groves, A.R., Woolrich, M.W.
-"Variational Bayesian inference for a non-linear forward model"
-IEEE Trans. Sig. Proc., 2009, 57(1), 223-236</i>
-"""
+FAB_CITE_TITLE = "Variational Bayesian inference for a non-linear forward model"
+FAB_CITE_AUTHOR = "Chappell MA, Groves AR, Whitcher B, Woolrich MW."
+FAB_CITE_JOURNAL = "IEEE Transactions on Signal Processing 57(1):223-236, 2009."
 
 class FabberWidget(QpWidget):
     """
@@ -83,10 +81,8 @@ class FabberWidget(QpWidget):
         hbox.addWidget(HelpButton(self, "fabber"))
         mainGrid.addLayout(hbox)
         
-        cite = QtGui.QLabel(CITE)
-        cite.setWordWrap(True)
+        cite = Citation(FAB_CITE_TITLE, FAB_CITE_AUTHOR, FAB_CITE_JOURNAL)
         mainGrid.addWidget(cite)
-        mainGrid.addWidget(QtGui.QLabel(""))
 
         # Options box
         optionsBox = QtGui.QGroupBox()
@@ -322,11 +318,9 @@ class FabberWidget(QpWidget):
          self.logview.show()
          self.logview.raise_()
 
-CITE_CEST = """
-Modelling for Chemical Exchange Saturation Transfer MRI<br><br>
-<i>Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J. (2012).<br>
-Quantitative Bayesian model-based analysis of amide proton transfer MRI. Magnetic Resonance in Medicine. doi:10.1002/mrm.24474</i>
-"""
+CEST_CITE_TITLE = "Quantitative Bayesian model-based analysis of amide proton transfer MRI"
+CEST_CITE_AUTHOR = "Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J."
+CEST_CITE_JOURNAL = "Magnetic Resonance in Medicine. doi:10.1002/mrm.24474"
 
 # FIXME correct numbers
 CEST_POOLVAL_TYPES = ["3T", "9.4T"]
@@ -382,10 +376,8 @@ class CESTWidget(FabberWidget):
         hbox.addWidget(HelpButton(self, "cest"))
         vbox.addLayout(hbox)
         
-        cite = QtGui.QLabel(CITE_CEST)
-        cite.setWordWrap(True)
+        cite = Citation(CEST_CITE_TITLE, CEST_CITE_AUTHOR, CEST_CITE_JOURNAL)
         vbox.addWidget(cite)
-        vbox.addWidget(QtGui.QLabel(""))
 
         seqBox = QtGui.QGroupBox()
         seqBox.setTitle("Sequence")
@@ -704,13 +696,6 @@ class CESTWidget(FabberWidget):
         #if status == Process.SUCCEEDED:
         #    self.update_volumes_axis()    
 
-CITE_ASL = """
-Modelling for Arterial Spin Labelling MRI<br><br>
-<i>Chappell MA, Groves AR, Whitcher B, Woolrich MW. Variational Bayesian inference for a non-linear forward model. 
-IEEE Transactions on Signal Processing 57(1):223-236, 2009.</i><br><br>
-<b>This widget is a UI preview and is not yet functional</b>
-"""
-
 class AslDataPreview(QtGui.QWidget):
     def __init__(self, order, tagfirst, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -800,9 +785,8 @@ class ASLWidget(FabberWidget):
         hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self, "asl"))
         vbox.addLayout(hbox)
-        
-        cite = QtGui.QLabel(CITE_ASL)
-        cite.setWordWrap(True)
+              
+        cite = Citation(FAB_CITE_TITLE, FAB_CITE_AUTHOR, FAB_CITE_JOURNAL)
         vbox.addWidget(cite)
 
         preprocBox = QtGui.QGroupBox("Preprocessing")
