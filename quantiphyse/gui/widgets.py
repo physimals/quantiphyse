@@ -70,7 +70,6 @@ class QpWidget(QtGui.QWidget):
         """
         pass
 
-
 class FingerTabBarWidget(QtGui.QTabBar):
     """
     Vertical tab bar used for the analysis widget setSelectionMode
@@ -445,16 +444,22 @@ class NumberGrid(QtGui.QTableWidget):
     """
     Table of numeric values
     """
-    def __init__(self, initial, col_headers=None, row_headers=None, expandable=True):
+    def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True)):
         QtGui.QTableWidget.__init__(self, 1, 1)
         
+        if (col_headers and expandable[0]) or (row_headers and expandable[1]):
+            raise RuntimeError("Can't specify headers for expandable dimensions")
+
         self.expandable=expandable
+        self.row_headers = row_headers
+        self.col_headers = col_headers
         self.setValues(initial)
 
         if col_headers:
             self.setHorizontalHeaderLabels(col_headers)
         else:
             self.horizontalHeader().hide()
+
         if row_headers:
             self.setVerticalHeaderLabels(row_headers)
         else:
@@ -462,6 +467,8 @@ class NumberGrid(QtGui.QTableWidget):
 
         self.default_bg = self.item(0, 0).background()
         self.itemChanged.connect(self._item_changed)
+        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
+        self.setAcceptDrops(True)
 
     def valid(self):
         try:
@@ -473,27 +480,40 @@ class NumberGrid(QtGui.QTableWidget):
     def values(self):
         rows = []
         try:
-            for r in range(self.rowCount()-int(self.expandable)):
-                row = [float(self.item(r, c).text()) for c in range(self.columnCount()-int(self.expandable))]
+            for r in range(self.rowCount()-int(self.expandable[1])):
+                row = [float(self.item(r, c).text()) for c in range(self.columnCount()-int(self.expandable[0]))]
                 rows.append(row)
         except:
             raise RuntimeError("Non-numeric data in list")
         return rows
+
+    def _set_size(self):
+        # QTableWidget is completely incapable of choosing a sensible size. We do our best
+        # here but have to allow a bit of random 'padding' in case scrollbars are necessary
+        tx, ty = self.horizontalHeader().length()+10, self.verticalHeader().length()+10
+        if self.row_headers is not None: tx += self.verticalHeader().width()
+        if self.col_headers is not None: ty += self.horizontalHeader().height()
+        sh = self.sizeHint()
+        tx = min(tx, sh.width())
+        ty = min(ty, sh.height())
+        self.setFixedSize(tx, ty)
 
     def setValues(self, vals):
         if len(vals) == 0: raise RuntimeError("No values provided")
         
         self.blockSignals(True)
         try:
-            self.setRowCount(len(vals)+int(self.expandable))
-            self.setColumnCount(len(vals[0])+int(self.expandable))
+            self.setRowCount(len(vals)+int(self.expandable[1]))
+            self.setColumnCount(len(vals[0])+int(self.expandable[0]))
             for r, rvals in enumerate(vals):
                 for c, v in enumerate(rvals):
                     self.setItem(r, c, QtGui.QTableWidgetItem("%g" % v))
 
-            if self.expandable:
+            if self.expandable[0]:
                 for r in range(len(vals)):
                     self.setItem(r, self.columnCount()-1, QtGui.QTableWidgetItem(""))
+
+            if self.expandable[1]:
                 for c in range(len(vals[0])):
                     self.setItem(self.rowCount()-1, c, QtGui.QTableWidgetItem(""))
 
@@ -501,27 +521,199 @@ class NumberGrid(QtGui.QTableWidget):
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
+        self._set_size()
+
+    def _range_empty(self, cs, rs):
+        empty = True
+        for r in rs:
+            for c in cs:
+                # Check if r or c is negative and do not consider empty
+                # so last row/column will not be deleted
+                if r < 0 or c < 0 or (self.item(r, c) is not None and self.item(r, c).text() != ""):
+                    empty = False
+                    break
+        return empty
 
     def _item_changed(self, item):
         c = item.column()
+        r = item.row()
         try:
             val = float(item.text())
             item.setBackground(self.default_bg)
         except:
-            item.setBackground(QtGui.QColor('red'))
+            if item.text != "": 
+                item.setBackground(QtGui.QColor('red'))
 
-        if self.expandable:
-            self.blockSignals(True)
-            try:
+        self.blockSignals(True)
+        try:
+            if self.expandable[0]:
                 if c == self.columnCount() - 1:
                     self.setColumnCount(self.columnCount()+1)
+                if self._range_empty([self.columnCount()-2], range(self.rowCount())):
+                    # Last-but-one column is empty, so remove last column (which is always empty)
+                    self.setColumnCount(self.columnCount()-1)
+
+            if self.expandable[1]:
                 if r == self.rowCount() - 1:
                     self.setRowCount(self.rowCount()+1)
-            finally:
-                self.blockSignals(False)
+                if self._range_empty(range(self.columnCount()), [self.rowCount()-2]):
+                    # Last-but-one row is empty, so remove last row (which is always empty)
+                    self.setColumnCount(self.columnCount()-1)
+        finally:
+            self.blockSignals(False)
 
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            links = []
+            for url in event.mimeData().urls():
+                self.loadFromFile(str(url.toLocalFile()))
+        else:
+            event.ignore()
+            
+    def loadFromFile(self, filename):
+        f = open(filename)
+        fvals = []
+        ncols = -1
+        try:
+            lines = f.readlines()
+            for line in lines:
+                # Discard comments
+                line = line.split("#", 1)[0].strip()
+                # Split by commas or spaces
+                vals = line.replace(",", " ").split()
+                if ncols < 0: ncols = len(vals)
+                elif len(vals) != ncols:
+                    raise RuntimeError("File must contain a matrix of numbers with fixed size (rows/columns)")
+
+                for val in vals:
+                    try:
+                        fval = float(val)
+                    except:
+                        raise RuntimeError("Non-numeric value '%s' found in file %s" % (val, filename))
+                fvals.append([float(v) for v in vals])     
+        finally:
+            f.close()
+
+        if ncols <= 0:
+            raise RuntimeError("No numeric data found in file")
+        elif ncols != self.columnCount() and not self.expandable[0]:
+            raise RuntimeError("Incorrect number of columns - expected %i" % self.columnCount())
+        elif len(fvals) != self.rowCount() and not self.expandable[1]:
+             raise RuntimeError("Incorrect number of rows - expected %i" % self.rowCount())
+        else:
+            self.setValues(fvals)
+
+class Citation(QtGui.QWidget):
+    def __init__(self, title, author, journal):
+        QtGui.QWidget.__init__(self)
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+
+        btn = QtGui.QPushButton()
+        icon = QtGui.QIcon(get_icon("citation"))
+        btn.setIcon(icon)
+        btn.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
+        btn.clicked.connect(self.lookup)
+        hbox.addWidget(btn)
+        hbox.setAlignment(btn, QtCore.Qt.AlignTop)
+
+        text = "<font size=3><i>" + title + "</i><br>" + author + "<br>" + journal + "</font>"
+        label = QtGui.QLabel(text)
+        label.setWordWrap(True)
+        hbox.addWidget(label)
+        
+    def lookup(self):
+        # FIXME implement to google reference
+        pass
+
+class RunBox(QtGui.QGroupBox):
+    """
+    Box containing a 'run' button, a progress bar, a 'cancel' button and a 'view log' button 
+
+    Designed for use with BackgroundTask
+    """
+    def __init__(self, get_process_fn, get_rundata_fn, title="Run"):
+        QtGui.QGroupBox.__init__(self)
+        self.setTitle(title)
+        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.runBtn = QtGui.QPushButton('Run', self)
+        self.runBtn.clicked.connect(self.start)
+        hbox.addWidget(self.runBtn)
+        self.progress = QtGui.QProgressBar(self)
+        hbox.addWidget(self.progress)
+        self.cancelBtn = QtGui.QPushButton('Cancel', self)
+        self.cancelBtn.clicked.connect(self.cancel)
+        hbox.addWidget(self.cancelBtn)
+        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn.clicked.connect(self.view_log)
+        self.logBtn.setEnabled(False)
+        hbox.addWidget(self.logBtn)
+        vbox.addLayout(hbox)
+
+        self.get_process_fn = get_process_fn
+        self.get_rundata_fn = get_rundata_fn
+
+    def start(self):
+        """
+        Start running the process
+        """
+        process = self.get_process_fn()
+        rundata = self.get_rundata_fn()
+
+        self.progress.setValue(0)
+        self.runBtn.setEnabled(False)
+        self.cancelBtn.setEnabled(False)
+        self.logBtn.setEnabled(False)
+
+        process.sig_finished.connect(self.finished)
+        process.sig_progress.connect(self.update_progress)
+        try:
+            process.run(rundata)
+        finally:
+            process.sig_finished.disconnect(self.finished)
+            process.sig_progress.disconnect(self.update_progress)
+
+    def update_progress(self, complete):
+        self.progress.setValue(100*complete)
+
+    def cancel(self):
+        # FIXME cancelling processes not yet implemented
+        pass
+
+    def finished(self, status, results, log):
+        try:
+            self.log = log
+        finally:
+            self.runBtn.setEnabled(True)
+            self.logBtn.setEnabled(True)
+            self.cancelBtn.setEnabled(False)
+            
+    def view_log(self):
+        self.logview = TextViewerDialog(text=self.log, parent=self)
+        self.logview.show()
+        self.logview.raise_()
 
 class OrderList(QtGui.QListWidget):
     """
