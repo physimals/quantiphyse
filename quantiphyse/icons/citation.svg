@@ -16,7 +16,7 @@
    id="svg2"
    inkscape:version="0.91 r13725"
    sodipodi:docname="citation.svg"
-   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/batch.png"
+   inkscape:export-filename="/home/ibmeuser/build/PkView/quantiphyse/icons/citation.png"
    inkscape:export-xdpi="89.739998"
    inkscape:export-ydpi="89.739998">
   <metadata
@@ -27,7 +27,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -47,7 +47,7 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="14.193761"
-     inkscape:cx="-0.83305982"
+     inkscape:cx="-12.774926"
      inkscape:cy="9.9758306"
      inkscape:window-x="65"
      inkscape:window-y="24"
