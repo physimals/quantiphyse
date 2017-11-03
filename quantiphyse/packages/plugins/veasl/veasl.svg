@@ -13,7 +13,7 @@
    width="32.09341"
    height="29.991787"
    sodipodi:docname="veasl.svg"
-   inkscape:export-filename="/home/ibmeuser/build/PkView/pkview/icons/cest.png"
+   inkscape:export-filename="/home/ibmeuser/build/PkView/quantiphyse/packages/plugins/veasl/veasl.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <metadata
@@ -42,7 +42,7 @@
      id="namedview63"
      showgrid="false"
      inkscape:zoom="10.148731"
-     inkscape:cx="-13.053192"
+     inkscape:cx="-29.754787"
      inkscape:cy="21.844604"
      inkscape:window-x="65"
      inkscape:window-y="24"
@@ -91,18 +91,21 @@
      y="0.31545258"
      ry="2.2950706" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#000057;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-     d="m 12.612414,4.2742864 c 0,0 -3.3501724,4.3355173 -3.3501724,8.4739656 0,4.138448 3.2516384,7.291552 3.2516384,9.853449 0,2.561896 -2.463363,4.039913 -2.463363,4.039913"
+     style="fill:none;fill-rule:evenodd;stroke:#4141f0;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 6.6018103,3.190407 c -0.017444,2.9170794 4.2955797,6.2795174 4.5325857,12.51388 0.02103,5.62487 -1.8553022,4.427558 -1.9706894,11.134396"
      id="path4146"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccc" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#969696;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-     d="m 18.918621,4.1757519 c 0,0 1.675086,1.3794828 1.872155,3.8428449 0.197069,2.4633622 -2.956034,9.4593102 -2.463362,12.8094832 0.492673,3.350172 3.448707,5.419397 3.448707,5.419397"
+     style="fill:none;fill-rule:evenodd;stroke:#969696;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 21.677587,3.387476 c -0.212757,3.4041103 -5.63733,7.428316 -5.616466,11.922673 0.07235,4.353043 -1.422911,6.214662 -1.379483,11.331465"
      id="path4148"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccc" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#b40000;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-     d="m 10.247586,4.1757519 c 0,0 0.689742,2.4633621 3.448707,6.7003451 2.758966,4.236983 7.981294,3.350172 8.76957,8.276897 0.788275,4.926724 1.182413,7.390086 1.182413,7.390086"
+     style="fill:none;fill-rule:evenodd;stroke:#be2929;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 11.134396,3.2889415 c 0,4.7047548 4.729656,8.7743285 7.094483,11.4300005 2.197261,2.675193 4.792107,7.025519 4.82819,12.021207"
      id="path4150"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccc" />
 </svg>
