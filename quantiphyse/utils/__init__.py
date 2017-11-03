@@ -8,6 +8,7 @@ import os, sys
 import glob
 import importlib
 import traceback
+import tempfile
 
 from matplotlib import cm
 import numpy as np
@@ -59,6 +60,44 @@ def get_local_file(name):
     """
     global LOCAL_FILE_PATH
     return os.path.join(LOCAL_FILE_PATH, name)
+
+def load_matrix(filename):
+    f = open(filename)
+    fvals = []
+    ncols = -1
+    try:
+        lines = f.readlines()
+        for line in lines:
+            # Discard comments
+            line = line.split("#", 1)[0].strip()
+            # Split by commas or spaces
+            vals = line.replace(",", " ").split()
+            if ncols < 0: ncols = len(vals)
+            elif len(vals) != ncols:
+                raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
+
+            for val in vals:
+                try:
+                    fval = float(val)
+                except:
+                    raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
+            fvals.append([float(v) for v in vals])     
+    finally:
+        f.close()
+    return fvals, len(fvals), ncols
+
+def write_temp_matrix(prefix, matrix):
+    """
+    Write a matrix to a temporary file, returning the filename
+    """
+    f = tempfile.NamedTemporaryFile(prefix=prefix, delete=False)
+    debug("matrix: %s" % prefix)
+    for row in matrix:
+        line = " ".join([str(v) for v in row]) + "\n"
+        debug(line)
+        f.write(line)
+    f.close()
+    return f.name
 
 def get_version():
     try:
