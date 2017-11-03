@@ -22,7 +22,7 @@ from PySide import QtCore, QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, NumberGrid, RunBox, Citation, TitleWidget
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
-from quantiphyse.utils import debug, warn
+from quantiphyse.utils import debug, warn, load_matrix
 from quantiphyse.utils.exceptions import QpException
 
 from .process import VeaslProcess
@@ -67,15 +67,33 @@ class VeaslWidget(QpWidget):
         self.method_combo.addItem("MAP")
         self.method_combo.addItem("MCMC")
         grid.addWidget(self.method_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Image list"), 2, 0)
-        self.imlist = QtGui.QLineEdit("T0123456")
-        grid.addWidget(self.imlist, 2, 1)
         grid.addWidget(QtGui.QLabel("Modulation matrix"), 3, 0)
         self.modmat_combo = QtGui.QComboBox()
         self.modmat_combo.addItem("Default")
         grid.addWidget(self.modmat_combo, 3, 1)
-
+        grid.addWidget(QtGui.QLabel("Infer vessel locations"), 4, 0)
+        self.loc_combo = QtGui.QComboBox()
+        self.loc_combo.addItem("Fixed positions", None)
+        self.loc_combo.addItem("Infer co-ordinates", "xy")
+        self.loc_combo.addItem("Infer rigid transformation", "rigid")
+        self.loc_combo.addItem("Infer affine transformation", "affine")
+        self.loc_combo.setCurrentIndex(1)
+        grid.addWidget(self.loc_combo, 4, 1)
+        grid.addWidget(QtGui.QLabel("Infer flow velocity"), 5, 0)
+        self.infer_v_cb = QtGui.QCheckBox()
+        grid.addWidget(self.infer_v_cb, 5, 1)
         hbox.addWidget(options_box)
+        hbox.setAlignment(options_box, QtCore.Qt.AlignTop)
+
+        imlist_box = QtGui.QGroupBox()
+        imlist_box.setTitle("Image list")
+        grid = QtGui.QGridLayout()
+        imlist_box.setLayout(grid)
+        self.imlist = OrderList([])
+        grid.addWidget(self.imlist, 0, 0)
+        hbox.addWidget(imlist_box)
+        hbox.setAlignment(imlist_box, QtCore.Qt.AlignTop)
+
         hbox.addStretch(1)
         mainGrid.addLayout(hbox)
 
@@ -86,11 +104,11 @@ class VeaslWidget(QpWidget):
         vesselbox.setTitle("Initial vessel locations")
         grid = QtGui.QGridLayout()
         vesselbox.setLayout(grid)
-        self.vesselxy = NumberGrid([[], []], row_headers=["X", "Y"], expandable=(True, False))
-        self.vesselxy.loadFromFile(self.local_file("veslocs_default.txt"))
+        self.vesselxy = NumberGrid([[], []], row_headers=["X", "Y"], expandable=(True, False), fix_height=True)
         grid.addWidget(self.vesselxy, 0, 1, 1, 2)
-
-        hbox.addWidget(vesselbox)
+        self.vesselxy.loadFromFile(self.local_file("veslocs_default.txt"))
+        
+        hbox.addWidget(vesselbox, 2)
         hbox.addStretch(1)
         mainGrid.addLayout(hbox)
 
@@ -101,38 +119,51 @@ class VeaslWidget(QpWidget):
         encbox.setTitle("Encoding setup")
         grid = QtGui.QGridLayout()
         encbox.setLayout(grid)
-        self.enc_mtx = NumberGrid([[],[],[],[]], row_headers=["CX", "CY", "\u03b8 (\u00b0)", "D"], expandable=(True, False))
-        self.enc_mtx.loadFromFile(self.local_file("encode_default.txt"))
+        self.enc_mtx = NumberGrid([[],[],[],[]], row_headers=["CX", "CY", "\u03b8 (\u00b0)", "D"], expandable=(True, False), fix_height=True)
         grid.addWidget(self.enc_mtx, 0, 1, 1, 2)
 
-        hbox.addWidget(encbox)
+        hbox.addWidget(encbox, 2)
         hbox.addStretch(1)
         mainGrid.addLayout(hbox)
-
-        # Modulation matrix
-        #hbox = QtGui.QHBoxLayout()
-        #modmatbox = QtGui.QGroupBox()
-        #modmatbox.setTitle("Modulation matrix")
-        #grid = QtGui.QGridLayout()
-        #modmatbox.setLayout(grid)
-        #self.modmat = NumberGrid([[]])
-        #self.modmat.loadFromFile(self.local_file("modmat_default.txt"))
-        #grid.addWidget(self.modmat, 0, 1, 1, 2)
-        #hbox.addWidget(modmatbox)
-        #hbox.addStretch(1)
-        #mainGrid.addLayout(hbox)
-
+        
         # Run box
         run_box = RunBox(self.get_process, self.get_rundata, title="Run VEASL")
         mainGrid.addWidget(run_box)
 
         mainGrid.addStretch(1)
+        self.main_data_changed()
 
     def activate(self):
-        pass
+        self.ivm.sig_main_data.connect(self.main_data_changed)
 
     def deactivate(self):
-        pass
+        self.ivm.sig_main_data.disconnect(self.main_data_changed)
+
+    def main_data_changed(self):
+        if self.ivm.main is not None:
+            nvols = self.ivm.main.nvols
+            self.imlist.setItems(["Tag", "Control"] + ["Encoding %i" % (i+1) for i in range(nvols-2)])
+            matrix, nrows, ncols = load_matrix(self.local_file("encode_default.txt"))
+            if nvols > ncols:
+                matrix = [row[:nvols] for row in matrix]
+            elif nvols < ncols:
+                matrix = [row + [0,] * (nvols - ncols) for row in matrix]
+            self.enc_mtx.setValues(matrix)
+        else:
+            self.imlist.setItems(["<No data loaded>"])
+            self.enc_mtx.loadFromFile(self.local_file("encode_default.txt"))
+
+    def get_imlist(self):
+        imlist = ""
+        for v in self.imlist.items():
+            if v == "Tag":
+                imlist += "T"
+            elif v == "Control":
+                imlist += "0"
+            else:
+                imlist += str(int(v.split(" ", 1)[1]))
+        print(imlist)
+        return imlist
 
     def batch_options(self):
         return "Veasl", self.get_rundata()
@@ -141,4 +172,10 @@ class VeaslWidget(QpWidget):
         return VeaslProcess(self.ivm)
 
     def get_rundata(self):
-        return {}
+        return {"vesloc" : self.vesselxy.values(), 
+                "modmat" : self.local_file("modmat_default.txt"),
+                "encdef" : self.enc_mtx.values(),
+                "nfpc"   : self.nfpc.spin.value(),
+                "imlist" : self.get_imlist(),
+                "infer_loc" : self.loc_combo.itemData(self.loc_combo.currentIndex()),
+                "infer_v" : self.infer_v_cb.isChecked()}

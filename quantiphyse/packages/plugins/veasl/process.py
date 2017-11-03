@@ -7,14 +7,26 @@ import time
 import numpy as np
 
 from quantiphyse.analysis import Process, BackgroundProcess
+from quantiphyse.utils import write_temp_matrix
 from quantiphyse.utils.exceptions import QpException
 
-def _run_veasl(id, queue, rundata, main_data, roi):
-    # Placeholder
-    for i in range(10):
-        queue.put((0, (i+1)*10, 100))
-        time.sleep(1)
-    return 0, True, {}
+from .veaslc_wrapper import veaslc_wrapper as run
+import veaslc_wrapper
+
+def _run_veasl(id, queue, options, main_data, roi):
+    print("_run_veasl")
+    vesloc = write_temp_matrix("vesloc", options["vesloc"])
+    encdef = write_temp_matrix("encdef", options["encdef"])
+    
+    nsources = len(options["vesloc"][0])
+    print("num sources", nsources)
+    print(dir(veaslc_wrapper))
+    flow, prob, log = run(main_data, roi, 
+                                     vesloc, encdef, options["modmat"], 
+                                     nsources, options["imlist"], options["nfpc"], options["infer_loc"], options["infer_v"])
+    #print(log)
+    queue.put((0, 1, 1))
+    return 0, True, {"log" : log, "flow" : flow, "prob" : prob}
 
 class VeaslProcess(BackgroundProcess):
     """
@@ -71,13 +83,10 @@ class VeaslProcess(BackgroundProcess):
     def finished(self):
         """ Add output data to the IVM and set the combined log """
         if self.status == Process.SUCCEEDED:
-            pass
-            #self.log = "\n\n".join([o.log for o in self.output])
-            #first = True
-            #for key in self.output[0].data:
-            #    recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
-            #    self.ivm.add_data(recombined_item, name=key, make_current=first)
-            #    first = False
+            output = self.output[0]
+            self.log = output["log"]
+            self.ivm.add_data(output["flow"], name="flow", make_current=True)
+            self.ivm.add_data(output["prob"], name="prob", make_current=False)
         elif hasattr(self.output, "log"):
             self.log = self.output.log
         else:
