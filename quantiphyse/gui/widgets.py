@@ -3,7 +3,7 @@ import inspect
 
 from PySide import QtGui, QtCore
 
-from ..utils import debug, warn, get_icon
+from ..utils import debug, warn, get_icon, load_matrix
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
@@ -376,29 +376,8 @@ class NumberList(QtGui.QTableWidget):
             event.ignore()
 
     def loadFromFile(self, filename):
-        f = open(filename)
-        fvals = []
-        ncols = -1
-        try:
-            lines = f.readlines()
-            for line in lines:
-                # Discard comments
-                line = line.split("#", 1)[0].strip()
-                # Split by commas or spaces
-                vals = line.replace(",", " ").split()
-                if ncols < 0: ncols = len(vals)
-                elif len(vals) != ncols:
-                    raise RuntimeError("File must contain a matrix of numbers with fixed size (rows/columns)")
-
-                for val in vals:
-                    try:
-                        fval = float(val)
-                    except:
-                        raise RuntimeError("Non-numeric value '%s' found in file %s" % (val, filename))
-                fvals.append([float(v) for v in vals])     
-        finally:
-            f.close()
-
+        fvals, nrows, ncols = load_matrix(filename)
+        
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
         elif ncols == 1:
@@ -444,7 +423,8 @@ class NumberGrid(QtGui.QTableWidget):
     """
     Table of numeric values
     """
-    def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True)):
+    def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
+                 fix_height=False, fix_width=False):
         QtGui.QTableWidget.__init__(self, 1, 1)
         
         if (col_headers and expandable[0]) or (row_headers and expandable[1]):
@@ -453,7 +433,9 @@ class NumberGrid(QtGui.QTableWidget):
         self.expandable=expandable
         self.row_headers = row_headers
         self.col_headers = col_headers
-        self.setValues(initial)
+        self.fix_height = fix_height
+        self.fix_width = fix_width
+        self.setValues(initial, False)
 
         if col_headers:
             self.setHorizontalHeaderLabels(col_headers)
@@ -467,7 +449,7 @@ class NumberGrid(QtGui.QTableWidget):
 
         self.default_bg = self.item(0, 0).background()
         self.itemChanged.connect(self._item_changed)
-        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         self.setAcceptDrops(True)
 
     def valid(self):
@@ -490,17 +472,24 @@ class NumberGrid(QtGui.QTableWidget):
     def _set_size(self):
         # QTableWidget is completely incapable of choosing a sensible size. We do our best
         # here but have to allow a bit of random 'padding' in case scrollbars are necessary
-        tx, ty = self.horizontalHeader().length()+10, self.verticalHeader().length()+10
+        tx, ty = self.horizontalHeader().length()+15, self.verticalHeader().length()+15
         if self.row_headers is not None: tx += self.verticalHeader().width()
         if self.col_headers is not None: ty += self.horizontalHeader().height()
-        sh = self.sizeHint()
-        tx = min(tx, sh.width())
-        ty = min(ty, sh.height())
-        self.setFixedSize(tx, ty)
+        #sh = self.sizeHint()
+        #tx = min(tx, sh.width())
+        #ty = min(ty, sh.height())
+        if self.fix_height: self.setFixedHeight(ty)
+        if self.fix_width: self.setFixedWidth(tx)
 
-    def setValues(self, vals):
-        if len(vals) == 0: raise RuntimeError("No values provided")
-        
+    def setValues(self, vals, validate=True):
+        if validate:
+            if len(vals) == 0: 
+                raise RuntimeError("No values provided")
+            elif len(vals[0]) != self.columnCount() and not self.expandable[0]:
+                raise RuntimeError("Incorrect number of columns - expected %i" % self.columnCount())
+            elif len(vals) != self.rowCount() and not self.expandable[1]:
+                raise RuntimeError("Incorrect number of rows - expected %i" % self.rowCount())
+            
         self.blockSignals(True)
         try:
             self.setRowCount(len(vals)+int(self.expandable[1]))
@@ -589,35 +578,10 @@ class NumberGrid(QtGui.QTableWidget):
             event.ignore()
             
     def loadFromFile(self, filename):
-        f = open(filename)
-        fvals = []
-        ncols = -1
-        try:
-            lines = f.readlines()
-            for line in lines:
-                # Discard comments
-                line = line.split("#", 1)[0].strip()
-                # Split by commas or spaces
-                vals = line.replace(",", " ").split()
-                if ncols < 0: ncols = len(vals)
-                elif len(vals) != ncols:
-                    raise RuntimeError("File must contain a matrix of numbers with fixed size (rows/columns)")
-
-                for val in vals:
-                    try:
-                        fval = float(val)
-                    except:
-                        raise RuntimeError("Non-numeric value '%s' found in file %s" % (val, filename))
-                fvals.append([float(v) for v in vals])     
-        finally:
-            f.close()
+        fvals, nrows, ncols = load_matrix(filename)
 
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
-        elif ncols != self.columnCount() and not self.expandable[0]:
-            raise RuntimeError("Incorrect number of columns - expected %i" % self.columnCount())
-        elif len(fvals) != self.rowCount() and not self.expandable[1]:
-             raise RuntimeError("Incorrect number of rows - expected %i" % self.rowCount())
         else:
             self.setValues(fvals)
 
@@ -738,12 +702,17 @@ class OrderList(QtGui.QListWidget):
     
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=[]):
+    def __init__(self, initial=[], col_headers = None):
         QtGui.QListWidget.__init__(self)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        #if col_headers:
+        #    self.setVerticalHeaderLabels(col_headers)
+        #else:
+        #    self.horizontalHeader().hide()
+
         self.setItems(initial)
 
     def setItems(self, items):
