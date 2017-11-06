@@ -97,7 +97,7 @@ class MatrixViewerDialog(QtGui.QDialog):
 
 class GridEditDialog(QtGui.QDialog):
 
-    def __init__(self, parent, vals, col_headers=None, row_headers=None, title="Data", text="", expandable=True):
+    def __init__(self, parent, vals, col_headers=None, row_headers=None, title="Data", text="", expandable=(True, True)):
         super(GridEditDialog, self).__init__(parent)
         self.setWindowTitle(title)
         vbox = QtGui.QVBoxLayout()
