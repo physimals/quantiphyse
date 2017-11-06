@@ -32,7 +32,7 @@ class SEPlot:
         self.line = None
         self.pts = None
 
-    def plot(self, plotwin, sigenh, smooth, xres):
+    def plot(self, plotwin, sigenh, smooth, opts):
         if sigenh:
             m = np.mean(self.sig[:3])
             pt_values = self.sig / m - 1
@@ -51,7 +51,9 @@ class SEPlot:
         else:
             line_values = pt_values
 
-        xx = xres * np.arange(len(pt_values))
+        xx = opts.t_scale
+        plotwin.setLabel('bottom', opts.t_type, units=opts.t_unit)
+        
         if self.line is not None:
             self.remove(plotwin)
 
@@ -166,7 +168,7 @@ class SECurve(QpWidget):
 
     def activate(self):
         self.ivl.sig_sel_changed.connect(self.sel_changed)
-        self.clear_all()
+        self.replot_graph()
 
     def deactivate(self):
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
@@ -183,7 +185,7 @@ class SECurve(QpWidget):
                 mean_values = np.stack([plt.sig for plt in plts], axis=1)
                 mean_values = np.squeeze(np.mean(mean_values, axis=1))
                 plt = SEPlot(mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
-                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
+                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
                 self.mean_plots[col] = plt
 
     def clear_graph(self):
@@ -208,7 +210,7 @@ class SECurve(QpWidget):
     def replot_graph(self):
         self.clear_graph()
         for plt in self.plots.values():
-            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
+            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
         if self.cb4.isChecked():
             self.update_mean()
 
@@ -253,7 +255,7 @@ class SECurve(QpWidget):
                         warnings.warn("Image is not 3D or 4D")
                         continue
                     plt = SEPlot(sig, pen=col)
-                    plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts.t_res)
+                    plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
                     self.plots[point] = plt
 
         for point in self.plots.keys():
