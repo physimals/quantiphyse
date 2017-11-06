@@ -420,8 +420,8 @@ class OrthoView(pg.GraphicsView):
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
         self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
-        self.vline.setVisible(self.iv.show_crosshairs)
-        self.hline.setVisible(self.iv.show_crosshairs)
+        self.vline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
+        self.hline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
 
         self._update_view_roi()
         self._update_view_overlay()
@@ -656,7 +656,6 @@ class ImageView(QtGui.QSplitter):
 
         # Viewer Options
         self.roi_outline_width = 3.0
-        self.show_crosshairs = True
         
         # Visualisation information for data and ROIs
         self.data_views = {}

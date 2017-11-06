@@ -92,6 +92,9 @@ class ViewOptions(QtGui.QDialog):
     OVERLAY_ON_TOP = 0
     ROI_ON_TOP = 1
 
+    SHOW = 0
+    HIDE = 1
+
     sig_options_changed = QtCore.Signal(object)
 
     def __init__(self, parent, ivm):
@@ -105,6 +108,7 @@ class ViewOptions(QtGui.QDialog):
         # Options
         self.size_scaling = self.SCALE_VOXELS
         self.orientation = self.RADIOLOGICAL
+        self.crosshairs = self.SHOW
         self.t_type = "Volume"
         self.t_unit = ""
         self.t_scale_type = 0
@@ -130,6 +134,14 @@ class ViewOptions(QtGui.QDialog):
         c.addItem("Neurological (Left is Left)")
         c.setCurrentIndex(self.orientation)
         c.currentIndexChanged.connect(self.orientation_changed)
+        grid.addWidget(c, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("Crosshairs"), 2, 0)
+        c = QtGui.QComboBox()
+        c.addItem("Show")
+        c.addItem("Hide")
+        c.setCurrentIndex(self.crosshairs)
+        c.currentIndexChanged.connect(self.crosshairs_changed)
         grid.addWidget(c, 2, 1)
 
         grid.addWidget(QtGui.QLabel("4D Type"), 3, 0)
@@ -192,6 +204,10 @@ class ViewOptions(QtGui.QDialog):
 
     def orientation_changed(self, idx):
         self.orientation = idx
+        self.sig_options_changed.emit(self)
+
+    def crosshairs_changed(self, idx):
+        self.crosshairs = idx
         self.sig_options_changed.emit(self)
 
     def zorder_changed(self, idx):
