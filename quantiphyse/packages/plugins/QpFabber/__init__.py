@@ -323,16 +323,20 @@ CEST_POOLVAL_TYPES = ["3T", "9.4T"]
 
 CEST_POOLS = [
     {"name" : "Water", "default" : True, "vals" : 
-        ["4.00252e8     0       1.8     0.05", 
-         "1.2774e8      0       1.3     0.05"]
+        ["1.2774e8      0       1.3     0.05",
+         "4.00252e8     0       1.8     0.05"]
     },
     {"name" : "Amide", "default" : True, "vals" : 
-        ["3.5           30      1.8     0.001", 
-         "3.5           20      0.77    0.01"]
+        ["3.5           20      0.77    0.01",
+         "3.5           30      1.8     0.001"]
     },
-    {"name" : "NOE", "default" : True, "vals" : 
-        ["-2.41          20     1.8     0.0005", 
-         "-2.34         40      1.0     0.0004"]
+    {"name" : "NOE/MT", "default" : True, "vals" : 
+        ["-2.34         40      1.0     0.0004",
+         "-2.41          20     1.8     0.0005",]
+    },
+    {"name" : "NOE", "default" : False, "vals" : 
+        ["0 0 0 0", 
+         "0 0 0 0"]
     },
     {"name" : "MT", "default" : False, "vals" : 
         ["0 0 0 0", 
@@ -454,10 +458,10 @@ class CESTWidget(FabberWidget):
             self.poolval_combo.addItem("%s defaults" % poolval_type)
         self.poolval_combo.addItem("custom")
         self.poolval_combo.currentIndexChanged.connect(self.update_pools)
-        grid.addWidget(self.poolval_combo, row+1, 0, 1, 2)
+        grid.addWidget(self.poolval_combo, NUM_ROWS, 0, 1, 2)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
-        grid.addWidget(edit_btn, row+1, 2)
+        grid.addWidget(edit_btn, NUM_ROWS, 2)
         poolVbox.addLayout(grid)
 
         anBox = QtGui.QGroupBox()
