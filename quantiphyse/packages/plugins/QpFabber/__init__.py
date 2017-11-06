@@ -548,7 +548,7 @@ class CESTWidget(FabberWidget):
             rvals = [float(v) for v in pvals.split()]
             vals.append(rvals)
         val_headers = ["PPM offset", "Exch rate", "T1", "T2"]
-        d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=False)
+        d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=(False, False))
         if d.exec_():
             vals = d.table.values()
             for row, pool in enumerate(self.pools):
