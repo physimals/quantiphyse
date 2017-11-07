@@ -7,6 +7,9 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 from PySide import QtCore, QtGui
 
+from quantiphyse.utils import debug
+from quantiphyse.gui.widgets import NumberVList
+
 class ScaleEditDialog(QtGui.QDialog):
     """
     Dialog used by the view options to allow the user to edit the 
@@ -19,17 +22,7 @@ class ScaleEditDialog(QtGui.QDialog):
         label = QtGui.QLabel('<font size="5">Edit Scale</font>')
         vbox.addWidget(label)
 
-        #paste_action = QtGui.QAction("Paste", self, triggered=self.paste)
-        #paste_action.setShortcut(QtGui.QKeySequence.Paste)
-        #paste_action.triggered.connect(self.paste)
-        #self.menu = QtGui.QMenu(self.table)
-        #self.menu.addAction(self.paste_action)
-        #self.menu.exec_(QtGui.QCursor.pos())
-
-        self.table = QtGui.QTableWidget()
-        self.table.setRowCount(len(scale))
-        self.table.setColumnCount(1)
-        self.table.setHorizontalHeaderItem(0, QtGui.QTableWidgetItem("Scale position"))
+        self.table = NumberVList(scale, expandable=False)
         self.table.itemChanged.connect(self.changed)
         vbox.addWidget(self.table)
 
@@ -40,7 +33,6 @@ class ScaleEditDialog(QtGui.QDialog):
 
         self.setLayout(vbox)
 
-        self.set_scale(scale)
         shortcut = QtGui.QShortcut(QtGui.QKeySequence.Paste, self.table)
         shortcut.activated.connect(self.paste)
 
@@ -54,27 +46,12 @@ class ScaleEditDialog(QtGui.QDialog):
             scale = text.strip().split("\t")
         if len(scale) == self.table.rowCount():
             try:
-                self.set_scale([float(v) for v in scale])
+                self.table.setValues([float(v) for v in scale])
             except:
                 pass
 
     def changed(self):
-        try:
-            self.get_scale()
-            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
-        except:
-            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
-
-    def set_scale(self, scale):
-        for r, v in enumerate(scale):
-            self.table.setVerticalHeaderItem(r, QtGui.QTableWidgetItem("Volume %i" % r))
-            self.table.setItem(r, 0, QtGui.QTableWidgetItem(str(v)))
-
-    def get_scale(self):
-        scale = []
-        for r in range(self.table.rowCount()):
-            scale.append(float(self.table.item(r, 0).text()))
-        return scale
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
 
 class ViewOptions(QtGui.QDialog):
     """
@@ -217,7 +194,8 @@ class ViewOptions(QtGui.QDialog):
     def edit_scale(self):
         dlg = ScaleEditDialog(self, self.t_scale)
         if dlg.exec_():
-            self.t_scale = dlg.get_scale()
+            self.t_scale = dlg.table.values()
+            debug("New t-scale: ", self.t_scale)
         self.sig_options_changed.emit(self)
 
     def voxel_scaling_changed(self, idx):

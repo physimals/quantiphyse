@@ -579,11 +579,68 @@ class NumberGrid(QtGui.QTableWidget):
             
     def loadFromFile(self, filename):
         fvals, nrows, ncols = load_matrix(filename)
-
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
         else:
             self.setValues(fvals)
+
+class NumberVList(NumberGrid):
+    """
+    Single-column NumberGrid
+    """
+    def __init__(self, initial, headers=None, expandable=True, fix_height=False):
+        NumberGrid.__init__(self, initial, row_headers=headers, 
+                            expandable=(False, expandable), fix_height=fix_height)
+
+    def values(self):
+        return [v[0] for v in NumberGrid.values(self)]
+
+    def setValues(self, values, validate=True):
+        NumberGrid.setValues(self, [[v,] for v in values], validate)
+
+    def loadFromFile(self, filename):
+        fvals, nrows, ncols = load_matrix(filename)
+        
+        if ncols <= 0:
+            raise RuntimeError("No numeric data found in file")
+        elif ncols == 1:
+            self.setValues(fvals[0])
+        else:
+            # Choose row or column you want
+            row, col = self._choose_row_col(fvals)
+            if row is not None:
+                self.setValues(fvals[row])
+            elif col is not None:
+                vals = [v[col] for v in fvals]
+                self.setValues(vals)
+
+    def _choose_row_col(self, vals):
+        d = MatrixViewerDialog(self, vals, title="Choose a row or column", text="Select a row or column containing the data you want")
+        if d.exec_():
+            ranges = d.table.selectedRanges()
+            if len(ranges) > 0:
+                r = ranges[0]
+                if r.topRow() == r.bottomRow():
+                    # Row select
+                    return r.topRow(), None
+                elif r.leftColumn() == r.rightColumn():
+                    # Column select
+                    return None, r.leftColumn()
+        return None, None    
+
+class NumberHList(NumberVList):
+    """
+    Single-row NumberGrid
+    """
+    def __init__(self, initial, headers=None, expandable=True, fix_width=False):
+        NumberGrid.__init__(self, initial, col_headers=headers, 
+                            expandable=(expandable, False), fix_width=fix_width)
+
+    def values(self):
+        return NumberGrid.values(self)[0]
+
+    def setValues(self, values, validate=True):
+        NumberGrid.setValues(self, [values,], validate)
 
 class Citation(QtGui.QWidget):
     def __init__(self, title, author, journal):
