@@ -1,8 +1,6 @@
 """
-
 Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
@@ -16,13 +14,14 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.ImageView import PickMode
-from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton
-from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col
+from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget
+from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug
 
 from .processes import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SEPlot:
-    def __init__(self, sig, **kwargs):
+    def __init__(self, plotwin, sig, **kwargs):
+        self.plotwin = plotwin
         self.sig = np.copy(np.array(sig, dtype=np.double))
         self.pen = kwargs.get("pen", (255, 255, 255))
         self.symbolBrush = kwargs.get("symbolBrush", (200, 200, 200))
@@ -32,7 +31,7 @@ class SEPlot:
         self.line = None
         self.pts = None
 
-    def plot(self, plotwin, sigenh, smooth, opts):
+    def draw(self, sigenh, smooth, opts):
         if sigenh:
             m = np.mean(self.sig[:3])
             pt_values = self.sig / m - 1
@@ -43,28 +42,25 @@ class SEPlot:
             wsize = 3
             cwin1 = np.ones(wsize)/wsize
             r1 = range(len(pt_values))
-            #tolerance does not scale by data value to scale input
+            # Tolerance does not scale by data value to scale input
             s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
             knots1 = s.get_knots()
-            #print("Number of knots in B-spline smoothing: ", len(knots1))
+            debug("Number of knots in B-spline smoothing: ", len(knots1))
             line_values = s(r1)*pt_values.max()
         else:
             line_values = pt_values
 
-        xx = opts.t_scale
-        plotwin.setLabel('bottom', opts.t_type, units=opts.t_unit)
-        
         if self.line is not None:
-            self.remove(plotwin)
+            self.remove()
 
-        self.line = plotwin.plot(xx, line_values, pen=self.pen, width=4.0)
-        self.pts = plotwin.plot(xx, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
+        self.line = self.plotwin.plot(opts.t_scale, line_values, pen=self.pen, width=4.0)
+        self.pts = self.plotwin.plot(opts.t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
                                 symbolSize=self.symbolSize)
 
-    def remove(self, plotwin):
+    def remove(self):
         if self.line is not None:
-            plotwin.removeItem(self.line)
-            plotwin.removeItem(self.pts)
+            self.plotwin.removeItem(self.line)
+            self.plotwin.removeItem(self.pts)
             self.line, self.pts = None, None
 
 class SECurve(QpWidget):
@@ -83,42 +79,38 @@ class SECurve(QpWidget):
     def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
-        title = QtGui.QLabel("<font size=5> Voxelwise analysis </font>")
-        bhelp = HelpButton(self, "curve_compare")
-        lhelp = QtGui.QHBoxLayout()
-        lhelp.addWidget(title)
-        lhelp.addStretch(1)
-        lhelp.addWidget(bhelp)
+        vbox = QtGui.QVBoxLayout()
 
-        self.win1 = pg.GraphicsLayoutWidget()
-        self.win1.setBackground(background=None)
-        self.p1 = None
-
-        # Take a local region mean to reduce noise
-        self.cb1 = QtGui.QCheckBox('Smooth curves', self)
-        self.cb1.stateChanged.connect(self.replot_graph)
-
-        #cb1.toggle()
-        self.cb2 = QtGui.QCheckBox('Multiple curves', self)
-        self.cb2.stateChanged.connect(self.multi_curves)
-
-        #Signal enhancement (normalised)
-        self.cb3 = QtGui.QCheckBox('Signal enhancement', self)
-        self.cb3.stateChanged.connect(self.replot_graph)
-
-        #Show mean
-        self.cb4 = QtGui.QCheckBox('Show mean', self)
-        self.cb4.stateChanged.connect(self.replot_graph)
+        title = TitleWidget("Voxelwise Analysis", help="curve_compare")
+        vbox.addWidget(title)
 
         #Clear curves button
-        b1icon = QtGui.QIcon(get_icon("clear"))
-        b1 = QtGui.QPushButton(self)
-        b1.setIcon(b1icon)
-        b1.setIconSize(QtCore.QSize(14, 14))
-        b1.setToolTip("Clear curves")
-        b1.clicked.connect(self.clear_all)
+        hbox = QtGui.QHBoxLayout()
+        clear_icon = QtGui.QIcon(get_icon("clear"))
+        btn = QtGui.QPushButton(self)
+        btn.setIcon(clear_icon)
+        btn.setIconSize(QtCore.QSize(14, 14))
+        btn.setToolTip("Clear curves")
+        btn.clicked.connect(self.clear_all)
+        hbox.addStretch(1)
+        hbox.addWidget(btn)
+        vbox.addLayout(hbox)
+
+        # Plot window
+        self.plotwin = pg.GraphicsLayoutWidget()
+        self.plotwin.setBackground(background=None)
+        self.p1 = self.plotwin.addPlot()
+        vbox.addWidget(self.plotwin)
+        vbox.addWidget(QtGui.QLabel())
+
+        opts_box = QtGui.QGroupBox()
+        opts_box.setTitle('Curve options')
+        opts_vbox = QtGui.QVBoxLayout()
+        opts_box.setLayout(opts_vbox)
 
         # Select plot color
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel('Plot color'))
         combo = QtGui.QComboBox(self)
         for col in self.colors.keys():
             combo.addItem(col)
@@ -126,146 +118,149 @@ class SECurve(QpWidget):
         combo.activated[str].connect(self.plot_col_changed)
         combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
                          "Allows visualisation of multiple enhancement curves of different colours")
+        hbox.addWidget(combo)
+        hbox.addStretch(1)
+        opts_vbox.addLayout(hbox)
 
-        l03 = QtGui.QHBoxLayout()
-        l03.addStretch(1)
-        l03.addWidget(b1)
+        # Take a local region mean to reduce noise
+        self.smooth_cb = QtGui.QCheckBox('Smooth curves', self)
+        self.smooth_cb.stateChanged.connect(self.replot_graph)
+        opts_vbox.addWidget(self.smooth_cb)
 
-        space1 = QtGui.QLabel('')
+        self.multi_cb = QtGui.QCheckBox('Multiple curves', self)
+        self.multi_cb.stateChanged.connect(self.clear_all)
+        opts_vbox.addWidget(self.multi_cb)
 
-        l01 = QtGui.QHBoxLayout()
-        l01.addWidget(QtGui.QLabel('Plot color'))
-        l01.addWidget(combo)
-        l01.addStretch(1)
+        # Signal enhancement (normalised)
+        self.se_cb = QtGui.QCheckBox('Signal enhancement', self)
+        self.se_cb.stateChanged.connect(self.replot_graph)
+        opts_vbox.addWidget(self.se_cb)
 
-        l04 = QtGui.QVBoxLayout()
-        l04.addLayout(l01)
-        l04.addWidget(self.cb1)
-        l04.addWidget(self.cb2)
-        l04.addWidget(self.cb3)
-        l04.addWidget(self.cb4)
+        # Show individual curves (can disable to just show mean)
+        self.indiv_cb = QtGui.QCheckBox('Show individual curves', self)
+        self.indiv_cb.toggle() # default ON
+        self.indiv_cb.stateChanged.connect(self.replot_graph)
+        opts_vbox.addWidget(self.indiv_cb)
 
-        g01 = QtGui.QGroupBox()
-        g01.setLayout(l04)
-        g01.setTitle('Curve options')
+        # Show mean
+        self.mean_cb = QtGui.QCheckBox('Show mean curve', self)
+        self.mean_cb.stateChanged.connect(self.replot_graph)
+        opts_vbox.addWidget(self.mean_cb)
 
-        l05 = QtGui.QHBoxLayout()
-        l05.addWidget(g01)
-        l05.addStretch()
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(opts_box)
+        hbox.addStretch()
+        vbox.addLayout(hbox)
 
-        l1 = QtGui.QVBoxLayout()
-        l1.addLayout(lhelp)
-        l1.addLayout(l03)
-        l1.addWidget(self.win1)
-        l1.addWidget(space1)
-        l1.addLayout(l05)
-        l1.addStretch(1)
-        self.setLayout(l1)
+        vbox.addStretch(1)
+        self.setLayout(vbox)
 
         self.plot_col_changed("grey")
-        self.multi = False
+        self.plots = {}
+        self.mean_plots = {}
         self.clear_all()
 
     def activate(self):
+        self.ivm.sig_main_data.connect(self.replot_graph)
         self.ivl.sig_sel_changed.connect(self.sel_changed)
         self.replot_graph()
 
     def deactivate(self):
+        self.ivm.sig_main_data.disconnect(self.replot_graph)
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
 
     def get_plots_by_color(self, col):
         return [plt for plt in self.plots.values() if plt.pen == col]
 
-    def update_mean(self):
-        for col in self.colors.values():
-            plts = self.get_plots_by_color(col)
-            if col in self.mean_plots:
-                self.mean_plots[col].remove(self.p1)
-            if len(plts) > 1:
-                mean_values = np.stack([plt.sig for plt in plts], axis=1)
-                mean_values = np.squeeze(np.mean(mean_values, axis=1))
-                plt = SEPlot(mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
-                plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
-                self.mean_plots[col] = plt
-
-    def clear_graph(self):
+    def remove_plots(self):
         """
         Clear the graph but don't delete data
         """
-        self.win1.setVisible(True)
-        if self.p1 is not None: self.win1.removeItem(self.p1)
-        self.p1 = self.win1.addPlot(title="Signal enhancement curve")
-        if self.ivm.main is not None:
-            if self.cb3.isChecked():
-                self.p1.setLabel('left', "%s (Signal Enhancement)" % self.ivm.main.name)
-            else:
-                self.p1.setLabel('left', self.ivm.main.name)
-            
-        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-
+        for plt in self.plots.values(): plt.remove()
+        for plt in self.mean_plots.values(): plt.remove()
+        
     def options_changed(self, opts):
         self.replot_graph()
 
-    @QtCore.Slot()
     def replot_graph(self):
-        self.clear_graph()
-        for plt in self.plots.values():
-            plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
-        if self.cb4.isChecked():
-            self.update_mean()
+        self.remove_plots()
+        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
+        if self.se_cb.isChecked():
+            self.p1.setTitle("Signal enhancement curve")
+        else:
+            self.p1.setTitle("Signal curve")
 
-    @QtCore.Slot()
+        if self.ivm.main is not None:
+            self.p1.setLabel('left', self.ivm.main.name)
+
+        if self.indiv_cb.isChecked():
+            for plt in self.plots.values():
+                plt.draw(self.se_cb.isChecked(), self.smooth_cb.isChecked(), self.opts)
+        if self.mean_cb.isChecked():
+            self.update_means()
+            for plt in self.mean_plots.values():
+                plt.draw(self.se_cb.isChecked(), self.smooth_cb.isChecked(), self.opts)
+
     def clear_all(self):
         """
         Clear the graph and all data
         """
-        self.clear_graph()
-        self.plots = {}
-        self.mean_plots = {}
+        self.remove_plots()
+        self.plots, self.mean_plots = {}, {}
         # Reset the list of picked points
-        if self.multi:
+        if self.multi_cb.isChecked():
             self.ivl.set_picker(PickMode.MULTIPLE)
             self.ivl.picker.col = self.col
         else:
             self.ivl.set_picker(PickMode.SINGLE)
             self.ivl.picker.col = self.col
 
-    @QtCore.Slot()
-    def multi_curves(self, state):
-        self.multi = state
-        self.clear_all()
+    def add_point(self, point, col):
+        """
+        Add a selected point of the specified colour
+        """
+        if self.ivm.main.ndim == 3:
+            # FIXME this should take into account which window the picked point was from
+            warnings.warn("3D image so just calculating cross image profile")
+            sig = self.ivm.main.std()[point[0], :, point[2]]
+        elif self.ivm.main.ndim == 4:
+            sig = self.ivm.main.std()[point[0], point[1], point[2], :]
+        else:
+            warnings.warn("Image is not 3D or 4D")
+            return
 
-    @QtCore.Slot(np.ndarray)
+        self.plots[point] = SEPlot(self.p1, sig, pen=col)
+
+    def update_means(self):
+        for col in self.colors.values():
+            all_plts = self.get_plots_by_color(col)
+            if len(all_plts) > 0:
+                mean_values = np.stack([plt.sig for plt in all_plts], axis=1)
+                mean_values = np.squeeze(np.mean(mean_values, axis=1))
+                self.mean_plots[col] = SEPlot(self.p1, mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
+            elif col in self.mean_plots:
+                self.mean_plots[col].remove()
+                del self.mean_plots[col]
+
     def sel_changed(self, picker):
         """
-        Get signal from mouse click
+        Point selection changed - add new points, or points which have changed color and update
+        the mean curves
         """
         allpoints = []
         for col, points in picker.points.items():
             allpoints += points
             for point in points:
-                if point not in self.plots:
-                    if self.ivm.main.ndim == 3:
-                        # FIXME this should take into account which window the picked point was from
-                        warnings.warn("3D image so just calculating cross image profile")
-                        sig = self.ivm.main.std()[point[0], :, point[2]]
-                    elif self.ivm.main.ndim == 4:
-                        sig = self.ivm.main.std()[point[0], point[1], point[2], :]
-                    else:
-                        warnings.warn("Image is not 3D or 4D")
-                        continue
-                    plt = SEPlot(sig, pen=col)
-                    plt.plot(self.p1, self.cb3.isChecked(), self.cb1.isChecked(), self.opts)
-                    self.plots[point] = plt
+                if point not in self.plots or self.plots[point].pen != col:
+                    self.add_point(point, col)
 
         for point in self.plots.keys():
             if point not in allpoints:
-                self.plots[point].remove(self.p1)
+                self.plots[point].remove()
                 del self.plots[point]
 
-        if self.cb4.isChecked(): self.update_mean()
+        self.replot_graph()
 
-    @QtCore.Slot(str)
     def plot_col_changed(self, text):
         self.col = self.colors.get(text, (255, 255, 255))
         self.ivl.picker.col = self.col
