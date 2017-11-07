@@ -86,10 +86,10 @@ class PointPicker(Picker):
     def __init__(self, iv, col=(255, 255, 255)):
         Picker.__init__(self, iv)
         self.col = col
-        self.points[self.col] = []
+        self.points = {self.col : []}
 
     def add_point(self, pos, win):
-        self.points[self.col] = [tuple(pos),]
+        self.points = {self.col : [tuple(pos),]}
         self.point = tuple(pos)
         self.iv.sig_sel_changed.emit(self)
 
