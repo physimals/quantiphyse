@@ -127,7 +127,7 @@ class MainWindow(QtGui.QMainWindow):
         self.widget_groups = {}
         self.current_widget = None
 
-        widgets = get_plugins()[0]
+        widgets = get_plugins("widgets")
         for wclass in widgets:
             w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
             if w.group not in self.widget_groups:

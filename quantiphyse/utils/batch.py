@@ -33,7 +33,7 @@ def run_batch(batchfile):
     """ Run a YAML batch file """
 
     # Register packages processes FIXME use this mechanism for all processes
-    plugin_procs = get_plugins()[1]
+    plugin_procs = get_plugins("processes")
     for p in plugin_procs:
         processes[p.PROCESS_NAME] = p
 
