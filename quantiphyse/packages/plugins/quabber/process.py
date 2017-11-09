@@ -6,11 +6,16 @@ import traceback
 import numpy as np
 
 from quantiphyse.analysis import Process, BackgroundProcess
+from quantiphyse.utils import debug, warn
+from quantiphyse.utils.exceptions import QpException
 
+FABBER_FOUND = False
 try:
     if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
     if "FABBERDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FABBERDIR"])
-    from fabber import FabberLib, FabberRunData
+    from fabber import find_fabber, FabberLib, FabberRunData, LibRun
+    FABBER_EX, FABBER_LIB, MODEL_LIBS = find_fabber()
+    FABBER_FOUND = FABBER_LIB is not None
 except:
     # Stubs to prevent startup error - warning will occur if Fabber is used
     warnings.warn("Failed to import Fabber API - analysis will be disabled")
@@ -31,6 +36,11 @@ def _run_fabber(id, queue, rundata, main_data, roi, *add_data):
     Function to run Fabber in a multiprocessing environment
     """
     try:
+        if np.count_nonzero(roi) == 0:
+            # Ignore runs with no voxel. Return placeholder object
+            debug("No voxels")
+            return id, True, LibRun({}, "")
+    
         data = {"data" : main_data}
         n = 0
         if len(add_data) % 2 != 0:
@@ -38,8 +48,10 @@ def _run_fabber(id, queue, rundata, main_data, roi, *add_data):
         while n < len(add_data):
             data[add_data[n]] = add_data[n+1]
             n += 2
+            
         lib = FabberLib(rundata=rundata, auto_load_models=True)
         run = lib.run_with_data(rundata, data, roi, progress_cb=_make_fabber_progress_cb(id, queue))
+        
         return id, True, run
     except:
         #print(sys.exc_info()[1])
@@ -58,6 +70,8 @@ class FabberProcess(BackgroundProcess):
     def run(self, options):
         data_name = options.pop("data", None)
         if data_name is None:
+            if self.ivm.main is None:
+                raise QpException("No data loaded")
             data = self.ivm.main.std()
         else:
             data = self.ivm.data[data_name].std()
@@ -114,11 +128,15 @@ class FabberProcess(BackgroundProcess):
     def finished(self):
         """ Add output data to the IVM and set the combined log """
         if self.status == Process.SUCCEEDED:
-            self.log = "\n\n".join([o.log for o in self.output])
-
+            self.log = "\n\n".join([o.log for o in self.output if len(o.log) > 0])
             first = True
-            for key in self.output[0].data:
-                recombined_item = np.concatenate([o.data[key] for o in self.output], 0)
+            data_keys = []
+            for o in self.output:
+                if len(o.data) > 0: data_keys = o.data.keys()
+            for key in data_keys:
+                debug(key)
+                recombined_item = self.recombine_data([o.data.get(key, None) for o in self.output])
+                debug("recombined")
                 self.ivm.add_data(recombined_item, name=key, make_current=first)
                 first = False
         elif hasattr(self.output, "log"):
