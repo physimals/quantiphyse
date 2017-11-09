@@ -1,11 +1,14 @@
 import os
+import sys
 import inspect
 
 from PySide import QtGui, QtCore
 
+from ..analysis import Process
 from ..utils import debug, warn, get_icon, load_matrix
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
+from ..volumes.io import save
 
 class QpWidget(QtGui.QWidget):
     """
@@ -687,15 +690,18 @@ class RunBox(QtGui.QGroupBox):
 
     Designed for use with BackgroundTask
     """
-    def __init__(self, get_process_fn, get_rundata_fn, title="Run"):
+    def __init__(self, get_process_fn, get_rundata_fn, title="Run", btn_label="Run", save_option=False):
         QtGui.QGroupBox.__init__(self)
+        self.save_option = save_option
+        
         self.setTitle(title)
         self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
         hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton('Run', self)
+        self.runBtn = QtGui.QPushButton(btn_label, self)
         self.runBtn.clicked.connect(self.start)
         hbox.addWidget(self.runBtn)
         self.progress = QtGui.QProgressBar(self)
@@ -709,6 +715,19 @@ class RunBox(QtGui.QGroupBox):
         self.logBtn.setEnabled(False)
         hbox.addWidget(self.logBtn)
         vbox.addLayout(hbox)
+
+        if self.save_option:
+            hbox = QtGui.QHBoxLayout()
+            self.save_cb = QtGui.QCheckBox("Save copy of output data")
+            hbox.addWidget(self.save_cb)
+            self.save_folder_edit = QtGui.QLineEdit()
+            hbox.addWidget(self.save_folder_edit)
+            btn = QtGui.QPushButton("Choose folder")
+            btn.clicked.connect(self.choose_output_folder)
+            hbox.addWidget(btn)
+            self.save_cb.stateChanged.connect(self.save_folder_edit.setEnabled)
+            self.save_cb.stateChanged.connect(btn.setEnabled)
+            vbox.addLayout(hbox)
 
         self.get_process_fn = get_process_fn
         self.get_rundata_fn = get_rundata_fn
@@ -727,7 +746,17 @@ class RunBox(QtGui.QGroupBox):
 
         self.process.sig_finished.connect(self.finished)
         self.process.sig_progress.connect(self.update_progress)
-        self.process.run(rundata)
+        
+        if self.save_option and self.save_cb.isChecked():
+            # Get a list of data stored before run, so we can save output data
+            # FIXME this is a bit of a hack and could be wrong if the user
+            # creates data while the process is running!
+            self.data_before = list(self.process.ivm.data.keys())
+
+        try:
+            self.process.run(rundata)
+        except:
+            self.finished(Process.FAILED, sys.exc_info()[1], "")
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
@@ -736,9 +765,19 @@ class RunBox(QtGui.QGroupBox):
         # FIXME cancelling processes not yet implemented
         pass
 
-    def finished(self, status, results, log):
+    def finished(self, status, result, log):
         try:
             self.log = log
+            if self.process.status != Process.SUCCEEDED:
+                raise result
+            elif self.save_option and self.save_cb.isChecked():
+                save_folder = self.save_folder_edit.text()   
+                data_to_save = [k for k in self.process.ivm.data.keys() if k not in self.data_before]    
+                for d in data_to_save:
+                    save(self.process.ivm.data[d], os.path.join(save_folder, d.name + ".nii"))
+                logfile = open(os.path.join(save_folder, "logfile"), "w")
+                logfile.write(self.log)
+                logfile.close()
         finally:
             self.process.sig_finished.disconnect(self.finished)
             self.process.sig_progress.disconnect(self.update_progress)
@@ -751,6 +790,11 @@ class RunBox(QtGui.QGroupBox):
         self.logview = TextViewerDialog(text=self.log, parent=self)
         self.logview.show()
         self.logview.raise_()
+
+    def choose_output_folder(self):
+        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
+        if outputDir:
+            self.save_folder_edit.setText(outputDir)
 
 class OrderList(QtGui.QListWidget):
     """
