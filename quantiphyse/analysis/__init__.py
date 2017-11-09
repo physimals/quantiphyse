@@ -11,7 +11,7 @@ import threading
 
 from PySide import QtCore, QtGui
 
-from ..utils import debug
+from ..utils import debug, warn
 
 _pool = None
 
@@ -136,12 +136,31 @@ class BackgroundProcess(Process):
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
-                split_args.append(np.array_split(arg, n, 0))
+                split_args.append(np.array_split(arg, n, SPLIT_AXIS))
             else:
                 split_args.append([arg,] * n)
 
         # Transpose list of lists so first element is all the arguments for process 0, etc
         return map(list, zip(*split_args))
+
+    def recombine_data(self, data):
+        shape = None
+        for d in data:
+            if d is not None:
+                shape = d.shape
+        if shape is None:
+            raise RuntimeError("No data to re-combine")
+        else:
+            debug("Recombining data with shape", shape)
+        empty = np.zeros(shape)
+        real_data = []
+        for d in data:
+            if d is None:
+                real_data.append(empty)
+            else:
+                real_data.append(d)
+        
+        return np.concatenate(real_data, SPLIT_AXIS)
 
     def _restart_timer(self):
         self._timer = threading.Timer(1, self._timer_cb)
@@ -172,6 +191,9 @@ class BackgroundProcess(Process):
             self.output = output
 
         if self.status != Process.RUNNING:
-            self.timeout()
-            self.finished()
+            try:
+                self.timeout()
+                self.finished()
+            except:
+                warn("Error executing finished methods for process")
             self.sig_finished.emit(self.status, self.output, self.log)
