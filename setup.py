@@ -76,16 +76,16 @@ elif sys.platform.startswith('darwin'):
 
 extensions.append(Extension("quantiphyse.packages.core.dce.pk_model",
                  sources=['quantiphyse/packages/core/dce/pk_model.pyx',
-                          'src/pkmodelling/Optimizer_class.cpp',
-                          'src/pkmodelling/pkrun2.cpp',
-                          'src/pkmodelling/ToftsOrton.cpp',
-                          'src/pkmodelling/ToftsOrtonOffset.cpp',
-                          'src/pkmodelling/ToftsWeinOffset.cpp',
-                          'src/pkmodelling/ToftsWeinOffsetVp.cpp',
-                          'src/pkmodelling/lmlib/lmcurve.cpp',
-                          'src/pkmodelling/lmlib/lmmin.cpp'],
-                 include_dirs=['src/pkmodelling/lmlib/',
-                               'src/pkmodelling/',
+                          'quantiphyse/packages/core/dce/src/Optimizer_class.cpp',
+                          'quantiphyse/packages/core/dce/src/pkrun2.cpp',
+                          'quantiphyse/packages/core/dce/src/ToftsOrton.cpp',
+                          'quantiphyse/packages/core/dce/src/ToftsOrtonOffset.cpp',
+                          'quantiphyse/packages/core/dce/src/ToftsWeinOffset.cpp',
+                          'quantiphyse/packages/core/dce/src/ToftsWeinOffsetVp.cpp',
+                          'quantiphyse/packages/core/dce/src/lmlib/lmcurve.cpp',
+                          'quantiphyse/packages/core/dce/src/lmlib/lmmin.cpp'],
+                 include_dirs=['quantiphyse/packages/core/dce/src/lmlib',
+                               'quantiphyse/packages/core/dce/src/',
                                numpy.get_include()],
                  language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
@@ -93,9 +93,9 @@ extensions.append(Extension("quantiphyse.packages.core.dce.pk_model",
 
 extensions.append(Extension("quantiphyse.packages.core.t1.t1_model",
                  sources=['quantiphyse/packages/core/t1/t1_model.pyx',
-                          'src/T10/linear_regression.cpp',
-                          'src/T10/T10_calculation.cpp'],
-                 include_dirs=['src/T10',
+                          'quantiphyse/packages/core/t1/src/linear_regression.cpp',
+                          'quantiphyse/packages/core/t1/src/T10_calculation.cpp'],
+                 include_dirs=['quantiphyse/packages/core/t1/src/',
                                numpy.get_include()],
                  language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
@@ -115,8 +115,8 @@ extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic
 
 extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic.additional.processing",
               sources=["quantiphyse/packages/core/supervoxels/perfusionslic/additional/processing.pyx",
-                       "src/perfusionslic/processing.cpp"],
-              include_dirs=["src/perfusionslic", numpy.get_include()],
+                       "quantiphyse/packages/core/supervoxels/src/processing.cpp"],
+              include_dirs=["quantiphyse/packages/core/supervoxels/src/", numpy.get_include()],
               language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
 # MCFlirt extension - requires FSL to build
@@ -130,12 +130,12 @@ else:
 
 fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
-    extensions.append(Extension("quantiphyse.packages.core.registration.mcflirt",
-                 sources=['quantiphyse/packages/core/registration/mcflirt.pyx',
-                          'src/mcflirt/mcflirt.cc',
-                          'src/mcflirt/Globaloptions.cc',
-                          'src/mcflirt/Log.cc'],
-                 include_dirs=['src/mcflirt/', 
+    extensions.append(Extension("quantiphyse.packages.plugins.mcflirt.mcflirt_wrapper",
+                 sources=['quantiphyse/packages/plugins/mcflirt/mcflirt_wrapper.pyx',
+                          'quantiphyse/packages/plugins/mcflirt/src/mcflirt.cc',
+                          'quantiphyse/packages/plugins/mcflirt/src/Globaloptions.cc',
+                          'quantiphyse/packages/plugins/mcflirt/src/Log.cc'],
+                 include_dirs=['quantiphyse/packages/plugins/mcflirt/src/', 
                                os.path.join(fsldir, "include"),
                                os.path.join(fsldir, "extras/include/newmat"),
                                os.path.join(fsldir, "extras/include/boost"),
@@ -148,10 +148,12 @@ else:
 
 # deedsReg extension
 
-extensions.append(Extension("quantiphyse.packages.core.registration.deeds",
-                 sources=['quantiphyse/packages/core/registration/deeds.pyx',
-                          'src/deedsRegSSC/TMI2013/deedsMSTssc.cpp'],
-                 include_dirs=[numpy.get_include(), "src/deedsRegSSC/TMI2013/", extra_inc],
+extensions.append(Extension("quantiphyse.packages.plugins.deeds.deeds_wrapper",
+                 sources=['quantiphyse/packages/plugins/deeds/deeds_wrapper.pyx',
+                          'quantiphyse/packages/plugins/deeds/src/TMI2013/deedsMSTssc.cpp'],
+                 include_dirs=[numpy.get_include(), 
+                               "quantiphyse/packages/plugins/deeds/src/TMI2013/", 
+                               extra_inc],
                  language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
 # setup parameters
