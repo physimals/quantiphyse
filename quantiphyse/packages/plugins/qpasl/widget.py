@@ -21,7 +21,7 @@ from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 
-from quantiphyse.packages.plugins.QpFabber.process import FabberProcess, FABBER_FOUND
+from quantiphyse.packages.plugins.quabber.process import FabberProcess, FABBER_FOUND
 
 class AslDataPreview(QtGui.QWidget):
     def __init__(self, order, tagfirst, parent=None):

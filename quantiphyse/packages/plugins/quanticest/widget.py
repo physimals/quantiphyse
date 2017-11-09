@@ -24,7 +24,7 @@ from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 
 # Need the Fabber generic process
-from quantiphyse.packages.plugins.QpFabber.process import FabberProcess, FABBER_FOUND
+from quantiphyse.packages.plugins.quabber.process import FabberProcess, FABBER_FOUND
 
 CEST_CITE_TITLE = "Quantitative Bayesian model-based analysis of amide proton transfer MRI"
 CEST_CITE_AUTHOR = "Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J."
