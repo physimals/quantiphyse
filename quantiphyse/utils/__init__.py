@@ -17,8 +17,7 @@ from PySide import QtCore, QtGui
 
 LOCAL_FILE_PATH=""
 DEBUG = False
-WIDGETS = None
-PROCESSES = None
+PLUGIN_MANIFEST = None
 
 def set_debug(debug):
     global DEBUG
@@ -208,7 +207,7 @@ def _possible_module(f):
     elif f.endswith(".py") or f.endswith(".dll") or f.endswith(".so"):
         return os.path.basename(f).rsplit(".", 1)[0]
 
-def _load_plugins_from_dir(dirname, pkgname, widgets, processes):
+def _load_plugins_from_dir(dirname, pkgname, manifest):
     """
     Beginning of plugin system - load modules dynamically from the specified directory
 
@@ -226,26 +225,33 @@ def _load_plugins_from_dir(dirname, pkgname, widgets, processes):
                 m = importlib.import_module(mod, pkgname)
                 if hasattr(m, "QP_WIDGETS"):
                     debug("Widgets found:", mod, m.QP_WIDGETS)
-                    widgets += m.QP_WIDGETS
+                    manifest["widgets"] = manifest.get("widgets", []) + m.QP_WIDGETS
                 if hasattr(m, "QP_PROCESSES"):
                     debug("Processes found:", mod, m.QP_PROCESSES)
-                    processes += m.QP_PROCESSES
+                    manifest["processes"] = manifest.get("processes", []) + m.QP_PROCESSES
+                if hasattr(m, "QP_MANIFEST"):
+                    for k, v in m.QP_MANIFEST.items():
+                        debug("%s found:" % k, mod, v)
+                        manifest[k] = manifest.get(k, []) + v
             except:
                 warn("Error loading plugin: %s" % mod)
                 traceback.print_exc()
 
-def get_plugins():
+def get_plugins(key=None):
     """
     Beginning of plugin system - load widgets dynamically from specified plugins directory
     """
-    global LOCAL_FILE_PATH, WIDGETS, PROCESSES
-    if WIDGETS is None or PROCESSES is None:
-        WIDGETS, PROCESSES = [], []
+    global LOCAL_FILE_PATH, PLUGIN_MANIFEST
+    if PLUGIN_MANIFEST is None:
+        PLUGIN_MANIFEST = {}
 
         core_dir = os.path.join(LOCAL_FILE_PATH, "packages", "core")
-        _load_plugins_from_dir(core_dir, "quantiphyse.packages.core", WIDGETS, PROCESSES)
+        _load_plugins_from_dir(core_dir, "quantiphyse.packages.core", PLUGIN_MANIFEST)
 
         plugin_dir = os.path.join(LOCAL_FILE_PATH, "packages", "plugins")
-        _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", WIDGETS, PROCESSES)
+        _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", PLUGIN_MANIFEST)
     
-    return WIDGETS, PROCESSES
+    if key is not None:
+        return PLUGIN_MANIFEST.get(key, [])
+    else:
+        return PLUGIN_MANIFEST
