@@ -9,175 +9,20 @@ from quantiphyse.gui.dialogs import TextViewerDialog
 
 from quantiphyse.analysis import Process
 
-from quantiphyse.utils import debug
+from quantiphyse.utils import debug, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
-from .process import RegProcess, MocoProcess, REG_METHODS
-
-class McflirtInterface:
-    def __init__(self):
-        self.cost_models = {"Mutual information" : "mutualinfo",
-                            "Woods" : "woods",
-                            "Correlation ratio" : "corratio",
-                            "Normalized correlation" : "normcorr",
-                            "Normalized mutual information" : "normmi",
-                            "Least squares" : "leastsquares"}
-                            
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Cost model"), 0, 0)
-        self.cost_combo = QtGui.QComboBox()
-        for name, opt in self.cost_models.items():
-            self.cost_combo.addItem(name, opt)
-        self.cost_combo.setCurrentIndex(self.cost_combo.findData("normcorr"))
-        grid.addWidget(self.cost_combo, 0, 1)
-
-        grid.addWidget(QtGui.QLabel("Number of search stages"), 3, 0)
-        self.stages = QtGui.QComboBox()
-        for i in range(1, 5):
-            self.stages.addItem(str(i), i)
-        self.stages.setCurrentIndex(2)
-        grid.addWidget(self.stages, 3, 1)
-
-        self.final_label = QtGui.QLabel("Final stage interpolation")
-        grid.addWidget(self.final_label, 4, 0)
-        self.final = QtGui.QComboBox()
-        self.final.addItem("None", "")
-        self.final.addItem("Sinc", "sinc_final")
-        self.final.addItem("Spline", "spline_final")
-        self.final.addItem("Nearest neighbour", "nn_final")
-        grid.addWidget(self.final, 4, 1)
-
-        grid.addWidget(QtGui.QLabel("Field of view (mm)"), 5, 0)
-        self.fov = QtGui.QSpinBox()
-        self.fov.setValue(20)
-        self.fov.setMinimum(1)
-        self.fov.setMaximum(100)
-        grid.addWidget(self.fov, 5, 1)
-
-        grid.addWidget(QtGui.QLabel("Number of bins"), 6, 0)
-        self.num_bins = QtGui.QSpinBox()
-        self.num_bins.setMinimum(1)
-        self.num_bins.setMaximum(1000)
-        self.num_bins.setValue(256)
-        grid.addWidget(self.num_bins, 6, 1)
-
-        grid.addWidget(QtGui.QLabel("Number of transform degrees of freedom"), 7, 0)
-        self.num_dofs = QtGui.QSpinBox()
-        self.num_dofs.setMinimum(6)
-        self.num_dofs.setMaximum(12)
-        self.num_dofs.setValue(6)
-        grid.addWidget(self.num_dofs, 7, 1)
-
-        grid.addWidget(QtGui.QLabel("Scaling"), 8, 0)
-        self.scaling = QtGui.QDoubleSpinBox()
-        self.scaling.setValue(6.0)
-        self.scaling.setMinimum(0.1)
-        self.scaling.setMaximum(10.0)
-        self.scaling.setSingleStep(0.1)
-        grid.addWidget(self.scaling, 8, 1)
-
-        grid.addWidget(QtGui.QLabel("Smoothing in cost function"), 9, 0)
-        self.smoothing = QtGui.QDoubleSpinBox()
-        self.smoothing.setValue(1.0)
-        self.smoothing.setMinimum(0.1)
-        self.smoothing.setMaximum(10.0)
-        self.smoothing.setSingleStep(0.1)
-        grid.addWidget(self.smoothing, 9, 1)
-
-        grid.addWidget(QtGui.QLabel("Scaling factor for rotation\noptimization tolerances"), 10, 0)
-        self.rotation = QtGui.QDoubleSpinBox()
-        self.rotation.setValue(1.0)
-        self.rotation.setMinimum(0.1)
-        self.rotation.setMaximum(10.0)
-        self.rotation.setSingleStep(0.1)
-        grid.addWidget(self.rotation, 10, 1)
-
-        grid.addWidget(QtGui.QLabel("Search on gradient images"), 11, 0)
-        self.gdt = QtGui.QCheckBox()
-        grid.addWidget(self.gdt, 11, 1)
-
-        self.options_layout = grid
-
-    def getOptions(self):
-        opts = {}
-        opts["cost"] = self.cost_combo.itemData(self.cost_combo.currentIndex())
-        opts["bins"] = self.num_bins.value()
-        opts["dof"] = self.num_dofs.value()
-        opts["scaling"] = self.scaling.value()
-        opts["smooth"] = self.smoothing.value()
-        opts["rotation"] = self.rotation.value()
-        opts["stages"] = self.stages.itemData(self.stages.currentIndex())
-        opts["fov"] = self.fov.value()
-        if self.gdt.isChecked(): opts["gdt"] = ""
-
-        final_interp = self.final.currentIndex()
-        if final_interp != 0: opts[self.final.itemData(final_interp)] = ""
-
-        for key, value in opts.items():
-            debug(key, value)
-        return opts
-        
-class DeedsInterface:
-    def __init__(self):
-        grid = QtGui.QGridLayout()
-
-        grid.addWidget(QtGui.QLabel("Regularisation parameter (alpha)"), 0, 0)
-        self.alpha = QtGui.QDoubleSpinBox()
-        self.alpha.setValue(2.0)
-        self.alpha.setMinimum(0)
-        self.alpha.setMaximum(10.0)
-        self.alpha.setSingleStep(0.1)
-        grid.addWidget(self.alpha, 0, 1)
-
-        grid.addWidget(QtGui.QLabel("Num random samples per node"), 1, 0)
-        self.randsamp = QtGui.QSpinBox()
-        self.randsamp.setValue(50)
-        self.randsamp.setMinimum(1)
-        self.randsamp.setMaximum(100)
-        grid.addWidget(self.randsamp, 1, 1)
-
-        grid.addWidget(QtGui.QLabel("Number of levels"), 2, 0)
-        self.levels = QtGui.QSpinBox()
-        self.levels.setValue(5)
-        self.levels.setMinimum(1)
-        self.levels.setMaximum(10)
-        grid.addWidget(self.levels, 2, 1)
-
-        #grid.addWidget(QtGui.QLabel("Grid spacing for each level"), 3, 0)
-        #self.spacing = QtGui.QLineEdit()
-        #grid.addWidget(self.spacing, 3, 1)
-
-        #grid.addWidget(QtGui.QLabel("Search radius for each level"),4, 0)
-        #self.radius = QtGui.QLineEdit()
-        #grid.addWidget(self.radius,4, 1)
-
-        #grid.addWidget(QtGui.QLabel("Quantisation of search step size for each level"),5, 0)
-        #self.radius = QtGui.QLineEdit()
-        #grid.addWidget(self.radius,5, 1)
-
-        #grid.addWidget(QtGui.QLabel("Use symmetric approach"),6, 0)
-        #self.symm = QtGui.QCheckBox()
-        #self.symm.setChecked(True)
-        #grid.addWidget(self.symm,6, 1)
-
-        self.options_layout = grid
-
-    def getOptions(self):
-        return {"alpha" : self.alpha.value(),
-                "randsamp" : self.randsamp.value(),
-                "levels" : self.levels.value()}
-
+from .process import RegProcess, MocoProcess
+    
 class RegWidget(QpWidget):
     """
     Generic registration / motion correction widget 
     """
     def __init__(self, **kwargs):
         super(RegWidget, self).__init__(name="Registration", icon="reg", desc="Registration and Motion Correction", **kwargs)
+        self.reg_methods = [c() for c in get_plugins("reg-methods")]
 
     def init_ui(self):
-        self.REG_INTERFACES = {"deeds" : DeedsInterface(), "mcflirt" : McflirtInterface()}
-
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -187,10 +32,9 @@ class RegWidget(QpWidget):
         hbox.addWidget(HelpButton(self, "reg"))
         layout.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        
-        hbox.addStretch(1)
-        layout.addLayout(hbox)
+        if len(self.reg_methods) == 0:
+            layout.addWidget(QtGui.QLabel("No registration methods found"))
+            return
 
         hbox = QtGui.QHBoxLayout()
         gbox = QtGui.QGroupBox()
@@ -207,10 +51,10 @@ class RegWidget(QpWidget):
 
         grid.addWidget(QtGui.QLabel("Method"), 1, 0)
         self.method_combo = QtGui.QComboBox()
-        for name in REG_METHODS:
-            self.method_combo.addItem(name, self.REG_INTERFACES[name])
+        for method in self.reg_methods:
+            self.method_combo.addItem(method.name, method)
         self.method_combo.currentIndexChanged.connect(self.method_changed)
-        self.method_combo.setCurrentIndex(self.method_combo.findText(REG_METHODS.keys()[0]))
+        self.method_combo.setCurrentIndex(self.method_combo.findText(self.reg_methods[0].name))
         grid.addWidget(self.method_combo, 1, 1)
 
         self.refdata_label = QtGui.QLabel("Reference data")
@@ -264,16 +108,16 @@ class RegWidget(QpWidget):
 
         # Create the options boxes for reg methods - only one visible at a time!
         self.opt_boxes = {}
-        for name in REG_METHODS:
+        for method in self.reg_methods:
             hbox = QtGui.QHBoxLayout()
             opt_box = QtGui.QGroupBox()
-            opt_box.setTitle("%s Options" % name)
-            opt_box.setLayout(self.REG_INTERFACES[name].options_layout)
+            opt_box.setTitle("%s Options" % method.name)
+            opt_box.setLayout(method.interface())
             hbox.addWidget(opt_box)
             hbox.addStretch(1)
             opt_box.setVisible(False)
             layout.addLayout(hbox)
-            self.opt_boxes[name] = opt_box
+            self.opt_boxes[method.name] = opt_box
 
         hbox = QtGui.QHBoxLayout()
         self.runBtn = QtGui.QPushButton('Run', self)
@@ -310,13 +154,11 @@ class RegWidget(QpWidget):
 
     def method_changed(self, idx):
         if idx >= 0:
-            method_name = self.method_combo.currentText()
-            if method_name in self.REG_INTERFACES:
-                self.method = self.REG_INTERFACES[method_name]
-                for name, box in self.opt_boxes.items():
-                    box.setVisible(name == method_name)
-            else:
-                self.method = None
+            self.method = self.method_combo.itemData(idx)
+            for name, box in self.opt_boxes.items():
+                box.setVisible(name == self.method.name)
+        else:
+            self.method = None
 
     def mode_changed(self, idx):
         self.mode = idx
@@ -372,11 +214,9 @@ class RegWidget(QpWidget):
         if self.method is None:
             raise QpException("No registration method has been chosen")
 
-        options = self.method.getOptions()
-
-        options["method"] = self.method_combo.currentText()
+        options = self.method.options()
+        options["method"] = self.method.name
         options["output-name"] = self.name_edit.text()
-
         
         refdata = self.ivm.data.get(self.refdata.currentText(), None)
         if refdata is None: raise QpException("Reference data not found: '%s'" % self.refdata.currentText())

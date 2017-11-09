@@ -4,37 +4,13 @@ import traceback
 
 import numpy as np
 
-from quantiphyse.utils import debug, warn
+from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
 from quantiphyse.analysis import Process, BackgroundProcess
 
 # Known registration methods (case-insensitive)
 REG_METHODS = {}
-
-try:
-    from .deeds import deedsReg
-    def deeds_reg(regdata, refdata, warp_rois, options):
-        return deedsReg(regdata, refdata, warp_rois, **options)
-    REG_METHODS["deeds"] = deeds_reg
-except:
-    warn("deeds registration method not found")
-
-try:
-    from .mcflirt import mcflirt
-    def mcflirt_reg(regdata, refdata, warp_rois, options):
-        if warp_rois is not None:
-            raise QpException("MCFLIRT does not yet support warping ROIs")
-        # MCFLIRT wants to do motion correction so we stack the reg and ref
-        # data together and tell it to use the second as the reference.
-        data = np.stack((regdata, refdata), -1)
-        options["refvol"] = 1
-        # FIXME voxel sizes?
-        retdata, log = mcflirt(data, [1.0,] * data.ndim, **options)
-        return retdata[:,:,:,0], None, log
-    REG_METHODS["mcflirt"] = mcflirt_reg
-except:
-    warn("mcflirt registration method not found")
 
 """
 Registration function for asynchronous process - used for moco and registration
@@ -53,7 +29,7 @@ def _run_reg(id, queue, method, options, regdata, refdata, warp_rois, ignore_idx
             warp_rois_out = np.zeros(warp_rois.shape)
             full_log += "Warp ROIs max=%f\n" % np.max(warp_rois)
         else: warp_rois_out = None
-        reg_fn = REG_METHODS[method.lower()]
+        method = REG_METHODS[method.lower()]
 
         for t in range(regdata.shape[-1]):
             full_log += "Registering volume %i of %i\n" % (t+1, regdata.shape[-1])
@@ -61,7 +37,7 @@ def _run_reg(id, queue, method, options, regdata, refdata, warp_rois, ignore_idx
             if t == ignore_idx:
                 regdata_out[:,:,:,t] = regvol
             else:
-                outvol, roivol, log = reg_fn(regvol, refdata, warp_rois, options)
+                outvol, roivol, log = method.reg(regvol, refdata, warp_rois, options)
                 full_log += log
                 regdata_out[:,:,:,t] = outvol
                 if warp_rois is not None: 
@@ -86,6 +62,11 @@ class RegProcess(BackgroundProcess):
 
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
+        global REG_METHODS
+        methods = get_plugins("reg-methods")
+        for m in methods:
+            method = m()
+            REG_METHODS[method.name.lower()] = method
 
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
