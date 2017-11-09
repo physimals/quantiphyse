@@ -1,0 +1,41 @@
+# Example config file for running Fabber model fitting
+
+OutputFolder: out
+Debug: False
+
+Processing:
+  - Load:
+        data:
+            image001.nii:
+        rois:
+            mask.nii:
+
+  - Fabber:
+      ptrain: fabber_runtime_files/ptrain_2s.mat
+      save-mean: 
+      noise: white
+      degree: 2
+      save-model-fit: 
+      spec: fabber_runtime_files/dataspec_v2.mat
+      max-iterations: 20
+      fabber_lib: C:/Users/ctsu0221/fsl_x64_release/bin\fabbercore_shared.dll
+      debug: 
+      pools: fabber_runtime_files/poolmat_2pool.mat
+      output: out
+      model: cest
+      method: vb
+      overwrite: 
+
+  - Save:
+        mean_B1_off:
+        mean_ppm_off:
+        mean_M0a:
+        mean_M0b_r:
+        mean_kba:
+        modelfit:
+
+Cases:
+    Subject1:
+        Folder:   C:\Users\ctsu0221\build\data\For_Martin_ENU_JL586
+        
+        

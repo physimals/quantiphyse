@@ -9,7 +9,9 @@ import multiprocessing
 import multiprocessing.pool
 import threading
 
-from PySide import QtCore
+from PySide import QtCore, QtGui
+
+from ..utils import debug, warn
 
 _pool = None
 
@@ -17,11 +19,14 @@ _pool = None
 # by default
 SPLIT_AXIS = 0
 
+# Whether to use multiprocessing - can be disabled for debugging
+MULTIPROC = True
+
 def _init_pool():
     global _pool
     if _pool is None: 
         n_workers = multiprocessing.cpu_count()
-        #print("Initializing multiprocessing using %i workers" % n_workers)
+        debug("Initializing multiprocessing using %i workers" % n_workers)
         _pool = multiprocessing.Pool(n_workers)
 
 class Process(QtCore.QObject):
@@ -48,9 +53,9 @@ class Process(QtCore.QObject):
         self.ivm = ivm
         self.log = ""
         self.status = Process.NOTSTARTED
-        self.debug = kwargs.get("debug", False)
-        self.folder = kwargs.get("indir", "")
-        self.outdir = kwargs.get("outdir", "")
+        self.name = kwargs.pop("name", None)
+        self.folder = kwargs.pop("indir", "")
+        self.outdir = kwargs.pop("outdir", "")
 
     def run(self, options):
         """ Override to run the process """
@@ -61,12 +66,13 @@ class BackgroundProcess(Process):
     A serial (non parallelized) asynchronous process
     """
 
-    def __init__(self, ivm, fn, sync=False, **kwargs):
-        super(BackgroundProcess, self).__init__(ivm)
+    def __init__(self, ivm, fn, **kwargs):
+        super(BackgroundProcess, self).__init__(ivm, **kwargs)
         _init_pool()
         self.fn = fn
         self.queue =  multiprocessing.Manager().Queue()
-        self.sync = sync
+        self.sync = kwargs.get("sync", False)
+        self.multiproc = MULTIPROC and kwargs.get("multiproc", True)
         self._timer = None
 
     def timeout(self):
@@ -87,23 +93,35 @@ class BackgroundProcess(Process):
         """
         Start worker processes. Should be called by run()
 
-        n = number of workers
+        n = number of tasks
         args = list of run arguments - will be split up amongst workers by split_args()
         """
         worker_args = self.split_args(n, args)
         self.output = [None, ] * n
         self.status = Process.RUNNING
-        processes = []
-        for i in range(n):
-            proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
-            processes.append(proc)
-        
-        if self.sync:
+        if self.multiproc:
+            processes = []
             for i in range(n):
-                processes[i].get()
+                debug("starting task %i..." % n)
+                proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
+                processes.append(proc)
+            
+            if self.sync:
+                debug("synchronous")
+                for i in range(n):
+                    processes[i].get()
+            else:
+                debug("async - restarting timer")
+                self._restart_timer()
         else:
-            self._restart_timer()
-    
+            for i in range(n):
+                result = self.fn(*worker_args[i])
+                self.timeout()
+                if QtGui.qApp is not None: QtGui.qApp.processEvents()
+                self._process_cb(result)
+                if self.status != Process.RUNNING: break
+        debug("done start")
+
     def split_args(self, n, args):
         """
         Split function arguments up across workers. 
@@ -118,13 +136,31 @@ class BackgroundProcess(Process):
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
-                #print("Splitting numpy array shape ", arg.shape)
-                split_args.append(np.array_split(arg, n, 0))
+                split_args.append(np.array_split(arg, n, SPLIT_AXIS))
             else:
                 split_args.append([arg,] * n)
 
         # Transpose list of lists so first element is all the arguments for process 0, etc
         return map(list, zip(*split_args))
+
+    def recombine_data(self, data):
+        shape = None
+        for d in data:
+            if d is not None:
+                shape = d.shape
+        if shape is None:
+            raise RuntimeError("No data to re-combine")
+        else:
+            debug("Recombining data with shape", shape)
+        empty = np.zeros(shape)
+        real_data = []
+        for d in data:
+            if d is None:
+                real_data.append(empty)
+            else:
+                real_data.append(d)
+        
+        return np.concatenate(real_data, SPLIT_AXIS)
 
     def _restart_timer(self):
         self._timer = threading.Timer(1, self._timer_cb)
@@ -132,13 +168,14 @@ class BackgroundProcess(Process):
         self._timer.start()
 
     def _timer_cb(self):
+        debug("timer CB")
         if self.status == Process.RUNNING:
             self.timeout()
             self._restart_timer()
 
     def _process_cb(self, result):
         worker_id, success, output = result
-        #print("Finished: id=", worker_id, success, str(output))
+        debug("Finished: id=", worker_id, success, str(output))
         
         if self.status == Process.FAILED:
             # If one process has already failed, ignore results of others
@@ -154,6 +191,9 @@ class BackgroundProcess(Process):
             self.output = output
 
         if self.status != Process.RUNNING:
-            self.timeout()
-            self.finished()
+            try:
+                self.timeout()
+                self.finished()
+            except:
+                warn("Error executing finished methods for process")
             self.sig_finished.emit(self.status, self.output, self.log)

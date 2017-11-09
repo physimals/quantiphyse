@@ -1,0 +1,24 @@
+# Example config file for motion correction using mcflirt
+
+OutputFolder: out
+Debug: False
+
+Processing:
+    - Load:
+        data:
+            testdata_4d_moving.nii.gz: data
+    
+    - Moco:
+        method: mcflirt
+        replace-vol: False
+        ref-vol: median
+        output-name: data_moco_mcflirt
+
+    - Save:
+        data:
+        data_moco_mcflirt:
+
+Cases:
+    Subject1:
+        Folder:   test/system_tests/test_data   
+

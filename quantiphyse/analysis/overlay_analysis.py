@@ -11,6 +11,7 @@ Benjamin Irving
 
 import numpy as np
 
+from ..volumes.io import NumpyData
 
 class OverlayAnalysis(object):
     """
@@ -31,9 +32,8 @@ class OverlayAnalysis(object):
         # Checks if either ROI or overlay is None
         if roi is not None:
             roi_labels = roi.regions
-            roi_labels = roi_labels[roi_labels > 0]
         else:
-            roi = np.ones(ovl.shape[:3])
+            roi = NumpyData(np.ones(ovl.stdgrid.shape[:3]), ovl.stdgrid, "temp", roi=True)
             roi_labels = [1,]
 
         if (ovl is None):
@@ -45,20 +45,13 @@ class OverlayAnalysis(object):
         hist1x = []
 
         if slice is None:
-            ovldata = ovl
-            roidata = roi
-        elif slice == 0:
-            slicepos = self.ivm.cim_pos[2]
-            ovldata = ovl[:, :, slicepos]
-            roidata = roi[:, :, slicepos]
-        elif slice == 1:
-            slicepos = self.ivm.cim_pos[1]
-            ovldata = ovl[:, slicepos, :]
-            roidata = roi[:, slicepos, :]
-        elif slice == 2:
-            slicepos = self.ivm.cim_pos[0]
-            ovldata = ovl[slicepos, :, :]
-            roidata = roi[slicepos, :, :]
+            ovldata = ovl.std()
+            roidata = roi.std()
+        elif slice in (0, 1, 2):
+            axis = 2-slice
+            slicepos = self.ivm.cim_pos[axis]
+            ovldata = ovl.get_slice([(axis, slicepos)])
+            roidata = roi.get_slice([(axis, slicepos)])
         else:
             raise RuntimeError("Invalid slice: " % slice)
 
@@ -84,14 +77,16 @@ class OverlayAnalysis(object):
         if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
             return []
 
-        data = self.ivm.current_overlay
-        voxel_sizes = self.ivm.voxel_sizes
-        roi = self.ivm.current_roi
+        data = self.ivm.current_overlay.std()
+        voxel_sizes = self.ivm.grid.spacing
+        roi = self.ivm.current_roi.std()
         centre = self.ivm.cim_pos
 
         # If overlay is 4d, get current 3d volume
-        if len(data.shape) == 4:
+        if data.ndim > 3 and data.shape[3] > 1:
             data = data[:, :, :, centre[3]]
+        elif data.ndim > 3:
+            data = data[:,:,:,0]
 
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1

@@ -18,16 +18,18 @@ import keyword
 import re
 
 from PySide import QtCore, QtGui
-from matplotlib import cm
 
 import numpy as np
 
-from .io import QpVolume, FileMetadata
+from ..utils import debug
+from ..utils.exceptions import QpException
 
-class ImageVolumeManagement(QtCore.QAbstractItemModel):
+from .io import NumpyData
+
+class ImageVolumeManagement(QtCore.QObject):
     """
     ImageVolumeManagement
-    1) Holds all image volumes used in analysis
+    1) Holds all image datas used in analysis
     2) Better support for switching volumes instead of having a single volume hardcoded
 
     Has to inherit from a Qt base class that supports signals
@@ -35,17 +37,17 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
     """
     # Signals
 
-    # Change to main volume
-    sig_main_volume = QtCore.Signal(QpVolume)
+    # Change to main data
+    sig_main_data = QtCore.Signal(object)
 
-    # Change to current overlay
-    sig_current_overlay = QtCore.Signal(QpVolume)
+    # Change to current data
+    sig_current_data = QtCore.Signal(object)
 
-    # Change to set of overlays (e.g. new one added)
-    sig_all_overlays = QtCore.Signal(list)
+    # Change to set of data (e.g. new one added)
+    sig_all_data = QtCore.Signal(list)
 
     # Change to current ROI
-    sig_current_roi = QtCore.Signal(QpVolume)
+    sig_current_roi = QtCore.Signal(object)
 
     # Change to set of ROIs (e.g. new one added)
     sig_all_rois = QtCore.Signal(list)
@@ -58,46 +60,36 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         """
         Reset to empty, signalling any connected widgets
         """
-        # Main background image
-        self.vol = None
+        # Main background data
+        self.main = None
 
-        self.voxel_sizes = [1.0, 1.0, 1.0]
-        self.shape = []
+        # One True Grid
+        self.grid = None
 
-        # Map from name to overlay object
-        self.overlays = {}
+        # Map from name to data object
+        self.data = {}
 
-        # Current overlay object
-        self.current_overlay = None
+        # Current data object
+        self.current_data = None
 
         # Map from name to ROI object
         self.rois = {}
 
-        # Processing artifacts
-        self.artifacts = {}
-
         # Current ROI object
         self.current_roi = None
 
+        # Processing artifacts
+        self.artifacts = {}
+
         # Current position of the cross hair as an array
+        # FIXME move to view?
         self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
-        self.sig_main_volume.emit(self.vol)
-        self.sig_current_overlay.emit(self.current_overlay)
-        self.sig_current_roi.emit(self.current_roi)
-        self.sig_all_rois.emit(self.rois.keys())
-        self.sig_all_overlays.emit(self.overlays.keys())
-
-    def check_shape(self, shape):
-        ndim = min(len(self.shape), len(shape))
-        return list(self.shape[:ndim]) == list(shape[:ndim])
-
-    def update_shape(self, shape):
-        if not self.check_shape(shape):
-            raise RuntimeError("Dimensions don't match - %s vs %s" % (self.shape, shape))
-
-        for d in range(len(self.shape), min(len(shape), 4)):
-            self.shape.append(shape[d])
+        self.sig_main_data.emit(None)
+        self.sig_current_data.emit(None)
+        self.sig_current_roi.emit(None)
+        self.sig_all_rois.emit([])
+        self.sig_all_data.emit([])
 
     def suggest_name(self, name):
         """
@@ -118,165 +110,169 @@ class ImageVolumeManagement(QtCore.QAbstractItemModel):
         n = 1
         test_name = name
         while 1:
-            if test_name not in self.overlays and test_name not in self.rois:
+            if test_name not in self.data and test_name not in self.rois:
                 break
             n += 1
             test_name = "%s_%i" % (name, n)
         return test_name
 
     def _valid_name(self, name):
-        if not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
-            raise RuntimeError("'%s' is not a valid name" % name)
+        if name is None or not re.match(r'[a-z_]\w*$', name, re.I) or keyword.iskeyword(name):
+            raise QpException("'%s' is not a valid name" % name)
 
-    def set_main_volume(self, name):
-        self._overlay_exists(name)
+    def set_main_data(self, name):
+        self._data_exists(name)
         
-        self.vol = self.overlays[name]
-        self.voxel_sizes = list(self.vol.md.voxel_sizes_ras)
-        while (len(self.voxel_sizes) < 3):
-            self.voxel_sizes.append(1)
-        self.update_shape(self.vol.shape)
+        self.main = self.data[name]
+        self.grid = self.main.rawgrid.reorient_ras()
+        debug("Main data raw grid")
+        debug(self.main.rawgrid.affine)
+        debug("RAS aligned")
+        debug(self.grid.affine)
 
-        self.cim_pos = [int(d/2) for d in self.shape]
-        if self.vol.ndim == 3: self.cim_pos.append(0)
-        self.sig_main_volume.emit(self.vol)
-
-    def add_overlay(self, name, ov, make_current=False, make_main=False, signal=True):
-        self._valid_name(name)
-
-        ov = ov.view(QpVolume)
-        ov.set_as_data(name)
-        if ov.md is None:
-            ov.md = FileMetadata(name, shape=ov.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+        for data in self.data.values():
+            data.regrid(self.grid)
+        for roi in self.rois.values():
+            roi.regrid(self.grid)
         
-        self.update_shape(ov.shape)
-        self.overlays[name] = ov
+        self.cim_pos = [int(d/2) for d in self.grid.shape]
+        self.cim_pos.append(int(self.main.nvols/2))
         
-        # Make main volume if requested, or if the first volume, or if the first 4d volume
-        # If not the main volume, set as current overlay if requested
-        make_main = make_main or self.vol is None or (ov.ndim == 4 and self.vol.ndim == 3)
+        self.sig_main_data.emit(self.main)
+
+    def add_data(self, data, name=None, make_current=False, make_main=False):
+        if isinstance(data, np.ndarray):
+            """ Data provided as a Numpy array is presumed to be on the current grid """
+            data = NumpyData(data.astype(np.float32), self.grid, name)
+            
+        self._valid_name(data.name)
+        self.data[data.name] = data
+        
+        # Make main data if requested, or if the first data, or if the first 4d data
+        # If not, regrid it onto the current OTG
+        make_main = make_main or self.main is None or (data.nvols > 1 and self.main.nvols == 1)
         if make_main:
-            self.set_main_volume(name)
-        elif make_current:
-            self.set_current_overlay(name, signal)
+            self.set_main_data(data.name)
+        else:
+            data.regrid(self.grid)
 
-        if signal:
-            self.sig_all_overlays.emit(self.overlays.keys())
+        self.sig_all_data.emit(self.data.keys())
 
-    def add_roi(self, name, roi, make_current=False, signal=True):
-        self._valid_name(name)
+        # Make current if requested, or if first overlay
+        if (make_current or self.current_data is None) and not make_main:
+            self.set_current_data(data.name)
 
-        roi = roi.astype(np.int32).view(QpVolume)
-        roi.set_as_roi(name)
-        if roi.md is None:
-            roi.md = FileMetadata(name, shape=roi.shape, affine=self.vol.md.affine, voxel_sizes=self.voxel_sizes)
+    def add_roi(self, data, name=None, make_current=False, signal=True):
+        if isinstance(data, np.ndarray):
+            """ Data provided as a Numpy array is presumed to be on the current grid """
+            roi = NumpyData(data, self.grid, name, roi=True)
+        else:
+            data.set_roi(True)
+            roi = data
 
-        if roi.range[0] < 0 or roi.range[1] > 2**32:
-            raise RuntimeError("ROI must contain values between 0 and 2**32")
+        self._valid_name(roi.name)
+        self.rois[roi.name] = roi
 
-        if not np.equal(np.mod(roi, 1), 0).any():
-           raise RuntimeError("ROI contains non-integer values.")
+        if self.grid is not None:
+            # FIXME regridding ROIs needs some thought - need to remain integers!
+            roi.regrid(self.grid)
 
-        self.update_shape(roi.shape)
-        self.rois[name] = roi
+        self.sig_all_rois.emit(self.rois.keys())
 
-        if signal:
-            self.sig_all_rois.emit(self.rois.keys())
         if make_current:
-            self.set_current_roi(name, signal)
-
-    def _overlay_exists(self, name, invert=False):
-        if name not in self.overlays:
-            raise RuntimeError("Overlay %s does not exist" % name)
+            self.set_current_roi(roi.name)
+            
+    def _data_exists(self, name, invert=False):
+        if name not in self.data:
+            raise RuntimeError("Data '%s' does not exist" % name)
 
     def _roi_exists(self, name):
         if name not in self.rois:
-            raise RuntimeError("ROI %s does not exist" % name)
+            raise RuntimeError("ROI '%s' does not exist" % name)
 
-    def is_main_volume(self, ovl):
-        return self.vol is not None and ovl is not None and self.vol.name == ovl.name
+    def is_main_data(self, qpd):
+        return self.main is not None and qpd is not None and self.main.name == qpd.name
 
-    def is_current_overlay(self, ovl):
-        return self.current_overlay is not None and ovl is not None and self.current_overlay.name == ovl.name
+    def is_current_data(self, qpd):
+        return self.current_data is not None and qpd is not None and self.current_data.name == qpd.name
 
     def is_current_roi(self, roi):
         return self.current_roi is not None and roi is not None and self.current_roi.name == roi.name
         
-    def set_current_overlay(self, name, signal=True):
-        self._overlay_exists(name)
-        self.current_overlay = self.overlays[name]
-        if signal: self.sig_current_overlay.emit(self.current_overlay)
+    def set_current_data(self, name):
+        self._data_exists(name)
+        self.current_data = self.data[name]
+        self.sig_current_data.emit(self.current_data)
 
-    def rename_overlay(self, name, newname, signal=True):
-        self._overlay_exists(name)
-        ovl = self.overlays[name]
-        ovl.name = newname
-        self.overlays[newname] = ovl
-        del self.overlays[name]
-        if signal: self.sig_all_overlays.emit(self.overlays.keys())
+    def rename_data(self, name, newname):
+        self._data_exists(name)
+        qpd = self.data[name]
+        qpd.name = newname
+        self.data[newname] = qpd
+        del self.data[name]
+        self.sig_all_data.emit(self.data.keys())
 
-    def rename_roi(self, name, newname, signal=True):
+    def rename_roi(self, name, newname):
         self._roi_exists(name)
         roi = self.rois[name]
         roi.name = newname
         self.rois[newname] = roi
         del self.rois[name]
-        if signal: self.sig_all_rois.emit(self.rois.keys())
+        self.sig_all_rois.emit(self.rois.keys())
 
-    def delete_overlay(self, name, signal=True):
-        self._overlay_exists(name)
-        del self.overlays[name]
-        if self.current_overlay is not None and self.current_overlay.name == name:
-            self.current_overlay = None
-            if signal: self.sig_current_overlay.emit(None)
-        if self.vol is not None and self.vol.name == name:
-            self.vol = None
-            if signal: self.sig_main_volume.emit(None)
-        if signal: self.sig_all_overlays.emit(self.overlays.keys())
+    def delete_data(self, name):
+        self._data_exists(name)
+        del self.data[name]
+        if self.current_data is not None and self.current_data.name == name:
+            self.current_data = None
+            self.sig_current_data.emit(None)
+        if self.main is not None and self.main.name == name:
+            self.main = None
+            self.sig_main_data.emit(None)
+        self.sig_all_data.emit(self.data.keys())
 
     def delete_roi(self, name, signal=True):
         self._roi_exists(name)
         del self.rois[name]
         if self.current_roi.name == name:
             self.current_roi = None
-            if signal: self.sig_current_roi.emit(None)
-        if signal: self.sig_all_rois.emit(self.rois.keys())
+            self.sig_current_roi.emit(None)
+        self.sig_all_rois.emit(self.rois.keys())
 
     def set_current_roi(self, name, signal=True):
         self._roi_exists(name)
         self.current_roi = self.rois[name]
-        if signal:
-            self.sig_current_roi.emit(self.current_roi)
+        self.sig_current_roi.emit(self.current_roi)
 
-    def get_overlay_value_curr_pos(self):
+    def get_data_value_curr_pos(self):
         """
-        Get all the overlay values at the current position
+        Get all the 3D data values at the current position
         """
-        overlay_value = {}
+        data_value = {}
 
-        # loop over all loaded overlays and save values in a dictionary
-        for name, ovl in self.overlays.items():
-            if ovl.ndim == 3:
-                overlay_value[name] = ovl[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2]]
-
-        return overlay_value
+        # loop over all loaded data and save values in a dictionary
+        for name, qpd in self.data.items():
+            if qpd.nvols == 1:
+                data_value[name] = qpd.val(self.cim_pos)
+                
+        return data_value
 
     def get_current_enhancement(self):
         """
-        Return enhancement curves for all 4D overlays whose 4th dimension matches that of the main volume
+        Return enhancement curves for all 4D data whose 4th dimension matches that of the main data
         """
-        if self.vol is None: return [], {}
-        if self.vol.ndim == 4:
-            main_sig = self.vol[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        if self.main is None: return [], {}
+        if self.main.nvols > 1:
+            main_sig = self.main.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
         else:
             main_sig = []
 
-        ovl_sig = {}
-        for ovl in self.overlays.values():
-            if ovl.ndim == 4 and (ovl.shape[3] == self.vol.shape[3]):
-                ovl_sig[ovl.name] = ovl[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
+        qpd_sig = {}
+        for qpd in self.data.values():
+            if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
+                qpd_sig[qpd.name] = qpd.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
 
-        return main_sig, ovl_sig
+        return main_sig, qpd_sig
 
     def add_artifact(self, name, obj):
         """

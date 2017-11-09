@@ -1,26 +1,32 @@
 ### Example config file for preclinical T10 modelling with B0 correction
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
+  - LoadData:
+
   - T10:
-      tr: 0.0014 # seconds
+      tr: 1.4 # ms
       #smooth:
       #  sigma: 2
       #  truncate: 3
 
-SaveOverlays:
-    T10:
+  - Save:
+      T10:
 
 # List of cases to apply the processing to
 Cases:
     C96:
         Folder:   c:\Users\ctsu0221\build\data\Martin_test_data\C96_R1L1_D3
-        Volume:   SS3_VK1_16_3756_47_10DayTumour_DCEx60_Gd11_008--NULL.nii
+        LoadData:   
+          SS3_VK1_16_3756_47_10DayTumour_DCEx60_Gd11_008--NULL.nii: data
+          SS3_VK1_16_3756_47_10DayTumour_VFAx16_007--NULL.nii: vfadata
+          SS3_VK1_16_3756_47_10DayTumour_AFI_005--NULL.nii: afidata
+          
         T10:
           vfa: 
-            SS3_VK1_16_3756_47_10DayTumour_VFAx16_007--NULL.nii: [1,  1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.7, 3.1, 3.7, 4.4, 5.2, 6.1, 7, 8]
+            vfadata: [1,  1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.7, 3.1, 3.7, 4.4, 5.2, 6.1, 7, 8]
           afi: 
-            SS3_VK1_16_3756_47_10DayTumour_AFI_005--NULL.nii: [10, 100]
+            afidata: [10, 100]
           fa-afi: 64

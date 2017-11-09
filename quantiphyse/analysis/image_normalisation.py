@@ -11,6 +11,7 @@ from __future__ import division, print_function
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 
+from quantiphyse.utils import debug
 
 class ImNorm(object):
 
@@ -50,7 +51,7 @@ class ImNorm(object):
         ind1 = np.argmax(d1)
         ind1 -= 1
         ind1 *= ind1 >= 0
-        print("Offset time: ", ind1)
+        debug("Offset time: ", ind1)
 
         self.ind1 = ind1
 

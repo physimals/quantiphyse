@@ -1,0 +1,26 @@
+# Example config file for replacing ROI region with the mean data value
+
+OutputFolder: out
+Debug: False
+
+Processing:
+  - Load:
+        data:
+            test_data.nii:
+            mean_c0.nii:
+            mean_c1.nii:
+        rois:
+            test_mask.nii: mask
+
+  - MeanValues:
+        data: mean_c0
+        roi: mask
+        output-name: c0_mean
+  - Save:
+      c0_mean:
+
+Cases:
+    Subject1:
+        Folder:   c:\Users\ctsu0221\build\data
+
+

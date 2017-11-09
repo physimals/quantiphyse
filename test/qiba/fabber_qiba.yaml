@@ -1,0 +1,45 @@
+# Example config file for running Fabber on the QIBA test data
+
+OutputFolder: out_qiba
+Debug: False
+
+Processing:
+  - Load:
+        data:
+            qiba_67tpts.nii: qiba_data
+        rois:
+            qiba_mask.nii: qiba_mask
+  
+  - Fabber:
+        method: vb
+        max-iterations: 30
+        model:  dce_tofts
+        delt: 0.16667
+        fa: 30
+        tr: 0.005
+        r1: 4.5
+        #aif: orton
+        #aif: signal
+        #aif-file: test/qiba/aif_qiba_sig_67tpts.txt
+        aif: conc
+        aif-file: aif_qiba_conc_hct_67tpts.txt
+        aif-hct: 0.45
+        aif-t1: 1.44 
+        t10: 1
+        sig0: 900
+        #use-log-params:
+        save-model-fit:
+        save-mean:
+
+  - Save:
+        qiba_data:
+        qiba_mask:
+        mean_Ktrans:
+        mean_Ve:
+        modelfit:
+
+Cases:
+    QIBA_67TPTS:
+        Folder:   test/qiba/
+
+

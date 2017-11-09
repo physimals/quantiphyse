@@ -1,0 +1,23 @@
+# Example config file for motion correction using DEEDS
+
+OutputFolder: out
+Debug: False
+
+Processing:
+    - Load:
+        data:
+            testdata_4d_moving.nii.gz: data
+    
+    - Moco:
+        method: deeds
+        replace-vol: False
+        ref-vol: median
+        output-name: data_moco_deeds
+
+    - Save:
+        data:
+        data_moco_deeds:
+
+Cases:
+    Subject1:
+        Folder:   test/system_tests/test_data   

@@ -1,24 +1,29 @@
 ### Example config file for T10 modelling without B0 correction
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
+  - LoadData:
+ 
   - T10:
-      tr: 0.0035 # seconds
+      tr: 3.5 # ms
+      vfa:
+        fa3: 3
+        fa9: 9
+        fa15: 15
       clamp:
         min: 0
         max: 5
 
-SaveOverlays:
-    T10:
+  - Save:
+      T10:
 
 Cases:
     RIT005:
         Folder:   c:\Users\ctsu0221\build\data\Martin_test_data\RIT005_PRE
-        Volume:   dceMRI.nii
-        T10:
-          vfa:
-            fa3_aligned.nii : 3
-            fa9_aligned.nii : 9
-            fa15_aligned.nii : 15
+        LoadData:
+          dceMRI.nii:
+          fa3_aligned.nii: fa3
+          fa9_aligned.nii: fa9
+          fa15_aligned.nii: fa15

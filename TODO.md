@@ -10,7 +10,7 @@ This is a rough indication of future plans which are not yet specific enough to 
 
  - MoCo/Registration
    - Definitely want Bartek's MC method
-   - More registration/motion correction options, could add FNIRT based option, MIND
+   - More registration/motion correction options, could add FNIRT based option
 
  - Add Jola's texture analysis which sounds cool, whatever it is
 
@@ -18,11 +18,9 @@ This is a rough indication of future plans which are not yet specific enough to 
    - QIBA in progress
    - QIN
 
- - ROI builder widget for putting together simple ROIs
-   - In progress
-
  - Simplify Fabber interface
    - possible model-specific widgets?
+   - ASL/CEST in progress
 
  - Improve memory usage by swapping out overlays which are not being displayed?
 
@@ -31,23 +29,26 @@ This is a rough indication of future plans which are not yet specific enough to 
     - Supervoxels does this already with great performance improvement.
 
  - Unified batch processing language to allow all analysis to be run in batch on multiple cases 
-   - In progress
    - Most GUI tools now use the new Process system so they are available in batch
 
+ - Package/plugin system
+   - Has been sketched out, Fabber tools are implemented as a package as a test case
+
  - Support other file formats using NIBABEL.
-   - DICOM conversion in progress
+   - DICOM conversion included where DCMSTACK is available
 
  - Generic maths/processing widget to do things like add/subtract overlays. Very easy with numpy. 
-   - In progress
+   - Basic version exists, could be improved
 
  - Add semiquantitative DCE-MRI measures
    - Area under the curve
    - Enhancing fraction
 
 ### Migration to PySide2 when released.
-- The current implementation uses PySide which is based on Qt4
-- Update to PySide2 when released which uses Qt5
-- Will provide support for HiDPI screens and proper scaling in OSx
+
+ - The current implementation uses PySide which is based on Qt4
+ - Update to PySide2 when released which uses Qt5
+ - Will provide support for HiDPI screens and proper scaling in OSx
 
 ### Supporting data which is not defined on the same voxel grid
 
@@ -61,12 +62,21 @@ for Fabber. Some of this works on the basis that multiple data sets are defined 
 
 This is not a straightforward problem to solve so a likely pathway towards supporting this would be:
 
- - Display files which do not match the main data grid, but do not allow them to be used in analysis / computation
  - Provide interpolation methods for files not on the main data grid so that slices, etc. can be 
    extracted with the same shape as the main data
+   
+   - This has been implemented although 2d slices on a 3d volume will not work well
+
  - Migrate analysis tools to use interpolation methods. Issues might arise with data which is oriented
    similarly to the main data but at a different resolution. Slice averages in this case might be
    well-defined without interpolation, and the results with interpolation might be different. Possibly
    need a method for extraction a slice which optionally allows the resolution to diverge from the
    main data (but not the orientation).
+
+   - Analysis tools currently use interpolated data only on the same grid as the main data
+
+ - Modify image viewer to use original raw data at full resolution and in appropriate orientation
+
+   - Probably use QT built in affine transformation classes
+
 

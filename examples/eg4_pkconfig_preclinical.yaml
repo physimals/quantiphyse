@@ -7,37 +7,38 @@
 #  Model 4: Weinmann with offset and vp (Pre-clinical)
 
 OutputFolder: out
-#Debug: True
+Debug: False
 
 Processing:
+  - Load:
+  
   - PkModelling:
-      model:      3       # Weinmann with offset
-      fa:         3       # degrees
-      tr:         1.4     # ms
-      te:         1.0     # ms
-      dt:         9       # temporal resolution (s)
-      r1:         3.9     # T1 Relaxivity of contrast agent
-      r2:         4.8     # T2 Relaxivity of contrast agent
-      ve-thresh:   99.8   # Ktrans/kep percentile threshold
-      tinj:       90      # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
+      model:      3      # Model (see above)
+      fa:         3      # degrees
+      tr:         1.4    # ms
+      te:         1.0    # ms
+      dt:         9      # temporal resolution (s)
+      r1:         3.9    # T1 Relaxivity of contrast agent
+      r2:         4.8    # T2 Relaxivity of contrast agent
+      ve-thresh:  99.8   # Ktrans/kep percentile threshold
+      tinj:       90     # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
       dose:       0.6     # Gadolinium dose mM/kg 
       #smoothing:  1      # Smoothing of the PK maps - TODO
 
-SaveOverlays:
-  kep:
-  ktrans:
-  ve:
-  vp:
-  offset:
-  Model curves:
+  - Save:
+      kep:
+      ktrans:
+      ve:
+      vp:
+      offset:
+      model_curves:
 
 Cases:
-    QIBA1:
-        Folder:   /mnt/ibme/Ben-Thais-Jola_examples/Ben/Test2/C91R2/
-        Volume:   C91R2_dcex110_gd11.nii
-        Overlays:
-          T10: T10_corr.nii
-        Rois:
-          mask: Seg.nii
+    Preclinical:
+        Folder:   Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
+        Load:
+          data:
+            C91R2_dcex110_gd11.nii:
+            T10_corr.nii: T10
 
 
