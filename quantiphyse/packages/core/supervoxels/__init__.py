@@ -2,15 +2,13 @@ from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, Citation, OverlayCombo, RoiCombo
 
 from .process import SupervoxelsProcess, MeanValuesProcess
 
-CITE = """
-<i>Irving et al (2017)
-"maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images"
-https://arxiv.org/abs/1606.09518v2</i>
-"""
+CITE_TITLE = "maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images"
+CITE_AUTHOR = "Benjamin Irving"
+CITE_JOURNAL = "https://arxiv.org/abs/1606.09518v2 (2017)"
 
 class NumericOption:
     def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
@@ -38,17 +36,11 @@ class PerfSlicWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Supervoxel Generation</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(BatchButton(self))
-        hbox.addWidget(HelpButton(self, "sv"))
-        layout.addLayout(hbox)
+        title = TitleWidget("Supervoxel Generation", help="sv")
+        layout.addWidget(title)
         
-        cite = QtGui.QLabel(CITE)
-        cite.setWordWrap(True)
+        cite = Citation(CITE_TITLE, CITE_AUTHOR, CITE_JOURNAL)
         layout.addWidget(cite)
-        layout.addWidget(QtGui.QLabel(""))
 
         hbox = QtGui.QHBoxLayout()
         optbox = QtGui.QGroupBox()
@@ -115,11 +107,8 @@ class MeanValuesWidget(QpWidget):
 
         layout = QtGui.QVBoxLayout()
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Generate Mean Values Overlay</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(HelpButton(self, "mean_values"))
-        layout.addLayout(hbox)
+        title = TitleWidget("Generate Mean Values Overlay", help="mean_values")
+        layout.addWidget(title)
         
         desc = QtGui.QLabel("This widget will convert the current overlay into a "
                             "new overlay in which each ROI region contains the mean "
