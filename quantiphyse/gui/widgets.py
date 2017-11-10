@@ -648,6 +648,7 @@ class NumberHList(NumberVList):
 class Citation(QtGui.QWidget):
     def __init__(self, title, author, journal):
         QtGui.QWidget.__init__(self)
+        self.title, self.author, self.journal = title, author, journal
         hbox = QtGui.QHBoxLayout()
         self.setLayout(hbox)
 
@@ -665,8 +666,10 @@ class Citation(QtGui.QWidget):
         hbox.addWidget(label)
         
     def lookup(self):
-        # FIXME implement to google reference
-        pass
+        import webbrowser, urllib
+        search_terms = tuple([urllib.quote(s) for s in (self.title, self.author, self.journal)])
+        url = "https://www.google.com/search?q=%s+%s+%s" % search_terms
+        webbrowser.open(url, new=0, autoraise=True)
 
 class TitleWidget(QtGui.QWidget):
     def __init__(self, title, subtitle="", help="", help_btn=True, batch_btn=True):
