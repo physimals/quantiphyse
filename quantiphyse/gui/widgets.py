@@ -46,6 +46,12 @@ class QpWidget(QtGui.QWidget):
         if self.opts:
             self.opts.sig_options_changed.connect(self.options_changed)
 
+    def get_local_file(self, name):
+        """
+        Get a file which is stored locally to the implementing class
+        """
+        return os.path.abspath(os.path.join(self.pkgdir, name))
+
     def init_ui(self):
         """
         Called when widget is first shown. Widgets should ideally override this to build their
@@ -672,19 +678,21 @@ class Citation(QtGui.QWidget):
         webbrowser.open(url, new=0, autoraise=True)
 
 class TitleWidget(QtGui.QWidget):
-    def __init__(self, title, subtitle="", help="", help_btn=True, batch_btn=True):
+    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True):
         QtGui.QWidget.__init__(self)
+        if title is None:
+            title = widget.name
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox) 
         
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">%s</font>' % title))   
         hbox.addStretch(1)
-        if batch_btn: hbox.addWidget(BatchButton(self))
+        if batch_btn: hbox.addWidget(BatchButton(widget))
         if help_btn: hbox.addWidget(HelpButton(self, help))
         vbox.addLayout(hbox)
 
-        if subtitle != "":
+        if subtitle is not None:
             vbox.addWidget(QtGui.QLabel(subtitle))     
 
 class RunBox(QtGui.QGroupBox):
@@ -777,7 +785,7 @@ class RunBox(QtGui.QGroupBox):
                 save_folder = self.save_folder_edit.text()   
                 data_to_save = [k for k in self.process.ivm.data.keys() if k not in self.data_before]    
                 for d in data_to_save:
-                    save(self.process.ivm.data[d], os.path.join(save_folder, d.name + ".nii"))
+                    save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"))
                 logfile = open(os.path.join(save_folder, "logfile"), "w")
                 logfile.write(self.log)
                 logfile.close()
