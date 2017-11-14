@@ -36,7 +36,7 @@ class PerfSlicWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        title = TitleWidget("Supervoxel Generation", help="sv")
+        title = TitleWidget(self, "Supervoxel Generation", help="sv")
         layout.addWidget(title)
         
         cite = Citation(CITE_TITLE, CITE_AUTHOR, CITE_JOURNAL)
@@ -107,7 +107,7 @@ class MeanValuesWidget(QpWidget):
 
         layout = QtGui.QVBoxLayout()
 
-        title = TitleWidget("Generate Mean Values Overlay", help="mean_values")
+        title = TitleWidget(self, "Generate Mean Values Overlay", help="mean_values")
         layout.addWidget(title)
         
         desc = QtGui.QLabel("This widget will convert the current overlay into a "

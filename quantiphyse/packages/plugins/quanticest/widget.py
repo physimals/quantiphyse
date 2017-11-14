@@ -79,7 +79,7 @@ class CESTWidget(QpWidget):
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
        
-        title = TitleWidget("CEST", help="cest", subtitle="Modelling for Chemical Exchange Saturation Transfer MRI")
+        title = TitleWidget(self, help="cest", subtitle="Modelling for Chemical Exchange Saturation Transfer MRI")
         vbox.addWidget(title)
         
         cite = Citation(CEST_CITE_TITLE, CEST_CITE_AUTHOR, CEST_CITE_JOURNAL)
@@ -234,13 +234,14 @@ class CESTWidget(QpWidget):
         vbox.addWidget(runBox)
         vbox.addStretch(1)
         
-        # General defaults
+        # General defaults which never change
         self.rundata = {}
         self.rundata["save-mean"] = ""
         self.rundata["save-model-fit"] = ""
         self.rundata["noise"] = "white"
         self.rundata["max-iterations"] = "20"
         self.rundata["model"] = "cest"
+        self.rundata["save-model-extras"] = ""
 
         # Placeholders to be replaced with temp files
         self.rundata["pools"] = "pools.mat"
@@ -420,12 +421,11 @@ class CESTWidget(QpWidget):
         self.rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
         self.rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
         self.rundata["debug"] = ""
-        self.rundata["save-model-extras"] = ""
         for item in self.rundata.items():
             debug("%s: %s" % item)
         import fabber
         fab = fabber.FabberLib(auto_load_models=True)
-        print(fab.get_model_outputs(self.rundata))
+        debug("Additional outputs", fab.get_model_outputs(self.rundata))
         return self.rundata
 
     def batch_options(self):

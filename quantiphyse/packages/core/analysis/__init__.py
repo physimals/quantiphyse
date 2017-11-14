@@ -81,7 +81,7 @@ class SECurve(QpWidget):
 
         vbox = QtGui.QVBoxLayout()
 
-        title = TitleWidget("Voxelwise Analysis", help="curve_compare")
+        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare")
         vbox.addWidget(title)
 
         #Clear curves button

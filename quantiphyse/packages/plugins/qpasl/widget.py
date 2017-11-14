@@ -104,7 +104,7 @@ class ASLWidget(QpWidget):
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
         
-        title = TitleWidget("ASL", help="asl", subtitle="Modelling for Arterial Spin Labelling MRI")
+        title = TitleWidget(self, help="asl", subtitle="Modelling for Arterial Spin Labelling MRI")
         vbox.addWidget(title)
               
         cite = Citation(FAB_CITE_TITLE, FAB_CITE_AUTHOR, FAB_CITE_JOURNAL)

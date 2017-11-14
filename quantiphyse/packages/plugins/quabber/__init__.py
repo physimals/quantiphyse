@@ -65,7 +65,7 @@ class FabberWidget(QpWidget):
         else:
             from fabber import FabberRunData
 
-        title = TitleWidget("Fabber Bayesian Model Fitting", help="fabber")
+        title = TitleWidget(self, title="Fabber Bayesian Model Fitting", help="fabber")
         mainGrid.addWidget(title)
         
         cite = Citation(FAB_CITE_TITLE, FAB_CITE_AUTHOR, FAB_CITE_JOURNAL)
