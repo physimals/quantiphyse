@@ -30,33 +30,36 @@ CEST_CITE_TITLE = "Quantitative Bayesian model-based analysis of amide proton tr
 CEST_CITE_AUTHOR = "Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J."
 CEST_CITE_JOURNAL = "Magnetic Resonance in Medicine. doi:10.1002/mrm.24474"
 
-# FIXME correct numbers
-CEST_POOLVAL_TYPES = ["3T", "9.4T"]
+B0_DEFAULTS = ["3T", "9.4T"]
 
-CEST_POOLS = [
+# Gyromagnetic ratio / 2PI
+GYROM_RATIO_BAR = 42.5774806e6
+
+# FIXME correct numbers
+POOLS = [
     {"name" : "Water", "default" : True, "vals" : 
-        ["1.2774e8      0       1.3     0.05",
-         "4.00252e8     0       1.8     0.05"]
+        { "3T" : [0,0,1.3,0.05],
+          "9.4T" : [0,0,1.8,0.05]}
     },
     {"name" : "Amide", "default" : True, "vals" : 
-        ["3.5           20      0.77    0.01",
-         "3.5           30      1.8     0.001"]
+        { "3T" : [3.5,20,0.77,0.01],
+          "9.4T" : [3.5,30,1.8,0.001]}
     },
     {"name" : "NOE/MT", "default" : True, "vals" : 
-        ["-2.34         40      1.0     0.0004",
-         "-2.41          20     1.8     0.0005",]
+        { "3T" : [-2.34,40,1.0,0.0004],
+          "9.4T" : [-2.41,20,1.8,0.0005]}
     },
     {"name" : "NOE", "default" : False, "vals" : 
-        ["0 0 0 0", 
-         "0 0 0 0"]
+        { "3T" : [0,0,0,0], 
+          "9.4T" : [0,0,0,0]}
     },
     {"name" : "MT", "default" : False, "vals" : 
-        ["0 0 0 0", 
-         "0 0 0 0"]
+        { "3T" : [0,0,0,0], 
+          "9.4T" : [0,0,0,0]}
     },
     {"name" : "Amine", "default" : False, "vals" : 
-        ["0 0 0 0", 
-         "0 0 0 0"]
+        { "3T" : [0,0,0,0], 
+          "9.4T" : [0,0,0,0]}
     },
 ]
 
@@ -88,13 +91,37 @@ class CESTWidget(QpWidget):
         grid.setColumnStretch(2, 1)
         seqBox.setLayout(grid)
 
+        # Table of frequency offsets
         grid.addWidget(QtGui.QLabel("Frequency offsets"), 0, 0)
         self.freq_offsets = NumberList([1, 2, 3, 4, 5])
         grid.addWidget(self.freq_offsets, 0, 1, 1, 2)
         self.load_freq_offsets = LoadNumbers(self.freq_offsets)
         grid.addWidget(self.load_freq_offsets, 0, 3)
 
-        self.b1 = NumericOption("B1 (\u03bcT)", grid, ypos=1, xpos=0, default=0.55, decimals=6)
+        # Field strength - this affects pool values selected
+        grid.addWidget(QtGui.QLabel("B0"), 1, 0)
+        self.b0_combo = QtGui.QComboBox()
+        self.poolval_combo = QtGui.QComboBox()
+        for b0 in B0_DEFAULTS:
+            self.b0_combo.addItem(b0)
+        self.b0_combo.addItem("Custom")
+        self.b0_combo.currentIndexChanged.connect(self.b0_changed)
+        grid.addWidget(self.b0_combo, 1, 1)
+
+        self.b0_custom = QtGui.QWidget()
+        hbox = QtGui.QHBoxLayout()
+        self.b0_custom.setLayout(hbox)
+        self.b0_spin = QtGui.QDoubleSpinBox()
+        self.b0_spin.setValue(3.0)
+        self.b0_spin.valueChanged.connect(self.b0_changed)
+        hbox.addWidget(self.b0_spin)
+        hbox.addWidget(QtGui.QLabel("T"))
+        hbox.addWidget(QtGui.QLabel("WARNING: Pool values will need editing"))
+        hbox.addStretch(1)
+        grid.addWidget(self.b0_custom, 1, 2)
+
+        # Saturation field
+        self.b1 = NumericOption("B1 (\u03bcT)", grid, ypos=2, xpos=0, default=0.55, decimals=6)
         hbox = QtGui.QHBoxLayout()
         self.unsat_cb = QtGui.QCheckBox("Unsaturated")
         self.unsat_cb.stateChanged.connect(self.update_ui)
@@ -105,41 +132,38 @@ class CESTWidget(QpWidget):
         self.unsat_combo.addItem("first and last  ")
         hbox.addWidget(self.unsat_combo)
         hbox.addStretch(1)
-        grid.addLayout(hbox, 1, 2)
+        grid.addLayout(hbox, 2, 2)
         
- #       self.b1.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
-
-        grid.addWidget(QtGui.QLabel("Saturation"), 2, 0)
+        grid.addWidget(QtGui.QLabel("Saturation"), 3, 0)
         self.sat_combo = QtGui.QComboBox()
         self.sat_combo.addItem("Continuous Saturation   ")
         self.sat_combo.addItem("Pulsed Saturation   ")
         self.sat_combo.currentIndexChanged.connect(self.update_ui)
         self.sat_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-#        self.sat_combo.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
-        grid.addWidget(self.sat_combo, 2, 1)
+        grid.addWidget(self.sat_combo, 3, 1)
 
         # Continuous saturation
-        self.st = NumericOption("Saturation times (s)", grid, ypos=3, xpos=0, default=2.0)
-#        self.st.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        self.st = NumericOption("Saturation times (s)", grid, ypos=4, xpos=0, default=2.0)
 
         # Pulsed saturation
         self.pms_label = QtGui.QLabel("Pulse Magnitudes")
-        grid.addWidget(self.pms_label, 4, 0)
+        grid.addWidget(self.pms_label, 5, 0)
         self.pms = NumberList([0, 0, 0, 0])
-        grid.addWidget(self.pms, 4, 1, 1, 2)
+        grid.addWidget(self.pms, 5, 1, 1, 2)
         self.load_pms = LoadNumbers(self.pms)
-        grid.addWidget(self.load_pms, 4, 3)
+        grid.addWidget(self.load_pms, 5, 3)
         self.pds_label = QtGui.QLabel("Pulse Durations (s)")
-        grid.addWidget(self.pds_label, 5, 0)
+        grid.addWidget(self.pds_label, 6, 0)
         self.pds = NumberList([0, 0, 0, 0])
-        grid.addWidget(self.pds, 5, 1, 1, 2)
+        grid.addWidget(self.pds, 6, 1, 1, 2)
         self.load_pds = LoadNumbers(self.pds)
-        grid.addWidget(self.load_pds, 5, 3)
+        grid.addWidget(self.load_pds, 6, 3)
         self.pr = NumericOption("Pulse Repeats", grid, ypos=6, xpos=0, default=1, intonly=True)
 #        self.pr.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
         
         vbox.addWidget(seqBox)
     
+        # Pools
         poolBox = QtGui.QGroupBox()
         poolBox.setTitle("Pools")
         poolVbox = QtGui.QVBoxLayout()
@@ -149,9 +173,9 @@ class CESTWidget(QpWidget):
         row, col = 0, 0
         NUM_ROWS = 2
         self.pool_cbs, self.custom_poolvals = {}, {}
-        for pool in CEST_POOLS:
+        for pool in POOLS:
             name = pool["name"]
-            self.custom_poolvals[name] = pool["vals"][0]
+            self.custom_poolvals[name] = pool["vals"]["9.4T"]
             self.pool_cbs[name] = QtGui.QCheckBox(name)
             self.pool_cbs[name].setChecked(pool["default"])
             self.pool_cbs[name].stateChanged.connect(self.update_pools)
@@ -160,17 +184,17 @@ class CESTWidget(QpWidget):
             if row == NUM_ROWS:
                 row = 0
                 col += 1
-        self.poolval_combo = QtGui.QComboBox()
-        for poolval_type in CEST_POOLVAL_TYPES:
-            self.poolval_combo.addItem("%s defaults" % poolval_type)
-        self.poolval_combo.addItem("custom")
-        self.poolval_combo.currentIndexChanged.connect(self.update_pools)
-        grid.addWidget(self.poolval_combo, NUM_ROWS, 0, 1, 2)
+        self.custom_label = QtGui.QLabel("")
+        grid.addWidget(self.custom_label, NUM_ROWS, 0)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
-        grid.addWidget(edit_btn, NUM_ROWS, 2)
+        grid.addWidget(edit_btn, NUM_ROWS, 1)
+        reset_btn = QtGui.QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_pools)
+        grid.addWidget(reset_btn, NUM_ROWS, 2)
         poolVbox.addLayout(grid)
 
+        # Fabber Options
         anBox = QtGui.QGroupBox()
         anBox.setTitle("Analysis")
         anVbox = QtGui.QVBoxLayout()
@@ -202,13 +226,13 @@ class CESTWidget(QpWidget):
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
+        # Run box
         runBox = RunBox(self.get_process, self.get_rundata, title="Run CEST modelling", save_option=True)
         vbox.addWidget(runBox)
         vbox.addStretch(1)
-
-        self.rundata = {}
-
+        
         # General defaults
+        self.rundata = {}
         self.rundata["save-mean"] = ""
         self.rundata["save-model-fit"] = ""
         self.rundata["noise"] = "white"
@@ -220,7 +244,20 @@ class CESTWidget(QpWidget):
         self.rundata["ptrain"] = "ptrain.mat"
         self.rundata["spec"] = "dataspec.mat"
 
+        self.poolvals_edited = False
+        self.b0_combo.setCurrentIndex(1)
         self.update_ui()
+        self.update_pools()
+
+    def b0_changed(self):
+        self.b0_sel = self.b0_combo.currentText()
+        if self.b0_combo.currentIndex() == 2:
+            # Custom B0
+            self.b0_custom.setVisible(True)
+            self.b0 = self.b0_spin.value()
+        else:
+            self.b0_custom.setVisible(False)
+            self.b0 = float(self.b0_sel[:-1])
         self.update_pools()
 
     def update_volumes_axis(self):
@@ -237,17 +274,15 @@ class CESTWidget(QpWidget):
             self.opts.sig_options_changed.emit(self)
 
     def update_pools(self):
-        poolval_idx = self.poolval_combo.currentIndex()
         self.pools = []
-        for pool in CEST_POOLS:
+        for pool in POOLS:
             if self.pool_cbs[pool["name"]].isChecked():
-                if poolval_idx < self.poolval_combo.count()-1:
-                    # Using default values
-                    vals = pool["vals"][poolval_idx]
-                else:
+                if self.b0_sel == "Custom" or self.poolvals_edited:
                     # Using custom values
                     vals = self.custom_poolvals[pool["name"]]
-
+                else:
+                    # Using default values
+                    vals = pool["vals"][self.b0_sel]
                 self.pools.append((pool["name"], vals))
         debug(self.pools)
 
@@ -255,17 +290,21 @@ class CESTWidget(QpWidget):
         vals, pool_headers = [], []
         for name, pvals in self.pools:
             pool_headers.append(name)
-            rvals = [float(v) for v in pvals.split()]
-            vals.append(rvals)
+            vals.append(pvals)
         val_headers = ["PPM offset", "Exch rate", "T1", "T2"]
         d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=(False, False))
         if d.exec_():
             vals = d.table.values()
             for row, pool in enumerate(self.pools):
-                rvals = vals[row]
-                self.custom_poolvals[pool[0]] = " ".join([str(v) for v in rvals])
-            self.poolval_combo.setCurrentIndex(self.poolval_combo.count()-1)
+                self.custom_poolvals[pool[0]] = vals[row]
+            self.custom_label.setText("Edited")
+            self.poolvals_edited = True
             self.update_pools()
+
+    def reset_pools(self):
+        self.custom_label.setText("")
+        self.poolvals_edited = False
+        self.update_pools()
 
     def update_options(self):
         if self.spatial_cb.isChecked():
@@ -292,7 +331,7 @@ class CESTWidget(QpWidget):
         else:
             self.rundata.pop("t12prior", None)
             
-        for n in range(prior_num, len(CEST_POOLS)*2+1):
+        for n in range(prior_num, len(POOLS)*2+1):
             self.rundata.pop("PSP_byname%i" % n, None)
             self.rundata.pop("PSP_byname%i_type" % n, None)
             self.rundata.pop("PSP_byname%i_image" % n, None)
@@ -352,7 +391,12 @@ class CESTWidget(QpWidget):
         return ptrain
 
     def get_poolmat(self):
-        poolmat = "\n".join([p[1] for p in self.pools])
+        poolmat = ""
+        for name, vals in self.pools:
+            if name == "Water":
+                # Embed the B0 value in the top left
+                vals = [self.b0 * GYROM_RATIO_BAR,] + vals[1:]
+            poolmat += "\t".join([str(v) for v in vals]) + "\n"
         debug(poolmat)
         return poolmat
 
