@@ -116,8 +116,10 @@ class CESTWidget(QpWidget):
         self.b0_spin.valueChanged.connect(self.b0_changed)
         hbox.addWidget(self.b0_spin)
         hbox.addWidget(QtGui.QLabel("T"))
-        hbox.addWidget(QtGui.QLabel("WARNING: Pool values will need editing"))
         hbox.addStretch(1)
+        label = QtGui.QLabel("WARNING: Pool values will need editing")
+        label.setStyleSheet("QLabel { color : red; }")
+        hbox.addWidget(label)
         grid.addWidget(self.b0_custom, 1, 2)
 
         # Saturation field
@@ -185,6 +187,7 @@ class CESTWidget(QpWidget):
                 row = 0
                 col += 1
         self.custom_label = QtGui.QLabel("")
+        self.custom_label.setStyleSheet("QLabel { color : red; }")
         grid.addWidget(self.custom_label, NUM_ROWS, 0)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
