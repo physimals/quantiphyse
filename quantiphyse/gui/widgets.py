@@ -757,13 +757,7 @@ class RunBox(QtGui.QGroupBox):
 
         self.process.sig_finished.connect(self.finished)
         self.process.sig_progress.connect(self.update_progress)
-        
-        if self.save_option and self.save_cb.isChecked():
-            # Get a list of data stored before run, so we can save output data
-            # FIXME this is a bit of a hack and could be wrong if the user
-            # creates data while the process is running!
-            self.data_before = list(self.process.ivm.data.keys())
-
+    
         try:
             self.process.run(rundata)
         except:
@@ -783,7 +777,10 @@ class RunBox(QtGui.QGroupBox):
                 raise result
             elif self.save_option and self.save_cb.isChecked():
                 save_folder = self.save_folder_edit.text()   
-                data_to_save = [k for k in self.process.ivm.data.keys() if k not in self.data_before]    
+                data_to_save = []
+                for o in result:
+                    if len(o.data) > 0: data_to_save = o.data.keys()
+                debug("Data to save: ", data_to_save)    
                 for d in data_to_save:
                     save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"))
                 logfile = open(os.path.join(save_folder, "logfile"), "w")
