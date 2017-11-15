@@ -22,6 +22,7 @@ from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDial
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
+from quantiphyse.volumes.io import save
 
 from .process import FabberProcess, FABBER_FOUND, MODEL_LIBS
 from .views import *
