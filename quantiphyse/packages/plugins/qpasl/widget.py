@@ -18,7 +18,7 @@ from PySide import QtCore, QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
-from quantiphyse.utils import debug, warn
+from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
 try:
@@ -103,7 +103,7 @@ class ASLWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        if not FabberProcess.FABBER_FOUND:
+        if FabberProcess is None or not FabberProcess.FABBER_FOUND:
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
         

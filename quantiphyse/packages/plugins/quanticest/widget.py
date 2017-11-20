@@ -20,11 +20,14 @@ from PySide import QtCore, QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
-from quantiphyse.utils import debug, warn
+from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
 # Need the Fabber generic process
-from quantiphyse.packages.plugins.quabber.process import FabberProcess, FABBER_FOUND
+try:
+    FabberProcess = get_plugins("processes", "FabberProcess")[0]
+except:
+    FabberProcess = None
 
 CEST_CITE_TITLE = "Quantitative Bayesian model-based analysis of amide proton transfer MRI"
 CEST_CITE_AUTHOR = "Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J."
@@ -75,7 +78,7 @@ class CESTWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        if not FABBER_FOUND:
+        if FabberProcess is None or not FabberProcess.FABBER_FOUND:
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
        
