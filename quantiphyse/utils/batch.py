@@ -149,7 +149,7 @@ class BatchCase:
                     print("DONE")
                     self.save_text(process.log, process.name, "log")
                 else:
-                    raise process.output
+                    raise process.exception
             except:
                 print("FAILED")
                 warn(str(sys.exc_info()[1]))
