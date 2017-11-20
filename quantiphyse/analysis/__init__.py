@@ -11,7 +11,8 @@ import threading
 
 from PySide import QtCore, QtGui
 
-from ..utils import debug, warn
+from quantiphyse.utils import debug, warn
+from quantiphyse.utils.exceptions import QpException
 
 _pool = None
 
@@ -41,12 +42,13 @@ class Process(QtCore.QObject):
     sig_progress = QtCore.Signal(float)
 
     """ Signal emitted when process finished"""
-    sig_finished = QtCore.Signal(int, list, str)
+    sig_finished = QtCore.Signal(int, list, str, object)
 
     NOTSTARTED = 0
     RUNNING = 1
     FAILED = 2
     SUCCEEDED = 3
+    CANCELLED = 4
 
     def __init__(self, ivm, **kwargs):
         super(Process, self).__init__()
@@ -74,6 +76,9 @@ class BackgroundProcess(Process):
         self.sync = kwargs.get("sync", False)
         self.multiproc = MULTIPROC and kwargs.get("multiproc", True)
         self._timer = None
+        self.workers = []
+        self.output = []
+        self.exception = None
 
     def timeout(self):
         """
@@ -91,7 +96,7 @@ class BackgroundProcess(Process):
     
     def start(self, n, args):
         """
-        Start worker processes. Should be called by run()
+        Start workers. Normally called by run()
 
         n = number of tasks
         args = list of run arguments - will be split up amongst workers by split_args()
@@ -100,27 +105,53 @@ class BackgroundProcess(Process):
         self.output = [None, ] * n
         self.status = Process.RUNNING
         if self.multiproc:
-            processes = []
+            self.workers = []
             for i in range(n):
                 debug("starting task %i..." % n)
                 proc = _pool.apply_async(self.fn, worker_args[i], callback=self._process_cb)
-                processes.append(proc)
+                self.workers.append(proc)
             
             if self.sync:
                 debug("synchronous")
                 for i in range(n):
-                    processes[i].get()
+                    self.workers[i].get()
             else:
                 debug("async - restarting timer")
                 self._restart_timer()
         else:
             for i in range(n):
+                if self.status != Process.RUNNING:
+                    break
                 result = self.fn(*worker_args[i])
                 self.timeout()
                 if QtGui.qApp is not None: QtGui.qApp.processEvents()
                 self._process_cb(result)
                 if self.status != Process.RUNNING: break
         debug("done start")
+
+    def cancel(self):
+        """
+        Cancel all workers. The status will be CANCELLED unless it
+        is already complete
+        """
+        if self.status == Process.RUNNING:
+            self.status = Process.CANCELLED
+            if self.multiproc:
+                for p in self.workers:
+                    p.terminate()
+                    p.join(timeout=1.0)
+            else:
+                # Just setting the status is enough - no more workers
+                # will be started
+                pass
+
+            try:
+                self.timeout()
+                self.finished()
+            except:
+                warn("Error executing finished methods for process")
+            print("4", self.output)
+            self.sig_finished.emit(self.status, self.output, self.log, self.exception)
 
     def split_args(self, n, args):
         """
@@ -177,8 +208,9 @@ class BackgroundProcess(Process):
         worker_id, success, output = result
         debug("Finished: id=", worker_id, success, str(output))
         
-        if self.status == Process.FAILED:
-            # If one process has already failed, ignore results of others
+        if self.status in (Process.FAILED, Process.CANCELLED):
+            # If one process has already failed or been cancelled, ignore results of others
+            debug("Ignoring, already failed")
             return
         elif success:
             self.output[worker_id] = output
@@ -186,9 +218,9 @@ class BackgroundProcess(Process):
                 self.status = Process.SUCCEEDED
         else:
             # If one process fails, they all fail. Output is just the first exception to be caught
-            # FIXME cancel other processes?
+            # FIXME cancel other workers?
             self.status = Process.FAILED
-            self.output = output
+            self.exception = output
 
         if self.status != Process.RUNNING:
             try:
@@ -196,4 +228,4 @@ class BackgroundProcess(Process):
                 self.finished()
             except:
                 warn("Error executing finished methods for process")
-            self.sig_finished.emit(self.status, self.output, self.log)
+            self.sig_finished.emit(self.status, self.output, self.log, self.exception)

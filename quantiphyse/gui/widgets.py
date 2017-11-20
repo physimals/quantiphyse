@@ -761,31 +761,32 @@ class RunBox(QtGui.QGroupBox):
         try:
             self.process.run(rundata)
         except:
+            # Process failed to start, so call finished cb manually
             self.finished(Process.FAILED, sys.exc_info()[1], "")
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
 
     def cancel(self):
-        # FIXME cancelling processes not yet implemented
-        pass
+        self.process.cancel()
 
-    def finished(self, status, result, log):
+    def finished(self, status, result, log, exception):
         try:
             self.log = log
-            if self.process.status != Process.SUCCEEDED:
-                raise result
-            elif self.save_option and self.save_cb.isChecked():
-                save_folder = self.save_folder_edit.text()   
-                data_to_save = []
-                for o in result:
-                    if len(o.data) > 0: data_to_save = o.data.keys()
-                debug("Data to save: ", data_to_save)    
-                for d in data_to_save:
-                    save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"))
-                logfile = open(os.path.join(save_folder, "logfile"), "w")
-                logfile.write(self.log)
-                logfile.close()
+            if self.process.status == Process.SUCCEEDED:
+                if self.save_option and self.save_cb.isChecked():
+                    save_folder = self.save_folder_edit.text()   
+                    data_to_save = []
+                    for o in result:
+                        if len(o.data) > 0: data_to_save = o.data.keys()
+                    debug("Data to save: ", data_to_save)    
+                    for d in data_to_save:
+                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"), self.process.ivm.main.rawgrid)
+                    logfile = open(os.path.join(save_folder, "logfile"), "w")
+                    logfile.write(self.log)
+                    logfile.close()
+            elif exception is not None:
+                raise exception
         finally:
             self.process.sig_finished.disconnect(self.finished)
             self.process.sig_progress.disconnect(self.update_progress)
