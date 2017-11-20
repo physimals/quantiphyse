@@ -17,16 +17,15 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 from quantiphyse.volumes.io import save
 
-from .process import FabberProcess, FABBER_FOUND, MODEL_LIBS
-from .views import *
-from .dialogs import ModelOptionsDialog, MatrixEditDialog
+from .process import FabberProcess
+from .dialogs import OptionsDialog, PriorsDialog
 
 FAB_CITE_TITLE = "Variational Bayesian inference for a non-linear forward model"
 FAB_CITE_AUTHOR = "Chappell MA, Groves AR, Whitcher B, Woolrich MW."
@@ -47,24 +46,21 @@ class FabberWidget(QpWidget):
         else:
             return lib
     
-    def model_group_changed(self, idx):
-        if idx >= 0:
-            lib = self.modellibCombo.itemData(idx)
-            if lib != "":
-                self.rundata["loadmodels"] = lib
-            else:
-                del self.rundata["loadmodels"]
-            self.modellibCombo.setToolTip(lib)
-        
     def init_ui(self):
         mainGrid = QtGui.QVBoxLayout()
         self.setLayout(mainGrid)
 
-        if not FABBER_FOUND:
+        if not FabberProcess.FABBER_FOUND:
             mainGrid.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
-        else:
-            from fabber import FabberRunData
+
+        self.rundata = {}
+        self.rundata["model"] = "poly"
+        self.rundata["degree"] = "2"
+        self.rundata["method"] = "vb"
+        self.rundata["save-mean"] = ""
+        self.rundata["save-model-fit"] = ""
+        #self.rundata["save-model-extras"] = ""
 
         title = TitleWidget(self, title="Fabber Bayesian Model Fitting", help="fabber")
         mainGrid.addWidget(title)
@@ -83,7 +79,7 @@ class FabberWidget(QpWidget):
         self.modellibCombo = QtGui.QComboBox(self)
         self.modellibCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         self.modellibCombo.addItem("GENERIC", "")
-        for lib in MODEL_LIBS:
+        for lib in FabberProcess.MODEL_LIBS:
             self.modellibCombo.addItem(self.model_name(lib), lib)
         self.modellibCombo.currentIndexChanged.connect(self.model_group_changed)
         self.modellibCombo.setCurrentIndex(0)
@@ -92,37 +88,40 @@ class FabberWidget(QpWidget):
         grid.addWidget(QtGui.QLabel("Model"), 1, 0)
         self.modelCombo = QtGui.QComboBox(self)
         self.modelCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        self.modelCombo.currentIndexChanged.connect(self.model_changed)
         grid.addWidget(self.modelCombo, 1, 1)
         self.modelOptionsBtn = QtGui.QPushButton('Model Options', self)
+        self.modelOptionsBtn.clicked.connect(self.show_model_options)
         grid.addWidget(self.modelOptionsBtn, 1, 2)
         
         grid.addWidget(QtGui.QLabel("Inference method"), 4, 0)
         self.methodCombo = QtGui.QComboBox(self)
         self.methodCombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        methods = self.fab().get_methods()
+        for method in methods:
+            self.methodCombo.addItem(method)
+        self.methodCombo.setCurrentIndex(self.methodCombo.findText(self.rundata["method"]))
+          
+        self.methodCombo.currentIndexChanged.connect(self.method_changed)
         grid.addWidget(self.methodCombo, 4, 1)
         self.methodOptionsBtn = QtGui.QPushButton('Inference Options', self)
+        self.methodOptionsBtn.clicked.connect(self.show_method_options)
         grid.addWidget(self.methodOptionsBtn, 4, 2)
         
         grid.addWidget(QtGui.QLabel("Parameter priors"), 5, 0)
         self.priorsBtn = QtGui.QPushButton('Edit', self)
+        self.priorsBtn.clicked.connect(self.show_prior_options)
         grid.addWidget(self.priorsBtn, 5, 2)
         
         grid.addWidget(QtGui.QLabel("General Options"), 6, 0)
         self.generalOptionsBtn = QtGui.QPushButton('Edit', self)
+        self.generalOptionsBtn.clicked.connect(self.show_general_options)
         grid.addWidget(self.generalOptionsBtn, 6, 2)
         
         mainGrid.addWidget(optionsBox)
 
-        # Model options box
-        #modelOptionsBox = QtGui.QGroupBox()
-        #modelOptionsBox.setTitle('Model Options')
-        #self.modelOptionsGrid = QtGui.QGridLayout()
-        #modelOptionsBox.setLayout(self.modelOptionsGrid)
-        #mainGrid.addWidget(modelOptionsBox)
-
         # Run box
-        runBox = self.run_box(self.start_task)
-
+        runBox = RunBox(self.get_process, self.get_rundata, title="Run Fabber", save_option=True)
         mainGrid.addWidget(runBox)
 
         # Load/save box
@@ -152,71 +151,89 @@ class FabberWidget(QpWidget):
         mainGrid.addWidget(fileBox)
         mainGrid.addStretch(1)
 
-        # Keep references to the option dialogs so we can update any image option views as overlays change
-        self.modelOpts = ModelOptionsView(dialog=ModelOptionsDialog(self), btn=self.modelOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
-        self.methodOpts = MethodOptionsView(dialog=ModelOptionsDialog(self), btn=self.methodOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
-        self.generalOpts = OptionsView(dialog=ModelOptionsDialog(self), btn=self.generalOptionsBtn, mat_dialog=MatrixEditDialog(self), desc_first=True)
-        self.priors = PriorsView(dialog=ModelOptionsDialog(self), btn=self.priorsBtn)
+        self.model_group_changed()
+        self.method_changed()
 
-        self.views = [
-            ModelMethodView(modelCombo=self.modelCombo, methodCombo=self.methodCombo),
-            self.modelOpts, self.methodOpts, self.generalOpts, self.priors,
-        ]
+    def fab(self):
+        from fabber import FabberLib
+        return FabberLib(rundata=self.rundata, auto_load_models=False)
 
-        self.generalOpts.ignore("output", "data", "mask", "data<n>", "overwrite", "method", "model", "help",
-                                "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
-                                "loadmodels")
+    def model_group_changed(self):
+        idx = self.modellibCombo.currentIndex()
+        if idx >= 0:
+            lib = self.modellibCombo.itemData(idx)
+            if lib != "":
+                self.rundata["loadmodels"] = lib
+            elif "loadmodels" in self.rundata:
+                del self.rundata["loadmodels"]
+            self.modellibCombo.setToolTip(lib)
 
-        self.rundata = FabberRunData()
-        self.rundata["save-mean"] = ""
-        self.rundata["save-model-fit"] = ""
-        #self.rundata["save-model-extras"] = ""
-        self.reset()
+            # Update the list of models
+            models = self.fab().get_models()
+            self.modelCombo.blockSignals(True)
+            try:
+                self.modelCombo.clear()
+                for model in models:
+                    self.modelCombo.addItem(model)
+            finally:
+                self.modelCombo.blockSignals(False)
+                if self.rundata.get("model", "") in models:
+                    self.modelCombo.setCurrentIndex(self.modelCombo.findText(self.rundata["model"]))
+                else:
+                    self.modelCombo.setCurrentIndex(0)
+      
+    def model_changed(self):
+        model = self.modelCombo.currentText()
+        self.rundata["model"] = model
 
-    def run_box(self, start_fn):
-        runBox = QtGui.QGroupBox()
-        runBox.setTitle('Running')
-        runBox.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
-        runVbox = QtGui.QVBoxLayout()
-        runBox.setLayout(runVbox)
+    def method_changed(self):
+        method = self.methodCombo.currentText()
+        self.rundata["method"] = method
 
-        hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton('Run modelling', self)
-        self.runBtn.clicked.connect(start_fn)
-        hbox.addWidget(self.runBtn)
-        self.progress = QtGui.QProgressBar(self)
-        self.progress.setStatusTip('Progress of Fabber model fitting. Be patient. Progress is only updated in chunks')
-        hbox.addWidget(self.progress)
-        self.logBtn = QtGui.QPushButton('View log', self)
-        self.logBtn.clicked.connect(self.view_log)
-        self.logBtn.setEnabled(False)
-        hbox.addWidget(self.logBtn)
-        runVbox.addLayout(hbox)
+    def show_model_options(self):
+        model = self.rundata["model"]
+        dlg = OptionsDialog(self, ivm=self.ivm, rundata=self.rundata, desc_first=True)
+        opts, desc = self.fab().get_options(model=model)
+        dlg.set_title("Forward Model: %s" % model, desc)
+        dlg.set_options(opts)
+        if dlg.exec_():
+            pass
 
-        hbox = QtGui.QHBoxLayout()
-        self.savefilesCb = QtGui.QCheckBox("Save copy of output data")
-        hbox.addWidget(self.savefilesCb)
-        self.saveFolderEdit = QtGui.QLineEdit()
-        hbox.addWidget(self.saveFolderEdit)
-        btn = QtGui.QPushButton("Choose folder")
-        btn.clicked.connect(self.chooseOutputFolder)
-        hbox.addWidget(btn)
-        self.savefilesCb.stateChanged.connect(self.saveFolderEdit.setEnabled)
-        self.savefilesCb.stateChanged.connect(btn.setEnabled)
-        runVbox.addLayout(hbox)
+    def show_method_options(self):
+        method = self.rundata["method"]
+        dlg = OptionsDialog(self, ivm=self.ivm, rundata=self.rundata, desc_first=True)
+        opts, desc = self.fab().get_options(method=method)
+        dlg.set_title("Inference method: %s" % method, desc)
+        dlg.set_options(opts)
+        dlg.fit_width()
+        dlg.exec_()
+        
+    def show_general_options(self):
+        dlg = OptionsDialog(self, ivm=self.ivm, rundata=self.rundata, desc_first=True)
+        dlg.ignore("model", "method", "output", "data", "mask", "data<n>", "overwrite", "help",
+                   "listmodels", "listmethods", "link-to-latest", "data-order", "dump-param-names",
+                   "loadmodels")
+        opts, desc = self.fab().get_options()
+        dlg.set_options(opts)
+        dlg.fit_width()
+        dlg.exec_()
+        
+    def show_prior_options(self):
+        dlg = PriorsDialog(self, ivm=self.ivm, rundata=self.rundata)
+        try:
+            params = self.fab().get_model_params(self.rundata)
+        except Exception, e:
+            raise QpException("Unable to get list of model parameters\n\n%s\n\nModel options must be set before parameters can be listed" % str(e))
+        dlg.set_params(params)
+        dlg.fit_width()
+        dlg.exec_()
+        
+    def get_process(self):
+        process = FabberProcess(self.ivm)
+        return process
 
-        return runBox
-
-    def activate(self):
-        self.ivm.sig_all_data.connect(self.overlays_changed)
-
-    def deactivate(self):
-        self.ivm.sig_all_data.disconnect(self.overlays_changed)
-
-    def chooseOutputFolder(self):
-        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
-        if outputDir:
-            self.saveFolderEdit.setText(outputDir)
+    def get_rundata(self):
+        return self.rundata
 
     def save_file(self):
         self.rundata.save()
@@ -235,76 +252,12 @@ class FabberWidget(QpWidget):
         filename = QtGui.QFileDialog.getOpenFileName()[0]
         if filename:
             self.fileEdit.setText(filename)
-            self.rundata = FabberRunData(filename)
+            self.rundata = dict(FabberRunData(filename))
             self.saveBtn.setEnabled(True)
             self.reset()
 
-    def reset(self):
-        for view in self.views: self.rundata.add_view(view)
-
-    def overlays_changed(self, overlays):
-        """
-        Update image data views
-        """
-        global CURRENT_OVERLAYS
-        CURRENT_OVERLAYS = overlays
-        for dialog in (self.methodOpts, self.modelOpts, self.methodOpts):
-            for view in dialog.views.values():
-                if isinstance(view, ImageOptionView):
-                    view.update_list()
-        self.priors.overlays = overlays
-        self.priors.repopulate()
-
     def batch_options(self):
         return "Fabber", self.rundata
-
-    def start_task(self):
-        """
-        Start running the Fabber modelling on button click
-        """
-        if self.ivm.main is None:
-            error_dialog("No data loaded")
-            return
-
-        # set the progress value
-        self.progress.setValue(0)
-        self.runBtn.setEnabled(False)
-        self.logBtn.setEnabled(False)
-
-        self.process = FabberProcess(self.ivm)
-        self.process.sig_finished.connect(self.run_finished)
-        self.process.sig_progress.connect(self.update_progress)
-        self.process.run(self.rundata)
-
-    def run_finished(self, status, results, log):
-        """
-        Callback called when an async fabber run completes
-        """
-        try:
-            self.log = log
-            if status == Process.SUCCEEDED:
-                if self.savefilesCb.isChecked():
-                    save_folder = self.saveFolderEdit.text()       
-                    for ovl in results[0].data:
-                        save(self.ivm.data[ovl], os.path.join(save_folder, ovl.name + ".nii"))
-                        logfile = open(os.path.join(save_folder, "logfile"), "w")
-                        logfile.write(self.log)
-                        logfile.close()
-            else:
-                raise results
-                QtGui.QMessageBox.warning(None, "Fabber error", "Fabber failed to run:\n\n" + str(results),
-                                        QtGui.QMessageBox.Close)
-        finally:
-            self.runBtn.setEnabled(True)
-            self.logBtn.setEnabled(True)
-
-    def update_progress(self, complete):
-        self.progress.setValue(100*complete)
-
-    def view_log(self):
-         self.logview = TextViewerDialog(text=self.log, parent=self)
-         self.logview.show()
-         self.logview.raise_()
 
 QP_WIDGETS = [FabberWidget]
 QP_PROCESSES = [FabberProcess]
