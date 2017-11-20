@@ -237,7 +237,7 @@ def _load_plugins_from_dir(dirname, pkgname, manifest):
                 warn("Error loading plugin: %s" % mod)
                 traceback.print_exc()
 
-def get_plugins(key=None):
+def get_plugins(key=None, class_name=None):
     """
     Beginning of plugin system - load widgets dynamically from specified plugins directory
     """
@@ -252,6 +252,8 @@ def get_plugins(key=None):
         _load_plugins_from_dir(plugin_dir, "quantiphyse.packages.plugins", PLUGIN_MANIFEST)
     
     if key is not None:
-        return PLUGIN_MANIFEST.get(key, [])
+        plugins = PLUGIN_MANIFEST.get(key, [])
+        if class_name is not None: plugins = [p for p in plugins if p.__name__==class_name]
     else:
-        return PLUGIN_MANIFEST
+        plugins = PLUGIN_MANIFEST
+    return plugins
