@@ -30,7 +30,8 @@ osx_bundle = False
 # Generic configuration
 block_cipher = None
 bin_files = []
-hidden_imports = []
+hidden_imports = ['skimage.segmentation', 'sklearn.metrics', 'quantiphyse.analysis.overlay_analysis',
+                   'quantiphyse.analysis.feat_pca' ]
 added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src'),
                ('quantiphyse/packages', 'packages')]
 qpdir = os.path.dirname(os.path.abspath(SPEC))
