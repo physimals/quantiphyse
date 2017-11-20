@@ -9,15 +9,11 @@ from quantiphyse.analysis import Process, BackgroundProcess
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 
-FABBER_FOUND = False
 try:
     if "FSLDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
     if "FABBERDIR" in os.environ: sys.path.append("%s/lib/python/" % os.environ["FABBERDIR"])
     from fabber import find_fabber, FabberLib, FabberRunData, LibRun
-    FABBER_EX, FABBER_LIB, MODEL_LIBS = find_fabber()
-    FABBER_FOUND = FABBER_LIB is not None
 except:
-    # Stubs to prevent startup error - warning will occur if Fabber is used
     warnings.warn("Failed to import Fabber API - analysis will be disabled")
     traceback.print_exc()
 
@@ -63,6 +59,16 @@ class FabberProcess(BackgroundProcess):
     """
 
     PROCESS_NAME = "Fabber"
+    FABBER_FOUND = False
+    FABBER_EX = None
+    FABBER_LIB = None
+    
+    try:
+        FABBER_EX, FABBER_LIB, MODEL_LIBS = find_fabber()
+        FABBER_FOUND = FABBER_LIB is not None
+    except:
+        # Error with fabber logged on import
+        pass
 
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_fabber, **kwargs)
@@ -127,8 +133,12 @@ class FabberProcess(BackgroundProcess):
 
     def finished(self):
         """ Add output data to the IVM and set the combined log """
+        self.log = ""
+        for o in self.output:
+            if o is not None and  hasattr(o, "log") and len(o.log) > 0:
+                self.log += o.log + "\n\n"
+
         if self.status == Process.SUCCEEDED:
-            self.log = "\n\n".join([o.log for o in self.output if len(o.log) > 0])
             first = True
             data_keys = []
             for o in self.output:
@@ -139,7 +149,4 @@ class FabberProcess(BackgroundProcess):
                 debug("recombined")
                 self.ivm.add_data(recombined_item, name=key, make_current=first)
                 first = False
-        elif hasattr(self.output, "log"):
-            self.log = self.output.log
-        else:
-            self.log = ""
+
