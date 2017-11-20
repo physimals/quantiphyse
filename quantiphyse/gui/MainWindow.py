@@ -442,7 +442,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.ivm.current_data is None:
             QtGui.QMessageBox.warning(self, "No data", "No current data to save", QtGui.QMessageBox.Close)
         else:
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_data, fname, self.ivm.main.rawgrid)
             else: # Cancelled
@@ -455,7 +455,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.ivm.current_roi is None:
             QtGui.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtGui.QMessageBox.Close)
         else:
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="*.nii")
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_roi, fname, self.ivm.main.rawgrid)
             else: # Cancelled
