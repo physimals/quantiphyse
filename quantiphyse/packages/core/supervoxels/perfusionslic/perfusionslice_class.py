@@ -2,9 +2,6 @@ from __future__ import division, print_function, unicode_literals
 
 import warnings
 
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib.cm as cm
 import numpy as np
 import scipy.ndimage as ndi
 
