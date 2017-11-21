@@ -14,7 +14,7 @@ Processing:
         test_clusters:
 
 Cases:
-    Subject1:
+    EG10:
         Folder:   c:\Users\ctsu0221\build\data
         LoadData:   
             test_data.nii:

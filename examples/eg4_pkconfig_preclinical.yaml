@@ -34,7 +34,7 @@ Processing:
       model_curves:
 
 Cases:
-    Preclinical:
+    EG4_C91R2:
         Folder:   Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
         Load:
           data:
