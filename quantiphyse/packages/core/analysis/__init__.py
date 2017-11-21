@@ -736,6 +736,87 @@ class SimpleMathsWidget(QpWidget):
         options = self.batch_options()[1]
         self.process.run(options)
 
+class ModelCurvesOptions(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.parent = parent
+
+        self.setWindowTitle('Plot options')
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
+
+        # Display mode
+        self.mode = 0
+        grid.addWidget(QtGui.QLabel("Display mode"), 0, 0)
+        self.mode_combo = QtGui.QComboBox()
+        self.mode_combo.addItem("Signal")
+        self.mode_combo.addItem("Signal Enhancement")
+        self.mode_combo.addItem("Residuals")
+        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
+        grid.addWidget(self.mode_combo, 0, 1)
+
+        # Y-axis scale
+        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+        self.auto_y_cb.setChecked(True)
+        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
+
+        hbox = QtGui.QHBoxLayout()
+        grid.addWidget(self.auto_y_cb, 1, 0)
+        self.min_lbl = QtGui.QLabel("Min")
+        self.min_lbl.setEnabled(False)
+        hbox.addWidget(self.min_lbl)
+        self.min_spin = QtGui.QDoubleSpinBox()
+        self.min_spin.setMinimum(-1e20)
+        self.min_spin.setMaximum(1e20)
+        self.min_spin.valueChanged.connect(parent.update)
+        self.min_spin.setEnabled(False)
+        hbox.addWidget(self.min_spin)
+        self.max_lbl = QtGui.QLabel("Max")
+        self.max_lbl.setEnabled(False)
+        hbox.addWidget(self.max_lbl)
+        self.max_spin = QtGui.QDoubleSpinBox()
+        self.max_spin.setMinimum(-1e20)
+        self.max_spin.setMaximum(1e20)
+        self.max_spin.valueChanged.connect(parent.update)
+        self.max_spin.setEnabled(False)
+        hbox.addWidget(self.max_spin)
+        hbox.addStretch(1)
+        grid.addLayout(hbox, 1, 1)
+
+        # Signal enhancement baseline
+        self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
+        self.se_lbl.setEnabled(False)
+        grid.addWidget(self.se_lbl, 2, 0)
+
+        hbox = QtGui.QHBoxLayout()
+        self.norm_frames = QtGui.QSpinBox()
+        self.norm_frames.setValue(3)
+        self.norm_frames.setMinimum(1)
+        self.norm_frames.setMaximum(100)
+        self.norm_frames.valueChanged.connect(parent.update)
+        self.norm_frames.setEnabled(False)
+        hbox.addWidget(self.norm_frames)
+        self.se_lbl2 = QtGui.QLabel('frames as baseline')
+        self.se_lbl2.setEnabled(False)
+        hbox.addWidget(self.se_lbl2)
+        hbox.addStretch(1)
+        grid.addLayout(hbox, 2, 1)
+
+    def mode_changed(self, idx):
+        self.mode = idx
+        se = (self.mode == 1)
+        self.se_lbl.setEnabled(se)
+        self.norm_frames.setEnabled(se)
+        self.se_lbl2.setEnabled(se)
+        self.parent.update()
+
+    def auto_y_changed(self, ch):
+        self.min_lbl.setEnabled(not ch)
+        self.min_spin.setEnabled(not ch)
+        self.max_lbl.setEnabled(not ch)
+        self.max_spin.setEnabled(not ch)
+        self.parent.update()
+
 class ModelCurves(QpWidget):
     """
     View original data and generated signal curves side by side
@@ -748,66 +829,16 @@ class ModelCurves(QpWidget):
 
     def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
+        self.setLayout(main_vbox)
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
+
+        title = TitleWidget(self, title="Model / Data Curves", help="modelfit", batch_btn=False, opts_btn=True)
+        main_vbox.addWidget(title)
 
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
-        self.plot = win.addPlot(title="Model / Data Curves")
+        self.plot = win.addPlot()
         main_vbox.addWidget(win)
-
-        # Curve options
-        hbox = QtGui.QHBoxLayout()
-        opts_box = QtGui.QGroupBox()
-        opts_box.setTitle('Curve options')
-        vbox = QtGui.QVBoxLayout()
-
-        # Signal enhancement (normalised)
-        hbox2 = QtGui.QHBoxLayout()
-        self.sig_en_cb = QtGui.QCheckBox('Plot signal enhancement using first', self)
-        self.sig_en_cb.stateChanged.connect(self.sig_enh_changed)
-        hbox2.addWidget(self.sig_en_cb)
-        self.norm_frames = QtGui.QSpinBox()
-        self.norm_frames.setValue(3)
-        self.norm_frames.setMinimum(1)
-        self.norm_frames.setMaximum(100)
-        self.norm_frames.valueChanged.connect(self.update)
-        self.norm_frames.setEnabled(False)
-        hbox2.addWidget(self.norm_frames)
-        hbox2.addWidget(QtGui.QLabel("frames as baseline"))
-        hbox2.addStretch(1)
-        vbox.addLayout(hbox2)
-
-        # Y-axis scale
-        hbox2 = QtGui.QHBoxLayout()
-        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
-        self.auto_y_cb.setChecked(True)
-        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
-        hbox2.addWidget(self.auto_y_cb)
-        self.min_lbl = QtGui.QLabel("Min")
-        self.min_lbl.setEnabled(False)
-        hbox2.addWidget(self.min_lbl)
-        self.min_spin = QtGui.QDoubleSpinBox()
-        self.min_spin.setMinimum(-1e20)
-        self.min_spin.setMaximum(1e20)
-        self.min_spin.valueChanged.connect(self.update)
-        self.min_spin.setEnabled(False)
-        hbox2.addWidget(self.min_spin)
-        self.max_lbl = QtGui.QLabel("Max")
-        self.max_lbl.setEnabled(False)
-        hbox2.addWidget(self.max_lbl)
-        self.max_spin = QtGui.QDoubleSpinBox()
-        self.max_spin.setMinimum(-1e20)
-        self.max_spin.setMaximum(1e20)
-        self.max_spin.valueChanged.connect(self.update)
-        self.max_spin.setEnabled(False)
-        hbox2.addWidget(self.max_spin)
-        hbox2.addStretch(1)
-        vbox.addLayout(hbox2)
-
-        opts_box.setLayout(vbox)
-        hbox.addWidget(opts_box)
-        hbox.addStretch()
-        main_vbox.addLayout(hbox)
 
         hbox = QtGui.QHBoxLayout()
 
@@ -826,7 +857,7 @@ class ModelCurves(QpWidget):
 
         # Table showing value of model parameters
         params_box = QtGui.QGroupBox()
-        params_box.setTitle('Overlay values at current position')
+        params_box.setTitle('Non-timeseries data')
         vbox2 = QtGui.QVBoxLayout()
         self.values_table = QtGui.QStandardItemModel()
         tview = QtGui.QTableView()
@@ -837,8 +868,13 @@ class ModelCurves(QpWidget):
         hbox.addWidget(params_box)
 
         main_vbox.addLayout(hbox)
-        self.setLayout(main_vbox)
+
+        self.plot_opts = ModelCurvesOptions(self)
     
+    def show_options(self):
+        self.plot_opts.show()
+        self.plot_opts.raise_()
+
     def activate(self):
         self.ivm.sig_all_data.connect(self.update_minmax)
         self.ivl.sig_focus_changed.connect(self.update)
@@ -853,17 +889,6 @@ class ModelCurves(QpWidget):
             # Have we been initialized?
             self.update()
 
-    def sig_enh_changed(self, ch):
-        self.norm_frames.setEnabled(ch)
-        self.update()
-
-    def auto_y_changed(self, ch):
-        self.min_lbl.setEnabled(not ch)
-        self.min_spin.setEnabled(not ch)
-        self.max_lbl.setEnabled(not ch)
-        self.max_spin.setEnabled(not ch)
-        self.update()
-
     def update_minmax(self, ovls):
         dmin, dmax, first = 0, 100, True
         for name in ovls:
@@ -871,8 +896,8 @@ class ModelCurves(QpWidget):
             if first or ovl.min() < dmin: dmin = ovl.min()
             if first or ovl.max() > dmax: dmax = ovl.max()
             first = False
-        self.min_spin.setValue(dmin)
-        self.max_spin.setValue(dmax)
+        self.plot_opts.min_spin.setValue(dmin)
+        self.plot_opts.max_spin.setValue(dmax)
         self.update()
 
     def update(self, pos=None):
@@ -896,6 +921,7 @@ class ModelCurves(QpWidget):
         try:
             self.updating = True # Hack to prevent plot being refreshed during table update
             self.rms_table.clear()
+            self.rms_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Name"))
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
             #self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
             idx = 0
@@ -940,11 +966,11 @@ class ModelCurves(QpWidget):
         Plot the curve / curves
         """
         self.plot.clear()
-        if self.auto_y_cb.isChecked():
+        if self.plot_opts.auto_y_cb.isChecked():
             self.plot.enableAutoRange()
         else: 
             self.plot.disableAutoRange()
-            self.plot.setYRange(self.min_spin.value(), self.max_spin.value())
+            self.plot.setYRange(self.plot_opts.min_spin.value(), self.plot_opts.max_spin.value())
 
         # Replaces any existing legend
         if self.plot.legend: self.plot.legend.scene().removeItem(self.plot.legend)
@@ -954,23 +980,27 @@ class ModelCurves(QpWidget):
 
         # Get x scale
         xx = self.opts.t_scale
-        frames1 = self.norm_frames.value()
+        frames1 = self.plot_opts.norm_frames.value()
         self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
-        if self.sig_en_cb.isChecked():
-            self.plot.setLabel('left', "Signal Enhancement")
-        else:
-            self.plot.setLabel('left', "Signal")
+        axis_labels = {0 : "Signal", 1 : "Signal enhancement", 2 : "Residual"}
+        self.plot.setLabel('left', axis_labels[self.plot_opts.mode])
 
         # Plot each data item
         idx, n_ovls = 0, len(sig_ovl)
         for ovl, sig_values in sig_ovl.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
-                if self.sig_en_cb.isChecked():
+                if self.plot_opts.mode == 1:
                     # Show signal enhancement rather than raw values
                     m1 = np.mean(sig_values[:frames1])
                     if m1 != 0: sig_values = sig_values / m1 - 1
-                    
+                elif self.plot_opts.mode == 2:
+                    # Show residuals rather than raw values
+                    if ovl == self.ivm.main.name:
+                        # Don't bother plotting the main data, it's always zero
+                        continue
+                    sig_values = sig_values - sig
+
                 self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
                 pen = get_kelly_col(idx)
                 line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
