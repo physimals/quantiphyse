@@ -677,8 +677,15 @@ class Citation(QtGui.QWidget):
         url = "https://www.google.com/search?q=%s+%s+%s" % search_terms
         webbrowser.open(url, new=0, autoraise=True)
 
+class OptionsButton(QtGui.QPushButton):
+    def __init__(self, widget):
+        QtGui.QPushButton.__init__(self)
+        self.setIcon(QtGui.QIcon(get_icon("options.png")))
+        self.setIconSize(QtCore.QSize(14, 14))
+        self.clicked.connect(widget.show_options)
+
 class TitleWidget(QtGui.QWidget):
-    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True):
+    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False):
         QtGui.QWidget.__init__(self)
         if title is None:
             title = widget.name
@@ -690,6 +697,7 @@ class TitleWidget(QtGui.QWidget):
         hbox.addStretch(1)
         if batch_btn: hbox.addWidget(BatchButton(widget))
         if help_btn: hbox.addWidget(HelpButton(self, help))
+        if opts_btn: hbox.addWidget(OptionsButton(widget))
         vbox.addLayout(hbox)
 
         if subtitle is not None:

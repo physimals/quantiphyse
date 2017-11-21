@@ -20,7 +20,8 @@ from pyqtgraph.exporters.ImageExporter import ImageExporter
 from PIL import Image, ImageDraw
 
 from .HistogramWidget import MultiImageHistogramWidget
-from ..utils import get_icon, get_lut, get_pencol, debug
+from quantiphyse.utils import get_icon, get_lut, get_pencol, debug
+from quantiphyse.gui.widgets import OptionsButton
 
 """
 How should picking work?
@@ -805,10 +806,7 @@ class ImageView(QtGui.QSplitter):
         self.ov_data = QtGui.QLineEdit()
         self.ov_data.setFixedWidth(60)
         hbox.addWidget(self.ov_data)
-        self.view_options_btn = QtGui.QPushButton()
-        self.view_options_btn.setIcon(QtGui.QIcon(get_icon("options.png")))
-        self.view_options_btn.setFixedSize(24, 24)
-        self.view_options_btn.clicked.connect(self.view_options)
+        self.view_options_btn = OptionsButton(self)
         hbox.addWidget(self.view_options_btn)
 
         vbox = QtGui.QVBoxLayout()
@@ -860,7 +858,7 @@ class ImageView(QtGui.QSplitter):
         self.picker = PointPicker(self) 
         self.drag_mode = DragMode.DEFAULT
 
-    def view_options(self):
+    def show_options(self):
         self.opts.show()
         self.opts.raise_()
         
