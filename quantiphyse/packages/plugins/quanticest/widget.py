@@ -207,7 +207,7 @@ class CESTWidget(QpWidget):
         anBox.setLayout(anVbox)
 
         grid = QtGui.QGridLayout()
-        self.spatial_cb = QtGui.QCheckBox("Spatial smoothing")
+        self.spatial_cb = QtGui.QCheckBox("Spatial regularization")
         grid.addWidget(self.spatial_cb, 0, 0, 1, 2)
         self.t12_cb = QtGui.QCheckBox("Allow uncertainty in T1/T2 values")
         self.t12_cb.stateChanged.connect(self.update_ui)
