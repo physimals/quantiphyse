@@ -12,7 +12,7 @@ Processing:
         roi_vols:
 
 Cases:
-    Subject1:
+    EG9:
         Folder:   c:\Users\ctsu0221\build\data
         Load:  
           data:

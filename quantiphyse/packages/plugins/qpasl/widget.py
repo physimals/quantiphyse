@@ -176,7 +176,7 @@ class ASLWidget(QpWidget):
         self.t1 = NumericOption("T1 (s)", grid, ypos=0, xpos=2, default=1.3, decimals=2)
         self.t1b = NumericOption("T1b (s)", grid, ypos=1, xpos=2, default=1.65, decimals=2)
 
-        self.spatial_cb = QtGui.QCheckBox("Spatial smoothing")
+        self.spatial_cb = QtGui.QCheckBox("Spatial regularization")
         grid.addWidget(self.spatial_cb, 4, 0, 1, 2)
         self.t1_cb = QtGui.QCheckBox("Allow uncertainty in T1 values")
         grid.addWidget(self.t1_cb, 5, 0, 1, 2)

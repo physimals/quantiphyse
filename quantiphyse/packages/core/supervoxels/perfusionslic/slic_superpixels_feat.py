@@ -3,17 +3,16 @@
 from __future__ import division, print_function, absolute_import
 
 import collections as coll
+import warnings
+
 import numpy as np
 from scipy import ndimage as ndi
-import warnings
 from scipy.ndimage.morphology import distance_transform_edt
-
 from skimage.util import img_as_float, regular_grid
-from ._slic_feat import _slic_feat_cython, _enforce_label_connectivity_cython, _find_adjacency_map, _find_adjacency_map_mask
 from skimage.color import rgb2lab
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from ._slic_feat import _slic_feat_cython, _enforce_label_connectivity_cython, _find_adjacency_map, _find_adjacency_map_mask
+
 from .additional.processing import get_mpd
 
 def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,

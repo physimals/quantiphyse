@@ -34,7 +34,7 @@ Processing:
 
 Cases:
     QIBA1:
-        Folder:   c:\Users\ctsu0221\build\data\testdata\qiba\
+        Folder:   test/qiba
         Load:
           data:
             qiba_67tpts.nii:
