@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.2"
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   width="32.09341"
+   height="29.991787"
+   sodipodi:docname="smooth.svg"
+   inkscape:export-filename="/home/ibmeuser/build/smooth.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <metadata
+     id="metadata65">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>pyqtgraph SVG export</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#323232"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1855"
+     inkscape:window-height="1120"
+     id="namedview63"
+     showgrid="false"
+     inkscape:zoom="5.0743655"
+     inkscape:cx="-65.386029"
+     inkscape:cy="21.844604"
+     inkscape:window-x="65"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:snap-text-baseline="true"
+     showborder="true" />
+  <title
+     id="title4">pyqtgraph SVG export</title>
+  <desc
+     id="desc6">Generated with Qt and pyqtgraph</desc>
+  <defs
+     id="defs8">
+    <clipPath
+       id="ViewBox_1_clip">
+      <path
+         inkscape:connector-curvature="0"
+         id="path16"
+         vector-effect="non-scaling-stroke"
+         d="m 0,0 478.336,0 0,467.476 L 0,467.476 0,0" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3176">
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:3;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect3178"
+         width="29.09341"
+         height="26.991787"
+         x="449.35364"
+         y="102.39454"
+         ry="2.1431227"
+         transform="scale(1,-1)" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter4204">
+      <feGaussianBlur
+         stdDeviation="1.61 1.07941"
+         result="blur"
+         id="feGaussianBlur4206" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter4270">
+      <feGaussianBlur
+         stdDeviation="2 2"
+         result="blur"
+         id="feGaussianBlur4272" />
+    </filter>
+  </defs>
+  <rect
+     style="opacity:1;fill:none;fill-opacity:1;stroke:#999999;stroke-width:3.09448791;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect2987-3"
+     width="28.905514"
+     height="28.905512"
+     x="1.7561659"
+     y="0.31545258"
+     ry="2.2950706" />
+  <circle
+     style="fill:#fae315;fill-opacity:1;stroke:#000000;stroke-width:13.38700008;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;filter:url(#filter4270)"
+     id="path4216"
+     cx="16.553795"
+     cy="14.620408"
+     r="9.4744606"
+     transform="matrix(1.1394115,0,0,1.1293117,-2.8989951,-1.9891248)" />
+</svg>
