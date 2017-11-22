@@ -116,7 +116,6 @@ class GridEditDialog(QtGui.QDialog):
         vbox.addWidget(self.buttonBox)
 
         self.setLayout(vbox)
-        self.resize(500, 500)
 
     def _table_changed(self):
         self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
