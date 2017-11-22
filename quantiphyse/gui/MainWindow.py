@@ -22,6 +22,7 @@ from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
 from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
 from ..utils import get_icon, get_local_file, get_version, get_plugins
+from ..utils.exceptions import QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -262,6 +263,11 @@ class MainWindow(QtGui.QMainWindow):
         console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
         console_action.setStatusTip('Run a console for advanced interaction')
         console_action.triggered.connect(self.show_console)
+        
+        # Advanced --> Install Packages
+        install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
+        install_action.setStatusTip('Install additional packages')
+        install_action.triggered.connect(self.install_packages)
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
@@ -293,6 +299,7 @@ class MainWindow(QtGui.QMainWindow):
         help_menu.addAction(about_action)
 
         advanced_menu.addAction(console_action)
+        advanced_menu.addAction(install_action)
 
         # extra info displayed in the status bar
         self.statusBar()
@@ -347,6 +354,9 @@ class MainWindow(QtGui.QMainWindow):
         <p align="center">Michael Chappell</p>
         """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
+
+    def install_packages(self):
+        raise QpException("Package installation not implemented yet")
 
     def show_console(self):
         """
