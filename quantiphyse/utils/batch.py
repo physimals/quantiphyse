@@ -7,6 +7,7 @@ import os.path
 import errno
 import traceback
 import yaml
+import time
 
 from ..analysis import Process
 from ..analysis.io import *
@@ -24,6 +25,7 @@ processes = {"RenameData"   : RenameDataProcess,
              "RoiCleanup" : RoiCleanupProcess,
              "Load" : LoadProcess,
              "Save" : SaveProcess,
+             "SaveAllExcept" : SaveAllExceptProcess,
              "SaveAndDelete" : SaveDeleteProcess,
              "LoadData" : LoadDataProcess,
              "LoadRois" : LoadRoisProcess,
@@ -42,6 +44,19 @@ def run_batch(batchfile):
         for id, case in root["Cases"].items():
             c = BatchCase(id, root, case)
             c.run()
+
+def run_batch_code(batchcode):
+    """ Run YAML batch code in the form of a string """
+
+    # Register packages processes FIXME use this mechanism for all processes
+    plugin_procs = get_plugins("processes")
+    for p in plugin_procs:
+        processes[p.PROCESS_NAME] = p
+
+    root = yaml.load(batchcode)
+    for id, case in root["Cases"].items():
+        c = BatchCase(id, root, case)
+        c.run()
 
 class BatchCase:
     def __init__(self, id, root, case):
@@ -78,56 +93,19 @@ class BatchCase:
             else:
                 raise
 
-    def load_volume(self):
-        # Load main volume      
-        vol_file = self.get("Volume", None)
-        if vol_file is not None:
-            vol = load(self.get_filepath(vol_file)).get_data()
-            multi = True
-            if vol.ndim == 2:
-                    multi = False
-            if vol.ndim == 3:
-                multi = self.get("MultiVolumes", False)
-            elif vol.ndim != 4:
-                raise QpException("Main volume is invalid number of dimensions: %i" % vol.ndim)
-            self.ivm.add_overlay(self.ivm.suggest_name(vol.md.basename), vol, make_main=True)
-
-    def load_overlays(self):
-        # Load case overlays followed by any root overlays not overridden by case
-        overlays = self.case.get("Overlays", {})
-        overlays.update(self.root.get("Overlays", {}))
-        for key in overlays:
-            filepath = self.get_filepath(overlays[key])
-            debug("  - Loading data '%s' from %s" % (key, filepath))
-            try:
-                ovl = load(filepath)
-                ovl.name = key
-                self.ivm.add_data(ovl, make_current=True)
-            except:
-                warn("Failed to load data: %s" % filepath)
-                
-    def load_rois(self):
-        # Load case ROIs followed by any root ROIs not overridden by case
-        rois = self.case.get("Rois", {})
-        rois.update(self.root.get("Rois", {}))
-        for key in rois:
-            filepath = self.get_filepath(rois[key])
-            debug("  - Loading ROI '%s' from %s" % (key, filepath))
-            try:
-                roi = load(filepath)
-                roi.name = key
-                self.ivm.add_roi(roi, make_current=True)
-            except:
-                warn("Failed to load ROI: %s" % filepath)
-
     def run_processing_steps(self):
         # Run processing steps
         for process in self.root.get("Processing", []):
             name = process.keys()[0]
             params = process[name]
             if params is None: params = {}
-            params = dict(params) # Make copy so process does not mess up shared config
+            
+            # Make copy so process does not mess up shared config
+            params = dict(params)
+
+            # Override values which are defined in the individual case
             params.update(self.case.get(name, {}))
+
             self.run_process(name, params)
 
     def run_process(self, name, params):
@@ -144,10 +122,17 @@ class BatchCase:
                 process.name = params.get("name", name)
                 #process.sig_progress.connect(self.progress)
                 sys.stdout.write("  - Running %s..." % process.name)
+                start = time.time()
                 process.run(params)
                 if process.status == Process.SUCCEEDED:
-                    print("DONE")
+                    end = time.time()
+                    process.log += "\nTOTAL DURATION: %.1fs" % (end-start)
+                    print("DONE (%.1fs)" % (end-start))
                     self.save_text(process.log, process.name, "log")
+                    if len(params) != 0:
+                        warn("Unused parameters")
+                        for k, v in params.items():
+                            warn("%s=%s" % (str(k), str(v)))
                 else:
                     raise process.exception
             except:
@@ -155,8 +140,8 @@ class BatchCase:
                 warn(str(sys.exc_info()[1]))
                 debug(traceback.format_exc())
                 
-    def progress(self, complete):
-        sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
+    #def progress(self, complete):
+    #    sys.stdout.write("\b\b\b\b%3i%%" % int(complete*100))
 
     def save_text(self, text, fname, ext="txt"):
         if len(text) > 0:
@@ -165,50 +150,11 @@ class BatchCase:
             with open(fname, "w") as f:
                 f.write(text)
 
-    def save_output(self):
-        if "SaveVolume" in self.root:
-            fname = self.root["SaveVolume"]
-            if not fname: fname = self.ivm.main.name
-            self.save_data(self.ivm.main, fname)
-
-        for name, fname in self.get("SaveOverlays", {}).items():
-            if not fname: fname = name
-            if name in self.ivm.data:
-                self.save_data(self.ivm.data[name], fname)
-            else:
-                warn("Overlay %s not found - not saving" % name)
-
-        for name, fname in self.get("SaveRois", {}).items():
-            if not fname: fname = name
-            if name in self.ivm.rois:
-                self.save_data(self.ivm.rois[name], fname)
-            else:
-                warn("ROI %s not found - not saving" % name)
-
-        for name, fname in self.get("SaveArtifacts", {}).items():
-            if not fname: fname = name
-            if name in self.ivm.artifacts:
-                self.save_text(str(self.ivm.artifacts[name]), fname)
-            else:
-                warn("Artifact %s not found - not saving" % name)
-
-    def save_data(self, vol, fname):
-        if not fname.endswith(".nii"): 
-            fname += ".nii"
-        if not os.path.isabs(fname):
-            fname = os.path.join(self.outdir, fname)
-        print("  - Saving %s" % fname)
-        save(vol, fname, self.ivm.main.rawgrid)
-
     def run(self):
         print("Processing case: %s" % self.id)
         cwd_prev = self.chdir()
         self.create_outdir()
-        self.load_volume()
-        self.load_overlays()
-        self.load_rois()
         self.run_processing_steps()
-        self.save_output()
         os.chdir(cwd_prev)
 
         

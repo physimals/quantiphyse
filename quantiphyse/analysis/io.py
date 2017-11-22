@@ -48,10 +48,12 @@ class LoadProcess(Process):
 class LoadDataProcess(LoadProcess):
     def run(self, options):
         LoadProcess.run(self, {'data' : options})
+        for key in options.keys(): options.pop(key)
 
 class LoadRoisProcess(LoadProcess):
     def run(self, options):
         LoadProcess.run(self, {'rois' : options})
+        for key in options.keys(): options.pop(key)
 
 class SaveProcess(Process):
     """
@@ -61,8 +63,9 @@ class SaveProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        for name, fname in options.items():
+        for name in options.keys():
             try:
+                fname = options.pop(name)
                 if fname is None: fname = name
                 qpdata = self.ivm.data.get(name, self.ivm.rois.get(name, None))
                 if qpdata is not None:
@@ -74,6 +77,41 @@ class SaveProcess(Process):
                     save(qpdata, fname, self.ivm.main.rawgrid)
                 else:
                     warn("Failed to save %s - no such data or ROI found" % name)
+            except:
+                warn("Failed to save %s" % name)
+                raise
+
+        self.status = Process.SUCCEEDED
+
+class SaveAllExceptProcess(Process):
+    """
+    Save all data to file apart from specified items
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        exceptions = [k for k in options.keys()]
+        for k in options.keys(): options.pop(k)
+
+        for name, qpdata in self.ivm.data.items():
+            if name in exceptions: 
+                continue
+            try:
+                fname = os.path.join(self.outdir, "%s.nii" % name)
+                debug("Saving %s as %s" % (name, fname))
+                save(qpdata, fname, self.ivm.main.rawgrid)
+            except:
+                warn("Failed to save %s" % name)
+                raise
+
+        for name, qpdata in self.ivm.rois.items():
+            if name in exceptions: 
+                continue
+            try:
+                fname = os.path.join(self.outdir, "%s.nii" % name)
+                debug("Saving %s as %s" % (name, fname))
+                save(qpdata, fname, self.ivm.main.rawgrid)
             except:
                 warn("Failed to save %s" % name)
                 raise
@@ -104,7 +142,8 @@ class SaveArtifactsProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        for name, fname in options.items():
+        for name in options.keys():
+            fname = options.pop(name)
             if not fname: fname = name
             if name in self.ivm.artifacts: 
                 self._save_text(str(self.ivm.artifacts[name]), fname)
