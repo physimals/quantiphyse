@@ -9,8 +9,10 @@ import glob
 script_dir = os.path.abspath(os.path.dirname(__file__))
 
 qpdir = os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir))
+os.chdir(qpdir)
 
-examples = glob.glob(os.path.join(qpdir, "examples", "*.yaml"))
-for ex in examples:
+examples = glob.glob(os.path.join(qpdir, "examples", "eg*.yaml"))
+for ex in sorted(examples):
     print("**** Running example: %s" % ex)
-    os.system("python %s/qp.py --batch=%s" % (qpdir, ex))
+    os.system("python -u qp.py --batch=%s" % ex)
+
