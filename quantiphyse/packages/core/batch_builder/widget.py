@@ -51,14 +51,18 @@ class BatchBuilderWidget(QpWidget):
         vbox.addWidget(self.proc_warn)
 
         self.default_dir = os.getcwd()
+        self.ivm.sig_main_data.connect(self.activate)
+        self.ivm.sig_all_data.connect(self.activate)
+        self.ivm.sig_all_rois.connect(self.activate)
+        self.changed = False
         self._reset()
 
     def activate(self):
-        if self.proc_edit.toPlainText().strip() == "":
+        if not self.changed:
             self._reset()
 
     def _reset(self):
-        if self.proc_edit.toPlainText().strip() != "":
+        if self.changed and self.proc_edit.toPlainText().strip() != "":
             ok = QtGui.QMessageBox.warning(self, "Reset to current data", 
                                         "Changes to batch file will be lost",
                                         QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
@@ -110,8 +114,12 @@ class BatchBuilderWidget(QpWidget):
             t += "\n"
 
         self.proc_edit.setPlainText(t)
+        self.changed = False
+        self.reset_btn.setEnabled(False)
 
     def _validate(self):
+        self.changed = True
+        self.reset_btn.setEnabled(True)
         t = self.proc_edit.toPlainText()
         self.proc_warn.setText("")
         if '\t' in self.proc_edit.toPlainText():
