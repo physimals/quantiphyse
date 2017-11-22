@@ -78,7 +78,8 @@ class BackgroundProcess(Process):
         self._timer = None
         self.workers = []
         self.output = []
-        self.exception = None
+        # We seem to get a segfault when emitting a signal with a None object
+        self.exception = object()
 
     def timeout(self):
         """
