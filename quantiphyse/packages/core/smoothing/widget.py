@@ -17,7 +17,7 @@ class SmoothingWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self, title="Data Smoothing")
+        title = TitleWidget(self, title="Data Smoothing", subtitle="Smooth data using a Gaussian kernel")
         vbox.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()
@@ -46,7 +46,8 @@ class SmoothingWidget(QpWidget):
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        vbox.addStretch(1)    
+        vbox.addStretch(1) 
+        self.data_changed()  
     
     def data_changed(self):
         self.output_name.setText("%s_smoothed" % self.data_combo.currentText())

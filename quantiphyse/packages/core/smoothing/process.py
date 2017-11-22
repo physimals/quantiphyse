@@ -32,6 +32,6 @@ class SmoothingProcess(Process):
         
         data = self.ivm.data[data_name].std()
         output = scipy.ndimage.filters.gaussian_filter(data, sigma, order=order, mode=mode)
-        self.ivm.add_data(output, name=output_name, set_current=True)
+        self.ivm.add_data(output, name=output_name, make_current=True)
 
         self.status = Process.SUCCEEDED
