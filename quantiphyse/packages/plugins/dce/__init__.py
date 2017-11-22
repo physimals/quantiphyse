@@ -142,10 +142,10 @@ class PharmaWidget(QpWidget):
     def progress(self, progress):
         self.prog_gen.setValue(100*progress)
 
-    def finished(self, status, output):
+    def finished(self, status, output, log, exception):
         """ GUI updates on process completion """
         if status != self.process.SUCCEEDED:
-            QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(output),
+            QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(exception),
                                       QtGui.QMessageBox.Close)
 
 QP_WIDGETS = [PharmaWidget]
