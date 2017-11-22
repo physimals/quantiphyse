@@ -31,9 +31,31 @@ def warn(msg):
     sys.stderr.write("WARNING: %s\n" % str(msg))
     sys.stderr.flush()
 
-def set_local_file_path(path):
+def set_local_file_path():
     global LOCAL_FILE_PATH
-    LOCAL_FILE_PATH = path
+    LOCAL_FILE_PATH = ""
+    if hasattr(sys, 'frozen'):
+        # File is frozen (packaged apps)
+        debug("Frozen executable")
+        if hasattr(sys, '_MEIPASS'):
+            LOCAL_FILE_PATH = sys._MEIPASS
+        elif hasattr(sys, '_MEIPASS2'):
+            LOCAL_FILE_PATH = sys._MEIPASS2
+        elif sys.frozen == 'macosx_app':
+            LOCAL_FILE_PATH = os.getcwd() + '/quantiphyse'
+        else:
+            LOCAL_FILE_PATH = os.path.dirname(sys.executable)
+        os.environ["FABBERDIR"] = os.path.join(LOCAL_FILE_PATH, "fabber")
+    else:
+        # Running from a script
+        LOCAL_FILE_PATH = os.path.join(os.path.dirname(__file__), os.pardir)
+        
+    if LOCAL_FILE_PATH == "":
+        # Use local working directory otherwise
+        warn("Reverting to current directory as local path")
+        LOCAL_FILE_PATH = os.getcwd()
+
+    debug("Local directory: ", LOCAL_FILE_PATH)
 
 def get_icon(name, dir=None):
     """

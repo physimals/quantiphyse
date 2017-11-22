@@ -4,19 +4,32 @@ import traceback
 
 import numpy as np
 
-from quantiphyse.utils import debug, warn, get_plugins
+from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path
 from quantiphyse.utils.exceptions import QpException
 
 from quantiphyse.analysis import Process, BackgroundProcess
 
 # Known registration methods (case-insensitive)
-REG_METHODS = {}
+def get_reg_methods():
+    methods = get_plugins("reg-methods")
+    reg_methods = {}
+    for m in methods:
+        method = m()
+        reg_methods[method.name.lower()] = method
+    return reg_methods
 
 """
 Registration function for asynchronous process - used for moco and registration
 """
-def _run_reg(id, queue, method, options, regdata, refdata, warp_rois, ignore_idx=None):
+def _run_reg(id, queue, method_name, options, regdata, refdata, warp_rois, ignore_idx=None):
     try:
+        set_local_file_path()
+        reg_methods = get_reg_methods()
+        debug("Known methods: ", reg_methods)
+        method = reg_methods.get(method_name.lower(), None)
+        if method is None: 
+            raise QpException("Unknown registration method: %s" % method_name)
+
         full_log = ""
         if regdata.ndim == 3: 
             regdata = np.expand_dims(regdata, -1)
@@ -29,7 +42,6 @@ def _run_reg(id, queue, method, options, regdata, refdata, warp_rois, ignore_idx
             warp_rois_out = np.zeros(warp_rois.shape)
             full_log += "Warp ROIs max=%f\n" % np.max(warp_rois)
         else: warp_rois_out = None
-        method = REG_METHODS[method.lower()]
 
         for t in range(regdata.shape[-1]):
             full_log += "Registering volume %i of %i\n" % (t+1, regdata.shape[-1])
@@ -62,11 +74,6 @@ class RegProcess(BackgroundProcess):
 
     def __init__(self, ivm, **kwargs):
         BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
-        global REG_METHODS
-        methods = get_plugins("reg-methods")
-        for m in methods:
-            method = m()
-            REG_METHODS[method.name.lower()] = method
 
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
@@ -120,6 +127,11 @@ class RegProcess(BackgroundProcess):
         else:
             warp_rois = None
         debug(self.warp_roi_names)
+
+        # Remove all option values - individual reg methods should warn if there
+        # are unexpected options
+        for key in options.keys():
+            options.pop(key)
 
         # Function input data must be passed as list of arguments for multiprocessing
         self.start(1, [self.method, options, reg_data, refdata, warp_rois])

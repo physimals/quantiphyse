@@ -39,7 +39,6 @@ def run_deeds_warp_c(np.ndarray[np.float32_t, ndim=1] vol,
 
 def deedsReg(vol, refvol, warp_rois, **kwargs):
     shape = vol.shape
-
     # DEEDS works on flattened arrays in Fortran order
     vol = vol.flatten(order='F').astype(np.float32)
     refvol = refvol.flatten(order='F').astype(np.float32)

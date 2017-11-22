@@ -56,30 +56,7 @@ def main():
     if args.debug: pg.systemInfo()
 
     # Set the local file path, used for finding icons, plugins, etc
-    local_file_path = ""
-    if hasattr(sys, 'frozen'):
-        # File is frozen (packaged apps)
-        debug("Frozen executable")
-        if hasattr(sys, '_MEIPASS'):
-            local_file_path = sys._MEIPASS
-        elif hasattr(sys, '_MEIPASS2'):
-            local_file_path = sys._MEIPASS2
-        elif sys.frozen == 'macosx_app':
-            local_file_path = os.getcwd() + '/quantiphyse'
-        else:
-            local_file_path = os.path.dirname(sys.executable)
-        os.environ["FABBERDIR"] = os.path.join(local_file_path, "fabber")
-    else:
-        # Running from a script
-        local_file_path = os.path.dirname(__file__)
-        
-    if local_file_path == "":
-        # Use local working directory otherwise
-        warn("Reverting to current directory as local path")
-        local_file_path = os.getcwd()
-
-    debug("Local directory: ", local_file_path)
-    set_local_file_path(local_file_path)
+    set_local_file_path()
 
     # Check whether any batch processing arguments have been called
     if (args.batch is not None):
