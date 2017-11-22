@@ -459,6 +459,7 @@ class NumberGrid(QtGui.QTableWidget):
         self.default_bg = self.item(0, 0).background()
         self.itemChanged.connect(self._item_changed)
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.setAcceptDrops(True)
 
     def valid(self):
