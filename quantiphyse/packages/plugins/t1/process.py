@@ -24,9 +24,9 @@ class T10Process(Process):
 
     def run(self, options):
         # TR specified in ms but pass in s
-        tr = float(options["tr"])/1000
+        tr = float(options.pop("tr"))/1000
         fa_vols, fas = [], []
-        for fname, fa in options["vfa"].items():
+        for fname, fa in options.pop("vfa").items():
             if fname in self.ivm.data:
                 vol = self.ivm.data[fname].std()
             else:
@@ -44,7 +44,7 @@ class T10Process(Process):
         if "afi" in options:
             # We are doing a B0 correction (preclinical)
             afi_vols, trs = [], []
-            for fname, t in options["afi"].items():
+            for fname, t in options.pop("afi").items():
                 if fname in self.ivm.data:
                     vol = self.ivm.data[fname].std()
                 else:
@@ -59,15 +59,17 @@ class T10Process(Process):
                     trs.append(t)
                     afi_vols.append(vol)
 
-            fa_afi = options["fa-afi"]
+            fa_afi = options.pop("fa-afi")
             T10 = t10_map(fa_vols, fas, TR=tr, afi_vols=afi_vols, fa_afi=fa_afi, TR_afi=trs)
-            if "smooth" in options:
-                T10 = gaussian_filter(T10, sigma=options["smooth"].get("sigma", 0.5), 
-                                    truncate=options["smooth"].get("truncate", 3))
+            smooth = options.pop("smooth", None)
+            if smooth is not None:
+                T10 = gaussian_filter(T10, sigma=smooth.get("sigma", 0.5), 
+                                    truncate=smooth.get("truncate", 3))
         else:
             T10 = t10_map(fa_vols, fas, tr)
 
-        if "clamp" in options:
-            np.clip(T10, options["clamp"]["min"], options["clamp"]["max"], out=T10)
+        clamp = options.pop("clamp", None)
+        if clamp is not None:
+            np.clip(T10, clamp["min"], clamp["max"], out=T10)
         self.ivm.add_data(T10, name="T10")
         self.status = Process.SUCCEEDED

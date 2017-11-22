@@ -93,7 +93,8 @@ class FabberProcess(BackgroundProcess):
 
         # FIXME rundata requires all arguments to be strings!
         rundata = FabberRunData()
-        for key, value in options.items():
+        for key in options.keys():
+            value = options.pop(key)
             if value is not None: rundata[key] = str(value)
             else: rundata[key] = ""
 

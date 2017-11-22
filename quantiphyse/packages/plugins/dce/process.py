@@ -111,16 +111,16 @@ class PkModellingProcess(BackgroundProcess):
 
         t101 = self.ivm.data["T10"].std()
 
-        R1 = options['r1']
-        R2 = options['r2']
-        DelT = options['dt']
-        InjT = options['tinj']
-        TR = options['tr']
-        TE = options['te']
-        FA = options['fa']
-        self.thresh1val = options['ve-thresh']
-        Dose = options.get('dose', 0)
-        model_choice = options['model']
+        R1 = options.pop('r1')
+        R2 = options.pop('r2')
+        DelT = options.pop('dt')
+        InjT = options.pop('tinj')
+        TR = options.pop('tr')
+        TE = options.pop('te')
+        FA = options.pop('fa')
+        self.thresh1val = options.pop('ve-thresh')
+        Dose = options.pop('dose', 0)
+        model_choice = options.pop('model')
 
         # Baseline defaults to time points prior to injection
         baseline_tpts = int(1 + InjT / DelT)

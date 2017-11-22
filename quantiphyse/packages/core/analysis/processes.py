@@ -276,7 +276,8 @@ class ExecProcess(Process):
             globals[name] = ovl.std()
         for name, roi in self.ivm.rois.items():
             globals[name] = roi.std()
-        for name, proc in options.items():
+        for name in options.keys():
+            proc = options.pop(name)
             if name == "exec":
                 for code in proc:
                     try:
