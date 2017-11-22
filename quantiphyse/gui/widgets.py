@@ -192,11 +192,13 @@ class BatchButton(QtGui.QPushButton):
 
                 text = "  - %s:\n" % proc_name
                 text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                text += "\n"
                 TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
             elif len(batchopts) == 3:
                 proc_name, opts, support_files = batchopts
                 text = "  - %s:\n" % proc_name
                 text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                text += "\n"
                 support_files.insert(0, ("Batch code", text))
                 MultiTextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, 
                                       pages=support_files).show()     

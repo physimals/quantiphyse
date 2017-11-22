@@ -39,9 +39,15 @@ class MultiTextViewerDialog(QtGui.QDialog):
 
         vbox.addWidget(self.tabs)
         
+        hbox = QtGui.QHBoxLayout()
+        self.copy_btn = QtGui.QPushButton("Copy")
+        self.copy_btn.clicked.connect(self._copy)
+        hbox.addWidget(self.copy_btn)
+        hbox.addStretch(1)
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
         self.buttonBox.accepted.connect(self.close)
-        vbox.addWidget(self.buttonBox)
+        hbox.addWidget(self.buttonBox)
+        vbox.addLayout(hbox)
 
         self.setLayout(vbox)
         self.resize(700, 500)
@@ -51,25 +57,16 @@ class MultiTextViewerDialog(QtGui.QDialog):
         tb.setFontFamily("Courier")
         tb.setText(content)
         return tb
-        
-class TextViewerDialog(QtGui.QDialog):
+
+    def _copy(self):
+        cb = QtGui.QApplication.clipboard()
+        cb.setText(self.tabs.currentWidget().toPlainText())
+
+class TextViewerDialog(MultiTextViewerDialog):
 
     def __init__(self, parent, title="Log", text=""):
-        super(TextViewerDialog, self).__init__(parent)
-        self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
-
-        self.text_browser = QtGui.QTextBrowser()
-        self.text_browser.setFontFamily("Courier")
-        self.text_browser.setText(text)
-        vbox.addWidget(self.text_browser)
-        
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
-        self.buttonBox.accepted.connect(self.close)
-        vbox.addWidget(self.buttonBox)
-
-        self.setLayout(vbox)
-        self.resize(700, 500)
+        MultiTextViewerDialog.__init__(self, parent, title, [("", text)])
+        self.tabs.tabBar().setVisible(False)
 
 class MatrixViewerDialog(QtGui.QDialog):
 
