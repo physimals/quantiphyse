@@ -4,7 +4,7 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo
+from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo, TitleWidget
 from quantiphyse.gui.dialogs import TextViewerDialog
 
 from quantiphyse.analysis import Process
@@ -26,11 +26,8 @@ class RegWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Registration and Motion Correction</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(HelpButton(self, "reg"))
-        layout.addLayout(hbox)
+        title = TitleWidget(self, title="Registration and Motion Correction", help="reg")
+        layout.addWidget(title)
 
         if len(self.reg_methods) == 0:
             layout.addWidget(QtGui.QLabel("No registration methods found"))
@@ -210,17 +207,17 @@ class RegWidget(QpWidget):
         idx = self.regdata.findText(currentReg)
         self.regdata.setCurrentIndex(max(0, idx))
 
-    def run(self):
+    def batch_options(self):
         if self.method is None:
             raise QpException("No registration method has been chosen")
+
+        refdata = self.ivm.data.get(self.refdata.currentText(), None)
+        if refdata is None: raise QpException("Reference data not found: '%s'" % self.refdata.currentText())
 
         options = self.method.options()
         options["method"] = self.method.name
         options["output-name"] = self.name_edit.text()
         
-        refdata = self.ivm.data.get(self.refdata.currentText(), None)
-        if refdata is None: raise QpException("Reference data not found: '%s'" % self.refdata.currentText())
-
         if refdata.nvols > 1:
             refvol = self.refvol.currentIndex()
             if refvol == 0:
@@ -231,13 +228,19 @@ class RegWidget(QpWidget):
                 options["ref-vol"] = self.refidx.value()
         
         if self.mode_combo.currentIndex() == 0:
+            proc_name = "Reg"
             options["ref"] = self.refdata.currentText()
             options["reg"] = self.regdata.currentText()
-            if self.warproi.currentText() != "":
+            if self.warproi.currentText() != "<none>":
                 options["warp-roi"] = self.warproi.currentText()
         else:
+            proc_name = "MoCo"
             options["reg"] = self.refdata.currentText()
             
+        return proc_name, options
+        
+    def run(self):
+        options = self.batch_options()[0]
         process = RegProcess(self.ivm)
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
