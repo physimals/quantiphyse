@@ -216,7 +216,7 @@ class CESTWidget(QpWidget):
         grid.addWidget(self.pds, 6, 1, 1, 2)
         self.load_pds = LoadNumbers(self.pds)
         grid.addWidget(self.load_pds, 6, 3)
-        self.pr = NumericOption("Pulse Repeats", grid, ypos=6, xpos=0, default=1, intonly=True)
+        self.pr = NumericOption("Pulse Repeats", grid, ypos=7, xpos=0, default=1, intonly=True)
         
         vbox.addWidget(seqBox)
     
@@ -275,12 +275,12 @@ class CESTWidget(QpWidget):
         vbox.addLayout(hbox)
 
         # Run box
-        runBox = RunBox(self.get_process_model, self.get_rundata_model, title="Run model-based modelling", save_option=True)
+        runBox = RunBox(self.get_process_model, self.get_rundata_model, title="Run model-based analysis", save_option=True)
         vbox.addWidget(runBox)
         vbox.addStretch(1)
         
         # Run box
-        runBox = RunBox(self.get_process_lda, self.get_rundata_lda, title="Run LDA modelling", save_option=True)
+        runBox = RunBox(self.get_process_lda, self.get_rundata_lda, title="Run Lorentzian Difference analysis", save_option=True)
         vbox.addWidget(runBox)
         vbox.addStretch(1)
 
@@ -468,7 +468,7 @@ class CESTWidget(QpWidget):
 
     def get_process_model(self):
         process = self.FabberProcess(self.ivm)
-        process.sig_finished.connect(self.extra_postproc)
+        process.sig_finished.connect(self.postproc)
         return process
 
     def get_rundata_model(self):
@@ -477,27 +477,38 @@ class CESTWidget(QpWidget):
         rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
         rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
         rundata["debug"] = ""
+        self.tempfiles = [rundata[s] for s in ("pools", "ptrain", "spec")]
+        
         for item in rundata.items():
             debug("%s: %s" % item)
         return rundata
 
-    def extra_postproc(self, status, results, log, exception):
-        # Remove temp files after run completes FIXME broken
-        #os.remove(rundata["ptrain"])
-        #os.remove(rundata["spec"])
-        #os.remove(rundata["pools"])
+    def postproc(self, status, results, log, exception):
+         # Remove temp files after run completes
+        for fname in self.tempfiles:
+            try:
+                os.remove(fname)
+            except:
+                warn("Failed to delete temp file: %s" % fname)
 
         # Update 'volumes' axis to contain frequencies
         # FIXME removed as effectively requires frequencies to be
         # ordered and doesn't seem to look very good either
         #if status == Process.SUCCEEDED:
         #    self.update_volumes_axis()    
-        pass
+
+    def postproc_lda(self, status, results, log, exception):
+        # Rename residuals and change sign convention
+        resids = self.ivm.data["residuals"]
+        ld = -resids.std()
+        self.ivm.delete_data("residuals")
+        self.ivm.add_data(ld, name="lorenz_diff", make_current=True)
 
     def get_process_lda(self):
         # FIXME need special process to get the residuals only
         process = self.FabberProcess(self.ivm)
-        process.sig_finished.connect(self.extra_postproc)
+        process.sig_finished.connect(self.postproc)
+        process.sig_finished.connect(self.postproc_lda)
         return process
         
     def get_rundata_lda(self):
@@ -533,6 +544,7 @@ class CESTWidget(QpWidget):
             p.enabled = (idx == 0)
 
         rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
+        self.tempfiles = [rundata[s] for s in ("pools", "ptrain", "spec")]
 
         # Return pools to previous state
         current_pools = []
