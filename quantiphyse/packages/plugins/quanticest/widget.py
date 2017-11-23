@@ -17,59 +17,108 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberGrid, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
-# Need the Fabber generic process
-try:
-    FabberProcess = get_plugins("processes", "FabberProcess")[0]
-except:
-    FabberProcess = None
-
 CEST_CITE_TITLE = "Quantitative Bayesian model-based analysis of amide proton transfer MRI"
 CEST_CITE_AUTHOR = "Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, A. A., Sibson, N. R., Jezzard, P., & Payne, S. J."
 CEST_CITE_JOURNAL = "Magnetic Resonance in Medicine. doi:10.1002/mrm.24474"
 
-B0_DEFAULTS = ["3T", "9.4T"]
+B0_DEFAULTS = ["3T", "9.4T", "Custom"]
 
 # Gyromagnetic ratio / 2PI
 GYROM_RATIO_BAR = 42.5774806e6
 
-# FIXME correct numbers
-POOLS = [
-    {"name" : "Water", "default" : True, "vals" : 
-        { "3T" : [0,0,1.3,0.05],
-          "9.4T" : [0,0,1.8,0.05]}
-    },
-    {"name" : "Amide", "default" : True, "vals" : 
-        { "3T" : [3.5,20,0.77,0.01],
-          "9.4T" : [3.5,30,1.8,0.001]}
-    },
-    {"name" : "NOE/MT", "default" : True, "vals" : 
-        { "3T" : [-2.34,40,1.0,0.0004],
-          "9.4T" : [-2.41,20,1.8,0.0005]}
-    },
-    {"name" : "NOE", "default" : False, "vals" : 
-        { "3T" : [0,0,0,0], 
-          "9.4T" : [0,0,0,0]}
-    },
-    {"name" : "MT", "default" : False, "vals" : 
-        { "3T" : [0,0,0,0], 
-          "9.4T" : [0,0,0,0]}
-    },
-    {"name" : "Amine", "default" : False, "vals" : 
-        { "3T" : [0,0,0,0], 
-          "9.4T" : [0,0,0,0]}
-    },
-]
+class Pool:
+    def __init__(self, name, enabled, vals=None, userdef=False):
+        self.name = name
+        self.enabled = enabled
+        if vals is None: vals = {}
+        for b0 in B0_DEFAULTS:
+            if b0 not in vals: vals[b0] = [0,0,0,0]
+        self.original_vals = vals
+        self.userdef = userdef
+        self.vals = dict(self.original_vals)
+
+    def reset(self):
+        if not self.userdef:
+            self.vals = dict(self.original_vals)
+
+class PoolEditDialog(QtGui.QDialog):
+    """
+    Thoughts on custom pools:
+
+     - Make pool selection checkboxes into list. No scrollbars with defaults!
+     - Provide 'New Pool' button?
+     - Leave 'Edit' as it is?
+     - Ideally, save custom pools for future!
+    """
+    HEADERS = ["PPM offset", "Exch rate", "T1", "T2"]
+
+    def __init__(self, parent, pools, b0):
+        super(PoolEditDialog, self).__init__(parent)
+        self.setWindowTitle("Edit Pools")
+        self.pools = pools
+        self.b0 = b0
+
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        # Need a layout to contain the table so we can remove and replace it when new pools are added
+        self.tbox = QtGui.QHBoxLayout()
+        self._init_table()
+        vbox.addLayout(self.tbox)
+
+        hbox = QtGui.QHBoxLayout()
+        
+        btn = QtGui.QPushButton("New Pool")
+        btn.clicked.connect(self._new_pool)
+        hbox.addWidget(btn)
+
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        hbox.addWidget(self.buttonBox)
+
+        vbox.addLayout(hbox)
+
+    def _init_table(self):
+        self.table = NumberGrid([p.vals[self.b0] for p in self.pools if p.enabled], 
+                                col_headers=self.HEADERS,
+                                row_headers=[p.name for p in self.pools if p.enabled], 
+                                expandable=(False, False))
+        self.table.itemChanged.connect(self._table_changed)
+        self.tbox.addWidget(self.table)
+
+    def _new_pool(self):
+        """
+        Ask for name then init values
+        """
+        name, result = QtGui.QInputDialog.getText(self, "New Pool", "Name for pool", QtGui.QLineEdit.Normal)
+        if result:
+            self.pools.append(Pool(name, enabled=True))
+        self.tbox.takeAt(0)
+        self._init_table()
+
+    def _table_changed(self):
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
 
 class CESTWidget(QpWidget):
     """
     CEST-specific widget, using the Fabber process
     """
+
+    pools = [
+        Pool("Water", True,  { "3T" : [0,0,1.3,0.05], "9.4T" : [0,0,1.8,0.05]}),
+        Pool("Amide", True,  { "3T" : [3.5,20,0.77,0.01], "9.4T" : [3.5,30,1.8,0.001]}),
+        Pool("NOE/MT", True, { "3T" : [-2.34,40,1.0,0.0004],  "9.4T" : [-2.41,20,1.8,0.0005]}),
+        Pool("NOE", False, { "3T" : [0,0,0,0], "9.4T" : [0,0,0,0]}),
+        Pool("MT", False, { "3T" : [0,0,0,0], "9.4T" : [0,0,0,0]}),
+        Pool("Amine", False, { "3T" : [0,0,0,0], "9.4T" : [0,0,0,0]}),
+    ]
 
     def __init__(self, **kwargs):
         QpWidget.__init__(self, name="CEST", icon="cest", group="Fabber", desc="CEST analysis", **kwargs)
@@ -78,10 +127,15 @@ class CESTWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        if FabberProcess is None or not FabberProcess.FABBER_FOUND:
+        try:
+            self.FabberProcess = get_plugins("processes", "FabberProcess")[0]
+        except:
+            self.FabberProcess = None
+
+        if self.FabberProcess is None or not self.FabberProcess.FABBER_FOUND:
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
-       
+    
         title = TitleWidget(self, help="cest", subtitle="Modelling for Chemical Exchange Saturation Transfer MRI")
         vbox.addWidget(title)
         
@@ -107,7 +161,6 @@ class CESTWidget(QpWidget):
         self.poolval_combo = QtGui.QComboBox()
         for b0 in B0_DEFAULTS:
             self.b0_combo.addItem(b0)
-        self.b0_combo.addItem("Custom")
         self.b0_combo.currentIndexChanged.connect(self.b0_changed)
         grid.addWidget(self.b0_combo, 1, 1)
 
@@ -125,17 +178,17 @@ class CESTWidget(QpWidget):
         hbox.addWidget(label)
         grid.addWidget(self.b0_custom, 1, 2)
 
-        # Saturation field
+        # B1 field
         self.b1 = NumericOption("B1 (\u03bcT)", grid, ypos=2, xpos=0, default=0.55, decimals=6)
         hbox = QtGui.QHBoxLayout()
-        self.unsat_cb = QtGui.QCheckBox("Unsaturated")
-        self.unsat_cb.stateChanged.connect(self.update_ui)
-        hbox.addWidget(self.unsat_cb)
-        self.unsat_combo = QtGui.QComboBox()
-        self.unsat_combo.addItem("first")
-        self.unsat_combo.addItem("last")
-        self.unsat_combo.addItem("first and last  ")
-        hbox.addWidget(self.unsat_combo)
+        #self.unsat_cb = QtGui.QCheckBox("Unsaturated")
+        #self.unsat_cb.stateChanged.connect(self.update_ui)
+        #hbox.addWidget(self.unsat_cb)
+        #self.unsat_combo = QtGui.QComboBox()
+        #self.unsat_combo.addItem("first")
+        #self.unsat_combo.addItem("last")
+        #self.unsat_combo.addItem("first and last  ")
+        #hbox.addWidget(self.unsat_combo)
         hbox.addStretch(1)
         grid.addLayout(hbox, 2, 2)
         
@@ -164,7 +217,6 @@ class CESTWidget(QpWidget):
         self.load_pds = LoadNumbers(self.pds)
         grid.addWidget(self.load_pds, 6, 3)
         self.pr = NumericOption("Pulse Repeats", grid, ypos=6, xpos=0, default=1, intonly=True)
-#        self.pr.spin.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
         
         vbox.addWidget(seqBox)
     
@@ -174,31 +226,21 @@ class CESTWidget(QpWidget):
         poolVbox = QtGui.QVBoxLayout()
         poolBox.setLayout(poolVbox)
 
-        grid = QtGui.QGridLayout()
-        row, col = 0, 0
-        NUM_ROWS = 2
-        self.pool_cbs, self.custom_poolvals = {}, {}
-        for pool in POOLS:
-            name = pool["name"]
-            self.custom_poolvals[name] = pool["vals"]["9.4T"]
-            self.pool_cbs[name] = QtGui.QCheckBox(name)
-            self.pool_cbs[name].setChecked(pool["default"])
-            self.pool_cbs[name].stateChanged.connect(self.update_pools)
-            grid.addWidget(self.pool_cbs[name], row, col)
-            row += 1
-            if row == NUM_ROWS:
-                row = 0
-                col += 1
+        self.poolgrid = QtGui.QGridLayout()
+        self.populate_poolgrid()
+        poolVbox.addLayout(self.poolgrid)
+
+        hbox = QtGui.QHBoxLayout()
         self.custom_label = QtGui.QLabel("")
         self.custom_label.setStyleSheet("QLabel { color : red; }")
-        grid.addWidget(self.custom_label, NUM_ROWS, 0)
+        hbox.addWidget(self.custom_label)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
-        grid.addWidget(edit_btn, NUM_ROWS, 1)
+        hbox.addWidget(edit_btn)
         reset_btn = QtGui.QPushButton("Reset")
         reset_btn.clicked.connect(self.reset_pools)
-        grid.addWidget(reset_btn, NUM_ROWS, 2)
-        poolVbox.addLayout(grid)
+        hbox.addWidget(reset_btn)
+        poolVbox.addLayout(hbox)
 
         # Fabber Options
         anBox = QtGui.QGroupBox()
@@ -233,28 +275,39 @@ class CESTWidget(QpWidget):
         vbox.addLayout(hbox)
 
         # Run box
-        runBox = RunBox(self.get_process, self.get_rundata, title="Run CEST modelling", save_option=True)
+        runBox = RunBox(self.get_process_model, self.get_rundata_model, title="Run model-based modelling", save_option=True)
         vbox.addWidget(runBox)
         vbox.addStretch(1)
         
-        # General defaults which never change
-        self.rundata = {}
-        self.rundata["save-mean"] = ""
-        self.rundata["save-model-fit"] = ""
-        self.rundata["noise"] = "white"
-        self.rundata["max-iterations"] = "20"
-        self.rundata["model"] = "cest"
-        self.rundata["save-model-extras"] = ""
-
-        # Placeholders to be replaced with temp files
-        self.rundata["pools"] = "pools.mat"
-        self.rundata["ptrain"] = "ptrain.mat"
-        self.rundata["spec"] = "dataspec.mat"
+        # Run box
+        runBox = RunBox(self.get_process_lda, self.get_rundata_lda, title="Run LDA modelling", save_option=True)
+        vbox.addWidget(runBox)
+        vbox.addStretch(1)
 
         self.poolvals_edited = False
         self.b0_combo.setCurrentIndex(1)
         self.update_ui()
-        self.update_pools()
+
+    def populate_poolgrid(self):
+        row, col = 0, 0
+        NUM_POOL_COLS = 3
+        for pool in self.pools:
+            if col == NUM_POOL_COLS:
+                col = 0
+                row += 1
+            existing = self.poolgrid.itemAtPosition(row, col)
+            if existing is not None:
+                existing.widget().setParent(None)
+            cb = QtGui.QCheckBox(pool.name)
+            cb.setChecked(pool.enabled)
+            cb.stateChanged.connect(self.pool_enabled(pool))
+            self.poolgrid.addWidget(cb, row, col)
+            col += 1
+
+    def pool_enabled(self, pool):
+        def cb(state):
+            pool.enabled = state
+        return cb
 
     def b0_changed(self):
         self.b0_sel = self.b0_combo.currentText()
@@ -265,7 +318,6 @@ class CESTWidget(QpWidget):
         else:
             self.b0_custom.setVisible(False)
             self.b0 = float(self.b0_sel[:-1])
-        self.update_pools()
 
     def update_volumes_axis(self):
         """ 
@@ -280,68 +332,61 @@ class CESTWidget(QpWidget):
             self.opts.t_scale = self.freq_offsets.values()
             self.opts.sig_options_changed.emit(self)
 
-    def update_pools(self):
-        self.pools = []
-        for pool in POOLS:
-            if self.pool_cbs[pool["name"]].isChecked():
-                if self.b0_sel == "Custom" or self.poolvals_edited:
-                    # Using custom values
-                    vals = self.custom_poolvals[pool["name"]]
-                else:
-                    # Using default values
-                    vals = pool["vals"][self.b0_sel]
-                self.pools.append((pool["name"], vals))
-        debug(self.pools)
-
     def edit_pools(self):
-        vals, pool_headers = [], []
-        for name, pvals in self.pools:
-            pool_headers.append(name)
-            vals.append(pvals)
-        val_headers = ["PPM offset", "Exch rate", "T1", "T2"]
-        d = GridEditDialog(self, vals, col_headers=val_headers, row_headers=pool_headers, expandable=(False, False))
+        d = PoolEditDialog(self, self.pools, self.b0_sel)
         if d.exec_():
-            vals = d.table.values()
-            for row, pool in enumerate(self.pools):
-                self.custom_poolvals[pool[0]] = vals[row]
+            enabled_pools = [p for p in self.pools if p.enabled]
+            for pool, vals in zip(enabled_pools, d.table.values()):
+                pool.vals[self.b0_sel] = vals
             self.custom_label.setText("Edited")
+            self.populate_poolgrid()
             self.poolvals_edited = True
-            self.update_pools()
 
     def reset_pools(self):
         self.custom_label.setText("")
         self.poolvals_edited = False
-        self.update_pools()
+        for pool in self.pools:
+            pool.reset()
+            
+    def get_rundata(self):
+        # General defaults which never change
+        rundata = {}
+        rundata["save-mean"] = ""
+        rundata["save-model-fit"] = ""
+        rundata["noise"] = "white"
+        rundata["max-iterations"] = "20"
+        rundata["model"] = "cest"
+        rundata["save-model-extras"] = ""
 
-    def update_options(self):
+        # Placeholders to be replaced with temp files
+        rundata["pools"] = "pools.mat"
+        rundata["ptrain"] = "ptrain.mat"
+        rundata["spec"] = "dataspec.mat"
+        
         if self.spatial_cb.isChecked():
-            self.rundata["method"] = "spatialvb"
-            self.rundata["param-spatial-priors"] = "MN+"
+            rundata["method"] = "spatialvb"
+            rundata["param-spatial-priors"] = "MN+"
         else:
-            self.rundata["method"] = "vb"
-            self.rundata.pop("param-spatial-priors", None)
+            rundata["method"] = "vb"
+            rundata.pop("param-spatial-priors", None)
             
         prior_num = 1
         if self.t12_cb.isChecked():
-            self.rundata["t12prior"] = ""
+            rundata["t12prior"] = ""
             if self.t1_cb.isChecked():
-                self.rundata["PSP_byname%i" % prior_num] = "T1a"
-                self.rundata["PSP_byname%i_type" % prior_num] = "I"
-                self.rundata["PSP_byname%i_image" % prior_num] = self.t1_ovl.currentText()
+                rundata["PSP_byname%i" % prior_num] = "T1a"
+                rundata["PSP_byname%i_type" % prior_num] = "I"
+                rundata["PSP_byname%i_image" % prior_num] = self.t1_ovl.currentText()
                 prior_num += 1
 
             if self.t2_cb.isChecked():
-                self.rundata["PSP_byname%i" % prior_num] = "T2a"
-                self.rundata["PSP_byname%i_type" % prior_num] = "I"
-                self.rundata["PSP_byname%i_image" % prior_num] = self.t2_ovl.currentText()
+                rundata["PSP_byname%i" % prior_num] = "T2a"
+                rundata["PSP_byname%i_type" % prior_num] = "I"
+                rundata["PSP_byname%i_image" % prior_num] = self.t2_ovl.currentText()
                 prior_num += 1
         else:
-            self.rundata.pop("t12prior", None)
-            
-        for n in range(prior_num, len(POOLS)*2+1):
-            self.rundata.pop("PSP_byname%i" % n, None)
-            self.rundata.pop("PSP_byname%i_type" % n, None)
-            self.rundata.pop("PSP_byname%i_image" % n, None)
+            rundata.pop("t12prior", None)
+        return rundata
 
     def update_ui(self):
         """ Update visibility / enabledness of widgets """
@@ -360,7 +405,7 @@ class CESTWidget(QpWidget):
         self.t2_cb.setEnabled(self.t12_cb.isChecked())
         self.t1_ovl.setEnabled(self.t12_cb.isChecked() and self.t1_cb.isChecked())
         self.t2_ovl.setEnabled(self.t12_cb.isChecked() and self.t2_cb.isChecked())
-        self.unsat_combo.setEnabled(self.unsat_cb.isChecked())
+        #self.unsat_combo.setEnabled(self.unsat_cb.isChecked())
 
     def get_dataspec(self):
         dataspec = ""
@@ -371,12 +416,12 @@ class CESTWidget(QpWidget):
             else:
                 repeats = 1
             b1 = self.b1.spin.value()/1e6
-            if self.unsat_cb.isChecked():
-                debug("Unsat", idx, self.unsat_combo.currentIndex())
-                if idx == 0 and self.unsat_combo.currentIndex() in (0, 2):
-                    b1 = 0
-                elif idx == len(freqs)-1 and self.unsat_combo.currentIndex() in (1, 2):
-                    b1 = 0
+            #if self.unsat_cb.isChecked():
+            #    debug("Unsat", idx, self.unsat_combo.currentIndex())
+            #    if idx == 0 and self.unsat_combo.currentIndex() in (0, 2):
+            #        b1 = 0
+            #    elif idx == len(freqs)-1 and self.unsat_combo.currentIndex() in (1, 2):
+            #        b1 = 0
             dataspec += "%g %g %i\n" % (freq, b1, repeats)
         debug(dataspec)
         return dataspec
@@ -399,11 +444,13 @@ class CESTWidget(QpWidget):
 
     def get_poolmat(self):
         poolmat = ""
-        for name, vals in self.pools:
-            if name == "Water":
+        for pool in self.pools:
+            vals = pool.vals[self.b0_sel]
+            if pool.name == "Water":
                 # Embed the B0 value in the top left
-                vals = [self.b0 * GYROM_RATIO_BAR,] + vals[1:]
-            poolmat += "\t".join([str(v) for v in vals]) + "\n"
+                vals = [self.b0 * GYROM_RATIO_BAR,] +vals[1:]
+            if pool.enabled:
+                poolmat += "\t".join([str(v) for v in vals]) + "\n"
         debug(poolmat)
         return poolmat
 
@@ -413,38 +460,85 @@ class CESTWidget(QpWidget):
         f.close()
         return f.name
 
-    def get_process(self):
-        process = FabberProcess(self.ivm)
-        process.sig_finished.connect(self.extra_postproc)
-        return process
-
-    def get_rundata(self):
-        self.update_options()
-        self.rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
-        self.rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
-        self.rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
-        self.rundata["debug"] = ""
-        for item in self.rundata.items():
-            debug("%s: %s" % item)
-        import fabber
-        fab = fabber.FabberLib(auto_load_models=True)
-        debug("Additional outputs", fab.get_model_outputs(self.rundata))
-        return self.rundata
-
     def batch_options(self):
         support_files = [("poolmat.mat", self.get_poolmat()),
                          ("dataspec.mat", self.get_dataspec()),
                          ("ptrain.mat", self.get_ptrain())]
-        return "Fabber", self.rundata, support_files
+        return "Fabber", self.get_rundata(), support_files
 
-    def extra_postproc(self, status, results, log):
-        # Remove temp files after run completes
-        os.remove(self.rundata["ptrain"])
-        os.remove(self.rundata["spec"])
-        os.remove(self.rundata["pools"])
+    def get_process_model(self):
+        process = self.FabberProcess(self.ivm)
+        process.sig_finished.connect(self.extra_postproc)
+        return process
+
+    def get_rundata_model(self):
+        rundata = self.get_rundata()
+        rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
+        rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
+        rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
+        rundata["debug"] = ""
+        for item in rundata.items():
+            debug("%s: %s" % item)
+        return rundata
+
+    def extra_postproc(self, status, results, log, exception):
+        # Remove temp files after run completes FIXME broken
+        #os.remove(rundata["ptrain"])
+        #os.remove(rundata["spec"])
+        #os.remove(rundata["pools"])
 
         # Update 'volumes' axis to contain frequencies
         # FIXME removed as effectively requires frequencies to be
         # ordered and doesn't seem to look very good either
         #if status == Process.SUCCEEDED:
         #    self.update_volumes_axis()    
+        pass
+
+    def get_process_lda(self):
+        # FIXME need special process to get the residuals only
+        process = self.FabberProcess(self.ivm)
+        process.sig_finished.connect(self.extra_postproc)
+        return process
+        
+    def get_rundata_lda(self):
+        rundata = self.get_rundata()
+        rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
+        rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
+        rundata["debug"] = ""
+        
+        # LDA is the residual data (data - modelfit)
+        rundata.pop("save-mean", None)
+        rundata.pop("save-zstat", None)
+        rundata.pop("save-std", None)
+        rundata.pop("save-model-fit", None)
+        rundata.pop("save-model-extras", None)
+        rundata["save-residuals"] = ""
+
+        # Restrict fitting to parts of the z-spectrum with |ppm| <= 1 or |ppm| >= 30
+        # This is done by 'masking' the timepoints so Fabber still reads in the
+        # full data and still outputs a prediction at each point, however the
+        # masked points are not used in the parameter fitting
+        masked_idx = 1
+        for idx, f in enumerate(self.freq_offsets.values()):
+            if f < 0: f = -f
+            if f > 1 and f < 30:
+                rundata["mt%i" % masked_idx] = idx+1
+                masked_idx += 1
+
+        # Temporarily disable non-water pools just to generate the poolmat file
+        enabled_pools = []
+        for idx, p in enumerate(self.pools):
+            if p.enabled:
+                enabled_pools.append(p.name)
+            p.enabled = (idx == 0)
+
+        rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
+
+        # Return pools to previous state
+        current_pools = []
+        for idx, p in enumerate(self.pools):
+            p.enabled = (p.name in enabled_pools)
+
+        for k in sorted(rundata.keys()):
+            debug("%s: %s" % (k, rundata[k]))
+        return rundata
