@@ -92,7 +92,7 @@ class FabberProcess(BackgroundProcess):
             roidata = self.ivm.rois[roi_name].std()
 
         # FIXME rundata requires all arguments to be strings!
-        rundata = FabberRunData()
+        rundata = {}
         for key in options.keys():
             value = options.pop(key)
             if value is not None: rundata[key] = str(value)
