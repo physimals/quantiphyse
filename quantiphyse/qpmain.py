@@ -67,7 +67,7 @@ def main():
         #QtCore.QTimer.singleShot(0, get_run_batch(args.batch))
         #t = BatchThread(args.batch)
         #t.start()
-        run_batch(args.batch)
+        run_batch(fname=args.batch)
         #sys.exit(app.exec_())
     else:
         # OS specific changes

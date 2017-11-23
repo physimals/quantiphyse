@@ -1,12 +1,11 @@
 import os
-import yaml
 
 from PySide import QtGui, QtCore
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.utils import debug
 from quantiphyse.utils.exceptions import QpException
-from quantiphyse.utils.batch import run_batch_code
+from quantiphyse.utils.batch import run_batch, check_batch
 
 class BatchBuilderWidget(QpWidget):
     """
@@ -126,12 +125,13 @@ class BatchBuilderWidget(QpWidget):
             self.proc_warn.setText("Tabs detected")
         else:
             try:
-                root = yaml.load(t)
+                warnings = check_batch(code=t)
+                self.proc_warn.setText("\n".join([w for w in warnings]))
             except Exception, e:
                 self.proc_warn.setText("Invalid YAML: %s" % str(e))
 
     def _run(self):
-        run_batch_code(self.proc_edit.toPlainText())
+        run_batch(code=self.proc_edit.toPlainText())
 
     def _save(self):
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save batch file', 

@@ -31,7 +31,7 @@ processes = {"RenameData"   : RenameDataProcess,
              "LoadRois" : LoadRoisProcess,
              "SaveArtifacts" : SaveArtifactsProcess}
 
-def run_batch(batchfile):
+def parse_batch(fname=None, code=None):
     """ Run a YAML batch file """
 
     # Register packages processes FIXME use this mechanism for all processes
@@ -39,24 +39,41 @@ def run_batch(batchfile):
     for p in plugin_procs:
         processes[p.PROCESS_NAME] = p
 
-    with open(batchfile, "r") as f:
-        root = yaml.load(f)
-        for id, case in root["Cases"].items():
-            c = BatchCase(id, root, case)
-            c.run()
+    if fname is not None:
+        with open(fname, "r") as f:
+            root = yaml.load(f)
+    elif code is not None:
+        root = yaml.load(code)
+    else:
+        raise RuntimeError("Neither filename nor YAML code provided")
 
-def run_batch_code(batchcode):
-    """ Run YAML batch code in the form of a string """
+    if root is None: 
+        return []
+    
+    # Cases can be expressed as list or dict
+    cases = root.get("Cases", [])
+    ret = []
+    if isinstance(cases, dict):
+        for id in sorted(cases.keys()):
+            ret.append(BatchCase(id, root, cases[id]))
+    else:
+        for case in cases:
+            id = case.keys()[0]
+            ret.append(BatchCase(id, root, case[id]))
+    return ret
 
-    # Register packages processes FIXME use this mechanism for all processes
-    plugin_procs = get_plugins("processes")
-    for p in plugin_procs:
-        processes[p.PROCESS_NAME] = p
-
-    root = yaml.load(batchcode)
-    for id, case in root["Cases"].items():
-        c = BatchCase(id, root, case)
+def run_batch(fname=None, code=None):
+    cases = parse_batch(fname=fname, code=code)
+    for c in cases:
         c.run()
+
+def check_batch(fname=None, code=None):
+    warnings = set()
+    cases = parse_batch(fname=fname, code=code)
+    for c in cases:
+        for w in c.check(): 
+            warnings.add(w)
+    return warnings
 
 class BatchCase:
     def __init__(self, id, root, case):
@@ -108,6 +125,16 @@ class BatchCase:
 
             self.run_process(name, params)
 
+    def check(self):
+        # Check specified processes exist
+        ret = set()
+        for process in self.root.get("Processing", []):
+            name = process.keys()[0]
+            proc = processes.get(name, None)
+            if proc is None:
+                ret.add("Unknown process: %s" % name)
+        return ret
+
     def run_process(self, name, params):
         proc = processes.get(name, None)
         if proc is None:
@@ -150,7 +177,7 @@ class BatchCase:
             with open(fname, "w") as f:
                 f.write(text)
 
-    def run(self):
+    def run(self, checkonly=False):
         print("Processing case: %s" % self.id)
         cwd_prev = self.chdir()
         self.create_outdir()
