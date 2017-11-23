@@ -21,11 +21,6 @@ from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
 
-try:
-    FabberProcess = get_plugins("processes", "FabberProcess")[0]
-except:
-    FabberProcess = None
-
 class AslDataPreview(QtGui.QWidget):
     def __init__(self, order, tagfirst, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -103,7 +98,12 @@ class ASLWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        if FabberProcess is None or not FabberProcess.FABBER_FOUND:
+        try:
+            self.FabberProcess = get_plugins("processes", "FabberProcess")[0]
+        except:
+            self.FabberProcess = None
+
+        if self.FabberProcess is None or not self.FabberProcess.FABBER_FOUND:
             vbox.addWidget(QtGui.QLabel("Fabber core library not found.\n\n You must install Fabber to use this widget"))
             return
         
@@ -236,7 +236,7 @@ class ASLWidget(QpWidget):
         return idx
 
     def get_process(self):
-        return FabberProcess(self.ivm)
+        return self.FabberProcess(self.ivm)
 
     def get_rundata(self):
         self.update_options()
