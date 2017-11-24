@@ -41,70 +41,59 @@ class Pool:
             if b0 not in vals: vals[b0] = [0,0,0,0]
         self.original_vals = vals
         self.userdef = userdef
-        self.vals = dict(self.original_vals)
+        self.reset()
 
     def reset(self):
-        if not self.userdef:
-            self.vals = dict(self.original_vals)
+        self.vals = dict(self.original_vals)
 
-class PoolEditDialog(QtGui.QDialog):
-    """
-    Thoughts on custom pools:
+class NewPoolDialog(QtGui.QDialog):
 
-     - Make pool selection checkboxes into list. No scrollbars with defaults!
-     - Provide 'New Pool' button?
-     - Leave 'Edit' as it is?
-     - Ideally, save custom pools for future!
-    """
-    HEADERS = ["PPM offset", "Exch rate", "T1", "T2"]
-
-    def __init__(self, parent, pools, b0):
-        super(PoolEditDialog, self).__init__(parent)
-        self.setWindowTitle("Edit Pools")
-        self.pools = pools
-        self.b0 = b0
-
+    def __init__(self, parent):
+        super(NewPoolDialog, self).__init__(parent)
+        self.setWindowTitle("New Pool")
         vbox = QtGui.QVBoxLayout()
-        self.setLayout(vbox)
 
-        # Need a layout to contain the table so we can remove and replace it when new pools are added
-        self.tbox = QtGui.QHBoxLayout()
-        self._init_table()
-        vbox.addLayout(self.tbox)
+        grid = QtGui.QGridLayout()
 
-        hbox = QtGui.QHBoxLayout()
+        grid.addWidget(QtGui.QLabel("Name"), 0, 0)
+        self.name_edit = QtGui.QLineEdit()
+        self.name_edit.editingFinished.connect(self._validate)
+        grid.addWidget(self.name_edit, 0, 1, 1, 3)
         
-        btn = QtGui.QPushButton("New Pool")
-        btn.clicked.connect(self._new_pool)
-        hbox.addWidget(btn)
+        self.ppm = NumericOption("PPM", grid, ypos=1, xpos=0, default=0, spin=False)
+        self.ppm.sig_changed.connect(self._validate)
+        self.exc = NumericOption("Exchange rate", grid, ypos=2, xpos=0, default=0,spin=False)
+        self.exc.sig_changed.connect(self._validate)
+        self.t1 = NumericOption("T1", grid, ypos=1, xpos=2, default=1.0, spin=False)
+        self.t1.sig_changed.connect(self._validate)
+        self.t2 = NumericOption("T2", grid, ypos=2, xpos=2, default=1.0, spin=False)
+        self.t2.sig_changed.connect(self._validate)
+
+        vbox.addLayout(grid)
 
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
-        hbox.addWidget(self.buttonBox)
+        vbox.addWidget(self.buttonBox)
 
-        vbox.addLayout(hbox)
+        self.setLayout(vbox)
+        self._validate()
+    
+    def pool(self, b0):
+        return Pool(self.name_edit.text(), True, 
+                    vals={b0 : [w.value() for w in [self.ppm, self.exc, self.t1, self.t2]]},
+                    userdef=True)
 
-    def _init_table(self):
-        self.table = NumberGrid([p.vals[self.b0] for p in self.pools if p.enabled], 
-                                col_headers=self.HEADERS,
-                                row_headers=[p.name for p in self.pools if p.enabled], 
-                                expandable=(False, False))
-        self.table.itemChanged.connect(self._table_changed)
-        self.tbox.addWidget(self.table)
-
-    def _new_pool(self):
-        """
-        Ask for name then init values
-        """
-        name, result = QtGui.QInputDialog.getText(self, "New Pool", "Name for pool", QtGui.QLineEdit.Normal)
-        if result:
-            self.pools.append(Pool(name, enabled=True))
-        self.tbox.takeAt(0)
-        self._init_table()
-
-    def _table_changed(self):
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
+    def _validate(self):
+        valid = self.ppm.valid and self.exc.valid and self.t1.valid and self.t2.valid
+        
+        if self.name_edit.text() != "":
+            self.name_edit.setStyleSheet("")
+        else:
+            self.name_edit.setStyleSheet("QLineEdit {background-color: red}")
+            valid = False
+        
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(valid)
 
 class CESTWidget(QpWidget):
     """
@@ -234,6 +223,9 @@ class CESTWidget(QpWidget):
         self.custom_label = QtGui.QLabel("")
         self.custom_label.setStyleSheet("QLabel { color : red; }")
         hbox.addWidget(self.custom_label)
+        new_btn = QtGui.QPushButton("New Pool")
+        new_btn.clicked.connect(self.new_pool)
+        hbox.addWidget(new_btn)
         edit_btn = QtGui.QPushButton("Edit")
         edit_btn.clicked.connect(self.edit_pools)
         hbox.addWidget(edit_btn)
@@ -332,14 +324,23 @@ class CESTWidget(QpWidget):
             self.opts.t_scale = self.freq_offsets.values()
             self.opts.sig_options_changed.emit(self)
 
+    def new_pool(self):
+        dlg = NewPoolDialog(self)
+        if dlg.exec_():
+            self.pools.append(dlg.pool(self.b0_sel))
+            self.populate_poolgrid()
+
     def edit_pools(self):
-        d = PoolEditDialog(self, self.pools, self.b0_sel)
+        COL_HEADERS = ["PPM offset", "Exch rate", "T1", "T2"]
+        enabled_pools = [p for p in self.pools if p.enabled]
+        vals = [p.vals[self.b0_sel] for p in enabled_pools]
+        names = [p.name for p in enabled_pools]
+        d = GridEditDialog(self, vals, title="Edit Pools", 
+                           col_headers=COL_HEADERS, row_headers=names, expandable=(False, False))
         if d.exec_():
-            enabled_pools = [p for p in self.pools if p.enabled]
             for pool, vals in zip(enabled_pools, d.table.values()):
                 pool.vals[self.b0_sel] = vals
             self.custom_label.setText("Edited")
-            self.populate_poolgrid()
             self.poolvals_edited = True
 
     def reset_pools(self):
