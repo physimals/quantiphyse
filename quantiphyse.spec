@@ -39,6 +39,9 @@ archive_method="zip"
 
 # Update version info from git tags and get standardized version for packages
 version_str = get_std_version()
+if len(version_str.split("-", 1)) > 0:
+    # This is a snapshot, name accordingly (real version is still embeddd in the python)
+    version_str = "snapshot"
 
 fsldir = os.environ.get("FSLDIR")
 sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
