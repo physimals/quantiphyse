@@ -54,16 +54,19 @@ class BatchBuilderWidget(QpWidget):
         self._reset()
 
     def activate(self):
-        self.ivm.sig_main_data.connect(self.activate)
-        self.ivm.sig_all_data.connect(self.activate)
-        self.ivm.sig_all_rois.connect(self.activate)
-        if not self.changed:
-            self._reset()
+        self.ivm.sig_main_data.connect(self._update)
+        self.ivm.sig_all_data.connect(self._update)
+        self.ivm.sig_all_rois.connect(self._update)
+        self._update()
 
     def deactivate(self):
-        self.ivm.sig_main_data.disconnect(self.activate)
-        self.ivm.sig_all_data.disconnect(self.activate)
-        self.ivm.sig_all_rois.disconnect(self.activate)
+        self.ivm.sig_main_data.disconnect(self._update)
+        self.ivm.sig_all_data.disconnect(self._update)
+        self.ivm.sig_all_rois.disconnect(self._update)
+
+    def _update(self):
+        if not self.changed:
+            self._reset()
 
     def _reset(self):
         if self.changed and self.proc_edit.toPlainText().strip() != "":
