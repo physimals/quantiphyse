@@ -101,7 +101,7 @@ class GridEditDialog(QtGui.QDialog):
 
         from .widgets import NumberGrid # prevent circular import dependency
         self.table = NumberGrid(vals, col_headers=col_headers, row_headers=row_headers, expandable=expandable)
-        self.table.itemChanged.connect(self._table_changed)
+        self.table.itemChanged.connect(self._validate)
         vbox.addWidget(self.table)
         
         self.text = QtGui.QLabel(text)
@@ -110,9 +110,10 @@ class GridEditDialog(QtGui.QDialog):
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
         vbox.addWidget(self.buttonBox)
 
         self.setLayout(vbox)
 
-    def _table_changed(self):
+    def _validate(self):
         self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
