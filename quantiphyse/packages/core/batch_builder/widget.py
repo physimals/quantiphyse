@@ -50,15 +50,20 @@ class BatchBuilderWidget(QpWidget):
         vbox.addWidget(self.proc_warn)
 
         self.default_dir = os.getcwd()
-        self.ivm.sig_main_data.connect(self.activate)
-        self.ivm.sig_all_data.connect(self.activate)
-        self.ivm.sig_all_rois.connect(self.activate)
         self.changed = False
         self._reset()
 
     def activate(self):
+        self.ivm.sig_main_data.connect(self.activate)
+        self.ivm.sig_all_data.connect(self.activate)
+        self.ivm.sig_all_rois.connect(self.activate)
         if not self.changed:
             self._reset()
+
+    def deactivate(self):
+        self.ivm.sig_main_data.disconnect(self.activate)
+        self.ivm.sig_all_data.disconnect(self.activate)
+        self.ivm.sig_all_rois.disconnect(self.activate)
 
     def _reset(self):
         if self.changed and self.proc_edit.toPlainText().strip() != "":
@@ -69,8 +74,8 @@ class BatchBuilderWidget(QpWidget):
         
         t = ""
         if self.ivm.main is not None:
-            filedata = [d for d in self.ivm.data.values() if hasattr(d, "fname")]
-            filerois= [d for d in self.ivm.rois.values() if hasattr(d, "fname")]
+            filedata = [d for d in self.ivm.data.values() if hasattr(d, "fname") and d.fname is not None]
+            filerois= [d for d in self.ivm.rois.values() if hasattr(d, "fname") and d.fname is not None]
             
             casedir = os.getcwd()
             if hasattr(self.ivm.main, "fname"):
