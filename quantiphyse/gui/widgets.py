@@ -255,23 +255,60 @@ class RoiCombo(OverlayCombo):
         super(RoiCombo, self).__init__(ivm, *args, **kwargs)
     
 class NumericOption(QtGui.QWidget):
-    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False):
+
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False, spin=True):
         QtGui.QWidget.__init__(self)
-        self.label = QtGui.QLabel(text)
+        self.use_spin = spin
+        self.text = text
+        self.minval = minval
+        self.maxval = maxval
+        self.valid = True
+
         if intonly:
-            self.spin = QtGui.QSpinBox()
+            self.rtype = int
         else:
-            self.spin = QtGui.QDoubleSpinBox()
-            self.spin.setDecimals(decimals)
-
-        self.spin.setMinimum(minval)
-        self.spin.setMaximum(maxval)
-        self.spin.setValue(default)
-        self.spin.setSingleStep(step)
-
+            self.rtype = float
+            
+        self.label = QtGui.QLabel(text)
         grid.addWidget(self.label, ypos, xpos)
-        grid.addWidget(self.spin, ypos, xpos+1)
 
+        if spin:
+            if intonly:
+                self.spin = QtGui.QSpinBox()
+            else:
+                self.spin = QtGui.QDoubleSpinBox()
+                self.spin.setDecimals(decimals)
+                self.spin.setMinimum(minval)
+            self.spin.setMaximum(maxval)
+            self.spin.setValue(default)
+            self.spin.setSingleStep(step)
+            self.spin.valueChanged.connect(self.sig_changed.emit)
+            grid.addWidget(self.spin, ypos, xpos+1)
+        else:
+            self.edit = QtGui.QLineEdit(str(default))
+            self.edit.editingFinished.connect(self._edit_changed)
+            grid.addWidget(self.edit, ypos, xpos+1)
+       
+    def _edit_changed(self):
+        try:
+            val = self.rtype(self.edit.text())
+            self.valid = (val >= self.minval and val <= self.maxval)
+            self.edit.setStyleSheet("")
+        except:
+            self.edit.setStyleSheet("QLineEdit {background-color: red}")
+            self.valid = False
+        self.sig_changed.emit()
+
+    def value(self):
+        if self.use_spin:
+            return self.spin.value()
+        elif self.valid:
+            return self.rtype(self.edit.text())
+        else:
+            raise QpException("'%s' is not a valid number")
+        
 class NumberList(QtGui.QTableWidget):
     """
     Horizontal list of numeric values
