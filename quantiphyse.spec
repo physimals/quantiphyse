@@ -7,6 +7,9 @@ import re
 import shutil
 import platform
 
+# See below for full explanation...
+OSX_LIBPNG_HACK = True
+
 # This is copied from update_version for now until we sort out how to import it...
 def get_std_version():
     """ 
@@ -69,7 +72,7 @@ elif sys.platform.startswith("linux"):
     hidden_imports.append('pywt._extensions._cwt')
     bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
-elif sys.platform.startswith("darwin"):#
+elif sys.platform.startswith("darwin"):
     sysname="osx"
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
@@ -126,6 +129,17 @@ else:
                    strip=False,
                    upx=False,
                    name='quantiphyse')
+
+    if sys.platform.startswith("darwin") and OSX_LIBPNG_HACK:
+        # This is a total hack for OSX which on my build system
+        # seems to bundle the wrong version of libpng. So we need 
+        # to copy the right one into the dist. This is clearly
+        # not portable and should be replaced by either a portable
+        # solution or a fix to the underlying problem
+        libpng = os.path.join(os.environ["HOME"], "anaconda2/lib/libpng16.16.dylib")
+        dest = os.path.join(os.path.abspath(SPECPATH), "dist/quantiphyse/")
+        shutil.copy(libpng, dest)
+
     if osx_bundle:
         app = BUNDLE(coll,
              name='quantiphyse.app',
