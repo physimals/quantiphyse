@@ -751,7 +751,7 @@ class ModelCurvesOptions(QtGui.QDialog):
         self.mode_combo = QtGui.QComboBox()
         self.mode_combo.addItem("Signal")
         self.mode_combo.addItem("Signal Enhancement")
-        self.mode_combo.addItem("Residuals")
+        self.mode_combo.addItem("Signal and Residuals")
         self.mode_combo.currentIndexChanged.connect(self.mode_changed)
         grid.addWidget(self.mode_combo, 0, 1)
 
@@ -838,6 +838,13 @@ class ModelCurves(QpWidget):
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
         self.plot = win.addPlot()
+
+        ## For second y-axis, create a new ViewBox, link the right axis to its coordinate system
+        self.plot_rightaxis = pg.ViewBox()
+        self.plot.scene().addItem(self.plot_rightaxis)
+        self.plot.getAxis('right').linkToView(self.plot_rightaxis)
+        self.plot_rightaxis.setXLink(self.plot)
+
         main_vbox.addWidget(win)
 
         hbox = QtGui.QHBoxLayout()
@@ -965,17 +972,27 @@ class ModelCurves(QpWidget):
         """
         Plot the curve / curves
         """
-        self.plot.clear()
+        self.plot.clear() 
+        self.plot_rightaxis.clear()
+
+        # FIXME custom range for residuals axis?
+        self.plot_rightaxis.enableAutoRange()
         if self.plot_opts.auto_y_cb.isChecked():
             self.plot.enableAutoRange()
         else: 
             self.plot.disableAutoRange()
             self.plot.setYRange(self.plot_opts.min_spin.value(), self.plot_opts.max_spin.value())
+            
+        self.plot_rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
+        self.plot_rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
 
-        # Replaces any existing legend
-        if self.plot.legend: self.plot.legend.scene().removeItem(self.plot.legend)
-        legend = self.plot.addLegend()
-
+        # Replaces any existing legend but keep position the same in case user moved it
+        legend_pos = (30, 30)
+        if self.plot.legend: 
+            legend_pos = self.plot.legend.pos()
+            self.plot.legend.scene().removeItem(self.plot.legend)
+        legend = self.plot.addLegend(offset=legend_pos)
+        
         sig, sig_ovl = self.ivm.get_current_enhancement()
 
         # Get x scale
@@ -983,26 +1000,33 @@ class ModelCurves(QpWidget):
         frames1 = self.plot_opts.norm_frames.value()
         self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
-        axis_labels = {0 : "Signal", 1 : "Signal enhancement", 2 : "Residual"}
+        # Set y labels
+        axis_labels = {0 : "Signal", 1 : "Signal enhancement", 2 : "Signal"}
         self.plot.setLabel('left', axis_labels[self.plot_opts.mode])
+        if self.plot_opts.mode == 2:
+            self.plot.showAxis('right')
+            self.plot.getAxis('right').setLabel('Residual')
+        else:
+            self.plot.hideAxis('right')
 
         # Plot each data item
         idx, n_ovls = 0, len(sig_ovl)
         for ovl, sig_values in sig_ovl.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
+                pen = get_kelly_col(idx)
+
                 if self.plot_opts.mode == 1:
                     # Show signal enhancement rather than raw values
                     m1 = np.mean(sig_values[:frames1])
                     if m1 != 0: sig_values = sig_values / m1 - 1
-                elif self.plot_opts.mode == 2:
-                    # Show residuals rather than raw values
-                    if ovl == self.ivm.main.name:
-                        # Don't bother plotting the main data, it's always zero
-                        continue
-                    sig_values = sig_values - sig
-
+                
+                if self.plot_opts.mode == 2 and ovl != self.ivm.main.name:
+                    # Show residuals on the right hand axis
+                    resid_values = sig_values - sig
+                    self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
+                    
+                # Plot signal or signal enhancement
                 self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-                pen = get_kelly_col(idx)
                 line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
                 legend.addItem(line, ovl)
                 idx += 1
