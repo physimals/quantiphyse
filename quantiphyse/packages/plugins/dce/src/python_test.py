@@ -2,7 +2,6 @@ from __future__ import division, print_function
 
 import nibabel as nib
 import numpy as np
-import matplotlib.pyplot as plt
 
 from quantiphyse.analysis.pk_model import PyPk
 
@@ -79,10 +78,4 @@ print("convert to numpy")
 fcurve2 = np.array(fcurveb)
 
 print (fcurve2.shape)
-print("plot curves")
-
-plt.plot(fcurve2[9674, :])
-plt.plot(img1sub[9674, :])
-plt.show()
-
 

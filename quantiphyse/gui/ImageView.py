@@ -6,10 +6,8 @@ Copyright (c) 2013-2015 University of Oxford
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import sys
-import matplotlib
 import collections
 
-from matplotlib import cm
 from PySide import QtCore, QtGui
 import warnings
 import numpy as np
