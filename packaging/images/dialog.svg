@@ -14,9 +14,9 @@
    width="493"
    height="312"
    sodipodi:docname="dialog.svg"
-   inkscape:export-filename="/home/martinc/dev/PkView/pkview/icons/quantiphyse.png"
-   inkscape:export-xdpi="268.04999"
-   inkscape:export-ydpi="268.04999">
+   inkscape:export-filename="/home/ibmeuser/build/PkView/images/dialog.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <metadata
      id="metadata65">
     <rdf:RDF>
@@ -30,8 +30,8 @@
     </rdf:RDF>
   </metadata>
   <sodipodi:namedview
-     pagecolor="#323232"
-     bordercolor="#666666"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
      borderopacity="1"
      objecttolerance="10"
      gridtolerance="10"
@@ -43,7 +43,7 @@
      id="namedview63"
      showgrid="false"
      inkscape:zoom="1"
-     inkscape:cx="84.692159"
+     inkscape:cx="-84.807841"
      inkscape:cy="22.2972"
      inkscape:window-x="65"
      inkscape:window-y="24"
@@ -86,7 +86,7 @@
   <rect
      style="fill:#323232;fill-opacity:1;stroke:none;stroke-width:13.38700008;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0"
      id="rect4179"
-     width="498"
+     width="150"
      height="318"
      x="-2"
      y="0"
@@ -140,14 +140,14 @@
   </g>
   <text
      xml:space="preserve"
-     style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#e5e5e5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-     x="6.8888168"
-     y="146.96014"
+     style="font-style:normal;font-weight:normal;font-size:42.63031387px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#e5e5e5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="6.8311143"
+     y="148.04909"
      id="text4449"
      sodipodi:linespacing="125%"><tspan
        sodipodi:role="line"
        id="tspan4453"
-       x="6.8888168"
-       y="146.96014"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:22.5px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">Quantiphyse</tspan></text>
+       x="6.8311143"
+       y="148.04909"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:23.97955132px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">Quantiphyse</tspan></text>
 </svg>

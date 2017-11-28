@@ -26,6 +26,8 @@ def get_std_version():
 # See if we are 32 bit or 64 bit
 bits = struct.calcsize("P") * 8
 
+qpdir = os.path.dirname(os.path.abspath(os.path.join(SPEC, os.pardir)))
+
 # Whether to build single-file executable or folder
 onefile = False
 osx_bundle = False
@@ -43,10 +45,10 @@ hidden_imports = [
 ]
 
 added_files = [
-    ('quantiphyse/icons', 'icons'), 
-    ('quantiphyse/resources', 'resources'), 
-    ('src', 'src'),
-    ('quantiphyse/packages', 'packages')
+    (os.path.join(qpdir, 'quantiphyse/icons'), 'icons'), 
+    (os.path.join(qpdir, 'quantiphyse/resources'), 'resources'), 
+    (os.path.join(qpdir, 'src'), 'src'),
+    (os.path.join(qpdir, 'quantiphyse/packages'), 'packages')
 ]
 
 runtime_hooks=[
@@ -65,7 +67,6 @@ excludes = [
     'wx',
 ]
 
-qpdir = os.path.dirname(os.path.abspath(SPEC))
 archive_method="zip"
 
 # Update version info from git tags and get standardized version for packages
@@ -112,13 +113,13 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(("%s/lib/libfabber*.dylib" % fsldir, "fabber/lib"))
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 
-a = Analysis(['qp.py'],
+a = Analysis([os.path.join(qpdir, 'qp.py')],
              pathex=[],
              binaries=bin_files,
              datas=added_files,
              hiddenimports=hidden_imports,
              runtime_hooks=runtime_hooks,
-             hookspath=['hooks'],
+             hookspath=['packaging/hooks'],
              excludes=excludes,
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
