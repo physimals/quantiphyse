@@ -9,10 +9,10 @@
    -->
 
    <!-- Basic product information -->
-   <Product Id="d64d2872-ea7b-5414-a65d-ede223a6c2f9" 
+   <Product Id="*" 
             UpgradeCode="7eaceb24-54cc-59ac-a2fa-1c34c9767ccc" 
             Name="Quantiphyse" 
-            Version="0.39.0.166" 
+            Version="0.39.0.168" 
             Manufacturer="ibme-qubic" 
             Language="1033">
       <Package Id="*" 
@@ -532,7 +532,7 @@
             <Component Id="Component160" Guid="a983d8c8-61da-5c77-a5b2-fd8f69b5ac97" Win64="yes">
               <File Id="File160" Source="C:\Users\ctsu0221\build\PkView\dist\quantiphyse\quantiphyse.exe" KeyPath="yes">
                 <Shortcut Id="startmenu_qp" Directory="ProgramMenuDir" Name="Quantiphyse"
-                          WorkingDirectory="INSTALLDIR" Advertise="yes"/>
+                          WorkingDirectory="INSTALLDIR" Icon="main_icon.ico" Advertise="yes"/>
               </File>
             </Component>
             <Component Id="Component161" Guid="8b5e9d97-4580-5603-bf5c-56d109c992ca" Win64="yes">
@@ -15116,5 +15116,8 @@
       <WixVariable Id="WixUIBannerBmp" Value="packaging/images/banner.bmp" />
       <WixVariable Id="WixUIDialogBmp" Value="packaging/images/dialog.bmp" />
       <WixVariable Id="WixUILicenseRtf" Value="packaging/LICENSE.rtf"/>
+
+      <Icon Id="main_icon.ico" SourceFile="quantiphyse/icons/main_icon.ico" />
+      <Property Id="ARPPRODUCTICON" Value="main_icon.ico" />
    </Product>
 </Wix>

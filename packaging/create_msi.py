@@ -37,7 +37,7 @@ WXS_TEMPLATE = """
    -->
 
    <!-- Basic product information -->
-   <Product Id="%(product_guid)s" 
+   <Product Id="*" 
             UpgradeCode="%(upgrade_guid)s" 
             Name="Quantiphyse" 
             Version="%(version_str)s" 
@@ -97,6 +97,9 @@ WXS_TEMPLATE = """
       <WixVariable Id="WixUIBannerBmp" Value="packaging/images/banner.bmp" />
       <WixVariable Id="WixUIDialogBmp" Value="packaging/images/dialog.bmp" />
       <WixVariable Id="WixUILicenseRtf" Value="packaging/LICENSE.rtf"/>
+
+      <Icon Id="main_icon.ico" SourceFile="quantiphyse/icons/main_icon.ico" />
+      <Property Id="ARPPRODUCTICON" Value="main_icon.ico" />
    </Product>
 </Wix>"""
 
@@ -106,7 +109,7 @@ def get_guid(path):
     """
     return uuid.uuid5(uuid.NAMESPACE_DNS, 'quantiphyse.org/' + path)
 
-def addSubdir(pdir, subdir, files, nfile, ndir, output, indent):
+def add_files_in_dir(pdir, subdir, files, nfile, ndir, output, indent):
     """
     Add file componenents from a directory, recursively adding from subdirs
     """
@@ -121,7 +124,7 @@ def addSubdir(pdir, subdir, files, nfile, ndir, output, indent):
             if fname == "quantiphyse.exe":
                 output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes">\n' % (indent, nfile, fpath))
                 output.write('%s      <Shortcut Id="startmenu_qp" Directory="ProgramMenuDir" Name="Quantiphyse"\n' % indent)
-                output.write('%s                WorkingDirectory="INSTALLDIR" Advertise="yes"/>\n' % indent)
+                output.write('%s                WorkingDirectory="INSTALLDIR" Icon="main_icon.ico" Advertise="yes"/>\n' % indent)
                 output.write('%s    </File>\n' % indent)
             else:
                 output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes"/>\n' % (indent, nfile, fpath))
@@ -129,7 +132,7 @@ def addSubdir(pdir, subdir, files, nfile, ndir, output, indent):
             nfile += 1
         for subdir in subdirList:
             files[subdir] = {}
-            nfile, ndir = addSubdir(dirName, subdir, files[subdir], nfile, ndir, output, indent + "  ")
+            nfile, ndir = add_files_in_dir(dirName, subdir, files[subdir], nfile, ndir, output, indent + "  ")
         break
     output.write('%s</Directory>\n' % indent)
     return nfile, ndir
@@ -148,7 +151,7 @@ def create_wxs(fname):
     
     all_files = {}
     output = StringIO()
-    nfile, ndir = addSubdir(DIST_ROOT_DIR, "quantiphyse", all_files, 1, 1, output, "  " * 5)
+    nfile, ndir = add_files_in_dir(DIST_ROOT_DIR, "quantiphyse", all_files, 1, 1, output, "  " * 5)
     formatting_values["dist_files"] = output.getvalue()
 
     output = StringIO()
