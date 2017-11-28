@@ -14,7 +14,7 @@
    width="493"
    height="312"
    sodipodi:docname="dialog.svg"
-   inkscape:export-filename="/home/ibmeuser/build/PkView/images/dialog.png"
+   inkscape:export-filename="/home/ibmeuser/build/PkView/packaging/images/dialog.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <metadata
@@ -43,7 +43,7 @@
      id="namedview63"
      showgrid="false"
      inkscape:zoom="1"
-     inkscape:cx="-84.807841"
+     inkscape:cx="10"
      inkscape:cy="22.2972"
      inkscape:window-x="65"
      inkscape:window-y="24"
@@ -150,4 +150,12 @@
        x="6.8311143"
        y="148.04909"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:23.97955132px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">Quantiphyse</tspan></text>
+  <rect
+     style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3.16443038;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect4148"
+     width="371.83557"
+     height="334.83557"
+     x="146.08221"
+     y="-5.9177847"
+     ry="2.4241989" />
 </svg>

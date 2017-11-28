@@ -17,7 +17,7 @@
    version="1.1"
    inkscape:version="0.91 r13725"
    sodipodi:docname="banner.svg"
-   inkscape:export-filename="/home/ibmeuser/build/PkView/images/banner.png"
+   inkscape:export-filename="/home/ibmeuser/build/PkView/packaging/images/banner.png"
    inkscape:export-xdpi="89.999977"
    inkscape:export-ydpi="89.999977">
   <defs
@@ -30,7 +30,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="179.5"
+     inkscape:cx="-98.3"
      inkscape:cy="-223.70175"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -63,14 +63,14 @@
        id="rect4179"
        width="498.00003"
        height="65.000015"
-       x="1.1920928e-06"
-       y="993.36218"
+       x="-0.99999601"
+       y="992.36218"
        ry="0.46911818"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <g
        id="g4152"
-       transform="matrix(1.4655493,0,0,1.4863739,5.6803556,591.65183)">
+       transform="matrix(1.2410638,0,0,1.2586986,437.68038,656.32098)">
       <image
          width="28.361376"
          height="28.242884"
@@ -113,29 +113,13 @@
            sodipodi:nodetypes="csssssssc" />
       </g>
     </g>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:66.96070099px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#e5e5e5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="69.701775"
-       y="1027.7234"
-       id="text4449"
-       sodipodi:linespacing="125%"><tspan
-         sodipodi:role="line"
-         id="tspan4453"
-         x="69.701775"
-         y="1027.7234"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:37.66539383px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#e5e5e5;fill-opacity:1">Quantiphyse</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:64.58441162px;line-height:100%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#868686;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="63.38311"
-       y="1048.7643"
-       id="text4457"
-       sodipodi:linespacing="100%"><tspan
-         sodipodi:role="line"
-         id="tspan4459"
-         x="63.38311"
-         y="1048.7643"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.10957718px;line-height:100%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#868686;fill-opacity:1">Visualisation for quantitative physiology</tspan></text>
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3.00658441;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect4145"
+       width="447.99341"
+       height="87.993416"
+       x="-18.99671"
+       y="983.36548"
+       ry="0.46908289" />
   </g>
 </svg>
