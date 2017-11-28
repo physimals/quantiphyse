@@ -32,11 +32,39 @@ osx_bundle = False
 
 # Generic configuration
 block_cipher = None
-bin_files = []
-hidden_imports = ['skimage.segmentation', 'sklearn.metrics', 'quantiphyse.analysis.overlay_analysis',
-                   'quantiphyse.analysis.feat_pca' ]
-added_files = [('quantiphyse/icons', 'icons'), ('quantiphyse/resources', 'resources'), ('src', 'src'),
-               ('quantiphyse/packages', 'packages')]
+bin_files = [
+]
+
+hidden_imports = [
+    'skimage.segmentation', 
+    'sklearn.metrics', 
+    'quantiphyse.analysis.overlay_analysis',
+    'quantiphyse.analysis.feat_pca',
+]
+
+added_files = [
+    ('quantiphyse/icons', 'icons'), 
+    ('quantiphyse/resources', 'resources'), 
+    ('src', 'src'),
+    ('quantiphyse/packages', 'packages')
+]
+
+runtime_hooks=[
+]
+
+excludes = [
+    'tcl',
+    'tk',
+    'tkinter',
+    '_tkinter',
+    'matplotlib.backends',
+    'pkgres',
+    'mplconfig',
+    'mpldata',
+    'mpl-data',
+    'wx',
+]
+
 qpdir = os.path.dirname(os.path.abspath(SPEC))
 archive_method="zip"
 
@@ -89,9 +117,9 @@ a = Analysis(['qp.py'],
              binaries=bin_files,
              datas=added_files,
              hiddenimports=hidden_imports,
+             runtime_hooks=runtime_hooks,
              hookspath=['hooks'],
-             runtime_hooks=[],
-             excludes=[],
+             excludes=excludes,
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
