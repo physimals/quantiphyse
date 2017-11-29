@@ -13,13 +13,7 @@ import os, sys
 import uuid
 from StringIO import StringIO
 
-# Get absolute paths to the packaging dir and the root Quantiphyse dir
-pkgdir = os.path.abspath(os.path.dirname(__file__))
-qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
-sys.path.append(qpdir)
-import update_version
-
-DIST_ROOT_DIR = os.path.join(qpdir, "dist")
+MSI_SUBDIR = "msi"
 
 # Path to WIX toolset - update as required
 WIXDIR = "c:\Program Files (x86)/WiX Toolset v3.11/bin/"
@@ -137,12 +131,12 @@ def add_files_in_dir(pdir, subdir, files, nfile, ndir, output, indent):
     output.write('%s</Directory>\n' % indent)
     return nfile, ndir
 
-def create_wxs(fname):
+def create_wxs(distdir, version_str, wxs_fname):
     """
     Create the WXS file for WIX toolset to create the MSI
     """
     formatting_values = {
-        "version_str" : update_version.get_std_version().replace("-", "."),
+        "version_str" : version_str,
         "product_guid" : get_guid('quantiphyse/product'),
         "upgrade_guid" : get_guid('quantiphyse/upgrade'),
         "menu_guid" : get_guid('quantiphyse/menu'),
@@ -151,7 +145,7 @@ def create_wxs(fname):
     
     all_files = {}
     output = StringIO()
-    nfile, ndir = add_files_in_dir(DIST_ROOT_DIR, "quantiphyse", all_files, 1, 1, output, "  " * 5)
+    nfile, ndir = add_files_in_dir(distdir, "quantiphyse", all_files, 1, 1, output, "  " * 5)
     formatting_values["dist_files"] = output.getvalue()
 
     output = StringIO()
@@ -159,18 +153,32 @@ def create_wxs(fname):
         output.write('         <ComponentRef Id="Component%i"/>\n' % (n+1))
     formatting_values["features"] = output.getvalue()
 
-    output = open(fname, 'w')
+    output = open(wxs_fname, 'w')
     output.write(WXS_TEMPLATE % formatting_values)
     output.close()
 
-def create_msi(fname):
+def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
     """
     Create the MSI itself using WIX toolset
     """
-    obj_fname = fname.replace(".wxs", ".wixobj")
-    os.system('"%s/candle.exe" %s -out %s' % (WIXDIR, fname, obj_fname))
+    if version_str_display == None:
+        version_str_display = version_str
+
+    msidir = os.path.join(pkgdir, MSI_SUBDIR)
+    wxs_fname = os.path.join(msidir, "quantiphyse.wxs")
+    obj_fname = os.path.join(msidir, "quantiphyse.wixobj")
+    create_wxs(distdir, version_str, wxs_fname)
+    
+    os.system('"%s/candle.exe" %s -out %s' % (WIXDIR, wxs_fname, obj_fname))
     os.system('"%s/light.exe" %s -ext WixUIExtension' % (WIXDIR, obj_fname))
 
-wxs_fname = os.path.join(pkgdir, "quantiphyse.wxs")
-create_wxs(wxs_fname)
-create_msi(wxs_fname)
+if __name__ == "__main":
+    # Get absolute paths to the packaging dir and the root Quantiphyse dir
+    pkgdir = os.path.abspath(os.path.dirname(__file__))
+    qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
+    sys.path.append(qpdir)
+    import update_version
+
+    wxs_fname = os.path.join(pkgdir, "quantiphyse.wxs")
+    create_msi(os.path.join(qpdir, "dist"), pkgdir, 
+               update_version.get_std_version().replace("-", "."), "win32")

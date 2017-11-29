@@ -17,3 +17,5 @@ quantiphyse.egg-info
 debian/debhelper-build-stamp
 test/system_tests/test_data
 out
+packaging/deb
+packaging/msi
