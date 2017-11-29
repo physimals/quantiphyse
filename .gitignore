@@ -19,3 +19,6 @@ test/system_tests/test_data
 out
 packaging/deb
 packaging/msi
+packaging/*.log
+packaging/*.err
+

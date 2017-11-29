@@ -60,8 +60,11 @@ Quantiphyse
 
 # Update version info from git tags and return a standardized version
 # of it for packaging
-from update_version import get_std_version
-version_str = get_std_version()
+qpdir = os.path.abspath(os.path.dirname(__file__))
+pkgdir = os.path.abspath(os.path.join(qpdir, "packaging"))
+sys.path.append(pkgdir)
+from update_version import update_version
+version_full, version_str = update_version()
 
 extensions = []
 compile_args = []
