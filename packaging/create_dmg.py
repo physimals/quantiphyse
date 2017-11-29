@@ -115,35 +115,50 @@ data 'STR#' (5002, "English") {
         ret = os.system('%s -a %s -o "%s"' %
                         (rez, tmpFile, dmgFile))
         os.system('hdiutil flatten -quiet "%s"' % dmgFile)
-        if compression is not None:
-            os.system('cp %s %s.temp.dmg' % (dmgFile, dmgFile))
-            os.remove(dmgFile)
-            if compression == "bz2":
-                os.system('hdiutil convert %s.temp.dmg -format UDBZ -o %s' %
-                          (dmgFile, dmgFile))
-            elif compression == "gz":
-                os.system('hdiutil convert %s.temp.dmg -format ' % dmgFile +
-                          'UDZO -imagekey zlib-devel=9 -o %s' % dmgFile)
-            os.remove('%s.temp.dmg' % dmgFile)
     if ret == 0:
         print "Successfully added license to '%s'" % dmgFile
     else:
         print "Failed to add license to '%s'" % dmgFile
 
+def add_apps_link(dmg_path):
+    """ 
+    Attempt to add a link to the /Applications folder in the DMG so the
+    user can simply drag it across
+    """
+    path = None
+    try:
+        a = subprocess.check_output(['hdiutil', 'attach', '-noverify', dmg_path])
+        lines = a.split('\n')
+        path = lines[1].split("\t")[2]
+        os.system('ln -s /Applications "%s/Applications" ' % path) 
+    except:
+        print("WARNING: Failed to add link to Applications folder")
+        print(sys.exc_info())
+    finally:
+        if path is not None:
+            os.system('hdiutil detach "%s" -quiet' % path)
+    
 def create_dmg(distdir, pkgdir, version_str, sysname, version_str_display=None):
     if version_str_display == None:
         version_str_display = version_str
 
+    dmg_temp_path = os.path.join(distdir, "quantiphyse.tmp.dmg")
+    dmg_path = os.path.join(distdir, "quantiphyse-%s.dmg" % version_str_display)
     formatting_values = {
         "version_str" : version_str,
         "version_str_display" : version_str_display,
         "bundle_dir" : os.path.join(distdir, "Quantiphyse.app"),
-        "dmg_name" : os.path.join(distdir, "quantiphyse-%s.dmg" % version_str_display)
+        "dmg_name" : dmg_path,
+        "dmg_temp_path" : dmg_temp_path,
     }
 
-    os.system('hdiutil create -volname Quantiphyse -srcfolder %(bundle_dir)s -ov -format UDZO %(dmg_name)s' % formatting_values)
+    os.system('hdiutil create -volname Quantiphyse -srcfolder %(bundle_dir)s -ov -quiet -format UDRW %(dmg_temp_path)s' % formatting_values)
     license = os.path.join(distdir, os.pardir, "licence.md")
-    add_license(formatting_values["dmg_name"], license)
+    add_apps_link(dmg_temp_path)
+    add_license(dmg_temp_path, license)
+    os.system('hdiutil convert %s -format ' % dmg_temp_path +
+              'UDZO -imagekey zlib-devel=9 -ov -quiet -o %s' % dmg_path)
+    os.remove(dmg_temp_path)
 
 if __name__ == "__main__":
     # Get absolute paths to the packaging dir and the root Quantiphyse dir

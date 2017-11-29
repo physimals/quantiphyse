@@ -155,9 +155,10 @@ coll = COLLECT(exe,
                 name='quantiphyse')
 
 if osx_bundle:
+    os.system("iconutil -c icns %s/images/qp.iconset" % pkgdir)
     app = BUNDLE(coll,
             name='quantiphyse.app',
-            icon='%s/quantiphyse/icons/pk.png' % qpdir,
+            icon='%s/images/qp.icns' % pkgdir,
             bundle_identifier=None)
 
 if sys.platform.startswith("darwin") and OSX_LIBPNG_HACK:
