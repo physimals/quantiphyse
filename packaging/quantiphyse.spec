@@ -13,6 +13,7 @@ OSX_LIBPNG_HACK = True
 pkgdir = os.path.abspath(os.path.dirname(SPEC))
 sys.path.append(pkgdir)
 qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
+distdir = os.path.join(qpdir, "dist")
 
 # This is copied from update_version for now until we sort out how to import it...
 def get_std_version():
@@ -108,6 +109,8 @@ elif sys.platform.startswith("linux"):
     bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 elif sys.platform.startswith("darwin"):
     sysname="osx"
+    import create_dmg
+    platform_package = create_dmg.create_dmg
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
     anaconda_dir='%s/anaconda2/' % home_dir
@@ -151,6 +154,12 @@ coll = COLLECT(exe,
                 upx=False,
                 name='quantiphyse')
 
+if osx_bundle:
+    app = BUNDLE(coll,
+            name='quantiphyse.app',
+            icon='%s/quantiphyse/icons/pk.png' % qpdir,
+            bundle_identifier=None)
+
 if sys.platform.startswith("darwin") and OSX_LIBPNG_HACK:
     # This is a total hack for OSX which on my build system
     # seems to bundle the wrong version of libpng. So we need 
@@ -158,18 +167,14 @@ if sys.platform.startswith("darwin") and OSX_LIBPNG_HACK:
     # not portable and should be replaced by either a portable
     # solution or a fix to the underlying problem
     libpng = os.path.join(os.environ["HOME"], "anaconda2/lib/libpng16.16.dylib")
-    dest = os.path.join(os.path.abspath(SPECPATH), "dist/quantiphyse/")
+    dest = os.path.join(distdir, "quantiphyse/")
     shutil.copy(libpng, dest)
-
-if osx_bundle:
-    app = BUNDLE(coll,
-            name='quantiphyse.app',
-            icon='%s/quantiphyse/icons/pk.png' % qpdir,
-            bundle_identifier=None)
+    if osx_bundle:
+        dest = os.path.join(distdir, "quantiphyse.app/Contents/MacOS/")
+        shutil.copy(libpng, dest)
 
 sys.stdout.write("Creating compressed archive...")
 sys.stdout.flush()
-distdir = os.path.join(qpdir, "dist")
 shutil.make_archive("%s/quantiphyse-%s-%s" % (distdir, version_str, sysname), 
                     archive_method, "%s/quantiphyse" % distdir)
 print("DONE")
