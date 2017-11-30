@@ -284,13 +284,16 @@ class NumericOption(QtGui.QWidget):
             self.spin.setMaximum(maxval)
             self.spin.setValue(default)
             self.spin.setSingleStep(step)
-            self.spin.valueChanged.connect(self.sig_changed.emit)
+            self.spin.valueChanged.connect(self._changed)
             grid.addWidget(self.spin, ypos, xpos+1)
         else:
             self.edit = QtGui.QLineEdit(str(default))
             self.edit.editingFinished.connect(self._edit_changed)
             grid.addWidget(self.edit, ypos, xpos+1)
-       
+
+    def _changed(self):
+        self.sig_changed.emit()
+
     def _edit_changed(self):
         try:
             val = self.rtype(self.edit.text())
@@ -299,7 +302,7 @@ class NumericOption(QtGui.QWidget):
         except:
             self.edit.setStyleSheet("QLineEdit {background-color: red}")
             self.valid = False
-        self.sig_changed.emit()
+        self._changed()
 
     def value(self):
         if self.use_spin:
