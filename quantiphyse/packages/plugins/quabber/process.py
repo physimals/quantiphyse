@@ -91,6 +91,8 @@ class FabberProcess(BackgroundProcess):
         else:
             roidata = self.ivm.rois[roi_name].std()
 
+        self.output_rename = options.pop("output-rename", {})
+
         # FIXME rundata requires all arguments to be strings!
         rundata = {}
         for key in options.keys():
@@ -148,6 +150,7 @@ class FabberProcess(BackgroundProcess):
                 debug(key)
                 recombined_item = self.recombine_data([o.data.get(key, None) for o in self.output])
                 debug("recombined")
-                self.ivm.add_data(recombined_item, name=key, make_current=first)
+                name = self.output_rename.get(key, key)
+                self.ivm.add_data(recombined_item, name=name, make_current=first)
                 first = False
 
