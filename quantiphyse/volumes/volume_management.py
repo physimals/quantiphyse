@@ -91,10 +91,10 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_rois.emit([])
         self.sig_all_data.emit([])
 
-    def suggest_name(self, name):
+    def suggest_name(self, name, ensure_unique=True):
         """
-        Suggest a name for new data that does not clash with existing names and is
-        suitable for use as a Python variable.
+        Suggest a name for new data that is suitable for use as a Python variable.
+        If required, ensure name does not clash with existing names
         """
         # Remove invalid characters
         name = re.sub('[^0-9a-zA-Z_]', '', name)
