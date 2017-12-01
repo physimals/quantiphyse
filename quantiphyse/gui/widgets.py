@@ -312,6 +312,29 @@ class NumericOption(QtGui.QWidget):
         else:
             raise QpException("'%s' is not a valid number")
         
+class ChoiceOption(QtGui.QWidget):
+
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, text, grid, ypos, xpos=0, choices=[]):
+        QtGui.QWidget.__init__(self)
+        self.choices = choices
+        
+        self.label = QtGui.QLabel(text)
+        grid.addWidget(self.label, ypos, xpos)
+
+        self.combo = QtGui.QComboBox()
+        for c in choices:
+            self.combo.addItem(c)
+        self.combo.currentIndexChanged.connect(self._changed)
+        grid.addWidget(self.combo, ypos, xpos+1)
+
+    def _changed(self):
+        self.sig_changed.emit()
+
+    def value(self):
+        return self.combo.currentText()
+        
 class NumberList(QtGui.QTableWidget):
     """
     Horizontal list of numeric values
