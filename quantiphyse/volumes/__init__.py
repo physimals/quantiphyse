@@ -260,10 +260,6 @@ class QpData:
     """
 
     def __init__(self, name, grid, nvols, fname=None, roi=False):
-        # Unlikely but possible that first data is added from the console
-        if grid is None:
-            grid = DataGrid(data.shape[:3], np.identity(4))
-
         # Everyone needs a friendly name
         self.name = name
 
@@ -349,7 +345,6 @@ class QpData:
 
         axes - a sequence of tuples of (axis number, position)
         mask - if specified, data outside the mask is given a fixed fill value
-        fill_value - fill value, if not specified a value less than the data minimum is used
         """
         #debug("Getting slice for %s" % self.name)
         vol_data = self.std()
