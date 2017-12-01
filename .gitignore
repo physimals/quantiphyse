@@ -21,4 +21,4 @@ packaging/deb
 packaging/msi
 packaging/*.log
 packaging/*.err
-
+.DS_Store
