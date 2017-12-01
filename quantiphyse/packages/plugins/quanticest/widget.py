@@ -477,9 +477,22 @@ class CESTWidget(QpWidget):
         rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
         rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
         rundata["pools"] = self.write_temp("poolmat", self.get_poolmat())
-        rundata["debug"] = ""
+
+        # Rename outputs using pool names rather than letters a, b, c etc
+        renames = {"mean_M0a" : "mean_M0_Water", "mean_T1a" : "mean_T1_Water", "mean_T2a" : "mean_T2_Water"}
+        for idx, pool in enumerate(self.pools[1:]):
+            pool_id = chr(ord('b') + idx)
+            name = self.ivm.suggest_name(pool.name)
+            renames["mean_M0%s_r" % pool_id] = "mean_M0_%s_r" % name
+            renames["mean_k%sa" % pool_id] = "mean_exch_%s" % name
+            renames["mean_ppm_%s" % pool_id] = "mean_ppm_%s" % name
+            renames["mean_T1_%s" % pool_id] = "mean_T1_%s" % name
+            renames["mean_T2_%s" % pool_id] = "mean_T2_%s" % name
+            renames["cest_rstar_%s" % pool_id] = "cest_rstar_%s" % name
+        rundata["output-rename"] = renames 
+        #rundata["debug"] = ""
+
         self.tempfiles = [rundata[s] for s in ("pools", "ptrain", "spec")]
-        
         for item in rundata.items():
             debug("%s: %s" % item)
         return rundata
@@ -516,7 +529,7 @@ class CESTWidget(QpWidget):
         rundata = self.get_rundata()
         rundata["ptrain"] = self.write_temp("ptrain", self.get_ptrain())
         rundata["spec"] = self.write_temp("dataspec", self.get_dataspec())
-        rundata["debug"] = ""
+        #rundata["debug"] = ""
         
         # LDA is the residual data (data - modelfit)
         rundata.pop("save-mean", None)

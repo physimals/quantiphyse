@@ -11,6 +11,7 @@ for reproducibility
 """
 import os, sys
 import uuid
+import shutil
 from StringIO import StringIO
 
 MSI_SUBDIR = "msi"
@@ -136,7 +137,7 @@ def create_wxs(distdir, version_str, wxs_fname):
     Create the WXS file for WIX toolset to create the MSI
     """
     formatting_values = {
-        "version_str" : version_str,
+        "version_str" : version_str.replace("-", "."),
         "product_guid" : get_guid('quantiphyse/product'),
         "upgrade_guid" : get_guid('quantiphyse/upgrade'),
         "menu_guid" : get_guid('quantiphyse/menu'),
@@ -165,14 +166,19 @@ def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
         version_str_display = version_str
 
     msidir = os.path.join(pkgdir, MSI_SUBDIR)
+    shutil.rmtree(msidir, ignore_errors=True)
+    os.makedirs(msidir)
     wxs_fname = os.path.join(msidir, "quantiphyse.wxs")
     obj_fname = os.path.join(msidir, "quantiphyse.wixobj")
+    msi_fname = os.path.join(msidir, "quantiphyse-%s.msi" % version_str_display)
     create_wxs(distdir, version_str, wxs_fname)
     
     os.system('"%s/candle.exe" %s -out %s' % (WIXDIR, wxs_fname, obj_fname))
-    os.system('"%s/light.exe" %s -ext WixUIExtension' % (WIXDIR, obj_fname))
+    print(msi_fname)
+    os.system('"%s/light.exe" %s -out %s -ext WixUIExtension' % (WIXDIR, obj_fname, msi_fname))
+    shutil.move(msi_fname, distdir)
 
-if __name__ == "__main":
+if __name__ == "__main__":
     # Get absolute paths to the packaging dir and the root Quantiphyse dir
     pkgdir = os.path.abspath(os.path.dirname(__file__))
     qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
