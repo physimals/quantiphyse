@@ -11,30 +11,35 @@ import time
 import traceback
 import re
 import tempfile
+import math
 
 import numpy as np
 from PySide import QtCore, QtGui
 
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
+from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, ChoiceOption, NumericOption, NumberList, LoadNumbers, OrderList, OrderListButtons, Citation, TitleWidget, RunBox
 from quantiphyse.gui.dialogs import TextViewerDialog, error_dialog, GridEditDialog
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug, warn, get_plugins
 from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils.batch import parse_batch
 
 class AslDataPreview(QtGui.QWidget):
-    def __init__(self, order, tagfirst, parent=None):
+    def __init__(self, order, tagfirst, multiphase=False, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        self.set_order(order, tagfirst)
+        self.set_order(order, tagfirst, multiphase)
         self.hfactor = 0.95
         self.vfactor = 0.95
         self.cols = {"R" : (128, 128, 255, 128), "T" : (255, 128, 128, 128), "P" : (128, 255, 128, 128)}
         self.setFixedHeight(self.fontMetrics().height()*4)
     
-    def set_order(self, order, tagfirst):
+    def set_order(self, order, tagfirst, multiphase=False):
         self.order = order
         self.tagfirst = tagfirst
+        self.multiphase = multiphase
         self.labels = {"R" : ("Repeat ", "R"), "T" : ("TI " , "TI")}
-        if tagfirst:
+        if multiphase:
+            self.labels["P"] = ("Phase", "Ph")
+        elif tagfirst:
             self.labels["P"] = (("Tag", "Control"), ("T", "C"))
         else:
             self.labels["P"] = (("Control", "Tag"), ("C", "T"))
@@ -48,7 +53,7 @@ class AslDataPreview(QtGui.QWidget):
     def draw_groups(self, p, groups, ox, oy, width, height, cont=False):
         if len(groups) == 0: return
         else:
-            small = width < 100
+            small = width < 150 # Heuristic
             group = groups[0]
             label = self.get_label(group, small)
             col = self.cols[group]
@@ -56,7 +61,7 @@ class AslDataPreview(QtGui.QWidget):
                 p.fillRect(ox, oy, width-1, height-1, QtGui.QBrush(QtGui.QColor(*col)))
                 p.drawText(ox, oy, width-1, height, QtCore.Qt.AlignHCenter, "...")
                 self.draw_groups(p, groups[1:], ox, oy+height, width, height, cont=True)
-            elif group == "P":
+            elif group == "P" and not self.multiphase:
                 w = width/2
                 for c in range(2):
                     p.fillRect(ox+c*w, oy, w-1, height-1, QtGui.QBrush(QtGui.QColor(*col)))
@@ -91,7 +96,7 @@ class ASLWidget(QpWidget):
     """
     def __init__(self, **kwargs):
         QpWidget.__init__(self, name="ASL", icon="asl",  group="Fabber", desc="ASL analysis", **kwargs)
-        self.groups = {"P" : "Tag/Control pairs", "R" : "Repeats", "T" : "TIs"}
+        self.groups = {"P" : "Tag-Control pairs / Phases", "R" : "Repeats", "T" : "TIs"}
         self.default_order = "TRP"
 
     def init_ui(self):
@@ -121,45 +126,51 @@ class ASLWidget(QpWidget):
         grid = QtGui.QGridLayout()
         preprocTab.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("Data format"), 0, 0)
-        self.tc_combo = QtGui.QComboBox()
-        self.tc_combo.addItem("Tag-control pairs")
-        self.tc_combo.addItem("Tag-control subtracted")
-        self.tc_combo.addItem("Multiphase")
-        self.tc_combo.currentIndexChanged.connect(self.update_ui)
-        grid.addWidget(self.tc_combo, 0, 1)
+        self.tc_combo = ChoiceOption("Data format", grid, ypos=0, choices=["Tag-control pairs", "Tag-control subtracted", "Multiphase"])
+        self.tc_combo.sig_changed.connect(self.update_ui)
         self.tc_ord_combo = QtGui.QComboBox()
         self.tc_ord_combo.addItem("Tag first")
         self.tc_ord_combo.addItem("Control first")
         self.tc_ord_combo.currentIndexChanged.connect(self.update_ui)
         grid.addWidget(self.tc_ord_combo, 0, 2)
 
-        self.ntis = NumericOption("Number of TIs/PLDs", grid, ypos=1, xpos=0, default=1, intonly=True, minval=1)
+        self.nphases = NumericOption("Number of Phases (evenly spaced)",  grid, ypos=1, default=8, intonly=True, minval=2)
+        self.nphases.label.setVisible(False)
+        self.nphases.spin.setVisible(False)
+
+        # Code below is for specific multiple phases
+        #self.phases_lbl = QtGui.QLabel("Phases (\N{DEGREE SIGN})")
+        #grid.addWidget(self.phases_lbl, 1, 0)
+        #self.phases_lbl.setVisible(False)
+        #self.phases = NumberList([float(x)*360/8 for x in range(8)])
+        #grid.addWidget(self.phases, 1, 1)
+        #self.phases.setVisible(False)
+
+        self.ntis = NumericOption("Number of TIs/PLDs", grid, ypos=2, xpos=0, default=1, intonly=True, minval=1)
         
-        grid.addWidget(QtGui.QLabel("Data grouping\n(top = outermost)"), 2, 0, alignment=QtCore.Qt.AlignTop)
+        grid.addWidget(QtGui.QLabel("Data grouping\n(top = outermost)"), 3, 0, alignment=QtCore.Qt.AlignTop)
         self.group_list = OrderList()
-        grid.addWidget(self.group_list, 2, 1)
+        grid.addWidget(self.group_list, 3, 1)
         self.list_btns = OrderListButtons(self.group_list)
-        grid.addLayout(self.list_btns, 2, 2)
+        grid.addLayout(self.list_btns, 3, 2)
         # Have to set items after adding to grid or sizing doesn't work right
         self.group_list.setItems([self.groups[g] for g in self.default_order])
         self.group_list.sig_changed.connect(self.update_ui)
 
-        grid.addWidget(QtGui.QLabel("Data order preview"), 3, 0)
-        self.data_preview = AslDataPreview(self.default_order, True)
-        grid.addWidget(self.data_preview, 4, 0, 1, 3)
+        grid.addWidget(QtGui.QLabel("Data order preview"), 4, 0)
+        self.data_preview = AslDataPreview(self.default_order, True, multiphase=False)
+        grid.addWidget(self.data_preview, 5, 0, 1, 3)
 
         self.preproc_btn = QtGui.QPushButton("Preprocess data")
         self.preproc_btn.clicked.connect(self.preprocess)
         self.preprocessed = False
-        grid.addWidget(self.preproc_btn, 5, 0)
+        grid.addWidget(self.preproc_btn, 6, 0)
 
-        grid.setRowStretch(6, 1)
+        grid.setRowStretch(7, 1)
 
         self.tabs.addTab(preprocTab, "Preprocessing")
 
         # Model-based analysis tab
-
         analysisTab = QtGui.QWidget()
         a_vbox = QtGui.QVBoxLayout()
         analysisTab.setLayout(a_vbox)
@@ -206,6 +217,33 @@ class ASLWidget(QpWidget):
         a_vbox.addStretch(1)
 
         self.tabs.addTab(analysisTab, "Analysis")
+
+        # Calibration tab
+        calibTab = QtGui.QWidget()
+        c_vbox = QtGui.QVBoxLayout()
+        calibTab.setLayout(c_vbox)
+
+        self.enable_calib = QtGui.QCheckBox("Enable Calibration")
+        self.enable_calib.stateChanged.connect(self.update_ui)
+        c_vbox.addWidget(self.enable_calib)
+
+        self.calib_pane = QtGui.QWidget()
+        grid = QtGui.QGridLayout()
+        self.calib_pane.setLayout(grid)
+
+        grid.addWidget(QtGui.QLabel("Calibration Image"), 0, 0)
+        self.calib_data = OverlayCombo(self.ivm, static_only=True)
+        grid.addWidget(self.calib_data, 0, 1)
+        
+        self.calib_m0 = ChoiceOption("M0 Type", grid, ypos=1, choices=["Proton Density (long TR)", "Saturation Recovery"])
+        self.calib_tr = NumericOption("Sequence TR (s)", grid, ypos=2, default=6.0, maxval=10, minval=0)
+        self.calib_gain = NumericOption("Calibration gain", grid, ypos=3, default=1.0, maxval=5, minval=0)
+        
+        c_vbox.addWidget(self.calib_pane)
+        c_vbox.addStretch(1)
+
+        self.tabs.addTab(calibTab, "Calibration")
+
         self.update_ui()
 
     def activate(self):
@@ -223,15 +261,28 @@ class ASLWidget(QpWidget):
 
     def update_ui(self):
         """ Update visibility / enabledness of widgets """
-        self.tc_ord_combo.setEnabled(self.tc_combo.currentIndex() == 0)
+        self.tc_ord_combo.setEnabled(self.tc_combo.combo.currentIndex() == 0)
+
         tagfirst = self.tc_ord_combo.currentIndex() == 0
+        multiphase = self.tc_combo.combo.currentIndex() == 2
+           
+        self.nphases.label.setVisible(multiphase)
+        self.nphases.spin.setVisible(multiphase)
+        #self.phases_lbl.setVisible(multiphase)
+        #self.phases.setVisible(multiphase)
+
         order = ""
         for item in self.group_list.items():
             code = [k for k, v in self.groups.items() if v == item][0]
             debug(item, code)
             order += code
         debug(order)
-        self.data_preview.set_order(order, tagfirst)
+        self.data_preview.set_order(order, tagfirst, multiphase)
+        #if multiphase:
+        #    self.groups["P"] = "Phases"
+        #else:
+        #    self.groups["P"] = "Tag/Control pairs"
+        #self.group_list.setItems([self.groups[g] for g in order])
         casl = self.lbl_combo.currentIndex() == 0
         if casl:
             self.plds_label.setText("PLDs")
@@ -239,6 +290,7 @@ class ASLWidget(QpWidget):
             self.plds_label.setText("TIs")
 
         self.runbox.runBtn.setEnabled(self.preprocessed)
+        self.calib_pane.setEnabled(self.enable_calib.isChecked())
 
     def get_vol_idx(self, tidx, ntis, ridx, nrepeats, tcidx, ntcs):
         idx = 0
@@ -254,40 +306,16 @@ class ASLWidget(QpWidget):
                 idx += tcidx
         return idx
 
-    def preprocess(self):
-        """
-        Preprocess the data to put it in the format the Fabber model expects.
-        This is outer grouping of TIs, then by repeats and finally tag/control pairs
-        
-        FIXME multiphase not yet supported
-        """
-        nvols = self.ivm.main.nvols
-        ntis = self.ntis.value()
-        if nvols % ntis != 0:
-            raise QpException("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
-        self.nrepeats = int(nvols / ntis)
-
-        tcpairs = ctpairs = False
-        if self.tc_combo.currentIndex() == 0:
-            # Need to do tag/control subtraction
-            if self.nrepeats % 2 != 0:
-                raise QpException("Number of volumes (%i) not consistent with %i PLDs and tag/control pairs" % (nvols, ntis))
-            nvols = int(nvols/2)
-            self.nrepeats = int(self.nrepeats/2)
-            if self.tc_ord_combo.currentIndex() == 0:
-                tcpairs = True
-            else:
-                ctpairs = True
-
-        debug("ntis=%i, nrepeats=%i, tcpairs=%i, ctpairs=%i, nvols=%i" % (ntis, self.nrepeats, tcpairs, ctpairs, nvols))
+    def do_subtraction(self, nvols, ntis, nrepeats, tcpairs, ctpairs):
+        debug("Subtraction: ntis=%i, nrepeats=%i, tcpairs=%i, ctpairs=%i, nvols=%i" % (ntis, nrepeats, tcpairs, ctpairs, nvols))
         asldata = np.zeros(list(self.ivm.grid.shape) + [nvols, ])
         out_idx = 0
         if tcpairs or ctpairs: npairs = 2
         else: npairs = 1
         for tidx in range(ntis):
-            for ridx in range(self.nrepeats):
-                idx1 = self.get_vol_idx(tidx, ntis, ridx, self.nrepeats, 0, npairs)
-                idx2 = self.get_vol_idx(tidx, ntis, ridx, self.nrepeats, 1, npairs)
+            for ridx in range(nrepeats):
+                idx1 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 0, npairs)
+                idx2 = self.get_vol_idx(tidx, ntis, ridx, nrepeats, 1, npairs)
                 debug("tidx=%i, ridx=%i, tc1=%i, tc2=%i" % (tidx, ridx, idx1, idx2))
                 if ctpairs:
                     # Do control - tag
@@ -304,6 +332,73 @@ class ASLWidget(QpWidget):
 #        meandiff = np.mean(asldata, 3)
 #        self.ivm.add_data(meandiff, name="diff", make_current=True)
         self.ivm.add_data(asldata, name="asldata", make_main=True)
+
+    def do_multiphase(self, nvols, ntis, nrepeats, nphases):
+        # Prepare properly ordered Fabber multiphase input
+        debug("Multiphase: ntis=%i, nrepeats=%i, nphases=%i, nvols=%i" % (ntis, nrepeats, nphases, nvols))
+        multiphasedata = np.zeros(list(self.ivm.grid.shape) + [nvols, ])
+        out_idx = 0
+        for tidx in range(ntis):
+            for ridx in range(nrepeats):
+                for phidx in range(nphases):
+                    idx = self.get_vol_idx(tidx, ntis, ridx, nrepeats, phidx, nphases)
+                    debug("tidx=%i, ridx=%i, phidx=%i, idx=%i" % (tidx, ridx, phidx, idx))
+                    multiphasedata[:,:,:,out_idx] = self.ivm.main.std()[:,:,:,idx]
+                    out_idx += 1
+        
+        # Run Fabber on data
+        # FIXME not finished
+        options = {
+            "nphases" : nphases,
+            "nrepeats" : nrepeats,
+            "nsv" : 8,
+            "compactness" : 0.32,
+            "sigma" : 1,
+        }
+        from .multiphase_template import TEMPLATE
+        pipeline_code = TEMPLATE % options
+        cases = parse_batch(code=pipeline_code)
+        if len(cases) != 1:
+            raise RuntimeError("Cases not length 1")
+        case = cases[0]
+        case.ivm = self.ivm # FIXME temp
+        case.ivm.add_data(multiphasedata, "asl_multiphase_data")
+        case.run()
+#        asldata = case.ivm.data["mean_phase"] # or whatever
+#        self.ivm.add_data(asldata, name="asldata", make_main=True)
+
+    def preprocess(self):
+        """
+        Preprocess the data to put it in the format the Fabber model expects.
+        This is outer grouping of TIs, then by repeats and finally tag/control pairs
+        """
+        nvols = self.ivm.main.nvols
+        ntis = self.ntis.value()
+        if nvols % ntis != 0:
+            raise QpException("Number of volumes (%i) not consistent with %i PLDs" % (nvols, ntis))
+        self.nrepeats = int(nvols / ntis)
+
+        if self.tc_combo.combo.currentIndex() == 0:
+            # Need to do tag/control subtraction
+            if self.nrepeats % 2 != 0:
+                raise QpException("Number of volumes (%i) not consistent with %i TIs/PLDs and tag/control pairs" % (nvols, ntis))
+            tcpairs = ctpairs = False
+            self.nrepeats = int(self.nrepeats/2)
+            if self.tc_ord_combo.currentIndex() == 0:
+                tcpairs = True
+            else:
+                ctpairs = True
+            self.do_subtraction(int(nvols/2), ntis, self.nrepeats, tcpairs, ctpairs)
+        elif self.tc_combo.combo.currentIndex() == 1:
+            # Already subtracted, just needs reordering
+            self.do_subtraction(nvols, ntis, self.nrepeats, False, False)
+        elif self.tc_combo.combo.currentIndex() == 2:
+            # Multiphase
+            nphases = self.nphases.value()
+            if self.nrepeats % nphases != 0:
+                raise QpException("Number of volumes (%i) not consistent with %i TIs/PLDs and %s phases" % (nvols, ntis, nphases))
+            self.nrepeats = int(self.nrepeats / nphases)
+            self.do_multiphase(nvols, ntis, self.nrepeats, nphases)
         self.preprocessed = True
         self.update_ui()
        
@@ -387,5 +482,5 @@ class ASLWidget(QpWidget):
 
         for item in self.rundata.items():
             debug("%s: %s" % item)
-        self.tc_combo.setCurrentIndex(1)
+        self.tc_combo.combo.setCurrentIndex(1)
         return self.rundata
