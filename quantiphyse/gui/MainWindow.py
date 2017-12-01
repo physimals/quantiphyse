@@ -32,7 +32,7 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ivm, ftype=None, force_t_option=False):
+    def __init__(self, parent, fname, ivm, ftype=None, force_t_option=False, default_main=False):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
@@ -66,21 +66,44 @@ class DragOptions(QtGui.QDialog):
         layout.addLayout(hbox)
         
         hbox = QtGui.QHBoxLayout()
+        self.adv_cb = QtGui.QCheckBox("Advanced Options")
+        self.adv_cb.stateChanged.connect(self._adv_changed)
+        hbox.addWidget(self.adv_cb)
+        layout.addLayout(hbox)
+
+        self.adv_pane = QtGui.QWidget()
+        vbox = QtGui.QVBoxLayout()
+        self.adv_pane.setLayout(vbox)
+
+        grid = QtGui.QGridLayout()
+        self.main_cb = QtGui.QCheckBox("Set as main data")
+        self.main_cb.setChecked(default_main)
+        self.make_main = default_main
+        grid.addWidget(self.main_cb, 0, 0)
+
         self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
         self.force_t_cb.setVisible(force_t_option)
-        hbox.addWidget(self.force_t_cb, 2, 0)
-        hbox.addStretch()
-        layout.addLayout(hbox)
+        grid.addWidget(self.force_t_cb, 1, 0)
         
+        grid.setColumnStretch(2, 1)
+        vbox.addLayout(grid)
+        
+        self.adv_pane.setVisible(False)
+        layout.addWidget(self.adv_pane)
+
         self.setLayout(layout)
         self.type = ""
         self.name = ""
         self.force_t = False
 
+    def _adv_changed(self, state):
+        self.adv_pane.setVisible(state)
+
     def clicked(self, ret):
         def cb():
             self.type = ret
             self.force_t = self.force_t_cb.isChecked()
+            self.make_main = self.main_cb.isChecked()
             self.name = self.name_combo.currentText()
             if self.name in self.ivm.data or self.name in self.ivm.rois:
                 btn = QtGui.QMessageBox.warning(self, "Name already exists",
@@ -93,10 +116,10 @@ class DragOptions(QtGui.QDialog):
         return cb
 
     @staticmethod
-    def getImageChoice(parent, fname, ivm, ftype=None, force_t_option=False):
-        dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option)
+    def getImageChoice(parent, fname, ivm, ftype=None, force_t_option=False, make_main=False):
+        dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option, default_main=make_main)
         result = dialog.exec_()
-        return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t
+        return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
 
 class MainWindow(QtGui.QMainWindow):
     """
@@ -413,7 +436,8 @@ class MainWindow(QtGui.QMainWindow):
         force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
         force_t = False
                 
-        ftype, name, ok, force_t_dialog = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option)
+        make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
+        ftype, name, ok, force_t_dialog, make_main = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
         if not ok: return
         data.name = name
         if force_t_option: force_t = force_t_dialog
@@ -441,7 +465,7 @@ class MainWindow(QtGui.QMainWindow):
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
         if ftype == "DATA": 
-            self.ivm.add_data(data, make_current=True)
+            self.ivm.add_data(data, make_current=True, make_main=make_main)
         else:
             self.ivm.add_roi(data, make_current=True)
 
