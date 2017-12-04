@@ -629,6 +629,47 @@ class OvLevelsDialog(QtGui.QDialog):
             self.dv.sig_changed.emit(self.dv)
         return val_changed
 
+class Navigator:
+    def __init__(self, ivl, label, axis, grid, ypos):
+        self.ivl = ivl
+        self.axis = axis
+
+        grid.addWidget(QtGui.QLabel(label), ypos, 0)
+        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.slider.setMinimumWidth(100)
+        self.slider.valueChanged.connect(self._changed)
+        grid.addWidget(self.slider, ypos, 1)
+
+        self.spin = QtGui.QSpinBox()
+        self.spin.valueChanged.connect(self._changed)
+        grid.addWidget(self.spin, ypos, 2)
+    
+    def _changed(self, value):
+        if value != self.ivl.ivm.cim_pos[self.axis]:
+            self.ivl.ivm.cim_pos[self.axis] = value
+            self.ivl.sig_focus_changed.emit(self.ivl.ivm.cim_pos)
+            self.ivl.update_ortho_views()
+
+        if value != self.slider.value():
+            self.slider.setValue(value)
+        if value != self.spin.value():
+            self.spin.setValue(value)
+        
+    def update_range(self, shape, nvols):
+        shape = list(shape) + [nvols,]
+        try:
+            self.slider.blockSignals(True)
+            self.spin.blockSignals(True)
+            self.slider.setRange(0, shape[self.axis]-1)
+            self.spin.setMaximum(shape[self.axis]-1)
+        finally:
+            self.slider.blockSignals(False)
+            self.spin.blockSignals(False)
+
+    def update_pos(self, pos):
+        self._changed(pos[self.axis])
+            
 class ImageView(QtGui.QSplitter):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
@@ -666,50 +707,15 @@ class ImageView(QtGui.QSplitter):
         gBox2 = QtGui.QGroupBox("Navigation")
         gBoxlay2 = QtGui.QGridLayout()
 
-        gBoxlay2.addWidget(QtGui.QLabel('Axial'), 0, 0)
-        self.sld1 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld1.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld1.setMinimumWidth(100)
-        gBoxlay2.addWidget(self.sld1, 0, 1)
-        lab_p1 = QtGui.QLabel('0')
-        gBoxlay2.addWidget(lab_p1, 0, 2)
-
-        gBoxlay2.addWidget(QtGui.QLabel('Coronal'), 1, 0)
-        self.sld2 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld2.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld2.setMinimumWidth(100)
-        gBoxlay2.addWidget(self.sld2, 1, 1)
-        lab_p2 = QtGui.QLabel('0')
-        gBoxlay2.addWidget(lab_p2, 1, 2)
-
-        gBoxlay2.addWidget(QtGui.QLabel('Sagittal'), 2, 0)
-        self.sld3 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld3.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld3.setMinimumWidth(100)
-        gBoxlay2.addWidget(self.sld3, 2, 1)
-        lab_p3 = QtGui.QLabel('0')
-        gBoxlay2.addWidget(lab_p3, 2, 2)
-
-        gBoxlay2.addWidget(QtGui.QLabel('Volume'), 3, 0)
-        self.sld4 = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.sld4.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.sld4.setMinimumWidth(100)
-        gBoxlay2.addWidget(self.sld4, 3, 1)
-        lab_p4 = QtGui.QLabel('0')
-        gBoxlay2.addWidget(lab_p4, 3, 2)
+        self.navs = []
+        self.navs.append(Navigator(self, "Axial", 2, gBoxlay2, 0))
+        self.navs.append(Navigator(self, "Coronal", 0, gBoxlay2, 1))
+        self.navs.append(Navigator(self, "Sagittal", 1, gBoxlay2, 2))
+        self.navs.append(Navigator(self, "Volume", 3, gBoxlay2, 3))
 
         gBoxlay2.setColumnStretch(0, 0)
         gBoxlay2.setColumnStretch(1, 2)
         gBox2.setLayout(gBoxlay2)
-
-        self.sld1.valueChanged[int].connect(self.set_pos(2))
-        self.sld2.valueChanged[int].connect(self.set_pos(0))
-        self.sld3.valueChanged[int].connect(self.set_pos(1))
-        self.sld4.valueChanged[int].connect(self.set_pos(3))
-        self.sld1.valueChanged[int].connect(lab_p1.setNum)
-        self.sld2.valueChanged[int].connect(lab_p2.setNum)
-        self.sld3.valueChanged[int].connect(lab_p3.setNum)
-        self.sld4.valueChanged[int].connect(lab_p4.setNum)
 
         # Create the ROI/Overlay view controls
         gBox = QtGui.QGroupBox("ROI")
@@ -874,7 +880,8 @@ class ImageView(QtGui.QSplitter):
             self.picker.add_point(pos, win)
         
         self.ivm.cim_pos = pos
-        self.update_nav_sliders()
+        for nav in self.navs:
+            nav.update_pos(pos)
         self.update_ortho_views()
         self.ivm.grid.grid_to_world(pos[:3])
         
@@ -910,15 +917,6 @@ class ImageView(QtGui.QSplitter):
         """ Update the image viewer windows """
         for win in self.win.values(): win.update()
 
-    def set_pos(self, dim):
-        def set_pos(value):
-            if self.ivm.cim_pos[dim] != value:
-                # Don't do any updating if the value has not changed
-                self.ivm.cim_pos[dim] = value
-                self.sig_focus_changed.emit(self.ivm.cim_pos)
-                self.update_ortho_views()
-        return set_pos
-
     def capture_view_as_image(self, window, outputfile):
         """ Export an image using pyqtgraph """
         if window not in (1, 2, 3):
@@ -930,8 +928,14 @@ class ImageView(QtGui.QSplitter):
         exporter.export(str(outputfile))
 
     def main_data_changed(self, vol):
-        self.update_slider_range()
-        self.update_nav_sliders()
+        for nav in self.navs:
+            if vol is not None:
+                nav.update_range(self.ivm.grid.shape, vol.nvols)
+            else:
+                nav.update_range([1,]*3, 1)
+
+            nav.update_pos(self.ivm.cim_pos)
+            
         if vol is not None:
             if vol.fname is not None: self.vol_name.setText(vol.fname)
             else: self.vol_name.setText(vol.name)
@@ -1099,33 +1103,3 @@ class ImageView(QtGui.QSplitter):
             else:
                 self.roi_view_combo.setCurrentIndex(3)
             self.roi_alpha_sld.setValue(self.current_roi_view.alpha)
-
-    def update_slider_range(self):
-        if self.ivm.grid is None: return
-        try:
-            self.sld1.blockSignals(True)
-            self.sld2.blockSignals(True)
-            self.sld3.blockSignals(True)
-            self.sld4.blockSignals(True)
-            self.sld1.setRange(0, self.ivm.grid.shape[2]-1)
-            self.sld2.setRange(0, self.ivm.grid.shape[0]-1)
-            self.sld3.setRange(0, self.ivm.grid.shape[1]-1)
-            self.sld4.setRange(0, self.ivm.main.nvols-1)
-        finally:
-            self.sld1.blockSignals(False)
-            self.sld2.blockSignals(False)
-            self.sld3.blockSignals(False)
-            self.sld4.blockSignals(False)
-        
-    def update_nav_sliders(self, pos=None):
-        self.sld1.setValue(self.ivm.cim_pos[2])
-        self.sld2.setValue(self.ivm.cim_pos[0])
-        self.sld3.setValue(self.ivm.cim_pos[1])
-        self.sld4.setValue(self.ivm.cim_pos[3])
-        if self.ivm.main is not None: 
-            self.vol_data.setText(self.ivm.main.strval(self.ivm.cim_pos))
-        if self.ivm.current_roi is not None: 
-            self.roi_region.setText(self.ivm.current_roi.strval(self.ivm.cim_pos))
-        if self.ivm.current_data is not None: 
-            self.ov_data.setText(self.ivm.current_data.strval(self.ivm.cim_pos))
-            
