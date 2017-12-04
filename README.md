@@ -57,14 +57,26 @@ Python libraries:
 
 3. Run from source directory
 
-`python quantiphyse.py`
+`python qp.py`
+
+### Packaging
+
+The scripts packaging/build.py is used to build a frozen distribution package in the form of a compressed archive (`tar.gz` or `.zip`) and a platform-dependent package (`deb`, `msi` or `dpg`). It should run autonomously, however you may need to input the sudo password on Linux in order to build a `deb` package. 
+
+The `--snapshot` option removes the version number from package filenames so you can provided them for download without having to change the link URLs.
+
+The `--maxi` option builds a package which includes the Fabber frontend widgets.
 
 #### OSx 10.11
 
 *NB: this guide is still a work in progress. Please let me know if something doesn't work*
 
 Installing from source on OSX is not fun. The major issue is QT since the required version (4.8) is 
-deprecated and hard to install properly. The instructions below are preserved but have not been
+deprecated and hard to install properly. 
+
+I have had most success using Anaconda and installing PySide using the conda tool. This should bring in the appropriate version of QT.
+
+Alternatively, homebrew+pip can be used, as described below. Note that these instructions have not been
 recently tested and you will probably need to use your own initiative a bit.
 
 For OSx it is recommended that you don't use the system version of python so that libraries can be updated without
