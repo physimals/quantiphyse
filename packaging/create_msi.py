@@ -91,12 +91,18 @@ WXS_TEMPLATE = """
       <UIRef Id="WixUI_ErrorProgressText" />
       <WixVariable Id="WixUIBannerBmp" Value="packaging/images/banner.bmp" />
       <WixVariable Id="WixUIDialogBmp" Value="packaging/images/dialog.bmp" />
-      <WixVariable Id="WixUILicenseRtf" Value="packaging/LICENSE.rtf"/>
+      <WixVariable Id="WixUILicenseRtf" Value="packaging/licence.rtf"/>
 
       <Icon Id="main_icon.ico" SourceFile="quantiphyse/icons/main_icon.ico" />
       <Property Id="ARPPRODUCTICON" Value="main_icon.ico" />
    </Product>
 </Wix>"""
+
+# Minimal RTF template used to turn the license text into RTF
+RTF_TEMPLATE = """{\\rtf
+{\\fonttbl {\\f0 Courier;}}
+\\f0\\fs20 %s
+}"""
 
 def get_guid(path):
     """
@@ -104,30 +110,37 @@ def get_guid(path):
     """
     return uuid.uuid5(uuid.NAMESPACE_DNS, 'quantiphyse.org/' + path)
 
-def add_files_in_dir(pdir, subdir, files, nfile, ndir, output, indent):
+def add_files_in_dir(distdir, pkgdir, nfile, ndir, output, indent):
     """
     Add file componenents from a directory, recursively adding from subdirs
     """
-    output.write('%s<Directory Id="INSTALLDIR%i" Name="%s">\n' % (indent, ndir, subdir))
+    output.write('%s<Directory Id="INSTALLDIR%i" Name="%s">\n' % (indent, ndir, os.path.basename(pkgdir)))
     ndir += 1
-    for dirName, subdirList, fileList in os.walk(os.path.join(pdir, subdir)):
+    for dirName, subdirList, fileList in os.walk(os.path.join(distdir, pkgdir)):
         for fname in fileList:
-            fpath = os.path.join(dirName, fname)
-            guid = get_guid(fpath)
-            files[fpath] = str(guid)
+            srcpath = os.path.join(distdir, pkgdir, fname)
+            
+            # Generate GUID based on destination path relative to install location
+            destpath = os.path.join(pkgdir, fname)
+            print(destpath)
+            guid = get_guid(destpath)
+
+            # Write component XML
             output.write('%s  <Component Id="Component%i" Guid="%s" Win64="yes">\n' % (indent, nfile, str(guid)))
             if fname == "quantiphyse.exe":
-                output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes">\n' % (indent, nfile, fpath))
+                output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes">\n' % (indent, nfile, srcpath))
                 output.write('%s      <Shortcut Id="startmenu_qp" Directory="ProgramMenuDir" Name="Quantiphyse"\n' % indent)
                 output.write('%s                WorkingDirectory="INSTALLDIR" Icon="main_icon.ico" Advertise="yes"/>\n' % indent)
                 output.write('%s    </File>\n' % indent)
             else:
-                output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes"/>\n' % (indent, nfile, fpath))
+                output.write('%s    <File Id="File%i" Source="%s" KeyPath="yes"/>\n' % (indent, nfile, srcpath))
             output.write('%s  </Component>\n' % indent)
             nfile += 1
-        for subdir in subdirList:
-            files[subdir] = {}
-            nfile, ndir = add_files_in_dir(dirName, subdir, files[subdir], nfile, ndir, output, indent + "  ")
+        for child in subdirList:
+            # Deal with subdirs recursively
+            nfile, ndir = add_files_in_dir(distdir, os.path.join(pkgdir, child), nfile, ndir, output, indent + "  ")
+        
+        # os.walk is recursive by default but we do not want this so break out after first listing
         break
     output.write('%s</Directory>\n' % indent)
     return nfile, ndir
@@ -144,9 +157,8 @@ def create_wxs(distdir, version_str, wxs_fname):
         "regkeys_guid" : get_guid('quantiphyse/regkeys'),
     }
     
-    all_files = {}
     output = StringIO()
-    nfile, ndir = add_files_in_dir(distdir, "quantiphyse", all_files, 1, 1, output, "  " * 5)
+    nfile, ndir = add_files_in_dir(distdir, "quantiphyse", 1, 1, output, "  " * 5)
     formatting_values["dist_files"] = output.getvalue()
 
     output = StringIO()
@@ -158,12 +170,23 @@ def create_wxs(distdir, version_str, wxs_fname):
     output.write(WXS_TEMPLATE % formatting_values)
     output.close()
 
+def convert_licence(txt_fname, rtf_fname):
+    f = open(txt_fname, "r")
+    txt = "\\line ".join(f.readlines())
+    f.close()
+    f = open(rtf_fname, "w")
+    f.write(RTF_TEMPLATE % txt)
+    f.close()
+
 def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
     """
     Create the MSI itself using WIX toolset
     """
     if version_str_display == None:
         version_str_display = version_str
+
+    qpdir = os.path.join(distdir, os.pardir)
+    convert_licence(os.path.join(qpdir, "licence.md"), os.path.join(pkgdir, "licence.rtf"))
 
     msidir = os.path.join(pkgdir, MSI_SUBDIR)
     shutil.rmtree(msidir, ignore_errors=True)
@@ -174,7 +197,6 @@ def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
     create_wxs(distdir, version_str, wxs_fname)
     
     os.system('"%s/candle.exe" %s -out %s' % (WIXDIR, wxs_fname, obj_fname))
-    print(msi_fname)
     os.system('"%s/light.exe" %s -out %s -ext WixUIExtension' % (WIXDIR, obj_fname, msi_fname))
     shutil.move(msi_fname, distdir)
 
@@ -187,4 +209,4 @@ if __name__ == "__main__":
 
     wxs_fname = os.path.join(pkgdir, "quantiphyse.wxs")
     create_msi(os.path.join(qpdir, "dist"), pkgdir, 
-               update_version.get_std_version().replace("-", "."), "win32")
+               update_version.update_version()[1], "win32")
