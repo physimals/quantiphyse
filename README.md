@@ -107,10 +107,6 @@ On Windows, Anaconda is recommended and comes with virtual environment support a
 
 ## Additional notes:
 
-### Class diagram
-
-![Class diagram](images/class_diagram.png "Class Diagram")
-
 ### Resource file
 
 The resource file is compiled by
