@@ -47,26 +47,28 @@ sys.stdout.flush()
 os.system("pyinstaller -y %s/%s.spec 2>%s/freeze.err 1>%s/freeze.log" % (pkgdir, package_name, pkgdir, pkgdir))
 print("DONE")
 
+version_pkg_fname = std_version
+if "--snapshot" in sys.argv:
+    version_pkg_fname = "snapshot"
+
 if "--maxi" in sys.argv:
     print("Creating a maxi-package")
     # This is necessarily a bit of a hack but so is the concept of a maxi-package
-    plugins = ["fabber-ap", "basil-qp", "quanticest"]
+    version_pkg_fname += "-maxi"
+    plugins = ["fabber-qp", "basil-qp", "quanticest"]
     for plugin in plugins:
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
+        plugindist = os.path.join(plugindir, "dist", plugin.replace("-", "_"))
         os.system("python %s/packaging/build.py" % plugindir)
-        shutil.copytree("%s/dist/%s" % (plugin, plugin), 
-                        "%s/%s/packages/plugins/%s" % (rootdir, package_name, plugin))
+        shutil.copytree(plugindist, 
+                        "%s/%s/packages/plugins/%s" % (distdir, package_name, plugin))
         if platform == "osx":
             # Need to put it into he OSX bundle as well
-            shutil.copytree("%s/dist/%s" (plugin, plugin), 
-                            "%s/%s.app/Contents/Resources/packages/plugins/%s" % (rootdir, package_name, plugin))            
+            shutil.copytree(plugindist,
+                            "%s/%s.app/Contents/Resources/packages/plugins/%s" % (distdir, package_name, plugin))            
         print("DONE")
-
-version_pkg_fname = std_version
-if "--snapshot" in sys.argv:
-    version_pkg_fname = "snapshot"
     
 sys.stdout.write("Creating compressed archive...")
 sys.stdout.flush()
