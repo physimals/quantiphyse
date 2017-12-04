@@ -140,7 +140,7 @@ class ImageVolumeManagement(QtCore.QObject):
         
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, make_current=False, make_main=False):
+    def add_data(self, data, name=None, make_current=False, make_main=None):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
             data = NumpyData(data.astype(np.float32), self.grid, name)
@@ -150,7 +150,8 @@ class ImageVolumeManagement(QtCore.QObject):
         
         # Make main data if requested, or if the first data, or if the first 4d data
         # If not, regrid it onto the current OTG
-        make_main = make_main or self.main is None or (data.nvols > 1 and self.main.nvols == 1)
+        if make_main is None:
+            make_main = self.main is None or (data.nvols > 1 and self.main.nvols == 1)
         if make_main:
             self.set_main_data(data.name)
         else:

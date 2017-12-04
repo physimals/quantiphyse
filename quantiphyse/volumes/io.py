@@ -34,6 +34,10 @@ except:
 
 class NumpyData(QpData):
     def __init__(self, data, grid, name, **kwargs):
+        # Unlikely but possible that first data is added from the console
+        if grid is None:
+            grid = DataGrid(data.shape[:3], np.identity(4))
+
         if data.dtype.kind in np.typecodes["AllFloat"]:
             # Use float32 rather than default float64 to reduce storage
             data = data.astype(np.float32)

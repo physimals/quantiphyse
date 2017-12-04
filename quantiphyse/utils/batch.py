@@ -59,6 +59,7 @@ def parse_batch(fname=None, code=None):
     else:
         for case in cases:
             id = case.keys()[0]
+            if case[id] is None: case[id] = {}
             ret.append(BatchCase(id, root, case[id]))
     return ret
 
