@@ -288,9 +288,9 @@ class MainWindow(QtGui.QMainWindow):
         console_action.triggered.connect(self.show_console)
         
         # Advanced --> Install Packages
-        install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
-        install_action.setStatusTip('Install additional packages')
-        install_action.triggered.connect(self.install_packages)
+        #install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
+        #install_action.setStatusTip('Install additional packages')
+        #install_action.triggered.connect(self.install_packages)
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
@@ -322,7 +322,7 @@ class MainWindow(QtGui.QMainWindow):
         help_menu.addAction(about_action)
 
         advanced_menu.addAction(console_action)
-        advanced_menu.addAction(install_action)
+        #advanced_menu.addAction(install_action)
 
         # extra info displayed in the status bar
         self.statusBar()
@@ -378,8 +378,8 @@ class MainWindow(QtGui.QMainWindow):
         """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
-    def install_packages(self):
-        raise QpException("Package installation not implemented yet")
+    #def install_packages(self):
+    #    raise QpException("Package installation not implemented yet")
 
     def show_console(self):
         """
