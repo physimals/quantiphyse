@@ -22,7 +22,7 @@ if sys.platform.startswith("win"):
     import create_msi
     build_platform_package = create_msi.create_msi
 elif sys.platform.startswith("linux"):
-    #sysname=platform.linux_distribution()[0].split()[0].lower()
+    #distro=platform.linux_distribution()[0].split()[0].lower()
     platform="linux"
     archive_method="gztar"
     import create_deb
@@ -56,25 +56,26 @@ if "--maxi" in sys.argv:
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
         os.system("python %s/packaging/build.py" % plugindir)
-        shutil.copytree("%s/dist/%s" (plugin, plugin), 
+        shutil.copytree("%s/dist/%s" % (plugin, plugin), 
                         "%s/%s/packages/plugins/%s" % (rootdir, package_name, plugin))
         if platform == "osx":
-            # Need to put it into the OSX bundle as well
+            # Need to put it into he OSX bundle as well
             shutil.copytree("%s/dist/%s" (plugin, plugin), 
                             "%s/%s.app/Contents/Resources/packages/plugins/%s" % (rootdir, package_name, plugin))            
         print("DONE")
 
+version_pkg_fname = std_version
+if "--snapshot" in sys.argv:
+    version_pkg_fname = "snapshot"
+    
 sys.stdout.write("Creating compressed archive...")
 sys.stdout.flush()
-shutil.make_archive("%s/%s-%s-%s" % (distdir, package_name, version_str, sysname), 
+shutil.make_archive("%s/%s-%s-%s" % (distdir, package_name, version_pkg_fname, platform), 
                     archive_method, "%s/%s" % (distdir, package_name))
 print("DONE")
 
 if build_platform_package is not None:
     sys.stdout.write("Creating platform-specific package...")
     sys.stdout.flush()
-    version_pkg_fname = std_version
-    if "--snapshot" in sys.argv:
-        version_pkg_fname = "snapshot"
-    build_platform_package(distdir, pkgdir, std_version, sysname, version_pkg_fname)
+    build_platform_package(distdir, pkgdir, std_version, platform, version_pkg_fname)
     print("DONE")
