@@ -6,6 +6,7 @@ Can specify:
   --maxi to bundle selected plugins (Basically the Fabber frontends)
 """
 import os, sys
+import shutil
 
 pkgdir = os.path.abspath(os.path.dirname(__file__))
 rootdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
@@ -21,7 +22,7 @@ if sys.platform.startswith("win"):
     import create_msi
     build_platform_package = create_msi.create_msi
 elif sys.platform.startswith("linux"):
-    sysname=platform.linux_distribution()[0].split()[0].lower()
+    #sysname=platform.linux_distribution()[0].split()[0].lower()
     platform="linux"
     archive_method="gztar"
     import create_deb
