@@ -103,11 +103,19 @@ class DataGrid:
         with the same voxel spacing but where the x axis is increasing
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
+
+        We make slightly botched use of the Transform class for this - this
+        hack shouldn't be necessary really
         """
-        rasgrid = DataGrid([1,1,1], np.identity(4))
-        t = Transform(rasgrid, self)
+        rasgrid = DataGrid([1, 1, 1], np.identity(4))
+        t = Transform(self, rasgrid)
         new_shape = [self.shape[d] for d in t.reorder]
-        return DataGrid(new_shape, t.tmatrix)
+        new_mat = t.tmatrix
+        # Adjust origin
+        for dim in t.flip:
+            new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
+
+        return DataGrid(new_shape, new_mat)
 
     def matches(self, grid):
         """
@@ -138,30 +146,30 @@ class Transform:
         self.out_grid = out_grid
 
         # Affine transformation matrix from grid 2 to grid 1
-        self.tmatrix_raw = np.dot(np.linalg.inv(in_grid.affine), out_grid.affine)
+        self.tmatrix_raw = np.dot(np.linalg.inv(out_grid.affine), in_grid.affine)
         self.output_shape = out_grid.shape[:]
 
         # Generate potentially simplified transformation using re-ordering and flipping
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
-        #self.reorder, self.flip, self.tmatrix = range(3), [], self.tmatrix_raw
 
     def transform_data(self, data):
-        
-        if self._is_identity(self.tmatrix):
-            # Transformation was reduced to flips/transpositions
-            if self.reorder != range(3):
-                if data.ndim == 4: self.reorder = self.reorder + [3]
-                debug("Re-ordering axes: ", self.reorder)
-                data = np.transpose(data, self.reorder)
+        # Perform the flips and transpositions which simplify the transformation
+        # and may avoid the need for an affine transformation or make it a simple
+        # scaling
+        if len(self.flip) != 0:
+            debug("Flipping axes: ", self.flip)
+            for d in self.flip: data = np.flip(data, d)
 
-            if len(self.flip) != 0:
-                debug("Flipping axes: ", self.flip)
-                for d in self.flip: data = np.flip(data, d)
-        else:
+        if self.reorder != range(3):
+            if data.ndim == 4: self.reorder = self.reorder + [3]
+            debug("Re-ordering axes: ", self.reorder)
+            data = np.transpose(data, self.reorder)
+
+        if not self._is_identity(self.tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
-            # so we will go with the raw affine matrix
-            affine = self.tmatrix_raw[:3,:3]
-            offset = list(self.tmatrix_raw[:3,3])
+            # so we will need an affine transformation
+            affine = self.tmatrix[:3,:3]
+            offset = list(self.tmatrix[:3,3])
             output_shape = self.output_shape[:]
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
