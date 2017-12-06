@@ -316,6 +316,7 @@ class QpData:
         self.raw_2dt = True
         # FIXME hack because it's not clear what to do with the grid apart from make sure it's 2D
         self.nvols = self.rawgrid.shape[2]
+        self.ndim = 4
         self.rawgrid.shape[2] = 1
         self.stddata = None
 
