@@ -111,10 +111,6 @@ class DataGrid:
         t = Transform(self, rasgrid)
         new_shape = [self.shape[d] for d in t.reorder]
         new_mat = t.tmatrix
-        # Adjust origin
-        for dim in t.flip:
-            new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
-
         return DataGrid(new_shape, new_mat)
 
     def matches(self, grid):
@@ -168,8 +164,11 @@ class Transform:
         if not self._is_identity(self.tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
             # so we will need an affine transformation
-            affine = self.tmatrix[:3,:3]
-            offset = list(self.tmatrix[:3,3])
+
+            # scipy requires the out->in transform so invert our in->out transform
+            tmatrix = np.linalg.inv(self.tmatrix)
+            affine = tmatrix[:3,:3]
+            offset = list(tmatrix[:3,3])
             output_shape = self.output_shape[:]
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
@@ -182,7 +181,6 @@ class Transform:
                 # The transformation is diagonal, so use this sequence instead of 
                 # the full matrix - this will be faster
                 affine = np.diagonal(affine)
-                #debug("Matrix is diagonal - ", affine)
             else:
                 pass
             debug("WARNING: affine_transform: ")
@@ -233,7 +231,7 @@ class Transform:
             debug("Before simplification")
             debug(new_mat)
             debug(self.output_shape)
-            new_shape = [self.output_shape[d] for d in dim_order]
+            new_shape = [self.in_grid.shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
                 new_mat[:,d] = mat[:,idx]
             debug("After transpose", dim_order)
