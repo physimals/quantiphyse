@@ -15,6 +15,8 @@ class LoadProcess(Process):
     def run(self, options):
         rois = options.pop('rois', {})
         data = options.pop('data', {})
+        # Force 3D data to be multiple 2D volumes 
+        force_mv = option.pop('force-multivol')
 
         for fname, name in rois.items():
             qpdata = self._load_file(fname, name)
@@ -22,7 +24,10 @@ class LoadProcess(Process):
 
         for fname, name in data.items():
             qpdata = self._load_file(fname, name)
-            if qpdata is not None: self.ivm.add_data(qpdata, make_current=True)
+            if qpdata is not None: 
+                if force_mv and qpdata.nvols == 1 and qpdata.rawgrid.shape[2] > 1: 
+                    qpdata.set_2dt()
+                self.ivm.add_data(qpdata, make_current=True)
 
         self.status = Process.SUCCEEDED
 
