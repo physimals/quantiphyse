@@ -415,6 +415,7 @@ class OrthoView(pg.GraphicsView):
             pos = self.ivm.cim_pos
             slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
             slicedata = self.ivm.main.get_slice(slices)
+            debug("Slice min/max: ", np.min(slicedata), np.max(slicedata))
             self.img.setImage(slicedata, autoLevels=False)
 
         self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
@@ -588,10 +589,10 @@ class OrthoView(pg.GraphicsView):
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
-class OvLevelsDialog(QtGui.QDialog):
+class LevelsDialog(QtGui.QDialog):
 
     def __init__(self, parent, dv):
-        super(OvLevelsDialog, self).__init__(parent)
+        super(LevelsDialog, self).__init__(parent)
         self.dv = dv
 
         self.setWindowTitle("Levels for %s" % dv.name)
@@ -669,7 +670,295 @@ class Navigator:
 
     def update_pos(self, pos):
         self._changed(pos[self.axis])
-            
+
+class DataSummary(QtGui.QWidget):
+    """ Data summary bar """
+    def __init__(self, ivl):
+        self.opts = ivl.opts
+        self.ivm = ivl.ivm
+
+        QtGui.QWidget.__init__(self)
+        hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
+        self.vol_name = QtGui.QLineEdit()
+        p = self.vol_name.sizePolicy()
+        p.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
+        self.vol_name.setSizePolicy(p)
+        hbox.addWidget(self.vol_name)
+        hbox.setStretchFactor(self.vol_name, 1)
+        self.vol_data = QtGui.QLineEdit()
+        self.vol_data.setFixedWidth(60)
+        hbox.addWidget(self.vol_data)
+        self.roi_region = QtGui.QLineEdit()
+        self.roi_region.setFixedWidth(30)
+        hbox.addWidget(self.roi_region)
+        self.ov_data = QtGui.QLineEdit()
+        self.ov_data.setFixedWidth(60)
+        hbox.addWidget(self.ov_data)
+        self.view_options_btn = OptionsButton(self)
+        hbox.addWidget(self.view_options_btn)
+        self.setLayout(hbox)
+
+        ivl.ivm.sig_main_data.connect(self._main_changed)
+        ivl.sig_focus_changed.connect(self._focus_changed)
+
+    def show_options(self):
+        self.opts.show()
+        self.opts.raise_()
+  
+    def _main_changed(self):
+        name = ""
+        if self.ivm.main is not None:
+            if self.ivm.main.fname is not None:
+                name = self.ivm.main.fname
+            else:
+                name = self.ivm.main.name
+        self.vol_name.setText(name)
+
+    def _focus_changed(self, pos):
+        if self.ivm.main is not None: self.vol_data.setText(self.ivm.main.strval(pos))
+        if self.ivm.current_roi is not None: self.roi_region.setText(self.ivm.current_roi.strval(pos))
+        if self.ivm.current_data is not None: self.ov_data.setText(self.ivm.current_data.strval(pos))
+
+class NavigationBox(QtGui.QGroupBox):
+    """ Box containing 4D navigators """
+    def __init__(self, ivl):
+        self.ivm = ivl.ivm
+
+        QtGui.QGroupBox.__init__(self, "Navigation")
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
+
+        self.navs = []
+        self.navs.append(Navigator(ivl, "Axial", 2, grid, 0))
+        self.navs.append(Navigator(ivl, "Coronal", 0, grid, 1))
+        self.navs.append(Navigator(ivl, "Sagittal", 1, grid, 2))
+        self.navs.append(Navigator(ivl, "Volume", 3, grid, 3))
+        grid.setColumnStretch(0, 0)
+        grid.setColumnStretch(1, 2)
+
+        ivl.ivm.sig_main_data.connect(self._main_data_changed)
+        ivl.sig_focus_changed.connect(self._focus)
+
+    def _main_data_changed(self, vol):
+        for nav in self.navs:
+            if vol is not None:
+                nav.update_range(self.ivm.grid.shape, vol.nvols)
+            else:
+                nav.update_range([1,]*3, 1)
+            nav.update_pos(self.ivm.cim_pos)
+
+    def _focus(self, pos):
+        for nav in self.navs:
+            nav.update_pos(pos)
+
+class RoiViewWidget(QtGui.QGroupBox):
+    """ Change view options for ROI """
+    def __init__(self, ivl):
+        self.ivl = ivl
+        self.ivm = ivl.ivm
+        QtGui.QGroupBox.__init__(self, "ROI")
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
+
+        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
+        self.roi_combo = QtGui.QComboBox()
+        grid.addWidget(self.roi_combo, 0, 1)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.roi_view_combo = QtGui.QComboBox()
+        self.roi_view_combo.addItem("Shaded")
+        self.roi_view_combo.addItem("Contour")
+        self.roi_view_combo.addItem("Both")
+        self.roi_view_combo.addItem("None")
+        grid.addWidget(self.roi_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
+        self.roi_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.roi_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.roi_alpha_sld.setRange(0, 255)
+        self.roi_alpha_sld.setValue(150)
+        grid.addWidget(self.roi_alpha_sld, 2, 1)
+        grid.setRowStretch(3, 1)
+
+        self.roi_combo.currentIndexChanged.connect(self._combo_changed)
+        self.roi_view_combo.currentIndexChanged.connect(self._view_changed)
+        self.roi_alpha_sld.valueChanged.connect(self._alpha_changed)
+        self.ivm.sig_all_rois.connect(self._rois_changed)
+        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+
+    def update_from_roiview(self, view):
+        if view is not None:
+            if view.shade and view.contour:
+                self.roi_view_combo.setCurrentIndex(2)
+            elif view.shade:
+                self.roi_view_combo.setCurrentIndex(0)
+            elif view.contour:
+                self.roi_view_combo.setCurrentIndex(1)
+            else:
+                self.roi_view_combo.setCurrentIndex(3)
+            self.roi_alpha_sld.setValue(view.alpha)
+
+    def _combo_changed(self, idx):
+        if idx >= 0:
+            roi = self.roi_combo.itemText(idx)
+            self.ivm.set_current_roi(roi)
+
+    def _view_changed(self, idx):
+        if self.ivl.current_roi_view is not None:
+            self.ivl.current_roi_view.shade = idx in (0, 2)
+            self.ivl.current_roi_view.contour = idx in (1, 2)
+        self.ivl.update_ortho_views()
+
+    def _alpha_changed(self, alpha):
+        """ Set the ROI transparency """
+        if self.ivl.current_roi_view is not None:
+            self.ivl.current_roi_view.alpha = alpha
+        self.ivl.update_ortho_views()
+
+    def _rois_changed(self, rois):
+        # Repopulate ROI combo, without sending signals
+        try:
+            self.roi_combo.blockSignals(True)
+            self.roi_combo.clear()
+            for roi in rois:
+                self.roi_combo.addItem(roi)
+        finally:
+            self.roi_combo.blockSignals(False)
+
+        self._current_roi_changed(self.ivm.current_roi)
+        self.roi_combo.updateGeometry()
+
+    def _current_roi_changed(self, roi):
+        # Update ROI combo to show the current ROI
+        if roi is None:
+            self.roi_combo.setCurrentIndex(-1)
+        else:
+            idx = self.roi_combo.findText(roi.name)
+            if idx != self.roi_combo.currentIndex():
+                try:
+                    self.roi_combo.blockSignals(True)
+                    self.roi_combo.setCurrentIndex(idx)
+                finally:
+                    self.roi_combo.blockSignals(False)
+
+class OverlayViewWidget(QtGui.QGroupBox):
+    """ Change view options for ROI """
+    def __init__(self, ivl):
+        self.ivl = ivl
+        self.ivm = ivl.ivm
+        QtGui.QGroupBox.__init__(self, "Overlay")
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
+        
+        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
+        self.overlay_combo = QtGui.QComboBox()
+        grid.addWidget(self.overlay_combo, 0, 1)
+        grid.addWidget(QtGui.QLabel("View"), 1, 0)
+        self.ov_view_combo = QtGui.QComboBox()
+        self.ov_view_combo.addItem("All")
+        self.ov_view_combo.addItem("Only in ROI")
+        self.ov_view_combo.addItem("None")
+        grid.addWidget(self.ov_view_combo, 1, 1)
+        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
+        hbox = QtGui.QHBoxLayout()
+        self.ov_cmap_combo = QtGui.QComboBox()
+        self.ov_cmap_combo.addItem("jet")
+        self.ov_cmap_combo.addItem("hot")
+        self.ov_cmap_combo.addItem("gist_heat")
+        self.ov_cmap_combo.addItem("flame")
+        self.ov_cmap_combo.addItem("bipolar")
+        self.ov_cmap_combo.addItem("spectrum")
+        hbox.addWidget(self.ov_cmap_combo)
+        self.ov_levels_btn = QtGui.QPushButton()
+        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
+        self.ov_levels_btn.setFixedSize(16, 16)
+        self.ov_levels_btn.setToolTip("Adjust colour map levels")
+        self.ov_levels_btn.clicked.connect(self._show_ov_levels)
+        self.ov_levels_btn.setEnabled(False)
+        hbox.addWidget(self.ov_levels_btn)
+        grid.addLayout(hbox, 2, 1)
+        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
+        self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+        self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.ov_alpha_sld.setRange(0, 255)
+        self.ov_alpha_sld.setValue(255)
+        grid.addWidget(self.ov_alpha_sld, 3, 1)
+        grid.setRowStretch(4, 1)
+
+        self.overlay_combo.currentIndexChanged.connect(self._combo_changed)
+        self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
+        self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
+        self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
+        self.ivm.sig_current_data.connect(self._current_data_changed)
+
+    def _combo_changed(self, idx):
+        if idx >= 0:
+            ov = self.overlay_combo.itemText(idx)
+            self.ivm.set_current_data(ov)
+
+    def _cmap_changed(self, idx):
+        cmap = self.ov_cmap_combo.itemText(idx)
+        self.ivl.current_data_view.cmap = cmap
+        self.ivl.current_data_view.sig_changed.emit(self.ivl.current_data_view)
+  
+    def _view_changed(self, idx):
+        """ Viewing style (all or within ROI only) changed """
+        if self.ivl.current_data_view is not None:
+            self.ivl.current_data_view.visible = idx in (0, 1)
+            self.ivl.current_data_view.roi_only = (idx == 1)
+        self.ivl.current_data_changed(self.ivm.current_data)
+
+    def _alpha_changed(self, alpha):
+        """ Set the overlay transparency """
+        if self.ivl.current_data_view is not None:
+            self.ivl.current_data_view.alpha = alpha
+            self.ivl.current_data_view.sig_changed.emit(self.ivl.current_data_view)
+     
+    def _show_ov_levels(self):
+        dlg = LevelsDialog(self, self.ivl.current_data_view)
+        dlg.exec_()
+
+    def _data_changed(self, data):
+        # Repopulate data combo, without sending signals
+        try:
+            self.overlay_combo.blockSignals(True)
+            self.overlay_combo.clear()
+            for ov in data:
+                self.overlay_combo.addItem(ov)
+        finally:
+            self.overlay_combo.blockSignals(False)
+
+        self._current_data_changed(self.ivm.current_data)
+        self.overlay_combo.updateGeometry()
+
+    def _current_data_changed(self, ov):
+        self.ov_levels_btn.setEnabled(ov is not None)
+        if ov is not None:
+            # Update the overlay combo to show the current overlay
+            idx = self.overlay_combo.findText(ov.name)
+            debug("New current data: ", ov.name, idx)
+            if idx != self.overlay_combo.currentIndex():
+                try:
+                    self.overlay_combo.blockSignals(True)
+                    self.overlay_combo.setCurrentIndex(idx)
+                finally:
+                    self.overlay_combo.blockSignals(False)
+        else:
+            self.overlay_combo.setCurrentIndex(-1)
+        self.update_from_dataview(self.ivl.current_data_view)
+
+    def update_from_dataview(self, view):
+        if view:
+            if not view.visible:
+                self.ov_view_combo.setCurrentIndex(2)
+            elif view.roi_only:
+                self.ov_view_combo.setCurrentIndex(1)
+            else:
+                self.ov_view_combo.setCurrentIndex(0)
+            idx = self.ov_cmap_combo.findText(view.cmap)
+            self.ov_cmap_combo.setCurrentIndex(idx)
+            self.ov_alpha_sld.setValue(view.alpha)
+
 class ImageView(QtGui.QSplitter):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
@@ -703,120 +992,21 @@ class ImageView(QtGui.QSplitter):
         self.roi_views = {}
         self.current_roi_view = None
 
-        # Create the navigation sliders
-        gBox2 = QtGui.QGroupBox("Navigation")
-        gBoxlay2 = QtGui.QGridLayout()
-
-        self.navs = []
-        self.navs.append(Navigator(self, "Axial", 2, gBoxlay2, 0))
-        self.navs.append(Navigator(self, "Coronal", 0, gBoxlay2, 1))
-        self.navs.append(Navigator(self, "Sagittal", 1, gBoxlay2, 2))
-        self.navs.append(Navigator(self, "Volume", 3, gBoxlay2, 3))
-
-        gBoxlay2.setColumnStretch(0, 0)
-        gBoxlay2.setColumnStretch(1, 2)
-        gBox2.setLayout(gBoxlay2)
-
-        # Create the ROI/Overlay view controls
-        gBox = QtGui.QGroupBox("ROI")
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = QtGui.QComboBox()
-        grid.addWidget(self.roi_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.roi_view_combo = QtGui.QComboBox()
-        self.roi_view_combo.addItem("Shaded")
-        self.roi_view_combo.addItem("Contour")
-        self.roi_view_combo.addItem("Both")
-        self.roi_view_combo.addItem("None")
-        grid.addWidget(self.roi_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
-        self.roi_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.roi_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.roi_alpha_sld.setRange(0, 255)
-        self.roi_alpha_sld.setValue(150)
-        grid.addWidget(self.roi_alpha_sld, 2, 1)
-        grid.setRowStretch(3, 1)
-        gBox.setLayout(grid)
-
-        self.roi_combo.currentIndexChanged.connect(self.roi_combo_changed)
-        self.roi_view_combo.currentIndexChanged.connect(self.roi_view_changed)
-        self.roi_alpha_sld.valueChanged.connect(self.roi_alpha_changed)
-
-        gBox3 = QtGui.QGroupBox("Overlay")
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = QtGui.QComboBox()
-        grid.addWidget(self.overlay_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.ov_view_combo = QtGui.QComboBox()
-        self.ov_view_combo.addItem("All")
-        self.ov_view_combo.addItem("Only in ROI")
-        self.ov_view_combo.addItem("None")
-        grid.addWidget(self.ov_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
-        hbox = QtGui.QHBoxLayout()
-        self.ov_cmap_combo = QtGui.QComboBox()
-        self.ov_cmap_combo.addItem("jet")
-        self.ov_cmap_combo.addItem("hot")
-        self.ov_cmap_combo.addItem("gist_heat")
-        self.ov_cmap_combo.addItem("flame")
-        self.ov_cmap_combo.addItem("bipolar")
-        self.ov_cmap_combo.addItem("spectrum")
-        hbox.addWidget(self.ov_cmap_combo)
-        self.ov_levels_btn = QtGui.QPushButton()
-        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
-        self.ov_levels_btn.setFixedSize(16, 16)
-        self.ov_levels_btn.setToolTip("Adjust colour map levels")
-        self.ov_levels_btn.clicked.connect(self.show_ov_levels)
-        self.ov_levels_btn.setEnabled(False)
-        hbox.addWidget(self.ov_levels_btn)
-        grid.addLayout(hbox, 2, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
-        self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.ov_alpha_sld.setRange(0, 255)
-        self.ov_alpha_sld.setValue(255)
-        grid.addWidget(self.ov_alpha_sld, 3, 1)
-        grid.setRowStretch(4, 1)
-        gBox3.setLayout(grid)
-
-        self.overlay_combo.currentIndexChanged.connect(self.overlay_combo_changed)
-        self.ov_view_combo.currentIndexChanged.connect(self.overlay_view_changed)
-        self.ov_cmap_combo.currentIndexChanged.connect(self.overlay_cmap_changed)
-        self.ov_alpha_sld.valueChanged.connect(self.overlay_alpha_changed)
-
         # Navigation controls layout
-        gBox_all = QtGui.QWidget()
-        gBoxlay_all = QtGui.QHBoxLayout()
-        gBoxlay_all.addWidget(gBox2)
-        gBoxlay_all.addWidget(gBox)
-        gBoxlay_all.addWidget(gBox3)
-        
-        # Data summary bar
-        hbox = QtGui.QHBoxLayout()
-        self.vol_name = QtGui.QLineEdit()
-        p = self.vol_name.sizePolicy()
-        p.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
-        self.vol_name.setSizePolicy(p)
-        hbox.addWidget(self.vol_name)
-        hbox.setStretchFactor(self.vol_name, 1)
-        self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(60)
-        hbox.addWidget(self.vol_data)
-        self.roi_region = QtGui.QLineEdit()
-        self.roi_region.setFixedWidth(30)
-        hbox.addWidget(self.roi_region)
-        self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(60)
-        hbox.addWidget(self.ov_data)
-        self.view_options_btn = OptionsButton(self)
-        hbox.addWidget(self.view_options_btn)
-
+        control_box = QtGui.QWidget()
         vbox = QtGui.QVBoxLayout()
-        vbox.addLayout(hbox)
-        vbox.addLayout(gBoxlay_all)  
-        gBox_all.setLayout(vbox)  
+        control_box.setLayout(vbox)  
+
+        # Create the navigation sliders and the ROI/Overlay view controls
+        vbox.addWidget(DataSummary(self))
+        hbox = QtGui.QHBoxLayout()
+        self.nav_box = NavigationBox(self)
+        hbox.addWidget(self.nav_box)
+        self.roi_box = RoiViewWidget(self)
+        hbox.addWidget(self.roi_box)
+        self.ovl_box = OverlayViewWidget(self)
+        hbox.addWidget(self.ovl_box)
+        vbox.addLayout(hbox)  
 
         # For each view window, this is the volume indices of the x, y and z axes for the view
         self.ax_map = [[0, 1, 2], [0, 2, 1], [1, 2, 0]]
@@ -855,21 +1045,13 @@ class ImageView(QtGui.QSplitter):
         self.grid.setRowStretch(1, 1)
         gview.setLayout(self.grid)
         self.addWidget(gview)
-        self.addWidget(gBox_all)
+        self.addWidget(control_box)
         self.setStretchFactor(0, 5)
         self.setStretchFactor(1, 1)
 
         self.picker = PointPicker(self) 
         self.drag_mode = DragMode.DEFAULT
-
-    def show_options(self):
-        self.opts.show()
-        self.opts.raise_()
-        
-    def show_ov_levels(self):
-        dlg = OvLevelsDialog(self, self.current_data_view)
-        dlg.exec_()
-
+      
     def view_focus(self, pos, win, is_click):
         if self.picker.win is not None and win != self.picker.win:
             # Bit of a hack. Ban focus changes in other windows when we 
@@ -880,12 +1062,11 @@ class ImageView(QtGui.QSplitter):
             self.picker.add_point(pos, win)
         
         self.ivm.cim_pos = pos
-        for nav in self.navs:
-            nav.update_pos(pos)
         self.update_ortho_views()
         self.ivm.grid.grid_to_world(pos[:3])
         
         # FIXME should this be a signal from IVM?
+        debug("Cursor position: ", pos)
         self.sig_focus_changed.emit(pos)
 
     def set_picker(self, pickmode, drag_mode = DragMode.DEFAULT):
@@ -928,17 +1109,7 @@ class ImageView(QtGui.QSplitter):
         exporter.export(str(outputfile))
 
     def main_data_changed(self, vol):
-        for nav in self.navs:
-            if vol is not None:
-                nav.update_range(self.ivm.grid.shape, vol.nvols)
-            else:
-                nav.update_range([1,]*3, 1)
-
-            nav.update_pos(self.ivm.cim_pos)
-            
         if vol is not None:
-            if vol.fname is not None: self.vol_name.setText(vol.fname)
-            else: self.vol_name.setText(vol.name)
             main_dv = DataView(self.ivm, self.ivm.main.name)
             main_dv.cmap = "grey"
             self.h1.set_data_view(main_dv)
@@ -949,25 +1120,9 @@ class ImageView(QtGui.QSplitter):
             for d in range(3):
                 if self.ivm.grid.shape[d] == 1:
                     self.max_min(d, state=1)
-        else:
-            self.vol_name.setText("")
         self.update_ortho_views()
 
-    def roi_combo_changed(self, idx):
-        if idx >= 0:
-            roi = self.roi_combo.itemText(idx)
-            self.ivm.set_current_roi(roi)
-
     def rois_changed(self, rois):
-        # Repopulate ROI combo, without sending signals
-        try:
-            self.roi_combo.blockSignals(True)
-            self.roi_combo.clear()
-            for roi in rois:
-                self.roi_combo.addItem(roi)
-        finally:
-            self.roi_combo.blockSignals(False)
-
         # Discard RoiView instances for data which has been deleted
         for name in self.roi_views.keys():
             if name not in rois:
@@ -976,130 +1131,37 @@ class ImageView(QtGui.QSplitter):
                 del self.roi_views[name]
 
         self.current_roi_changed(self.ivm.current_roi)
-        self.roi_combo.updateGeometry()
 
     def current_roi_changed(self, roi):
         # Update ROI combo to show the current ROI
         if roi is None:
-            self.roi_combo.setCurrentIndex(-1)
             self.current_roi_view = None
         else:
-            idx = self.roi_combo.findText(roi.name)
-            if idx != self.roi_combo.currentIndex():
-                try:
-                    self.roi_combo.blockSignals(True)
-                    self.roi_combo.setCurrentIndex(idx)
-                finally:
-                    self.roi_combo.blockSignals(False)
-
             if roi.name not in self.roi_views:
                 # Create an ROI view if we don't already have one for this ROI
                 self.roi_views[roi.name] = RoiView(self.ivm, roi.name)
             self.current_roi_view = self.roi_views[roi.name]
 
-        self.update_view_widgets()
+        self.roi_box.update_from_roiview(self.current_roi_view)
         self.update_ortho_views()
-
-    def roi_view_changed(self, idx):
-        if self.current_roi_view is not None:
-            self.current_roi_view.shade = idx in (0, 2)
-            self.current_roi_view.contour = idx in (1, 2)
-        self.update_view_widgets()
-        self.update_ortho_views()
-
-    def roi_alpha_changed(self, alpha):
-        """ Set the ROI transparency """
-        if self.current_roi_view is not None:
-            self.current_roi_view.alpha = alpha
-        self.update_ortho_views()
-
-    def overlay_combo_changed(self, idx):
-        if idx >= 0:
-            ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_data(ov)
-
-    def overlay_cmap_changed(self, idx):
-        cmap = self.ov_cmap_combo.itemText(idx)
-        self.current_data_view.cmap = cmap
-        self.current_data_view.sig_changed.emit(self.current_data_view)
-        #self.update_view_widgets()
 
     def data_changed(self, data):
-        # Repopulate data combo, without sending signals
         debug("New data: ", data)
-        try:
-            self.overlay_combo.blockSignals(True)
-            self.overlay_combo.clear()
-            for ov in data:
-                self.overlay_combo.addItem(ov)
-        finally:
-            self.overlay_combo.blockSignals(False)
-
         # Discard DataView instances for data which has been deleted
         for name in self.data_views.keys():
             if name not in data:
                 del self.data_views[name]
 
         self.current_data_changed(self.ivm.current_data)
-        self.overlay_combo.updateGeometry()
 
     def current_data_changed(self, ov):
-        self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
-            # Update the overlay combo to show the current overlay
-            idx = self.overlay_combo.findText(ov.name)
-            debug("New current data: ", ov.name, idx)
-            if idx != self.overlay_combo.currentIndex():
-                try:
-                    self.overlay_combo.blockSignals(True)
-                    self.overlay_combo.setCurrentIndex(idx)
-                finally:
-                    self.overlay_combo.blockSignals(False)
-
             if ov.name not in self.data_views:
                 # Create a data view if we don't already have one for this overlay
                 self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
             self.current_data_view = self.data_views[ov.name]
-            self.update_view_widgets()
         else:
-            self.overlay_combo.setCurrentIndex(-1)
             self.current_data_view = None
         self.h2.set_data_view(self.current_data_view)
         self.update_ortho_views()
-
-    def overlay_view_changed(self, idx):
-        """ Viewing style (all or within ROI only) changed """
-        if self.current_data_view is not None:
-            self.current_data_view.visible = idx in (0, 1)
-            self.current_data_view.roi_only = (idx == 1)
-        self.current_data_changed(self.ivm.current_data)
-
-    def overlay_alpha_changed(self, alpha):
-        """ Set the overlay transparency """
-        if self.current_data_view is not None:
-            self.current_data_view.alpha = alpha
-            self.current_data_view.sig_changed.emit(self.current_data_view)
-
-    def update_view_widgets(self):
-        if self.current_data_view:
-            if not self.current_data_view.visible:
-                self.ov_view_combo.setCurrentIndex(2)
-            elif self.current_data_view.roi_only:
-                self.ov_view_combo.setCurrentIndex(1)
-            else:
-                self.ov_view_combo.setCurrentIndex(0)
-            idx = self.ov_cmap_combo.findText(self.current_data_view.cmap)
-            self.ov_cmap_combo.setCurrentIndex(idx)
-            self.ov_alpha_sld.setValue(self.current_data_view.alpha)
-
-        if self.current_roi_view:
-            if self.current_roi_view.shade and self.current_roi_view.contour:
-                self.roi_view_combo.setCurrentIndex(2)
-            elif self.current_roi_view.shade:
-                self.roi_view_combo.setCurrentIndex(0)
-            elif self.current_roi_view.contour:
-                self.roi_view_combo.setCurrentIndex(1)
-            else:
-                self.roi_view_combo.setCurrentIndex(3)
-            self.roi_alpha_sld.setValue(self.current_roi_view.alpha)
