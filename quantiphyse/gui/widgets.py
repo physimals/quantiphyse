@@ -211,29 +211,34 @@ class OverlayCombo(QtGui.QComboBox):
 
     Really ugly hacks to make it work for data / rois
     """
-    def __init__(self, ivm, parent=None, static_only=False, none_option=False, all_option=False, rois=False):
+    def __init__(self, ivm, parent=None, static_only=False, none_option=False, all_option=False, data=True, rois=False):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
         self.static_only = static_only
         self.none_option = none_option
         self.all_option = all_option
         self.rois = rois
+        self.data = data
         if self.rois:
             self.ivm.sig_all_rois.connect(self.data_changed)
-            self.data_changed(self.ivm.rois.keys())
-        else:
+        if self.data:
             self.ivm.sig_all_data.connect(self.data_changed)
-            self.data_changed(self.ivm.data.keys())
+        self.data_changed()
     
-    def data_changed(self, data):
+    def data_changed(self):
+        data = []
+        if self.rois:
+            data += self.ivm.rois.keys()
+        if self.data:
+            data += self.ivm.data.keys()
+
         current = self.currentText()
         self.clear()
         if self.none_option:
             self.addItem("<none>")
 
         for name in data:
-            if self.rois: d = self.ivm.rois[name]
-            else: d = self.ivm.data[name]
+            d = self.ivm.data.get(name, self.ivm.rois.get(name, None))
             if (d.nvols == 1 or not self.static_only):
                 self.addItem(d.name)
 
@@ -498,7 +503,7 @@ class NumberGrid(QtGui.QTableWidget):
     Table of numeric values
     """
     def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
-                 fix_height=False, fix_width=False):
+                 fix_height=False, fix_width=False, readonly=False):
         QtGui.QTableWidget.__init__(self, 1, 1)
         
         if (col_headers and expandable[0]) or (row_headers and expandable[1]):
@@ -522,7 +527,10 @@ class NumberGrid(QtGui.QTableWidget):
             self.verticalHeader().hide()
 
         self.default_bg = self.item(0, 0).background()
-        self.itemChanged.connect(self._item_changed)
+        if readonly:
+            self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        else:
+            self.itemChanged.connect(self._item_changed)
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.setAcceptDrops(True)
@@ -766,8 +774,9 @@ class TitleWidget(QtGui.QWidget):
         if opts_btn: hbox.addWidget(OptionsButton(widget))
         vbox.addLayout(hbox)
 
-        if subtitle is not None:
-            vbox.addWidget(QtGui.QLabel(subtitle))     
+        if subtitle is None:
+            subtitle = widget.description
+        vbox.addWidget(QtGui.QLabel(subtitle))     
 
 class RunBox(QtGui.QGroupBox):
     """
