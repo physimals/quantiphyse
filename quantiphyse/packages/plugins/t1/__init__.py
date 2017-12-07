@@ -6,7 +6,7 @@ from PySide import QtGui
 import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
-from quantiphyse.gui.widgets import HelpButton, QpWidget
+from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.volumes.io import load
 
 from .process import T10Process
@@ -170,15 +170,9 @@ class SourceImageList(QtGui.QVBoxLayout):
             vol = load(filename)
             vol.name = "fa%i" % file_vals[0]
             self.ivm.add_data(vol)
-            if len(file_vals) == 1:
-                # FIXME need to check dimensions against volume?
-                vols.append(vol.name)
-                vals.append(file_vals[0])
-            else:
-                for i, val in enumerate(file_vals):
-                    subvol=vol.std()[...,i]
-                    vols.append(subvol)
-                    vals.append(val)
+            # FIXME need to check dimensions against volume?
+            vols.append(vol.name)
+            vals.append(file_vals)
         return vols, vals
 
 class T10Widget(QpWidget):
@@ -186,20 +180,15 @@ class T10Widget(QpWidget):
     Generate T1 map from variable flip angle images
     """
     def __init__(self, **kwargs):
-        super(T10Widget, self).__init__(name="T1", desc="Generate T1 map", icon="t10", group="DCE-MRI", **kwargs)
+        super(T10Widget, self).__init__(name="T1 Map", desc="Generate T1 map from variable flip angle images", icon="t10", 
+                                        group="Processing", **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">T1 map generation</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(HelpButton(self, "t1"))
-        layout.addLayout(hbox)
-        
-        layout.addWidget(QtGui.QLabel('Generate T1 map from variable flip angle images'))
-
+        layout.addWidget(TitleWidget(self))
+       
         fabox = QtGui.QGroupBox()
         fabox.setTitle("Flip angle images")
         self.fatable = SourceImageList("Flip angle", val_range=[0, 90])
