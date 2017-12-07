@@ -151,15 +151,16 @@ class SaveArtifactsProcess(Process):
             fname = options.pop(name)
             if not fname: fname = name
             if name in self.ivm.artifacts: 
+                debug("Saving '%s' to %s" (name, fname))
                 self._save_text(str(self.ivm.artifacts[name]), fname)
             else:
-                warn("Artifact %s not found - not saving" % name)
+                warn("Extra '%s' not found - not saving" % name)
 
         self.status = Process.SUCCEEDED
 
     def _save_text(self, text, fname, ext="txt"):
         if len(text) > 0:
             if "." not in fname: fname = "%s.%s" % (fname, ext)
-            fname = os.path.join(self.workdir, fname)
+            fname = os.path.join(self.outdir, fname)
             with open(fname, "w") as f:
                 f.write(text)

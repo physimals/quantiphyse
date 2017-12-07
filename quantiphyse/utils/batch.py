@@ -29,7 +29,8 @@ processes = {"RenameData"   : RenameDataProcess,
              "SaveAndDelete" : SaveDeleteProcess,
              "LoadData" : LoadDataProcess,
              "LoadRois" : LoadRoisProcess,
-             "SaveArtifacts" : SaveArtifactsProcess}
+             "SaveArtifacts" : SaveArtifactsProcess,
+             "SaveExtras" : SaveArtifactsProcess}
 
 def parse_batch(fname=None, code=None):
     """ Run a YAML batch file """
