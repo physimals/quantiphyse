@@ -460,6 +460,8 @@ class NumberList(QtGui.QTableWidget):
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
         elif ncols == 1:
+            self.setValues([r[0] for r in fvals])
+        elif nrows == 1:
             self.setValues(fvals[0])
         else:
             # Choose row or column you want
@@ -852,6 +854,7 @@ class RunBox(QtGui.QGroupBox):
 
     def cancel(self):
         self.process.cancel()
+        self.progress.setValue(0)
 
     def finished(self, status, result, log, exception):
         try:
@@ -868,6 +871,8 @@ class RunBox(QtGui.QGroupBox):
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()
+            elif self.process.status == Process.CANCELLED:
+                pass
             elif exception is not None:
                 raise exception
         finally:
