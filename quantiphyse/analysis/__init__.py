@@ -138,9 +138,14 @@ class BackgroundProcess(Process):
         if self.status == Process.RUNNING:
             self.status = Process.CANCELLED
             if self.multiproc:
-                for p in self.workers:
-                    p.terminate()
-                    p.join(timeout=1.0)
+                # FIXME this does not work. Not incredibly harmful because
+                # with status set to CANCELLED results are ignored anyway.
+                # But workers will continue to work. Maybe look into
+                # abortable_worker solution?
+                pass
+                #for p in self.workers:
+                #    p.terminate()
+                #    p.join(timeout=1.0)
             else:
                 # Just setting the status is enough - no more workers
                 # will be started
@@ -151,7 +156,6 @@ class BackgroundProcess(Process):
                 self.finished()
             except:
                 warn("Error executing finished methods for process")
-            print("4", self.output)
             self.sig_finished.emit(self.status, self.output, self.log, self.exception)
 
     def split_args(self, n, args):
