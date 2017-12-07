@@ -15,6 +15,8 @@ import numpy as np
 
 from PySide import QtCore, QtGui
 
+from .exceptions import QpException
+
 LOCAL_FILE_PATH=""
 DEBUG = False
 PLUGIN_MANIFEST = None
@@ -93,10 +95,13 @@ def load_matrix(filename):
             line = line.split("#", 1)[0].strip()
             # Split by commas or spaces
             vals = line.replace(",", " ").split()
+            # Ignore empty lines
+            if len(vals) == 0: continue
+            # Check correct number of columns
             if ncols < 0: ncols = len(vals)
             elif len(vals) != ncols:
                 raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
-
+            # Check all data is numeric
             for val in vals:
                 try:
                     fval = float(val)
