@@ -21,5 +21,6 @@ packaging/deb
 packaging/msi
 packaging/*.log
 packaging/*.err
+packaging/licence.rtf
 .DS_Store
 .vscode
