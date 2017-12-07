@@ -71,7 +71,7 @@ class SECurve(QpWidget):
     sig_clear_pnt = QtCore.Signal(bool)
 
     def __init__(self, **kwargs):
-        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal enhancement curves", group="DEFAULT", position=2, **kwargs)
+        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal enhancement curves", group="Analysis", position=2, **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -690,7 +690,9 @@ resids = mydata - modelfit
 
 class SimpleMathsWidget(QpWidget):
     def __init__(self, **kwargs):
-        super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="maths", desc="Simple mathematical operations on data", **kwargs)
+        super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="maths", 
+                                                desc="Simple mathematical operations on data", 
+                                                group="Processing", **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -823,7 +825,8 @@ class ModelCurves(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(ModelCurves, self).__init__(name="Model Curve", desc="Display model enhancement curves", icon="curve_view", **kwargs)
+        super(ModelCurves, self).__init__(name="Model Curve", desc="Display model enhancement curves", 
+                                          icon="curve_view", group="Analysis", **kwargs)
         self.data_enabled = {}
         self.updating = False
 

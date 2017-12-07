@@ -19,7 +19,9 @@ class RegWidget(QpWidget):
     Generic registration / motion correction widget 
     """
     def __init__(self, **kwargs):
-        super(RegWidget, self).__init__(name="Registration", icon="reg", desc="Registration and Motion Correction", **kwargs)
+        super(RegWidget, self).__init__(name="Registration", icon="reg", 
+                                        desc="Registration and Motion Correction", 
+                                        group="Processing", **kwargs)
         self.reg_methods = [c() for c in get_plugins("reg-methods")]
 
     def init_ui(self):

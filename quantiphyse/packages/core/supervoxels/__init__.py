@@ -30,7 +30,9 @@ class PerfSlicWidget(QpWidget):
     Generates supervoxels using SLIC method
     """
     def __init__(self, **kwargs):
-        super(PerfSlicWidget, self).__init__(name="Super Voxels", icon="sv", desc="Generate supervoxel clusters", **kwargs)
+        super(PerfSlicWidget, self).__init__(name="Super Voxels", icon="sv", 
+                                             desc="Generate supervoxel clusters", 
+                                             group="Clustering", **kwargs)
         
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -103,7 +105,9 @@ class MeanValuesWidget(QpWidget):
     Convert an overlay + multi-level ROI into mean values overlay
     """
     def __init__(self, **kwargs):
-        super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", desc="Generate mean values overlays", **kwargs)
+        super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", 
+                                               desc="Generate mean values overlays", 
+                                               group="Clustering", **kwargs)
 
         layout = QtGui.QVBoxLayout()
 

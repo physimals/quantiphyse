@@ -9,6 +9,7 @@ class OverviewWidget(QpWidget):
     def __init__(self, **kwargs):
         super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", group="DEFAULT", position=0, **kwargs)
 
+    def init_ui(self):
         layout = QtGui.QVBoxLayout()
 
         hbox = QtGui.QHBoxLayout()
@@ -119,19 +120,18 @@ class DataListWidget(QtGui.QTableWidget):
     def add_volume(self, row, vol_type, vol, current=False):
         self.setItem(row, 0, QtGui.QTableWidgetItem(vol.name))
         self.setItem(row, 1, QtGui.QTableWidgetItem(vol_type))
+        item = self.item(row, 0)
         if vol.fname is not None:
             self.setItem(row, 2, QtGui.QTableWidgetItem(vol.fname))
-            item = self.item(row, 0)
             if item is not None:
                 item.setToolTip(vol.fname)
-            else:
-                debug("Weird - item is None ", vol.name)
         if current:
-            font = self.item(row, 0).font()
-            font.setBold(True)
-            self.item(row, 0).setFont(font)
-            self.item(row, 1).setFont(font)
-            if vol.fname is not None: self.item(row, 2).setFont(font)
+            if item is not None:
+                font = self.item(row, 0).font()
+                font.setBold(True)
+                self.item(row, 0).setFont(font)
+                self.item(row, 1).setFont(font)
+                if vol.fname is not None: self.item(row, 2).setFont(font)
         
     def update_list(self, list1):
         try:

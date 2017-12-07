@@ -71,7 +71,9 @@ class DataInspectorWidget(QpWidget):
     Widget that lets you tweak the orientation of data
     """
     def __init__(self, **kwargs):
-        super(DataInspectorWidget, self).__init__(name="Data Inspector", icon="pk.png", desc="Manipulate data orientation", **kwargs)
+        super(DataInspectorWidget, self).__init__(name="Data Inspector", icon="pk.png", 
+                                                  desc="Manipulate data orientation", 
+                                                  group="Utilities", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()

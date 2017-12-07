@@ -13,7 +13,8 @@ class BatchBuilderWidget(QpWidget):
     """
     def __init__(self, **kwargs):
         super(BatchBuilderWidget, self).__init__(name="Batch Builder", icon="batch", 
-                                                 desc="Simple helper for building and running batch files", **kwargs)
+                                                 desc="Simple helper for building and running batch files", 
+                                                 group="Utilities", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()

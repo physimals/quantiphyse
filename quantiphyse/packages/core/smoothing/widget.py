@@ -11,7 +11,8 @@ class SmoothingWidget(QpWidget):
     Gaussian smoothing widget
     """
     def __init__(self, **kwargs):
-        super(SmoothingWidget, self).__init__(name="Smoothing", icon="smooth.png", desc="Gaussian smoothing", **kwargs)
+        super(SmoothingWidget, self).__init__(name="Smoothing", icon="smooth.png", 
+                                              desc="Gaussian smoothing", group="Processing", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
