@@ -108,7 +108,7 @@ def get_guid(path):
     """
     Return a GUID which is reproducibly tied to a file path
     """
-    return uuid.uuid5(uuid.NAMESPACE_DNS, 'quantiphyse.org/' + path)
+    return uuid.uuid5(uuid.NAMESPACE_DNS, 'quantiphyse.org/' +  os.path.normpath(path))
 
 def add_files_in_dir(distdir, pkgdir, nfile, ndir, output, indent):
     """
@@ -122,9 +122,8 @@ def add_files_in_dir(distdir, pkgdir, nfile, ndir, output, indent):
             
             # Generate GUID based on destination path relative to install location
             destpath = os.path.join(pkgdir, fname)
-            print(destpath)
             guid = get_guid(destpath)
-
+            
             # Write component XML
             output.write('%s  <Component Id="Component%i" Guid="%s" Win64="yes">\n' % (indent, nfile, str(guid)))
             if fname == "quantiphyse.exe":
