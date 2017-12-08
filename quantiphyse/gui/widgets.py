@@ -847,7 +847,7 @@ class RunBox(QtGui.QGroupBox):
             self.process.run(rundata)
         except:
             # Process failed to start, so call finished cb manually
-            self.finished(Process.FAILED, sys.exc_info()[1], "")
+            self.finished(Process.FAILED, sys.exc_info()[1], "", sys.exc_info()[1])
 
     def update_progress(self, complete):
         self.progress.setValue(100*complete)
