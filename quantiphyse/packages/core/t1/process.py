@@ -6,6 +6,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 from quantiphyse.volumes.io import load
 from quantiphyse.analysis import Process
+from quantiphyse.utils import debug
 
 from .t1_model import t10_map
 
@@ -27,6 +28,7 @@ class T10Process(Process):
         tr = float(options.pop("tr"))/1000
         fa_vols, fas = [], []
         for fname, fa in options.pop("vfa").items():
+            debug("FA=", fa, fname)
             if fname in self.ivm.data:
                 vol = self.ivm.data[fname].std()
             else:
@@ -34,9 +36,13 @@ class T10Process(Process):
                 data.regrid(self.ivm.grid)
                 vol = data.std()
             if isinstance(fa, list):
-                for i, a in enumerate(fa):
-                    fas.append(a)
-                    fa_vols.append(vol[:,:,:,i])
+                if len(fa) > 1:
+                    for i, a in enumerate(fa):
+                        fas.append(a)
+                        fa_vols.append(vol[:,:,:,i])
+                else:
+                    fas.append(fa[0])
+                    fa_vols.append(vol)
             else:
                 fas.append(fa)
                 fa_vols.append(vol)
