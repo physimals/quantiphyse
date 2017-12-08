@@ -60,10 +60,11 @@ if "--maxi" in sys.argv:
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
-        plugindist = os.path.join(plugindir, "dist", plugin.replace("-", "_"))
-        os.system("python %s/packaging/build.py" % plugindir)
+        plugin_pkg = plugin.replace("-", "_")
+        plugindist = os.path.join(plugindir, "dist", plugin_pkg)
+        os.system("python %s/packaging/build.py 2>%s/bundle.err 1>%s/bundle.log" % (plugindir, pkgdir, pkgdir))
         shutil.copytree(plugindist, 
-                        "%s/%s/packages/plugins/%s" % (distdir, package_name, plugin))
+                        "%s/%s/packages/plugins/%s" % (distdir, package_name, plugin_pkg))
         if platform == "osx":
             # Need to put it into he OSX bundle as well
             shutil.copytree(plugindist,
