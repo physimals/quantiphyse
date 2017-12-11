@@ -28,7 +28,6 @@ class RoiCleanupProcess(Process):
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
-        self.ia = OverlayAnalysis(ivm=self.ivm)
 
     def run(self, options):
         roi_name = options.pop('roi', None)
