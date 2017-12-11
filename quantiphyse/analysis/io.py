@@ -16,7 +16,7 @@ class LoadProcess(Process):
         rois = options.pop('rois', {})
         data = options.pop('data', {})
         # Force 3D data to be multiple 2D volumes 
-        force_mv = option.pop('force-multivol')
+        force_mv = options.pop('force-multivol', False)
 
         for fname, name in rois.items():
             qpdata = self._load_file(fname, name)
@@ -151,7 +151,7 @@ class SaveArtifactsProcess(Process):
             fname = options.pop(name)
             if not fname: fname = name
             if name in self.ivm.artifacts: 
-                debug("Saving '%s' to %s" (name, fname))
+                debug("Saving '%s' to %s" % (name, fname))
                 self._save_text(str(self.ivm.artifacts[name]), fname)
             else:
                 warn("Extra '%s' not found - not saving" % name)
