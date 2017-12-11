@@ -50,7 +50,7 @@ class ExamplePluginWidget(QpWidget):
     def deactivate(self):
         self.ivm.sig_all_data.disconnect(self.data_changed)
 
-    def data_changed(self, overlays):
+    def data_changed(self, data):
         pass
 
     def batch_options(self):
@@ -58,7 +58,7 @@ class ExamplePluginWidget(QpWidget):
 
 class ExampleWidget(QpWidget):
     """
-    Widget for setting a threshold to the image data inside the ROI. This is saved as an overlay.
+    Widget for setting a threshold to the image data inside the ROI. This is saved as data
     """
     def __init__(self, **kwargs):
         super(ExampleWidget, self).__init__(name="Threshold", desc="Threshold data", icon="quantiphyse", **kwargs)
@@ -76,7 +76,7 @@ class ExampleWidget(QpWidget):
                                    'widget for development purposes. \n'
                                    'A DCE-MRI image and ROI are \n'
                                    'loaded normally and clicking run \n'
-                                   'creates an overlay only shows values \n'
+                                   'creates a data set which only shows values \n'
                                    'in the ROI above a defined threshold.')
         main_vbox.addWidget(explanation)
 
@@ -116,5 +116,5 @@ class ExampleWidget(QpWidget):
         img = img * (self.ivm.current_roi > 0)
         img[img1 < thresh] = 0
 
-        self.ivm.add_overlay('thresh', img, set_current=True)
+        self.ivm.add_data(img, name='thresh', make_current=True)
 

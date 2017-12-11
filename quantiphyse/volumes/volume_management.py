@@ -159,7 +159,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
         self.sig_all_data.emit(self.data.keys())
 
-        # Make current if requested, or if first overlay
+        # Make current if requested, or if first data
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
 

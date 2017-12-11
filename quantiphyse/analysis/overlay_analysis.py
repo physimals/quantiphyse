@@ -3,7 +3,7 @@
 Author: Benjamin Irving (benjamin.irv@gmail.com)
 Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
 
-Library for simple analysis of the overlay parameters
+Library for simple analysis of the data parameters
 
 Benjamin Irving
 
@@ -15,7 +15,7 @@ from ..volumes.io import NumpyData
 
 class OverlayAnalysis(object):
     """
-    Class for analysing the imported overlay
+    Class for data set analysis
     """
 
     def __init__(self, ivm):
@@ -29,7 +29,7 @@ class OverlayAnalysis(object):
         @m3 standard deviation for each ROI
         @roi_labels label of each ROI
         """
-        # Checks if either ROI or overlay is None
+        # Checks if either ROI or data is None
         if roi is not None:
             roi_labels = roi.regions
         else:
@@ -56,7 +56,7 @@ class OverlayAnalysis(object):
             raise RuntimeError("Invalid slice: " % slice)
 
         for ii in roi_labels:
-            # Overlay for a single label of the roi
+            # get data for a single label of the roi
             vroi1 = ovldata[roidata == ii]
 
             stat1['mean'].append(np.mean(vroi1))
@@ -74,15 +74,15 @@ class OverlayAnalysis(object):
         """
         Generate a radial profile curve within an ROI
         """
-        if (self.ivm.current_roi is None) or (self.ivm.current_overlay is None):
+        if (self.ivm.current_roi is None) or (self.ivm.current_data is None):
             return []
 
-        data = self.ivm.current_overlay.std()
+        data = self.ivm.current_data.std()
         voxel_sizes = self.ivm.grid.spacing
         roi = self.ivm.current_roi.std()
         centre = self.ivm.cim_pos
 
-        # If overlay is 4d, get current 3d volume
+        # If data is 4d, get current 3d volume
         if data.ndim > 3 and data.shape[3] > 1:
             data = data[:, :, :, centre[3]]
         elif data.ndim > 3:

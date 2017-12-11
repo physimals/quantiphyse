@@ -290,7 +290,7 @@ PCA reduction is used on 4D data to extract representative curves
             # Generate mean curve for each cluster
             self._generate_cluster_means(roi, data)
 
-            # TODO need to work on fixing the scaling in a similar way to the normalisation of the overlay
+            # TODO need to work on fixing the scaling in a similar way to the normalisation of the data
             num_clus = roi.regions.max()
             le1 = self.plot.addLegend()
 

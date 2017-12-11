@@ -66,7 +66,7 @@ class ViewOptions(QtGui.QDialog):
     RADIOLOGICAL = 0
     NEUROLOGICAL = 1
     
-    OVERLAY_ON_TOP = 0
+    DATA_ON_TOP = 0
     ROI_ON_TOP = 1
 
     SHOW = 0
@@ -152,7 +152,7 @@ class ViewOptions(QtGui.QDialog):
 
         grid.addWidget(QtGui.QLabel("Display order"), 7, 0)
         c = QtGui.QComboBox()
-        c.addItem("Overlay on top")
+        c.addItem("Data on top")
         c.addItem("ROI on top")
         c.setCurrentIndex(self.display_order)
         c.currentIndexChanged.connect(self.zorder_changed)

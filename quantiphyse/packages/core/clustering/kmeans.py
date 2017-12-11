@@ -119,7 +119,7 @@ class KMeans3DProcess(Process):
     def run(self, options):
         n_clusters = options.pop('n-clusters', 5)
         invert_roi = options.pop('invert-roi', False)
-        output_name = options.pop('output-name', 'overlay_clusters')
+        output_name = options.pop('output-name', 'clusters')
         data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         
@@ -129,7 +129,7 @@ class KMeans3DProcess(Process):
         elif self.ivm.current_data is not None:
             data = self.ivm.current_data.std().astype(np.float32)
         else:
-            raise QpException("No data specified and no current overlay")
+            raise QpException("No data specified and no current data")
 
         if len(data.shape) != 3:
             raise QpException("Can only run clustering on 3D data")

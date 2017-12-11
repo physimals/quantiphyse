@@ -7,7 +7,7 @@ quantiphyse (0.36ubuntu1) trusty; urgency=medium
 pkview (0.31) trusty; urgency=medium
 
   * T10 map generation
-  * Overlay histogram
+  * Histogram
   * Supervoxel generation
   * UI tweaks and improvements
 

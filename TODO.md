@@ -22,7 +22,7 @@ This is a rough indication of future plans which are not yet specific enough to 
    - possible model-specific widgets?
    - ASL/CEST in progress
 
- - Improve memory usage by swapping out overlays which are not being displayed?
+ - Improve memory usage by swapping out data which are not being displayed?
 
  - All widgets which process within ROI should work with the subimage within the bounding box of the
    ROI, not the whole image. 
@@ -37,7 +37,7 @@ This is a rough indication of future plans which are not yet specific enough to 
  - Support other file formats using NIBABEL.
    - DICOM conversion included where DCMSTACK is available
 
- - Generic maths/processing widget to do things like add/subtract overlays. Very easy with numpy. 
+ - Generic maths/processing widget to do things like add/subtract data. Very easy with numpy. 
    - Basic version exists, could be improved
 
  - Add semiquantitative DCE-MRI measures
@@ -57,7 +57,7 @@ in the Nifti file to reorient to standard RAS space, or leave one file in its ow
 everything else to that space. This can be done by the viewer although slice views might need interpolation.
 
 This is a bit more problematic for Quantiphyse as we want to be able to compare data by slices, use
-multiple overlays in a single computation, etc. An example would be using an overlay as an image prior
+multiple data in a single computation, etc. An example would be using data as an image prior
 for Fabber. Some of this works on the basis that multiple data sets are defined on the same grid.
 
 This is not a straightforward problem to solve so a likely pathway towards supporting this would be:

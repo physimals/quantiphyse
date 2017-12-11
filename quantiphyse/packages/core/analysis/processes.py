@@ -55,7 +55,7 @@ class CalcVolumesProcess(Process):
 
 class HistogramProcess(Process):
     """
-    Calculate histogram for an overlay
+    Calculate histogram for a data set 
     """
     
     PROCESS_NAME = "Histogram"
@@ -65,7 +65,7 @@ class HistogramProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        ov_name = options.pop('overlay', None)
+        ov_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         sel_region = options.pop('region', None)
         dmin = options.pop('min', None)
@@ -126,7 +126,7 @@ class HistogramProcess(Process):
 
 class RadialProfileProcess(Process):
     """
-    Calculate radial profile for an overlay
+    Calculate radial profile for a data set
     """
     
     PROCESS_NAME = "RadialProfile"
@@ -136,7 +136,7 @@ class RadialProfileProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        ov_name = options.pop('overlay', None)
+        ov_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         #roi_region = options.pop('region', None)
         centre = options.pop('centre', None)
@@ -191,7 +191,7 @@ class RadialProfileProcess(Process):
         for col, data in enumerate(ovs):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
                 
-            # If overlay is 4d, get current 3d volume
+            # If data is 4d, get current 3d volume
             if data.ndim == 4:
                 weights = data.std()[:, :, :, centre[3]]
             else:
@@ -224,13 +224,14 @@ class OverlayStatisticsProcess(Process):
 
     def run(self, options):
         roi_name = options.pop('roi', None)
-        ov_name = options.pop('overlay', None)
-        output_name = options.pop('output-name', "overlay-stats")
+        ov_name = options.pop('data', None)
         no_artifact = options.pop('no-artifact', False)
         if ov_name is None:
             ovs = self.ivm.data.values()
+            output_name = options.pop('output-name', "stats")
         else:
             ovs = [self.ivm.data[ov_name]]
+            output_name = options.pop('output-name', "%s_stats" % ov_name)
             
         if roi_name is None:
             roi = self.ivm.current_roi

@@ -909,7 +909,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.ivl.current_data_changed(self.ivm.current_data)
 
     def _alpha_changed(self, alpha):
-        """ Set the overlay transparency """
+        """ Set the data transparency """
         if self.ivl.current_data_view is not None:
             self.ivl.current_data_view.alpha = alpha
             self.ivl.current_data_view.sig_changed.emit(self.ivl.current_data_view)
@@ -934,7 +934,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
     def _current_data_changed(self, ov):
         self.ov_levels_btn.setEnabled(ov is not None)
         if ov is not None:
-            # Update the overlay combo to show the current overlay
+            # Update the data combo to show the current data
             idx = self.overlay_combo.findText(ov.name)
             debug("New current data: ", ov.name, idx)
             if idx != self.overlay_combo.currentIndex():
@@ -1157,7 +1157,7 @@ class ImageView(QtGui.QSplitter):
     def current_data_changed(self, ov):
         if ov is not None:
             if ov.name not in self.data_views:
-                # Create a data view if we don't already have one for this overlay
+                # Create a data view if we don't already have one for this data
                 self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
             self.current_data_view = self.data_views[ov.name]

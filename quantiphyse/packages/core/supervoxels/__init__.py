@@ -102,20 +102,20 @@ class PerfSlicWidget(QpWidget):
 
 class MeanValuesWidget(QpWidget):
     """
-    Convert an overlay + multi-level ROI into mean values overlay
+    Convert a data + multi-level ROI into mean values data set
     """
     def __init__(self, **kwargs):
         super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", 
-                                               desc="Generate mean values overlays", 
+                                               desc="Generate mean values data set", 
                                                group="Clustering", **kwargs)
 
         layout = QtGui.QVBoxLayout()
 
-        title = TitleWidget(self, "Generate Mean Values Overlay", help="mean_values")
+        title = TitleWidget(self, "Generate Mean Values Data", help="mean_values")
         layout.addWidget(title)
         
-        desc = QtGui.QLabel("This widget will convert the current overlay into a "
-                            "new overlay in which each ROI region contains the mean "
+        desc = QtGui.QLabel("This widget will convert the current data set into a "
+                            "new data set in which each ROI region contains the mean "
                             "value for that region.\n\nThis is generally only useful for "
                             "multi-level ROIs such as clusters or supervoxels")
         desc.setWordWrap(True)

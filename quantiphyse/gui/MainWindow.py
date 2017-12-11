@@ -250,9 +250,9 @@ class MainWindow(QtGui.QMainWindow):
         load_roi_action.setStatusTip('Load binary ROI')
         load_roi_action.triggered.connect(self.load_roi)
 
-        # File --> Save Overlay
-        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current Overlay', self)
-        save_ovreg_action.setStatusTip('Save current Overlay as a NIFTI file')
+        # File --> Save Data
+        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
+        save_ovreg_action.setStatusTip('Save current data as a NIFTI file')
         save_ovreg_action.triggered.connect(self.save_data)
         save_ovreg_action.setShortcut('Ctrl+S')
 

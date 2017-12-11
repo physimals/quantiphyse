@@ -351,12 +351,10 @@ class SECurve(QpWidget):
 class OverlayStatistics(QpWidget):
 
     def __init__(self, **kwargs):
-        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", group="DEFAULT", position=1, **kwargs)
+        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about data sets", icon="edit", group="DEFAULT", position=1, **kwargs)
         
     def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
-        self.setStatusTip("Load a ROI and overlay to analyse statistics")
-
         self.process = OverlayStatisticsProcess(self.ivm)
         self.process_ss = OverlayStatisticsProcess(self.ivm)
         self.process_rp = RadialProfileProcess(self.ivm)
@@ -390,8 +388,8 @@ class OverlayStatistics(QpWidget):
 
         l02 = QtGui.QHBoxLayout()
         self.butgen = QtGui.QPushButton("Show")
-        self.butgen.setToolTip("Show standard statistics for the overlay values in each ROI")
-        self.butgen.clicked.connect(self.show_overlay_stats)
+        self.butgen.setToolTip("Show standard statistics for the data in each ROI")
+        self.butgen.clicked.connect(self.show_stats)
         l02.addWidget(self.butgen)
         self.copy_btn = QtGui.QPushButton("Copy")
         self.copy_btn.clicked.connect(self.copy_stats)
@@ -402,7 +400,7 @@ class OverlayStatistics(QpWidget):
         l02ss = QtGui.QHBoxLayout()
         self.butgenss = QtGui.QPushButton("Show")
         self.butgenss.setToolTip("Show standard statistics for the current slice")
-        self.butgenss.clicked.connect(self.show_overlay_stats_current_slice)
+        self.butgenss.clicked.connect(self.show_stats_current_slice)
         l02ss.addWidget(self.butgenss)
         self.slice_dir_label = QtGui.QLabel("Slice direction:")
         self.slice_dir_label.setVisible(False)
@@ -424,7 +422,7 @@ class OverlayStatistics(QpWidget):
         l03 = QtGui.QHBoxLayout()
 
         self.butgen2 = QtGui.QPushButton("Show")
-        self.butgen2.setToolTip("Show a histogram of the overlay values in each ROI")
+        self.butgen2.setToolTip("Show a histogram of the data values in each ROI")
         self.butgen2.clicked.connect(self.show_histogram)
 
         regenHbox = QtGui.QHBoxLayout()
@@ -553,7 +551,7 @@ class OverlayStatistics(QpWidget):
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.tab1ss.isVisible():
-            self.update_overlay_stats_current_slice()
+            self.update_stats_current_slice()
 
     def update_all(self):
         name = self.data_combo.currentText()
@@ -565,14 +563,14 @@ class OverlayStatistics(QpWidget):
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.tab1.isVisible():
-            self.update_overlay_stats()
+            self.update_stats()
         if self.tab1ss.isVisible():
-            self.update_overlay_stats_current_slice()
+            self.update_stats_current_slice()
         if self.win1.isVisible():
             self.update_histogram()
 
     def update_histogram_spins(self):
-        # Min and max set for overlay choice FIXME doesn't work for <all> option
+        # Min and max set for data choice FIXME doesn't work for <all> option
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             ov = self.ivm.data[name]
@@ -589,18 +587,18 @@ class OverlayStatistics(QpWidget):
     def copy_stats_ss(self):
         copy_table(self.process_ss.model)
         
-    def show_overlay_stats(self):
+    def show_stats(self):
         if self.tab1.isVisible():
             self.tab1.setVisible(False)
             self.copy_btn.setVisible(False)
             self.butgen.setText("Show")
         else:
-            self.update_overlay_stats()
+            self.update_stats()
             self.tab1.setVisible(True)
             self.copy_btn.setVisible(True)
             self.butgen.setText("Hide")
 
-    def show_overlay_stats_current_slice(self):
+    def show_stats_current_slice(self):
         if self.tab1ss.isVisible():
             self.tab1ss.setVisible(False)
             self.slice_dir_label.setVisible(False)
@@ -608,7 +606,7 @@ class OverlayStatistics(QpWidget):
             self.copy_btn_ss.setVisible(False)
             self.butgenss.setText("Show")
         else:
-            self.update_overlay_stats_current_slice()
+            self.update_stats_current_slice()
             self.tab1ss.setVisible(True)
             self.slice_dir_label.setVisible(True)
             self.sscombo.setVisible(True)
@@ -638,22 +636,22 @@ class OverlayStatistics(QpWidget):
     def update_radial_profile(self):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
-            options = {"overlay" : name, 
+            options = {"data" : name, 
                        "no-artifact" : True, "bins" : self.rp_nbins.value()}
             self.process_rp.run(options)
             self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
-    def update_overlay_stats(self):
+    def update_stats(self):
         self.populate_stats_table(self.process)
 
-    def update_overlay_stats_current_slice(self):
+    def update_stats_current_slice(self):
         selected_slice = self.sscombo.currentIndex()
         self.populate_stats_table(self.process_ss, slice=selected_slice)
 
     def update_histogram(self):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
-            options = {"overlay" : name, 
+            options = {"data" : name, 
                     "no-artifact" : True, "bins" : self.nbinsSpin.value(),
                     "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
@@ -669,7 +667,7 @@ class OverlayStatistics(QpWidget):
 
     def populate_stats_table(self, process, **options):
         if self.data_combo.currentText() != "<all>":
-            options["overlay"] = self.data_combo.currentText()
+            options["data"] = self.data_combo.currentText()
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):
@@ -981,15 +979,15 @@ class ModelCurves(QpWidget):
 
     def _update_table(self):
         """
-        Set the overlay parameter values in the table based on the current point clicked
+        Set the data parameter values in the table based on the current point clicked
         """
         self.values_table.clear()
         self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
-        overlay_vals = self.ivm.get_data_value_curr_pos()
-        for ii, ovl in enumerate(sorted(overlay_vals.keys())):
+        data_vals = self.ivm.get_data_value_curr_pos()
+        for ii, ovl in enumerate(sorted(data_vals.keys())):
             if self.ivm.data[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
-                self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(overlay_vals[ovl], 10))))
+                self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(data_vals[ovl], 10))))
 
     def _update_rms_table(self):
         try:

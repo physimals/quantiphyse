@@ -91,7 +91,7 @@ class SupervoxelsProcess(Process):
 
 class MeanValuesProcess(Process):
     """
-    Create new overlay by replacing voxel values with mean within each ROI region
+    Create new data set by replacing voxel values with mean within each ROI region
     """
     PROCESS_NAME="MeanValues"
     

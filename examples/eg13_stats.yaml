@@ -1,4 +1,4 @@
-# Example config file for calculating various overlay statistics
+# Example config file for calculating various data statistics
 
 OutputFolder: test/examples_output
 Debug: False
@@ -12,16 +12,16 @@ Processing:
             testdata_mask.nii.gz: mask
           
   - OverlayStats:
-        overlay: testdata_3d
+        data: testdata_3d
         output-name: testdata_stats
 
   - RadialProfile:
-        overlay: testdata_3d
+        dat: testdata_3d
         centre: 10, 10, 10
         output-name: testdata_rp
         
   - Histogram:
-        overlay: testdata_3d
+        data: testdata_3d
         bins: 10
         output-name: testdata_hist
         roi: mask

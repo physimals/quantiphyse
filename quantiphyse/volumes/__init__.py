@@ -384,7 +384,7 @@ class QpData:
         box of this number of dimensions, truncating
         and appending slices as required.
 
-        This enables image or overlay data to be
+        This enables data to be
         easily restricted to the ROI region and
         reduce data copying.
 
