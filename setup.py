@@ -64,7 +64,7 @@ qpdir = os.path.abspath(os.path.dirname(__file__))
 pkgdir = os.path.abspath(os.path.join(qpdir, "packaging"))
 sys.path.append(pkgdir)
 from update_version import update_version
-version_full, version_str = update_version()
+version_full, version_str = update_version("quantiphyse", qpdir)
 
 extensions = []
 compile_args = []
@@ -133,12 +133,12 @@ else:
 
 fsldir = os.environ.get("FSLDIR", "")
 if fsldir:
-    extensions.append(Extension("quantiphyse.packages.plugins.mcflirt.mcflirt_wrapper",
-                 sources=['quantiphyse/packages/plugins/mcflirt/mcflirt_wrapper.pyx',
-                          'quantiphyse/packages/plugins/mcflirt/src/mcflirt.cc',
-                          'quantiphyse/packages/plugins/mcflirt/src/Globaloptions.cc',
-                          'quantiphyse/packages/plugins/mcflirt/src/Log.cc'],
-                 include_dirs=['quantiphyse/packages/plugins/mcflirt/src/', 
+    extensions.append(Extension("quantiphyse.packages.core.mcflirt.mcflirt_wrapper",
+                 sources=['quantiphyse/packages/core/mcflirt/mcflirt_wrapper.pyx',
+                          'quantiphyse/packages/core/mcflirt/src/mcflirt.cc',
+                          'quantiphyse/packages/core/mcflirt/src/Globaloptions.cc',
+                          'quantiphyse/packages/core/mcflirt/src/Log.cc'],
+                 include_dirs=['quantiphyse/packages/core/mcflirt/src/', 
                                os.path.join(fsldir, "include"),
                                os.path.join(fsldir, "extras/include/newmat"),
                                os.path.join(fsldir, "extras/include/boost"),
@@ -151,11 +151,11 @@ else:
 
 # deedsReg extension
 
-extensions.append(Extension("quantiphyse.packages.plugins.deeds.deeds_wrapper",
-                 sources=['quantiphyse/packages/plugins/deeds/deeds_wrapper.pyx',
-                          'quantiphyse/packages/plugins/deeds/src/TMI2013/deedsMSTssc.cpp'],
+extensions.append(Extension("quantiphyse.packages.core.deeds.deeds_wrapper",
+                 sources=['quantiphyse/packages/core/deeds/deeds_wrapper.pyx',
+                          'quantiphyse/packages/core/deeds/src/TMI2013/deedsMSTssc.cpp'],
                  include_dirs=[numpy.get_include(), 
-                               "quantiphyse/packages/plugins/deeds/src/TMI2013/", 
+                               "quantiphyse/packages/core/deeds/src/TMI2013/", 
                                extra_inc],
                  language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
