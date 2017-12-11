@@ -66,7 +66,6 @@ class NiftiData(QpData):
             nvols = 1
 
         self.nifti_header = nii.header
-        print(self.nifti_header)
         grid = DataGrid(shape[:3], nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname)
 
