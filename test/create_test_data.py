@@ -19,7 +19,7 @@ def test_fn(x, y, z, t=None):
 
 centre = [float(v)/2 for v in TEST_SHAPE]
 script_dir = os.path.abspath(os.path.dirname(__file__))
-output_dir = os.path.join(script_dir, "test_data")
+output_dir = os.path.join(script_dir, "data_autogen")
 
 testdata_3d = np.zeros(TEST_SHAPE, dtype=np.float32)
 testdata_4d = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)

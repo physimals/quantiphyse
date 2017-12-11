@@ -25,3 +25,5 @@ packaging/*.err
 packaging/licence.rtf
 .DS_Store
 .vscode
+test/data_autogen
+test/examples_output
