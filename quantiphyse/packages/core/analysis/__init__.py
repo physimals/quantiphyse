@@ -14,11 +14,98 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.ImageView import PickMode
-from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget
+from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
 from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug
 
 from .processes import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
 
+class SECurveOptions(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.parent = parent
+        self.se = False
+        self.smooth = False
+
+        self.setWindowTitle('Plot options')
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
+
+        # Display mode
+        self.mode = 0
+        grid.addWidget(QtGui.QLabel("Display mode"), 0, 0)
+        self.mode_combo = QtGui.QComboBox()
+        self.mode_combo.addItem("Signal")
+        self.mode_combo.addItem("Signal Enhancement")
+        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
+        grid.addWidget(self.mode_combo, 0, 1)
+
+        # Y-axis scale
+        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+        self.auto_y_cb.setChecked(True)
+        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
+
+        hbox = QtGui.QHBoxLayout()
+        grid.addWidget(self.auto_y_cb, 1, 0)
+        self.min_lbl = QtGui.QLabel("Min")
+        self.min_lbl.setEnabled(False)
+        hbox.addWidget(self.min_lbl)
+        self.min_spin = QtGui.QDoubleSpinBox()
+        self.min_spin.setMinimum(-1e20)
+        self.min_spin.setMaximum(1e20)
+        self.min_spin.valueChanged.connect(parent.update)
+        self.min_spin.setEnabled(False)
+        hbox.addWidget(self.min_spin)
+        self.max_lbl = QtGui.QLabel("Max")
+        self.max_lbl.setEnabled(False)
+        hbox.addWidget(self.max_lbl)
+        self.max_spin = QtGui.QDoubleSpinBox()
+        self.max_spin.setMinimum(-1e20)
+        self.max_spin.setMaximum(1e20)
+        self.max_spin.valueChanged.connect(parent.update)
+        self.max_spin.setEnabled(False)
+        hbox.addWidget(self.max_spin)
+        hbox.addStretch(1)
+        grid.addLayout(hbox, 1, 1)
+
+        # Signal enhancement baseline
+        self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
+        self.se_lbl.setEnabled(False)
+        grid.addWidget(self.se_lbl, 2, 0)
+
+        hbox = QtGui.QHBoxLayout()
+        self.norm_frames = QtGui.QSpinBox()
+        self.norm_frames.setValue(3)
+        self.norm_frames.setMinimum(1)
+        self.norm_frames.setMaximum(100)
+        self.norm_frames.valueChanged.connect(parent.update)
+        self.norm_frames.setEnabled(False)
+        hbox.addWidget(self.norm_frames)
+        self.se_lbl2 = QtGui.QLabel('frames as baseline')
+        self.se_lbl2.setEnabled(False)
+        hbox.addWidget(self.se_lbl2)
+        hbox.addStretch(1)
+        grid.addLayout(hbox, 2, 1)
+
+        # Smoothing
+        self.smooth_cb = QtGui.QCheckBox('Smooth curves', self)
+        self.smooth_cb.setChecked(False)
+        grid.addWidget(self.smooth_cb, 3, 0)
+
+    def mode_changed(self, idx):
+        self.mode = idx
+        self.se = (self.mode == 1)
+        self.se_lbl.setEnabled(self.se)
+        self.norm_frames.setEnabled(self.se)
+        self.se_lbl2.setEnabled(self.se)
+        self.parent.update()
+
+    def auto_y_changed(self, ch):
+        self.min_lbl.setEnabled(not ch)
+        self.min_spin.setEnabled(not ch)
+        self.max_lbl.setEnabled(not ch)
+        self.max_spin.setEnabled(not ch)
+        self.parent.update()
+        
 class SEPlot:
     def __init__(self, plotwin, sig, **kwargs):
         self.plotwin = plotwin
@@ -31,14 +118,14 @@ class SEPlot:
         self.line = None
         self.pts = None
 
-    def draw(self, sigenh, smooth, opts):
-        if sigenh:
-            m = np.mean(self.sig[:3])
+    def draw(self, plot_opts, global_opts):
+        if plot_opts.se:
+            m = np.mean(self.sig[:plot_opts.norm_frames.value()])
             pt_values = self.sig / m - 1
         else:
             pt_values = self.sig
 
-        if smooth:
+        if plot_opts.smooth_cb.isChecked:
             wsize = 3
             cwin1 = np.ones(wsize)/wsize
             r1 = range(len(pt_values))
@@ -53,8 +140,8 @@ class SEPlot:
         if self.line is not None:
             self.remove()
 
-        self.line = self.plotwin.plot(opts.t_scale, line_values, pen=self.pen, width=4.0)
-        self.pts = self.plotwin.plot(opts.t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
+        self.line = self.plotwin.plot(global_opts.t_scale, line_values, pen=self.pen, width=4.0)
+        self.pts = self.plotwin.plot(global_opts.t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
                                 symbolSize=self.symbolSize)
 
     def remove(self):
@@ -71,7 +158,7 @@ class SECurve(QpWidget):
     sig_clear_pnt = QtCore.Signal(bool)
 
     def __init__(self, **kwargs):
-        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal enhancement curves", group="Analysis", position=2, **kwargs)
+        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal curves", group="Analysis", position=2, **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -81,7 +168,7 @@ class SECurve(QpWidget):
 
         vbox = QtGui.QVBoxLayout()
 
-        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare")
+        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare", opts_btn=True)
         vbox.addWidget(title)
 
         #Clear curves button
@@ -104,7 +191,7 @@ class SECurve(QpWidget):
         vbox.addWidget(QtGui.QLabel())
 
         opts_box = QtGui.QGroupBox()
-        opts_box.setTitle('Curve options')
+        opts_box.setTitle('Point selection')
         opts_vbox = QtGui.QVBoxLayout()
         opts_box.setLayout(opts_vbox)
 
@@ -122,19 +209,9 @@ class SECurve(QpWidget):
         hbox.addStretch(1)
         opts_vbox.addLayout(hbox)
 
-        # Take a local region mean to reduce noise
-        self.smooth_cb = QtGui.QCheckBox('Smooth curves', self)
-        self.smooth_cb.stateChanged.connect(self.replot_graph)
-        opts_vbox.addWidget(self.smooth_cb)
-
         self.multi_cb = QtGui.QCheckBox('Multiple curves', self)
         self.multi_cb.stateChanged.connect(self.clear_all)
         opts_vbox.addWidget(self.multi_cb)
-
-        # Signal enhancement (normalised)
-        self.se_cb = QtGui.QCheckBox('Signal enhancement', self)
-        self.se_cb.stateChanged.connect(self.replot_graph)
-        opts_vbox.addWidget(self.se_cb)
 
         # Show individual curves (can disable to just show mean)
         self.indiv_cb = QtGui.QCheckBox('Show individual curves', self)
@@ -155,6 +232,8 @@ class SECurve(QpWidget):
         vbox.addStretch(1)
         self.setLayout(vbox)
 
+        self.plot_opts = SECurveOptions(self)
+    
         self.plot_col_changed("grey")
         self.plots = {}
         self.mean_plots = {}
@@ -168,6 +247,10 @@ class SECurve(QpWidget):
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.replot_graph)
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
+
+    def show_options(self):
+        self.plot_opts.show()
+        self.plot_opts.raise_()
 
     def get_plots_by_color(self, col):
         return [plt for plt in self.plots.values() if plt.pen == col]
@@ -185,7 +268,7 @@ class SECurve(QpWidget):
     def replot_graph(self):
         self.remove_plots()
         self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-        if self.se_cb.isChecked():
+        if self.plot_opts.se:
             self.p1.setTitle("Signal enhancement curve")
         else:
             self.p1.setTitle("Signal curve")
@@ -195,11 +278,11 @@ class SECurve(QpWidget):
 
         if self.indiv_cb.isChecked():
             for plt in self.plots.values():
-                plt.draw(self.se_cb.isChecked(), self.smooth_cb.isChecked(), self.opts)
+                plt.draw(self.plot_opts, self.opts)
         if self.mean_cb.isChecked():
             self.update_means()
             for plt in self.mean_plots.values():
-                plt.draw(self.se_cb.isChecked(), self.smooth_cb.isChecked(), self.opts)
+                plt.draw(self.plot_opts, self.opts)
 
     def clear_all(self):
         """
@@ -267,22 +350,6 @@ class SECurve(QpWidget):
 
 class OverlayStatistics(QpWidget):
 
-    """
-    Color overlay interaction
-    """
-    CURRENT_OVERLAY = 0
-    ALL_OVERLAYS = 1
-
-    # Signals
-    # emit colormap choice
-    sig_choose_cmap = QtCore.Signal(str)
-    # emit alpha value
-    sig_set_alpha = QtCore.Signal(int)
-    # emit reset command
-    sig_emit_reset = QtCore.Signal(bool)
-    # emit a change in range
-    sig_range_change = QtCore.Signal(int)
-
     def __init__(self, **kwargs):
         super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about the current overlay", icon="edit", group="DEFAULT", position=1, **kwargs)
         
@@ -297,18 +364,14 @@ class OverlayStatistics(QpWidget):
         
         l1 = QtGui.QVBoxLayout()
 
+        title = TitleWidget(self, help="overlay_stats", batch_btn=False)
+        l1.addWidget(title)
+
         hbox = QtGui.QHBoxLayout()
-        title1 = QtGui.QLabel("<font size=5>Overlay statistics: </font>")
-        hbox.addWidget(title1)
-        self.mode_combo = QtGui.QComboBox()
-        self.mode_combo.addItem("Current overlay")
-        self.mode_combo.addItem("All overlays")
-        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
-        hbox.addWidget(self.mode_combo)
-        self.ovl_selection = self.CURRENT_OVERLAY
+        self.data_combo = OverlayCombo(self.ivm, all_option=True)
+        self.data_combo.currentIndexChanged.connect(self.update_all)
+        hbox.addWidget(self.data_combo)
         hbox.addStretch(1)
-        bhelp = HelpButton(self, "overlay_stats")
-        hbox.addWidget(bhelp)
         l1.addLayout(hbox)
 
         self.win1 = pg.GraphicsLayoutWidget()
@@ -493,11 +556,9 @@ class OverlayStatistics(QpWidget):
             self.update_overlay_stats_current_slice()
 
     def update_all(self):
-        if self.ivm.current_data is None:
-            self.mode_combo.setItemText(0, "Current overlay")
-        else:
-            self.mode_combo.setItemText(0, self.ivm.current_data.name)
-            self.rp_plt.setLabel('left', self.ivm.current_data.name)
+        name = self.data_combo.currentText()
+        if name in self.ivm.data:
+            self.rp_plt.setLabel('left', name)
 
         self.update_histogram_spins()
 
@@ -511,9 +572,10 @@ class OverlayStatistics(QpWidget):
             self.update_histogram()
 
     def update_histogram_spins(self):
-        # Min and max set for overlay choice
-        ov = self.ivm.current_data
-        if ov is not None:
+        # Min and max set for overlay choice FIXME doesn't work for <all> option
+        name = self.data_combo.currentText()
+        if name in self.ivm.data:
+            ov = self.ivm.data[name]
             self.minSpin.setValue(ov.range[0])
             self.maxSpin.setValue(ov.range[1])
             self.minSpin.setDecimals(ov.dps)
@@ -574,11 +636,12 @@ class OverlayStatistics(QpWidget):
             self.rp_btn.setText("Hide")
 
     def update_radial_profile(self):
-        if self.ivm.current_data is not None:
-            options = {"overlay" : self.ivm.current_data.name, 
+        name = self.data_combo.currentText()
+        if name in self.ivm.data:
+            options = {"overlay" : name, 
                        "no-artifact" : True, "bins" : self.rp_nbins.value()}
             self.process_rp.run(options)
-            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[self.ivm.current_data.name])
+            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
     def update_overlay_stats(self):
         self.populate_stats_table(self.process)
@@ -588,8 +651,9 @@ class OverlayStatistics(QpWidget):
         self.populate_stats_table(self.process_ss, slice=selected_slice)
 
     def update_histogram(self):
-        if self.ivm.current_data is not None:
-            options = {"overlay" : self.ivm.current_data.name, 
+        name = self.data_combo.currentText()
+        if name in self.ivm.data:
+            options = {"overlay" : name, 
                     "no-artifact" : True, "bins" : self.nbinsSpin.value(),
                     "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
@@ -604,8 +668,8 @@ class OverlayStatistics(QpWidget):
                 self.plt1.addItem(curve)
 
     def populate_stats_table(self, process, **options):
-        if self.ivm.current_data is not None and self.ovl_selection == self.CURRENT_OVERLAY:
-            options["overlay"] = self.ivm.current_data.name
+        if self.data_combo.currentText() != "<all>":
+            options["overlay"] = self.data_combo.currentText()
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):
