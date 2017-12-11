@@ -1,7 +1,7 @@
 ### Illustration of proposed YAML-based batch file format
 
 # Global output folder - each case is output in a separate subfolder
-OutputFolder: out
+OutputFolder: test/examples_output
 
 # Setting to True will create LOTS of debugging output
 Debug: False

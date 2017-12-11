@@ -1,6 +1,6 @@
 ### Example config file for T10 modelling without B0 correction
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:

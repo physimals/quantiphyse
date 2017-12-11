@@ -1,21 +1,29 @@
 # Example config file for running simple custom code
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
   - LoadData:
+
   - Exec:
-      test: mean_c1 - mean_c0   
+      test1: testdata_3d * 3.14159265  
+
+  - Exec:
+      test2: test1 - np.mean(test1)
+
+  - Exec:
+      test3: test2 - test1
+
   - Save:
-      test:
+      test1:
+      test2:
+      test3:
 
 Cases:
     EG11:
-        Folder:   c:\Users\ctsu0221\build\data
+        Folder:   test/data_autogen
         LoadData:   
-          test_data.nii:
-          mean_c0.nii:
-          mean_c1.nii:
+          testdata_3d.nii.gz:
           
 

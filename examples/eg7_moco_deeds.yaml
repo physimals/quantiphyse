@@ -1,6 +1,6 @@
 # Example config file for motion correction using DEEDS
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
@@ -10,6 +10,7 @@ Processing:
     
     - Moco:
         method: deeds
+        data-name: data
         replace-vol: False
         ref-vol: median
         output-name: data_moco_deeds
@@ -20,4 +21,4 @@ Processing:
 
 Cases:
     EG7:
-        Folder:   test/system_tests/test_data   
+        Folder:   test/data_autogen/   

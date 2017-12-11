@@ -1,22 +1,33 @@
 # Example config file for clustering
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
   - LoadData:
-  - KMeansPCA:
+
+  # Clustering on 3D data
+  - KMeans3D:
+        data-name: testdata_3d
         n-clusters: 3
+        output-name: test_clusters_3d
+      
+  # Clustering on 4D data
+  - KMeansPCA:
+        data-name: testdata_4d
+        n-clusters: 4
         n-pca: 5
-        output-name: test_clusters
+        output-name: test_clusters_4d
         
   - Save:
-        test_clusters:
+        test_clusters_3d:
+        test_clusters_4d:
 
 Cases:
     EG10:
-        Folder:   c:\Users\ctsu0221\build\data
+        Folder:   test/data_autogen
         LoadData:   
-            test_data.nii:
+            testdata_4d.nii.gz:
+            testdata_3d.nii.gz:
 
 

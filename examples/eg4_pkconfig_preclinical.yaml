@@ -6,7 +6,7 @@
 #  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
 #  Model 4: Weinmann with offset and vp (Pre-clinical)
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
@@ -22,8 +22,7 @@ Processing:
       r2:         4.8    # T2 Relaxivity of contrast agent
       ve-thresh:  99.8   # Ktrans/kep percentile threshold
       tinj:       90     # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
-      dose:       0.6     # Gadolinium dose mM/kg 
-      #smoothing:  1      # Smoothing of the PK maps - TODO
+      dose:       0.6     # Gadolinium dose mM/kg
 
   - Save:
       kep:

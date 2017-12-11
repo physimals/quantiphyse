@@ -1,6 +1,6 @@
 # Example config file for running Fabber model fitting
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:

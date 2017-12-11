@@ -1,6 +1,6 @@
 # Example config file for motion correction using mcflirt
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
@@ -10,6 +10,7 @@ Processing:
     
     - Moco:
         method: mcflirt
+        data-name: data
         replace-vol: False
         ref-vol: median
         output-name: data_moco_mcflirt
@@ -20,5 +21,5 @@ Processing:
 
 Cases:
     EG8:
-        Folder:   test/system_tests/test_data   
+        Folder:   test/data_autogen   
 

@@ -1,23 +1,35 @@
 ### Example config file for supervoxel generation
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
   - Load:
       data:
-          test_data.nii:
+          testdata_3d.nii.gz:
+          testdata_4d.nii.gz:
       rois:
-          test_mask.nii:
+          testdata_mask.nii.gz:
 
+  # Supervoxels from 4D data
   - Supervoxels:
+      data-name: testdata_4d
+      output-name: sv_4d
       n-components: 3
       compactness: 0.02
       n-supervoxels: 30
 
+  # Supervoxels from 3D data
+  - Supervoxels:
+      data-name: testdata_3d
+      output-name: sv_3d
+      compactness: 0.01
+      n-supervoxels: 20
+
   - Save:
-      supervoxels:
+      sv_3d:
+      sv_4d:
 
 Cases:
     EG5:
-        Folder:   c:\Users\ctsu0221\build\data\
+        Folder: test/data_autogen/

@@ -1,4 +1,6 @@
 ### Example config file for PK modelling 
+###
+### This runs PK modelling on the QIBA simulated test data
 
 #  Model descriptions:
 #  Model 1: Orton with offset (Clinical) - Recommended model for clinical
@@ -6,7 +8,7 @@
 #  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
 #  Model 4: Weinmann with offset and vp (Pre-clinical)
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:
@@ -22,8 +24,7 @@ Processing:
       r2:         4.8    # T2 Relaxivity of contrast agent
       ve-thresh:  99.8   # Ktrans/kep percentile threshold
       tinj:       60     # Approximate injection time (s) - e.g. number_of_slices*temporal resolution
-      #smoothing:  1      # Smoothing of the PK maps - TODO
-
+      
   - Save:
       kep:
       ktrans:
@@ -34,7 +35,7 @@ Processing:
 
 Cases:
     QIBA1:
-        Folder:   test/qiba
+        Folder:   test/data_static/qiba
         Load:
           data:
             qiba_67tpts.nii:

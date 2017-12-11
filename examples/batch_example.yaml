@@ -1,7 +1,7 @@
 ### Illustration of proposed YAML-based batch file format
 
 # Global output folder - each case is output in a separate subfolder
-OutputFolder: out
+OutputFolder: test/examples_output
 
 # Setting to True will create LOTS of debugging output
 Debug: False
@@ -21,7 +21,6 @@ Processing:
       cost: normcorr
 
   - Fabber:
-      loadmodels: c:\Users\ctsu0221\fsl_x64_release\bin\fabber_models_dce.dll
       method: vb
       max-iterations: 30
       model:  poly
@@ -40,14 +39,14 @@ Processing:
 Cases:
     EG15:
         # Note that the folder is used to form input filenames
-        Folder:   c:\Users\ctsu0221\build\data\
+        Folder:   test/data_autogen
 
         # Data to load for this case
         Load:
           data:
-            test_data.nii:
+            testdata_4d.nii:
           rois:
-            test_mask.nii: mask
+            testdata_mask.nii: mask
 
         # Can override processing defaults here
         MCFlirt:
