@@ -18,8 +18,7 @@ bin_files = [
 
 hidden_imports = [
     'skimage.segmentation', 
-    'sklearn.metrics', 
-    'quantiphyse.analysis.overlay_analysis',
+    'sklearn.metrics',
     'quantiphyse.analysis.feat_pca',
 ]
 
