@@ -17,7 +17,7 @@ class ResampleProcess(Process):
         use_orientation = options.pop('use-orientation', True)
         use_scaling = options.pop('use-scaling', True)
 
-        data = load(os.path.join(self.folder, fname))
+        data = load(os.path.join(self.indir, fname))
         if not use_origin:
             affine = data.rawgrid.affine
             

@@ -47,7 +47,7 @@ class LoadProcess(Process):
         if os.path.isabs(fname):
             return fname
         else:
-            if folder is None: folder = self.workdir
+            if folder is None: folder = self.indir
             return os.path.abspath(os.path.join(folder, fname))
 
 class LoadDataProcess(LoadProcess):

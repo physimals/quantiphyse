@@ -32,7 +32,7 @@ class T10Process(Process):
             if fname in self.ivm.data:
                 vol = self.ivm.data[fname].std()
             else:
-                data = load(_get_filepath(fname, self.workdir))
+                data = load(_get_filepath(fname, self.indir))
                 data.regrid(self.ivm.grid)
                 vol = data.std()
             if isinstance(fa, list):
@@ -54,7 +54,7 @@ class T10Process(Process):
                 if fname in self.ivm.data:
                     vol = self.ivm.data[fname].std()
                 else:
-                    data = load(_get_filepath(fname, self.workdir))
+                    data = load(_get_filepath(fname, self.indir))
                     data.regrid(self.ivm.grid)
                     vol = data.std()
                 if isinstance(t, list):

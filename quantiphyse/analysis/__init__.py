@@ -1,9 +1,8 @@
 """
-
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Author: Martin Craig
+Copyright (c) 2013-2015 University of Oxford
 """
+
 import numpy as np
 import multiprocessing
 import multiprocessing.pool
@@ -36,6 +35,22 @@ class Process(QtCore.QObject):
     
     The purpose of this class and it subclasses is to expose processing tasks to the batch system, 
     and also allow them to be used from the GUI
+
+    Processes take options in the form of a key/value dictionary derived from the YAML batch file.
+    Certain option names are standardized:
+
+      name - Optional name given to the process. Will be used to name the log file output. 
+             This is set in the constructor by the batch code but is taken from the process
+             options list if present. If not given as an option, the process generic name
+             (e.g. MoCo) is used.
+      data - The name of the input data where a process acts on a single input data set
+      roi - The name of the input ROI where a process can make use of a single input ROI
+      output-name - The name of the output data set or ROI 
+
+    Some attributes are additionally set by the batch case the process is part of
+
+      indir - Input data folder
+      outdir - Output data folder
     """
 
     """ Signal may be emitted to track progress"""
@@ -56,7 +71,7 @@ class Process(QtCore.QObject):
         self.log = ""
         self.status = Process.NOTSTARTED
         self.name = kwargs.pop("name", None)
-        self.folder = kwargs.pop("indir", "")
+        self.indir = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
 
     def run(self, options):

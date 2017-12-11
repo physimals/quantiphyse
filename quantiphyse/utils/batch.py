@@ -83,8 +83,9 @@ class BatchCase:
         self.root = root
         self.case = case
         if self.get("Debug", False): set_debug(True) # Don't override command line debug flag
-        self.folder = os.path.abspath(self.get("Folder", ""))
+
         self.output_id = self.get("OutputId", id)
+        self.indir = os.path.abspath(self.get("InputFolder", self.get("Folder", "")))
         self.outdir = os.path.abspath(os.path.join(self.get("OutputFolder", ""), self.output_id))
         self.ivm = ImageVolumeManagement()
         
@@ -92,7 +93,7 @@ class BatchCase:
         if os.path.isabs(fname):
             return fname
         else:
-            if folder is None: folder = self.folder
+            if folder is None: folder = self.indir
             return os.path.abspath(os.path.join(folder, fname))
 
     def get(self, param, default=None):
@@ -100,7 +101,7 @@ class BatchCase:
 
     def chdir(self):
         cwd_prev = os.getcwd()
-        if self.folder: os.chdir(self.folder)
+        if self.indir: os.chdir(self.indir)
         return cwd_prev
 
     def create_outdir(self):
@@ -145,10 +146,7 @@ class BatchCase:
             try:
                 for key, value in params.items():
                     debug("      %s=%s" % (key, str(value)))
-                process = proc(self.ivm, sync=True)
-                process.workdir = self.folder
-                process.outdir = self.outdir
-                process.name = params.get("name", name)
+                process = proc(self.ivm, sync=True, indir=self.indir, outdir=self.outdir, name=params.get("name", name))
                 #process.sig_progress.connect(self.progress)
                 sys.stdout.write("  - Running %s..." % process.name)
                 start = time.time()
