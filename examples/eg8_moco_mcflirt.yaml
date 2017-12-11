@@ -10,7 +10,7 @@ Processing:
     
     - Moco:
         method: mcflirt
-        data-name: data
+        data: data
         replace-vol: False
         ref-vol: median
         output-name: data_moco_mcflirt

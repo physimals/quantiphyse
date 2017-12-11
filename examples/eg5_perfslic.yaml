@@ -13,7 +13,7 @@ Processing:
 
   # Supervoxels from 4D data
   - Supervoxels:
-      data-name: testdata_4d
+      data: testdata_4d
       output-name: sv_4d
       n-components: 3
       compactness: 0.02
@@ -21,7 +21,7 @@ Processing:
 
   # Supervoxels from 3D data
   - Supervoxels:
-      data-name: testdata_3d
+      data: testdata_3d
       output-name: sv_3d
       compactness: 0.01
       n-supervoxels: 20

@@ -1,6 +1,6 @@
 # Example config file for calculating various overlay statistics
 
-OutputFolder: out
+OutputFolder: test/examples_output
 Debug: False
 
 Processing:

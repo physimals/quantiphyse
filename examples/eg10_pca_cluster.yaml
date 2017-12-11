@@ -8,13 +8,13 @@ Processing:
 
   # Clustering on 3D data
   - KMeans3D:
-        data-name: testdata_3d
+        data: testdata_3d
         n-clusters: 3
         output-name: test_clusters_3d
       
   # Clustering on 4D data
   - KMeansPCA:
-        data-name: testdata_4d
+        data: testdata_4d
         n-clusters: 4
         n-pca: 5
         output-name: test_clusters_4d
