@@ -17,7 +17,7 @@ from quantiphyse.gui.ImageView import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
 from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug
 
-from .processes import CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess
+from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess, HistogramProcess
 
 class SECurveOptions(QtGui.QDialog):
     def __init__(self, parent):
@@ -348,15 +348,15 @@ class SECurve(QpWidget):
         self.col = self.colors.get(text, (255, 255, 255))
         self.ivl.picker.col = self.col
 
-class OverlayStatistics(QpWidget):
+class DataStatistics(QpWidget):
 
     def __init__(self, **kwargs):
-        super(OverlayStatistics, self).__init__(name="Overlay Statistics", desc="Display statistics about data sets", icon="edit", group="DEFAULT", position=1, **kwargs)
+        super(DataStatistics, self).__init__(name="Data Statistics", desc="Display statistics about data sets", icon="edit", group="DEFAULT", position=1, **kwargs)
         
     def init_ui(self):
         """ Set up UI controls here so as not to delay startup"""
-        self.process = OverlayStatisticsProcess(self.ivm)
-        self.process_ss = OverlayStatisticsProcess(self.ivm)
+        self.process = DataStatisticsProcess(self.ivm)
+        self.process_ss = DataStatisticsProcess(self.ivm)
         self.process_rp = RadialProfileProcess(self.ivm)
         self.process_hist = HistogramProcess(self.ivm)
         
@@ -366,6 +366,7 @@ class OverlayStatistics(QpWidget):
         l1.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("Data selection"))
         self.data_combo = OverlayCombo(self.ivm, all_option=True)
         self.data_combo.currentIndexChanged.connect(self.update_all)
         hbox.addWidget(self.data_combo)
@@ -1096,5 +1097,5 @@ class ModelCurves(QpWidget):
                 legend.addItem(line, ovl)
                 idx += 1
 
-QP_WIDGETS = [SECurve, OverlayStatistics, RoiAnalysisWidget, SimpleMathsWidget, ModelCurves]
-QP_PROCESSES = [CalcVolumesProcess, ExecProcess, OverlayStatisticsProcess, RadialProfileProcess, HistogramProcess]
+QP_WIDGETS = [SECurve, DataStatistics, RoiAnalysisWidget, SimpleMathsWidget, ModelCurves]
+QP_PROCESSES = [CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess, HistogramProcess]

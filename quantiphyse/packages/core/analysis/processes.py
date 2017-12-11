@@ -4,11 +4,11 @@ import sys
 
 from PySide import QtGui
 
+from quantiphyse.volumes.io import NumpyData
 from quantiphyse.utils import table_to_str, debug
 from quantiphyse.utils.exceptions import QpException
 
 from quantiphyse.analysis import Process
-from quantiphyse.analysis.overlay_analysis import OverlayAnalysis
 
 class CalcVolumesProcess(Process):
     """
@@ -210,7 +210,7 @@ class RadialProfileProcess(Process):
             self.ivm.add_artifact(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
-class OverlayStatisticsProcess(Process):
+class DataStatisticsProcess(Process):
     """
     Calculate summary statistics on data
     """
@@ -220,7 +220,6 @@ class OverlayStatisticsProcess(Process):
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
         self.model = QtGui.QStandardItemModel()
-        self.ia = OverlayAnalysis(ivm=self.ivm)
 
     def run(self, options):
         roi_name = options.pop('roi', None)
@@ -249,7 +248,7 @@ class OverlayStatisticsProcess(Process):
 
         col = 0
         for ov in ovs:
-            stats1, roi_labels, hist1, hist1x = self.ia.get_summary_stats(ov, roi, **options)
+            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(ov, roi, **options)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
@@ -262,6 +261,55 @@ class OverlayStatisticsProcess(Process):
         if not no_artifact: 
             self.ivm.add_artifact(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
+
+    def get_summary_stats(self, ovl, roi=None, hist_bins=20, hist_range=None, slice=None):
+        """
+        Return:
+        @m1 mean for each ROI
+        @m2 median for each ROI
+        @m3 standard deviation for each ROI
+        @roi_labels label of each ROI
+        """
+        # Checks if either ROI or data is None
+        if roi is not None:
+            roi_labels = roi.regions
+        else:
+            roi = NumpyData(np.ones(ovl.stdgrid.shape[:3]), ovl.stdgrid, "temp", roi=True)
+            roi_labels = [1,]
+
+        if (ovl is None):
+            stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
+            return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
+
+        stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
+        hist1 = []
+        hist1x = []
+
+        if slice is None:
+            ovldata = ovl.std()
+            roidata = roi.std()
+        elif slice in (0, 1, 2):
+            axis = 2-slice
+            slicepos = self.ivm.cim_pos[axis]
+            ovldata = ovl.get_slice([(axis, slicepos)])
+            roidata = roi.get_slice([(axis, slicepos)])
+        else:
+            raise RuntimeError("Invalid slice: " % slice)
+
+        for ii in roi_labels:
+            # get data for a single label of the roi
+            vroi1 = ovldata[roidata == ii]
+
+            stat1['mean'].append(np.mean(vroi1))
+            stat1['median'].append(np.median(vroi1))
+            stat1['std'].append(np.std(vroi1))
+            stat1['max'].append(np.max(vroi1))
+            stat1['min'].append(np.min(vroi1))
+            y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
+            hist1.append(y)
+            hist1x.append(x)
+
+        return stat1, roi_labels, hist1, hist1x
 
 class ExecProcess(Process):
     
