@@ -18,7 +18,7 @@ Processing:
       save-model-fit: 
       spec: fabber_runtime_files/dataspec_v2.mat
       max-iterations: 20
-      fabber_lib: C:/Users/ctsu0221/fsl_x64_release/bin\fabbercore_shared.dll
+      model-group: cest
       debug: 
       pools: fabber_runtime_files/poolmat_2pool.mat
       output: out
