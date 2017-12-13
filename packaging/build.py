@@ -32,7 +32,7 @@ elif sys.platform.startswith("darwin"):
     import create_dmg
     build_platform_package = create_dmg.create_dmg
 
-shutil.rmtree("%s/dist" % rootdir)
+shutil.rmtree("%s/dist" % rootdir, ignore_errors=True)
 
 from update_version import update_version
 full_version, std_version = update_version(package_name, rootdir)
