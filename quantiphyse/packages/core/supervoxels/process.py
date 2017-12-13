@@ -33,20 +33,15 @@ class SupervoxelsProcess(Process):
 
     def run(self, options):
         comp = options.pop('compactness', 0.1)
-        n_supervoxels = options['n-supervoxels']
+        n_supervoxels = options.pop('n-supervoxels')
         sigma = options.pop('sigma', 1)
         recompute_seeds = options.pop('recompute-seeds', True)
         seed_type = options.get('seed-type', 'nrandom')
         data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
-        output_name = options.get('output-name', "supervoxels")
+        output_name = options.pop('output-name', "supervoxels")
         
-        if data_name is None:
-            img = self.ivm.main.std()
-        elif data_name in self.ivm.data:
-            img = self.ivm.data[data_name].std()
-        else:
-            raise QpException("Data not found: '%s'" % data_name)
+        img = self.get_data(options)
 
         if roi_name is None and self.ivm.current_roi is not None:
             roi = self.ivm.current_roi
