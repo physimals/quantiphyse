@@ -47,7 +47,6 @@ def set_local_file_path():
             LOCAL_FILE_PATH = os.getcwd() + '/quantiphyse'
         else:
             LOCAL_FILE_PATH = os.path.dirname(sys.executable)
-        os.environ["FABBERDIR"] = os.path.join(LOCAL_FILE_PATH, "fabber")
     else:
         # Running from a script
         LOCAL_FILE_PATH = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -77,13 +76,35 @@ def get_icon(name, dir=None):
     for t in tries:
         if os.path.isfile(t): return t
 
-def get_local_file(name):
+def get_local_file(name, loc=None):
     """
-    Get path to the named icon
-    """
-    global LOCAL_FILE_PATH
-    return os.path.join(LOCAL_FILE_PATH, name)
+    Get path to a file relative to the main Quantiphyse folder
 
+    If location is not None, use it to determine the local root folder 
+    (e.g. use __file__ to get file local to a python plugin module)
+    """
+    if loc is None:
+        global LOCAL_FILE_PATH
+        locdir = LOCAL_FILE_PATH
+    else:
+        loc = os.path.dirname(loc)
+    return os.path.abspath(os.path.join(loc, name))
+
+def get_lib_fname(name):
+    """ Get file name for named shared library on current platform """
+    if sys.platform.startswith("win"):
+        return "%s.dll" % name
+    elif sys.platform.startswith("darwin"):
+        return "lib%s.dylib" % name
+    else:
+        return "lib%s.so" % name
+
+def get_local_shlib(name, loc):
+    """
+    Get a named shared library which is stored locally to another file
+    """
+    return get_local_file(get_lib_fname(name), loc)
+    
 def load_matrix(filename):
     f = open(filename)
     fvals = []
@@ -244,7 +265,8 @@ def _load_plugins_from_dir(dirname, pkgname, manifest):
 
     Then check in module for widgets and/or processes to return
     """
-    submodules = glob.glob(os.path.join(dirname, "*"))
+    debug("Loading plugins from ", dirname)
+    submodules = glob.glob(os.path.join(os.path.abspath(dirname), "*"))
     done = set()
     sys.path.append(dirname)
     for f in submodules:
