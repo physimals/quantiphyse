@@ -85,7 +85,7 @@ def get_local_file(name, loc=None):
     """
     if loc is None:
         global LOCAL_FILE_PATH
-        locdir = LOCAL_FILE_PATH
+        loc = LOCAL_FILE_PATH
     else:
         loc = os.path.dirname(loc)
     return os.path.abspath(os.path.join(loc, name))
