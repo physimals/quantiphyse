@@ -74,6 +74,55 @@ class Process(QtCore.QObject):
         self.indir = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
 
+    def get_data(self, options, multi=False):
+        """ 
+        Get the data the process is to operate on 
+        
+        If no 'data' option is specified, go with main data if it exists
+        If 'multi' then allow data to be a list of items
+        """
+        data_name = options.pop("data", None)
+        if data_name is None:
+            if self.ivm.main is None:
+                raise QpException("No data loaded")
+            data = self.ivm.main.std()
+        elif multi and isinstance(data_name, list):
+            # Allow specifying a list of data volumes which are concatenated
+            multi_data = [self.ivm.data[name] for name in data_name]
+            nvols = sum([d.nvols for d in multi_data])
+            debug("Multivol: nvols=", nvols)
+            data = np.zeros(self.ivm.grid.shape + [nvols,]) # FIXME what if no main data
+            v = 0
+            for d in multi_data:
+                data[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
+                v += d.nvols
+        else:
+            data = self.ivm.data[data_name].std()
+        return data
+
+    def get_roi(self, options, multi=False):
+        roi_name = options.pop("roi", None)
+        if roi_name is None:
+            if self.ivm.current_roi is not None:
+                roidata = self.ivm.current_roi.std()
+            elif self.ivm.main is not None:
+                roidata = np.ones(self.ivm.main.shape[:3])
+            else:
+                raise QpException("No data loaded")
+        elif multi and isinstance(roi_name, list):
+            # Allow specifying a list of ROIs which are concatenated
+            multi_data = [self.ivm.rois[name] for name in roi_name]
+            nvols = sum([d.nvols for d in multi_data])
+            debug("Multiroi: nvols=", nvols)
+            roidata = np.zeros(self.ivm.grid.shape + [nvols,]) # FIXME what if no main data
+            v = 0
+            for d in multi_data:
+                roidata[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
+                v += d.nvols
+        else:
+            roidata = self.ivm.rois[roi_name].std()
+        return roidata
+
     def run(self, options):
         """ Override to run the process """
         pass
@@ -226,7 +275,7 @@ class BackgroundProcess(Process):
 
     def _process_cb(self, result):
         worker_id, success, output = result
-        debug("Finished: id=", worker_id, success, str(output))
+        debug("Finished: id=", worker_id, success, output)
         
         if self.status in (Process.FAILED, Process.CANCELLED):
             # If one process has already failed or been cancelled, ignore results of others
