@@ -46,10 +46,6 @@ excludes = [
     'wx',
 ]
 
-fsldir = os.environ.get("FSLDIR")
-sys.path.append("%s/lib/python/" % os.environ["FSLDIR"])
-hidden_imports.append('fabber')
-
 # Platform-specific configuration
 osx_bundle = False
 block_cipher = None
@@ -62,8 +58,6 @@ if sys.platform.startswith("win"):
     anaconda_dir='%s/AppData/Local/Continuum/Anaconda2/' % home_dir
     bin_files.append(('%s/Library/bin/mkl_avx2.dll' % anaconda_dir, '.' ))
     #bin_files.append(('%s/Library/bin/mkl_def.dll' % anaconda_dir, '.' ))
-    bin_files.append(("%s/bin/fabber*.dll" % fsldir, "fabber/bin"))
-    bin_files.append(("%s/bin/fabber.exe" % fsldir, "fabber/bin"))
 
     if bits == 32:
         # Possible bug in setuptools makes this necessary on 32 bit Anaconda
@@ -73,8 +67,6 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
     hidden_imports.append('pywt._extensions._cwt')
-    bin_files.append(("%s/lib/libfabber*.so" % fsldir, "fabber/lib"))
-    bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 elif sys.platform.startswith("darwin"):
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
@@ -83,8 +75,6 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(('%s/lib/libmkl_avx2.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libmkl_avx.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libpng16.16.dylib' % anaconda_dir, '.' ))
-    bin_files.append(("%s/lib/libfabber*.dylib" % fsldir, "fabber/lib"))
-    bin_files.append(("%s/bin/fabber" % fsldir, "fabber/bin"))
 
 a = Analysis([os.path.join(qpdir, 'qp.py')],
              pathex=[],
