@@ -11,7 +11,7 @@ class CompareDataWidget(QpWidget):
     Compare two data sets
     """
     def __init__(self, **kwargs):
-        QpWidget.__init__(self, name="Compare Data", icon="pk.png", 
+        QpWidget.__init__(self, name="Compare Data", icon="compare.png", 
                           desc="Compare two data sets", group="Analysis", **kwargs)
         
     def init_ui(self):
