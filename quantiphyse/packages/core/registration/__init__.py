@@ -137,13 +137,15 @@ class RegWidget(QpWidget):
         self.method_changed(0)
 
     def activate(self):
-        self.ivm.sig_main_data.connect(self.main_data_changed)
-        self.ivm.sig_all_data.connect(self.data_changed)
-        self.update()
+        if len(self.reg_methods) > 0:
+            self.ivm.sig_main_data.connect(self.main_data_changed)
+            self.ivm.sig_all_data.connect(self.data_changed)
+            self.update()
 
     def deactivate(self):
-        self.ivm.sig_main_data.disconnect(self.main_data_changed)
-        self.ivm.sig_all_data.disconnect(self.data_changed)
+        if len(self.reg_methods) > 0:
+            self.ivm.sig_main_data.disconnect(self.main_data_changed)
+            self.ivm.sig_all_data.disconnect(self.data_changed)
 
     def data_changed(self, ovls):
         self.update()
