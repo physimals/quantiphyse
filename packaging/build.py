@@ -21,8 +21,6 @@ if sys.platform.startswith("win"):
     platform="win32"
     import create_msi
     build_platform_package = create_msi.create_msi
-    # HACK: for mcflirt, Need to build against special FSL compiled with VC9 compiler
-    os.environ["FSLDIR"] = "c:\users\ctsu0221\fsl_vc9_x64_release"
 elif sys.platform.startswith("linux"):
     #distro=platform.linux_distribution()[0].split()[0].lower()
     platform="linux"
