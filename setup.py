@@ -134,7 +134,7 @@ else:
 fsldir = os.environ.get("FSLDIR", "")
 if sys.platform.startswith("win"):
     # HACK: for mcflirt, Need to build against special FSL compiled with VC9 compiler
-    fsldir = "c:\users\ctsu0221\fsl_vc9_x64_release"
+    fsldir = "c:\\users\\ctsu0221\\fsl_vc9_x64_release"
 
 if fsldir:
     extensions.append(Extension("quantiphyse.packages.core.mcflirt.mcflirt_wrapper",
