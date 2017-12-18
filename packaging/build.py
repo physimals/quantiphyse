@@ -60,6 +60,8 @@ if "--maxi" in sys.argv:
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
+        cwd_orig = os.getcwd()
+        os.chdir(plugindir)
         if plugin.startswith("qp-"):
             plugin_pkg = plugin[3:].replace("-", "_")
         else:
@@ -72,6 +74,7 @@ if "--maxi" in sys.argv:
             # Need to put it into he OSX bundle as well
             shutil.copytree(plugindist,
                             "%s/%s.app/Contents/Resources/packages/plugins/%s" % (distdir, package_name, plugin))            
+        os.chdir(cwd_orig)
         print("DONE")
     
 sys.stdout.write("Creating compressed archive...")
