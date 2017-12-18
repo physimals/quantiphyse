@@ -60,7 +60,10 @@ if "--maxi" in sys.argv:
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
-        plugin_pkg = plugin.replace("-", "_")
+        if plugin.startswith("qp-"):
+            plugin_pkg = plugin[3:].replace("-", "_")
+        else:
+            plugin_pkg = plugin.replace("-", "_")
         plugindist = os.path.join(plugindir, "dist", plugin_pkg)
         os.system("python %s/packaging/build.py 2>%s/bundle.err 1>%s/bundle.log" % (plugindir, pkgdir, pkgdir))
         shutil.copytree(plugindist, 
