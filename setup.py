@@ -71,9 +71,13 @@ compile_args = []
 link_args = []
 
 if sys.platform.startswith('win'):
+    zlib = "zlib"
+    extra_inc = "src/compat"
     compile_args.append('/EHsc')
 elif sys.platform.startswith('darwin'):
     link_args.append("-stdlib=libc++")
+    zlib = "z"
+    extra_inc = "."
 
 # PK modelling extension
 
@@ -121,47 +125,6 @@ extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic
                        "quantiphyse/packages/core/supervoxels/src/processing.cpp"],
               include_dirs=["quantiphyse/packages/core/supervoxels/src/", numpy.get_include()],
               language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
-
-# MCFlirt extension - requires FSL to build
-
-if sys.platform.startswith("win"):
-  zlib = "zlib"
-  extra_inc = "src/compat"
-else:
-  zlib = "z"
-  extra_inc = "."
-
-fsldir = os.environ.get("FSLDIR", "")
-if sys.platform.startswith("win"):
-    # HACK: for mcflirt, Need to build against special FSL compiled with VC9 compiler
-    fsldir = "c:\\users\\ctsu0221\\fsl_vc9_x64_release"
-
-if fsldir:
-    extensions.append(Extension("quantiphyse.packages.core.mcflirt.mcflirt_wrapper",
-                 sources=['quantiphyse/packages/core/mcflirt/mcflirt_wrapper.pyx',
-                          'quantiphyse/packages/core/mcflirt/src/mcflirt.cc',
-                          'quantiphyse/packages/core/mcflirt/src/Globaloptions.cc',
-                          'quantiphyse/packages/core/mcflirt/src/Log.cc'],
-                 include_dirs=['quantiphyse/packages/core/mcflirt/src/', 
-                               os.path.join(fsldir, "include"),
-                               os.path.join(fsldir, "extras/include/newmat"),
-                               os.path.join(fsldir, "extras/include/boost"),
-                               numpy.get_include(), extra_inc],
-                 libraries=['newimage', 'miscmaths', 'fslio', 'niftiio', 'newmat', 'znz', zlib],
-                 library_dirs=[os.path.join(fsldir, "lib"),os.path.join(fsldir, "extras/lib")],
-                 language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
-else:
-    print("FSLDIR not set - not building MCFLIRT extension")
-
-# deedsReg extension
-
-extensions.append(Extension("quantiphyse.packages.core.deeds.deeds_wrapper",
-                 sources=['quantiphyse/packages/core/deeds/deeds_wrapper.pyx',
-                          'quantiphyse/packages/core/deeds/src/TMI2013/deedsMSTssc.cpp'],
-                 include_dirs=[numpy.get_include(), 
-                               "quantiphyse/packages/core/deeds/src/TMI2013/", 
-                               extra_inc],
-                 language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
 # setup parameters
 setup(name='quantiphyse',
