@@ -274,6 +274,9 @@ class DataView(QtCore.QObject):
     color map and min/max range for color mapping
     """
 
+    BOUNDARY_TRANS = 0
+    BOUNDARY_CLAMP = 1
+
     # Signals when view parameters are changed
     sig_changed = QtCore.Signal(object)
 
@@ -285,6 +288,7 @@ class DataView(QtCore.QObject):
         self.visible = True
         self.alpha = 255
         self.roi_only = False
+        self.boundary = self.BOUNDARY_TRANS
 
         # Initial colourmap range. 
         data = self.data().std()
@@ -319,6 +323,10 @@ class MaskableImage(pg.ImageItem):
     def __init__(self, image=None, **kwargs):
         pg.ImageItem.__init__(self, image, **kwargs)
         self.mask = None
+        self.boundary = DataView.BOUNDARY_TRANS
+
+    def setBoundaryMode(self, mode):
+        self.boundary = mode
 
     def render(self):
         """
@@ -332,8 +340,15 @@ class MaskableImage(pg.ImageItem):
             lut = self.lut
             
         argb, alpha = pg.functions.makeARGB(self.image, lut=lut, levels=self.levels)
-        if self.mask is not None:
-            argb[:,:,3][self.mask == 0] = 0
+        if self.image.size > 1:
+            if self.mask is not None:
+                argb[:,:,3][self.mask == 0] = 0
+        
+            if self.boundary == DataView.BOUNDARY_TRANS:
+                # Make out of range values transparent
+                trans = np.logical_or(self.image < self.levels[0], self.image > self.levels[1])
+                argb[:,:,3][trans] = 0
+
         self.qimage = pg.functions.makeQImage(argb, alpha)
     
 class OrthoView(pg.GraphicsView):
@@ -500,9 +515,12 @@ class OrthoView(pg.GraphicsView):
             
             slices = (self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])
             slicedata = oview.data().get_slice(slices)
+            self.img_ovl.setBoundaryMode(oview.boundary)
             if oview.roi_only and self.ivm.current_roi is not None:
                 mask = self.ivm.current_roi.get_slice(slices)
                 self.img_ovl.mask = mask
+            else:
+                self.img_ovl.mask = None
             self.img_ovl.setImage(slicedata, autoLevels=False)
 
     def resize_win(self, event):
@@ -605,7 +623,8 @@ class LevelsDialog(QtGui.QDialog):
         self.combo = QtGui.QComboBox()
         self.combo.addItem("Transparent")
         self.combo.addItem("Clamped to max/min colour")
-        self.combo.setEnabled(False)
+        self.combo.setCurrentIndex(self.dv.boundary)
+        self.combo.currentIndexChanged.connect(self.bound_changed)
         grid.addWidget(self.combo, 2, 1)
         vbox.addLayout(grid)
 
@@ -629,6 +648,10 @@ class LevelsDialog(QtGui.QDialog):
             self.dv.cmap_range[row] = val
             self.dv.sig_changed.emit(self.dv)
         return val_changed
+
+    def bound_changed(self, idx):
+        self.dv.boundary = idx
+        self.dv.sig_changed.emit(self.dv)
 
 class Navigator:
     def __init__(self, ivl, label, axis, grid, ypos):
@@ -1155,13 +1178,19 @@ class ImageView(QtGui.QSplitter):
         self.current_data_changed(self.ivm.current_data)
 
     def current_data_changed(self, ov):
+        if self.current_data_view is not None:
+            self.current_data_view.sig_changed.disconnect(self._dv_changed)
         if ov is not None:
             if ov.name not in self.data_views:
                 # Create a data view if we don't already have one for this data
                 self.data_views[ov.name] = DataView(self.ivm, ov.name)
 
             self.current_data_view = self.data_views[ov.name]
+            self.current_data_view.sig_changed.connect(self._dv_changed)
         else:
             self.current_data_view = None
         self.h2.set_data_view(self.current_data_view)
+        self.update_ortho_views()
+
+    def _dv_changed(self, dv):
         self.update_ortho_views()

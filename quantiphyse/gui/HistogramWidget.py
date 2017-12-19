@@ -102,7 +102,6 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
             for row in lut[1:]:
                 row[3] = self.dv.alpha
 
-        lut[0][3] = 0
         self.lut = lut
         return lut
 
