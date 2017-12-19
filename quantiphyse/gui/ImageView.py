@@ -609,23 +609,39 @@ class OrthoView(pg.GraphicsView):
 
 class LevelsDialog(QtGui.QDialog):
 
-    def __init__(self, parent, dv):
+    def __init__(self, parent, ivm, dv):
         super(LevelsDialog, self).__init__(parent)
+        self.ivm = ivm
         self.dv = dv
 
         self.setWindowTitle("Levels for %s" % dv.name)
         vbox = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
-        self.add_spin(grid, "Minimum", 0)
-        self.add_spin(grid, "Maximum", 1)   
-        grid.addWidget(QtGui.QLabel("Values outside range are"), 2, 0)
+        self.min_spin = self.add_spin(grid, "Minimum", 0)
+        self.max_spin = self.add_spin(grid, "Maximum", 1)   
+
+        grid.addWidget(QtGui.QLabel("Percentage of data range"), 2, 0)
+        hbox = QtGui.QHBoxLayout()
+        self.percentile_spin = QtGui.QSpinBox()
+        self.percentile_spin.setMaximum(100)
+        self.percentile_spin.setMinimum(1)
+        self.percentile_spin.setValue(100)
+        hbox.addWidget(self.percentile_spin)
+        btn = QtGui.QPushButton("Reset")
+        btn.clicked.connect(self._reset)
+        hbox.addWidget(btn)
+        self.use_roi = QtGui.QCheckBox("Within ROI")
+        hbox.addWidget(self.use_roi)
+        grid.addLayout(hbox, 2, 1)
+
+        grid.addWidget(QtGui.QLabel("Values outside range are"), 4, 0)
         self.combo = QtGui.QComboBox()
         self.combo.addItem("Transparent")
         self.combo.addItem("Clamped to max/min colour")
         self.combo.setCurrentIndex(self.dv.boundary)
         self.combo.currentIndexChanged.connect(self.bound_changed)
-        grid.addWidget(self.combo, 2, 1)
+        grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
 
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
@@ -642,6 +658,7 @@ class LevelsDialog(QtGui.QDialog):
         spin.setValue(self.dv.cmap_range[row])
         spin.valueChanged.connect(self.val_changed(row))
         grid.addWidget(spin, row, 1)
+        return spin
 
     def val_changed(self, row):
         def val_changed(val):
@@ -652,6 +669,21 @@ class LevelsDialog(QtGui.QDialog):
     def bound_changed(self, idx):
         self.dv.boundary = idx
         self.dv.sig_changed.emit(self.dv)
+    
+    def _reset(self):
+        percentile = float(100 - self.percentile_spin.value()) / 2
+        cmin, cmax = list(self.dv.data().range)
+        within_roi = self.use_roi.isChecked()
+        if percentile > 0 or within_roi: 
+            data = self.dv.data().std()
+            if within_roi and self.ivm.current_roi is not None:
+                data = data[self.ivm.current_roi.std() > 0]
+            flat = data.reshape(-1)
+            cmin = np.percentile(flat, percentile)
+            cmax = np.percentile(flat, 100-percentile)
+        self.dv.cmap_range = [cmin, cmax]
+        self.min_spin.setValue(cmin)
+        self.max_spin.setValue(cmax)
 
 class Navigator:
     def __init__(self, ivl, label, axis, grid, ypos):
@@ -938,7 +970,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
             self.ivl.current_data_view.sig_changed.emit(self.ivl.current_data_view)
      
     def _show_ov_levels(self):
-        dlg = LevelsDialog(self, self.ivl.current_data_view)
+        dlg = LevelsDialog(self, self.ivm, self.ivl.current_data_view)
         dlg.exec_()
 
     def _data_changed(self, data):
