@@ -299,16 +299,20 @@ class DataStatisticsProcess(Process):
         for ii in roi_labels:
             # get data for a single label of the roi
             vroi1 = ovldata[roidata == ii]
+            if vroi1.size > 0:
+                mean, med, std = np.mean(vroi1), np.median(vroi1), np.std(vroi1)
+                mx, mn = np.max(vroi1), np.min(vroi1)
+            else:
+                mean, med, std, mx, mn = 0,0,0,0,0
 
-            stat1['mean'].append(np.mean(vroi1))
-            stat1['median'].append(np.median(vroi1))
-            stat1['std'].append(np.std(vroi1))
-            stat1['max'].append(np.max(vroi1))
-            stat1['min'].append(np.min(vroi1))
+            stat1['mean'].append(mean)
+            stat1['median'].append(med)
+            stat1['std'].append(std)
+            stat1['max'].append(mx)
+            stat1['min'].append(mn)
             y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
             hist1.append(y)
             hist1x.append(x)
-
         return stat1, roi_labels, hist1, hist1x
 
 class ExecProcess(Process):
