@@ -16,8 +16,8 @@ Processing:
         output-name: testdata_stats
 
   - RadialProfile:
-        dat: testdata_3d
-        centre: 10, 10, 10
+        data: testdata_3d
+        centre: 5, 5, 5
         output-name: testdata_rp
         
   - Histogram:
