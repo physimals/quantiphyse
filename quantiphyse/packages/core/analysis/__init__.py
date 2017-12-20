@@ -363,10 +363,10 @@ class DataStatistics(QpWidget):
         self.process_rp = RadialProfileProcess(self.ivm)
         self.process_hist = HistogramProcess(self.ivm)
         
-        l1 = QtGui.QVBoxLayout()
+        main_vbox = QtGui.QVBoxLayout()
 
         title = TitleWidget(self, help="overlay_stats", batch_btn=False)
-        l1.addWidget(title)
+        main_vbox.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel("Data selection"))
@@ -374,41 +374,49 @@ class DataStatistics(QpWidget):
         self.data_combo.currentIndexChanged.connect(self.update_all)
         hbox.addWidget(self.data_combo)
         hbox.addStretch(1)
-        l1.addLayout(hbox)
+        main_vbox.addLayout(hbox)
 
-        self.win1 = pg.GraphicsLayoutWidget()
-        self.win1.setVisible(False)
-        self.plt1 = self.win1.addPlot(title="Overlay histogram")
+        # Summary stats
+        stats_box = QtGui.QGroupBox()
+        stats_box.setTitle('Summary Statistics')
+        vbox = QtGui.QVBoxLayout()
+        stats_box.setLayout(vbox)
 
-        self.tab1 = QtGui.QTableView()
-        self.tab1.resizeColumnsToContents()
-        self.tab1.setModel(self.process.model)
-        self.tab1.setVisible(False)
-
-        self.tab1ss = QtGui.QTableView()
-        self.tab1ss.resizeColumnsToContents()
-        self.tab1ss.setModel(self.process_ss.model)
-        self.tab1ss.setVisible(False)
-
-        l02 = QtGui.QHBoxLayout()
+        hbox = QtGui.QHBoxLayout()
         self.butgen = QtGui.QPushButton("Show")
         self.butgen.setToolTip("Show standard statistics for the data in each ROI")
         self.butgen.clicked.connect(self.show_stats)
-        l02.addWidget(self.butgen)
+        hbox.addWidget(self.butgen)
         self.copy_btn = QtGui.QPushButton("Copy")
         self.copy_btn.clicked.connect(self.copy_stats)
         self.copy_btn.setVisible(False)
-        l02.addWidget(self.copy_btn)
-        l02.addStretch(1)
+        hbox.addWidget(self.copy_btn)
+        hbox.addStretch(1)
+        vbox.addLayout(hbox)
 
-        l02ss = QtGui.QHBoxLayout()
+        self.stats_table = QtGui.QTableView()
+        self.stats_table.resizeColumnsToContents()
+        self.stats_table.setModel(self.process.model)
+        self.stats_table.setVisible(False)
+        vbox.addWidget(self.stats_table)
+
+        main_vbox.addWidget(stats_box)
+
+        # Summary stats (single slice)
+
+        stats_box_ss = QtGui.QGroupBox()
+        stats_box_ss.setTitle('Summary Statistics - Slice')
+        vbox = QtGui.QVBoxLayout()
+        stats_box_ss.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
         self.butgenss = QtGui.QPushButton("Show")
         self.butgenss.setToolTip("Show standard statistics for the current slice")
         self.butgenss.clicked.connect(self.show_stats_current_slice)
-        l02ss.addWidget(self.butgenss)
+        hbox.addWidget(self.butgenss)
         self.slice_dir_label = QtGui.QLabel("Slice direction:")
         self.slice_dir_label.setVisible(False)
-        l02ss.addWidget(self.slice_dir_label)
+        hbox.addWidget(self.slice_dir_label)
         self.sscombo = QtGui.QComboBox()
         self.sscombo.addItem("Axial")
         self.sscombo.addItem("Saggital")
@@ -416,96 +424,82 @@ class DataStatistics(QpWidget):
         self.sscombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         self.sscombo.currentIndexChanged.connect(self.update)
         self.sscombo.setVisible(False)
-        l02ss.addWidget(self.sscombo)
+        hbox.addWidget(self.sscombo)
         self.copy_btn_ss = QtGui.QPushButton("Copy")
         self.copy_btn_ss.clicked.connect(self.copy_stats_ss)
         self.copy_btn_ss.setVisible(False)
-        l02ss.addWidget(self.copy_btn_ss)
-        l02ss.addStretch(1)
+        hbox.addWidget(self.copy_btn_ss)
+        hbox.addStretch(1)
+        vbox.addLayout(hbox)
 
-        l03 = QtGui.QHBoxLayout()
+        self.stats_table_ss = QtGui.QTableView()
+        self.stats_table_ss.resizeColumnsToContents()
+        self.stats_table_ss.setModel(self.process_ss.model)
+        self.stats_table_ss.setVisible(False)
+        vbox.addWidget(self.stats_table_ss)
 
-        self.butgen2 = QtGui.QPushButton("Show")
-        self.butgen2.setToolTip("Show a histogram of the data values in each ROI")
-        self.butgen2.clicked.connect(self.show_histogram)
+        main_vbox.addWidget(stats_box_ss)
 
-        regenHbox = QtGui.QHBoxLayout()
-        self.regenBtn = QtGui.QPushButton("Recalculate")
-        self.regenBtn.clicked.connect(self.update_histogram)
-        regenHbox.addWidget(self.regenBtn)
-        regenHbox.addStretch(1)
-        self.regenBtn.setVisible(False)
+        # Histogram
 
-        l03.addWidget(self.butgen2)
-        #l03.addWidget(buthide2)
-        l03.addStretch(1)
+        hist_box = QtGui.QGroupBox()
+        hist_box.setTitle('Histogram')
+        vbox = QtGui.QVBoxLayout()
+        hist_box.setLayout(vbox)
 
-        nbinsLabel = QtGui.QLabel("Number of bins")
-        l03.addWidget(nbinsLabel)
+        hbox = QtGui.QHBoxLayout()
+
+        self.hist_show_btn = QtGui.QPushButton("Show")
+        self.hist_show_btn.setToolTip("Show a histogram of the data values in each ROI")
+        self.hist_show_btn.clicked.connect(self.show_histogram)
+        hbox.addWidget(self.hist_show_btn)
+
+        hbox.addWidget( QtGui.QLabel("Number of bins"))
 
         self.nbinsSpin = QtGui.QSpinBox()
         self.nbinsSpin.setMaximum(100)
         self.nbinsSpin.setMinimum(5)
         self.nbinsSpin.setValue(30)
-        l03.addWidget(self.nbinsSpin)
+        hbox.addWidget(self.nbinsSpin)
 
-        minLabel = QtGui.QLabel("Min value")
-        l03.addWidget(minLabel)
+        hbox.addWidget(QtGui.QLabel("Min value"))
 
         self.minSpin = QtGui.QDoubleSpinBox()
         # Silly numbers for max and min because seems to be no way to have
         # a spin box without a range
         self.minSpin.setMaximum(100000000)
         self.minSpin.setMinimum(-100000000)
-        l03.addWidget(self.minSpin)
+        hbox.addWidget(self.minSpin)
 
-        maxLabel = QtGui.QLabel("Max value")
-        l03.addWidget(maxLabel)
+        hbox.addWidget(QtGui.QLabel("Max value"))
 
         self.maxSpin = QtGui.QDoubleSpinBox()
         self.maxSpin.setMaximum(100000000)
         self.maxSpin.setMinimum(-100000000)
-        l03.addWidget(self.maxSpin)
+        hbox.addWidget(self.maxSpin)
+        vbox.addLayout(hbox)
 
-        l07 = QtGui.QVBoxLayout()
-        l07.addLayout(l03)
-        l07.addWidget(self.win1)
-        l07.addLayout(regenHbox)
-        l07.addStretch(1)
-
+        self.win1 = pg.GraphicsLayoutWidget()
         # Hide histogram for the meanwhile
-        f02 = QtGui.QGroupBox()
-        f02.setTitle('Histogram')
-        f02.setLayout(l07)
+        self.win1.setVisible(False)
+        self.plt1 = self.win1.addPlot(title="Overlay histogram")
+        vbox.addWidget(self.win1, stretch=2)
 
-        l08 = QtGui.QVBoxLayout()
-        l08.addLayout(l02)
-        l08.addWidget(self.tab1)
-        l08.addStretch(1)
+        hbox = QtGui.QHBoxLayout()
+        self.regenBtn = QtGui.QPushButton("Recalculate")
+        self.regenBtn.clicked.connect(self.update_histogram)
+        hbox.addWidget(self.regenBtn)
+        hbox.addStretch(1)
+        self.regenBtn.setVisible(False)
+        vbox.addLayout(hbox)
 
-        f03 = QtGui.QGroupBox()
-        f03.setTitle('Summary Statistics')
-        f03.setLayout(l08)
-
-        l08ss = QtGui.QVBoxLayout()
-        l08ss.addLayout(l02ss)
-        l08ss.addWidget(self.tab1ss)
-        l08ss.addStretch(1)
-
-        f03ss = QtGui.QGroupBox()
-        f03ss.setTitle('Summary Statistics - Slice')
-        f03ss.setLayout(l08ss)
-
-        l1.addWidget(f03)
-        l1.addWidget(f03ss)
-
-        l1.addWidget(f02)
+        main_vbox.addWidget(hist_box)
 
         # Radial profile widgets
-        box = QtGui.QGroupBox()
-        box.setTitle("Radial Profile")
+        rp_box = QtGui.QGroupBox()
+        rp_box.setTitle("Radial Profile")
         vbox = QtGui.QVBoxLayout()
-        box.setLayout(vbox)
+        rp_box.setLayout(vbox)
 
         hbox = QtGui.QHBoxLayout()
         self.rp_btn = QtGui.QPushButton("Show")
@@ -528,11 +522,12 @@ class DataStatistics(QpWidget):
         self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance (mm)'})
         self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))
         self.rp_plt.addItem(self.rp_curve)
-        vbox.addWidget(self.rp_win)
-        l1.addWidget(box)
+        vbox.addWidget(self.rp_win, stretch=2)
 
-        l1.addStretch(1)
-        self.setLayout(l1)
+        main_vbox.addWidget(rp_box)
+
+        main_vbox.addStretch(1)
+        self.setLayout(main_vbox)
 
     def activate(self):
         self.ivm.sig_current_roi.connect(self.update_all)
@@ -554,7 +549,7 @@ class DataStatistics(QpWidget):
     def focus_changed(self, pos):
         if self.rp_win.isVisible():
             self.update_radial_profile()
-        if self.tab1ss.isVisible():
+        if self.stats_table_ss.isVisible():
             self.update_stats_current_slice()
 
     def update_all(self):
@@ -566,9 +561,9 @@ class DataStatistics(QpWidget):
 
         if self.rp_win.isVisible():
             self.update_radial_profile()
-        if self.tab1.isVisible():
+        if self.stats_table.isVisible():
             self.update_stats()
-        if self.tab1ss.isVisible():
+        if self.stats_table_ss.isVisible():
             self.update_stats_current_slice()
         if self.win1.isVisible():
             self.update_histogram()
@@ -592,26 +587,26 @@ class DataStatistics(QpWidget):
         copy_table(self.process_ss.model)
         
     def show_stats(self):
-        if self.tab1.isVisible():
-            self.tab1.setVisible(False)
+        if self.stats_table.isVisible():
+            self.stats_table.setVisible(False)
             self.copy_btn.setVisible(False)
             self.butgen.setText("Show")
         else:
             self.update_stats()
-            self.tab1.setVisible(True)
+            self.stats_table.setVisible(True)
             self.copy_btn.setVisible(True)
             self.butgen.setText("Hide")
 
     def show_stats_current_slice(self):
-        if self.tab1ss.isVisible():
-            self.tab1ss.setVisible(False)
+        if self.stats_table_ss.isVisible():
+            self.stats_table_ss.setVisible(False)
             self.slice_dir_label.setVisible(False)
             self.sscombo.setVisible(False)
             self.copy_btn_ss.setVisible(False)
             self.butgenss.setText("Show")
         else:
             self.update_stats_current_slice()
-            self.tab1ss.setVisible(True)
+            self.stats_table_ss.setVisible(True)
             self.slice_dir_label.setVisible(True)
             self.sscombo.setVisible(True)
             self.copy_btn_ss.setVisible(True)
@@ -621,12 +616,12 @@ class DataStatistics(QpWidget):
         if self.win1.isVisible():
             self.win1.setVisible(False)
             self.regenBtn.setVisible(False)
-            self.butgen2.setText("Show")
+            self.hist_show_btn.setText("Show")
         else:
             self.update_histogram()
             self.win1.setVisible(True)
             self.regenBtn.setVisible(True)
-            self.butgen2.setText("Hide")
+            self.hist_show_btn.setText("Hide")
 
     def show_radial_profile(self):
         if self.rp_win.isVisible():
