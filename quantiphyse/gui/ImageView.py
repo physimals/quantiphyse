@@ -371,8 +371,11 @@ class OrthoView(pg.GraphicsView):
         self.contours = []
         self.arrows = []
 
-        self.img = pg.ImageItem(border='k')
-        self.img_roi = pg.ImageItem(border='k')
+        self.img = MaskableImage(border='k')
+        self.img.setBoundaryMode(DataView.BOUNDARY_TRANS)
+        self.img.setZValue(-1)
+        self.img_roi = MaskableImage(border='k')
+        self.img_roi.setBoundaryMode(DataView.BOUNDARY_TRANS)
         self.img_ovl = MaskableImage(border='k')
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
@@ -702,10 +705,10 @@ class Navigator:
         grid.addWidget(self.spin, ypos, 2)
     
     def _changed(self, value):
-        if value != self.ivl.ivm.cim_pos[self.axis]:
-            self.ivl.ivm.cim_pos[self.axis] = value
-            self.ivl.sig_focus_changed.emit(self.ivl.ivm.cim_pos)
-            self.ivl.update_ortho_views()
+        pos = list(self.ivl.ivm.cim_pos)
+        if value != pos[self.axis]:
+            pos[self.axis] = value
+            self.ivl.set_focus(pos, self.axis, False)
         self._update_gui(value)
         
     def update_range(self, shape, nvols):
@@ -748,13 +751,13 @@ class DataSummary(QtGui.QWidget):
         hbox.addWidget(self.vol_name)
         hbox.setStretchFactor(self.vol_name, 1)
         self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(60)
+        self.vol_data.setFixedWidth(65)
         hbox.addWidget(self.vol_data)
         self.roi_region = QtGui.QLineEdit()
         self.roi_region.setFixedWidth(30)
         hbox.addWidget(self.roi_region)
         self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(60)
+        self.ov_data.setFixedWidth(65)
         hbox.addWidget(self.ov_data)
         self.view_options_btn = OptionsButton(self)
         hbox.addWidget(self.view_options_btn)
@@ -1077,7 +1080,7 @@ class ImageView(QtGui.QSplitter):
         self.win = {}
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
-            win.sig_focus.connect(self.view_focus)
+            win.sig_focus.connect(self.set_focus)
             win.sig_maxmin.connect(self.max_min)
             self.win[win.zaxis] = win
 
@@ -1113,7 +1116,7 @@ class ImageView(QtGui.QSplitter):
         self.picker = PointPicker(self) 
         self.drag_mode = DragMode.DEFAULT
       
-    def view_focus(self, pos, win, is_click):
+    def set_focus(self, pos, win, is_click):
         if self.picker.win is not None and win != self.picker.win:
             # Bit of a hack. Ban focus changes in other windows when we 
             # have a single-window picker because it will change the slice 
