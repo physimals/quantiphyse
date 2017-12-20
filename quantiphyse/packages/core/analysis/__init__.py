@@ -88,7 +88,7 @@ class SECurveOptions(QtGui.QDialog):
 
         # Smoothing
         self.smooth_cb = QtGui.QCheckBox('Smooth curves', self)
-        self.smooth_cb.setChecked(False)
+        self.smooth_cb.setChecked(self.smooth)
         grid.addWidget(self.smooth_cb, 3, 0)
 
     def mode_changed(self, idx):
@@ -125,7 +125,7 @@ class SEPlot:
         else:
             pt_values = self.sig
 
-        if plot_opts.smooth_cb.isChecked:
+        if plot_opts.smooth_cb.isChecked():
             wsize = 3
             cwin1 = np.ones(wsize)/wsize
             r1 = range(len(pt_values))
