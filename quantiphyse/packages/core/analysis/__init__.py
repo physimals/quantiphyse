@@ -162,6 +162,7 @@ class SECurve(QpWidget):
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
+        self.activated = False
 
     def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
@@ -242,6 +243,7 @@ class SECurve(QpWidget):
     def activate(self):
         self.ivm.sig_main_data.connect(self.replot_graph)
         self.ivl.sig_sel_changed.connect(self.sel_changed)
+        self.activated = True
         self.replot_graph()
 
     def deactivate(self):
@@ -263,7 +265,8 @@ class SECurve(QpWidget):
         for plt in self.mean_plots.values(): plt.remove()
         
     def options_changed(self, opts):
-        self.replot_graph()
+        if self.activated:
+            self.replot_graph()
 
     def replot_graph(self):
         self.remove_plots()
