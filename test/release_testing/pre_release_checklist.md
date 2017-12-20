@@ -1,14 +1,13 @@
-# PkView pre-release test checklist
+# Quantiphyse pre-release test checklist
 
 This is an attempt to document steps to go through prior to each release.
 It isn't exhaustive, but it is intended to cover the basics so no obvious
 bugs go out to release.
 
 Release procedure is to copy this file for all builds that are deemed to
-require full test. At present it is not decided whether to test each
-individual build (windows exe, windows zip, linux deb, etc..) or just one of
-them. Then fill in the checkboxes like `[x]` for each item checked *if the
-behaviour is acceptable!*.
+require full test. At present this is the 'maxi' package for each platform
+(Windows, Linux, OSX). Then fill in the checkboxes like `[x]` for each item 
+checked *if the behaviour is acceptable!*.
 
 Any comments should be recorded in the copy of the document (e.g. minor
 issues or observations). If bugs are
@@ -46,16 +45,50 @@ not found any problems.
 - [ ] Check pan/zoom in normal and maximised mode
 - [ ] Check double click to maximise and then minimise, windows in consistent grid
 - [ ] Check space and time sliders consistent with previous version
-- [ ] Check ROI view options and alpha slider
-- [ ] Check overlay view options and alpha slider
 - [ ] Load second overlay, check switching including update to Overview widget
 - [ ] Load second ROI, check switching including update to Overview widget
-- [ ] Check voxel size scaling on appropriate dataset
-- [ ] Load replacement DCE, confirm all data cleared (check view, menus, lists)
-- [ ] Check histogram modifies view for overlay and volume
+- [ ] Clear all data, load replacement data set check range handled correctly
 - [ ] Load large volume / overlay / roi to check large file handling on 64 bit system
 
-## Voxel analysis widget
+## Colour Histogram
+
+- [ ] Check histogram modifies view for overlay and volume
+
+## View options
+
+- [ ] Relative position of overlay/ROI
+- [ ] Check voxel size scaling on appropriate dataset
+
+## Overlay view options
+
+- [ ] Change levels, updates view and histogram
+- [ ] Automatic levels as percentile, check 100%, 90% within/without ROI
+- [ ] Check handling of out of range values above/below 
+- [ ] Colourmap selector updates histogram and view
+
+## ROI view options
+
+- [ ] Shaded, contour, both and None working
+- [ ] Alpha slider fast and working
+
+## Data statistics widget
+
+- [ ] Check show/hide/recalculate without ROI, without overlay
+- [ ] Check overlay with single region ROI
+- [ ] Check histogram range and bins
+- [ ] Change to multi-region ROI, check recalculate
+
+## Clustering widget
+
+- [ ] Check without overlay
+- [ ] Check run defaults
+- [ ] Check change number of clusters/modes and re-run
+- [ ] Check voxel count
+- [ ] Check merge regions, voxel counts consistent
+- [ ] Check AutoMerge?
+- [ ] Check 4D overlay, use of PCA modes
+
+## 4D data analysis widget
 
 - [ ] Check default to single click select giving signal enhancement curve
 - [ ] Check smoothing, signal enhancement checkboxes
@@ -68,28 +101,52 @@ not found any problems.
 - [ ] Check clear graph clears arrows and removes arrows
 - [ ] Check switch back to single plotting
 
-## Overlay statistics widget
+## Model curves view
 
-- [ ] Check show/hide/recalculate without ROI, without overlay
-- [ ] Check overlay with single region ROI
-- [ ] Check histogram range and bins
-- [ ] Change to multi-region ROI, check recalculate
+- [ ] Without 4D data - no curves
+- [ ] With 4D data - check curves consistent colours
+- [ ] Turn on/off curves 
+- [ ] 3D Data values correct and update on click
+- [ ] RMS comparison 
+- [ ] Normalise frames changes plot (hard to validate actual effect!)
+- [ ] Temporal resolution changes when volumes scale is changed
+- [ ] Residuals display correct (base data not displayed)
 
-## Curve cluster widget
+## Compare data
 
-- [ ] Check run defaults
-- [ ] Check change number of clusters/modes and re-run
-- [ ] Check voxel count
-- [ ] Check merge regions, voxel counts consistent
-- [ ] Check AutoMerge?
+- [ ] Compare 3D
+- [ ] Compare 3D-4D
+- [ ] Compare 4D
+- [ ] Check sample size and warning if disable
+- [ ] Check within ROI, 3D and 4D
 
-## Overlay cluster widget
+## Mean values widget
 
-- [ ] Check without overlay
-- [ ] Check run defaults with overlay
-- [ ] Check change number of clusters
-- [ ] Check voxel count
-- [ ] Check merge regions, voxel counts consistent
+- [ ] Check with supervoxels and other clustering Widgets
+- [ ] Confirm zero variance/range in voxel analysis
+
+## Supervoxels
+
+- [ ] Run defaults
+- [ ] Change parameters and re-run
+
+## PK modelling
+
+- [ ] Run defaults
+- [ ] Change model and re-run
+- [ ] Switch between generated overlays
+- [ ] Change params and re-run (estimated injection time good to vary)
+
+## Simple Maths
+
+- [ ] Subtraction of data
+- [ ] Multiplication of data by constant
+
+## Smoothing
+
+- [ ] 3D and 4D data
+- [ ] Effect of sigma
+- [ ] Output name respected
 
 ## T10 map Generation
 
@@ -102,31 +159,43 @@ not found any problems.
 - [ ] Check smoothing, visible
 - [ ] Check clamping, output overlay within clamp limits
 
-## PK modelling
+## Registration
 
-- [ ] Run defaults
-- [ ] Change model and re-run
-- [ ] Switch between generated overlays
-- [ ] Change params and re-run (estimated injection time good to vary)
+- [ ] Run on artificial moving data - DEEDS and MCFLIRT
+- [ ] Modify parameters, check effect still sensible, no errors
+- [ ] Register to different volume than median
+- [ ] Register two 3D volumes
 
-## PK curve view
+## ROI analysis
 
-- [ ] Without PK modelling run - just views image curves
-- [ ] After PK modelling - model comparison.
-- [ ] Current parameters update on click
-- [ ] Normalise frames changes plot (hard to validate actual effect!)
-- [ ] Temporal resolution changes x-scale on click
+- [ ] Run on single-region ROI
+- [ ] Run on multi-region ROI
 
-## Mean values widget
+## ROI builder
 
-- [ ] Check with supervoxels and other clustering Widgets
-- [ ] Confirm zero variance/range in voxel analysis
+- [ ] Pen tool, check on each slice
+- [ ] random walker, check 3D and 4D
+- [ ] Eraser, check on each slice
+- [ ] Rectangle, check on each slice
+- [ ] Ellipse, check on each slice
+- [ ] Polygon, check on each slice
+- [ ] Pick region, check with multi-region ROI (e.g. supervoxels)
+- [ ] Check undo
+- [ ] Check current label respected
+- [ ] Check ROI name respected
 
-## Supervoxels
+## Data inspector
 
-- [ ] Run defaults
-- [ ] Change parameters and re-run
+- [ ] View data orientation
+- [ ] Move origin, check sensible outcome
+- [ ] Tweak transform, check sensible outcome
 
-## Generate temporal animation
+## Batch builder
 
-- [ ] Run defaults and view generated files
+- [ ] Check empty data
+- [ ] Load data, check updates until modified
+- [ ] Check warning on TAB
+- [ ] Check warning on invalid syntax
+- [ ] Cut/paste Fabber, run, check correct
+- [ ] Check reset button
+
