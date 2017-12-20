@@ -21,6 +21,8 @@ LOCAL_FILE_PATH=""
 DEBUG = False
 PLUGIN_MANIFEST = None
 
+DEFAULT_SIG_FIG = 4
+
 def set_debug(debug):
     global DEBUG
     DEBUG = debug
@@ -174,6 +176,14 @@ def copy_table(tabmod):
     clipboard = QtGui.QApplication.clipboard()
     tsv = table_to_str(tabmod)
     clipboard.setText(tsv)
+
+def sf(num, sf=None):
+    """ Format a number as a string to a given number of sig figs """
+    if sf is None: 
+        global DEFAULT_SIG_FIG
+        sf = DEFAULT_SIG_FIG
+    fmt = "%%.%ig" % sf
+    return fmt % float(num)
 
 def get_col(cmap, idx, out_of):
     """ Get RGB color for an index within a range, using a Matplotlib colour map """

@@ -15,7 +15,7 @@ from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.ImageView import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
-from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug
+from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug, sf
 
 from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess, HistogramProcess
 
@@ -986,7 +986,7 @@ class ModelCurves(QpWidget):
         for ii, ovl in enumerate(sorted(data_vals.keys())):
             if self.ivm.data[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
-                self.values_table.setItem(ii, 0, QtGui.QStandardItem(str(np.around(data_vals[ovl], 10))))
+                self.values_table.setItem(ii, 0, QtGui.QStandardItem(sf(data_vals[ovl])))
 
     def _update_rms_table(self):
         try:
@@ -1016,10 +1016,10 @@ class ModelCurves(QpWidget):
                         self.data_enabled[name] = QtCore.Qt.Checked
                     name_item.setCheckState(self.data_enabled[name])
                     self.rms_table.setItem(idx, 0, name_item)
-                    item = QtGui.QStandardItem(str(np.around(pos_rms, 10)))
+                    item = QtGui.QStandardItem(sf(pos_rms))
                     item.setEditable(False)
                     self.rms_table.setItem(idx, 1, item)
-                    #item = QtGui.QStandardItem(str(np.around(mean_rms, 10)))
+                    #item = QtGui.QStandardItem(sf(mean_rms))
                     #item.setEditable(False)
                     #self.rms_table.setItem(idx, 2, item)
                     idx += 1

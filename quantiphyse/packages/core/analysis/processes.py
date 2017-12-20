@@ -5,7 +5,7 @@ import sys
 from PySide import QtGui
 
 from quantiphyse.volumes.io import NumpyData
-from quantiphyse.utils import table_to_str, debug
+from quantiphyse.utils import table_to_str, debug, sf
 from quantiphyse.utils.exceptions import QpException
 
 from quantiphyse.analysis import Process
@@ -251,11 +251,11 @@ class DataStatisticsProcess(Process):
             stats1, roi_labels, hist1, hist1x = self.get_summary_stats(ov, roi, **options)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
-                self.model.setItem(0, col, QtGui.QStandardItem(str(np.around(stats1['mean'][ii], ov.dps))))
-                self.model.setItem(1, col, QtGui.QStandardItem(str(np.around(stats1['median'][ii], ov.dps))))
-                self.model.setItem(2, col, QtGui.QStandardItem(str(np.around(stats1['std'][ii], ov.dps))))
-                self.model.setItem(3, col, QtGui.QStandardItem(str(np.around(stats1['min'][ii], ov.dps))))
-                self.model.setItem(4, col, QtGui.QStandardItem(str(np.around(stats1['max'][ii], ov.dps))))
+                self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
+                self.model.setItem(1, col, QtGui.QStandardItem(sf(stats1['median'][ii])))
+                self.model.setItem(2, col, QtGui.QStandardItem(sf(stats1['std'][ii])))
+                self.model.setItem(3, col, QtGui.QStandardItem(sf(stats1['min'][ii])))
+                self.model.setItem(4, col, QtGui.QStandardItem(sf(stats1['max'][ii])))
                 col += 1
 
         if not no_artifact: 

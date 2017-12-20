@@ -6,8 +6,8 @@ import scipy
 
 from PySide import QtGui
 
-from ..utils import debug
-from ..utils.exceptions import QpException
+from quantiphyse.utils import debug, sf
+from quantiphyse.utils.exceptions import QpException
 
 """
 Work-in-progress on Next Generation volume class
@@ -337,7 +337,8 @@ class QpData:
         Return the data value at pos as a string to an appropriate
         number of decimal places
         """
-        return str(np.around(self.val(pos), self.dps))
+        return sf(self.val(pos))
+        #return str(np.around(self.val(pos), self.dps))
 
     def val(self, pos):
         """ 
