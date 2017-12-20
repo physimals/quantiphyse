@@ -706,11 +706,7 @@ class Navigator:
             self.ivl.ivm.cim_pos[self.axis] = value
             self.ivl.sig_focus_changed.emit(self.ivl.ivm.cim_pos)
             self.ivl.update_ortho_views()
-
-        if value != self.slider.value():
-            self.slider.setValue(value)
-        if value != self.spin.value():
-            self.spin.setValue(value)
+        self._update_gui(value)
         
     def update_range(self, shape, nvols):
         shape = list(shape) + [nvols,]
@@ -723,9 +719,19 @@ class Navigator:
             self.slider.blockSignals(False)
             self.spin.blockSignals(False)
 
-    def update_pos(self, pos):
-        self._changed(pos[self.axis])
+    def _update_gui(self, value):
+        try:
+            self.slider.blockSignals(True)
+            self.spin.blockSignals(True)
+            self.slider.setValue(value)
+            self.spin.setValue(value)
+        finally:
+            self.slider.blockSignals(False)
+            self.spin.blockSignals(False)
 
+    def update_pos(self, pos):
+        self._update_gui(pos[self.axis])
+        
 class DataSummary(QtGui.QWidget):
     """ Data summary bar """
     def __init__(self, ivl):
