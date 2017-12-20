@@ -98,7 +98,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     def _get_image_lut(self, img):
         lut = self.getLookupTable(img, alpha=True)
         if self.dv is not None:
-            for row in lut[1:]:
+            for row in lut:
                 row[3] = self.dv.alpha
 
         self.lut = lut
