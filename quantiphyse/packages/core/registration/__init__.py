@@ -33,6 +33,7 @@ class RegWidget(QpWidget):
 
         if len(self.reg_methods) == 0:
             layout.addWidget(QtGui.QLabel("No registration methods found"))
+            layout.addStretch(1)
             return
 
         hbox = QtGui.QHBoxLayout()
@@ -110,10 +111,9 @@ class RegWidget(QpWidget):
         for method in self.reg_methods:
             hbox = QtGui.QHBoxLayout()
             opt_box = QtGui.QGroupBox()
-            opt_box.setTitle("%s Options" % method.name)
+            opt_box.setTitle(method.name.upper())
             opt_box.setLayout(method.interface())
             hbox.addWidget(opt_box)
-            hbox.addStretch(1)
             opt_box.setVisible(False)
             layout.addLayout(hbox)
             self.opt_boxes[method.name] = opt_box
