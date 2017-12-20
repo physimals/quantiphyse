@@ -1,4 +1,4 @@
-# PkView pre-release test checklist
+# pre-release test checklist
 
 This is an attempt to document steps to go through prior to each release.
 It isn't exhaustive, but it is intended to cover the basics so no obvious

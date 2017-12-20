@@ -5,4 +5,4 @@ debian/quantiphyse-exec usr/bin
 debian/quantiphyse.desktop usr/share/applications
 debian/quantiphyse.png usr/share/icons/hicolor/48x48/apps
 # copy icons
-# pkview/icons/ usr/share/python/pkview/icons
+# quantiphyse/icons/ usr/share/python/quantiphyse/icons

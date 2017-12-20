@@ -2,7 +2,7 @@
 
 ## Issue tracker
 
-Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng.ox.ac.uk/biomedia-perfusion/PkView/issues)
+Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng.ox.ac.uk/quantiphyse/quantiphyse/issues)
 
 ## Future plans
 

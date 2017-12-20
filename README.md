@@ -27,7 +27,7 @@ See:
 
 ## Installation
 
-Installation packages are available on the [Wiki](https://ibme-gitcvs.eng.ox.ac.uk/biomedia-perfusion/PkView/wikis/home)
+Installation packages are available on the [Wiki](https://ibme-gitcvs.eng.ox.ac.uk/quantiphyse/quantiphyse/wikis/home)
 
 The packages are rather large because they include all dependencies (including Python). However this
 does have the advantage of making them standalone.
