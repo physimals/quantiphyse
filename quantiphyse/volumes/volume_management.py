@@ -144,7 +144,9 @@ class ImageVolumeManagement(QtCore.QObject):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
             data = NumpyData(data.astype(np.float32), self.grid, name)
-            
+        elif name is not None:
+            data.name = name
+
         self._valid_name(data.name)
         self.data[data.name] = data
         
@@ -168,6 +170,8 @@ class ImageVolumeManagement(QtCore.QObject):
             """ Data provided as a Numpy array is presumed to be on the current grid """
             roi = NumpyData(data, self.grid, name, roi=True)
         else:
+            if name is not None:
+                data.name = name
             data.set_roi(True)
             roi = data
 
