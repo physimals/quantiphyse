@@ -372,7 +372,7 @@ class OrthoView(pg.GraphicsView):
         self.arrows = []
 
         self.img = MaskableImage(border='k')
-        self.img.setBoundaryMode(DataView.BOUNDARY_TRANS)
+        self.img.setBoundaryMode(DataView.BOUNDARY_CLAMP)
         self.img.setZValue(-1)
         self.img_roi = MaskableImage(border='k')
         self.img_roi.setBoundaryMode(DataView.BOUNDARY_TRANS)
