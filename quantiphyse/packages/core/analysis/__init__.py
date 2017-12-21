@@ -169,7 +169,7 @@ class SECurve(QpWidget):
 
         vbox = QtGui.QVBoxLayout()
 
-        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare", opts_btn=True)
+        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare", batch_btn=False, opts_btn=True)
         vbox.addWidget(title)
 
         #Clear curves button
@@ -908,6 +908,7 @@ class ModelCurves(QpWidget):
         self.plot.scene().addItem(self.plot_rightaxis)
         self.plot.getAxis('right').linkToView(self.plot_rightaxis)
         self.plot_rightaxis.setXLink(self.plot)
+        self.plot.vb.sigResized.connect(self._update_plot_viewbox)
 
         main_vbox.addWidget(win)
 
@@ -942,6 +943,15 @@ class ModelCurves(QpWidget):
 
         self.plot_opts = ModelCurvesOptions(self)
     
+    def _update_plot_viewbox(self):
+        """ Required to keep the right and left axis plots in sync with each other """
+        self.plot_rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
+        
+        ## need to re-update linked axes since this was called
+        ## incorrectly while views had different shapes.
+        ## (probably this should be handled in ViewBox.resizeEvent)
+        self.plot_rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
+
     def show_options(self):
         self.plot_opts.show()
         self.plot_opts.raise_()
@@ -1047,9 +1057,6 @@ class ModelCurves(QpWidget):
             self.plot.disableAutoRange()
             self.plot.setYRange(self.plot_opts.min_spin.value(), self.plot_opts.max_spin.value())
             
-        self.plot_rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
-        self.plot_rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
-
         # Replaces any existing legend but keep position the same in case user moved it
         legend_pos = (30, 30)
         if self.plot.legend: 
