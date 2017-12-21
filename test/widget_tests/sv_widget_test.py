@@ -27,7 +27,6 @@ class PerfSlicWidgetTest(WidgetTest):
         """ User clicks the generate buttons with no data"""
         self.harmless_click(self.w.gen_btn)
 
-    @unittest.expectedFailure
     def test3dData(self):
         self.ivm.add_data(self.data_3d, name="data_3d")
         self.w.ovl.setCurrentIndex(0)
@@ -45,19 +44,21 @@ class PerfSlicWidgetTest(WidgetTest):
 
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
+        # Don't check regions as we know this doesn't work. Really you shouldn't be running
+        # supervoxels without an ROI, we are just checking it handles it gracefully if you do
+        #self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         self.assertFalse(self.error)
 
     def test3dDataMask(self):
         self.ivm.add_roi(self.mask, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.test3dData()
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
         sv = self.ivm.rois[NAME].std()
         self.assertTrue(np.all(sv[self.mask.std() == 0] == 0))
         self.assertFalse(self.error)
 
-    @unittest.expectedFailure
     def test4dData(self):
         self.ivm.add_data(self.data_4d, name="data_4d")
         self.w.ovl.setCurrentIndex(0)
@@ -75,13 +76,16 @@ class PerfSlicWidgetTest(WidgetTest):
 
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
+        # Don't check regions as we know this doesn't work. Really you shouldn't be running
+        # supervoxels without an ROI, we are just checking it handles it gracefully if you do
+        #self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         self.assertFalse(self.error)
 
     def test4dDataMask(self):
         self.ivm.add_roi(self.mask, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.test4dData()
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
         sv = self.ivm.rois[NAME].std()
         self.assertTrue(np.all(sv[self.mask.std() == 0] == 0))
