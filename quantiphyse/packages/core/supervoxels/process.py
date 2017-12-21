@@ -40,7 +40,6 @@ class SupervoxelsProcess(Process):
         data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         output_name = options.pop('output-name', "supervoxels")
-        
         img = self.get_data(options)
 
         if roi_name is None and self.ivm.current_roi is not None:
@@ -75,7 +74,6 @@ class SupervoxelsProcess(Process):
                            enforce_connectivity=False, return_adjacency=False, spacing=vox_sizes,
                            mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
         labels = np.array(labels, dtype=np.int) + 1
-
         if roi is not None:
             newroi = np.zeros(roi.std().shape)
             newroi[slices] = labels
