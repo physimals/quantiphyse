@@ -12,7 +12,7 @@ script_dir = os.path.abspath(os.path.dirname(__file__))
 qpdir = os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir))
 os.chdir(qpdir)
 
-shutil.rmtree(os.path.join(qpdir, "test", "examples_output"))
+shutil.rmtree(os.path.join(qpdir, "test", "examples_output"), ignore_errors=True)
 
 examples = glob.glob(os.path.join(qpdir, "examples", "batch_scripts", "*.yaml"))
 for ex in sorted(examples):
