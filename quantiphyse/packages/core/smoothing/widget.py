@@ -41,9 +41,9 @@ class SmoothingWidget(QpWidget):
         vbox.addLayout(hbox)
 
         hbox = QtGui.QHBoxLayout()
-        run_btn = QtGui.QPushButton("Run")
-        run_btn.clicked.connect(self.run)
-        hbox.addWidget(run_btn)
+        self.run_btn = QtGui.QPushButton("Run")
+        self.run_btn.clicked.connect(self.run)
+        hbox.addWidget(self.run_btn)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
@@ -52,6 +52,7 @@ class SmoothingWidget(QpWidget):
     
     def data_changed(self):
         self.output_name.setText("%s_smoothed" % self.data_combo.currentText())
+        self.run_btn.setEnabled(self.data_combo.currentText() in self.ivm.data)
 
     def batch_options(self):
         return "Smooth", {"data" : self.data_combo.currentText(),

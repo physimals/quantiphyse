@@ -18,7 +18,7 @@ class CompareDataWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self)
+        title = TitleWidget(self, batch_btn=False)
         vbox.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()
@@ -79,6 +79,7 @@ class CompareDataWidget(QpWidget):
         
         vbox.addStretch(1)  
         self._update_gui()
+        self._update_data()
     
     def _update_gui(self):
         self.sample_spin.setEnabled(self.sample_cb.isChecked())
