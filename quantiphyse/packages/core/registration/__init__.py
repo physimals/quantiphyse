@@ -240,11 +240,10 @@ class RegWidget(QpWidget):
         else:
             proc_name = "MoCo"
             options["reg"] = self.refdata.currentText()
-            
         return proc_name, options
         
     def run(self):
-        options = self.batch_options()[0]
+        options = self.batch_options()[1]
         process = RegProcess(self.ivm)
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
