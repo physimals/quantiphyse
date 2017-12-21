@@ -1,6 +1,7 @@
 import os
 import sys
 import inspect
+import traceback
 
 from PySide import QtGui, QtCore
 
@@ -847,6 +848,7 @@ class RunBox(QtGui.QGroupBox):
             self.process.run(rundata)
         except:
             # Process failed to start, so call finished cb manually
+            debug(traceback.format_exc())
             self.finished(Process.FAILED, sys.exc_info()[1], "", sys.exc_info()[1])
 
     def update_progress(self, complete):
