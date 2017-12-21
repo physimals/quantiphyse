@@ -195,8 +195,8 @@ def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
     msi_fname = os.path.join(msidir, "quantiphyse-%s.msi" % version_str_display)
     create_wxs(distdir, version_str, wxs_fname)
     
-    os.system('"%s/candle.exe" %s -out %s >>msi.out 2>&1' % (WIXDIR, wxs_fname, obj_fname))
-    os.system('"%s/light.exe" %s -out %s -ext WixUIExtension >>msi.out 2>&1' % (WIXDIR, obj_fname, msi_fname))
+    os.system('"%s/candle.exe" %s -out %s >%s/msi.out 2>&1' % (WIXDIR, wxs_fname, obj_fname, msidir))
+    os.system('"%s/light.exe" %s -out %s -ext WixUIExtension >>%s/msi.out 2>&1' % (WIXDIR, obj_fname, msi_fname, msidir))
     shutil.move(msi_fname, distdir)
 
 if __name__ == "__main__":
