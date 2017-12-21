@@ -105,8 +105,8 @@ class Process(QtCore.QObject):
         if roi_name is None:
             if self.ivm.current_roi is not None:
                 roidata = self.ivm.current_roi.std()
-            elif self.ivm.main is not None:
-                roidata = np.ones(self.ivm.main.shape[:3])
+            elif self.ivm.grid is not None:
+                roidata = np.ones(self.ivm.grid.shape[:3])
             else:
                 raise QpException("No data loaded")
         elif multi and isinstance(roi_name, list):
