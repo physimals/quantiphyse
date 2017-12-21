@@ -24,7 +24,16 @@ class WidgetTest(unittest.TestCase):
     Base class for a test module for a QP WidgetTest
 
     Note that it is necessary to physically show the widget during testing. This is ugly
-    but enables checking of visible/invisible components
+    but enables checking of visible/invisible components.
+
+    The philosophy of widget testing is 'white box', so we feel entitled to use our knowledge
+    of the names given to widget components and other internal structure. This means tests
+    are likely to go out of date very quickly if not maintained in line with the widgets
+    themselves. However it is difficult to test GUI logic otherwise.
+
+    Because of this it may be appropriate to move widget test classes into the widget packages
+    themselves and make the whole test system internal (i.e. you can run 
+    ``quantiphyse.exe --self-test``)
     """
     def setUp(self):
         global APP
