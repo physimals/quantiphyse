@@ -258,6 +258,7 @@ class RoiCombo(OverlayCombo):
     """
     def __init__(self, ivm, *args, **kwargs):
         kwargs["rois"] = True
+        kwargs["data"] = False
         super(RoiCombo, self).__init__(ivm, *args, **kwargs)
     
 class NumericOption(QtGui.QWidget):
