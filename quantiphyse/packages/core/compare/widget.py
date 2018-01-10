@@ -128,6 +128,8 @@ class CompareDataWidget(QpWidget):
 
     def _run(self):
         self.plot.clear() 
+        self.plot.setLabel('bottom', self.d1_combo.currentText())
+        self.plot.setLabel('left', self.d2_combo.currentText())
         self.plot.plot(self.d1, self.d2, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
         if self.id_cb.isChecked():
             real_min = max(self.d1.min(), self.d2.min())
