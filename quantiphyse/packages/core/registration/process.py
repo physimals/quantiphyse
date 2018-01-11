@@ -21,7 +21,7 @@ def get_reg_methods():
 """
 Registration function for asynchronous process - used for moco and registration
 """
-def _run_reg(id, queue, method_name, options, regdata, refdata, warp_rois, ignore_idx=None):
+def _run_reg(id, queue, method_name, options, regdata, refdata, voxel_sizes, warp_rois, ignore_idx=None):
     try:
         set_local_file_path()
         reg_methods = get_reg_methods()
@@ -49,7 +49,7 @@ def _run_reg(id, queue, method_name, options, regdata, refdata, warp_rois, ignor
             if t == ignore_idx:
                 regdata_out[:,:,:,t] = regvol
             else:
-                outvol, roivol, log = method.reg(regvol, refdata, warp_rois, options)
+                outvol, roivol, log = method.reg(regvol, refdata, voxel_sizes, warp_rois, options)
                 full_log += log
                 regdata_out[:,:,:,t] = outvol
                 if warp_rois is not None: 
@@ -134,7 +134,7 @@ class RegProcess(BackgroundProcess):
             options.pop(key)
 
         # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, options, reg_data, refdata, warp_rois])
+        self.start(1, [self.method, options, reg_data, refdata, self.ivm.grid.spacing, warp_rois])
 
     def timeout(self):
         if self.queue.empty(): return
