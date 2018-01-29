@@ -46,7 +46,6 @@ class GridView(QtGui.QWidget):
             if hasattr(data, "nifti_header"):
                 self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
             self.transform.setValues(data.rawgrid.transform)
-            print(data.rawgrid.origin)
             self.origin.setValues([[x,] for x in data.rawgrid.origin])
         else:
             self.coord_label.setText("unknown")
@@ -64,7 +63,6 @@ class GridView(QtGui.QWidget):
             self.data.rawgrid = newgrid
             self.data.stddata = None
             self.ivl.update_ortho_views()
-            print("data updated")
 
 class DataInspectorWidget(QpWidget):
     """
