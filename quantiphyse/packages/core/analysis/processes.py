@@ -46,10 +46,10 @@ class CalcVolumesProcess(Process):
                         self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
                         self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
 
-            no_artifact = options.pop('no-artifact', False)
-            if not no_artifact: 
+            no_extra = options.pop('no-extras', False)
+            if not no_extra: 
                 output_name = options.pop('output-name', "roi-vols")
-                self.ivm.add_artifact(output_name, table_to_str(self.model))
+                self.ivm.add_extra(output_name, table_to_str(self.model))
 
         self.status = Process.SUCCEEDED
 
@@ -72,7 +72,7 @@ class HistogramProcess(Process):
         dmax = options.pop('max', None)
         bins = options.pop('bins', 20)
         output_name = options.pop('output-name', "histogram")
-        no_artifact = options.pop('no-artifact', False)
+        no_extra = options.pop('no-extras', False)
 
         if roi_name is None and self.ivm.current_roi is None:
             roi = np.ones(self.ivm.grid.shape[:3])
@@ -119,9 +119,9 @@ class HistogramProcess(Process):
                 self.hist[ov.name][region] = yvals
                 col += 1
 
-        if not no_artifact: 
+        if not no_extra: 
             debug("Adding %s" % output_name)
-            self.ivm.add_artifact(output_name, table_to_str(self.model))
+            self.ivm.add_extra(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
 class RadialProfileProcess(Process):
@@ -141,7 +141,7 @@ class RadialProfileProcess(Process):
         #roi_region = options.pop('region', None)
         centre = options.pop('centre', None)
         output_name = options.pop('output-name', "radial-profile")
-        no_artifact = options.pop('no-artifact', False)
+        no_extra = options.pop('no-extras', False)
         bins = options.pop('bins', 20)
 
         if roi_name is None:
@@ -206,8 +206,8 @@ class RadialProfileProcess(Process):
                 self.model.setItem(idx, col, QtGui.QStandardItem(str(v)))
             self.rp[data.name] = rp
 
-        if not no_artifact: 
-            self.ivm.add_artifact(output_name, table_to_str(self.model))
+        if not no_extra: 
+            self.ivm.add_extra(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
 class DataStatisticsProcess(Process):
@@ -224,7 +224,7 @@ class DataStatisticsProcess(Process):
     def run(self, options):
         roi_name = options.pop('roi', None)
         ov_name = options.pop('data', None)
-        no_artifact = options.pop('no-artifact', False)
+        no_extra = options.pop('no-extras', False)
         if ov_name is None:
             ovs = self.ivm.data.values()
             output_name = options.pop('output-name', "stats")
@@ -258,8 +258,8 @@ class DataStatisticsProcess(Process):
                 self.model.setItem(4, col, QtGui.QStandardItem(sf(stats1['max'][ii])))
                 col += 1
 
-        if not no_artifact: 
-            self.ivm.add_artifact(output_name, table_to_str(self.model))
+        if not no_extra: 
+            self.ivm.add_extra(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
     def get_summary_stats(self, ovl, roi=None, hist_bins=20, hist_range=None, slice=None):
