@@ -31,7 +31,6 @@ class FabberWidgetTest(WidgetTest):
         while not hasattr(self.w.runBox, "log"):
             self.app.processEvents()
             time.sleep(2)
-        #print(self.w.runBox.log)
         self.assertTrue("mean_c0" in self.ivm.data)
         self.assertTrue("mean_c1" in self.ivm.data)
         self.assertTrue("mean_c2" in self.ivm.data)
