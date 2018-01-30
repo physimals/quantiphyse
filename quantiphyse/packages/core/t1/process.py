@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis processes for generating T1 map from VFA images
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 import numpy as np

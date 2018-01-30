@@ -1,6 +1,7 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+Quantiphyse - Generic analysis widgets
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import

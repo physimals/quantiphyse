@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Miscellaneous custom Qt widgets
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 import sys
 import inspect

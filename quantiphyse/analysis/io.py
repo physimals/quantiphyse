@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis processes for basic loading/saving of data
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 from quantiphyse.utils import debug, warn

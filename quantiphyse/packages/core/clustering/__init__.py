@@ -1,8 +1,7 @@
 """
+Quantiphyse - Widgets which perform data clustering
 
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function

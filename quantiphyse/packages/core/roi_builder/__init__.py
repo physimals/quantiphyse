@@ -1,6 +1,7 @@
 """
-Author: Martin Craig
-Copyright (c) 2017 University of Oxford
+Quantiphyse - Widgets allowing the user to build simple ROIs
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function

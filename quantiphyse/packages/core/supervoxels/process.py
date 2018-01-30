@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis process for supervoxel clustering
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import numpy as np
 import skimage.segmentation 
 

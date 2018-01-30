@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets for comparing data sets
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 from PySide import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np

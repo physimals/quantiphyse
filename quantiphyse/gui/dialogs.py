@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Custom dialog boxes
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 from PySide import QtGui

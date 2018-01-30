@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis process for DCE-MRI modelling
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import sys
 import time
 import numpy as np

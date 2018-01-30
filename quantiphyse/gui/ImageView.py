@@ -1,6 +1,7 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com), Martin Craig (martin.craig@eng.ox.ac.uk)
-Copyright (c) 2013-2015 University of Oxford
+Quantiphyse - 2d ortho slice image viewer
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function

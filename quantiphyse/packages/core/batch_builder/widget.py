@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets which supports the writing of batch files
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 from PySide import QtGui, QtCore

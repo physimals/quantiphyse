@@ -1,3 +1,9 @@
+"""
+Quantiphyse - SLIC implementation for supervoxels
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 # coding=utf-8
 
 from __future__ import division, print_function, absolute_import

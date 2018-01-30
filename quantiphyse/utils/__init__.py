@@ -1,7 +1,10 @@
 """
-Rag-bag of utility functions - some should probably be moved
+Quantiphyse - Rag-bag of utility functions - some should probably be moved
 into more specific modules
+
+Copyright (c) 2013-2018 University of Oxford
 """
+
 from __future__ import division, print_function
 
 import os, sys

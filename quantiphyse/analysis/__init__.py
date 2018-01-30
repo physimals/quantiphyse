@@ -1,6 +1,7 @@
 """
-Author: Martin Craig
-Copyright (c) 2013-2015 University of Oxford
+Quantiphyse - Generic analysis processes
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 import numpy as np

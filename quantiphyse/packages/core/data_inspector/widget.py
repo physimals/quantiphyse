@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets for viewing and modifying data orientation and grids
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import numpy as np
 
 from PySide import QtGui

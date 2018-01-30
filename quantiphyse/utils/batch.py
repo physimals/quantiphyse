@@ -1,6 +1,9 @@
 """
-Implements the batch processing system for Quantiphyse
+Quantiphyse - Implements the batch processing system for Quantiphyse
+
+Copyright (c) 2013-2018 University of Oxford
 """
+
 import sys
 import os
 import os.path

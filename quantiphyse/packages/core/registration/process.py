@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis processes for registration and motion correction
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import sys
 import os
 import traceback

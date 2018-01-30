@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Class wrapper for supervoxel generation
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 from __future__ import division, print_function, unicode_literals
 
 import warnings

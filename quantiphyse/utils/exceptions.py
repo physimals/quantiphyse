@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Exception subclasses
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 class QpException(Exception):
     """ 
     Base class for quantiphyse-specific exceptions
