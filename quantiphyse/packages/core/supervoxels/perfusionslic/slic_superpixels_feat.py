@@ -106,7 +106,7 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
     References
     ----------
     .. [1] Radhakrishna Achanta, Appu Shaji, Kevin Smith, Aurelien Lucchi,
-        Pascal Fua, and Sabine Süsstrunk, SLIC Superpixels Compared to
+        Pascal Fua, and Sabine Susstrunk, SLIC Superpixels Compared to
         State-of-the-art Superpixel Methods, TPAMI, May 2012.
     .. [2] http://ivrg.epfl.ch/research/superpixels#SLICO
 
