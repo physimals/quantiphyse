@@ -297,8 +297,8 @@ class DataStatisticsProcess(Process):
         elif slice in (0, 1, 2):
             axis = 2-slice
             slicepos = self.ivm.cim_pos[axis]
-            ovldata = ovl.get_slice([(axis, slicepos)])
-            roidata = roi.get_slice([(axis, slicepos)])
+            ovldata, _ = ovl.get_slice(self.ivm.grid, axis, slicepos, vol=None)
+            roidata, _ = roi.get_slice(self.ivm.grid, axis, slicepos, vol=None)
         else:
             raise RuntimeError("Invalid slice: " % slice)
 

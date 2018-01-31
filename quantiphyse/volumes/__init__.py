@@ -197,20 +197,6 @@ class Transform:
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape, order=0)
         
         return data
-
-    def qtransform(self, zaxis):
-        """
-        Return a QTransform object for a 2D slice through this grid with z-axis given
-        """
-        a = np.copy(self.tmatrix_raw)
-        a = np.delete(a, zaxis, 0)
-        a = np.delete(a, zaxis, 1)
-        debug("Original transform:")
-        debug(self.tmatrix_raw)
-        debug("Transform in %i axis" % zaxis)
-        debug(a)
-        a = a.flatten()
-        return QtGui.QTransform(*a)
     
     def _is_diagonal(self, mat):
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
@@ -353,28 +339,68 @@ class QpData:
         if pos[3] > self.nvols: pos[3] = self.nvols-1
         return self.std()[tuple(pos[:self.ndim])]
 
-    def get_slice(self, axes):
-        """ 
-        Get a slice at a given position
+    def get_vol(self, vol):
+        rawdata=self.raw()
+        if self.ndim == 4:
+            rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
+        return rawdata
 
-        axes - a sequence of tuples of (axis number, position)
-        mask - if specified, data outside the mask is given a fixed fill value
+    def get_slice(self, grid, axis, position, vol=0):
         """
-        #debug("Getting slice for %s" % self.name)
-        vol_data = self.std()
-        #debug("Got data")
-        sl = [slice(None)] * vol_data.ndim
-        for axis, pos in axes:
-            if axis >= vol_data.ndim:
-                pass
-            elif pos < vol_data.shape[axis]:
-                # Handle case where 4th dimension is out of range
-                sl[axis] = pos
-            else:
-                sl[axis] = vol_data.shape[axis]-1
-        slice_data = vol_data[sl]
-        #debug("Done")
-        return slice_data
+        Extract a data slice in raw data resolution
+
+        grid is the grid on which the slice position/direction is defined
+        axis is the axis (relative to grid) the slice is normal to
+        position is the position (relative to grid) of the slice position
+        """
+        debug("Slicing axis=%i, position=%i, vol=%i" % (axis, position, vol))
+        debug("Relative to grid")
+        debug(grid.affine)
+
+        debug("Raw data defined on grid")
+        debug(self.rawgrid.affine)
+        
+        origin = [0, 0, 0, 1]
+        units = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+
+        origin[axis] = position
+        del units[axis]
+        o_world = grid.affine.dot(origin)
+        units_world = [grid.transform.dot(u) for u in units]
+        debug("World origin: %s" % str(o_world))
+        debug("World units: %s" % str(units_world))
+
+        o_raw = np.linalg.inv(self.rawgrid.affine).dot(o_world)
+        units_raw = [np.linalg.inv(self.rawgrid.transform).dot(u) for u in units_world]
+        norms = [np.linalg.norm(v) for v in units_raw]
+        scale = [1/n for n in norms]
+        units_raw = [u / n for u, n in zip(units_raw, norms)]
+
+        debug("Raw origin: %s" % str(o_raw))
+        debug("Raw units: %s" % str(units_raw))
+
+        outshape = list(grid.shape)
+        del outshape[axis]
+        outshape = [o * n for o, n in zip(outshape, norms)]
+        debug("Output shape", outshape)
+
+        import pyqtgraph as pg
+        if self.nvols == 0 or vol is not None:
+            # Single-volume slice (true 2D slice)
+            rawdata=self.get_vol(vol)
+            sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
+            debug("Slice shape", sdata.shape)
+            return sdata, scale
+        else:
+            # Multi-volume slice
+            sdatas = []
+            for v in range(self.nvols):
+                rawdata=self.get_vol(vol)
+                sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
+                sdata = np.expand_dims(sdata, axis)
+                sdata.expand_dims()
+                sdatas.append(sdata)
+            return np.concatentate(sdatas, 3), scale
 
     def set_roi(self, roi):
         self.roi = roi

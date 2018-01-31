@@ -432,8 +432,9 @@ class OrthoView(pg.GraphicsView):
             
             # Plot image slice
             pos = self.ivm.cim_pos
-            slices = [(self.zaxis, pos[self.zaxis]), (3, pos[3])]
-            slicedata = self.ivm.main.get_slice(slices)
+            slicedata, scale = self.ivm.main.get_slice(self.ivm.grid, self.zaxis, pos[self.zaxis], vol=pos[3])
+            self.img.resetTransform()
+            self.img.scale(*scale)
             debug("Slice min/max: ", np.min(slicedata), np.max(slicedata))
             self.img.setImage(slicedata, autoLevels=False)
 
@@ -474,14 +475,16 @@ class OrthoView(pg.GraphicsView):
             roi_levels = [0, len(lut)-1]
             
             if roiview.shade:
-                slicedata = roidata.get_slice([(self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])])
+                slicedata, scale = roidata.get_slice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
                 self.img_roi.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
+                self.img_roi.resetTransform()
+                self.img_roi.scale(*scale)
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
 
             if roiview.contour:
-                data = roidata.get_slice([(self.zaxis, pos[self.zaxis])])
+                slicedata, scale = roidata.get_slice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
                 
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.contours)
@@ -517,15 +520,16 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            slices = (self.zaxis, self.ivm.cim_pos[self.zaxis]), (3, self.ivm.cim_pos[3])
-            slicedata = oview.data().get_slice(slices)
+            slicedata, scale = oview.data().get_slice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis], vol=self.ivm.cim_pos[3])
             self.img_ovl.setBoundaryMode(oview.boundary)
             if oview.roi_only and self.ivm.current_roi is not None:
-                mask = self.ivm.current_roi.get_slice(slices)
+                mask, scale = self.ivm.current_roi.get_slice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
                 self.img_ovl.mask = mask
             else:
                 self.img_ovl.mask = None
             self.img_ovl.setImage(slicedata, autoLevels=False)
+            self.img_ovl.resetTransform() 
+            self.img_ovl.scale(*scale)
 
     def resize_win(self, event):
         """
