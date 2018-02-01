@@ -9,6 +9,7 @@ import warnings
 
 import numpy as np
 import scipy
+import pyqtgraph as pg
 
 from PySide import QtGui
 
@@ -125,14 +126,14 @@ class DataGrid:
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
 
+# Tolerance for treating values as equal
+# Used to determine if matrices are diagonal or identity
+EQ_TOL = 1e-3
+
 class Transform:
     """
     Transforms data on one grid into another
     """
-
-    # Tolerance for treating values as equal
-    # Used to determine if matrices are diagonal or identity
-    EQ_TOL = 1e-3
 
     def __init__(self, in_grid, out_grid):
         debug("Transforming from")
@@ -199,10 +200,10 @@ class Transform:
         return data
     
     def _is_diagonal(self, mat):
-        return np.all(np.abs(mat - np.diag(np.diag(mat))) < self.EQ_TOL)
+        return np.all(np.abs(mat - np.diag(np.diag(mat))) < EQ_TOL)
 
     def _is_identity(self, mat):
-        return np.all(np.abs(mat - np.identity(mat.shape[0])) < self.EQ_TOL)
+        return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
         
     def _simplify_transforms(self):
         # Flip/transpose the axes to put the biggest numbers on
@@ -263,6 +264,8 @@ class QpData:
 
         # Grid the data was defined on. 
         self.rawgrid = grid
+        self.w2raw = np.linalg.inv(self.rawgrid.affine)
+        self.w2raw3 = np.linalg.inv(self.rawgrid.transform)
 
         # Number of volumes (1=3D data)
         self.nvols = nvols
@@ -320,7 +323,7 @@ class QpData:
         if not self.stdgrid.matches(grid):
             debug("Regridding")
             self.stdgrid = grid
-            self._update_stddata()
+            #self._update_stddata()
         else:
             debug("Not bothering to regrid - no change")
 
@@ -344,7 +347,7 @@ class QpData:
         if self.ndim == 4:
             rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
         return rawdata
-
+        
     def get_slice(self, grid, axis, position, vol=0):
         """
         Extract a data slice in raw data resolution
@@ -353,13 +356,12 @@ class QpData:
         axis is the axis (relative to grid) the slice is normal to
         position is the position (relative to grid) of the slice position
         """
-        debug("Slicing axis=%i, position=%i, vol=%i" % (axis, position, vol))
-        debug("Relative to grid")
-        debug(grid.affine)
+        #debug("Slicing axis=%i, position=%i, vol=%i" % (axis, position, vol))
+        #debug("Relative to grid")
+        #debug(grid.affine)
 
-        debug("Raw data defined on grid")
-        debug(self.rawgrid.affine)
-        
+        #debug("Raw data defined on grid")
+        #debug(self.rawgrid.affine)
         origin = [0, 0, 0, 1]
         units = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
@@ -367,11 +369,11 @@ class QpData:
         del units[axis]
         o_world = grid.affine.dot(origin)
         units_world = [grid.transform.dot(u) for u in units]
-        debug("World origin: %s" % str(o_world))
-        debug("World units: %s" % str(units_world))
+        #debug("World origin: %s" % str(o_world))
+        #debug("World units: %s" % str(units_world))
 
-        o_raw = np.linalg.inv(self.rawgrid.affine).dot(o_world)
-        units_raw = [np.linalg.inv(self.rawgrid.transform).dot(u) for u in units_world]
+        o_raw = self.w2raw.dot(o_world)
+        units_raw = [self.w2raw3.dot(u) for u in units_world]
         norms = [np.linalg.norm(v) for v in units_raw]
         scale = [1/n for n in norms]
         units_raw = [u / n for u, n in zip(units_raw, norms)]
@@ -382,14 +384,20 @@ class QpData:
         outshape = list(grid.shape)
         del outshape[axis]
         outshape = [o * n for o, n in zip(outshape, norms)]
-        debug("Output shape", outshape)
+        #debug("Output shape", outshape)
 
-        import pyqtgraph as pg
         if self.nvols == 0 or vol is not None:
             # Single-volume slice (true 2D slice)
             rawdata=self.get_vol(vol)
-            sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
-            debug("Slice shape", sdata.shape)
+            slices = self.is_ortho(units_raw, o_raw)
+            if slices is not None:
+                debug("Orthogonal slices: %s" % str(slices))
+                sdata = rawdata[slices]
+                print(sdata.shape)
+            else:
+                debug("Non Orthogonal")
+                sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
+            #debug("Slice shape", sdata.shape)
             return sdata, scale
         else:
             # Multi-volume slice
@@ -401,6 +409,35 @@ class QpData:
                 sdata.expand_dims()
                 sdatas.append(sdata)
             return np.concatentate(sdatas, 3), scale
+
+    def is_ortho(self, units, origin):
+        ax1, d1 = self.axis_unit(units[0])
+        ax2, d2 = self.axis_unit(units[1])
+        ax3 = 3-ax1-ax2
+        if ax1 is not None and ax2 is not None:
+            slices = [slice(None),]*3
+            if d1 == 1:
+                slices[ax1] = slice(0, self.rawgrid.shape[ax1]-1, 1)
+            else:
+                slices[ax1] = slice(self.rawgrid.shape[ax1]-1, 0, -1)
+
+            if d2 == 1:
+                slices[ax2] = slice(0, self.rawgrid.shape[ax2]-1, 1)
+            else:
+                slices[ax2] = slice(self.rawgrid.shape[ax2]-1, 0, -1)
+            debug(ax1, ax2, ax3)
+            slices[ax3] = int(origin[ax3])
+            return slices
+        else:
+            return None
+
+    def axis_unit(self, vec):
+        for ax, v in enumerate(vec):
+            print(ax, v, abs(v))
+            if abs(abs(v)-1) < EQ_TOL:
+                print("unit", ax, math.copysign(1, v))
+                return ax, math.copysign(1, v)
+        return None, None
 
     def set_roi(self, roi):
         self.roi = roi
