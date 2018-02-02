@@ -58,6 +58,111 @@ For consideration
  - We could expand the OTG to accommodate data outside its range?
 """
 
+class SlicePlane:
+    """
+    Defines a slicing plane within a grid
+
+    May be defined in three wasy:
+
+     - As an orthogonal slice using ``ortho=(axis, position)``
+     - As a slice through an ``origin`` with two 3D ``basis_vectors``
+     - From an existing SlicePlane, but applied to a new grid
+
+    The following attributes are defined:
+
+     - ``origin`` Starting point of the slice in grid co-ordinates
+     - ``basis_vectors`` Two 3D basis vectors for the plane in grid co-ordinates
+     - ``unit_vectors`` Normalized version of basis_vectors
+     - ``offset`` Offset values to apply to slices so they have consistent position.
+     - ``scales`` Scale factors to apply to slices so that they have consistent size
+
+    """
+    def __init__(self, grid, ortho=None, basis_vectors=None, origin=None, plane=None):
+        self.grid = grid
+        if ortho is not None:
+            axis, pos = ortho
+            self.origin = [0, 0, 0]
+            self.origin[axis] = pos
+            self.basis_vectors = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+            del self.basis_vectors[axis]
+            self.scales = [1, 1]
+            self.offset = [0, 0]
+            self.ortho = True
+            self.ortho_slices = [slice(int(0), self.grid.shape[ax], 1) for ax in range(3)]
+            self.ortho_slices[axis] = pos
+            self.shape = grid.shape
+        elif basis_vectors is not None and origin is not None:
+            self.origin = list(origin)
+            self.basis_vectors = basis_vectors
+            self._init_generic()     
+        elif plane is not None:
+            trans = Transform(plane.grid, grid)
+            self.origin = trans.transform_position(plane.origin)
+            self.basis_vectors = [trans.transform_direction(v) for v in plane.basis_vectors]
+            self._init_generic()
+        else:
+            raise RuntimeError("Not enough information to construct SlicePlane")
+        debug(self.origin, self.basis_vectors, self.offset, self.scales)
+        if self.ortho: debug(self.ortho_slices)
+        
+    def _init_generic(self):
+        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]        
+        self.unit_vectors = [v / n for v, n in zip(self.basis_vectors, self.norms)]
+        self.basis_vectors = [np.array(v) / max(np.abs(v)) for v in self.basis_vectors]
+        self.scales = [1/n for n in self.norms]
+
+        ax1, d1 = self.is_ortho_vector(self.unit_vectors[0])
+        ax2, d2 = self.is_ortho_vector(self.unit_vectors[1])
+        if ax1 is not None and ax2 is not None:
+            ax3 = 3-ax2-ax1
+            self.ortho = True
+            self.ortho_slices = [slice(None),]*3
+            self.ortho_slices[ax3] = int(self.origin[ax3])
+            self.offset=[]
+            for ax, d in ((ax1, d1), (ax2, d2)):
+                if self.origin[ax] < 0:
+                    self.offset.append(-self.origin[ax])
+                elif self.origin[ax] > self.grid.shape[ax]-1:
+                    self.offset.append(self.origin[ax] - self.grid.shape[ax] + 1)
+                else:
+                    self.offset.append(0)
+
+                if d == 1:
+                    self.ortho_slices[ax] = slice(int(self.origin[ax]), self.grid.shape[ax], 1)
+                else:
+                    self.ortho_slices[ax] = slice(int(self.origin[ax]), None, -1)
+        else:
+            self.ortho = False
+            self.offset=[0, 0]
+            n1, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[0])
+            n2, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[1])
+            self.shape = (n1, n2)
+
+    def slice_data(self, data, include_mask=False):
+        """
+        Extract a data slice in raw data resolution
+
+        grid is the grid on which the slice position/direction is defined
+        axis is the axis (relative to grid) the slice is normal to
+        position is the position (relative to grid) of the slice position
+        """
+        if self.ortho:
+            sdata = data[self.ortho_slices]
+        else:
+            sdata = pg.affineSlice(data, self.shape, self.origin[:3], self.basis_vectors, range(3))
+
+        if include_mask:
+            smask = self.slice_data(np.ones(data.shape))
+            return sdata, smask
+        else:
+            return sdata
+
+    def is_ortho_vector(self, vec):
+        for ax, v in enumerate(vec):
+            if abs(abs(v)-1) < EQ_TOL:
+                return ax, math.copysign(1, v)
+        return None, None
+
 class DataGrid:
     """
     Defines a regular 3D grid in standard space
@@ -89,17 +194,17 @@ class DataGrid:
 
         self.origin = affine[:3,3]
         self.transform = affine[:3,:3]
+        self.inv_transform = np.linalg.inv(self.transform)
 
         self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
         self.nvoxels = 1
         for d in range(3): self.nvoxels *= shape[d]
 
     def grid_to_world(self, coords):
-        c2 = np.dot(self.transform, [float(c) for c in coords])
-        debug(c2)
-        c2 += self.origin
-        debug(c2)
         return np.dot(self.transform, coords) + self.origin
+
+    def world_to_grid(self, coords):
+        return np.dot(self.inv_transform, (coords - self.origin))
 
     def reorient_ras(self):
         """ 
@@ -125,6 +230,37 @@ class DataGrid:
         Return True if grid is identical to this grid
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
+
+    def line_intersection(self, origin, direction):
+        #debug("LI: ", origin, direction)
+        n_fwd, p_fwd, n_bwd, p_bwd = None, None, None, None
+        for o, x, y in [(0, 0, 1), (0, 0, 2), (0, 1, 2), (1, 0, 1), (1, 0, 2), (1, 1, 2)]:
+            #debug("LI:", o, x, y)
+            vo = self.origin + o*sum([self.shape[v] * self.transform[:,v] for v in range(3)])
+            #debug("LI: O=", vo)
+            vx = self.transform[:,x]
+            vy = self.transform[:,y]
+            #debug("LI: X,Y=", vx, vy)
+            mat = np.zeros((3, 3))
+            mat[:, 0] = -direction
+            mat[:, 1] = vx
+            mat[:, 2] = vy
+            #debug("LI: mat")
+            #debug(mat)
+            try:
+                l, m, n = np.linalg.inv(mat).dot(origin - vo)
+                #debug("LI: lmn=", l, m, n)
+                p = origin + l*direction 
+                if l > 0 and (l > n_fwd or n_fwd is None):
+                    n_fwd = l
+                    p_fwd = p
+                elif l < 0 and (-l > n_bwd or n_bwd is None):
+                    n_bwd = -l
+                    p_bwd = p
+            except np.linalg.LinAlgError:
+                pass
+                #debug("No intersection")
+        return n_fwd, p_fwd, n_bwd, p_bwd
 
 # Tolerance for treating values as equal
 # Used to determine if matrices are diagonal or identity
@@ -154,6 +290,12 @@ class Transform:
 
         # Generate potentially simplified transformation using re-ordering and flipping
         self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
+
+    def transform_position(self, v):
+        return self.tmatrix_raw.dot(list(v) + [1,])[:3]
+
+    def transform_direction(self, v):
+        return self.tmatrix_raw[:3,:3].dot(v)
 
     def transform_data(self, data):
         # Perform the flips and transpositions which simplify the transformation
@@ -348,7 +490,12 @@ class QpData:
             rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
         return rawdata
         
-    def get_slice(self, grid, axis, position, vol=0):
+    def get_slice(self, plane, vol=0):
+        rawdata=self.get_vol(vol)
+        my_plane = SlicePlane(self.rawgrid, plane=plane)
+        return my_plane.slice_data(rawdata), my_plane.scales, my_plane.offset
+
+    def get_slice_old(self, grid, axis, position, vol=0):
         """
         Extract a data slice in raw data resolution
 

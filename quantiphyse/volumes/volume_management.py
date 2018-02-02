@@ -21,7 +21,7 @@ import numpy as np
 from ..utils import debug
 from ..utils.exceptions import QpException
 
-from .io import NumpyData
+from .load_save import NumpyData
 
 class ImageVolumeManagement(QtCore.QObject):
     """

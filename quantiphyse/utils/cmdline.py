@@ -12,7 +12,7 @@ import tempfile
 import shutil
 import re
 
-from quantiphyse.volumes.io import load, save
+from quantiphyse.volumes.load_save import load, save
 
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException

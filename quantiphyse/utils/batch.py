@@ -17,7 +17,7 @@ from ..analysis.io import *
 from ..analysis.misc import *
 
 from ..volumes.volume_management import ImageVolumeManagement
-from ..volumes.io import load, save
+from ..volumes.load_save import load, save
 
 from . import debug, warn, set_debug, get_plugins
 from .exceptions import QpException

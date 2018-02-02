@@ -20,7 +20,7 @@ from .Register import RegisterDialog
 from .ImageView import ImageView
 
 from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
-from ..volumes.io import load, save
+from ..volumes.load_save import load, save
 from ..volumes.volume_management import ImageVolumeManagement
 from ..utils import get_icon, get_local_file, get_version, get_plugins
 from ..utils.exceptions import QpException

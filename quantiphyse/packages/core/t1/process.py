@@ -10,7 +10,7 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from quantiphyse.volumes.io import load
+from quantiphyse.volumes.load_save import load
 from quantiphyse.analysis import Process
 from quantiphyse.utils import debug
 

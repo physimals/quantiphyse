@@ -10,7 +10,7 @@ import sys
 
 from PySide import QtGui
 
-from quantiphyse.volumes.io import NumpyData
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.utils import table_to_str, debug, sf
 from quantiphyse.utils.exceptions import QpException
 

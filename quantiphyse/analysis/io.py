@@ -7,7 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 import os
 
 from quantiphyse.utils import debug, warn
-from quantiphyse.volumes.io import load, save
+from quantiphyse.volumes.load_save import load, save
 
 from . import Process
 
