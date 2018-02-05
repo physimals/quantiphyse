@@ -423,10 +423,10 @@ class QpData:
         """
         Check for and remove nans from images
         """
-        nans = np.isnan(data)
-        if np.any(nans):
-            warnings.warn("Image contains nans")
-            data[nans] = 0
+        notnans = np.isfinite(data)
+        if not np.all(notnans):
+            warnings.warn("Image contains nans or infinity")
+            data[np.logical_not(notnans)] = 0
 
     def _update_stddata(self):
         debug("Updating stddata for %s" % self.name)
