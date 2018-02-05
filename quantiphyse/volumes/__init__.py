@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Basic volume data classes
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import math
 import warnings
 

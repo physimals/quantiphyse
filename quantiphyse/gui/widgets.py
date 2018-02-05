@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Miscellaneous custom Qt widgets
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 import sys
 import inspect
@@ -319,6 +325,35 @@ class NumericOption(QtGui.QWidget):
         else:
             raise QpException("'%s' is not a valid number")
         
+class OptionalName(QtGui.QWidget):
+
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, text, grid, ypos, xpos=0, default_on=False, default=""):
+        QtGui.QWidget.__init__(self)
+            
+        self.label = QtGui.QCheckBox(text)
+        self.label.setChecked(default_on)
+        grid.addWidget(self.label, ypos, xpos)
+
+        self.edit = QtGui.QLineEdit(default)
+        self.edit.editingFinished.connect(self._edit_changed)
+        grid.addWidget(self.edit, ypos, xpos+1)
+
+        self.label.stateChanged.connect(self.edit.setVisible)
+
+    def _changed(self):
+        self.sig_changed.emit()
+
+    def _edit_changed(self):
+        self._changed()
+
+    def selected(self):
+        return self.label.isChecked()
+
+    def value(self):
+        return self.edit.text()
+        
 class ChoiceOption(QtGui.QWidget):
 
     sig_changed = QtCore.Signal()
@@ -418,20 +453,25 @@ class NumberList(QtGui.QTableWidget):
 
     def _item_changed(self, item):
         c = item.column()
-        try:
-            val = float(item.text())
-            item.setBackground(self.default_bg)
-        except:
-            item.setBackground(QtGui.QColor('red'))
-
-        if c == self.columnCount() - 1:
-            self.blockSignals(True)
+        if item.text() == "":
+            self.deleteValue(c)
+        else:
+            # Validate new value
             try:
-                self.setColumnCount(self.columnCount()+1)
-                self.setItem(0, self.columnCount()-1, QtGui.QTableWidgetItem("..."))
-            finally:
-                self.blockSignals(False)
-        self.resizeColumnsToContents()
+                val = float(item.text())
+                item.setBackground(self.default_bg)
+            except:
+                item.setBackground(QtGui.QColor('red'))
+
+            # Add a new column if we have just edited the last one
+            if c == self.columnCount() - 1:
+                self.blockSignals(True)
+                try:
+                    self.setColumnCount(self.columnCount()+1)
+                    self.setItem(0, self.columnCount()-1, QtGui.QTableWidgetItem("..."))
+                finally:
+                    self.blockSignals(False)
+            self.resizeColumnsToContents()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls:
@@ -506,6 +546,9 @@ class NumberGrid(QtGui.QTableWidget):
     """
     Table of numeric values
     """
+
+    sig_changed = QtCore.Signal()
+
     def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
                  fix_height=False, fix_width=False, readonly=False):
         QtGui.QTableWidget.__init__(self, 1, 1)
@@ -611,20 +654,24 @@ class NumberGrid(QtGui.QTableWidget):
         return empty
 
     def _item_changed(self, item):
-        c = item.column()
-        r = item.row()
-        try:
-            val = float(item.text())
-            item.setBackground(self.default_bg)
-        except:
-            if item.text != "": 
-                item.setBackground(QtGui.QColor('red'))
-
         self.blockSignals(True)
         try:
+            c = item.column()
+            r = item.row()
+            try:
+                val = float(item.text())
+                item.setBackground(self.default_bg)
+            except:
+                if item.text != "": 
+                    item.setBackground(QtGui.QColor('red'))
+
             if self.expandable[0]:
                 if c == self.columnCount() - 1:
                     self.setColumnCount(self.columnCount()+1)
+                    # Set rest of new column to prevent it from immediately being invalid
+                    for row in range(self.rowCount()-int(self.expandable[1])):
+                        if row != r:
+                            self.setItem(row, c, QtGui.QTableWidgetItem(self.item(row, c-1).text()))
                 if self._range_empty([self.columnCount()-2], range(self.rowCount())):
                     # Last-but-one column is empty, so remove last column (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
@@ -632,6 +679,10 @@ class NumberGrid(QtGui.QTableWidget):
             if self.expandable[1]:
                 if r == self.rowCount() - 1:
                     self.setRowCount(self.rowCount()+1)
+                    # Set rest of new row to prevent it from immediately being invalid
+                    for col in range(self.columnCount()-int(self.expandable[0])):
+                        if col != c:
+                            self.setItem(r, col, QtGui.QTableWidgetItem(self.item(r-1, col).text()))
                 if self._range_empty(range(self.columnCount()), [self.rowCount()-2]):
                     # Last-but-one row is empty, so remove last row (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
@@ -640,6 +691,7 @@ class NumberGrid(QtGui.QTableWidget):
 
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
+        self.sig_changed.emit()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls:
@@ -870,7 +922,7 @@ class RunBox(QtGui.QGroupBox):
                         if len(o.data) > 0: data_to_save = o.data.keys()
                     debug("Data to save: ", data_to_save)    
                     for d in data_to_save:
-                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"), self.process.ivm.main.rawgrid)
+                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"), self.process.ivm.save_grid)
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()

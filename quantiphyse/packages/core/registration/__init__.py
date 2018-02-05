@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets for data registration and motion correction
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os.path
 import re
 import numpy as np

@@ -1,10 +1,7 @@
-
 """
-Main file
+Quantiphyse - Program entry point
 
-To compile the resources, run:
-$ pyside-rcc resource -o resource.py
-from inside quantiphyse/resources
+Copyright (c) 2013-2018 University of Oxford
 """
 
 import quantiphyse.qpmain

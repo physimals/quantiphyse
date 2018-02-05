@@ -1,8 +1,7 @@
 """
+Quantiphyse - Experimental widgets (not currently in GUI)
 
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import print_function, division

@@ -1,8 +1,7 @@
 """
+Quantiphyse - Wrapper for C++ based DCE modelling code
 
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
+Copyright (c) 2013-2018 University of Oxford
 """
 
 # Cython interface file for wrapping the object

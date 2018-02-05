@@ -1,11 +1,9 @@
 """
+Quantiphyse - Module for normalising the image prior to features extraction
 
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
-
-Module for normalising the image prior to features extraction
+Copyright (c) 2013-2018 University of Oxford
 """
+
 from __future__ import division, print_function
 
 import numpy as np

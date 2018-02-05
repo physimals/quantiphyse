@@ -63,6 +63,10 @@ class WidgetTest(unittest.TestCase):
         else:
             raise unittest.SkipTest("Plugin not found")
 
+    def tearDown(self):
+        if hasattr(self, "w"):
+            self.w.hide()
+            
     def harmless_click(self, btn):
         """ Click a button and check that it produces no error"""
         if btn.isEnabled():

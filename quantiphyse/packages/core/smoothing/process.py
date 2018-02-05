@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis processes for data smoothing
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import scipy.ndimage.filters
 
 from quantiphyse.utils import debug, warn

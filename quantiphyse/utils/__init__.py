@@ -1,7 +1,10 @@
 """
-Rag-bag of utility functions - some should probably be moved
+Quantiphyse - Rag-bag of utility functions - some should probably be moved
 into more specific modules
+
+Copyright (c) 2013-2018 University of Oxford
 """
+
 from __future__ import division, print_function
 
 import os, sys
@@ -27,6 +30,10 @@ def set_debug(debug):
     global DEBUG
     DEBUG = debug
 
+def get_debug():
+    global DEBUG
+    return DEBUG
+    
 def debug(*msgs):
     if DEBUG:
         print(*msgs)
@@ -108,11 +115,14 @@ def get_local_shlib(name, loc):
     return get_local_file(get_lib_fname(name), loc)
     
 def load_matrix(filename):
-    f = open(filename)
+    with open(filename, "r") as f:
+        return text_to_matrix(f.read())
+
+def text_to_matrix(text):
     fvals = []
     ncols = -1
     try:
-        lines = f.readlines()
+        lines = text.splitlines()
         for line in lines:
             # Discard comments
             line = line.split("#", 1)[0].strip()

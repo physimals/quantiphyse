@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets for data smoothing
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption

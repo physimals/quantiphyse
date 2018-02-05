@@ -19,9 +19,7 @@ class ClusteringWidgetTest(WidgetTest):
 
     def testNoData(self):
         """ User clicks the run button with no data"""
-        print(self.error)
         if self.w.run_btn.isEnabled():
-            print("clicking")
             self.w.run_btn.clicked.emit()
         self.assertFalse(self.error)
 

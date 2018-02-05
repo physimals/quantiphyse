@@ -1,6 +1,7 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com), Martin Craig (martin.craig@eng.ox.ac.uk)
-Copyright (c) 2013-2017 University of Oxford
+Quantiphyse - Main application window
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
@@ -478,7 +479,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_data, fname, self.ivm.main.rawgrid)
+                save(self.ivm.current_data, fname, self.ivm.save_grid)
             else: # Cancelled
                 pass
 
@@ -491,7 +492,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_roi, fname, self.ivm.main.rawgrid)
+                save(self.ivm.current_roi, fname, self.ivm.save_grid)
             else: # Cancelled
                 pass
 

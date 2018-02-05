@@ -1,5 +1,5 @@
 """
-Subclasses of QpData for handling different sources
+Quantiphyse - Subclasses of QpData for handling different data sources
 
 A subclass of QpData must implement the raw() method to return the actual
 data on its original grid. This may be stored internally or retrieved on-demand.
@@ -8,6 +8,8 @@ when we use the standard grid data for viewing and analysis
 
 NumpyData is used for data generated internally on the current grid and stored
 as a Numpy array
+
+Copyright (c) 2013-2018 University of Oxford
 """
 from __future__ import division, print_function
 

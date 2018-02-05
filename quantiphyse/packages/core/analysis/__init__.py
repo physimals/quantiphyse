@@ -1,6 +1,7 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
+Quantiphyse - Generic analysis widgets
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
@@ -636,7 +637,7 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             options = {"data" : name, 
-                       "no-artifact" : True, "bins" : self.rp_nbins.value()}
+                       "no-extras" : True, "bins" : self.rp_nbins.value()}
             self.process_rp.run(options)
             self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
@@ -651,7 +652,7 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             options = {"data" : name, 
-                    "no-artifact" : True, "bins" : self.nbinsSpin.value(),
+                    "no-extras" : True, "bins" : self.nbinsSpin.value(),
                     "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
 
@@ -733,7 +734,7 @@ class RoiAnalysisWidget(QpWidget):
     def update(self):
         roi = self.combo.currentText()
         if roi in self.ivm.rois:
-            self.process.run({"roi" : roi, "no-artifact" : True})
+            self.process.run({"roi" : roi, "no-extras" : True})
         
     def copy_stats(self):
         copy_table(self.process.model)

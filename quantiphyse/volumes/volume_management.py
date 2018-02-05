@@ -1,10 +1,7 @@
 """
+Quantiphyse - Data management framework
 
-Author: Benjamin Irving (benjamin.irv@gmail.com)
-Copyright (c) 2013-2015 University of Oxford, Benjamin Irving
-
-- Data management framework
-
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, print_function
@@ -66,6 +63,9 @@ class ImageVolumeManagement(QtCore.QObject):
         # One True Grid
         self.grid = None
 
+        # Grid to use when saving data - should come from the first file loaded
+        self.savegrid = None
+
         # Map from name to data object
         self.data = {}
 
@@ -78,8 +78,8 @@ class ImageVolumeManagement(QtCore.QObject):
         # Current ROI object
         self.current_roi = None
 
-        # Processing artifacts
-        self.artifacts = {}
+        # Processing extras
+        self.extras = {}
 
         # Current position of the cross hair as an array
         # FIXME move to view?
@@ -165,6 +165,9 @@ class ImageVolumeManagement(QtCore.QObject):
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
 
+        # Set save grid if first to be loaded
+        self.save_grid = data.rawgrid
+        
     def add_roi(self, data, name=None, make_current=False, signal=True):
         if isinstance(data, np.ndarray):
             """ Data provided as a Numpy array is presumed to be on the current grid """
@@ -279,12 +282,12 @@ class ImageVolumeManagement(QtCore.QObject):
 
         return main_sig, qpd_sig
 
-    def add_artifact(self, name, obj):
+    def add_extra(self, name, obj):
         """
-        Add an 'artifact', which can be any result of a process which
+        Add an 'extra', which can be any result of a process which
         is not voxel data, e.g. a number, table, etc.
 
-        Artifacts are only required to support str() conversion so they
+        Extras are only required to support str() conversion so they
         can be written to a file
         """
-        self.artifacts[name] = obj
+        self.extras[name] = obj

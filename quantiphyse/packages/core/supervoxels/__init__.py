@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widget for data clustering using the Supervoxel method
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 from PySide import QtGui
 import numpy as np
 import skimage.segmentation as seg

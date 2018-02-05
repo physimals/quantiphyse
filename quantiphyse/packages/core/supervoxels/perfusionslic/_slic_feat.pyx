@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Cython wrapper for supervoxel generation
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 #cython: boundscheck=False
 #cython: nonecheck=False
 #cython: wraparound=False

@@ -1,3 +1,8 @@
+"""
+Quantiphyse - Extension to the PyQtGraph histogram to support multiple images
+
+Copyright (c) 2013-2018 University of Oxford
+"""
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 

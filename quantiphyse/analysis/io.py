@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Analysis processes for basic loading/saving of data
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 from quantiphyse.utils import debug, warn
@@ -79,7 +85,7 @@ class SaveProcess(Process):
                     if not os.path.isabs(fname):
                         fname = os.path.join(self.outdir, fname)
                     debug("Saving %s as %s" % (name, fname))
-                    save(qpdata, fname, self.ivm.main.rawgrid)
+                    save(qpdata, fname, self.ivm.save_grid)
                 else:
                     warn("Failed to save %s - no such data or ROI found" % name)
             except:
@@ -105,7 +111,7 @@ class SaveAllExceptProcess(Process):
             try:
                 fname = os.path.join(self.outdir, "%s.nii" % name)
                 debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname, self.ivm.main.rawgrid)
+                save(qpdata, fname, self.ivm.save_grid)
             except:
                 warn("Failed to save %s" % name)
                 raise
@@ -116,7 +122,7 @@ class SaveAllExceptProcess(Process):
             try:
                 fname = os.path.join(self.outdir, "%s.nii" % name)
                 debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname, self.ivm.main.rawgrid)
+                save(qpdata, fname, self.ivm.save_grid)
             except:
                 warn("Failed to save %s" % name)
                 raise
@@ -150,9 +156,9 @@ class SaveArtifactsProcess(Process):
         for name in options.keys():
             fname = options.pop(name)
             if not fname: fname = name
-            if name in self.ivm.artifacts: 
+            if name in self.ivm.extras: 
                 debug("Saving '%s' to %s" % (name, fname))
-                self._save_text(str(self.ivm.artifacts[name]), fname)
+                self._save_text(str(self.ivm.extras[name]), fname)
             else:
                 warn("Extra '%s' not found - not saving" % name)
 

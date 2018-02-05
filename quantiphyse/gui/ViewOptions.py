@@ -1,6 +1,7 @@
 """
-Author: Benjamin Irving (benjamin.irv@gmail.com), Martin Craig (martin.craig@eng.ox.ac.uk)
-Copyright (c) 2013-2017 University of Oxford
+Quantiphyse - Dialog box for editing view options
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import

@@ -1,3 +1,9 @@
+"""
+Quantiphyse - Widgets which supports the writing of batch files
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import os
 
 from PySide import QtGui, QtCore
@@ -82,7 +88,7 @@ class BatchBuilderWidget(QpWidget):
             filerois= [d for d in self.ivm.rois.values() if hasattr(d, "fname") and d.fname is not None]
             
             casedir = os.getcwd()
-            if hasattr(self.ivm.main, "fname"):
+            if hasattr(self.ivm.main, "fname") and self.ivm.main.fname is not None:
                 casedir = os.path.dirname(self.ivm.main.fname)
 
             t += "OutputFolder: qp_out\n"
