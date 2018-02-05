@@ -17,6 +17,7 @@ from .utils.batch import run_batch
 from .utils.exceptions import QpException
 from .utils import debug, warn, set_local_file_path, set_debug
 from .gui.MainWindow import MainWindow
+from .gui.QuickWindow import QuickWindow
 from .gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.
@@ -47,6 +48,7 @@ def main():
     parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     parser.add_argument('--debug', help='Activate debug mode', action="store_true")
+    parser.add_argument('--qv', help='Activate quick-view mode', action="store_true")
     args = parser.parse_args()
 
     set_debug(args.debug)
@@ -81,7 +83,10 @@ def main():
 
         # Create window and start main loop
         app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
-        win = MainWindow(load_data=args.data, load_roi=args.roi)
+        if args.qv:
+            win = QuickWindow(load_data=args.data, load_roi=args.roi)
+        else:
+            win = MainWindow(load_data=args.data, load_roi=args.roi)
         set_main_window(win)
 
         sys.exit(app.exec_())
