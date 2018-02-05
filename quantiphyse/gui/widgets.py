@@ -244,7 +244,7 @@ class OverlayCombo(QtGui.QComboBox):
         if self.none_option:
             self.addItem("<none>")
 
-        for name in data:
+        for name in sorted(data):
             d = self.ivm.data.get(name, self.ivm.rois.get(name, None))
             if (d.nvols == 1 or not self.static_only):
                 self.addItem(d.name)
