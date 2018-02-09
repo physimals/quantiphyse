@@ -15,15 +15,17 @@ from . import Process
 class RenameDataProcess(Process):
     """ Rename data  """
     def run(self, options):
-        for name, newname in options.items():
+        for name in options.keys():
+            newname = options.pop(name)
             self.ivm.rename_data(name, newname)
-            
+          
         self.status = Process.SUCCEEDED
 
 class RenameRoiProcess(Process):
     """ Rename ROI  """
     def run(self, options):
-        for name, newname in options.items():
+        for name in options.keys():
+            newname = options.pop(name)
             self.ivm.rename_roi(name, newname)
             
         self.status = Process.SUCCEEDED
