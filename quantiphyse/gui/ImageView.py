@@ -414,11 +414,6 @@ class OrthoView(pg.GraphicsView):
         if self.ivm.main is None: 
             self.img.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
-            # Adjust axis scaling depending on whether voxel size scaling is enabled
-            if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
-                self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
-            else:
-                self.vb.setAspectLocked(True, ratio=1)
             for l in self.labels:
                 l.setVisible(True)
 
@@ -434,13 +429,8 @@ class OrthoView(pg.GraphicsView):
             # Plot image slice
             pos = self.ivm.cim_pos
             plane = SlicePlane(self.ivm.grid, ortho=(self.zaxis, pos[self.zaxis]))
-            debug("Grid co-ords (IVM grid):", pos[:3])
-            world = self.ivm.grid.grid_to_world(pos[:3])
-            debug("World co-ords (from IVM grid): ", world)
-            gridcoords = self.ivm.main.rawgrid.world_to_grid(world)
-            debug("Grid co-ords (data grid): ", gridcoords)
-            debug("World co-ords (from data grid): ", self.ivm.main.rawgrid.grid_to_world(gridcoords))
             slicedata, scale, offset = self.ivm.main.get_slice(plane, vol=pos[3])
+            print(slicedata.shape, scale, offset)
             self.img.resetTransform()
             self.img.translate(*offset)
             self.img.scale(*scale)
@@ -531,9 +521,6 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            world = self.ivm.grid.grid_to_world(self.ivm.cim_pos[:3])
-            debug("Grid co-ords (ovl grid): ", oview.data().rawgrid.world_to_grid(world))
-
             plane = SlicePlane(self.ivm.grid, ortho=(self.zaxis, self.ivm.cim_pos[self.zaxis]))
             slicedata, scale, offset = oview.data().get_slice(plane, vol=self.ivm.cim_pos[3])
             self.img_ovl.setBoundaryMode(oview.boundary)
@@ -542,10 +529,11 @@ class OrthoView(pg.GraphicsView):
                 self.img_ovl.mask = mask
             else:
                 self.img_ovl.mask = None
+            print(slicedata.shape, scale, offset)
             self.img_ovl.setImage(slicedata, autoLevels=False)
             self.img_ovl.resetTransform() 
-            self.img_ovl.scale(*scale)
             self.img_ovl.translate(*offset)
+            self.img_ovl.scale(*scale)
 
     def resize_win(self, event):
         """
@@ -584,6 +572,7 @@ class OrthoView(pg.GraphicsView):
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
+            debug("Mouse press scene coords=", mx, my)
             if mx < 0 or mx >= self.ivm.grid.shape[self.xaxis]: return
             if my < 0 or my >= self.ivm.grid.shape[self.yaxis]: return
             pos = self.ivm.cim_pos[:]

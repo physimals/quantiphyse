@@ -80,63 +80,75 @@ class SlicePlane:
     def __init__(self, grid, ortho=None, basis_vectors=None, origin=None, plane=None):
         self.grid = grid
         if ortho is not None:
-            axis, pos = ortho
-            self.origin = [0, 0, 0]
-            self.origin[axis] = pos
-            self.basis_vectors = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-            del self.basis_vectors[axis]
-            self.scales = [1, 1]
-            self.offset = [0, 0]
-            self.ortho = True
-            self.ortho_slices = [slice(int(0), self.grid.shape[ax], 1) for ax in range(3)]
-            self.ortho_slices[axis] = pos
-            self.shape = grid.shape
+            self._init_ortho(*ortho)
         elif basis_vectors is not None and origin is not None:
-            self.origin = list(origin)
-            self.basis_vectors = basis_vectors
-            self._init_generic()     
+            self._init_generic(origin, basis_vectors)     
         elif plane is not None:
+            debug("INIT PLANE")
             trans = Transform(plane.grid, grid)
-            self.origin = trans.transform_position(plane.origin)
-            self.basis_vectors = [trans.transform_direction(v) for v in plane.basis_vectors]
-            self._init_generic()
+            origin = trans.transform_position(plane.origin)
+            basis_vectors = [trans.transform_direction(v) for v in plane.basis_vectors]
+            debug(origin, basis_vectors)
+            self._init_generic(origin, basis_vectors)
         else:
             raise RuntimeError("Not enough information to construct SlicePlane")
-        debug(self.origin, self.basis_vectors, self.offset, self.scales)
-        if self.ortho: debug(self.ortho_slices)
+
         
-    def _init_generic(self):
-        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]        
-        self.unit_vectors = [v / n for v, n in zip(self.basis_vectors, self.norms)]
-        self.basis_vectors = [np.array(v) / max(np.abs(v)) for v in self.basis_vectors]
-        self.scales = [1/n for n in self.norms]
+    def _init_ortho(self, axis, pos):
+        debug("INIT ORTHO")
+        self.origin = [0, 0, 0]
+        self.origin[axis] = pos
+        basis = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        del basis[axis]
+        self.basis_vectors = [self.grid.transform.dot(v) for v in basis]
+        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]
+        self.scales = [n for n in self.norms]
+        # Offset by 0.5 voxels since co-ords should be voxel centres
+        self.offset = [-n/2 for n in self.norms]
+        self.ortho = True
+        self.ortho_slices = [slice(int(0), self.grid.shape[ax], 1) for ax in range(3)]
+        self.ortho_slices[axis] = pos
+        debug(self.origin, self.basis_vectors, self.norms, self.offset, self.scales)
+        debug(self.ortho_slices)
+
+    def _init_generic(self, origin, basis):
+        debug("INIT GENERIC")
+        self.origin = list(origin)    
+        self.unit_vectors = [v / np.linalg.norm(v) for v in basis]
+        self.grid_vectors = [np.array(v) / max(np.abs(v)) for v in basis]
+        self.basis_vectors = [self.grid.transform.dot(v) for v in self.unit_vectors]
+        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]    
+
+        self.scales = [n for n in self.norms]
+        self.offset = [-n/2 for n in self.norms]
+        debug(self.origin, self.basis_vectors, self.norms, self.offset, self.scales)
 
         ax1, d1 = self.is_ortho_vector(self.unit_vectors[0])
         ax2, d2 = self.is_ortho_vector(self.unit_vectors[1])
         if ax1 is not None and ax2 is not None:
+            debug("GENERIC ORTHO")
             ax3 = 3-ax2-ax1
             self.ortho = True
             self.ortho_slices = [slice(None),]*3
             self.ortho_slices[ax3] = int(self.origin[ax3])
-            self.offset=[]
-            for ax, d in ((ax1, d1), (ax2, d2)):
+            for idx, ax, d in ((0, ax1, d1), (1, ax2, d2)):
                 if self.origin[ax] < 0:
-                    self.offset.append(-self.origin[ax])
+                    self.offset[idx] += self.origin[ax]
                 elif self.origin[ax] > self.grid.shape[ax]-1:
-                    self.offset.append(self.origin[ax] - self.grid.shape[ax] + 1)
-                else:
-                    self.offset.append(0)
+                    self.offset[idx] += self.origin[ax] - self.grid.shape[ax] + 1
 
                 if d == 1:
-                    self.ortho_slices[ax] = slice(int(self.origin[ax]), self.grid.shape[ax], 1)
+                    self.ortho_slices[ax] = slice(int(max(0, self.origin[ax])), self.grid.shape[ax], 1)
                 else:
-                    self.ortho_slices[ax] = slice(int(self.origin[ax]), None, -1)
+                    self.ortho_slices[ax] = slice(int(min(self.grid.shape[ax]-1, self.origin[ax])), None, -1)
+            debug(self.origin, self.offset, self.ortho_slices)
         else:
             self.ortho = False
-            self.offset=[0, 0]
             n1, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[0])
             n2, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[1])
             self.shape = (n1, n2)
+            debug("NON-ORTHO")
+            debug(n1, n2)
 
     def slice_data(self, data, include_mask=False):
         """
@@ -302,12 +314,12 @@ class Transform:
         # and may avoid the need for an affine transformation or make it a simple
         # scaling
         if len(self.flip) != 0:
-            debug("Flipping axes: ", self.flip)
+            #debug("Flipping axes: ", self.flip)
             for d in self.flip: data = np.flip(data, d)
 
         if self.reorder != range(3):
             if data.ndim == 4: self.reorder = self.reorder + [3]
-            debug("Re-ordering axes: ", self.reorder)
+            #debug("Re-ordering axes: ", self.reorder)
             data = np.transpose(data, self.reorder)
 
         if not self._is_identity(self.tmatrix):
@@ -332,11 +344,11 @@ class Transform:
                 affine = np.diagonal(affine)
             else:
                 pass
-            debug("WARNING: affine_transform: ")
-            debug(affine)
-            debug("Offset = ", offset)
-            debug("Input shape=", data.shape, data.min(), data.max())
-            debug("Output shape=", output_shape)
+            #debug("WARNING: affine_transform: ")
+            #debug(affine)
+            #debug("Offset = ", offset)
+            #debug("Input shape=", data.shape, data.min(), data.max())
+            #debug("Output shape=", output_shape)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape, order=0)
         
         return data
@@ -363,25 +375,25 @@ class Transform:
         new_mat = np.copy(mat)
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            debug("Before simplification")
-            debug(new_mat)
-            debug(self.output_shape)
+            #debug("Before simplification")
+            #debug(new_mat)
+            #debug(self.output_shape)
             new_shape = [self.in_grid.shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
                 new_mat[:,d] = mat[:,idx]
-            debug("After transpose", dim_order)
-            debug(new_mat)
+            #debug("After transpose", dim_order)
+            #debug(new_mat)
             for dim in dim_flip:
                 # Change signs to positive to flip a dimension
                 new_mat[:,dim] = -new_mat[:,dim]
-            debug("After flip", dim_flip)
-            debug(new_mat)
+            #debug("After flip", dim_flip)
+            #debug(new_mat)
             for dim in dim_flip:
                 # Adjust origin
                 new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
                 
-            debug("After adjust origin", new_shape)
-            debug(new_mat)
+            #debug("After adjust origin", new_shape)
+            #debug(new_mat)
 
             return dim_order, dim_flip, new_mat
         else:
@@ -495,97 +507,6 @@ class QpData:
         my_plane = SlicePlane(self.rawgrid, plane=plane)
         return my_plane.slice_data(rawdata), my_plane.scales, my_plane.offset
 
-    def get_slice_old(self, grid, axis, position, vol=0):
-        """
-        Extract a data slice in raw data resolution
-
-        grid is the grid on which the slice position/direction is defined
-        axis is the axis (relative to grid) the slice is normal to
-        position is the position (relative to grid) of the slice position
-        """
-        #debug("Slicing axis=%i, position=%i, vol=%i" % (axis, position, vol))
-        #debug("Relative to grid")
-        #debug(grid.affine)
-
-        #debug("Raw data defined on grid")
-        #debug(self.rawgrid.affine)
-        origin = [0, 0, 0, 1]
-        units = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-
-        origin[axis] = position
-        del units[axis]
-        o_world = grid.affine.dot(origin)
-        units_world = [grid.transform.dot(u) for u in units]
-        #debug("World origin: %s" % str(o_world))
-        #debug("World units: %s" % str(units_world))
-
-        o_raw = self.w2raw.dot(o_world)
-        units_raw = [self.w2raw3.dot(u) for u in units_world]
-        norms = [np.linalg.norm(v) for v in units_raw]
-        scale = [1/n for n in norms]
-        units_raw = [u / n for u, n in zip(units_raw, norms)]
-
-        debug("Raw origin: %s" % str(o_raw))
-        debug("Raw units: %s" % str(units_raw))
-
-        outshape = list(grid.shape)
-        del outshape[axis]
-        outshape = [o * n for o, n in zip(outshape, norms)]
-        #debug("Output shape", outshape)
-
-        if self.nvols == 0 or vol is not None:
-            # Single-volume slice (true 2D slice)
-            rawdata=self.get_vol(vol)
-            slices = self.is_ortho(units_raw, o_raw)
-            if slices is not None:
-                debug("Orthogonal slices: %s" % str(slices))
-                sdata = rawdata[slices]
-                print(sdata.shape)
-            else:
-                debug("Non Orthogonal")
-                sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
-            #debug("Slice shape", sdata.shape)
-            return sdata, scale
-        else:
-            # Multi-volume slice
-            sdatas = []
-            for v in range(self.nvols):
-                rawdata=self.get_vol(vol)
-                sdata = pg.affineSlice(rawdata, outshape, o_raw[:3], units_raw, range(3))
-                sdata = np.expand_dims(sdata, axis)
-                sdata.expand_dims()
-                sdatas.append(sdata)
-            return np.concatentate(sdatas, 3), scale
-
-    def is_ortho(self, units, origin):
-        ax1, d1 = self.axis_unit(units[0])
-        ax2, d2 = self.axis_unit(units[1])
-        ax3 = 3-ax1-ax2
-        if ax1 is not None and ax2 is not None:
-            slices = [slice(None),]*3
-            if d1 == 1:
-                slices[ax1] = slice(0, self.rawgrid.shape[ax1]-1, 1)
-            else:
-                slices[ax1] = slice(self.rawgrid.shape[ax1]-1, 0, -1)
-
-            if d2 == 1:
-                slices[ax2] = slice(0, self.rawgrid.shape[ax2]-1, 1)
-            else:
-                slices[ax2] = slice(self.rawgrid.shape[ax2]-1, 0, -1)
-            debug(ax1, ax2, ax3)
-            slices[ax3] = int(origin[ax3])
-            return slices
-        else:
-            return None
-
-    def axis_unit(self, vec):
-        for ax, v in enumerate(vec):
-            print(ax, v, abs(v))
-            if abs(abs(v)-1) < EQ_TOL:
-                print("unit", ax, math.copysign(1, v))
-                return ax, math.copysign(1, v)
-        return None, None
-
     def set_roi(self, roi):
         self.roi = roi
         if self.roi:
@@ -645,20 +566,20 @@ class QpData:
             data[nans] = 0
 
     def _update_stddata(self):
-        debug("Updating stddata for %s" % self.name)
+        #debug("Updating stddata for %s" % self.name)
         t = Transform(self.rawgrid, self.stdgrid)
-        debug("Raw grid: ")
-        debug(self.rawgrid.affine)
-        debug(self.rawgrid.shape)
-        debug("Std grid: ")
-        debug(self.stdgrid.affine)
-        debug(self.stdgrid.shape)
+        #debug("Raw grid: ")
+        #debug(self.rawgrid.affine)
+        #debug(self.rawgrid.shape)
+        #debug("Std grid: ")
+        #debug(self.stdgrid.affine)
+        #debug(self.stdgrid.shape)
         rawdata = self.raw()
         if rawdata.ndim not in (3, 4):
             raise RuntimeError("Data must be 3D or 4D (padded if necessary")
-        debug("Raw data range: ", rawdata.min(), rawdata.max())
+        #debug("Raw data range: ", rawdata.min(), rawdata.max())
         self.stddata = t.transform_data(rawdata)
-        debug("Std data range: ", self.stddata.min(), self.stddata.max())
+        #debug("Std data range: ", self.stddata.min(), self.stddata.max())
         self._remove_nans(self.stddata)  
 
         if self.roi:
@@ -675,5 +596,5 @@ class QpData:
             self.regions = []
 
         self.range = (self.stddata.min(), self.stddata.max())
-        debug("Done")
+        #debug("Done")
         

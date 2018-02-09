@@ -10,7 +10,7 @@ sys.path.append(TEST_DIR)
 sys.path.append(qpdir)
 
 from quantiphyse.volumes.volume_management import ImageVolumeManagement
-from quantiphyse.volumes.io import load
+from quantiphyse.volumes.load_save import load
 from quantiphyse.utils import set_local_file_path, set_debug
 from quantiphyse.utils.exceptions import QpException
 
