@@ -233,31 +233,36 @@ class OverlayCombo(QtGui.QComboBox):
         self.data_changed()
     
     def data_changed(self):
-        data = []
-        if self.rois:
-            data += self.ivm.rois.keys()
-        if self.data:
-            data += self.ivm.data.keys()
+        self.blockSignals(True)
+        try:
+            data = []
+            if self.rois:
+                data += self.ivm.rois.keys()
+            if self.data:
+                data += self.ivm.data.keys()
 
-        current = self.currentText()
-        self.clear()
-        if self.none_option:
-            self.addItem("<none>")
+            current = self.currentText()
+            self.clear()
+            if self.none_option:
+                self.addItem("<none>")
 
-        for name in data:
-            d = self.ivm.data.get(name, self.ivm.rois.get(name, None))
-            if (d.nvols == 1 or not self.static_only):
-                self.addItem(d.name)
+            for name in data:
+                d = self.ivm.data.get(name, self.ivm.rois.get(name, None))
+                if (d.nvols == 1 or not self.static_only):
+                    self.addItem(d.name)
 
-        if self.all_option:
-            self.addItem("<all>")
+            if self.all_option:
+                self.addItem("<all>")
 
+            # Make sure names are visible even with drop down arrow
+            width = self.minimumSizeHint().width()
+            self.setMinimumWidth(width+50)
+        finally:
+            self.blockSignals(False)
+        
         idx = self.findText(current)
         self.setCurrentIndex(max(0, idx))
-        # Make sure names are visible even with drop down arrow
-        width = self.minimumSizeHint().width()
-        self.setMinimumWidth(width+50)
-        
+
 class RoiCombo(OverlayCombo):
     """
     A combo box which gives a choice of ROIs
@@ -640,6 +645,7 @@ class NumberGrid(QtGui.QTableWidget):
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
+
         self._set_size()
 
     def _range_empty(self, cs, rs):
@@ -910,11 +916,15 @@ class RunBox(QtGui.QGroupBox):
     def cancel(self):
         self.process.cancel()
         self.progress.setValue(0)
+        # These should be set by the 'finished' CB but make sure in case it fails
+        self.runBtn.setEnabled(True)
+        self.cancelBtn.setEnabled(False)
 
     def finished(self, status, result, log, exception):
+        debug("Finished: ", status, result, len(log), exception)
         try:
             self.log = log
-            if self.process.status == Process.SUCCEEDED:
+            if status == Process.SUCCEEDED:
                 if self.save_option and self.save_cb.isChecked():
                     save_folder = self.save_folder_edit.text()   
                     data_to_save = []
@@ -926,7 +936,7 @@ class RunBox(QtGui.QGroupBox):
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()
-            elif self.process.status == Process.CANCELLED:
+            elif status == Process.CANCELLED:
                 pass
             elif exception is not None:
                 raise exception
