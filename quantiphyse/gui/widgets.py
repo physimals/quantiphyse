@@ -547,6 +547,209 @@ class LoadNumbers(QtGui.QPushButton):
         if filename:
             self.num_list.loadFromFile(filename)
 
+class NumericGrid(QtGui.QTableView):
+    """
+    Table of numeric values
+    """
+
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
+                 fix_height=False, fix_width=False, readonly=False):
+        QtGui.QTableView.__init__(self)
+        
+        if (col_headers and expandable[0]) or (row_headers and expandable[1]):
+            raise RuntimeError("Can't specify headers for expandable dimensions")
+
+        self._model = QtGui.QStandardItemModel()
+        self.setModel(self._model)
+        self.updating = False
+        self.expandable=expandable
+        self.row_headers = row_headers
+        self.col_headers = col_headers
+        self.fix_height = fix_height
+        self.fix_width = fix_width
+        self.default_bg = None
+
+        if col_headers:
+            self._model.setHorizontalHeaderLabels(col_headers)
+        else:
+            self.horizontalHeader().hide()
+
+        if row_headers:
+            self._model.setVerticalHeaderLabels(row_headers)
+        else:
+            self.verticalHeader().hide()
+        
+        self.setValues(initial, False)
+        
+        if readonly:
+            self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        else:
+            self.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
+            self.model().itemChanged.connect(self._item_changed)
+        
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        #self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.setAcceptDrops(True)
+        
+    def valid(self):
+        try:
+            self.values()
+            return True
+        except:
+            return False
+
+    def values(self):
+        rows = []
+        try:
+            for r in range(self._model.rowCount()-int(self.expandable[1])):
+                row = [float(self._model.item(r, c).text()) for c in range(self._model.columnCount()-int(self.expandable[0]))]
+                rows.append(row)
+        except:
+            raise RuntimeError("Non-numeric data in list")
+        return rows
+
+    def _set_size(self):
+        # QTableWidget is completely incapable of choosing a sensible size. We do our best
+        # here but have to allow a bit of random 'padding' in case scrollbars are necessary
+        tx, ty = self.horizontalHeader().length()+15, self.verticalHeader().length()+15
+        if self.row_headers is not None: tx += self.verticalHeader().width()
+        if self.col_headers is not None: ty += self.horizontalHeader().height()
+        #sh = self.sizeHint()
+        #tx = min(tx, sh.width())
+        #ty = min(ty, sh.height())
+        if self.fix_height: self.setFixedHeight(ty)
+        if self.fix_width: self.setFixedWidth(tx)
+
+    def setValues(self, vals, validate=True):
+        if validate:
+            if len(vals) == 0: 
+                raise RuntimeError("No values provided")
+            elif len(vals[0]) != self._model.columnCount() and not self.expandable[0]:
+                raise RuntimeError("Incorrect number of columns - expected %i" % self._model.columnCount())
+            elif len(vals) != self._model.rowCount() and not self.expandable[1]:
+                raise RuntimeError("Incorrect number of rows - expected %i" % self._model.rowCount())
+
+        self._model.setRowCount(len(vals)+int(self.expandable[1]))
+        self._model.setColumnCount(len(vals[0])+int(self.expandable[0]))
+
+        self._model.blockSignals(True)
+        try:
+            #self._model.clear()
+            for r, rvals in enumerate(vals):
+                for c, v in enumerate(rvals):
+                    item = QtGui.QStandardItem("%g" % v)
+                    item.setEditable(True)
+                    self._model.setItem(r, c, item)
+            
+            if self.expandable[0]:
+                for r in range(len(vals)):
+                    item = QtGui.QStandardItem("")
+                    item.setEditable(True)
+                    self._model.setItem(r, self._model.columnCount()-1, item)
+        
+            if self.expandable[1]:
+                for c in range(len(vals[0])):
+                    item = QtGui.QStandardItem("")
+                    item.setEditable(True)
+                    self._model.setItem(self._model.rowCount()-1, c, item)
+        
+            self.resizeColumnsToContents()
+            self.resizeRowsToContents()
+        finally:
+            self._model.blockSignals(False)
+            self.updating = False
+            
+        self._set_size()
+
+    def _range_empty(self, cs, rs):
+        empty = True
+        for r in rs:
+            for c in cs:
+                # Check if r or c is negative and do not consider empty
+                # so last row/column will not be deleted
+                if r < 0 or c < 0 or (self._model.item(r, c) is not None and self._model.item(r, c).text() != ""):
+                    empty = False
+                    break
+        return empty
+
+    def _item_changed(self, item):
+        if self.updating: return
+        self.updating = True
+        try:
+            if self.default_bg is None:
+                self.default_bg = item.background()
+
+            c = item.column()
+            r = item.row()
+            try:
+                val = float(item.text())
+                item.setBackground(self.default_bg)
+            except:
+                if item.text() != "": 
+                    item.setBackground(QtGui.QColor('red'))
+
+            if item.text() != "":
+                if self.expandable[0]:
+                    if c == self._model.columnCount() - 1:
+                        self._model.setColumnCount(self._model.columnCount()+1)
+                        # Set rest of new column to prevent it from immediately being invalid
+                        for row in range(self._model.rowCount()-int(self.expandable[1])):
+                            if row != r:
+                                item = QtGui.QStandardItem(self._model.item(row, c-1).text())
+                                self._model.setItem(row, c, item)
+                    if self._range_empty([self._model.columnCount()-2], range(self._model.rowCount())):
+                        # Last-but-one column is empty, so remove last column (which is always empty)
+                        self._model.setColumnCount(self._model.columnCount()-1)
+
+                if self.expandable[1]:
+                    if r == self._model.rowCount() - 1:
+                        self._model.setRowCount(self._model.rowCount()+1)
+                        # Set rest of new row to prevent it from immediately being invalid
+                        for col in range(self._model.columnCount()-int(self.expandable[0])):
+                            if col != c:
+                                self._model.setItem(r, col, QtGui.QStandardItem(self._model.item(r-1, col).text()))
+                    if self._range_empty(range(self._model.columnCount()), [self._model.rowCount()-2]):
+                        # Last-but-one row is empty, so remove last row (which is always empty)
+                        self._model.setColumnCount(self._model.columnCount()-1)
+
+            self.resizeColumnsToContents()
+            self.resizeRowsToContents()
+            self.sig_changed.emit()
+        finally:
+            self.updating = False
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            links = []
+            for url in event.mimeData().urls():
+                self.loadFromFile(str(url.toLocalFile()))
+        else:
+            event.ignore()
+            
+    def loadFromFile(self, filename):
+        fvals, nrows, ncols = load_matrix(filename)
+        if ncols <= 0:
+            raise RuntimeError("No numeric data found in file")
+        else:
+            self.setValues(fvals)
+
 class NumberGrid(QtGui.QTableWidget):
     """
     Table of numeric values
@@ -631,23 +834,29 @@ class NumberGrid(QtGui.QTableWidget):
             self.setColumnCount(len(vals[0])+int(self.expandable[0]))
             for r, rvals in enumerate(vals):
                 for c, v in enumerate(rvals):
-                    self.setItem(r, c, QtGui.QTableWidgetItem("%g" % v))
-
+                    item = QtGui.QStandardItem("%g" % v)
+                    item.setEditable(True)
+                    self.setItem(r, c, item)
+            
             if self.expandable[0]:
                 for r in range(len(vals)):
-                    self.setItem(r, self.columnCount()-1, QtGui.QTableWidgetItem(""))
+                    item = QtGui.QStandardItem("")
+                    item.setEditable(True)
+                    self.setItem(r, self.columnCount()-1, item)
 
             if self.expandable[1]:
                 for c in range(len(vals[0])):
-                    self.setItem(self.rowCount()-1, c, QtGui.QTableWidgetItem(""))
+                    item = QtGui.QStandardItem("")
+                    item.setEditable(True)
+                    self.setItem(self.rowCount()-1, c, item)
 
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
-
+            
         self._set_size()
-
+        
     def _range_empty(self, cs, rs):
         empty = True
         for r in rs:
@@ -677,7 +886,7 @@ class NumberGrid(QtGui.QTableWidget):
                     # Set rest of new column to prevent it from immediately being invalid
                     for row in range(self.rowCount()-int(self.expandable[1])):
                         if row != r:
-                            self.setItem(row, c, QtGui.QTableWidgetItem(self.item(row, c-1).text()))
+                            self.setItem(row, c, QtGui.QStandardItem(self.item(row, c-1).text()))
                 if self._range_empty([self.columnCount()-2], range(self.rowCount())):
                     # Last-but-one column is empty, so remove last column (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
@@ -688,7 +897,7 @@ class NumberGrid(QtGui.QTableWidget):
                     # Set rest of new row to prevent it from immediately being invalid
                     for col in range(self.columnCount()-int(self.expandable[0])):
                         if col != c:
-                            self.setItem(r, col, QtGui.QTableWidgetItem(self.item(r-1, col).text()))
+                            self.setItem(r, col, QtGui.QStandardItem(self.item(r-1, col).text()))
                 if self._range_empty(range(self.columnCount()), [self.rowCount()-2]):
                     # Last-but-one row is empty, so remove last row (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
