@@ -121,28 +121,26 @@ def load_matrix(filename):
 def text_to_matrix(text):
     fvals = []
     ncols = -1
-    try:
-        lines = text.splitlines()
-        for line in lines:
-            # Discard comments
-            line = line.split("#", 1)[0].strip()
-            # Split by commas or spaces
-            vals = line.replace(",", " ").split()
-            # Ignore empty lines
-            if len(vals) == 0: continue
-            # Check correct number of columns
-            if ncols < 0: ncols = len(vals)
-            elif len(vals) != ncols:
-                raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
-            # Check all data is numeric
-            for val in vals:
-                try:
-                    fval = float(val)
-                except:
-                    raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
-            fvals.append([float(v) for v in vals])     
-    finally:
-        f.close()
+    lines = text.splitlines()
+    for line in lines:
+        # Discard comments
+        line = line.split("#", 1)[0].strip()
+        # Split by commas or spaces
+        vals = line.replace(",", " ").split()
+        # Ignore empty lines
+        if len(vals) == 0: continue
+        # Check correct number of columns
+        if ncols < 0: ncols = len(vals)
+        elif len(vals) != ncols:
+            raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
+        # Check all data is numeric
+        for val in vals:
+            try:
+                fval = float(val)
+            except:
+                raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
+        fvals.append([float(v) for v in vals])     
+    
     return fvals, len(fvals), ncols
 
 def write_temp_matrix(prefix, matrix):
