@@ -55,17 +55,14 @@ if "--maxi" in sys.argv:
     print("Creating a maxi-package")
     # This is necessarily a bit of a hack but so is the concept of a maxi-package
     version_pkg_fname += "-maxi"
-    plugins = ["qp-fabber", "qp-basil", "quanticest", "qp-deeds", "qp-mcflirt", "qp-fabber-t1"]
-    for plugin in plugins:
+    plugins = {"qp-fabber" : "fabber", "qp-basil" : "basil", "quanticest" : "quanticest", "qp-deeds" : "deeds", 
+               "qp-mcflirt" : "mcflirt", "qp-fabber-t1" : "fabber_t1", "veaslc/quantiphyse" : "veasl"}
+    for plugin, plugin_pkg in plugins.items():
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
         plugindir = os.path.join(rootdir, os.pardir, plugin)
         cwd_orig = os.getcwd()
         os.chdir(plugindir)
-        if plugin.startswith("qp-"):
-            plugin_pkg = plugin[3:].replace("-", "_")
-        else:
-            plugin_pkg = plugin.replace("-", "_")
         plugindist = os.path.join(plugindir, "dist", plugin_pkg)
         os.system("python %s/packaging/build.py 2>%s/bundle.err 1>%s/bundle.log" % (plugindir, pkgdir, pkgdir))
         shutil.copytree(plugindist, 
