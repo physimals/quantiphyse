@@ -834,20 +834,17 @@ class NumberGrid(QtGui.QTableWidget):
             self.setColumnCount(len(vals[0])+int(self.expandable[0]))
             for r, rvals in enumerate(vals):
                 for c, v in enumerate(rvals):
-                    item = QtGui.QStandardItem("%g" % v)
-                    item.setEditable(True)
+                    item = QtGui.QTableWidgetItem("%g" % v)
                     self.setItem(r, c, item)
             
             if self.expandable[0]:
                 for r in range(len(vals)):
-                    item = QtGui.QStandardItem("")
-                    item.setEditable(True)
+                    item = QtGui.QTableWidgetItem("")
                     self.setItem(r, self.columnCount()-1, item)
 
             if self.expandable[1]:
                 for c in range(len(vals[0])):
-                    item = QtGui.QStandardItem("")
-                    item.setEditable(True)
+                    item = QtGui.QTableWidgetItem("")
                     self.setItem(self.rowCount()-1, c, item)
 
             self.resizeColumnsToContents()
@@ -886,7 +883,7 @@ class NumberGrid(QtGui.QTableWidget):
                     # Set rest of new column to prevent it from immediately being invalid
                     for row in range(self.rowCount()-int(self.expandable[1])):
                         if row != r:
-                            self.setItem(row, c, QtGui.QStandardItem(self.item(row, c-1).text()))
+                            self.setItem(row, c, QtGui.QTableWidgetItem(self.item(row, c-1).text()))
                 if self._range_empty([self.columnCount()-2], range(self.rowCount())):
                     # Last-but-one column is empty, so remove last column (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
@@ -897,7 +894,7 @@ class NumberGrid(QtGui.QTableWidget):
                     # Set rest of new row to prevent it from immediately being invalid
                     for col in range(self.columnCount()-int(self.expandable[0])):
                         if col != c:
-                            self.setItem(r, col, QtGui.QStandardItem(self.item(r-1, col).text()))
+                            self.setItem(r, col, QtGui.QTableWidgetItem(self.item(r-1, col).text()))
                 if self._range_empty(range(self.columnCount()), [self.rowCount()-2]):
                     # Last-but-one row is empty, so remove last row (which is always empty)
                     self.setColumnCount(self.columnCount()-1)
