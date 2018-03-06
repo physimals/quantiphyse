@@ -56,7 +56,8 @@ if "--maxi" in sys.argv:
     # This is necessarily a bit of a hack but so is the concept of a maxi-package
     version_pkg_fname += "-maxi"
     plugins = {"qp-fabber" : "fabber", "qp-basil" : "basil", "quanticest" : "quanticest", "qp-deeds" : "deeds", 
-               "qp-mcflirt" : "mcflirt", "qp-fabber-t1" : "fabber_t1", "veaslc/quantiphyse" : "veasl"}
+               "qp-mcflirt" : "mcflirt", "qp-fabber-t1" : "fabber_t1", "veaslc/quantiphyse" : "veasl",
+               "qp-dsc" : "dsc"}
     for plugin, plugin_pkg in plugins.items():
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
