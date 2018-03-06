@@ -558,9 +558,6 @@ class NumericGrid(QtGui.QTableView):
                  fix_height=False, fix_width=False, readonly=False):
         QtGui.QTableView.__init__(self)
         
-        if (col_headers and expandable[0]) or (row_headers and expandable[1]):
-            raise RuntimeError("Can't specify headers for expandable dimensions")
-
         self._model = QtGui.QStandardItemModel()
         self.setModel(self._model)
         self.updating = False
@@ -570,18 +567,10 @@ class NumericGrid(QtGui.QTableView):
         self.fix_height = fix_height
         self.fix_width = fix_width
         self.default_bg = None
+        self.horizontalHeader().hide()
+        self.verticalHeader().hide()
 
-        if col_headers:
-            self._model.setHorizontalHeaderLabels(col_headers)
-        else:
-            self.horizontalHeader().hide()
-
-        if row_headers:
-            self._model.setVerticalHeaderLabels(row_headers)
-        else:
-            self.verticalHeader().hide()
-        
-        self.setValues(initial, False)
+        self.setValues(initial, False, col_headers=col_headers, row_headers=row_headers)
         
         if readonly:
             self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
@@ -622,7 +611,7 @@ class NumericGrid(QtGui.QTableView):
         if self.fix_height: self.setFixedHeight(ty)
         if self.fix_width: self.setFixedWidth(tx)
 
-    def setValues(self, vals, validate=True):
+    def setValues(self, vals, validate=True, col_headers=None, row_headers=None):
         if validate:
             if len(vals) == 0: 
                 raise RuntimeError("No values provided")
@@ -631,9 +620,20 @@ class NumericGrid(QtGui.QTableView):
             elif len(vals) != self._model.rowCount() and not self.expandable[1]:
                 raise RuntimeError("Incorrect number of rows - expected %i" % self._model.rowCount())
 
+        if (col_headers and self.expandable[0]) or (row_headers and self.expandable[1]):
+            raise RuntimeError("Can't specify headers for auto-expandable dimensions")
+
         self._model.setRowCount(len(vals)+int(self.expandable[1]))
         self._model.setColumnCount(len(vals[0])+int(self.expandable[0]))
 
+        if col_headers:
+            self._model.setHorizontalHeaderLabels(col_headers)
+            self.horizontalHeader().show()
+
+        if row_headers:
+            self._model.setVerticalHeaderLabels(row_headers)
+            self.verticalHeader().show()
+        
         self._model.blockSignals(True)
         try:
             #self._model.clear()
@@ -662,6 +662,7 @@ class NumericGrid(QtGui.QTableView):
             self.updating = False
             
         self._set_size()
+        self.sig_changed.emit()
 
     def _range_empty(self, cs, rs):
         empty = True
@@ -1047,6 +1048,9 @@ class TitleWidget(QtGui.QWidget):
         vbox.addWidget(QtGui.QLabel(subtitle))     
 
 class RunBox(QtGui.QGroupBox):
+
+    sig_postrun = QtCore.Signal()
+
     """
     Box containing a 'run' button, a progress bar, a 'cancel' button and a 'view log' button 
 
@@ -1153,6 +1157,7 @@ class RunBox(QtGui.QGroupBox):
             self.runBtn.setEnabled(True)
             self.logBtn.setEnabled(True)
             self.cancelBtn.setEnabled(False)
+            self.sig_postrun.emit()
             
     def view_log(self):
         self.logview = TextViewerDialog(text=self.log, parent=self)
