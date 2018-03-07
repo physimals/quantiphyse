@@ -118,9 +118,9 @@ class MeanValuesProcess(Process):
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
             if data.ndim > 3:
-                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
-            else:
                 ov_data[roi.std() == region] = np.mean(data[roi.std() == region], axis=0)
+            else:
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
 
         self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED
