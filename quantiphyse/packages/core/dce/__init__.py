@@ -13,7 +13,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from quantiphyse.gui.dialogs import error_dialog
-from quantiphyse.gui.widgets import QpWidget, HelpButton
+from quantiphyse.gui.widgets import QpWidget, TitleWidget
 
 from .process import PkModellingProcess
 
@@ -29,11 +29,8 @@ class PharmaWidget(QpWidget):
     def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
         
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">PK Modelling</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(HelpButton(self, "pk"))
-        main_vbox.addLayout(hbox)
+        title = TitleWidget(self, "PK Modelling", help="pk", batch_btn=True, opts_btn=False)
+        main_vbox.addWidget(title)
 
         # Inputs
         param_box = QtGui.QGroupBox()
@@ -123,6 +120,20 @@ class PharmaWidget(QpWidget):
             error_dialog("No T10 map loaded - required for Pk modelling")
             return
 
+        _, options = self.batch_options()
+        self.prog_gen.setValue(0)
+        self.process.run(options)
+
+    def progress(self, progress):
+        self.prog_gen.setValue(100*progress)
+
+    def finished(self, status, output, log, exception):
+        """ GUI updates on process completion """
+        if status != self.process.SUCCEEDED:
+            QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(exception),
+                                      QtGui.QMessageBox.Close)
+
+    def batch_options(self):
         options = {}
         options["r1"] = float(self.valR1.text())
         options["r2"] = float(self.valR2.text())
@@ -135,17 +146,7 @@ class PharmaWidget(QpWidget):
         options["dose"] = float(self.valDose.text())
         options["model"] = self.combo.currentIndex() + 1
 
-        self.prog_gen.setValue(0)
-        self.process.run(options)
-
-    def progress(self, progress):
-        self.prog_gen.setValue(100*progress)
-
-    def finished(self, status, output, log, exception):
-        """ GUI updates on process completion """
-        if status != self.process.SUCCEEDED:
-            QtGui.QMessageBox.warning(None, "PK error", "PK modelling failed:\n\n" + str(exception),
-                                      QtGui.QMessageBox.Close)
+        return "PkModelling", options
 
 QP_WIDGETS = [PharmaWidget]
 QP_PROCESSES = [PkModellingProcess]
