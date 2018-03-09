@@ -42,17 +42,16 @@ issues:
 currently saves the icons in the wrong folder and needs to be manually moved
 
 """
-import numpy
-import platform
 import os
 import sys
-import re
 import glob
 
 from setuptools import setup
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from setuptools.extension import Extension
+
+import numpy
 
 Description = """/
 Quantiphyse
@@ -78,23 +77,6 @@ elif sys.platform.startswith('darwin'):
     link_args.append("-stdlib=libc++")
     zlib = "z"
     extra_inc = "."
-
-# PK modelling extension
-
-extensions.append(Extension("quantiphyse.packages.core.dce.pk_model",
-                 sources=['quantiphyse/packages/core/dce/pk_model.pyx',
-                          'quantiphyse/packages/core/dce/src/Optimizer_class.cpp',
-                          'quantiphyse/packages/core/dce/src/pkrun2.cpp',
-                          'quantiphyse/packages/core/dce/src/ToftsOrton.cpp',
-                          'quantiphyse/packages/core/dce/src/ToftsOrtonOffset.cpp',
-                          'quantiphyse/packages/core/dce/src/ToftsWeinOffset.cpp',
-                          'quantiphyse/packages/core/dce/src/ToftsWeinOffsetVp.cpp',
-                          'quantiphyse/packages/core/dce/src/lmlib/lmcurve.cpp',
-                          'quantiphyse/packages/core/dce/src/lmlib/lmmin.cpp'],
-                 include_dirs=['quantiphyse/packages/core/dce/src/lmlib',
-                               'quantiphyse/packages/core/dce/src/',
-                               numpy.get_include()],
-                 language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
 
 # T1 map generation extension
 
