@@ -8,15 +8,15 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import requests
 
-from PySide import QtCore, QtGui
+from PySide import QtGui
 
-from ..utils import get_icon, get_local_file
+from ..utils import get_icon, get_version
 
 class RegisterDialog(QtGui.QDialog):
     """
     Dialog box which asks a first-time user to send a registration email
     """
-    def __init__(self, parent=None, scale=[]):
+    def __init__(self, parent=None):
         QtGui.QDialog.__init__(self, parent)
         
         layout = QtGui.QVBoxLayout()
@@ -33,13 +33,13 @@ class RegisterDialog(QtGui.QDialog):
 
         hbox = QtGui.QHBoxLayout()
         hbox.addStretch(1)
-        hbox.addWidget(QtGui.QLabel("\n<font size=5>Welcome to Quantiphyse %s</font>" % __version__))
+        hbox.addWidget(QtGui.QLabel("\n<font size=5>Welcome to Quantiphyse %s</font>" % get_version()))
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        l = QtGui.QLabel("\nPlease register as a user. We will not send any unsolicited communications, this is just to help us know where the software is being used")
-        l.setWordWrap(True)
-        layout.addWidget(l)
+        label = QtGui.QLabel("\nPlease register as a user. We will not send any unsolicited communications, this is just to help us know where the software is being used")
+        label.setWordWrap(True)
+        layout.addWidget(label)
 
         grid = QtGui.QGridLayout()
         grid.addWidget(QtGui.QLabel("Name"), 0, 0)
@@ -66,27 +66,27 @@ class RegisterDialog(QtGui.QDialog):
         #edit.ensureCursorVisible()
         layout.addWidget(edit)
 
-        l = QtGui.QLabel("""The Software is distributed "AS IS" under this Licence solely for non-commercial use. If you are interested in using the Software commercially, please contact the technology transfer company of the University, to negotiate a licence. Contact details are: enquiries@innovation.ox.ac.uk""")
-        l.setWordWrap(True)
-        layout.addWidget(l)
+        label = QtGui.QLabel("""The Software is distributed "AS IS" under this Licence solely for non-commercial use. If you are interested in using the Software commercially, please contact the technology transfer company of the University, to negotiate a licence. Contact details are: enquiries@innovation.ox.ac.uk""")
+        label.setWordWrap(True)
+        layout.addWidget(label)
 
         self.agree_cb = QtGui.QCheckBox("I agree to abide by the terms of the Quantiphyse license")
         self.agree_cb.stateChanged.connect(self.agree_changed)
         layout.addWidget(self.agree_cb)
         
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
-        layout.addWidget(self.buttonBox)
+        self.button_box = QtGui.QDialogbutton_box(QtGui.QDialogbutton_box.Ok|QtGui.QDialogbutton_box.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.button_box.button(QtGui.QDialogbutton_box.Ok).setEnabled(False)
+        layout.addWidget(self.button_box)
 
         self.setLayout(layout)
         self.setFixedSize(600, 600)
 
     def agree_changed(self, state):
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(state)
+        self.button_box.button(QtGui.QDialogbutton_box.Ok).setEnabled(state)
 
-    def send_register_email(name, inst, email):
+    def send_register_email(self, name, inst, email):
         """
         Send registration email
         
@@ -97,6 +97,6 @@ class RegisterDialog(QtGui.QDialog):
             "https://api.mailgun.net/v3/sandboxd8aca8efc95348609a6d63f0c651f4d2.mailgun.org/messages",
             auth=("api", "key-c0be61e997b71c2d0c43fa8aeb706a5c"),
             data={"from": "Quantiphyse <postmaster@sandboxd8aca8efc95348609a6d63f0c651f4d2.mailgun.org>",
-                "to": "Martin Craig <martin.craig@eng.ox.ac.uk>",
-                "subject": "Quantiphyse Registration",
-                "text": "Name: %s\nInstitution: %s\nEmail: %s\n" % (name, inst, email)})
+                  "to": "Martin Craig <martin.craig@eng.ox.ac.uk>",
+                  "subject": "Quantiphyse Registration",
+                  "text": "Name: %s\nInstitution: %s\nEmail: %s\n" % (name, inst, email)})

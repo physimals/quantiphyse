@@ -111,9 +111,9 @@ class MeanValuesWidget(QpWidget):
     Convert a data + multi-level ROI into mean values data set
     """
     def __init__(self, **kwargs):
-        super(MeanValuesWidget, self).__init__(name="Mean Values", icon="meanvals", 
-                                               desc="Generate mean values data set", 
-                                               group="Clustering", **kwargs)
+        super(MeanValuesWidget, self).__init__(name="Mean in ROI", icon="meanvals", 
+                                               desc="Replace data with its mean value within each ROI region", 
+                                               group="ROIs", **kwargs)
 
         layout = QtGui.QVBoxLayout()
 
