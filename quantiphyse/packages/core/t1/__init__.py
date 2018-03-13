@@ -186,8 +186,8 @@ class T10Widget(QpWidget):
     Generate T1 map from variable flip angle images
     """
     def __init__(self, **kwargs):
-        super(T10Widget, self).__init__(name="T1 Map", desc="Generate T1 map from variable flip angle images", icon="t10", 
-                                        group="Processing", **kwargs)
+        super(T10Widget, self).__init__(name="VFA-T1", desc="Generate T1 map from variable flip angle images", icon="t10", 
+                                        group="T1", **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()

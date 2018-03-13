@@ -365,11 +365,11 @@ class MainWindow(QtGui.QMainWindow):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
-        <p align="center">Created by Benjamin Irving</p>
-        <h2 align="center">Contributors</h2>
-        <p align="center">Benjamin Irving</p>
-        <p align="center">Martin Craig</p>
+        <h2 align="center">Contributers</h2>
+        <p align="center">Martin Craig (current maintainer)</p>
+        <p align="center">Benjamin Irving (original author)</p>
         <p align="center">Michael Chappell</p>
+        <p align="center">Paula Croal</p>
         """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 

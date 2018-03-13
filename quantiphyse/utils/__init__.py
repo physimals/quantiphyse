@@ -332,7 +332,8 @@ def get_plugins(key=None, class_name=None):
     
     if key is not None:
         plugins = PLUGIN_MANIFEST.get(key, [])
-        if class_name is not None: plugins = [p for p in plugins if p.__name__==class_name]
+        if class_name is not None: 
+            plugins = [p for p in plugins if p.__name__==class_name]
     else:
         plugins = PLUGIN_MANIFEST
     return plugins
