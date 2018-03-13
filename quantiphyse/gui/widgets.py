@@ -12,7 +12,7 @@ import traceback
 from PySide import QtGui, QtCore
 
 from ..analysis import Process
-from ..utils import debug, warn, get_icon, load_matrix
+from ..utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 from ..volumes.io import save
@@ -497,7 +497,7 @@ class NumberList(QtGui.QTableWidget):
             event.accept()
             links = []
             for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
+                self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
 
@@ -740,7 +740,7 @@ class NumericGrid(QtGui.QTableView):
             event.accept()
             links = []
             for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
+                self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
             
@@ -925,7 +925,7 @@ class NumberGrid(QtGui.QTableWidget):
             event.accept()
             links = []
             for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
+                self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
             
