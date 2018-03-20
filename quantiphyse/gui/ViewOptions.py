@@ -24,7 +24,7 @@ class ScaleEditDialog(QtGui.QDialog):
         vbox.addWidget(label)
 
         self.table = NumberVList(scale, expandable=False)
-        self.table.itemChanged.connect(self.changed)
+        self.table.sig_changed.connect(self.changed)
         vbox.addWidget(self.table)
 
         self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
