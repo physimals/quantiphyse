@@ -307,6 +307,10 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(exit_action)
 
         widget_submenus = {"" : widget_menu}
+        DEFAULT_GROUPS = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
+        for group in DEFAULT_GROUPS:
+            widget_submenus[group] = widget_menu.addMenu(group)
+
         for group in sorted(self.widget_groups.keys()):
             if group != "DEFAULT":
                 if group not in widget_submenus:
