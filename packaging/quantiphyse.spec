@@ -16,10 +16,12 @@ distdir = os.path.join(qpdir, "dist")
 bin_files = [
 ]
 
+# Hidden imports are used by plugins but not reference in main code
 hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
     'quantiphyse.analysis.feat_pca',
+    'quantiphyse.utils.cmdline',
 ]
 
 added_files = [
