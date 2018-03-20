@@ -57,7 +57,7 @@ if "--maxi" in sys.argv:
     version_pkg_fname += "-maxi"
     plugins = {"qp-fabber" : "fabber", "qp-basil" : "basil", "quanticest" : "quanticest", "qp-deeds" : "deeds", 
                "qp-mcflirt" : "mcflirt", "qp-fabber-t1" : "fabber_t1", "veaslc/quantiphyse" : "veasl",
-               "qp-dsc" : "dsc", "qp-dce" : "dce", "qp-fsl" : "fsl"}
+               "qp-dsc" : "dsc", "qp-dce" : "dce", "qp-fsl" : "fslqp"}
     for plugin, plugin_pkg in plugins.items():
         sys.stdout.write("  - Building and bundling %s..." % plugin)
         sys.stdout.flush()
