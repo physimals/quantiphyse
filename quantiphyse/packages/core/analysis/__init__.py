@@ -241,11 +241,14 @@ class SECurve(QpWidget):
         self.ivm.sig_main_data.connect(self.replot_graph)
         self.ivl.sig_sel_changed.connect(self.sel_changed)
         self.activated = True
+        self.ivl.set_picker(PickMode.MULTIPLE)
+        self.ivl.picker.col = self.col
         self.replot_graph()
 
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.replot_graph)
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
+        self.ivl.set_picker(PickMode.SINGLE)
 
     def show_options(self):
         self.plot_opts.show()
