@@ -13,7 +13,7 @@ import traceback
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
-from .utils.batch import run_batch
+from .utils.batch import run_batch, BatchScriptRunner
 from .utils.exceptions import QpException
 from .utils import debug, warn, set_local_file_path, set_debug
 from .gui.MainWindow import MainWindow
@@ -32,7 +32,23 @@ def my_catch_exceptions(exc_type, exc, tb):
     else:
         detail = traceback.format_exception(exc_type, exc, tb)
     error_dialog(str(exc), title="Error", detail=detail)
-        
+
+class BatchApp(QtCore.QObject):
+
+    def __init__(self, fname, app):
+        super(BatchApp, self).__init__()
+        self.fname = fname
+        self.app = app
+        QtCore.QTimer.singleShot(0, self.run)
+
+    def run(self):
+        print("Running")
+        try:
+            run_batch(fname=self.fname)
+        finally:
+            print("Quitting")
+            self.app.quit()
+
 def main():
     """
     Parse any input arguments and run the application
@@ -57,37 +73,31 @@ def main():
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
 
+    # OS specific changes
+    if sys.platform.startswith("darwin"):
+        QtGui.QApplication.setGraphicsSystem('native')
+        
+    app = QtGui.QApplication(sys.argv)
+    QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
+    QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
+    QtCore.QCoreApplication.setApplicationName("Quantiphyse")
+
+    # Handle CTRL-C correctly
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     # Check whether any batch processing arguments have been called
     if (args.batch is not None):
-        #app = QtCore.QCoreApplication(sys.argv)
-        #timer = threading.Timer(1, get_run_batch(args.batch))
-        #timer.daemon = True
-        #timer.start()
-        #QtCore.QTimer.singleShot(0, get_run_batch(args.batch))
-        #t = BatchThread(args.batch)
-        #t.start()
-        run_batch(fname=args.batch)
-        #sys.exit(app.exec_())
+        runner = BatchScriptRunner(fname=args.batch)
+        runner.run()
     else:
-        # OS specific changes
-        if sys.platform.startswith("darwin"):
-            QtGui.QApplication.setGraphicsSystem('native')
-          
-        app = QtGui.QApplication(sys.argv)
-        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
-        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
-        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-        sys.excepthook = my_catch_exceptions
-        # Handle CTRL-C correctly
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-
         # Create window and start main loop
         app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
+        sys.excepthook = my_catch_exceptions
         if args.qv:
             win = QuickWindow(load_data=args.data, load_roi=args.roi)
         else:
             win = MainWindow(load_data=args.data, load_roi=args.roi)
         set_main_window(win)
 
-        sys.exit(app.exec_())
+    sys.exit(app.exec_())
 
