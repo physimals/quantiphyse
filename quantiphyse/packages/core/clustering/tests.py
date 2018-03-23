@@ -1,12 +1,10 @@
-import os
-import sys
-import time
+import unittest
 
 import numpy as np
 
-from widget_test import WidgetTest
+from quantiphyse.test.widget_test import WidgetTest
 
-from quantiphyse.packages.core.clustering import ClusteringWidget
+from .widgets import ClusteringWidget
 
 NUM_CLUSTERS = 4
 NAME = "test_clusters"
@@ -27,13 +25,13 @@ class ClusteringWidgetTest(WidgetTest):
         """ 3d clustering"""
         self.ivm.add_data(self.data_3d, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
-        self.app.processEvents()
+        self.processEvents()
         self.assertFalse(self.w.n_pca.spin.isVisible())
 
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
         self.w.output_name.setText(NAME)
         self.w.run_btn.clicked.emit()
-        self.app.processEvents()
+        self.processEvents()
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
@@ -49,7 +47,7 @@ class ClusteringWidgetTest(WidgetTest):
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
         self.w.output_name.setText(NAME)
         self.w.run_btn.clicked.emit()
-        self.app.processEvents()
+        self.processEvents()
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
@@ -63,14 +61,14 @@ class ClusteringWidgetTest(WidgetTest):
         """ 4d clustering """
         self.ivm.add_data(self.data_4d, name="data_4d")
         self.w.data_combo.setCurrentIndex(0)
-        self.app.processEvents()            
+        self.processEvents()            
         self.assertTrue(self.w.n_pca.spin.isVisible())
 
         self.w.n_pca.spin.setValue(NUM_PCA)
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
         self.w.output_name.setText(NAME)
         self.w.run_btn.clicked.emit()
-        self.app.processEvents()
+        self.processEvents()
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
@@ -88,7 +86,7 @@ class ClusteringWidgetTest(WidgetTest):
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
         self.w.output_name.setText(NAME)
         self.w.run_btn.clicked.emit()
-        self.app.processEvents()
+        self.processEvents()
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)

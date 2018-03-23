@@ -1,16 +1,8 @@
-import os
-import sys
-import time
+import unittest
 
-import numpy as np
+from quantiphyse.test.widget_test import WidgetTest
 
-from widget_test import WidgetTest
-
-from quantiphyse.packages.core.analysis import DataStatistics
-
-NUM_CLUSTERS = 4
-NAME = "test_clusters"
-NUM_PCA = 3
+from .widgets import DataStatistics
 
 class DataStatisticsTest(WidgetTest):
 
@@ -28,7 +20,7 @@ class DataStatisticsTest(WidgetTest):
         self.ivm.add_data(self.data_3d, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgen)
-        self.app.processEvents()
+        self.processEvents()
         self.assertTrue(self.w.stats_table.isVisible())
         self.assertEquals(self.w.stats_table.model().rowCount(), 5)
         self.assertEquals(self.w.stats_table.model().columnCount(), 1)
@@ -39,7 +31,7 @@ class DataStatisticsTest(WidgetTest):
         # Select 'all data'
         self.w.data_combo.setCurrentIndex(2)
         self.harmless_click(self.w.butgen)
-        self.app.processEvents()
+        self.processEvents()
         self.assertTrue(self.w.stats_table.isVisible())
         self.assertEquals(self.w.stats_table.model().rowCount(), 5)
         self.assertEquals(self.w.stats_table.model().columnCount(), 2)
