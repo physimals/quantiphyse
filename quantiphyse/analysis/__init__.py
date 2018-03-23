@@ -57,7 +57,7 @@ class Process(QtCore.QObject):
     """ Signal may be emitted to track progress"""
     sig_progress = QtCore.Signal(float)
 
-    """ Signal emitted when process finished"""
+    """ Signal emitted when process finished (status, output, log, exception or None)"""
     sig_finished = QtCore.Signal(int, list, str, object)
 
     NOTSTARTED = 0
@@ -71,9 +71,12 @@ class Process(QtCore.QObject):
         self.ivm = ivm
         self.log = ""
         self.status = Process.NOTSTARTED
+        self.proc_id = kwargs.pop("proc_id", None)
         self.name = kwargs.pop("name", None)
         self.indir = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
+        self.log = ""
+        self.exception = None
 
     def get_data(self, options, multi=False):
         """ 
@@ -102,6 +105,9 @@ class Process(QtCore.QObject):
         return data
 
     def get_roi(self, options, multi=False):
+        """
+        Like get_data but for an ROI
+        """
         roi_name = options.pop("roi", None)
         if roi_name is None:
             if self.ivm.current_roi is not None:
