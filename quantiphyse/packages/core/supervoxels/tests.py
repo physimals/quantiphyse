@@ -1,3 +1,8 @@
+"""
+Quantiphyse - Tests for supervoxel clustering widget
+
+Copyright (c) 2013-2018 University of Oxford
+"""
 import unittest 
 
 import numpy as np
@@ -13,9 +18,6 @@ SIGMA = 0.5
 COMP = 0.2
 
 class PerfSlicWidgetTest(WidgetTest):
-    """
-    Note tests without a mask are failing at the moment
-    """
 
     def widget_class(self):
         return PerfSlicWidget

@@ -5,31 +5,14 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 from PySide import QtGui
-import numpy as np
-import skimage.segmentation as seg
 
-from quantiphyse.gui.widgets import QpWidget, TitleWidget, Citation, OverlayCombo, RoiCombo
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, Citation, OverlayCombo, RoiCombo, NumericOption
 
 from .process import SupervoxelsProcess, MeanValuesProcess
 
 CITE_TITLE = "maskSLIC: Regional Superpixel Generation with Application to Local Pathology Characterisation in Medical Images"
 CITE_AUTHOR = "Benjamin Irving"
 CITE_JOURNAL = "https://arxiv.org/abs/1606.09518v2 (2017)"
-
-class NumericOption:
-    def __init__(self, text, grid, ypos, minval=0, maxval=100, default=0, step=1, intonly=False):
-        self.label = QtGui.QLabel(text)
-        if intonly:
-            self.spin = QtGui.QSpinBox()
-        else:
-            self.spin = QtGui.QDoubleSpinBox()
-
-        self.spin.setMinimum(minval)
-        self.spin.setMaximum(maxval)
-        self.spin.setValue(default)
-        self.spin.setSingleStep(step)
-        grid.addWidget(self.label, ypos, 0)
-        grid.addWidget(self.spin, ypos, 1)
 
 class PerfSlicWidget(QpWidget):
     """
@@ -58,7 +41,7 @@ class PerfSlicWidget(QpWidget):
         
         grid.addWidget(QtGui.QLabel("Data"), 0, 0)
         self.ovl = OverlayCombo(self.ivm)
-        self.ovl.currentIndexChanged.connect(self.ovl_changed)
+        self.ovl.currentIndexChanged.connect(self._data_changed)
         grid.addWidget(self.ovl, 0, 1)
         grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
         self.roi = RoiCombo(self.ivm)
@@ -74,7 +57,7 @@ class PerfSlicWidget(QpWidget):
         grid.addWidget(self.output_name, 6, 1)
 
         self.gen_btn = QtGui.QPushButton('Generate', self)
-        self.gen_btn.clicked.connect(self.generate)
+        self.gen_btn.clicked.connect(self._generate)
         grid.addWidget(self.gen_btn, 7, 0)
         hbox.addWidget(optbox)
         hbox.addStretch(1)
@@ -82,7 +65,7 @@ class PerfSlicWidget(QpWidget):
 
         layout.addStretch(1)
 
-    def ovl_changed(self, idx):
+    def _data_changed(self, _):
         name = self.ovl.currentText()
         if name:
             ovl = self.ivm.data[name]
@@ -90,16 +73,18 @@ class PerfSlicWidget(QpWidget):
             self.n_comp.spin.setVisible(ovl.nvols > 1)
 
     def batch_options(self):
-        options = {"data" : self.ovl.currentText(),
-                   "roi" : self.roi.currentText(),
-                   "n-components" : self.n_comp.spin.value(),
-                   "compactness" : self.compactness.spin.value(),
-                   "sigma" : self.sigma.spin.value(),
-                   "n-supervoxels" :  self.n_supervoxels.spin.value(),
-                   "output-name" :  self.output_name.text() }
+        options = {
+            "data" : self.ovl.currentText(),
+            "roi" : self.roi.currentText(),
+            "n-components" : self.n_comp.spin.value(),
+            "compactness" : self.compactness.spin.value(),
+            "sigma" : self.sigma.spin.value(),
+            "n-supervoxels" :  self.n_supervoxels.spin.value(),
+            "output-name" :  self.output_name.text() 
+        }
         return "Supervoxels", options
 
-    def generate(self):
+    def _generate(self):
         process = SupervoxelsProcess(self.ivm, sync=True)
         process.run(self.batch_options()[1])
         if process.status != SupervoxelsProcess.SUCCEEDED:
@@ -135,7 +120,7 @@ class MeanValuesWidget(QpWidget):
         
         grid.addWidget(QtGui.QLabel("Data"), 0, 0)
         self.ovl = OverlayCombo(self.ivm)
-        self.ovl.currentIndexChanged.connect(self.ovl_changed)
+        self.ovl.currentIndexChanged.connect(self._data_changed)
         grid.addWidget(self.ovl, 0, 1)
         grid.addWidget(QtGui.QLabel("ROI regions"), 1, 0)
         self.roi = RoiCombo(self.ivm)
@@ -145,7 +130,7 @@ class MeanValuesWidget(QpWidget):
         grid.addWidget(self.output_name, 2, 1)
 
         btn = QtGui.QPushButton('Generate', self)
-        btn.clicked.connect(self.generate)
+        btn.clicked.connect(self._generate)
         grid.addWidget(btn, 2, 0)
         hbox.addWidget(gbox)
         hbox.addStretch(1)
@@ -153,18 +138,20 @@ class MeanValuesWidget(QpWidget):
         layout.addStretch(1)
         self.setLayout(layout)
 
-    def ovl_changed(self):
+    def _data_changed(self):
         name = self.ovl.currentText()
         if name:
             self.output_name.setText(name + "_means")
 
     def batch_options(self):
-        options = {"roi" : self.roi.currentText(),
-                   "data" : self.ovl.currentText(),
-                   "output-name" :  self.output_name.text() }
+        options = {
+            "roi" : self.roi.currentText(),
+            "data" : self.ovl.currentText(),
+            "output-name" :  self.output_name.text()
+        }
         return "MeanValues", options
 
-    def generate(self):
+    def _generate(self):
         options = self.batch_options()[1]
 
         if not options["data"]:

@@ -1,3 +1,9 @@
+"""
+Quantiphyse - supervoxel clustering package
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 from .widgets import MeanValuesWidget, PerfSlicWidget
 from .process import SupervoxelsProcess, MeanValuesProcess
 from .tests import PerfSlicWidgetTest

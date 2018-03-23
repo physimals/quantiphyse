@@ -17,7 +17,6 @@ from quantiphyse.utils import debug
 from . import slic_feat
 
 class PerfSLIC(object):
-
     """
     PerfSLIC
     Object that creates and visualises supervoxels created from 4D perfusion images
@@ -28,7 +27,6 @@ class PerfSLIC(object):
 
     def __init__(self, img, vox_sizes, mask=None):
         """
-
         :param img1: 4D image to load
         :param vox_size: voxel size of loaded image
         :return:
@@ -45,10 +43,11 @@ class PerfSLIC(object):
         self.feat1_image = None
         self.img_slice = None
         self.zoom_factor = None
+        self.n_components = None
+        self.fe = None
 
     def normalise_curves(self):
         """
-
         :param use_roi: Normalise within an roi
         :return:
         """
@@ -61,7 +60,6 @@ class PerfSLIC(object):
 
     def feature_extraction(self, n_components=5, normalise_input_image=1, norm_type='perc'):
         """
-
         :param n_components:
         :param normalise_input_image: Normalise the input image
         :param norm_type: 'max' or 'perc'
@@ -82,7 +80,6 @@ class PerfSLIC(object):
         """
         Component to save
         :return:
-
         """
 
         return self.feat1_image[:, :, :, comp_choice]
@@ -100,7 +97,6 @@ class PerfSLIC(object):
 
     def supervoxel_extraction(self, compactness=0.05, sigma=1, seed_type='grid',
                               segment_size=400, recompute_seeds=False, n_random_seeds=10):
-
         """
         Just a wrapper for the SLIC interface
         :param compactness:
@@ -153,4 +149,3 @@ class PerfSLIC(object):
             neigh_store.append(sv_neigh)
 
         return neigh_store
-
