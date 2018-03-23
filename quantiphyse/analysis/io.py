@@ -96,6 +96,10 @@ class SaveProcess(Process):
                     if not os.path.isabs(fname):
                         fname = os.path.join(self.outdir, fname)
                     debug("Saving %s as %s" % (name, fname))
+                    dirname = os.path.dirname(fname)
+                    if not os.path.exists(dirname):
+                        os.makedirs(dirname)
+
                     save(qpdata, fname, output_grid)
                 else:
                     warn("Failed to save %s - no such data or ROI found" % name)
@@ -179,5 +183,7 @@ class SaveArtifactsProcess(Process):
         if len(text) > 0:
             if "." not in fname: fname = "%s.%s" % (fname, ext)
             fname = os.path.join(self.outdir, fname)
+            dirname = os.path.dirname(fname)
+            if not os.path.exists(dirname): os.makedirs(dirname)
             with open(fname, "w") as f:
                 f.write(text)
