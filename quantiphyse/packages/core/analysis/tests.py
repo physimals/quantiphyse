@@ -6,7 +6,7 @@ from PySide import QtGui
 
 from quantiphyse.test.widget_test import WidgetTest
 
-from .widgets import DataStatistics
+from .widgets import DataStatistics, SECurve
 
 class DataStatisticsTest(WidgetTest):
 
@@ -123,6 +123,138 @@ class DataStatisticsTest(WidgetTest):
         self.harmless_click(self.w.rp_btn)
         self.assertFalse(self.w.rp_win.isVisible())
         self.assertFalse(self.w.regenBtn.isVisible())
-     
+
+class MultiVoxelAnalysisTest(WidgetTest):
+
+    def widget_class(self):
+        return SECurve
+
+    def testClick(self):
+        self.ivm.add_data(self.data_4d, name="data_4d")
+        pt = (2, 2, 2, 0)
+        self.ivl.set_focus(pt, 0, True)
+        self.processEvents()
+        sig = self.data_4d[2,2,2,:]
+        self.assertTrue(pt in self.w.plots)
+        plot = self.w.plots[pt]
+        for v1, v2 in zip(sig, plot.sig):
+            self.assertAlmostEquals(v1, v2)
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
+    def testMultiClick(self):
+        self.ivm.add_data(self.data_4d, name="data_4d")
+        pt1 = (2, 2, 2, 0)
+        sig1 = self.data_4d[2,2,2,:]
+        self.ivl.set_focus(pt1, 0, True)
+        self.processEvents()
+        pt2 = (3, 3, 3, 0)
+        sig2 = self.data_4d[3,3,3,:]
+        self.ivl.set_focus(pt2, 0, True)
+        self.processEvents()
+
+        self.assertTrue(pt1 in self.w.plots)
+        plot = self.w.plots[pt1]
+        for v1, v2 in zip(sig1, plot.sig):
+            self.assertAlmostEquals(v1, v2)
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
+        self.assertTrue(pt2 in self.w.plots)
+        plot = self.w.plots[pt2]
+        for v1, v2 in zip(sig2, plot.sig):
+            self.assertAlmostEquals(v1, v2)
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
+    def testMultiClickChangeColor(self):
+        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.w.color_combo.setCurrentIndex(6)
+        self.processEvents()
+
+        pt1 = (2, 2, 2, 0)
+        self.ivl.set_focus(pt1, 0, True)
+        self.processEvents()
+
+        self.assertTrue(pt1 in self.w.plots)
+        plot = self.w.plots[pt1]
+        self.assertEquals(plot.pen, self.w.colors['red'])
+
+        self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("blue"))
+        self.processEvents()
+
+        pt2 = (3, 3, 3, 0)
+        self.ivl.set_focus(pt2, 0, True)
+        self.processEvents()
+
+        self.assertTrue(pt2 in self.w.plots)
+        plot = self.w.plots[pt2]
+        self.assertEquals(plot.pen, self.w.colors['blue'])
+
+    def testShowMeanCurves(self):
+        """
+        Select two points, show mean curves=On.
+        """
+        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("red"))
+        self.processEvents()
+        self.w.mean_cb.setChecked(True)
+        self.processEvents()
+
+        pt1 = (2, 2, 2, 0)
+        self.ivl.set_focus(pt1, 0, True)
+        self.processEvents()
+
+        self.assertTrue(pt1 in self.w.plots)
+        plot = self.w.plots[pt1]
+
+        pt2 = (3, 3, 3, 0)
+        self.ivl.set_focus(pt2, 0, True)
+        self.processEvents()
+
+        plot = self.w.mean_plots[self.w.colors["red"]]
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
+        self.w.mean_cb.setChecked(False)
+        self.processEvents()
+        
+        self.assertFalse(plot.line in self.w.p1.items)
+        self.assertFalse(plot.pts in self.w.p1.items)
+
+    def testShowIndividualCurves(self):
+        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.w.indiv_cb.setChecked(False)
+        self.processEvents()
+
+        pt1 = (2, 2, 2, 0)
+        self.ivl.set_focus(pt1, 0, True)
+        self.processEvents()
+
+        pt2 = (3, 3, 3, 0)
+        self.ivl.set_focus(pt2, 0, True)
+        self.processEvents()
+
+        self.assertTrue(pt1 in self.w.plots)
+        plot = self.w.plots[pt1]
+        self.assertFalse(plot.line in self.w.p1.items)
+        self.assertFalse(plot.pts in self.w.p1.items)
+
+        self.assertTrue(pt2 in self.w.plots)
+        plot = self.w.plots[pt2]
+        self.assertFalse(plot.line in self.w.p1.items)
+        self.assertFalse(plot.pts in self.w.p1.items)
+
+        self.w.indiv_cb.setChecked(True)
+        self.processEvents()
+
+        plot = self.w.plots[pt1]
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
+        plot = self.w.plots[pt2]
+        self.assertTrue(plot.line in self.w.p1.items)
+        self.assertTrue(plot.pts in self.w.p1.items)
+
 if __name__ == '__main__':
     unittest.main()
