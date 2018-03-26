@@ -12,7 +12,7 @@ import traceback
 from PySide import QtGui, QtCore
 
 from ..analysis import Process
-from ..utils import debug, warn, get_icon, load_matrix
+from ..utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 from ..volumes.io import save
@@ -91,49 +91,49 @@ class FingerTabBarWidget(QtGui.QTabBar):
     Vertical tab bar used for the analysis widget setSelectionMode
     """
     def __init__(self, tab_widget, parent=None, *args, **kwargs):
-        self.tabSize = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
+        self.tab_size = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
         QtGui.QTabBar.__init__(self, parent, *args, **kwargs)
         self.close_icon = QtGui.QIcon(get_icon("close"))
         self.tab_widget = tab_widget
 
-    def paintEvent(self, event):
+    def paintEvent(self, _):
         painter = QtGui.QStylePainter(self)
         option = QtGui.QStyleOptionTab()
  
         for index in range(self.count()):
             self.initStyleOption(option, index)
-            tabRect = self.tabRect(index)
-            tabRect.moveLeft(10)
+            tab_rect = self.tabRect(index)
+            tab_rect.moveLeft(10)
             painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)
-            painter.drawText(tabRect, QtCore.Qt.AlignVCenter |
+            painter.drawText(tab_rect, QtCore.Qt.AlignVCenter |
                              QtCore.Qt.AlignHCenter,
                              self.tabText(index))
-            painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
+            painter.drawItemPixmap(tab_rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter,
                                    self.tabIcon(index).pixmap(20, 20))
             w = self.tab_widget.widget(index)
             if w.group != "DEFAULT":
-                tabRect.moveLeft(-5)
-                tabRect.moveTop(tabRect.top()+5)
-                painter.drawItemPixmap(tabRect,  QtCore.Qt.AlignRight | QtCore.Qt.AlignTop,
-                                    self.close_icon.pixmap(10, 10))
+                tab_rect.moveLeft(-5)
+                tab_rect.moveTop(tab_rect.top()+5)
+                painter.drawItemPixmap(tab_rect, QtCore.Qt.AlignRight | QtCore.Qt.AlignTop,
+                                       self.close_icon.pixmap(10, 10))
         painter.end()
 
     def mousePressEvent(self, evt):
         QtGui.QTabBar.mousePressEvent(self, evt)
         idx = self.tabAt(evt.pos())
         if idx >= 0 and evt.button() == QtCore.Qt.LeftButton:
-             tabRect = self.tabRect(idx)
-             oy = evt.pos().y() - tabRect.top() - 5
-             ox = tabRect.right() - evt.pos().x() - 5
-             if ox > 0 and ox < 10 and oy > 0 and oy < 10:
-                 # Click was inside close button
-                 w = self.tab_widget.widget(idx)
-                 if w.group != "DEFAULT":
-                     w.visible = False
-                     self.tab_widget.removeTab(idx)
+            tab_rect = self.tabRect(idx)
+            oy = evt.pos().y() - tab_rect.top() - 5
+            ox = tab_rect.right() - evt.pos().x() - 5
+            if ox > 0 and ox < 10 and oy > 0 and oy < 10:
+                # Click was inside close button
+                w = self.tab_widget.widget(idx)
+                if w.group != "DEFAULT":
+                    w.visible = False
+                    self.tab_widget.removeTab(idx)
         
-    def tabSizeHint(self,index):
-        return self.tabSize
+    def tabSizeHint(self, _):
+        return self.tab_size
 
 class FingerTabWidget(QtGui.QTabWidget):
     """
@@ -227,12 +227,12 @@ class OverlayCombo(QtGui.QComboBox):
         self.rois = rois
         self.data = data
         if self.rois:
-            self.ivm.sig_all_rois.connect(self.data_changed)
+            self.ivm.sig_all_rois.connect(self._data_changed)
         if self.data:
-            self.ivm.sig_all_data.connect(self.data_changed)
-        self.data_changed()
+            self.ivm.sig_all_data.connect(self._data_changed)
+        self._data_changed()
     
-    def data_changed(self):
+    def _data_changed(self):
         self.blockSignals(True)
         try:
             data = []
@@ -248,7 +248,7 @@ class OverlayCombo(QtGui.QComboBox):
 
             for name in sorted(data):
                 d = self.ivm.data.get(name, self.ivm.rois.get(name, None))
-                if (d.nvols == 1 or not self.static_only):
+                if d.nvols == 1 or not self.static_only:
                     self.addItem(d.name)
 
             if self.all_option:
@@ -261,7 +261,12 @@ class OverlayCombo(QtGui.QComboBox):
             self.blockSignals(False)
         
         idx = self.findText(current)
-        self.setCurrentIndex(max(0, idx))
+        if idx >= 0:
+            self.setCurrentIndex(idx)
+        else:
+            # Make sure signal is sent when first data arrives
+            self.setCurrentIndex(-1)
+            self.setCurrentIndex(0)
 
 class RoiCombo(OverlayCombo):
     """
@@ -273,6 +278,7 @@ class RoiCombo(OverlayCombo):
         super(RoiCombo, self).__init__(ivm, *args, **kwargs)
     
 class NumericOption(QtGui.QWidget):
+    """ Option whose value must be a number (int or float) """
 
     sig_changed = QtCore.Signal()
 
@@ -317,12 +323,13 @@ class NumericOption(QtGui.QWidget):
             val = self.rtype(self.edit.text())
             self.valid = (val >= self.minval and val <= self.maxval)
             self.edit.setStyleSheet("")
-        except:
+        except ValueError:
             self.edit.setStyleSheet("QLineEdit {background-color: red}")
             self.valid = False
         self._changed()
 
     def value(self):
+        """ Get the numeric value selected """
         if self.use_spin:
             return self.spin.value()
         elif self.valid:
@@ -331,6 +338,7 @@ class NumericOption(QtGui.QWidget):
             raise QpException("'%s' is not a valid number")
         
 class OptionalName(QtGui.QWidget):
+    """ String option which can be enabled or disabled """
 
     sig_changed = QtCore.Signal()
 
@@ -354,17 +362,22 @@ class OptionalName(QtGui.QWidget):
         self._changed()
 
     def selected(self):
+        """ Return True if enabled """
         return self.label.isChecked()
 
     def value(self):
+        """ Return the current text entered """
         return self.edit.text()
         
 class ChoiceOption(QtGui.QWidget):
+    """ Option which is chosen from a list of possible strings """
 
     sig_changed = QtCore.Signal()
 
-    def __init__(self, text, grid, ypos, xpos=0, choices=[]):
+    def __init__(self, text, grid, ypos, xpos=0, choices=None):
         QtGui.QWidget.__init__(self)
+        if choices is None:
+            choices = []
         self.choices = choices
         
         self.label = QtGui.QLabel(text)
@@ -380,6 +393,7 @@ class ChoiceOption(QtGui.QWidget):
         self.sig_changed.emit()
 
     def value(self):
+        """ Get currently selected text """
         return self.combo.currentText()
         
 class NumberList(QtGui.QTableWidget):
@@ -397,13 +411,15 @@ class NumberList(QtGui.QTableWidget):
         self.setAcceptDrops(True)
 
     def valid(self):
+        """ Return True if all entries are valid numbers """
         try:
             self.values()
             return True
-        except:
+        except ValueError:
             return False
 
     def values(self):
+        """ Return values as a list of list of floats """
         try:
             return [float(self.item(0, c).text()) for c in range(self.columnCount()-1)]
         except:
@@ -451,7 +467,7 @@ class NumberList(QtGui.QTableWidget):
             for c in range(self.columnCount()-1, col, -1):
                 item = self.item(0, c-1)
                 self.setItem(0, c, QtGui.QTableWidgetItem(item.text()))
-            self.setItem(0, col,  QtGui.QTableWidgetItem("%g" % val))
+            self.setItem(0, col, QtGui.QTableWidgetItem("%g" % val))
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
@@ -463,9 +479,9 @@ class NumberList(QtGui.QTableWidget):
         else:
             # Validate new value
             try:
-                val = float(item.text())
+                float(item.text())
                 item.setBackground(self.default_bg)
-            except:
+            except ValueError:
                 item.setBackground(QtGui.QColor('red'))
 
             # Add a new column if we have just edited the last one
@@ -495,9 +511,8 @@ class NumberList(QtGui.QTableWidget):
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
-            links = []
             for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
+                self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
 
@@ -523,7 +538,7 @@ class NumberList(QtGui.QTableWidget):
         d = MatrixViewerDialog(self, vals, title="Choose a row or column", text="Select a row or column containing the data you want")
         if d.exec_():
             ranges = d.table.selectedRanges()
-            if len(ranges) > 0:
+            if ranges:
                 r = ranges[0]
                 if r.topRow() == r.bottomRow():
                     # Row select
@@ -547,7 +562,7 @@ class LoadNumbers(QtGui.QPushButton):
         if filename:
             self.num_list.loadFromFile(filename)
 
-class NumericGrid(QtGui.QTableView):
+class NumberGrid(QtGui.QTableView):
     """
     Table of numeric values
     """
@@ -561,7 +576,7 @@ class NumericGrid(QtGui.QTableView):
         self._model = QtGui.QStandardItemModel()
         self.setModel(self._model)
         self.updating = False
-        self.expandable=expandable
+        self.expandable = expandable
         self.row_headers = row_headers
         self.col_headers = col_headers
         self.fix_height = fix_height
@@ -575,18 +590,18 @@ class NumericGrid(QtGui.QTableView):
         if readonly:
             self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         else:
-            self.setEditTriggers(QtGui.QAbstractItemView.AllEditTriggers)
             self.model().itemChanged.connect(self._item_changed)
         
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         #self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.itemDelegate().closeEditor.connect(self._expand_if_required, QtCore.Qt.QueuedConnection)
         self.setAcceptDrops(True)
         
     def valid(self):
         try:
             self.values()
             return True
-        except:
+        except ValueError:
             return False
 
     def values(self):
@@ -596,7 +611,7 @@ class NumericGrid(QtGui.QTableView):
                 row = [float(self._model.item(r, c).text()) for c in range(self._model.columnCount()-int(self.expandable[0]))]
                 rows.append(row)
         except:
-            raise RuntimeError("Non-numeric data in list")
+            raise ValueError("Non-numeric data in list")
         return rows
 
     def _set_size(self):
@@ -613,12 +628,12 @@ class NumericGrid(QtGui.QTableView):
 
     def setValues(self, vals, validate=True, col_headers=None, row_headers=None):
         if validate:
-            if len(vals) == 0: 
-                raise RuntimeError("No values provided")
+            if not vals: 
+                raise ValueError("No values provided")
             elif len(vals[0]) != self._model.columnCount() and not self.expandable[0]:
-                raise RuntimeError("Incorrect number of columns - expected %i" % self._model.columnCount())
+                raise ValueError("Incorrect number of columns - expected %i" % self._model.columnCount())
             elif len(vals) != self._model.rowCount() and not self.expandable[1]:
-                raise RuntimeError("Incorrect number of rows - expected %i" % self._model.rowCount())
+                raise ValueError("Incorrect number of rows - expected %i" % self._model.rowCount())
 
         if (col_headers and self.expandable[0]) or (row_headers and self.expandable[1]):
             raise RuntimeError("Can't specify headers for auto-expandable dimensions")
@@ -636,30 +651,25 @@ class NumericGrid(QtGui.QTableView):
         
         self._model.blockSignals(True)
         try:
-            #self._model.clear()
             for r, rvals in enumerate(vals):
                 for c, v in enumerate(rvals):
                     item = QtGui.QStandardItem("%g" % v)
-                    item.setEditable(True)
                     self._model.setItem(r, c, item)
             
             if self.expandable[0]:
                 for r in range(len(vals)):
                     item = QtGui.QStandardItem("")
-                    item.setEditable(True)
                     self._model.setItem(r, self._model.columnCount()-1, item)
         
             if self.expandable[1]:
                 for c in range(len(vals[0])):
                     item = QtGui.QStandardItem("")
-                    item.setEditable(True)
                     self._model.setItem(self._model.rowCount()-1, c, item)
         
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
         finally:
             self._model.blockSignals(False)
-            self.updating = False
             
         self._set_size()
         self.sig_changed.emit()
@@ -682,228 +692,49 @@ class NumericGrid(QtGui.QTableView):
             if self.default_bg is None:
                 self.default_bg = item.background()
 
-            c = item.column()
-            r = item.row()
             try:
-                val = float(item.text())
+                float(item.text())
                 item.setBackground(self.default_bg)
-            except:
+            except ValueError:
                 if item.text() != "": 
                     item.setBackground(QtGui.QColor('red'))
 
-            if item.text() != "":
-                if self.expandable[0]:
-                    if c == self._model.columnCount() - 1:
-                        self._model.setColumnCount(self._model.columnCount()+1)
-                        # Set rest of new column to prevent it from immediately being invalid
-                        for row in range(self._model.rowCount()-int(self.expandable[1])):
-                            if row != r:
-                                item = QtGui.QStandardItem(self._model.item(row, c-1).text())
-                                self._model.setItem(row, c, item)
-                    if self._range_empty([self._model.columnCount()-2], range(self._model.rowCount())):
-                        # Last-but-one column is empty, so remove last column (which is always empty)
-                        self._model.setColumnCount(self._model.columnCount()-1)
-
-                if self.expandable[1]:
-                    if r == self._model.rowCount() - 1:
-                        self._model.setRowCount(self._model.rowCount()+1)
-                        # Set rest of new row to prevent it from immediately being invalid
-                        for col in range(self._model.columnCount()-int(self.expandable[0])):
-                            if col != c:
-                                self._model.setItem(r, col, QtGui.QStandardItem(self._model.item(r-1, col).text()))
-                    if self._range_empty(range(self._model.columnCount()), [self._model.rowCount()-2]):
-                        # Last-but-one row is empty, so remove last row (which is always empty)
-                        self._model.setColumnCount(self._model.columnCount()-1)
-
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
-            self.sig_changed.emit()
         finally:
             self.updating = False
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls:
-            event.accept()
-        else:
-            event.ignore()
+    def _expand_if_required(self):
+        last_col = self._model.columnCount()-1
+        last_row = self._model.rowCount()-1
+        if self.expandable[0]:
+            if not self._range_empty([last_col], range(self._model.rowCount())):
+                # Last column is not empty - add a new empty column
+                self._model.setColumnCount(self._model.columnCount()+1)
+                # Set rest of new column to prevent it from immediately being invalid
+                for row in range(self._model.rowCount()-int(self.expandable[1])):
+                    item = self._model.item(row, last_col)
+                    if item is None or item.text() == "":
+                        item = QtGui.QStandardItem(self._model.item(row, last_col-1).text())
+                        self._model.setItem(row, last_col, item)
+                    
+            elif self._range_empty([self._model.columnCount()-2], range(self._model.rowCount())):
+                # Last two columns are empty, so remove last column
+                self._model.setColumnCount(self._model.columnCount()-1)
 
-    def dragMoveEvent(self, event):
-        if event.mimeData().hasUrls:
-            event.setDropAction(QtCore.Qt.CopyAction)
-            event.accept()
-        else:
-            event.ignore()
-
-    def dropEvent(self, event):
-        if event.mimeData().hasUrls:
-            event.setDropAction(QtCore.Qt.CopyAction)
-            event.accept()
-            links = []
-            for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
-        else:
-            event.ignore()
+        if self.expandable[1]:
+            if not self._range_empty(range(self._model.columnCount()), [last_row]):
+               # Last row is not empty - add a new empty row
+                self._model.setRowCount(self._model.rowCount()+1)
+                # Set rest of new row to prevent it from immediately being invalid
+                for col in range(self._model.columnCount()-int(self.expandable[0])):
+                    item = self._model.item(last_row, col)
+                    if item is None or item.text() == "":
+                        self._model.setItem(last_row, col, QtGui.QStandardItem(self._model.item(last_row-1, col).text()))
             
-    def loadFromFile(self, filename):
-        fvals, nrows, ncols = load_matrix(filename)
-        if ncols <= 0:
-            raise RuntimeError("No numeric data found in file")
-        else:
-            self.setValues(fvals)
-
-class NumberGrid(QtGui.QTableWidget):
-    """
-    Table of numeric values
-    """
-
-    sig_changed = QtCore.Signal()
-
-    def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
-                 fix_height=False, fix_width=False, readonly=False):
-        QtGui.QTableWidget.__init__(self, 1, 1)
-        
-        if (col_headers and expandable[0]) or (row_headers and expandable[1]):
-            raise RuntimeError("Can't specify headers for expandable dimensions")
-
-        self.expandable=expandable
-        self.row_headers = row_headers
-        self.col_headers = col_headers
-        self.fix_height = fix_height
-        self.fix_width = fix_width
-        self.setValues(initial, False)
-
-        if col_headers:
-            self.setHorizontalHeaderLabels(col_headers)
-        else:
-            self.horizontalHeader().hide()
-
-        if row_headers:
-            self.setVerticalHeaderLabels(row_headers)
-        else:
-            self.verticalHeader().hide()
-
-        self.default_bg = self.item(0, 0).background()
-        if readonly:
-            self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        else:
-            self.itemChanged.connect(self._item_changed)
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
-        self.setAcceptDrops(True)
-
-    def valid(self):
-        try:
-            self.values()
-            return True
-        except:
-            return False
-
-    def values(self):
-        rows = []
-        try:
-            for r in range(self.rowCount()-int(self.expandable[1])):
-                row = [float(self.item(r, c).text()) for c in range(self.columnCount()-int(self.expandable[0]))]
-                rows.append(row)
-        except:
-            raise RuntimeError("Non-numeric data in list")
-        return rows
-
-    def _set_size(self):
-        # QTableWidget is completely incapable of choosing a sensible size. We do our best
-        # here but have to allow a bit of random 'padding' in case scrollbars are necessary
-        tx, ty = self.horizontalHeader().length()+15, self.verticalHeader().length()+15
-        if self.row_headers is not None: tx += self.verticalHeader().width()
-        if self.col_headers is not None: ty += self.horizontalHeader().height()
-        #sh = self.sizeHint()
-        #tx = min(tx, sh.width())
-        #ty = min(ty, sh.height())
-        if self.fix_height: self.setFixedHeight(ty)
-        if self.fix_width: self.setFixedWidth(tx)
-
-    def setValues(self, vals, validate=True):
-        if validate:
-            if len(vals) == 0: 
-                raise RuntimeError("No values provided")
-            elif len(vals[0]) != self.columnCount() and not self.expandable[0]:
-                raise RuntimeError("Incorrect number of columns - expected %i" % self.columnCount())
-            elif len(vals) != self.rowCount() and not self.expandable[1]:
-                raise RuntimeError("Incorrect number of rows - expected %i" % self.rowCount())
-            
-        self.blockSignals(True)
-        try:
-            self.setRowCount(len(vals)+int(self.expandable[1]))
-            self.setColumnCount(len(vals[0])+int(self.expandable[0]))
-            for r, rvals in enumerate(vals):
-                for c, v in enumerate(rvals):
-                    item = QtGui.QTableWidgetItem("%g" % v)
-                    self.setItem(r, c, item)
-            
-            if self.expandable[0]:
-                for r in range(len(vals)):
-                    item = QtGui.QTableWidgetItem("")
-                    self.setItem(r, self.columnCount()-1, item)
-
-            if self.expandable[1]:
-                for c in range(len(vals[0])):
-                    item = QtGui.QTableWidgetItem("")
-                    self.setItem(self.rowCount()-1, c, item)
-
-            self.resizeColumnsToContents()
-            self.resizeRowsToContents()
-        finally:
-            self.blockSignals(False)
-            
-        self._set_size()
-        
-    def _range_empty(self, cs, rs):
-        empty = True
-        for r in rs:
-            for c in cs:
-                # Check if r or c is negative and do not consider empty
-                # so last row/column will not be deleted
-                if r < 0 or c < 0 or (self.item(r, c) is not None and self.item(r, c).text() != ""):
-                    empty = False
-                    break
-        return empty
-
-    def _item_changed(self, item):
-        self.blockSignals(True)
-        try:
-            c = item.column()
-            r = item.row()
-            try:
-                val = float(item.text())
-                item.setBackground(self.default_bg)
-            except:
-                if item.text != "": 
-                    item.setBackground(QtGui.QColor('red'))
-
-            if self.expandable[0]:
-                if c == self.columnCount() - 1:
-                    self.setColumnCount(self.columnCount()+1)
-                    # Set rest of new column to prevent it from immediately being invalid
-                    for row in range(self.rowCount()-int(self.expandable[1])):
-                        if row != r:
-                            self.setItem(row, c, QtGui.QTableWidgetItem(self.item(row, c-1).text()))
-                if self._range_empty([self.columnCount()-2], range(self.rowCount())):
-                    # Last-but-one column is empty, so remove last column (which is always empty)
-                    self.setColumnCount(self.columnCount()-1)
-
-            if self.expandable[1]:
-                if r == self.rowCount() - 1:
-                    self.setRowCount(self.rowCount()+1)
-                    # Set rest of new row to prevent it from immediately being invalid
-                    for col in range(self.columnCount()-int(self.expandable[0])):
-                        if col != c:
-                            self.setItem(r, col, QtGui.QTableWidgetItem(self.item(r-1, col).text()))
-                if self._range_empty(range(self.columnCount()), [self.rowCount()-2]):
-                    # Last-but-one row is empty, so remove last row (which is always empty)
-                    self.setColumnCount(self.columnCount()-1)
-        finally:
-            self.blockSignals(False)
-
-        self.resizeColumnsToContents()
-        self.resizeRowsToContents()
+            elif self._range_empty(range(self._model.columnCount()), [self._model.rowCount()-2]):
+                # Last-but-one row is empty, so remove last row (which is always empty)
+                self._model.setColumnCount(self._model.columnCount()-1)
         self.sig_changed.emit()
 
     def dragEnterEvent(self, event):
@@ -925,7 +756,7 @@ class NumberGrid(QtGui.QTableWidget):
             event.accept()
             links = []
             for url in event.mimeData().urls():
-                self.loadFromFile(str(url.toLocalFile()))
+                self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
             
@@ -1176,7 +1007,7 @@ class OrderList(QtGui.QListWidget):
     
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=[], col_headers = None):
+    def __init__(self, initial=[], col_headers=None):
         QtGui.QListWidget.__init__(self)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setDropIndicatorShown(True)

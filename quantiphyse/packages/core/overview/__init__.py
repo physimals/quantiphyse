@@ -42,9 +42,7 @@ class OverviewWidget(QpWidget):
         disc = QtGui.QLabel("<font size=2> Disclaimer: This software has been developed for research purposes only, and "
                           "should not be used as a diagnostic tool. The authors or distributors will not be "
                           "responsible for any direct, indirect, special, incidental, or consequential damages "
-                          "arising of the use of this software. The current intention of this software is for "
-                          "'in house' use only and should not be distributed without the explicit consent of the "
-                          "authors."
+                          "arising of the use of this software."
                           "\n\n"
                           "By using the this software you agree to this disclaimer (see help for more information)</font>")
         vbox.addWidget(disc)

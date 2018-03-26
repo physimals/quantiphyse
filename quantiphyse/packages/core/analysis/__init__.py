@@ -159,7 +159,7 @@ class SECurve(QpWidget):
     sig_clear_pnt = QtCore.Signal(bool)
 
     def __init__(self, **kwargs):
-        super(SECurve, self).__init__(name="Voxel Analysis", icon="voxel", desc="Display signal curves", group="Analysis", position=2, **kwargs)
+        super(SECurve, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -170,7 +170,7 @@ class SECurve(QpWidget):
 
         vbox = QtGui.QVBoxLayout()
 
-        title = TitleWidget(self, "Voxelwise Analysis", help="curve_compare", batch_btn=False, opts_btn=True)
+        title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False, opts_btn=True)
         vbox.addWidget(title)
 
         #Clear curves button
@@ -211,10 +211,6 @@ class SECurve(QpWidget):
         hbox.addStretch(1)
         opts_vbox.addLayout(hbox)
 
-        self.multi_cb = QtGui.QCheckBox('Multiple curves', self)
-        self.multi_cb.stateChanged.connect(self.clear_all)
-        opts_vbox.addWidget(self.multi_cb)
-
         # Show individual curves (can disable to just show mean)
         self.indiv_cb = QtGui.QCheckBox('Show individual curves', self)
         self.indiv_cb.toggle() # default ON
@@ -245,11 +241,14 @@ class SECurve(QpWidget):
         self.ivm.sig_main_data.connect(self.replot_graph)
         self.ivl.sig_sel_changed.connect(self.sel_changed)
         self.activated = True
+        self.ivl.set_picker(PickMode.MULTIPLE)
+        self.ivl.picker.col = self.col
         self.replot_graph()
 
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.replot_graph)
         self.ivl.sig_sel_changed.disconnect(self.sel_changed)
+        self.ivl.set_picker(PickMode.SINGLE)
 
     def show_options(self):
         self.plot_opts.show()
@@ -295,12 +294,8 @@ class SECurve(QpWidget):
         self.remove_plots()
         self.plots, self.mean_plots = {}, {}
         # Reset the list of picked points
-        if self.multi_cb.isChecked():
-            self.ivl.set_picker(PickMode.MULTIPLE)
-            self.ivl.picker.col = self.col
-        else:
-            self.ivl.set_picker(PickMode.SINGLE)
-            self.ivl.picker.col = self.col
+        self.ivl.set_picker(PickMode.MULTIPLE)
+        self.ivl.picker.col = self.col
 
     def add_point(self, point, col):
         """
@@ -420,8 +415,8 @@ class DataStatistics(QpWidget):
         hbox.addWidget(self.slice_dir_label)
         self.sscombo = QtGui.QComboBox()
         self.sscombo.addItem("Axial")
-        self.sscombo.addItem("Saggital")
         self.sscombo.addItem("Coronal")
+        self.sscombo.addItem("Sagittal")
         self.sscombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
         self.sscombo.currentIndexChanged.connect(self.update)
         self.sscombo.setVisible(False)
@@ -887,7 +882,7 @@ class ModelCurves(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(ModelCurves, self).__init__(name="Model Curve", desc="Display model enhancement curves", 
+        super(ModelCurves, self).__init__(name="Voxel analysis", desc="Display data at a voxel", 
                                           icon="curve_view", group="Analysis", **kwargs)
         self.data_enabled = {}
         self.updating = False
@@ -897,7 +892,7 @@ class ModelCurves(QpWidget):
         self.setLayout(main_vbox)
         self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
-        title = TitleWidget(self, title="Model / Data Curves", help="modelfit", batch_btn=False, opts_btn=True)
+        title = TitleWidget(self, title="Voxel analysis", help="modelfit", batch_btn=False, opts_btn=True)
         main_vbox.addWidget(title)
 
         win = pg.GraphicsLayoutWidget()

@@ -350,7 +350,7 @@ class QpData:
         """ 
         Return the data value at pos 
         """
-        if pos[3] > self.nvols: pos[3] = self.nvols-1
+        if pos[3] >= self.nvols: pos[3] = self.nvols-1
         return self.std()[tuple(pos[:self.ndim])]
 
     def get_slice(self, axes):

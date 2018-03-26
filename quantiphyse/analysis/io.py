@@ -7,6 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 import os
 
 from quantiphyse.utils import debug, warn
+from quantiphyse.utils.exceptions import QpException
 from quantiphyse.volumes.io import load, save
 
 from . import Process
@@ -74,6 +75,16 @@ class SaveProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
+        # Note that output-grid is not a valid data name so will not clash
+        output_grid = self.ivm.save_grid
+        output_grid_name = options.pop("output-grid", None)
+        if output_grid_name is not None:
+            output_grid_data = self.ivm.data.get(output_grid_name, self.ivm.rois.get(output_grid_name, None))
+            if output_grid_data is None:
+                raise QpException("No such data found as source of grid: %s" % output_grid_name)
+            else:
+                output_grid = output_grid_data.rawgrid
+
         for name in options.keys():
             try:
                 fname = options.pop(name)
@@ -85,7 +96,7 @@ class SaveProcess(Process):
                     if not os.path.isabs(fname):
                         fname = os.path.join(self.outdir, fname)
                     debug("Saving %s as %s" % (name, fname))
-                    save(qpdata, fname, self.ivm.save_grid)
+                    save(qpdata, fname, output_grid)
                 else:
                     warn("Failed to save %s - no such data or ROI found" % name)
             except:

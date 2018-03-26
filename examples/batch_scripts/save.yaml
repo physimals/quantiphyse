@@ -1,0 +1,17 @@
+### Example config file for T10 modelling without B0 correction
+
+OutputFolder: test/examples_output
+Debug: False
+
+Processing:
+  - LoadData:
+      asl_raw_data.nii.gz: data
+      struc.nii.gz: struc
+      
+  - Save:
+      output-grid: data
+      struc: struc_resamp
+
+Cases:
+    regrid_asl:
+        Folder:  /home/ibmeuser/data/asl/asl_tutorial_data/basildata/data_pcasl/

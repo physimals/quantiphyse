@@ -23,7 +23,7 @@ class ClusteringWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(ClusteringWidget, self).__init__(name="Data Clustering", icon="clustering", desc="Generate clusters from 3D or 4D data", group="DEFAULT", position=2, **kwargs)
+        super(ClusteringWidget, self).__init__(name="KMeans Clustering", icon="clustering", desc="Generate clusters from 3D or 4D data", group="Clustering", position=2, **kwargs)
         self.curves = {}
 
     def init_ui(self):

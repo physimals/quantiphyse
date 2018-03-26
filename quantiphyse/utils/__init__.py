@@ -99,6 +99,14 @@ def get_local_file(name, loc=None):
         loc = os.path.dirname(loc)
     return os.path.abspath(os.path.join(loc, name))
 
+def local_file_from_drop_url(url):
+    if sys.platform.startswith("darwin"):
+        # OSx specific changes to allow drag and drop
+        from Cocoa import NSURL
+        return str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
+    else:
+        return str(url.toLocalFile())
+
 def get_lib_fname(name):
     """ Get file name for named shared library on current platform """
     if sys.platform.startswith("win"):
@@ -324,7 +332,8 @@ def get_plugins(key=None, class_name=None):
     
     if key is not None:
         plugins = PLUGIN_MANIFEST.get(key, [])
-        if class_name is not None: plugins = [p for p in plugins if p.__name__==class_name]
+        if class_name is not None: 
+            plugins = [p for p in plugins if p.__name__==class_name]
     else:
         plugins = PLUGIN_MANIFEST
     return plugins

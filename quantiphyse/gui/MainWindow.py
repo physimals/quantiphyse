@@ -22,7 +22,7 @@ from .ImageView import ImageView
 from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
 from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, get_plugins
+from ..utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url
 from ..utils.exceptions import QpException
 
 # ROIs with values larger than this will trigger a warning
@@ -307,6 +307,10 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(exit_action)
 
         widget_submenus = {"" : widget_menu}
+        DEFAULT_GROUPS = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
+        for group in DEFAULT_GROUPS:
+            widget_submenus[group] = widget_menu.addMenu(group)
+
         for group in sorted(self.widget_groups.keys()):
             if group != "DEFAULT":
                 if group not in widget_submenus:
@@ -349,13 +353,7 @@ class MainWindow(QtGui.QMainWindow):
             e.accept()
             fnames = []
             for url in e.mimeData().urls():
-                if sys.platform.startswith("darwin"):
-                    # OSx specific changes to allow drag and drop
-                    from Cocoa import NSURL
-                    filep = str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
-                    fnames.append(filep)
-                else:
-                    fnames.append(str(url.toLocalFile()))
+                fnames.append(local_file_from_drop_url(url))
             self.raise_()
             self.activateWindow()
             for fname in fnames:
@@ -371,11 +369,11 @@ class MainWindow(QtGui.QMainWindow):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
-        <p align="center">Created by Benjamin Irving</p>
-        <h2 align="center">Contributors</h2>
-        <p align="center">Benjamin Irving</p>
-        <p align="center">Martin Craig</p>
+        <h2 align="center">Contributers</h2>
+        <p align="center">Martin Craig (current maintainer)</p>
+        <p align="center">Benjamin Irving (original author)</p>
         <p align="center">Michael Chappell</p>
+        <p align="center">Paula Croal</p>
         """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
