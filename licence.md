@@ -304,3 +304,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## Lmfit
 
 [LMFIT](http://apps.jcns.fz-juelich.de/doku/sc/lmfit) is issued under the [FreeBSD license](http://opensource.org/licenses/BSD-2-Clause)
+
+## Requests
+
+Copyright 2017 Kenneth Reitz
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this 
+file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under 
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF 
+ANY KIND, either express or implied. See the License for the specific language 
+governing permissions and limitations under the License.
+
+## Funcsigs
+
+*funcsigs* is a derived work of CPython under the terms of the `PSF License
+Agreement`. The original CPython inspect module, its unit tests and
+documentation are the copyright of the Python Software Foundation. The derived
+work is distributed under the `Apache License Version 2.0`
+
+[PSF License Agreement](http://docs.python.org/3/license.html#terms-and-conditions-for-accessing-or-otherwise-using-python)
+[Apache License Version 2.0](http://opensource.org/licenses/Apache-2.0)
+
