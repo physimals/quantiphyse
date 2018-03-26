@@ -61,21 +61,26 @@ class PerfSlicWidget(QpWidget):
         self.ovl.currentIndexChanged.connect(self.ovl_changed)
         grid.addWidget(self.ovl, 0, 1)
         grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
-        self.roi = RoiCombo(self.ivm)
+        self.roi = RoiCombo(self.ivm, none_option=True)
+        self.roi.currentIndexChanged.connect(self.roi_changed)
         grid.addWidget(self.roi, 1, 1)
 
-        self.n_comp = NumericOption("Number of components", grid, 2, minval=1, maxval=3, default=3, intonly=True)
-        self.compactness = NumericOption("Compactness", grid, 3, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
-        self.sigma = NumericOption("Smoothing", grid, 4, minval=0, maxval=5, step=0.1, default=1, intonly=False)
-        self.n_supervoxels = NumericOption("Number of supervoxels", grid, 5, minval=2, maxval=1000, default=20, intonly=True)
+        self.noroi_warning = QtGui.QLabel("WARNING: Use of ROI is recommended")
+        self.noroi_warning.setStyleSheet("QLabel { color : red; }")
+        grid.addWidget(self.noroi_warning, 2, 0)
 
-        grid.addWidget(QtGui.QLabel("Output name"), 6, 0)
+        self.n_comp = NumericOption("Number of components", grid, 3, minval=1, maxval=3, default=3, intonly=True)
+        self.compactness = NumericOption("Compactness", grid, 4, minval=0.01, maxval=1, step=0.05, default=0.1, intonly=False)
+        self.sigma = NumericOption("Smoothing", grid, 5, minval=0, maxval=5, step=0.1, default=1, intonly=False)
+        self.n_supervoxels = NumericOption("Number of supervoxels", grid, 6, minval=2, maxval=1000, default=20, intonly=True)
+
+        grid.addWidget(QtGui.QLabel("Output name"), 7, 0)
         self.output_name = QtGui.QLineEdit("supervoxels")
-        grid.addWidget(self.output_name, 6, 1)
+        grid.addWidget(self.output_name, 7, 1)
 
         self.gen_btn = QtGui.QPushButton('Generate', self)
         self.gen_btn.clicked.connect(self.generate)
-        grid.addWidget(self.gen_btn, 7, 0)
+        grid.addWidget(self.gen_btn, 8, 0)
         hbox.addWidget(optbox)
         hbox.addStretch(1)
         layout.addLayout(hbox)
@@ -89,6 +94,9 @@ class PerfSlicWidget(QpWidget):
             self.n_comp.label.setVisible(ovl.nvols > 1)
             self.n_comp.spin.setVisible(ovl.nvols > 1)
 
+    def roi_changed(self, idx):
+        self.noroi_warning.setVisible(self.roi.currentText() == "<none>")
+
     def batch_options(self):
         options = {"data" : self.ovl.currentText(),
                    "roi" : self.roi.currentText(),
@@ -97,6 +105,10 @@ class PerfSlicWidget(QpWidget):
                    "sigma" : self.sigma.spin.value(),
                    "n-supervoxels" :  self.n_supervoxels.spin.value(),
                    "output-name" :  self.output_name.text() }
+                
+        if options["roi"] == "<none>":
+            options.pop("roi")
+
         return "Supervoxels", options
 
     def generate(self):
