@@ -7,6 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 import sys
 import math
 import unittest
+import traceback
 
 import numpy as np
 import scipy
@@ -116,12 +117,15 @@ class WidgetTest(unittest.TestCase):
         """
         if btn.isEnabled():
             btn.clicked.emit()
+        self.processEvents()
         self.assertFalse(self.error)
 
-    def _exc(self, exc_type, *_):
+    def _exc(self, exc_type, value, tb):
         """ 
         Exception handler which simply flags whether a user-exception or an error has been caught 
         """
+        if "--debug" in sys.argv:
+            traceback.print_exception(exc_type, value, tb)
         self.qpe = issubclass(exc_type, QpException)
         self.error = not self.qpe
         
