@@ -796,8 +796,8 @@ class NavigationBox(QtGui.QGroupBox):
 
         self.navs = []
         self.navs.append(Navigator(ivl, "Axial", 2, grid, 0))
-        self.navs.append(Navigator(ivl, "Coronal", 0, grid, 1))
-        self.navs.append(Navigator(ivl, "Sagittal", 1, grid, 2))
+        self.navs.append(Navigator(ivl, "Sagittal", 0, grid, 1))
+        self.navs.append(Navigator(ivl, "Coronal", 1, grid, 2))
         self.navs.append(Navigator(ivl, "Volume", 3, grid, 3))
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 2)
