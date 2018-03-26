@@ -200,14 +200,13 @@ class SECurve(QpWidget):
         # Select plot color
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('Plot color'))
-        combo = QtGui.QComboBox(self)
-        for col in self.colors.keys():
-            combo.addItem(col)
-        combo.setCurrentIndex(combo.findText("grey"))
-        combo.activated[str].connect(self.plot_col_changed)
-        combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
-                         "Allows visualisation of multiple enhancement curves of different colours")
-        hbox.addWidget(combo)
+        self.color_combo = QtGui.QComboBox(self)
+        for text, col in self.colors.items():
+            self.color_combo.addItem(text, col)
+        self.color_combo.currentIndexChanged.connect(self.plot_col_changed)
+        self.color_combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
+                                   "Allows visualisation of multiple enhancement curves of different colours")
+        hbox.addWidget(self.color_combo)
         hbox.addStretch(1)
         opts_vbox.addLayout(hbox)
 
@@ -232,7 +231,7 @@ class SECurve(QpWidget):
 
         self.plot_opts = SECurveOptions(self)
     
-        self.plot_col_changed("grey")
+        self.color_combo.setCurrentIndex(self.color_combo.findText("grey"))
         self.plots = {}
         self.mean_plots = {}
         self.clear_all()
@@ -340,8 +339,8 @@ class SECurve(QpWidget):
 
         self.replot_graph()
 
-    def plot_col_changed(self, text):
-        self.col = self.colors.get(text, (255, 255, 255))
+    def plot_col_changed(self, idx):
+        self.col = tuple(self.color_combo.itemData(idx))
         self.ivl.picker.col = self.col
 
 class DataStatistics(QpWidget):
