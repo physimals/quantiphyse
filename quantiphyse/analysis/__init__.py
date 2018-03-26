@@ -92,6 +92,9 @@ class Process(QtCore.QObject):
             data = self.ivm.main.std()
         elif multi and isinstance(data_name, list):
             # Allow specifying a list of data volumes which are concatenated
+            for name in data_name:
+                if name not in self.ivm.data:
+                    raise QpException("Data not found: %s" % name)
             multi_data = [self.ivm.data[name] for name in data_name]
             nvols = sum([d.nvols for d in multi_data])
             debug("Multivol: nvols=", nvols)
@@ -101,7 +104,10 @@ class Process(QtCore.QObject):
                 data[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
                 v += d.nvols
         else:
-            data = self.ivm.data[data_name].std()
+            if data_name in self.ivm.data:
+                data = self.ivm.data[data_name].std()
+            else:
+                raise QpException("Data not found: %s" % data_name)
         return data
 
     def get_roi(self, options, multi=False):
@@ -118,6 +124,9 @@ class Process(QtCore.QObject):
                 raise QpException("No data loaded")
         elif multi and isinstance(roi_name, list):
             # Allow specifying a list of ROIs which are concatenated
+            for name in roi_name:
+                if name not in self.ivm.rois:
+                    raise QpException("ROI not found: %s" % name)
             multi_data = [self.ivm.rois[name] for name in roi_name]
             nvols = sum([d.nvols for d in multi_data])
             debug("Multiroi: nvols=", nvols)
@@ -127,7 +136,10 @@ class Process(QtCore.QObject):
                 roidata[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
                 v += d.nvols
         else:
-            roidata = self.ivm.rois[roi_name].std()
+            if roi_name in self.ivm.data:
+                roidata = self.ivm.rois[roi_name].std()
+            else:
+                raise QpException("ROI not found: %s" % roi_name)
         return roidata
 
     def run(self, options):
