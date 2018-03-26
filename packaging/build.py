@@ -71,7 +71,7 @@ if "--maxi" in sys.argv:
         if platform == "osx":
             # Need to put it into he OSX bundle as well
             shutil.copytree(plugindist,
-                            "%s/%s.app/Contents/Resources/packages/plugins/%s" % (distdir, package_name, plugin))            
+                            "%s/%s.app/Contents/Resources/packages/plugins/%s" % (distdir, package_name, plugin_pkg))            
         os.chdir(cwd_orig)
         print("DONE")
     
