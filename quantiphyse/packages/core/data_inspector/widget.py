@@ -33,11 +33,11 @@ class GridView(QtGui.QWidget):
 
         grid.addWidget(QtGui.QLabel("Grid->World Transform"), 1, 0)
         self.transform = NumberGrid(initial=np.identity(3), expandable=(False, False), fix_height=True, fix_width=True, readonly=readonly)
-        self.transform.itemChanged.connect(self._changed)
+        self.transform.sig_changed.connect(self._changed)
         grid.addWidget(self.transform, 2, 0)
         grid.addWidget(QtGui.QLabel("Origin"), 1, 1)
         self.origin = NumberGrid(initial=[[0],]*3, expandable=(False, False), fix_height=True, fix_width=True, readonly=readonly)
-        self.origin.itemChanged.connect(self._changed)
+        self.origin.sig_changed.connect(self._changed)
         grid.addWidget(self.origin, 2, 1)
 
         grid.addWidget(QtGui.QLabel("Co-ordinate system: "), 3, 0)

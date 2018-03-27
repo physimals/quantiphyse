@@ -255,8 +255,6 @@ def slic_feat(image, n_segments=100, compactness=10., max_iter=10, sigma=0,
     image = np.ascontiguousarray(image * ratio, dtype=np.double)
     mask = np.ascontiguousarray(mask, dtype=np.int32)
 
-    segments_old = np.copy(segments)
-
     if recompute_seeds:
 
         # Seed step 2: Run SLIC to reinitialise seeds

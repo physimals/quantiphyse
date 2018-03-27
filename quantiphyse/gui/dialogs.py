@@ -107,7 +107,7 @@ class GridEditDialog(QtGui.QDialog):
 
         from .widgets import NumberGrid # prevent circular import dependency
         self.table = NumberGrid(vals, col_headers=col_headers, row_headers=row_headers, expandable=expandable)
-        self.table.itemChanged.connect(self._validate)
+        self.table.sig_changed.connect(self._validate)
         vbox.addWidget(self.table)
         
         self.text = QtGui.QLabel(text)

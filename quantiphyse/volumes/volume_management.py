@@ -64,7 +64,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self.grid = None
 
         # Grid to use when saving data - should come from the first file loaded
-        self.savegrid = None
+        self.save_grid = None
 
         # Map from name to data object
         self.data = {}

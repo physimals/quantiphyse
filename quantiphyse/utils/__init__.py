@@ -99,6 +99,14 @@ def get_local_file(name, loc=None):
         loc = os.path.dirname(loc)
     return os.path.abspath(os.path.join(loc, name))
 
+def local_file_from_drop_url(url):
+    if sys.platform.startswith("darwin"):
+        # OSx specific changes to allow drag and drop
+        from Cocoa import NSURL
+        return str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
+    else:
+        return str(url.toLocalFile())
+
 def get_lib_fname(name):
     """ Get file name for named shared library on current platform """
     if sys.platform.startswith("win"):
@@ -121,28 +129,26 @@ def load_matrix(filename):
 def text_to_matrix(text):
     fvals = []
     ncols = -1
-    try:
-        lines = text.splitlines()
-        for line in lines:
-            # Discard comments
-            line = line.split("#", 1)[0].strip()
-            # Split by commas or spaces
-            vals = line.replace(",", " ").split()
-            # Ignore empty lines
-            if len(vals) == 0: continue
-            # Check correct number of columns
-            if ncols < 0: ncols = len(vals)
-            elif len(vals) != ncols:
-                raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
-            # Check all data is numeric
-            for val in vals:
-                try:
-                    fval = float(val)
-                except:
-                    raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
-            fvals.append([float(v) for v in vals])     
-    finally:
-        f.close()
+    lines = text.splitlines()
+    for line in lines:
+        # Discard comments
+        line = line.split("#", 1)[0].strip()
+        # Split by commas or spaces
+        vals = line.replace(",", " ").split()
+        # Ignore empty lines
+        if len(vals) == 0: continue
+        # Check correct number of columns
+        if ncols < 0: ncols = len(vals)
+        elif len(vals) != ncols:
+            raise QpException("File must contain a matrix of numbers with fixed size (rows/columns)")
+        # Check all data is numeric
+        for val in vals:
+            try:
+                fval = float(val)
+            except:
+                raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
+        fvals.append([float(v) for v in vals])     
+    
     return fvals, len(fvals), ncols
 
 def write_temp_matrix(prefix, matrix):
@@ -326,7 +332,8 @@ def get_plugins(key=None, class_name=None):
     
     if key is not None:
         plugins = PLUGIN_MANIFEST.get(key, [])
-        if class_name is not None: plugins = [p for p in plugins if p.__name__==class_name]
+        if class_name is not None: 
+            plugins = [p for p in plugins if p.__name__==class_name]
     else:
         plugins = PLUGIN_MANIFEST
     return plugins

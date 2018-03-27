@@ -248,7 +248,7 @@ class DataStatisticsProcess(Process):
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        self.model.setVerticalHeaderItem(2, QtGui.QStandardItem("Variance"))
+        self.model.setVerticalHeaderItem(2, QtGui.QStandardItem("STD"))
         self.model.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
         self.model.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 

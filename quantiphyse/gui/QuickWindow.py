@@ -1,5 +1,5 @@
 """
-Quantiphyse - Main application window
+Quantiphyse - Quick cutodown version of the main application window
 
 Copyright (c) 2013-2018 University of Oxford
 """
@@ -8,21 +8,17 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import sys
 import os
-import requests
 
 import numpy as np
 
 from PySide import QtCore, QtGui
-import pyqtgraph.console
 
 from .ViewOptions import ViewOptions
-from .Register import RegisterDialog
 from .ImageView import ImageView
 
-from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
-from ..volumes.load_save import load, save
+from ..volumes.io import load, save
 from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url
+from ..utils import get_icon, get_local_file, get_version, local_file_from_drop_url
 from ..utils.exceptions import QpException
 
 # ROIs with values larger than this will trigger a warning
@@ -122,7 +118,7 @@ class DragOptions(QtGui.QDialog):
         result = dialog.exec_()
         return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
 
-class MainWindow(QtGui.QMainWindow):
+class QuickWindow(QtGui.QMainWindow):
     """
     Main application window
 
@@ -134,7 +130,7 @@ class MainWindow(QtGui.QMainWindow):
     """
 
     def __init__(self, load_data=None, load_roi=None):
-        super(MainWindow, self).__init__()
+        super(QuickWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
         self.view_options_dlg = ViewOptions(self, self.ivm)
@@ -148,93 +144,28 @@ class MainWindow(QtGui.QMainWindow):
         # Default dir to load files from is the user's home dir
         self.default_directory = os.path.expanduser("~")
 
-        # Widgets 
-        self.widget_groups = {}
-        self.current_widget = None
-
-        widgets = get_plugins("widgets")
-        for wclass in widgets:
-            w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
-            if w.group not in self.widget_groups:
-                self.widget_groups[w.group] = []
-            self.widget_groups[w.group].append(w)
-
-        for group, widgets in self.widget_groups.items():
-            widgets.sort(key=lambda x: x.position)
-
-        # Initialize menu and tabs
+        # Initialize menu
         self.init_menu()
-        self.init_tabs()
         
-        # Main layout - image view to left, tabs to right
+        # Main layout
         main_widget = QtGui.QWidget()
         hbox = QtGui.QHBoxLayout()
-        splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
-        splitter.addWidget(self.ivl)
-        splitter.addWidget(self.tab_widget)
-        splitter.setStretchFactor(0, 4)
-        splitter.setStretchFactor(1, 1)
-        hbox.addWidget(splitter)
+        hbox.addWidget(self.ivl)
         main_widget.setLayout(hbox)
         self.setCentralWidget(main_widget)
         
         # General properties of main window
         self.setWindowTitle("Quantiphyse %s" % get_version())
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
-        self.resize(1000, 700)
+        self.resize(700, 500)
         self.setUnifiedTitleAndToolBarOnMac(True)
         self.setAcceptDrops(True)
         self.show()
-
-        settings = QtCore.QSettings()
-        reg = settings.value("registered", 0)
-        #reg = 0
-        if not reg:
-            try:
-                dlg = RegisterDialog(self)
-                res = dlg.exec_()
-                if res:
-                    dlg.send_register_email(dlg.name_edit.text(), dlg.inst_edit.text(), dlg.email_edit.text())
-                    settings.setValue("registered", 1)
-                else:
-                    self.close()
-                    QtCore.QCoreApplication.quit()
-            except:
-                # On failure, allow program to continue but do not mark user as registered
-                pass
 
         # autoload any files that have been passed from the command line
         if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
         if load_roi is not None: self.load_data(fname=load_roi, ftype="ROI")
 
-    def init_tabs(self):
-        self.tab_widget = FingerTabWidget(self)
-
-        # Add widgets flagged to appear by default
-        for w in self.widget_groups["DEFAULT"]:
-            index = self.tab_widget.addTab(w, w.icon, w.tabname)
-            w.init_ui()
-            w.visible = True
-            w.index = index
-        self.tab_widget.currentChanged.connect(self.select_tab)
-        self.select_tab(0)
-
-    def show_widget(self):
-        # For some reason a closure did not work here - get the widget to show from the event sender
-        w = self.sender().widget
-        if not w.visible:
-            index = self.tab_widget.addTab(w, w.icon, w.tabname)
-            w.init_ui()
-            w.visible = True
-            w.index = index
-        self.tab_widget.setCurrentIndex(w.index)
-
-    def select_tab(self, idx):
-        if self.current_widget is not None:
-            self.current_widget.deactivate()
-        self.current_widget = self.tab_widget.widget(idx)
-        self.current_widget.activate()
-        
     def init_menu(self):
         """
         Set up the main window menus
@@ -283,20 +214,8 @@ class MainWindow(QtGui.QMainWindow):
         help_action.setStatusTip('See online help file')
         help_action.triggered.connect(self.show_help)
 
-        # Advanced --> Python Console
-        console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
-        console_action.setStatusTip('Run a console for advanced interaction')
-        console_action.triggered.connect(self.show_console)
-        
-        # Advanced --> Install Packages
-        #install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
-        #install_action.setStatusTip('Install additional packages')
-        #install_action.triggered.connect(self.install_packages)
-
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
-        widget_menu = menubar.addMenu('&Widgets')
-        advanced_menu = menubar.addMenu('&Advanced')
         help_menu = menubar.addMenu('&Help')
 
         file_menu.addAction(load_action)
@@ -306,28 +225,8 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(clear_action)
         file_menu.addAction(exit_action)
 
-        widget_submenus = {"" : widget_menu}
-        DEFAULT_GROUPS = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
-        for group in DEFAULT_GROUPS:
-            widget_submenus[group] = widget_menu.addMenu(group)
-
-        for group in sorted(self.widget_groups.keys()):
-            if group != "DEFAULT":
-                if group not in widget_submenus:
-                    widget_submenus[group] = widget_menu.addMenu(group)
-                    
-                for w in self.widget_groups[group]:
-                    action = QtGui.QAction(w.icon, '&%s' % w.name, self)
-                    action.setStatusTip(w.description)
-                    action.widget = w
-                    action.triggered.connect(self.show_widget)
-                    widget_submenus[group].addAction(action)
-
         help_menu.addAction(help_action)
         help_menu.addAction(about_action)
-
-        advanced_menu.addAction(console_action)
-        #advanced_menu.addAction(install_action)
 
         # extra info displayed in the status bar
         self.statusBar()
@@ -353,7 +252,7 @@ class MainWindow(QtGui.QMainWindow):
             e.accept()
             fnames = []
             for url in e.mimeData().urls():
-                fnames.append(local_file_from_drop_url(url))
+                names.append(local_file_from_drop_url(url))
             self.raise_()
             self.activateWindow()
             for fname in fnames:
@@ -369,47 +268,13 @@ class MainWindow(QtGui.QMainWindow):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
-        <h2 align="center">Contributers</h2>
-        <p align="center">Martin Craig (current maintainer)</p>
-        <p align="center">Benjamin Irving (original author)</p>
+        <p align="center">Created by Benjamin Irving</p>
+        <h2 align="center">Contributors</h2>
+        <p align="center">Benjamin Irving</p>
+        <p align="center">Martin Craig</p>
         <p align="center">Michael Chappell</p>
-        <p align="center">Paula Croal</p>
         """ % get_version()
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
-
-    #def install_packages(self):
-    #    raise QpException("Package installation not implemented yet")
-
-    def show_console(self):
-        """
-        Creates a pop up console that allows interaction with the GUI and data
-        Uses:
-        pyqtgraph.console
-        """
-        # Places that the console has access to
-        namespace = {'np': np, 'ivm': self.ivm, 'self': self}
-        for name, ovl in self.ivm.data.items():
-            namespace[name] = ovl.std()
-        for name, roi in self.ivm.rois.items():
-            namespace[name] = roi.std()
-
-        text = (
-            """
-            ****** Quantiphyse Console ******
-
-            This is a python console that allows interaction with the GUI data and running of scripts.
-
-            Libraries already imported
-              np: Numpy
-
-            Access to data
-              ivm: Access to all the stored image data
-
-            """)
-        self.con1 = pyqtgraph.console.ConsoleWidget(namespace=namespace, text=text)
-        self.con1.setWindowTitle('Quantiphyse Console')
-        self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
-        self.con1.show()
 
     def load_data(self, fname=None, name=None, ftype=None):
         """

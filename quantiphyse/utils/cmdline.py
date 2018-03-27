@@ -67,7 +67,11 @@ class Workspace:
             debug("Checking %s" % ex)
             if os.path.isfile(ex) and os.access(ex, os.X_OK):
                 return ex
-        
+            elif sys.platform.startswith("win"):
+                ex += ".exe"
+                if os.path.isfile(ex) and os.access(ex, os.X_OK):
+                    return ex
+            
         warn("Failed to find command line program: %s" % cmd)
         return cmd
     
@@ -101,7 +105,10 @@ class Workspace:
         os.chdir(self.workdir)
         try:
             cmd = self._find(cmd)
-            cmd_args = shlex.split(cmd + " " + argline)
+            print(cmd)
+
+            cmd_args = shlex.split(cmd + " " + argline, posix=not sys.platform.startswith("win"))
+            print(cmd_args)
             for arg, value in argdict.items():
                 cmd_args.append(arg)
                 if value != "": cmd_args.append(value)

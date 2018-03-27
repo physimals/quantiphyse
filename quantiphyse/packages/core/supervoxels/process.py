@@ -5,14 +5,13 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import numpy as np
-import skimage.segmentation 
 
 from quantiphyse.utils.exceptions import QpException
 
 from quantiphyse.analysis import Process
 from quantiphyse.analysis.feat_pca import PcaFeatReduce
 
-from .perfusionslic import PerfSLIC, slic_feat
+from .perfusionslic import slic_feat
 
 class SupervoxelsProcess(Process):
     """
@@ -34,7 +33,7 @@ class SupervoxelsProcess(Process):
         # Run PCA feature extraction
         fe = PcaFeatReduce(img)
         feat_image, _ = fe.get_training_features(opt_normdata=True, opt_normimage=normalise_input_image,
-                                                  feature_volume=True, n_components=ncomp, norm_type=norm_type)
+                                                 feature_volume=True, n_components=ncomp, norm_type=norm_type)
         return feat_image
 
     def run(self, options):
@@ -43,7 +42,6 @@ class SupervoxelsProcess(Process):
         sigma = options.pop('sigma', 1)
         recompute_seeds = options.pop('recompute-seeds', True)
         seed_type = options.get('seed-type', 'nrandom')
-        data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         output_name = options.pop('output-name', "supervoxels")
         img = self.get_data(options)
@@ -92,7 +90,7 @@ class MeanValuesProcess(Process):
     """
     Create new data set by replacing voxel values with mean within each ROI region
     """
-    PROCESS_NAME="MeanValues"
+    PROCESS_NAME = "MeanValues"
     
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -118,9 +116,9 @@ class MeanValuesProcess(Process):
         ov_data = np.zeros(data.shape)
         for region in roi.regions:
             if data.ndim > 3:
-                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
-            else:
                 ov_data[roi.std() == region] = np.mean(data[roi.std() == region], axis=0)
+            else:
+                ov_data[roi.std() == region] = np.mean(data[roi.std() == region])
 
         self.ivm.add_data(ov_data, name=output_name, make_current=True)
         self.status = Process.SUCCEEDED

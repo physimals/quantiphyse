@@ -1,13 +1,15 @@
-import os
-import sys
-import time
+"""
+Quantiphyse - Tests for supervoxel clustering widget
+
+Copyright (c) 2013-2018 University of Oxford
+"""
 import unittest 
 
 import numpy as np
 
-from widget_test import WidgetTest
+from quantiphyse.test.widget_test import WidgetTest
 
-from quantiphyse.packages.core.supervoxels import PerfSlicWidget
+from .widgets import PerfSlicWidget
 
 NUM_SV = 4
 NAME = "test_sv"
@@ -16,9 +18,6 @@ SIGMA = 0.5
 COMP = 0.2
 
 class PerfSlicWidgetTest(WidgetTest):
-    """
-    Note tests without a mask are failing at the moment
-    """
 
     def widget_class(self):
         return PerfSlicWidget
@@ -30,8 +29,8 @@ class PerfSlicWidgetTest(WidgetTest):
     def test3dData(self):
         self.ivm.add_data(self.data_3d, name="data_3d")
         self.w.ovl.setCurrentIndex(0)
-        self.app.processEvents()
-        self.assertFalse(self.w.n_comp.spin.isEnabled())
+        self.processEvents()
+        self.assertFalse(self.w.n_comp.spin.isVisible())
 
         self.w.compactness.spin.setValue(COMP)
         self.w.sigma.spin.setValue(SIGMA)
@@ -39,7 +38,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.w.output_name.setText(NAME)
 
         self.harmless_click(self.w.gen_btn)
-        self.app.processEvents()
+        self.processEvents()
         #print(self.ivm.rois[NAME].std())
 
         self.assertTrue(NAME in self.ivm.rois)
@@ -62,7 +61,7 @@ class PerfSlicWidgetTest(WidgetTest):
     def test4dData(self):
         self.ivm.add_data(self.data_4d, name="data_4d")
         self.w.ovl.setCurrentIndex(0)
-        self.app.processEvents()
+        self.processEvents()
         self.assertTrue(self.w.n_comp.spin.isEnabled())
 
         self.w.compactness.spin.setValue(COMP)
@@ -72,7 +71,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.w.output_name.setText(NAME)
 
         self.harmless_click(self.w.gen_btn)
-        self.app.processEvents()
+        self.processEvents()
 
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
