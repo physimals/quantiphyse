@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 from .HistogramWidget import MultiImageHistogramWidget
 from quantiphyse.utils import get_icon, get_lut, get_pencol, debug
-from quantiphyse.volumes import SlicePlane
+from quantiphyse.volumes import OrthoSlice
 from quantiphyse.gui.widgets import OptionsButton
 
 """
@@ -428,8 +428,9 @@ class OrthoView(pg.GraphicsView):
             
             # Plot image slice
             pos = self.ivm.cim_pos
-            plane = SlicePlane(self.ivm.grid, ortho=(self.zaxis, pos[self.zaxis]))
-            slicedata, scale, offset = self.ivm.main.get_slice(plane, vol=pos[3])
+            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, pos[self.zaxis])
+            rawdata=self.ivm.main.get_vol(pos[3])
+            slicedata, scale, offset = plane2.slice_data(rawdata, self.ivm.main.rawgrid)
             print(slicedata.shape, scale, offset)
             self.img.resetTransform()
             self.img.translate(*offset)
@@ -473,9 +474,11 @@ class OrthoView(pg.GraphicsView):
             lut = get_lut(roidata, roiview.alpha)
             roi_levels = [0, len(lut)-1]
             
-            plane = SlicePlane(self.ivm.grid, ortho=(self.zaxis, self.ivm.cim_pos[self.zaxis]))
+            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
+            slicedata, scale, offset = plane2.slice_data(rawdata, roidata.rawgrid)
+
             if roiview.shade:
-                slicedata, scale, offset = roidata.get_slice(plane)
+                rawdata=roidata.get_vol(self.ivm.cim_pos[3])
                 self.img_roi.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
                 self.img_roi.resetTransform()
                 self.img_roi.translate(*offset)
@@ -485,8 +488,6 @@ class OrthoView(pg.GraphicsView):
                 self.img_roi.setImage(np.zeros((1, 1)))
 
             if roiview.contour:
-                slicedata, scale, offset = roidata.get_slice(plane)
-                
                 # Update data and level for existing contour items, and create new ones if needed
                 n_conts = len(self.contours)
                 create_new = False
@@ -521,8 +522,9 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            plane = SlicePlane(self.ivm.grid, ortho=(self.zaxis, self.ivm.cim_pos[self.zaxis]))
-            slicedata, scale, offset = oview.data().get_slice(plane, vol=self.ivm.cim_pos[3])
+            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
+            rawdata=oview.data().get_vol(self.ivm.cim_pos[3])
+            slicedata, scale, offset = plane2.slice_data(rawdata, oview.data().rawgrid)
             self.img_ovl.setBoundaryMode(oview.boundary)
             if oview.roi_only and self.ivm.current_roi is not None:
                 mask, scale, offset = self.ivm.current_roi.get_slice(plane)

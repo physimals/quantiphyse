@@ -58,123 +58,6 @@ For consideration
  - We could expand the OTG to accommodate data outside its range?
 """
 
-class SlicePlane:
-    """
-    Defines a slicing plane within a grid
-
-    May be defined in three wasy:
-
-     - As an orthogonal slice using ``ortho=(axis, position)``
-     - As a slice through an ``origin`` with two 3D ``basis_vectors``
-     - From an existing SlicePlane, but applied to a new grid
-
-    The following attributes are defined:
-
-     - ``origin`` Starting point of the slice in grid co-ordinates
-     - ``basis_vectors`` Two 3D basis vectors for the plane in grid co-ordinates
-     - ``unit_vectors`` Normalized version of basis_vectors
-     - ``offset`` Offset values to apply to slices so they have consistent position.
-     - ``scales`` Scale factors to apply to slices so that they have consistent size
-
-    """
-    def __init__(self, grid, ortho=None, basis_vectors=None, origin=None, plane=None):
-        self.grid = grid
-        if ortho is not None:
-            self._init_ortho(*ortho)
-        elif basis_vectors is not None and origin is not None:
-            self._init_generic(origin, basis_vectors)     
-        elif plane is not None:
-            debug("INIT PLANE")
-            trans = Transform(plane.grid, grid)
-            origin = trans.transform_position(plane.origin)
-            basis_vectors = [trans.transform_direction(v) for v in plane.basis_vectors]
-            debug(origin, basis_vectors)
-            self._init_generic(origin, basis_vectors)
-        else:
-            raise RuntimeError("Not enough information to construct SlicePlane")
-
-        
-    def _init_ortho(self, axis, pos):
-        debug("INIT ORTHO")
-        self.origin = [0, 0, 0]
-        self.origin[axis] = pos
-        basis = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        del basis[axis]
-        self.basis_vectors = [self.grid.transform.dot(v) for v in basis]
-        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]
-        self.scales = [n for n in self.norms]
-        # Offset by 0.5 voxels since co-ords should be voxel centres
-        self.offset = [-n/2 for n in self.norms]
-        self.ortho = True
-        self.ortho_slices = [slice(int(0), self.grid.shape[ax], 1) for ax in range(3)]
-        self.ortho_slices[axis] = pos
-        debug(self.origin, self.basis_vectors, self.norms, self.offset, self.scales)
-        debug(self.ortho_slices)
-
-    def _init_generic(self, origin, basis):
-        debug("INIT GENERIC")
-        self.origin = list(origin)    
-        self.unit_vectors = [v / np.linalg.norm(v) for v in basis]
-        self.grid_vectors = [np.array(v) / max(np.abs(v)) for v in basis]
-        self.basis_vectors = [self.grid.transform.dot(v) for v in self.unit_vectors]
-        self.norms = [np.linalg.norm(v) for v in self.basis_vectors]    
-
-        self.scales = [n for n in self.norms]
-        self.offset = [-n/2 for n in self.norms]
-        debug(self.origin, self.basis_vectors, self.norms, self.offset, self.scales)
-
-        ax1, d1 = self.is_ortho_vector(self.unit_vectors[0])
-        ax2, d2 = self.is_ortho_vector(self.unit_vectors[1])
-        if ax1 is not None and ax2 is not None:
-            debug("GENERIC ORTHO")
-            ax3 = 3-ax2-ax1
-            self.ortho = True
-            self.ortho_slices = [slice(None),]*3
-            self.ortho_slices[ax3] = int(self.origin[ax3])
-            for idx, ax, d in ((0, ax1, d1), (1, ax2, d2)):
-                if self.origin[ax] < 0:
-                    self.offset[idx] += self.origin[ax]
-                elif self.origin[ax] > self.grid.shape[ax]-1:
-                    self.offset[idx] += self.origin[ax] - self.grid.shape[ax] + 1
-
-                if d == 1:
-                    self.ortho_slices[ax] = slice(int(max(0, self.origin[ax])), self.grid.shape[ax], 1)
-                else:
-                    self.ortho_slices[ax] = slice(int(min(self.grid.shape[ax]-1, self.origin[ax])), None, -1)
-            debug(self.origin, self.offset, self.ortho_slices)
-        else:
-            self.ortho = False
-            n1, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[0])
-            n2, _, _, _ = self.grid.line_intersection(self.origin, self.basis_vectors[1])
-            self.shape = (n1, n2)
-            debug("NON-ORTHO")
-            debug(n1, n2)
-
-    def slice_data(self, data, include_mask=False):
-        """
-        Extract a data slice in raw data resolution
-
-        grid is the grid on which the slice position/direction is defined
-        axis is the axis (relative to grid) the slice is normal to
-        position is the position (relative to grid) of the slice position
-        """
-        if self.ortho:
-            sdata = data[self.ortho_slices]
-        else:
-            sdata = pg.affineSlice(data, self.shape, self.origin[:3], self.basis_vectors, range(3))
-
-        if include_mask:
-            smask = self.slice_data(np.ones(data.shape))
-            return sdata, smask
-        else:
-            return sdata
-
-    def is_ortho_vector(self, vec):
-        for ax, v in enumerate(vec):
-            if abs(abs(v)-1) < EQ_TOL:
-                return ax, math.copysign(1, v)
-        return None, None
-
 class DataGrid:
     """
     Defines a regular 3D grid in standard space
@@ -204,7 +87,7 @@ class DataGrid:
             raise RuntimeError("Grid afine must be 4x4 matrix")
         self.affine = np.copy(affine)
 
-        self.origin = affine[:3,3]
+        self.origin = tuple(affine[:3,3])
         self.transform = affine[:3,:3]
         self.inv_transform = np.linalg.inv(self.transform)
 
@@ -243,36 +126,87 @@ class DataGrid:
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
 
-    def line_intersection(self, origin, direction):
-        #debug("LI: ", origin, direction)
-        n_fwd, p_fwd, n_bwd, p_bwd = None, None, None, None
-        for o, x, y in [(0, 0, 1), (0, 0, 2), (0, 1, 2), (1, 0, 1), (1, 0, 2), (1, 1, 2)]:
-            #debug("LI:", o, x, y)
-            vo = self.origin + o*sum([self.shape[v] * self.transform[:,v] for v in range(3)])
-            #debug("LI: O=", vo)
-            vx = self.transform[:,x]
-            vy = self.transform[:,y]
-            #debug("LI: X,Y=", vx, vy)
-            mat = np.zeros((3, 3))
-            mat[:, 0] = -direction
-            mat[:, 1] = vx
-            mat[:, 2] = vy
-            #debug("LI: mat")
-            #debug(mat)
-            try:
-                l, m, n = np.linalg.inv(mat).dot(origin - vo)
-                #debug("LI: lmn=", l, m, n)
-                p = origin + l*direction 
-                if l > 0 and (l > n_fwd or n_fwd is None):
-                    n_fwd = l
-                    p_fwd = p
-                elif l < 0 and (-l > n_bwd or n_bwd is None):
-                    n_bwd = -l
-                    p_bwd = p
-            except np.linalg.LinAlgError:
-                pass
-                #debug("No intersection")
-        return n_fwd, p_fwd, n_bwd, p_bwd
+class OrthoSlice(DataGrid):
+    """
+    Grid which is an orthogonal slice through another grid
+    
+    May be defined in two ways:
+
+     - As an orthogonal slice through a grid, using ``ortho=(grid, zaxis, position)``
+     - As a slice through an ``origin`` with two 3D ``basis_vectors``
+
+    The following attributes are defined:
+
+     - ``origin`` Starting point of the slice in world co-ordinates
+     - ``basis_vectors`` Two 3D basis vectors for the plane in world co-ordinates
+     - ``unit_vectors`` Normalized version of basis_vectors
+    """
+    def __init__(self, grid, zaxis, pos):
+        affine = np.zeros((4, 4))
+        shape = [1, 1, 1]
+        col = 0
+        for ax in range(3):
+            if ax != zaxis:
+                affine[:,col] = grid.affine[:,ax]
+                shape[col] = grid.shape[ax]
+                col += 1
+            else:
+                affine[:,2] = grid.affine[:,ax]
+        affine[:,3] = grid.affine[:,3] + pos * affine[:,2]
+        DataGrid.__init__(self, shape, affine)
+        self.basis = [tuple(self.transform[:,0]), tuple(self.transform[:,1])]
+
+    def slice_data(self, data, grid):
+        """
+        Extract a data slice in raw data resolution
+
+        grid is the grid on which the slice position/direction is defined
+        axis is the axis (relative to grid) the slice is normal to
+        position is the position (relative to grid) of the slice position
+        """
+        
+        print("OrthoSlice: grid origin: %s" % str(self.origin))
+        print("OrthoSlice: grid v1: %s" % str(self.basis[0]))
+        print("OrthoSlice: grid v2: %s" % str(self.basis[1]))
+
+        trans = Transform(self, grid)
+        data_origin = trans.transform_position((0, 0, 0))
+        data_basis = [
+            trans.transform_direction((1, 0, 0)),
+            trans.transform_direction((0, 1, 0))
+        ]
+        print("OrthoSlice: data origin: %s" % str(data_origin))
+        print("OrthoSlice: data v1: %s" % str(data_basis[0]))
+        print("OrthoSlice: data v2: %s" % str(data_basis[1]))
+
+        slice_shape, slice_v, slice_scale = [], [], []
+        for idx in range(2):
+            absv = np.absolute(data_basis[idx])
+            bestd = np.argmax(absv)
+            slice_shape.append(data.shape[bestd])
+            scale = 1/absv[bestd]
+            slice_v.append(data_basis[idx]*scale)
+            slice_scale.append(scale)
+        
+        print("OrthoSlice: slice shape: %s" % str(slice_shape))
+        print("OrthoSlice: slice v1: %s" % str(slice_v[0]))
+        print("OrthoSlice: slice v2: %s" % str(slice_v[1]))
+        print("OrthoSlice: slice scale: %s" % str(slice_scale))
+
+        #if self.ortho:
+        if False:
+            sdata = data[self.ortho_slices]
+        else:
+            sdata = pg.affineSlice(data, slice_shape, data_origin, slice_v, range(3))
+            mask = np.ones(data.shape)
+            smask = pg.affineSlice(mask, slice_shape, data_origin, slice_v, range(3))
+        return sdata, slice_scale, (0, 0)
+
+    def is_ortho_vector(self, vec):
+        for ax, v in enumerate(vec):
+            if abs(abs(v)-1) < EQ_TOL:
+                return ax, math.copysign(1, v)
+        return None, None
 
 # Tolerance for treating values as equal
 # Used to determine if matrices are diagonal or identity
