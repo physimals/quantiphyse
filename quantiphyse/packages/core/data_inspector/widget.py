@@ -47,16 +47,22 @@ class GridView(QtGui.QWidget):
         grid.setColumnStretch(3, 1)
     
     def set_data(self, data):
-        self.data = data
-        if data is not None:
-            if hasattr(data, "nifti_header"):
-                self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
-            self.transform.setValues(data.grid.transform)
-            self.origin.setValues([[x,] for x in data.grid.origin])
-        else:
-            self.coord_label.setText("unknown")
-            self.transform.setValues(np.identity(3))
-            self.origin.setValues([[0],]*3)
+        self.transform.blockSignals(True)
+        self.origin.blockSignals(True)
+        try:
+            self.data = data
+            if data is not None:
+                if hasattr(data, "nifti_header"):
+                    self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
+                self.transform.setValues(data.grid.transform)
+                self.origin.setValues([[x,] for x in data.grid.origin])
+            else:
+                self.coord_label.setText("unknown")
+                self.transform.setValues(np.identity(3))
+                self.origin.setValues([[0],]*3)
+        finally:
+            self.transform.blockSignals(False)
+            self.origin.blockSignals(False)
 
     def _changed(self):
         if self.data is not None:

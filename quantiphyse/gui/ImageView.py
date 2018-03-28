@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 from .HistogramWidget import MultiImageHistogramWidget
 from quantiphyse.utils import get_icon, get_lut, get_pencol, debug
-from quantiphyse.volumes import OrthoSlice
+from quantiphyse.volumes import OrthoSlice, Transform
 from quantiphyse.gui.widgets import OptionsButton
 
 """
@@ -428,29 +428,24 @@ class OrthoView(pg.GraphicsView):
                 # X-axis is left/right
                 self.vb.invertX(self.iv.opts.orientation == 0)
                 if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL:
-                    l, r, self.x_scale = 1, 0, -1
+                    l, r = 1, 0
                 else: 
-                    l, r, self.x_scale = 0, 1, 1
+                    l, r = 0, 1
                 self.labels[r].setText("R")
                 self.labels[l].setText("L")
-            else:
-                self.x_scale = 1
 
             # Get image slice
             pos = self.ivm.cim_pos
             plane = OrthoSlice(self.ivm.grid, self.zaxis, pos[self.zaxis])
             slicedata, scale, offset = self.ivm.main.slice_data(plane, vol=pos[3])
-            offset = (offset[0] * self.x_scale, offset[1])
-            #print(slicedata.shape, scale, offset)
-            self.img.resetTransform()
-            self.img.translate(*offset)
-            self.img.scale(*scale)
-            self.img.translate(-0.5, -0.5)
-            #debug("Slice min/max: ", np.min(slicedata), np.max(slicedata))
+            #debug(slicedata.shape, scale, offset)
+            self.img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
             self.img.setImage(slicedata, autoLevels=False)
 
-        self.vline.setPos(float(self.ivm.cim_pos[self.xaxis]))
-        self.hline.setPos(float(self.ivm.cim_pos[self.yaxis]))
+        trans = Transform(self.ivm.grid, self.ivm.main.grid)
+        tpos = trans.transform_position(self.ivm.cim_pos[:3])
+        self.vline.setPos(float(tpos[self.xaxis]))
+        self.hline.setPos(float(tpos[self.yaxis]))
         self.vline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
         self.hline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
 
@@ -487,14 +482,10 @@ class OrthoView(pg.GraphicsView):
             
             plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
             slicedata, scale, offset = roidata.slice_data(plane)
-            offset = (offset[0] * self.x_scale, offset[1])
 
             if roiview.shade:
                 self.img_roi.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
-                self.img_roi.resetTransform()
-                self.img_roi.translate(*offset)
-                self.img_roi.scale(*scale)
-                self.img_roi.translate(-0.5, -0.5)
+                self.img_roi.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
@@ -536,7 +527,7 @@ class OrthoView(pg.GraphicsView):
             
             plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
             slicedata, scale, offset = oview.data().slice_data(plane, vol=self.ivm.cim_pos[3])
-            offset = (offset[0] * self.x_scale, offset[1])
+            #debug(slicedata.shape, scale, offset)
 
             self.img_ovl.setBoundaryMode(oview.boundary)
             if oview.roi_only and self.ivm.current_roi is not None:
@@ -544,12 +535,8 @@ class OrthoView(pg.GraphicsView):
                 self.img_ovl.mask = mask
             else:
                 self.img_ovl.mask = None
-            print(slicedata.shape, scale, offset)
             self.img_ovl.setImage(slicedata, autoLevels=False)
-            self.img_ovl.resetTransform() 
-            self.img_ovl.translate(*offset)
-            self.img_ovl.scale(*scale)
-            self.img_ovl.translate(-0.5, -0.5)
+            self.img_ovl.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1], offset[0], offset[1]))
 
     def resize_win(self, event):
         """

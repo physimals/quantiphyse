@@ -87,7 +87,7 @@ class NiftiData(QpData):
                     self.rawdata = np.expand_dims(self.rawdata, 2)
 
         return self.rawdata
-
+        
 class DicomFolder(QpData):
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti
