@@ -280,7 +280,7 @@ class DataStatisticsProcess(Process):
         if roi is not None:
             roi_labels = roi.regions
         else:
-            roi = NumpyData(np.ones(ovl.stdgrid.shape[:3]), ovl.stdgrid, "temp", roi=True)
+            roi = NumpyData(np.ones(ovl.grid.shape[:3]), ovl.grid, "temp", roi=True)
             roi_labels = [1,]
 
         if (ovl is None):

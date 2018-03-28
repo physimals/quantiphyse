@@ -56,7 +56,6 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
 
             # Only needs to be done once for a new DV
             self._update_histogram()
-            arr = dv.data().std()
             self.dv.sig_changed.connect(self._update)
         else:
             self.plot.setData([], [])

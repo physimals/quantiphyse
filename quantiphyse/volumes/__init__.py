@@ -155,58 +155,7 @@ class OrthoSlice(DataGrid):
         affine[:,3] = grid.affine[:,3] + pos * affine[:,2]
         DataGrid.__init__(self, shape, affine)
         self.basis = [tuple(self.transform[:,0]), tuple(self.transform[:,1])]
-
-    def slice_data(self, data, grid):
-        """
-        Extract a data slice in raw data resolution
-
-        grid is the grid on which the slice position/direction is defined
-        axis is the axis (relative to grid) the slice is normal to
-        position is the position (relative to grid) of the slice position
-        """
-        
-        print("OrthoSlice: grid origin: %s" % str(self.origin))
-        print("OrthoSlice: grid v1: %s" % str(self.basis[0]))
-        print("OrthoSlice: grid v2: %s" % str(self.basis[1]))
-
-        trans = Transform(self, grid)
-        data_origin = trans.transform_position((0, 0, 0))
-        data_basis = [
-            trans.transform_direction((1, 0, 0)),
-            trans.transform_direction((0, 1, 0))
-        ]
-        print("OrthoSlice: data origin: %s" % str(data_origin))
-        print("OrthoSlice: data v1: %s" % str(data_basis[0]))
-        print("OrthoSlice: data v2: %s" % str(data_basis[1]))
-
-        slice_shape, slice_v, slice_scale = [], [], []
-        for idx in range(2):
-            absv = np.absolute(data_basis[idx])
-            bestd = np.argmax(absv)
-            slice_shape.append(data.shape[bestd])
-            scale = 1/absv[bestd]
-            slice_v.append(data_basis[idx]*scale)
-            slice_scale.append(scale)
-        
-        print("OrthoSlice: slice shape: %s" % str(slice_shape))
-        print("OrthoSlice: slice v1: %s" % str(slice_v[0]))
-        print("OrthoSlice: slice v2: %s" % str(slice_v[1]))
-        print("OrthoSlice: slice scale: %s" % str(slice_scale))
-
-        #if self.ortho:
-        if False:
-            sdata = data[self.ortho_slices]
-        else:
-            sdata = pg.affineSlice(data, slice_shape, data_origin, slice_v, range(3))
-            mask = np.ones(data.shape)
-            smask = pg.affineSlice(mask, slice_shape, data_origin, slice_v, range(3))
-        return sdata, slice_scale, (0, 0)
-
-    def is_ortho_vector(self, vec):
-        for ax, v in enumerate(vec):
-            if abs(abs(v)-1) < EQ_TOL:
-                return ax, math.copysign(1, v)
-        return None, None
+        self.normal = tuple(self.transform[:,2])
 
 # Tolerance for treating values as equal
 # Used to determine if matrices are diagonal or identity
@@ -351,9 +300,7 @@ class QpData:
         self.name = name
 
         # Grid the data was defined on. 
-        self.rawgrid = grid
-        self.w2raw = np.linalg.inv(self.rawgrid.affine)
-        self.w2raw3 = np.linalg.inv(self.rawgrid.transform)
+        self.grid = grid
 
         # Number of volumes (1=3D data)
         self.nvols = nvols
@@ -363,27 +310,33 @@ class QpData:
         # File it was loaded from, if relevant
         self.fname = fname
 
-        # Set standard grid to match raw grid, it will be changed when/if regrid() is called
-        self.stddata = None
-        self.stdgrid = grid
-
-        # Basic default, updated when stddata is evaluated
-        self.range = (0, 1)
         self.dps = 1
 
         # Whether raw data is 2d + time incorrectly returned as 3D
         self.raw_2dt = False
 
         # Whether to treat as an ROI data set
+        self.range = self.raw().min(), self.raw().max()
         self.set_roi(roi)
 
     def raw(self):
         raise NotImplementedError("Internal Error: raw() has not been implemented. This is a bug - please inform the authors")
 
+    def get_vol(self, vol):
+        """
+        Default implementation calls raw() to return all data. Implementations may override
+        e.g. to only load the required volume
+        """
+        rawdata=self.raw()
+        if self.ndim == 4:
+            rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
+        return rawdata
+        
     def std(self):
-        if self.stddata is None:
-            self._update_stddata()
-        return self.stddata
+        raise Exception("Removed")
+
+    def regrid(self):
+        raise Exception("Removed")
 
     def set_2dt(self):
         """
@@ -393,60 +346,174 @@ class QpData:
         is completely ignored. In order to work, the underlying class must implement the
         change in raw().
         """
-        if self.nvols != 1 or self.rawgrid.shape[2] == 1:
+        if self.nvols != 1 or self.grid.shape[2] == 1:
             raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
 
         self.raw_2dt = True
-        # FIXME hack because it's not clear what to do with the grid apart from make sure it's 2D
-        self.nvols = self.rawgrid.shape[2]
+        self.nvols = self.grid.shape[2]
         self.ndim = 4
-        self.rawgrid.shape[2] = 1
-        self.stddata = None
 
-    def regrid(self, grid):
+        # The grid transform can't be properly interpreted because basically the file is broken,
+        # so just make it 2D and hope the remaining transform is sensible
+        self.grid.shape[2] = 1
+
+    def resample(self, grid):
+        t = Transform(self.grid, grid)
+        rawdata = self.raw()
+        if rawdata.ndim not in (3, 4):
+            raise RuntimeError("Data must be 3D or 4D (padded if necessary")
+        regridded_data = t.transform_data(rawdata)
+        self._remove_nans(regridded_data)  
+
+        if self.roi:
+            if regridded_data.min() < 0 or regridded_data.max() > 2**32:
+                raise QpException("ROIs must contain values between 0 and 2**32")
+            if not np.equal(np.mod(regridded_data, 1), 0).any():
+                raise QpException("ROIs must contain integers only")
+            regridded_data = regridded_data.astype(np.int32)
+        
+        return regridded_data
+        
+    def slice_data(self, plane, vol=0):
         """
-        Set the standard grid - i.e. the grid on which data returned
-        by std() is defined.
+        Extract a data slice in raw data resolution
+
+        grid is the grid on which the slice position/direction is defined
+        axis is the axis (relative to grid) the slice is normal to
+        position is the position (relative to grid) of the slice position
         """
-        if not self.stdgrid.matches(grid):
-            debug("Regridding")
-            self.stdgrid = grid
-            #self._update_stddata()
+        rawdata=self.get_vol(vol)
+        mask = np.ones(rawdata.shape)
+
+        print("OrthoSlice: plane origin: %s" % str(plane.origin))
+        print("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
+        print("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
+        print("OrthoSlice: plane n: %s" % str(plane.normal))
+
+        trans = Transform(plane, self.grid)
+        data_origin = trans.transform_position((0, 0, 0))
+        data_basis = [
+            trans.transform_direction((1, 0, 0)),
+            trans.transform_direction((0, 1, 0))
+        ]
+        data_normal = trans.transform_direction((0, 0, 1))
+        data_naxis = np.argmax(np.absolute(data_normal))
+        
+        print("OrthoSlice: data origin: %s" % str(data_origin))
+        print("OrthoSlice: data v1: %s" % str(data_basis[0]))
+        print("OrthoSlice: data v2: %s" % str(data_basis[1]))
+        print("OrthoSlice: data n: %s" % str(data_normal))
+        print("OrthoSlice: data naxis: %i" % data_naxis)
+
+        data_axes = range(3)
+        del data_axes[data_naxis]
+        data_b, sh = [], []
+        for ax in data_axes:
+            b = [0, 0, 0]
+            b[ax] = 1
+            b[data_naxis] = -(data_normal[ax] / data_normal[data_naxis])
+            data_b.append(b)
+            sh.append(rawdata.shape[ax])
+        print("OrthoSlice: data b: %s (shape=%s)" % (str(data_b), str(sh)))
+        trans2 = Transform(self.grid, plane)
+        trans_mtx = [
+            trans2.transform_direction((1, 0, 0)),
+            trans2.transform_direction((0, 1, 0))
+        ]
+        print("OrthoSlice: trans matrix: %s, %s" % (trans_mtx[0], trans_mtx[1]))
+        
+        slice_shape, slice_v, slice_scale = [], [], []
+        for idx in range(2):
+            absv = np.absolute(data_basis[idx])
+            bestd = np.argmax(absv)
+            slice_shape.append(rawdata.shape[bestd])
+            scale = 1/absv[bestd]
+            slice_v.append(data_basis[idx]*scale)
+            slice_scale.append(scale)
+        
+        print("OrthoSlice: slice shape: %s" % str(slice_shape))
+        print("OrthoSlice: slice v1: %s" % str(slice_v[0]))
+        print("OrthoSlice: slice v2: %s" % str(slice_v[1]))
+        print("OrthoSlice: slice scale: %s" % str(slice_scale))
+
+        ax1, sign1 = self._is_ortho_vector(slice_v[0])
+        ax2, sign2 = self._is_ortho_vector(slice_v[1])
+        print(ax1, sign1, ax2, sign2)
+        if ax1 is not None and ax2 is not None:
+            slices = [None, None, None]
+            offset = [0, 0]
+            s, off = self._get_slice(ax1, rawdata.shape[ax1], sign1, data_origin[ax1])
+            slices[ax1] = s
+            offset[0] = -off * slice_scale[0]
+            print("Ortho slice: %s, offset=%f" % (s, off))
+            s, off = self._get_slice(ax2, rawdata.shape[ax2], sign2, data_origin[ax2])
+            slices[ax2] = s
+            offset[1] = -off * slice_scale[1]
+            print("Ortho slice: %s, offset=%f" % (s, off))
+        
+            pos_axis = 3-ax1-ax2
+            pos = data_origin[pos_axis]
+            print("Pos axis=%i, pos=%i" % (pos_axis, pos))
+            
+            if pos < rawdata.shape[pos_axis]:
+                slices[pos_axis] = int(pos)
+                print(slices, rawdata.shape)
+                sdata = rawdata[slices]
+                print(sdata.shape, slice_scale, tuple(offset))
+            else:
+                sdata = np.zeros(slice_shape)
+
+            #if offset[0] != 0: offset[0] = 10
+            #if offset[1] != 0: offset[1] = 0
+
+            return sdata, slice_scale, offset
+
+
+        sdata = pg.affineSlice(rawdata, slice_shape, data_origin, slice_v, range(3))
+        smask = pg.affineSlice(mask, slice_shape, data_origin, slice_v, range(3))
+        return sdata, slice_scale, (0, 0)
+
+    def _get_slice(self, axis, length, sign, origin):
+        if sign == 1:
+            s = slice(0, length, 1)
+            return s, origin
         else:
-            debug("Not bothering to regrid - no change")
+            s = slice(length-1, None, -1)
+            return s, origin-length+1
 
-    def strval(self, pos):
+    def _is_ortho_vector(self, vec):
+        mod = np.linalg.norm(vec)
+        for ax, v in enumerate(vec):
+            if abs(abs(v/mod)-1) < EQ_TOL:
+                return ax, math.copysign(1, v)
+        return None, None
+
+    def strval(self, grid, pos):
         """ 
         Return the data value at pos as a string to an appropriate
         number of decimal places
         """
-        return sf(self.val(pos))
+        return sf(self.val(grid, pos))
         #return str(np.around(self.val(pos), self.dps))
 
-    def val(self, pos):
+    def val(self, grid, pos):
         """ 
         Return the data value at pos 
         """
-        if pos[3] >= self.nvols: pos[3] = self.nvols-1
-        return self.std()[tuple(pos[:self.ndim])]
+        trans = Transform(grid, self.grid)
+        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
 
-    def get_vol(self, vol):
-        rawdata=self.raw()
-        if self.ndim == 4:
-            rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
-        return rawdata
+        rawdata = self.get_vol(pos[3])
+        try:
+            return rawdata[tuple(data_pos)]
+        except IndexError:
+            return 0
         
-    def get_slice(self, plane, vol=0):
-        rawdata=self.get_vol(vol)
-        my_plane = SlicePlane(self.rawgrid, plane=plane)
-        return my_plane.slice_data(rawdata), my_plane.scales, my_plane.offset
-
     def set_roi(self, roi):
         self.roi = roi
         if self.roi:
             if self.nvols != 1:
                 raise RuntimeError("ROIs must be static (single volume) 3D data")
-            self._update_stddata()
 
     def get_bounding_box(self, ndim=3):
         """
@@ -462,7 +529,7 @@ class QpData:
 
         e.g. 
         slices = roi.get_bounding_box(img.ndim)
-        img_restric = img.stddata[slices]
+        img_restric = data[slices]
         ... process img_restict, returning out_restrict
         out_full = np.zeros(img.shape)
         out_full[slices] = out_restrict
@@ -498,37 +565,3 @@ class QpData:
         if not np.all(notnans):
             warnings.warn("Image contains nans or infinity")
             data[np.logical_not(notnans)] = 0
-
-    def _update_stddata(self):
-        #debug("Updating stddata for %s" % self.name)
-        t = Transform(self.rawgrid, self.stdgrid)
-        #debug("Raw grid: ")
-        #debug(self.rawgrid.affine)
-        #debug(self.rawgrid.shape)
-        #debug("Std grid: ")
-        #debug(self.stdgrid.affine)
-        #debug(self.stdgrid.shape)
-        rawdata = self.raw()
-        if rawdata.ndim not in (3, 4):
-            raise RuntimeError("Data must be 3D or 4D (padded if necessary")
-        #debug("Raw data range: ", rawdata.min(), rawdata.max())
-        self.stddata = t.transform_data(rawdata)
-        #debug("Std data range: ", self.stddata.min(), self.stddata.max())
-        self._remove_nans(self.stddata)  
-
-        if self.roi:
-            if self.stddata.min() < 0 or self.stddata.max() > 2**32:
-                raise QpException("ROIs must contain values between 0 and 2**32")
-            if not np.equal(np.mod(self.stddata, 1), 0).any():
-                raise QpException("ROIs must contain integers only")
-            self.stddata = self.stddata.astype(np.int32)
-            self.dps = 0
-            self.regions = np.unique(self.stddata)
-            self.regions = self.regions[self.regions > 0]
-        else:   
-            self.dps = self._calc_dps()
-            self.regions = []
-
-        self.range = (self.stddata.min(), self.stddata.max())
-        #debug("Done")
-        

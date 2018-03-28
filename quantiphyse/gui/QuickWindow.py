@@ -16,7 +16,7 @@ from PySide import QtCore, QtGui
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-from ..volumes.io import load, save
+from ..volumes.load_save import load, save
 from ..volumes.volume_management import ImageVolumeManagement
 from ..utils import get_icon, get_local_file, get_version, local_file_from_drop_url
 from ..utils.exceptions import QpException
@@ -297,7 +297,7 @@ class QuickWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)

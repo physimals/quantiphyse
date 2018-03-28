@@ -209,11 +209,11 @@ def load(fname):
 
 def save(data, fname, grid=None):
     if grid is None:
-        grid = data.stdgrid
-        arr = data.std()
+        grid = data.grid
+        arr = data.raw()
     else:
-        t = Transform(data.stdgrid, grid)
-        arr = t.transform_data(data.std())
+        t = Transform(data.grid, grid)
+        arr = t.transform_data(data.raw())
 
     img = nib.Nifti1Image(arr, grid.affine)
     img.update_header()

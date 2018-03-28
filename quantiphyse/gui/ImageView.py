@@ -293,7 +293,6 @@ class DataView(QtCore.QObject):
         self.boundary = self.BOUNDARY_TRANS
 
         # Initial colourmap range. 
-        data = self.data().std()
         self.cmap_range = list(self.data().range)
         
     def data(self):
@@ -326,6 +325,7 @@ class MaskableImage(pg.ImageItem):
         pg.ImageItem.__init__(self, image, **kwargs)
         self.mask = None
         self.boundary = DataView.BOUNDARY_TRANS
+        self.border = None
 
     def setBoundaryMode(self, mode):
         self.boundary = mode
@@ -414,6 +414,12 @@ class OrthoView(pg.GraphicsView):
         if self.ivm.main is None: 
             self.img.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
+            # Adjust axis scaling depending on whether voxel size scaling is enabled
+            if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
+                self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
+            else:
+                self.vb.setAspectLocked(True, ratio=1)
+
             for l in self.labels:
                 l.setVisible(True)
 
@@ -421,25 +427,30 @@ class OrthoView(pg.GraphicsView):
             if self.xaxis == 0:
                 # X-axis is left/right
                 self.vb.invertX(self.iv.opts.orientation == 0)
-                if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL: l, r = 1, 0
-                else: l, r = 0, 1
+                if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL:
+                    l, r, self.x_scale = 1, 0, -1
+                else: 
+                    l, r, self.x_scale = 0, 1, 1
                 self.labels[r].setText("R")
                 self.labels[l].setText("L")
-            
-            # Plot image slice
+            else:
+                self.x_scale = 1
+
+            # Get image slice
             pos = self.ivm.cim_pos
-            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, pos[self.zaxis])
-            rawdata=self.ivm.main.get_vol(pos[3])
-            slicedata, scale, offset = plane2.slice_data(rawdata, self.ivm.main.rawgrid)
-            print(slicedata.shape, scale, offset)
+            plane = OrthoSlice(self.ivm.grid, self.zaxis, pos[self.zaxis])
+            slicedata, scale, offset = self.ivm.main.slice_data(plane, vol=pos[3])
+            offset = (offset[0] * self.x_scale, offset[1])
+            #print(slicedata.shape, scale, offset)
             self.img.resetTransform()
             self.img.translate(*offset)
             self.img.scale(*scale)
+            self.img.translate(-0.5, -0.5)
             #debug("Slice min/max: ", np.min(slicedata), np.max(slicedata))
             self.img.setImage(slicedata, autoLevels=False)
 
-        self.vline.setPos(float(self.ivm.cim_pos[self.xaxis])+0.5)
-        self.hline.setPos(float(self.ivm.cim_pos[self.yaxis])+0.5)
+        self.vline.setPos(float(self.ivm.cim_pos[self.xaxis]))
+        self.hline.setPos(float(self.ivm.cim_pos[self.yaxis]))
         self.vline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
         self.hline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
 
@@ -474,15 +485,16 @@ class OrthoView(pg.GraphicsView):
             lut = get_lut(roidata, roiview.alpha)
             roi_levels = [0, len(lut)-1]
             
-            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
-            slicedata, scale, offset = plane2.slice_data(rawdata, roidata.rawgrid)
+            plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
+            slicedata, scale, offset = roidata.slice_data(plane)
+            offset = (offset[0] * self.x_scale, offset[1])
 
             if roiview.shade:
-                rawdata=roidata.get_vol(self.ivm.cim_pos[3])
                 self.img_roi.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
                 self.img_roi.resetTransform()
                 self.img_roi.translate(*offset)
                 self.img_roi.scale(*scale)
+                self.img_roi.translate(-0.5, -0.5)
                 self.img_roi.setZValue(z)
             else:
                 self.img_roi.setImage(np.zeros((1, 1)))
@@ -522,9 +534,10 @@ class OrthoView(pg.GraphicsView):
             if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            plane2 = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
-            rawdata=oview.data().get_vol(self.ivm.cim_pos[3])
-            slicedata, scale, offset = plane2.slice_data(rawdata, oview.data().rawgrid)
+            plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
+            slicedata, scale, offset = oview.data().slice_data(plane, vol=self.ivm.cim_pos[3])
+            offset = (offset[0] * self.x_scale, offset[1])
+
             self.img_ovl.setBoundaryMode(oview.boundary)
             if oview.roi_only and self.ivm.current_roi is not None:
                 mask, scale, offset = self.ivm.current_roi.get_slice(plane)
@@ -536,6 +549,7 @@ class OrthoView(pg.GraphicsView):
             self.img_ovl.resetTransform() 
             self.img_ovl.translate(*offset)
             self.img_ovl.scale(*scale)
+            self.img_ovl.translate(-0.5, -0.5)
 
     def resize_win(self, event):
         """
@@ -584,7 +598,7 @@ class OrthoView(pg.GraphicsView):
 
     def add_arrow(self, pos, col):
         arrow = pg.ArrowItem(pen=col, brush=col)
-        arrow.setPos(float(pos[self.xaxis])+0.5, float(pos[self.yaxis])+0.5)
+        arrow.setPos(float(pos[self.xaxis]), float(pos[self.yaxis]))
         arrow.setVisible(pos[self.zaxis] == pos[self.zaxis]) 
         arrow.setZValue(2)
         self.vb.addItem(arrow)
@@ -690,9 +704,10 @@ class LevelsDialog(QtGui.QDialog):
         cmin, cmax = list(self.dv.data().range)
         within_roi = self.use_roi.isChecked()
         if percentile > 0 or within_roi: 
-            data = self.dv.data().std()
+            data = self.dv.data().resample(self.ivm.grid)
             if within_roi and self.ivm.current_roi is not None:
-                data = data[self.ivm.current_roi.std() > 0]
+                roidata = self.ivm.current_roi.resample(self.ivm.grid)
+                data = data[roidata > 0]
             flat = data.reshape(-1)
             cmin = np.percentile(flat, percentile)
             cmax = np.percentile(flat, 100-percentile)
@@ -792,9 +807,9 @@ class DataSummary(QtGui.QWidget):
         self.vol_name.setText(name)
 
     def _focus_changed(self, pos):
-        if self.ivm.main is not None: self.vol_data.setText(self.ivm.main.strval(pos))
-        if self.ivm.current_roi is not None: self.roi_region.setText(self.ivm.current_roi.strval(pos))
-        if self.ivm.current_data is not None: self.ov_data.setText(self.ivm.current_data.strval(pos))
+        if self.ivm.main is not None: self.vol_data.setText(self.ivm.main.strval(self.ivm.grid, pos))
+        if self.ivm.current_roi is not None: self.roi_region.setText(self.ivm.current_roi.strval(self.ivm.grid, pos))
+        if self.ivm.current_data is not None: self.ov_data.setText(self.ivm.current_data.strval(self.ivm.grid, pos))
 
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """

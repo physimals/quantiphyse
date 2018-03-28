@@ -432,7 +432,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
