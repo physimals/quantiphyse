@@ -389,9 +389,9 @@ class MainWindow(QtGui.QMainWindow):
         # Places that the console has access to
         namespace = {'np': np, 'ivm': self.ivm, 'self': self}
         for name, ovl in self.ivm.data.items():
-            namespace[name] = ovl.std()
+            namespace[name] = ovl.raw()
         for name, roi in self.ivm.rois.items():
-            namespace[name] = roi.std()
+            namespace[name] = roi.raw()
 
         text = (
             """
@@ -454,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
             data.set_2dt()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
+        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
             msgBox = QtGui.QMessageBox()
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
