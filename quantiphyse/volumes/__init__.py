@@ -1,6 +1,19 @@
 """
 Quantiphyse - Basic volume data classes
 
+Concepts:
+
+ - All data is 3D or 4D. 2D (or 1D?) data must be expanded to 3D on load. There is provision
+   for 3D data to be 'interpreted' as 2D multi-volume data (there are broken Nifti files
+   around like this)
+ - All data is defined on a ``grid`` which consists of the data shape and an affine transform
+   from grid co-ordinate space to world space.
+ - The 4th dimension (multiple volumes) is not part of the grid and has no impact on orientation.
+ - Data objects support arbitrary slicing in a plane defined by an normal axis and a position
+   relative to another grid. The output of this slice is an array, a mask (zero where outside range
+   of data, plus a 2D affine transformation to map the data onto the slice grid)
+ - Data objects also support resampling onto a grid, as required for some analysis methods
+
 Copyright (c) 2013-2018 University of Oxford
 """
 
@@ -16,93 +29,71 @@ from PySide import QtGui
 from quantiphyse.utils import debug, sf
 from quantiphyse.utils.exceptions import QpException
 
-"""
-Work-in-progress on Next Generation volume class
+# Tolerance for treating values as equal
+# Used to determine if matrices are diagonal or identity
+EQ_TOL = 1e-3
 
-To support viewing of files in different spaces with 
-interpolation so analysis can be done on a grid.
-
-Basic concepts decided:
-
- - The One True Grid (OTG) is defined by the main volume. It consists of 
-   a 3D shape, and a 3D affine which maps grid co-ordinates onto
-   coordinates in standard space.
- - All data is 4D. 2D (or 1D?) data will be expanded to 4D on load
- - The 4th dimension is not part of the grid and has no impact on orientation.
- - Every data object may have raw data (e.g. from file) and is also regridded onto
-   the OTG. The affine transformations associated with a grid are used for this
- - When a grid 'matches' the OTG (i.e. defines the same voxels, although possibly
-   with different axis order/directions), regridding will be implemented by
-   axis transpositions/flips to avoid the cost of regridding a large 4D volume 
-   using general affine transformations.
- - If the regridding transformation 'looks' diagonal we will pass it to the
-   transform function as a sequence to reduce computational cost.
- - When the main volume is changed, the OTG is changed to and approximately RAS oriented 
-   copy of the main data's raw grid. so the image view is consistent. All data is then 
-   regridded on to the new OTG. Note that the OTG will not be exactly RAS aligned
-   but the image view labels (R/L, S/I, A/P) should be in roughly the right place.
- - This means that if the main data was loaded from a file its raw data and
-   OTG data are not necessarily the same.
- - Data objects may be created already on the standard grid, they will not be
-   regridded and the raw data / OTG data are the same
-
-For consideration
- - Initially only OTG data will be used for viewing and analysis
- - Raw data could be used for viewing and potentially some analysis 
-   (e.g. volume averages which do not depend on slicing)
- - Raw data could be swapped to disk (mem-mapped) to avoid keeping 2 copies
-   of everything - might have an impact if required for analysis
- - 4D data - for now the 4th dimension will need to match but could start
-   off with crude workaround (e.g. if it doesn't just use the first volume)
-   and think about how multiple 4D data could be accommodated.
- - We could expand the OTG to accommodate data outside its range?
-"""
-
-class DataGrid:
+class DataGrid(object):
     """
-    Defines a regular 3D grid in standard space
+    Defines a regular 3D grid in some 'world' space
 
-    A grid consists of :
-      - A 4D affine matrix which describes the transformation from 
-        grid co-ordinates to standard space co-ordinates
-      - A 3D shape (number of points in x, y, z dimensions)
+    :ivar affine: 4D affine matrix which describes the transformation from
+                  grid co-ordinates to standard space co-ordinates
+    :ivar origin: 3D origin of grid in world co-ordinates (last column of ``affine``)
+    :ivar transform: 3x3 submatrix of ``affine`` used to transform directions to world space
+    :ivar spacing: Sequence of length 3 giving spacing between voxels in world units
+    :ivar nvoxels: Number of voxels in the grid
 
-    From the grid affine may be derived:
-      - The grid spacing in standard units (mm)
-      - The grid origin in standard space (last column of the affine)
-      - The grid 3D transformation matrix (first 3x3 submatrix of the affine)
-
-    The objects are not formally immutable but are not designed to be modified
+    A DataGrid is not formally immutable but are not designed to be modified
     """
 
     def __init__(self, shape, affine):
+        """
+        Create a DataGrid object
+
+        :param shape: Sequence of 3 integers giving number of voxels along each axis
+        :param affine: 4x4 affine transformation to world co-ordinates
+        """
         # Dimensionality of the grid - 3D only
-        if len(shape) != 3: 
+        if len(shape) != 3:
             raise RuntimeError("Grid shape must be 3D")
         self.shape = list(shape)[:]
 
         # 3D Affine transformation from grid-space to standard space
-        # This is a 4x4 matrix - includes constant offset
-        if len(affine.shape) != 2 or affine.shape[0] != 4 or affine.shape[1] != 4: 
-            raise RuntimeError("Grid afine must be 4x4 matrix")
-        self.affine = np.copy(affine)
+        # This is a 4x4 matrix - includes constant offset (origin)
+        if len(affine.shape) != 2 or affine.shape[0] != 4 or affine.shape[1] != 4:
+            raise RuntimeError("Grid affine must be 4x4 matrix")
 
-        self.origin = tuple(affine[:3,3])
-        self.transform = affine[:3,:3]
+        self.affine = np.copy(affine)
+        self.origin = tuple(affine[:3, 3])
+        self.transform = affine[:3, :3]
         self.inv_transform = np.linalg.inv(self.transform)
 
-        self.spacing = [np.linalg.norm(self.affine[:,i]) for i in range(3)]
+        self.spacing = [np.linalg.norm(self.affine[:, i]) for i in range(3)]
         self.nvoxels = 1
-        for d in range(3): self.nvoxels *= shape[d]
+        for d in range(3):
+            self.nvoxels *= shape[d]
 
     def grid_to_world(self, coords):
+        """
+        Transform grid co-ordinates to world co-ordinates
+
+        :param coords: 3D grid co-ordinates
+        :return: 3D world co-ordinates
+        """
         return np.dot(self.transform, coords) + self.origin
 
     def world_to_grid(self, coords):
+        """
+        Transform world co-ordinates to grid co-ordinates
+
+        :param coords: 3D world co-ordinates
+        :return: 3D grid co-ordinates
+        """
         return np.dot(self.inv_transform, (coords - self.origin))
 
-    def reorient_ras(self):
-        """ 
+    def get_standard(self):
+        """
         Return a new grid in approximate RAS order, by axis transposition
         and flipping only
 
@@ -110,119 +101,157 @@ class DataGrid:
         with the same voxel spacing but where the x axis is increasing
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
-
-        We make slightly botched use of the Transform class for this - this
-        hack shouldn't be necessary really
         """
+        # We make slightly botched use of the Transform class for this - this
+        # hack shouldn't be necessary really
         rasgrid = DataGrid([1, 1, 1], np.identity(4))
+        return rasgrid
         t = Transform(self, rasgrid)
-        new_shape = [self.shape[d] for d in t.reorder]
-        new_mat = t.tmatrix
-        return DataGrid(new_shape, new_mat)
+        reorder, flip, tmatrix = t._simplify_transforms(t.tmatrix[t.OUT2IN])
+        print(tmatrix)
+        print(t.tmatrix[t.OUT2IN])
+        new_shape = [self.shape[d] for d in reorder]
+        return DataGrid(new_shape, tmatrix)
 
     def matches(self, grid):
         """
-        Return True if grid is identical to this grid
+        Determine if another grid matches this one
+
+        :param grid: DataGrid instance
+        :return: True if ``grid`` is identical to this grid
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
 
 class OrthoSlice(DataGrid):
     """
-    Grid which is an orthogonal slice through another grid
-    
-    May be defined in two ways:
+    DataGrid defined as a 2D orthogonal slice through another grid
 
-     - As an orthogonal slice through a grid, using ``ortho=(grid, zaxis, position)``
-     - As a slice through an ``origin`` with two 3D ``basis_vectors``
+    Has same attributes as :class:`DataGrid`, in addition:
 
-    The following attributes are defined:
-
-     - ``origin`` Starting point of the slice in world co-ordinates
-     - ``basis_vectors`` Two 3D basis vectors for the plane in world co-ordinates
-     - ``unit_vectors`` Normalized version of basis_vectors
+    :ivar basis: Sequence of two 3D basis vectors for the plane in world co-ordinates
+    :ivar normal: 3D normal vector to the plane in world co-ordinates
     """
+
     def __init__(self, grid, zaxis, pos):
+        """
+        Create an OrthoSlice by taking a slice through an existing grid
+
+        :param grid: DataGrid instance
+        :param zaxis: Which axis is the normal axis for the slice (0, 1 or 2)
+        :param pos: Position along ``axis`` to take the slice, in grid co-ordinates
+        """
         affine = np.zeros((4, 4))
         shape = [1, 1, 1]
         col = 0
         for ax in range(3):
             if ax != zaxis:
-                affine[:,col] = grid.affine[:,ax]
+                affine[:, col] = grid.affine[:, ax]
                 shape[col] = grid.shape[ax]
                 col += 1
             else:
-                affine[:,2] = grid.affine[:,ax]
-        affine[:,3] = grid.affine[:,3] + pos * affine[:,2]
+                affine[:, 2] = grid.affine[:, ax]
+        affine[:, 3] = grid.affine[:, 3] + pos * affine[:, 2]
         DataGrid.__init__(self, shape, affine)
-        self.basis = [tuple(self.transform[:,0]), tuple(self.transform[:,1])]
-        self.normal = tuple(self.transform[:,2])
+        self.basis = [tuple(self.transform[:, 0]), tuple(self.transform[:, 1])]
+        self.normal = tuple(self.transform[:, 2])
 
-# Tolerance for treating values as equal
-# Used to determine if matrices are diagonal or identity
-EQ_TOL = 1e-3
-
-class Transform:
+class Transform(object):
     """
     Transforms data on one grid into another
+
+    :ivar tmatrix: Sequence of 2 4x4 affine transformations. First is out grid->in grid, the second
+                   in_grid -> out_grid. The constants ``OUT2IN`` and ``IN2OUT`` allow you to index
+                   which you require (most methods default to using ``OUT2IN``)
     """
 
+    OUT2IN = 0
+    IN2OUT = 1
+
     def __init__(self, in_grid, out_grid):
+        """
+        Construct a transformation from one grid to another
+
+        :param in_grid: Input grid
+        :param out_grid: Output grid
+        """
         debug("Transforming from")
         debug(in_grid.affine)
         debug("To")
         debug(out_grid.affine)
 
-        # Convert the transformation into optional re-ordering and flipping
-        # of axes and a final optional affine transformation
-        # This enables us to use faster methods in the case where the
-        # grids are essentially the same or scaled
-        self.in_grid = in_grid
-        self.out_grid = out_grid
+        self.grid = [out_grid, in_grid]
+        self.tmatrix = [None, None]
 
         # Affine transformation matrix from grid 2 to grid 1
-        self.tmatrix_raw = np.dot(np.linalg.inv(out_grid.affine), in_grid.affine)
-        self.output_shape = out_grid.shape[:]
+        self.tmatrix[self.OUT2IN] = np.dot(np.linalg.inv(out_grid.affine), in_grid.affine)
+        # Affine transformation matrix from grid 1 to grid 2
+        self.tmatrix[self.IN2OUT] = np.linalg.inv(self.tmatrix[self.OUT2IN])
 
-        # Generate potentially simplified transformation using re-ordering and flipping
-        self.reorder, self.flip, self.tmatrix = self._simplify_transforms()
+    def transform_position(self, v, direction=OUT2IN):
+        """
+        Transform a 3D position
 
-    def transform_position(self, v):
-        return self.tmatrix_raw.dot(list(v) + [1,])[:3]
+        :param v: 3D position vector
+        :param direction: Transform.OUT2IN to transform output grid position to input grid.
+                          Transform.IN2OUT for opposite
+        :return Transformed 3D position vector
+        """
+        return self.tmatrix[direction].dot(list(v) + [1,])[:3]
 
-    def transform_direction(self, v):
-        return self.tmatrix_raw[:3,:3].dot(v)
+    def transform_direction(self, v, direction=OUT2IN):
+        """
+        Transform a 3D direction (displacement vector). This does not make use of the grid origins
 
-    def transform_data(self, data):
+        :param v: 3D direction vector
+        :param direction: Transform.OUT2IN to transform output grid position to input grid.
+                          Transform.IN2OUT for opposite
+        :return Transformed 3D direction vector
+        """
+        return self.tmatrix[direction][:3, :3].dot(v)
+
+    def transform_data(self, data, direction=OUT2IN):
+        """
+        Transform 3D or 4D data from one grid to another
+
+        :param data: 3D or 4D Numpy data
+        :param direction: Transform.OUT2IN to transform output grid position to input grid.
+                          Transform.IN2OUT for opposite
+        :return Transformed 3D or 4D data
+        """
+        reorder, flip, tmatrix = self._simplify_transforms(self.tmatrix[direction])
+
         # Perform the flips and transpositions which simplify the transformation
         # and may avoid the need for an affine transformation or make it a simple
         # scaling
-        if len(self.flip) != 0:
+        if len(flip) != 0:
             #debug("Flipping axes: ", self.flip)
-            for d in self.flip: data = np.flip(data, d)
+            for d in flip:
+                data = np.flip(data, d)
 
-        if self.reorder != range(3):
-            if data.ndim == 4: self.reorder = self.reorder + [3]
-            #debug("Re-ordering axes: ", self.reorder)
-            data = np.transpose(data, self.reorder)
+        if reorder != range(3):
+            if data.ndim == 4:
+                reorder = reorder + [3]
+            #debug("Re-ordering axes: ", reorder)
+            data = np.transpose(data, reorder)
 
-        if not self._is_identity(self.tmatrix):
+        if not self._is_identity(tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
             # so we will need an affine transformation
 
             # scipy requires the out->in transform so invert our in->out transform
-            tmatrix = np.linalg.inv(self.tmatrix)
-            affine = tmatrix[:3,:3]
-            offset = list(tmatrix[:3,3])
-            output_shape = self.output_shape[:]
+            tmatrix = np.linalg.inv(tmatrix)
+            affine = tmatrix[:3, :3]
+            offset = list(tmatrix[:3, 3])
+            output_shape = self.grid[direction].shape[:]
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
                 affine = np.append(affine, [[0, 0, 0]], 0)
-                affine = np.append(affine, [[0],[0],[0],[1]],1)
+                affine = np.append(affine, [[0], [0], [0], [1]], 1)
                 offset.append(0)
                 output_shape.append(data.shape[3])
 
             if self._is_diagonal(affine):
-                # The transformation is diagonal, so use this sequence instead of 
+                # The transformation is diagonal, so use this sequence instead of
                 # the full matrix - this will be faster
                 affine = np.diagonal(affine)
             else:
@@ -232,51 +261,55 @@ class Transform:
             #debug("Offset = ", offset)
             #debug("Input shape=", data.shape, data.min(), data.max())
             #debug("Output shape=", output_shape)
-            data = scipy.ndimage.affine_transform(data, affine, offset=offset, output_shape=output_shape, order=0)
-        
+            data = scipy.ndimage.affine_transform(data, affine, offset=offset,
+                                                  output_shape=output_shape, order=0)
+
         return data
-    
+
     def _is_diagonal(self, mat):
         return np.all(np.abs(mat - np.diag(np.diag(mat))) < EQ_TOL)
 
     def _is_identity(self, mat):
         return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
-        
-    def _simplify_transforms(self):
+
+    def _simplify_transforms(self, mat):
+        # Convert the transformation into optional re-ordering and flipping
+        # of axes and a final optional affine transformation
+        # This enables us to use faster methods in the case where the
+        # grids are essentially the same or scaled
+
         # Flip/transpose the axes to put the biggest numbers on
         # the diagonal and make negative diagonal elements positive
         dim_order, dim_flip = [], []
-        mat = self.tmatrix_raw
-        
+
         absmat = np.absolute(mat)
         for d in range(3):
-            newd = np.argmax(absmat[:,d])
+            newd = np.argmax(absmat[:, d])
             dim_order.append(newd)
             if mat[newd, d] < 0:
                 dim_flip.append(newd)
-     
+
         new_mat = np.copy(mat)
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            #debug("Before simplification")
-            #debug(new_mat)
-            #debug(self.output_shape)
-            new_shape = [self.in_grid.shape[d] for d in dim_order]
+            debug("Before simplification")
+            debug(new_mat)
+            new_shape = [self.grid[self.OUT2IN].shape[d] for d in dim_order]
             for idx, d in enumerate(dim_order):
-                new_mat[:,d] = mat[:,idx]
-            #debug("After transpose", dim_order)
-            #debug(new_mat)
+                new_mat[:, d] = mat[:, idx]
+            debug("After transpose", dim_order)
+            debug(new_mat)
             for dim in dim_flip:
                 # Change signs to positive to flip a dimension
-                new_mat[:,dim] = -new_mat[:,dim]
-            #debug("After flip", dim_flip)
-            #debug(new_mat)
+                new_mat[:, dim] = -new_mat[:, dim]
+            debug("After flip", dim_flip)
+            debug(new_mat)
             for dim in dim_flip:
                 # Adjust origin
-                new_mat[:3,3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
-                
-            #debug("After adjust origin", new_shape)
-            #debug(new_mat)
+                new_mat[:3, 3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
+
+            debug("After adjust origin", new_shape)
+            debug(new_mat)
 
             return dim_order, dim_flip, new_mat
         else:
@@ -284,28 +317,37 @@ class Transform:
             # affine transform - this will work but might be slow
             return range(3), [], new_mat
 
-class QpData:
+class QpData(object):
     """
     3D or 4D data
 
     Data is defined on a DataGrid instance which defines a uniform grid in standard space.
-    Data can be interpolated onto another grid for display or analysis purposes, however the
-    original raw data and grid are preserved so file save can be done consistently without
-    loss of information. In addition some visualisation or analysis may want to use the original
-    raw data.
+
+    :ivar name: Identifying name for the data the :class:`ImageVolumeManagement` class will
+                require this to be a valid and Python variable name and unique within the IVM.
+    :ivar grid: :class:`DataGrid` instance the data is defined on
+    :ivar nvols: Number of volumes (1=3D data)
+    :ivar ndim: 3 or 4 for 3D or 4D data
+    :ivar fname: File name data came from if relevant
+    :ivar dps: Number of decimal places to display data to
+    :ivar raw_2dt: Whether raw data is 3D but being interpreted as 2D multi-volume
+    :ivar range: Data range tuple (min, max)
+    :ivar roi: True if this data represents a region of interest
     """
 
     def __init__(self, name, grid, nvols, fname=None, roi=False):
         # Everyone needs a friendly name
         self.name = name
 
-        # Grid the data was defined on. 
+        # Grid the data was defined on.
         self.grid = grid
 
         # Number of volumes (1=3D data)
         self.nvols = nvols
-        if self.nvols == 1: self.ndim = 3
-        else: self.ndim = 4
+        if self.nvols == 1:
+            self.ndim = 3
+        else:
+            self.ndim = 4
 
         # File it was loaded from, if relevant
         self.fname = fname
@@ -323,21 +365,33 @@ class QpData:
         self.set_roi(roi)
 
     def raw(self):
-        raise NotImplementedError("Internal Error: raw() has not been implemented. This is a bug - please inform the authors")
+        """
+        Return the raw data as a Numpy array
+
+        Instances should implement this method to get the data from file
+        or internal storage
+        """
+        raise NotImplementedError("Internal Error: raw() has not been implemented.")
 
     def get_vol(self, vol):
         """
-        Default implementation calls raw() to return all data. Implementations may override
-        e.g. to only load the required volume
+        Get the specified volume from a multi-volume data set
+
+        The default implementation calls raw() to return all data. Implementations may override
+        e.g. to only load the required volume.
+
+        If the specified volume is out of range for this data, returns the last volume
+
+        :param vol: Volume number (0=first)
         """
-        rawdata=self.raw()
+        rawdata = self.raw()
         if self.ndim == 4:
-            rawdata = rawdata[:,:,:,min(vol, self.nvols-1)]
+            rawdata = rawdata[:, :, :, min(vol, self.nvols-1)]
         return rawdata
 
     def set_2dt(self):
         """
-        Force 3D static data into the form of a 2D + time
+        Force 3D static data into the form of 2D multi-volume
 
         This is useful for some broken NIFTI files. Note that the 3D extent of the grid
         is completely ignored. In order to work, the underlying class must implement the
@@ -356,14 +410,17 @@ class QpData:
 
     def resample(self, grid):
         """
-        Resample the data onto a new grid, returning a new QpData object
+        Resample the data onto a new grid
+
+        :param grid: :class:`DataGrid` to resample the data on to
+        :return: New :class:`QpData` object
         """
         t = Transform(self.grid, grid)
         rawdata = self.raw()
         if rawdata.ndim not in (3, 4):
             raise RuntimeError("Data must be 3D or 4D (padded if necessary")
         regridded_data = t.transform_data(rawdata)
-        self._remove_nans(regridded_data)  
+        self._remove_nans(regridded_data)
 
         if self.roi:
             if regridded_data.min() < 0 or regridded_data.max() > 2**32:
@@ -371,17 +428,19 @@ class QpData:
             if not np.equal(np.mod(regridded_data, 1), 0).any():
                 raise QpException("ROIs must contain integers only")
             regridded_data = regridded_data.astype(np.int32)
-        
-        return NumpyData(self, regridded_data, grid, self.name + "_resampled")
-        
+
+        from quantiphyse.volumes.load_save import NumpyData
+        return NumpyData(data=regridded_data, grid=grid, name=self.name + "_resampled", roi=self.roi)
+
     def slice_data(self, plane, vol=0):
         """
         Extract a data slice in raw data resolution
 
-        plane: OrthoSlice representing the slice to be extracted
-        vol: volume index for use if this is a 4D data set
+        :param plane: OrthoSlice representing the slice to be extracted. Note that this
+                      slice will not in general be defined on the same grid as the data
+        :param vol: volume index for use if this is a 4D data set
         """
-        rawdata=self.get_vol(vol)
+        rawdata = self.get_vol(vol)
 
         #debug("OrthoSlice: plane origin: %s" % str(plane.origin))
         #debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
@@ -392,7 +451,7 @@ class QpData:
         data_origin = trans.transform_position((0, 0, 0))
         data_normal = trans.transform_direction((0, 0, 1))
         data_naxis = np.argmax(np.absolute(data_normal))
-        
+
         #debug("OrthoSlice: data origin: %s" % str(data_origin))
         #debug("OrthoSlice: data n: %s" % str(data_normal))
         #debug("OrthoSlice: data naxis: %i" % data_naxis)
@@ -425,31 +484,31 @@ class QpData:
         ax1, sign1 = self._is_ortho_vector(slice_basis[0])
         ax2, sign2 = self._is_ortho_vector(slice_basis[1])
         if ax1 is not None and ax2 is not None:
-             slices = [None, None, None]
-             slices[ax1] = self._get_slice(ax1, rawdata.shape[ax1], sign1, data_origin[ax1])
-             slices[ax2] = self._get_slice(ax2, rawdata.shape[ax2], sign2, data_origin[ax2])
-        
-             pos = data_origin[data_naxis]
-             if pos < rawdata.shape[data_naxis]:
-                 slices[data_naxis] = int(pos)
-                 debug("Using Numpy slice: ", slices, rawdata.shape)
-                 sdata = rawdata[slices]
-                 smask = np.ones(slice_shape)
-             else:
-                 # Requested slice is outside the data range
-                 debug("Outside data range: %i, %i" % (pos, rawdata.shape[data_naxis]))
-                 sdata = np.zeros(slice_shape)
-                 smask = np.zeros(slice_shape)
+            slices = [None, None, None]
+            slices[ax1] = self._get_slice(ax1, rawdata.shape[ax1], sign1)
+            slices[ax2] = self._get_slice(ax2, rawdata.shape[ax2], sign2)
+
+            pos = data_origin[data_naxis]
+            if pos < rawdata.shape[data_naxis]:
+                slices[data_naxis] = int(pos)
+                debug("Using Numpy slice: ", slices, rawdata.shape)
+                sdata = rawdata[slices]
+                smask = np.ones(slice_shape)
+            else:
+                # Requested slice is outside the data range
+                debug("Outside data range: %i, %i" % (pos, rawdata.shape[data_naxis]))
+                sdata = np.zeros(slice_shape)
+                smask = np.zeros(slice_shape)
         else:
             debug("Full affine slice")
             sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3))
             mask = np.ones(rawdata.shape)
             smask = pg.affineSlice(mask, slice_shape, data_origin, slice_basis, range(3))
-        
+
         #debug(data_naxis, sdata)
         return sdata, trans_v, offset
 
-    def _get_slice(self, axis, length, sign, origin):
+    def _get_slice(self, axis, length, sign):
         if sign == 1:
             return slice(0, length, 1)
         else:
@@ -463,7 +522,7 @@ class QpData:
         return None, None
 
     def strval(self, grid, pos):
-        """ 
+        """
         Return the data value at pos as a string to an appropriate
         number of decimal places
         """
@@ -471,8 +530,8 @@ class QpData:
         #return str(np.around(self.val(pos), self.dps))
 
     def val(self, grid, pos):
-        """ 
-        Return the data value at pos 
+        """
+        Return the data value at pos
         """
         trans = Transform(grid, self.grid)
         data_pos = [int(v) for v in trans.transform_position(pos[:3])]
@@ -482,18 +541,25 @@ class QpData:
             return rawdata[tuple(data_pos)]
         except IndexError:
             return 0
-        
+
     def set_roi(self, roi):
+        """
+        Set whether data should be interpreted as a region of interest
+
+        :param roi: If True, interpret as roi
+        """
         self.roi = roi
         if self.roi:
             if self.nvols != 1:
                 raise RuntimeError("ROIs must be static (single volume) 3D data")
+            self.regions = np.unique(self.raw())
+            self.regions = [r for r in self.regions if r > 0]
 
     def get_bounding_box(self, ndim=3):
         """
         Returns a sequence of slice objects which
         describe the bounding box of this ROI.
-        If ndim is specified, will return a bounding 
+        If ndim is specified, will return a bounding
         box of this number of dimensions, truncating
         and appending slices as required.
 
@@ -501,7 +567,7 @@ class QpData:
         easily restricted to the ROI region and
         reduce data copying.
 
-        e.g. 
+        e.g.
         slices = roi.get_bounding_box(img.ndim)
         img_restric = data[slices]
         ... process img_restict, returning out_restrict
@@ -510,14 +576,14 @@ class QpData:
         """
         if not self.roi:
             raise RuntimeError("get_bounding_box() called on non-ROI data")
-            
+
         slices = [slice(None)] * ndim
         for d in range(min(ndim, 3)):
             ax = [i for i in range(3) if i != d]
-            nonzero = np.any(self.std(), axis=tuple(ax))
+            nonzero = np.any(self.raw(), axis=tuple(ax))
             s1, s2 = np.where(nonzero)[0][[0, -1]]
             slices[d] = slice(s1, s2+1)
-        
+
         return slices
 
     def _calc_dps(self):
