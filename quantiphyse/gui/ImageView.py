@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 from .HistogramWidget import MultiImageHistogramWidget
 from quantiphyse.utils import get_icon, get_lut, get_pencol, debug
-from quantiphyse.volumes import OrthoSlice, Transform
+from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 """
@@ -39,6 +39,10 @@ user goes back to the starting point in a lasso picker, or finishes drawing a se
 
 Changes to the selection will trigger sel_changed events. For freehand selection this will only occur
 when mouse button is released.
+
+Selected points are reported in IVL grid space, widgets can convert these easily to the coordinate space
+of whatever data they are interested in. For region selection pickers, the get_roi method takes a 
+QpData instance which is used to define the grid space on which the returned ROI is defined.
 """
 
 class PickMode:
@@ -68,7 +72,7 @@ class PickMode:
 
 class Picker:
     def __init__(self, iv):
-        self.iv = iv
+        self.ivl = iv
         self.win = None
         # Map from colour to selected points
         self.points = {}
@@ -92,7 +96,7 @@ class PointPicker(Picker):
     def add_point(self, pos, win):
         self.points = {self.col : [tuple(pos),]}
         self.point = tuple(pos)
-        self.iv.sig_sel_changed.emit(self)
+        self.ivl.sig_sel_changed.emit(self)
 
 class MultiPicker(PointPicker):
     def __init__(self, iv, col=(255, 0, 0)):
@@ -103,13 +107,13 @@ class MultiPicker(PointPicker):
         if self.col not in self.points: 
             self.points[self.col] = []
         self.points[self.col].append(tuple(pos))
-        for win in self.iv.win.values():
+        for win in self.ivl.win.values():
             win.add_arrow(pos, self.col)
-        self.iv.sig_sel_changed.emit(self)
+        self.ivl.sig_sel_changed.emit(self)
     
     def cleanup(self):
         for w in range(3):
-            win = self.iv.win[w].remove_arrows()
+            win = self.ivl.win[w].remove_arrows()
 
 class SliceMultiPicker(MultiPicker):
     def __init__(self, iv, col=(255, 0, 0)):
@@ -121,14 +125,14 @@ class SliceMultiPicker(MultiPicker):
         
         if self.win is None:
             self.win = win
-            self.zaxis = self.iv.win[win].zaxis
+            self.zaxis = self.ivl.win[win].zaxis
             self.zpos = pos[self.zaxis]
 
         if win == self.win and pos[self.zaxis] == self.zpos:
             self.points[self.col].append(tuple(pos))
-            self.iv.win[win].add_arrow(pos, self.col)
+            self.ivl.win[win].add_arrow(pos, self.col)
 
-        self.iv.sig_sel_changed.emit(self)
+        self.ivl.sig_sel_changed.emit(self)
 
 class LassoPicker(Picker): 
 
@@ -142,7 +146,7 @@ class LassoPicker(Picker):
         if self.win is None: 
             self.win = win
             self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
-            self.view = self.iv.win[self.win]
+            self.view = self.ivl.win[self.win]
             self.view.vb.addItem(self.roisel)
         
         fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
@@ -154,14 +158,14 @@ class LassoPicker(Picker):
         """ Get the selected points as an ROI"""
         if self.win is None: return None    
 
-        w, h = self.iv.ivm.grid.shape[self.view.xaxis], self.iv.ivm.grid.shape[self.view.yaxis]
+        w, h = self.ivl.grid.shape[self.view.xaxis], self.ivl.grid.shape[self.view.yaxis]
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).polygon(self.points, outline=label, fill=label)
         
-        ret = np.zeros(self.view.ivm.grid.shape)
+        ret = np.zeros(self.view.ivl.grid.shape)
         slice_mask = np.array(img).T
         slices = [slice(None)] * 3
-        slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
+        slices[self.view.zaxis] = self.ivl.focus()[self.view.zaxis]
         ret[slices] = slice_mask
         return ret
 
@@ -177,7 +181,7 @@ class RectPicker(LassoPicker):
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.view = self.iv.win[self.win]
+            self.view = self.ivl.win[self.win]
         
         fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
         self.points.append((fx, fy))
@@ -200,7 +204,7 @@ class EllipsePicker(LassoPicker):
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.view = self.iv.win[self.win]
+            self.view = self.ivl.win[self.win]
         
         fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
         self.points.append((fx, fy))
@@ -221,14 +225,14 @@ class EllipsePicker(LassoPicker):
         """ Get the selected points as an ROI"""
         if self.win is None: return None    
 
-        w, h = self.iv.ivm.grid.shape[self.view.xaxis], self.iv.ivm.grid.shape[self.view.yaxis]
+        w, h = self.ivl.grid.shape[self.view.xaxis], self.ivl.grid.shape[self.view.yaxis]
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).ellipse([int(p) for p in self.points], outline=label, fill=label)
         
-        ret = np.zeros(self.view.ivm.grid.shape)
+        ret = np.zeros(self.view.ivl.grid.shape)
         slice_mask = np.array(img).T
         slices = [slice(None)] * 3
-        slices[self.view.zaxis] = self.view.ivm.cim_pos[self.view.zaxis]
+        slices[self.view.zaxis] = self.ivl.focus()[self.view.zaxis]
         ret[slices] = slice_mask
         return ret
 
@@ -242,7 +246,7 @@ class FreehandPicker(LassoPicker):
     def add_point(self, pos, win):
         if self.win is None: 
             self.win = win
-            self.view = self.iv.win[self.win]
+            self.view = self.ivl.win[self.win]
             
         fx, fy = float(pos[self.view.xaxis])+0.5, float(pos[self.view.yaxis])+0.5
         self.points.append((fx, fy))
@@ -364,9 +368,9 @@ class OrthoView(pg.GraphicsView):
     # Signals when view is maximised/minimised
     sig_maxmin = QtCore.Signal(int)
 
-    def __init__(self, iv, ivm, ax_map, ax_labels):
+    def __init__(self, ivl, ivm, ax_map, ax_labels):
         pg.GraphicsView.__init__(self)
-        self.iv = iv
+        self.ivl = ivl
         self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
         self.dragging = False
@@ -415,8 +419,8 @@ class OrthoView(pg.GraphicsView):
             self.img.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
             # Adjust axis scaling depending on whether voxel size scaling is enabled
-            if self.iv.opts.size_scaling == self.iv.opts.SCALE_VOXELS:
-                self.vb.setAspectLocked(True, ratio=(self.ivm.grid.spacing[self.xaxis] / self.ivm.grid.spacing[self.yaxis]))
+            if self.ivl.opts.size_scaling == self.ivl.opts.SCALE_VOXELS:
+                self.vb.setAspectLocked(True, ratio=(self.ivl.grid.spacing[self.xaxis] / self.ivl.grid.spacing[self.yaxis]))
             else:
                 self.vb.setAspectLocked(True, ratio=1)
 
@@ -426,8 +430,8 @@ class OrthoView(pg.GraphicsView):
             # Flip left/right depending on the viewing convention selected
             if self.xaxis == 0:
                 # X-axis is left/right
-                self.vb.invertX(self.iv.opts.orientation == 0)
-                if self.iv.opts.orientation == self.iv.opts.RADIOLOGICAL:
+                self.vb.invertX(self.ivl.opts.orientation == 0)
+                if self.ivl.opts.orientation == self.ivl.opts.RADIOLOGICAL:
                     l, r = 1, 0
                 else: 
                     l, r = 0, 1
@@ -435,19 +439,18 @@ class OrthoView(pg.GraphicsView):
                 self.labels[l].setText("L")
 
             # Get image slice
-            pos = self.ivm.cim_pos
-            plane = OrthoSlice(self.ivm.grid, self.zaxis, pos[self.zaxis])
+            pos = self.ivl.focus()
+            plane = OrthoSlice(self.ivl.grid, self.zaxis, pos[self.zaxis])
             slicedata, scale, offset = self.ivm.main.slice_data(plane, vol=pos[3])
-            #debug(slicedata.shape, scale, offset)
-            self.img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
+            #print(slicedata.shape, scale, offset)
+            transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1])
+            self.img.setTransform(transform)
             self.img.setImage(slicedata, autoLevels=False)
 
-        trans = Transform(self.ivm.grid, self.ivm.main.grid)
-        tpos = trans.transform_position(self.ivm.cim_pos[:3])
-        self.vline.setPos(float(tpos[self.xaxis]))
-        self.hline.setPos(float(tpos[self.yaxis]))
-        self.vline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
-        self.hline.setVisible(self.iv.opts.crosshairs == self.iv.opts.SHOW)
+        self.vline.setPos(float(pos[self.xaxis]))
+        self.hline.setPos(float(pos[self.yaxis]))
+        self.vline.setVisible(self.ivl.opts.crosshairs == self.ivl.opts.SHOW)
+        self.hline.setVisible(self.ivl.opts.crosshairs == self.ivl.opts.SHOW)
 
         self._update_view_roi()
         self._update_view_overlay()
@@ -467,20 +470,20 @@ class OrthoView(pg.GraphicsView):
         return out
 
     def _update_view_roi(self):
-        roiview = self.iv.current_roi_view
+        roiview = self.ivl.current_roi_view
         n = 0 # Number of contours - required at end
         if roiview is None or roiview.roi() is None:
             self.img_roi.setImage(np.zeros((1, 1)))
         else:
             roidata = roiview.roi()
             z = 0
-            if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=1
+            if self.ivl.opts.display_order == self.ivl.opts.ROI_ON_TOP: z=1
 
-            pos = self.ivm.cim_pos
+            pos = self.ivl.focus()
             lut = get_lut(roidata, roiview.alpha)
             roi_levels = [0, len(lut)-1]
             
-            plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
+            plane = OrthoSlice(self.ivl.grid, self.zaxis, pos[self.zaxis])
             slicedata, scale, offset = roidata.slice_data(plane)
 
             if roiview.shade:
@@ -507,7 +510,7 @@ class OrthoView(pg.GraphicsView):
                         d = self._iso_prepare(data, val)
                         self.contours[n].setData(d)
                         self.contours[n].setLevel(1)
-                        self.contours[n].setPen(pg.mkPen(pencol, width=self.iv.roi_outline_width))
+                        self.contours[n].setPen(pg.mkPen(pencol, width=self.ivl.roi_outline_width))
 
                     n += 1
 
@@ -517,16 +520,17 @@ class OrthoView(pg.GraphicsView):
             self.contours[idx].setData(None)
 
     def _update_view_overlay(self):
-        oview = self.iv.current_data_view
+        oview = self.ivl.current_data_view
         if oview is None or not oview.visible or oview.data() is None:
             self.img_ovl.setImage(np.zeros((1, 1)), autoLevels=False)
         else:
             z = 1
-            if self.iv.opts.display_order == self.iv.opts.ROI_ON_TOP: z=0
+            if self.ivl.opts.display_order == self.ivl.opts.ROI_ON_TOP: z=0
             self.img_ovl.setZValue(z)
             
-            plane = OrthoSlice(self.ivm.grid, self.zaxis, self.ivm.cim_pos[self.zaxis])
-            slicedata, scale, offset = oview.data().slice_data(plane, vol=self.ivm.cim_pos[3])
+            pos = self.ivl.focus()
+            plane = OrthoSlice(self.ivl.grid, self.zaxis, pos[self.zaxis])
+            slicedata, scale, offset = oview.data().slice_data(plane, vol=pos[3])
             #debug(slicedata.shape, scale, offset)
 
             self.img_ovl.setBoundaryMode(oview.boundary)
@@ -556,32 +560,37 @@ class OrthoView(pg.GraphicsView):
         Subclassed to remove scroll to zoom from pg.ImageItem
         and instead trigger a scroll through the volume
         """
-        if self.ivm.grid is None: return
         dz = int(event.delta()/120)
-        pos = self.ivm.cim_pos[:]
+        pos = self.ivl.focus(self.ivm.main.grid)
         pos[self.zaxis] += dz
-        if pos[self.zaxis] >= self.ivm.grid.shape[self.zaxis] or pos[self.zaxis] < 0:
+        if pos[self.zaxis] >= self.ivm.main.grid.shape[self.zaxis] or pos[self.zaxis] < 0:
             return
 
-        self.sig_focus.emit(pos, self.zaxis, False)
+        self.ivl.set_focus(pos + [pos[3], ], self.ivm.main.grid)
+        #t = Transform(self.ivl.grid, self.ivm.main.grid)
+        #std_pos = list(t.transform_position(pos[:3]))
+        #self.sig_focus.emit(std_pos + [pos[3], ], self.zaxis, False)
 
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
         if self.ivm.main is None: return
         
         if event.button() == QtCore.Qt.LeftButton:
-            self.dragging = (self.iv.drag_mode == DragMode.PICKER_DRAG)
-            
+            self.dragging = (self.ivl.drag_mode == DragMode.PICKER_DRAG)
             coords = self.img.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            debug("Mouse press scene coords=", mx, my)
-            if mx < 0 or mx >= self.ivm.grid.shape[self.xaxis]: return
-            if my < 0 or my >= self.ivm.grid.shape[self.yaxis]: return
-            pos = self.ivm.cim_pos[:]
+
+            if mx < 0 or mx >= self.ivm.main.grid.shape[self.xaxis]: return
+            if my < 0 or my >= self.ivm.main.grid.shape[self.yaxis]: return
+
+            # Convert to view grid
+            pos = self.ivl.focus(self.ivm.main.grid)
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
-            self.sig_focus.emit(pos, self.zaxis, True)
+            t = Transform(self.ivl.grid, self.ivm.main.grid)
+            std_pos = list(t.transform_position(pos[:3]))
+            self.ivl.set_focus(pos + [pos[3], ], self.ivm.main.grid)
 
     def add_arrow(self, pos, col):
         arrow = pg.ArrowItem(pen=col, brush=col)
@@ -599,8 +608,9 @@ class OrthoView(pg.GraphicsView):
 
     def update_arrows(self):
         """ Update arrows so only those visible are shown """
+        current_zpos = self.ivl.focus()[self.zaxis]
         for zpos, arrow in self.arrows:
-            arrow.setVisible(self.ivm.cim_pos[self.zaxis] == zpos)
+            arrow.setVisible(current_zpos == zpos)
 
     def mouseReleaseEvent(self, event):
         super(OrthoView, self).mouseReleaseEvent(event)
@@ -613,10 +623,10 @@ class OrthoView(pg.GraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
-            coords = self.img.mapFromScene(event.pos())
+            coords = self.mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-            pos = self.ivm.cim_pos[:]
+            pos = self.ivl.focus()
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
             self.sig_focus.emit(pos, self.zaxis, True)
@@ -691,9 +701,9 @@ class LevelsDialog(QtGui.QDialog):
         cmin, cmax = list(self.dv.data().range)
         within_roi = self.use_roi.isChecked()
         if percentile > 0 or within_roi: 
-            data = self.dv.data().resample(self.ivm.grid)
+            data = self.dv.data().resample(self.ivl.grid)
             if within_roi and self.ivm.current_roi is not None:
-                roidata = self.ivm.current_roi.resample(self.ivm.grid)
+                roidata = self.ivm.current_roi.resample(self.ivl.grid)
                 data = data[roidata > 0]
             flat = data.reshape(-1)
             cmin = np.percentile(flat, percentile)
@@ -703,57 +713,59 @@ class LevelsDialog(QtGui.QDialog):
         self.max_spin.setValue(cmax)
 
 class Navigator:
-    def __init__(self, ivl, label, axis, grid, ypos):
+    """
+    Slider control which alters position along an axis
+    """
+
+    def __init__(self, ivl, label, axis, layout_grid, layout_ypos):
         self.ivl = ivl
         self.axis = axis
+        self._pos = -1
 
-        grid.addWidget(QtGui.QLabel(label), ypos, 0)
+        layout_grid.addWidget(QtGui.QLabel(label), layout_ypos, 0)
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
         self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
         self.slider.setMinimumWidth(100)
         self.slider.valueChanged.connect(self._changed)
-        grid.addWidget(self.slider, ypos, 1)
+        layout_grid.addWidget(self.slider, layout_ypos, 1)
 
         self.spin = QtGui.QSpinBox()
         self.spin.valueChanged.connect(self._changed)
-        grid.addWidget(self.spin, ypos, 2)
+        layout_grid.addWidget(self.spin, layout_ypos, 2)
     
     def _changed(self, value):
-        pos = list(self.ivl.ivm.cim_pos)
-        if value != pos[self.axis]:
+        if value != self._pos:
+            self.set_pos(value)
+            pos = self.ivl.focus()
             pos[self.axis] = value
-            self.ivl.set_focus(pos, self.axis, False)
-        self._update_gui(value)
+            self.ivl.set_focus(pos)
         
-    def update_range(self, shape, nvols):
-        shape = list(shape) + [nvols,]
+    def set_size(self, size):
         try:
             self.slider.blockSignals(True)
             self.spin.blockSignals(True)
-            self.slider.setRange(0, shape[self.axis]-1)
-            self.spin.setMaximum(shape[self.axis]-1)
+            self.slider.setRange(0, size-1)
+            self.spin.setMaximum(size-1)
         finally:
             self.slider.blockSignals(False)
             self.spin.blockSignals(False)
 
-    def _update_gui(self, value):
+    def set_pos(self, pos):
+        self._pos = pos
         try:
             self.slider.blockSignals(True)
             self.spin.blockSignals(True)
-            self.slider.setValue(value)
-            self.spin.setValue(value)
+            self.slider.setValue(pos)
+            self.spin.setValue(pos)
         finally:
             self.slider.blockSignals(False)
             self.spin.blockSignals(False)
-
-    def update_pos(self, pos):
-        self._update_gui(pos[self.axis])
         
 class DataSummary(QtGui.QWidget):
     """ Data summary bar """
     def __init__(self, ivl):
         self.opts = ivl.opts
-        self.ivm = ivl.ivm
+        self.ivl = ivl
 
         QtGui.QWidget.__init__(self)
         hbox = QtGui.QHBoxLayout()
@@ -784,24 +796,27 @@ class DataSummary(QtGui.QWidget):
         self.opts.show()
         self.opts.raise_()
   
-    def _main_changed(self):
+    def _main_changed(self, data):
         name = ""
-        if self.ivm.main is not None:
-            if self.ivm.main.fname is not None:
-                name = self.ivm.main.fname
+        if data is not None:
+            if data.fname is not None:
+                name = data.fname
             else:
-                name = self.ivm.main.name
+                name = data.name
         self.vol_name.setText(name)
 
     def _focus_changed(self, pos):
-        if self.ivm.main is not None: self.vol_data.setText(self.ivm.main.strval(self.ivm.grid, pos))
-        if self.ivm.current_roi is not None: self.roi_region.setText(self.ivm.current_roi.strval(self.ivm.grid, pos))
-        if self.ivm.current_data is not None: self.ov_data.setText(self.ivm.current_data.strval(self.ivm.grid, pos))
+        if self.ivl.ivm.main is not None: 
+            self.vol_data.setText(self.ivl.ivm.main.strval(self.ivl.grid, pos))
+        if self.ivl.ivm.current_roi is not None: 
+            self.roi_region.setText(self.ivl.ivm.current_roi.strval(self.ivl.grid, pos))
+        if self.ivl.ivm.current_data is not None: 
+            self.ov_data.setText(self.ivl.ivm.current_data.strval(self.ivl.grid, pos))
 
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """
     def __init__(self, ivl):
-        self.ivm = ivl.ivm
+        self.ivl = ivl
 
         QtGui.QGroupBox.__init__(self, "Navigation")
         grid = QtGui.QGridLayout()
@@ -816,19 +831,22 @@ class NavigationBox(QtGui.QGroupBox):
         grid.setColumnStretch(1, 2)
 
         ivl.ivm.sig_main_data.connect(self._main_data_changed)
-        ivl.sig_focus_changed.connect(self._focus)
+        ivl.sig_focus_changed.connect(self._focus_changed)
 
-    def _main_data_changed(self, vol):
+    def _main_data_changed(self, data):
         for nav in self.navs:
-            if vol is not None:
-                nav.update_range(self.ivm.grid.shape, vol.nvols)
+            if data is not None:
+                if nav.axis < 3:
+                    nav.set_size(self.ivl.grid.shape[nav.axis])
+                else:
+                    nav.set_size(data.nvols)
             else:
-                nav.update_range([1,]*3, 1)
-            nav.update_pos(self.ivm.cim_pos)
+                nav.set_size(1)
+            nav.set_pos(self.ivl.focus()[nav.axis])
 
-    def _focus(self, pos):
+    def _focus_changed(self, pos):
         for nav in self.navs:
-            nav.update_pos(pos)
+            nav.set_pos(pos[nav.axis])
 
 class RoiViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
@@ -884,13 +902,13 @@ class RoiViewWidget(QtGui.QGroupBox):
         if self.ivl.current_roi_view is not None:
             self.ivl.current_roi_view.shade = idx in (0, 2)
             self.ivl.current_roi_view.contour = idx in (1, 2)
-        self.ivl.update_ortho_views()
+        self.ivl._update_ortho_views()
 
     def _alpha_changed(self, alpha):
         """ Set the ROI transparency """
         if self.ivl.current_roi_view is not None:
             self.ivl.current_roi_view.alpha = alpha
-        self.ivl.update_ortho_views()
+        self.ivl._update_ortho_views()
 
     def _rois_changed(self, rois):
         # Repopulate ROI combo, without sending signals
@@ -984,7 +1002,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         if self.ivl.current_data_view is not None:
             self.ivl.current_data_view.visible = idx in (0, 1)
             self.ivl.current_data_view.roi_only = (idx == 1)
-        self.ivl.current_data_changed(self.ivm.current_data)
+        self.ivl._current_data_changed(self.ivm.current_data)
 
     def _alpha_changed(self, alpha):
         """ Set the data transparency """
@@ -1040,7 +1058,11 @@ class OverlayViewWidget(QtGui.QGroupBox):
 class ImageView(QtGui.QSplitter):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
-    navigation sliders and data summary view
+    navigation sliders and data summary view.
+
+    :ivar grid: Grid the ImageView uses as the basis for the orthogonal slices. 
+                This is typically an RAS-aligned version of the main data grid, or
+                alternatively an RAS world-grid
     """
 
     # Signals when point of focus is changed
@@ -1052,14 +1074,17 @@ class ImageView(QtGui.QSplitter):
     def __init__(self, ivm, opts):
         super(ImageView, self).__init__(QtCore.Qt.Vertical)
 
+        self.grid = DataGrid([1, 1, 1], np.identity(4))
+        self._pos = [0, 0, 0, 0]
+
         self.ivm = ivm
         self.opts = opts
-        self.ivm.sig_current_data.connect(self.current_data_changed)
-        self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_data.connect(self.main_data_changed)
-        self.ivm.sig_all_rois.connect(self.rois_changed)
-        self.ivm.sig_all_data.connect(self.data_changed)
-        self.opts.sig_options_changed.connect(self.update_ortho_views)
+        self.ivm.sig_current_data.connect(self._current_data_changed)
+        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+        self.ivm.sig_main_data.connect(self._main_data_changed)
+        self.ivm.sig_all_rois.connect(self._rois_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
+        self.opts.sig_options_changed.connect(self._update_ortho_views)
 
         # Viewer Options
         self.roi_outline_width = 3.0
@@ -1094,8 +1119,8 @@ class ImageView(QtGui.QSplitter):
         self.win = {}
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
-            win.sig_focus.connect(self.set_focus)
-            win.sig_maxmin.connect(self.max_min)
+            win.sig_focus.connect(self._pick)
+            win.sig_maxmin.connect(self._toggle_maximise)
             self.win[win.zaxis] = win
 
         # Histogram which controls colour map and levels for main volume
@@ -1107,21 +1132,21 @@ class ImageView(QtGui.QSplitter):
         # Main graphics layout
         #gview = pg.GraphicsView(background='k')
         gview = QtGui.QWidget()
-        self.grid = QtGui.QGridLayout()
-        self.grid.setHorizontalSpacing(2)
-        self.grid.setVerticalSpacing(2)
-        self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.addWidget(self.win[1], 0, 0,)
-        self.grid.addWidget(self.win[0], 0, 1)
-        self.grid.addWidget(self.h1, 0, 2)
-        self.grid.addWidget(self.win[2], 1, 0)
-        self.grid.addWidget(self.h2, 1, 2)
-        self.grid.setColumnStretch(0, 3)
-        self.grid.setColumnStretch(1, 3)
-        self.grid.setColumnStretch(2, 1)
-        self.grid.setRowStretch(0, 1)
-        self.grid.setRowStretch(1, 1)
-        gview.setLayout(self.grid)
+        self.layout_grid = QtGui.QGridLayout()
+        self.layout_grid.setHorizontalSpacing(2)
+        self.layout_grid.setVerticalSpacing(2)
+        self.layout_grid.setContentsMargins(0, 0, 0, 0)
+        self.layout_grid.addWidget(self.win[1], 0, 0,)
+        self.layout_grid.addWidget(self.win[0], 0, 1)
+        self.layout_grid.addWidget(self.h1, 0, 2)
+        self.layout_grid.addWidget(self.win[2], 1, 0)
+        self.layout_grid.addWidget(self.h2, 1, 2)
+        self.layout_grid.setColumnStretch(0, 3)
+        self.layout_grid.setColumnStretch(1, 3)
+        self.layout_grid.setColumnStretch(2, 1)
+        self.layout_grid.setRowStretch(0, 1)
+        self.layout_grid.setRowStretch(1, 1)
+        gview.setLayout(self.layout_grid)
         self.addWidget(gview)
         self.addWidget(control_box)
         self.setStretchFactor(0, 5)
@@ -1130,52 +1155,42 @@ class ImageView(QtGui.QSplitter):
         self.picker = PointPicker(self) 
         self.drag_mode = DragMode.DEFAULT
       
-    def set_focus(self, pos, win, is_click):
-        if self.picker.win is not None and win != self.picker.win:
-            # Bit of a hack. Ban focus changes in other windows when we 
-            # have a single-window picker because it will change the slice 
-            # visible in the pick window
-            return
-        if is_click:
-            self.picker.add_point(pos, win)
+    def focus(self, grid=None):
+        """
+        Get the current focus position
+
+        :param grid: Report position using co-ordinates relative to this grid. 
+                     If not specified, report current view grid co-ordinates
+        :return: 4D sequence containing position plus the current data volume index
+        """
+        if grid is None:
+            return list(self._pos)
+        else:
+            world = self.grid.grid_to_world(self._pos[:3])
+            return list(grid.world_to_grid(world)) + [self._pos[3], ]
+
+    def set_focus(self, pos, grid=None):
+        """
+        Set the current focus position
+
+        :param grid: Specify position using co-ordinates relative to this grid. 
+                     If not specified, position is in current view grid co-ordinates
+        """
+        if grid is not None:
+            world = grid.grid_to_world(pos[:3])
+            pos = list(self.grid.world_to_grid(world)) + [pos[3], ]
+
+        self._pos = list(pos)
+        self._update_ortho_views()
         
-        self.ivm.cim_pos = pos
-        self.update_ortho_views()
-        self.ivm.grid.grid_to_world(pos[:3])
-        
-        # FIXME should this be a signal from IVM?
-        debug("Cursor position: ", pos)
-        self.sig_focus_changed.emit(pos)
+        debug("Cursor position: ", self._pos)
+        self.sig_focus_changed.emit(self._pos)
 
     def set_picker(self, pickmode, drag_mode = DragMode.DEFAULT):
         self.picker.cleanup()
         self.picker = PICKERS[pickmode](self)
         self.drag_mode = drag_mode
         
-    def max_min(self, win, state=-1):
-        """ Maximise/Minimise view window
-        If state=1, maximise, 0=show all, -1=toggle """
-        o1 = (win+1) % 3
-        o2 = (win+2) % 3
-        if state == 1 or (state == -1 and self.win[o1].isVisible()):
-            # Maximise
-            self.grid.addWidget(self.win[win], 0, 0, 2, 2)
-            self.win[o1].setVisible(False)
-            self.win[o2].setVisible(False)
-            self.win[win].setVisible(True)
-        elif state == 0 or (state == -1 and not self.win[o1].isVisible()):
-            # Show all three
-            self.grid.addWidget(self.win[1], 0, 0, )
-            self.grid.addWidget(self.win[0], 0, 1)
-            self.grid.addWidget(self.win[2], 1, 0)
-            self.win[o1].setVisible(True)
-            self.win[o2].setVisible(True)
-            self.win[win].setVisible(True)
-
-    def update_ortho_views(self):
-        """ Update the image viewer windows """
-        for win in self.win.values(): win.update()
-
     def capture_view_as_image(self, window, outputfile):
         """ Export an image using pyqtgraph """
         if window not in (1, 2, 3):
@@ -1186,21 +1201,64 @@ class ImageView(QtGui.QSplitter):
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
-    def main_data_changed(self, vol):
-        if vol is not None:
-            main_dv = DataView(self.ivm, self.ivm.main.name)
+    def _pick(self, pos, win, is_click):
+        if self.picker.win is not None and win != self.picker.win:
+            # Bit of a hack. Ban focus changes in other windows when we 
+            # have a single-window picker because it will change the slice 
+            # visible in the pick window
+            return
+        if is_click:
+            self.picker.add_point(pos, win)
+
+        self.set_focus(pos)
+
+    def _toggle_maximise(self, win, state=-1):
+        """ 
+        Maximise/Minimise view window
+        If state=1, maximise, 0=show all, -1=toggle 
+        """
+        o1 = (win+1) % 3
+        o2 = (win+2) % 3
+        if state == 1 or (state == -1 and self.win[o1].isVisible()):
+            # Maximise
+            self.layout_grid.addWidget(self.win[win], 0, 0, 2, 2)
+            self.win[o1].setVisible(False)
+            self.win[o2].setVisible(False)
+            self.win[win].setVisible(True)
+        elif state == 0 or (state == -1 and not self.win[o1].isVisible()):
+            # Show all three
+            self.layout_grid.addWidget(self.win[1], 0, 0, )
+            self.layout_grid.addWidget(self.win[0], 0, 1)
+            self.layout_grid.addWidget(self.win[2], 1, 0)
+            self.win[o1].setVisible(True)
+            self.win[o2].setVisible(True)
+            self.win[win].setVisible(True)
+
+    def _update_ortho_views(self):
+        """ Update the image viewer windows """
+        for win in self.win.values(): win.update()
+
+    def _main_data_changed(self, data):
+        if data is not None:
+            self.grid = data.grid.get_standard()
+            debug("Main data raw grid")
+            debug(data.grid.affine)
+            debug("RAS aligned")
+            debug(self.grid.affine)
+
+            main_dv = DataView(self.ivm, data.name)
             main_dv.cmap = "grey"
             self.h1.set_data_view(main_dv)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
-            self.max_min(0, state=0)
+            self._toggle_maximise(0, state=0)
             for d in range(3):
-                if self.ivm.grid.shape[d] == 1:
-                    self.max_min(d, state=1)
-        self.update_ortho_views()
+                if self.grid.shape[d] == 1:
+                    self._toggle_maximise(d, state=1)
+        self._update_ortho_views()
 
-    def rois_changed(self, rois):
+    def _rois_changed(self, rois):
         # Discard RoiView instances for data which has been deleted
         for name in self.roi_views.keys():
             if name not in rois:
@@ -1208,9 +1266,9 @@ class ImageView(QtGui.QSplitter):
                     self.current_roi_view = None
                 del self.roi_views[name]
 
-        self.current_roi_changed(self.ivm.current_roi)
+        self._current_roi_changed(self.ivm.current_roi)
 
-    def current_roi_changed(self, roi):
+    def _current_roi_changed(self, roi):
         # Update ROI combo to show the current ROI
         if roi is None:
             self.current_roi_view = None
@@ -1221,18 +1279,18 @@ class ImageView(QtGui.QSplitter):
             self.current_roi_view = self.roi_views[roi.name]
 
         self.roi_box.update_from_roiview(self.current_roi_view)
-        self.update_ortho_views()
+        self._update_ortho_views()
 
-    def data_changed(self, data):
+    def _data_changed(self, data):
         debug("New data: ", data)
         # Discard DataView instances for data which has been deleted
         for name in self.data_views.keys():
             if name not in data:
                 del self.data_views[name]
 
-        self.current_data_changed(self.ivm.current_data)
+        self._current_data_changed(self.ivm.current_data)
 
-    def current_data_changed(self, ov):
+    def _current_data_changed(self, ov):
         if self.current_data_view is not None:
             self.current_data_view.sig_changed.disconnect(self._dv_changed)
         if ov is not None:
@@ -1245,7 +1303,7 @@ class ImageView(QtGui.QSplitter):
         else:
             self.current_data_view = None
         self.h2.set_data_view(self.current_data_view)
-        self.update_ortho_views()
+        self._update_ortho_views()
 
     def _dv_changed(self, dv):
-        self.update_ortho_views()
+        self._update_ortho_views()

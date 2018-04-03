@@ -18,10 +18,11 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from ..utils import debug
-from ..utils.exceptions import QpException
+from quantiphyse.volumes import QpData
+from quantiphyse.volumes.load_save import NumpyData
 
-from .load_save import NumpyData
+from quantiphyse.utils import debug
+from quantiphyse.utils.exceptions import QpException
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -60,12 +61,6 @@ class ImageVolumeManagement(QtCore.QObject):
         # Main background data
         self.main = None
 
-        # One True Grid
-        self.grid = None
-
-        # Grid to use when saving data - should come from the first file loaded
-        self.save_grid = None
-
         # Map from name to data object
         self.data = {}
 
@@ -80,10 +75,6 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # Processing extras
         self.extras = {}
-
-        # Current position of the cross hair as an array
-        # FIXME move to view?
-        self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         self.sig_main_data.emit(None)
         self.sig_current_data.emit(None)
@@ -122,24 +113,14 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def set_main_data(self, name):
         self._data_exists(name)
-        
         self.main = self.data[name]
-        self.grid = self.main.grid.reorient_ras()
-        debug("Main data raw grid")
-        debug(self.main.grid.affine)
-        debug("RAS aligned")
-        debug(self.grid.affine)
-
-        self.cim_pos = [int(d/2) for d in self.grid.shape]
-        self.cim_pos.append(int(self.main.nvols/2))
-        
         self.sig_main_data.emit(self.main)
 
     def add_data(self, data, name=None, make_current=False, make_main=None):
-        if isinstance(data, np.ndarray):
-            """ Data provided as a Numpy array is presumed to be on the current grid """
-            data = NumpyData(data.astype(np.float32), self.grid, name)
-        elif name is not None:
+        if not isinstance(data, QpData):
+            raise QpException("add_data called with non-QpData")
+
+        if name is not None:
             data.name = name
 
         self._valid_name(data.name)
@@ -161,15 +142,13 @@ class ImageVolumeManagement(QtCore.QObject):
         # Set save grid if first to be loaded
         self.save_grid = data.grid
         
-    def add_roi(self, data, name=None, make_current=False, signal=True):
-        if isinstance(data, np.ndarray):
-            """ Data provided as a Numpy array is presumed to be on the current grid """
-            roi = NumpyData(data, self.grid, name, roi=True)
-        else:
-            if name is not None:
-                data.name = name
-            data.set_roi(True)
-            roi = data
+    def add_roi(self, roi, name=None, make_current=False, signal=True):
+        if not isinstance(roi, QpData):
+            raise QpException("add_roi called with non-QpData")
+        
+        if name is not None:
+            roi.name = name
+        roi.set_roi(True)
 
         self._valid_name(roi.name)
         self.rois[roi.name] = roi
