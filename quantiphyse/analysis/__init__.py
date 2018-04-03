@@ -80,7 +80,7 @@ class Process(QtCore.QObject):
 
     def get_data(self, options, multi=False):
         """ 
-        Get the data the process is to operate on 
+        Standard method to get the data object the process is to operate on 
         
         If no 'data' option is specified, go with main data if it exists
         If 'multi' then allow data to be a list of items
@@ -89,7 +89,7 @@ class Process(QtCore.QObject):
         if data_name is None:
             if self.ivm.main is None:
                 raise QpException("No data loaded")
-            data = self.ivm.main.std()
+            data = self.ivm.main.raw()
         elif multi and isinstance(data_name, list):
             # Allow specifying a list of data volumes which are concatenated
             for name in data_name:
@@ -98,46 +98,40 @@ class Process(QtCore.QObject):
             multi_data = [self.ivm.data[name] for name in data_name]
             nvols = sum([d.nvols for d in multi_data])
             debug("Multivol: nvols=", nvols)
-            data = np.zeros(self.ivm.grid.shape + [nvols,]) # FIXME what if no main data
+            data = None
             v = 0
             for d in multi_data:
-                data[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
+                if data is None:
+                    data = np.zeros(d.grid.shape + [nvols,])
+                if d.shape[:3] != data.shape[:3]:
+                    raise QpException("Data shapes do not match")
+                data[:,:,:,v:v+d.nvols] = np.expand_dims(d.raw(), 3)
                 v += d.nvols
         else:
             if data_name in self.ivm.data:
-                data = self.ivm.data[data_name].std()
+                data = self.ivm.data[data_name].raw()
             else:
                 raise QpException("Data not found: %s" % data_name)
         return data
 
-    def get_roi(self, options, multi=False):
+    def get_roi(self, options):
         """
-        Like get_data but for an ROI
+        Standard method to get the ROI the process is to operate on
+
+        If no 'roi' option is specified, go with currently selected ROI, 
+        if it exists.
         """
         roi_name = options.pop("roi", None)
         if roi_name is None:
             if self.ivm.current_roi is not None:
-                roidata = self.ivm.current_roi.std()
+                roidata = self.ivm.current_roi.raw()
             elif self.ivm.grid is not None:
                 roidata = np.ones(self.ivm.grid.shape[:3])
             else:
                 raise QpException("No data loaded")
-        elif multi and isinstance(roi_name, list):
-            # Allow specifying a list of ROIs which are concatenated
-            for name in roi_name:
-                if name not in self.ivm.rois:
-                    raise QpException("ROI not found: %s" % name)
-            multi_data = [self.ivm.rois[name] for name in roi_name]
-            nvols = sum([d.nvols for d in multi_data])
-            debug("Multiroi: nvols=", nvols)
-            roidata = np.zeros(self.ivm.grid.shape + [nvols,]) # FIXME what if no main data
-            v = 0
-            for d in multi_data:
-                roidata[:,:,:,v:v+d.nvols] = np.expand_dims(d.std(), 3)
-                v += d.nvols
         else:
             if roi_name in self.ivm.data:
-                roidata = self.ivm.rois[roi_name].std()
+                roidata = self.ivm.rois[roi_name].raw()
             else:
                 raise QpException("ROI not found: %s" % roi_name)
         return roidata
