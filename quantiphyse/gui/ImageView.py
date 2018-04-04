@@ -807,11 +807,11 @@ class DataSummary(QtGui.QWidget):
 
     def _focus_changed(self, pos):
         if self.ivl.ivm.main is not None: 
-            self.vol_data.setText(self.ivl.ivm.main.strval(self.ivl.grid, pos))
+            self.vol_data.setText(self.ivl.ivm.main.value(pos, self.ivl.grid, str=True))
         if self.ivl.ivm.current_roi is not None: 
-            self.roi_region.setText(self.ivl.ivm.current_roi.strval(self.ivl.grid, pos))
+            self.roi_region.setText(self.ivl.ivm.current_roi.value(pos, self.ivl.grid, str=True))
         if self.ivl.ivm.current_data is not None: 
-            self.ov_data.setText(self.ivl.ivm.current_data.strval(self.ivl.grid, pos))
+            self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, str=True))
 
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """
