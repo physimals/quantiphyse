@@ -151,7 +151,7 @@ class Workspace:
                             self.ivm.add_data(qpdata)
 
                         # Make sure data is loaded as file is temporary
-                        qpdata.std()
+                        qpdata.raw()
                     except:
                         warn("Error loading output file %s" % f)
                         traceback.print_exc()

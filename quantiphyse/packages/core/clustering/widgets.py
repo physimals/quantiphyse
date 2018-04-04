@@ -252,20 +252,15 @@ PCA reduction is used on 4D data to extract representative curves
 
     def update_voxel_count(self):
         self.count_table.clear()
-        self.count_table.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
-        self.count_table.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
+        self.count_table.setVerticalHeaderItem(1, QtGui.QStandardItem("Voxel count"))
 
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
             for cc, ii in enumerate(roi.regions):
                 self.count_table.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
-                # Slice count
-                voxel_count_slice = np.sum(roi.std()[:, :, self.ivm.cim_pos[2]] == ii)
-                self.count_table.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
-
                 # Volume count
-                voxel_count = np.sum(roi.std() == ii)
+                voxel_count = np.sum(roi.raw() == ii)
                 self.count_table.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def reset_graph(self):
@@ -335,17 +330,18 @@ PCA reduction is used on 4D data to extract representative curves
 
         self.curves = {}
         for region in regions:
-            mean = np.median(data.std()[roi.std() == region], axis=0)
+            roi_data, _ = data.mask(roi, region=region)
+            mean = np.median(roi_data, axis=0)
             self.curves[region] = mean
 
     def _merge(self, m1, m2):
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
-            roi = roi.std()
-            roi[roi == m1] = m2
+            roi_data = roi.raw()
+            roi_data[roi_data == m1] = m2
 
             # signal the change
-            self.ivm.add_roi(roi, name=self.output_name.text(), make_current=True)
+            self.ivm.add_roi(NumpyData(roi_data, grid=roi.grid, name=self.output_name.text()), make_current=True)
 
             # replot
             self.update_plot()

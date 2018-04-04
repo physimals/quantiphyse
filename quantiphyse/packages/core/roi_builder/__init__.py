@@ -60,7 +60,7 @@ class PolygonTool(Tool):
 
     def done(self):
         slice_zaxis = self.ivl.picker.view.zaxis
-        slice_z = self.ivm.cim_pos[slice_zaxis]
+        slice_z = self.ivl.focus()[slice_zaxis]
         roi_new = self.ivl.picker.get_roi(self.label)
         self.builder.add_to_roi(roi_new, slice_zaxis, slice_z)
         

@@ -297,16 +297,7 @@ class SECurve(QpWidget):
         """
         Add a selected point of the specified colour
         """
-        if self.ivm.main.ndim == 3:
-            # FIXME this should take into account which window the picked point was from
-            warnings.warn("3D image so just calculating cross image profile")
-            sig = self.ivm.main.std()[point[0], :, point[2]]
-        elif self.ivm.main.ndim == 4:
-            sig = self.ivm.main.std()[point[0], point[1], point[2], :]
-        else:
-            warnings.warn("Image is not 3D or 4D")
-            return
-
+        sig = self.ivm.main.timeseries(point, grid=self.ivl.grid)
         self.plots[point] = SEPlot(self.p1, sig, pen=col)
 
     def update_means(self):
@@ -315,7 +306,8 @@ class SECurve(QpWidget):
             if len(all_plts) > 0:
                 mean_values = np.stack([plt.sig for plt in all_plts], axis=1)
                 mean_values = np.squeeze(np.mean(mean_values, axis=1))
-                self.mean_plots[col] = SEPlot(self.p1, mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), symbolBrush=col, symbolPen='k', symbolSize=10.0)
+                self.mean_plots[col] = SEPlot(self.p1, mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), 
+                                              symbolBrush=col, symbolPen='k', symbolSize=10.0)
             elif col in self.mean_plots:
                 self.mean_plots[col].remove()
                 del self.mean_plots[col]
@@ -962,12 +954,12 @@ class ModelCurves(QpWidget):
             # Have we been initialized?
             self.update()
 
-    def update_minmax(self, ovls):
+    def update_minmax(self, data_items):
         dmin, dmax, first = 0, 100, True
-        for name in ovls:
-            ovl = self.ivm.data[name].std()
-            if first or ovl.min() < dmin: dmin = ovl.min()
-            if first or ovl.max() > dmax: dmax = ovl.max()
+        for name in data_items:
+            data_range = self.ivm.data[name].range
+            if first or data_range[0] < dmin: dmin = data_range[0]
+            if first or data_range[1] > dmax: dmax = data_range[1]
             first = False
         self.plot_opts.min_spin.setValue(dmin)
         self.plot_opts.max_spin.setValue(dmax)
@@ -984,7 +976,7 @@ class ModelCurves(QpWidget):
         """
         self.values_table.clear()
         self.values_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Value"))
-        data_vals = self.ivm.get_data_value_curr_pos()
+        data_vals = self.ivm.values(self.ivl.focus(), self.ivl.grid)
         for ii, ovl in enumerate(sorted(data_vals.keys())):
             if self.ivm.data[ovl].ndim == 3:
                 self.values_table.setVerticalHeaderItem(ii, QtGui.QStandardItem(ovl))
@@ -996,21 +988,19 @@ class ModelCurves(QpWidget):
             self.rms_table.clear()
             self.rms_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Name"))
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
-            #self.rms_table.setHorizontalHeaderItem(2, QtGui.QStandardItem("RMS (mean)"))
             idx = 0
+            pos = self.ivl.focus()
             for name in sorted(self.ivm.data.keys()):
+                main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
                 ovl = self.ivm.data[name]
-                pos = self.ivm.cim_pos
                 if ovl.ndim == 4 and ovl.nvols == self.ivm.main.nvols:
-                    #rms = np.sqrt(np.mean(np.square(self.ivm.main.std() - ovl.std()), 3))
-                    #if self.ivm.current_roi is not None:
-                    #    rms[self.ivm.current_roi.std() == 0] = 0
-                    #    mean_rms = np.mean(rms[self.ivm.current_roi.std() > 0])
-                    #else:
-                    #    mean_rms = np.mean(rms)
-                    pos_curve = ovl.std()[pos[0], pos[1], pos[2],:]
-                    main_curve = self.ivm.main.std()[pos[0], pos[1], pos[2],:]
-                    pos_rms = np.sqrt(np.mean(np.square(main_curve - pos_curve)))
+                    # Make sure data curve is correct length
+                    data_curve = ovl.timeseries(pos, grid=self.ivl.grid)
+                    data_curve.extend([0] * self.ivm.main.nvols)
+                    data_curve = data_curve[:self.ivm.main.nvols]
+
+                    data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+
                     name_item = QtGui.QStandardItem(name)
                     name_item.setCheckable(True)
                     name_item.setEditable(False)
@@ -1018,12 +1008,10 @@ class ModelCurves(QpWidget):
                         self.data_enabled[name] = QtCore.Qt.Checked
                     name_item.setCheckState(self.data_enabled[name])
                     self.rms_table.setItem(idx, 0, name_item)
-                    item = QtGui.QStandardItem(sf(pos_rms))
+
+                    item = QtGui.QStandardItem(sf(data_rms))
                     item.setEditable(False)
                     self.rms_table.setItem(idx, 1, item)
-                    #item = QtGui.QStandardItem(sf(mean_rms))
-                    #item.setEditable(False)
-                    #self.rms_table.setItem(idx, 2, item)
                     idx += 1
         finally:
             self.updating = False
@@ -1056,7 +1044,7 @@ class ModelCurves(QpWidget):
             self.plot.legend.scene().removeItem(self.plot.legend)
         legend = self.plot.addLegend(offset=legend_pos)
         
-        sig, sig_ovl = self.ivm.get_current_enhancement()
+        sigs = self.ivm.timeseries(self.ivl.focus(), self.ivl.grid)
 
         # Get x scale
         xx = self.opts.t_scale
@@ -1073,8 +1061,8 @@ class ModelCurves(QpWidget):
             self.plot.hideAxis('right')
 
         # Plot each data item
-        idx, n_ovls = 0, len(sig_ovl)
-        for ovl, sig_values in sig_ovl.items():
+        idx, n_ovls = 0, len(sigs)
+        for ovl, sig_values in sigs.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
                 pen = get_kelly_col(idx)
 

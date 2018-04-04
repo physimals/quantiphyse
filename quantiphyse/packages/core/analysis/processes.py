@@ -145,15 +145,18 @@ class RadialProfileProcess(Process):
         data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         #roi_region = options.pop('region', None)
-        centre = options.pop('centre', None)
+        centre = options.pop('centre')
         output_name = options.pop('output-name', "radial-profile")
         no_extra = options.pop('no-extras', False)
         bins = options.pop('bins', 20)
 
         if data_name is None:
             data_items = self.ivm.data.values()
+            grid = self.ivm.main.grid
         else:
             data_items = [self.ivm.data[data_name]]
+            grid = self.ivm.data[data_name].grid
+
         if len(data_items) == 0:
             raise QpException("No data to calculate radial profile")
         
@@ -164,19 +167,14 @@ class RadialProfileProcess(Process):
         else:
             roi = self.ivm.rois[roi_name]
 
-        voxel_sizes = self.ivm.main.grid.spacing
-
-        if centre is not None:
-            centre = [int(v) for v in centre.split(",")]
-        else:
-            centre = self.ivm.cim_pos
-
         self.model.clear()
         self.rp = {}
         
+        voxel_sizes = grid.spacing
+
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1
-        x, y, z = np.indices((self.ivm.grid.shape))
+        x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         if roi is not None: 
             r[roi==0] = -1
@@ -279,7 +277,7 @@ class DataStatisticsProcess(Process):
         :return: Sequence of summary stats dictionary, roi labels
         """
         # Checks if either ROI or data is None
-        if roi is not None:
+        if roi is  None:
             roi = roi.resample(data.grid) 
         else:
             roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
