@@ -26,12 +26,9 @@ from quantiphyse.utils.exceptions import QpException
 
 class ImageVolumeManagement(QtCore.QObject):
     """
-    ImageVolumeManagement
-    1) Holds all image datas used in analysis
-    2) Better support for switching volumes instead of having a single volume hardcoded
+    Holds all image datas used in analysis
 
     Has to inherit from a Qt base class that supports signals
-    Note that the correct QT Model/View structure has not been set up but is intended in future
     """
     # Signals
 
@@ -220,36 +217,6 @@ class ImageVolumeManagement(QtCore.QObject):
         self.current_roi = self.rois[name]
         self.sig_current_roi.emit(self.current_roi)
 
-    def get_data_value_curr_pos(self):
-        """
-        Get all the 3D data values at the current position
-        """
-        data_value = {}
-
-        # loop over all loaded data and save values in a dictionary
-        for name, qpd in self.data.items():
-            if qpd.nvols == 1:
-                data_value[name] = qpd.val(self.cim_pos)
-                
-        return data_value
-
-    def get_current_enhancement(self):
-        """
-        Return enhancement curves for all 4D data whose 4th dimension matches that of the main data
-        """
-        if self.main is None: return [], {}
-        if self.main.nvols > 1:
-            main_sig = self.main.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
-        else:
-            main_sig = []
-
-        qpd_sig = {}
-        for qpd in self.data.values():
-            if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
-                qpd_sig[qpd.name] = qpd.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
-
-        return main_sig, qpd_sig
-
     def add_extra(self, name, obj):
         """
         Add an 'extra', which can be any result of a process which
@@ -257,5 +224,44 @@ class ImageVolumeManagement(QtCore.QObject):
 
         Extras are only required to support str() conversion so they
         can be written to a file
+
+        :param name: Name to give the extra. If an extra already exists with this name
+                     it will be overwritten
+        :param obj: Object which should support str() conversion
         """
         self.extras[name] = obj
+
+    def values(self, pos, grid=None):
+        """
+        Get all the 3D data values at the current position
+
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :return: Dictionary of data name : value
+        """
+        values = {}
+
+        # loop over all loaded data and save values in a dictionary
+        for name, qpd in self.data.items():
+            if qpd.nvols == 1:
+                values[name] = qpd.value(pos, grid)
+                
+        return values
+
+    def timeseries(self, pos, grid=None):
+        """
+        Return time/volume series curves for all 4D data items
+       
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :return: Dictionary of data name : sequence of values
+        """
+        timeseries = {}
+        for qpd in self.data.values():
+            if qpd.nvols > 1:
+                timeseries[qpd.name] = qpd.timeseries(pos, grid)
+                
+        return timeseries
+
