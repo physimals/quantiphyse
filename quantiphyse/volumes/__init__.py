@@ -6,7 +6,7 @@ Concepts:
  - All data is 3D or 4D. 2D (or 1D?) data must be expanded to 3D on load. There is provision
    for 3D data to be 'interpreted' as 2D multi-volume data (there are broken Nifti files
    around like this)
- - All data is defined on a ``grid`` which consists of the data shape and an affine transform
+ - All data is defined on a ``DataGrid`` which consists of the data shape and an affine transform
    from grid co-ordinate space to world space.
  - The 4th dimension (multiple volumes) is not part of the grid and has no impact on orientation.
  - Data objects support arbitrary slicing in a plane defined by an normal axis and a position
@@ -373,7 +373,7 @@ class QpData(object):
         """
         raise NotImplementedError("Internal Error: raw() has not been implemented.")
 
-    def get_vol(self, vol):
+    def volume(self, vol):
         """
         Get the specified volume from a multi-volume data set
 
@@ -389,24 +389,103 @@ class QpData(object):
             rawdata = rawdata[:, :, :, min(vol, self.nvols-1)]
         return rawdata
 
-    def set_2dt(self):
+    def value(self, pos, grid=None, str=False):
         """
-        Force 3D static data into the form of 2D multi-volume
+        Return the data value at a point
 
-        This is useful for some broken NIFTI files. Note that the 3D extent of the grid
-        is completely ignored. In order to work, the underlying class must implement the
-        change in raw().
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :param str: If True, return value as string to appropriate number of decimal places.
         """
-        if self.nvols != 1 or self.grid.shape[2] == 1:
-            raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
+        if grid is None:
+            grid = DataGrid([1, 1, 1], np.identity(4))
 
-        self.raw_2dt = True
-        self.nvols = self.grid.shape[2]
-        self.ndim = 4
+        trans = Transform(grid, self.grid)
+        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
 
-        # The grid transform can't be properly interpreted because basically the file is broken,
-        # so just make it 2D and hope the remaining transform is sensible
-        self.grid.shape[2] = 1
+        rawdata = self.volume(pos[3])
+        try:
+            value = rawdata[tuple(data_pos)]
+        except IndexError:
+            value = 0
+        
+        if str:
+            return sf(value)
+            #return str(np.around(value, self.dps))
+        else:
+            return value
+
+    def timeseries(self, pos, grid=None):
+        """
+        Return the time/volume series at a point
+
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :return: List of values, one for each volume. For 3D data, sequence has length 1.
+        """
+        if self.nvols == 1:
+            return [self.value(pos, grid), ]
+
+        if grid is None:
+            grid = DataGrid([1, 1, 1], np.identity(4))
+            
+        trans = Transform(grid, self.grid)
+        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
+
+        rawdata = self.raw()
+        try:
+            return list(rawdata[data_pos[0], data_pos[1], data_pos[2], :])
+        except IndexError:
+            return []
+
+    def mask(self, roi, region=None, vol=None, invert=False, flat=False, mask=False):
+        """
+        Mask the data
+
+        :param roi: ROI data item If None, return all data
+        :param region: If specified, return data within this region. Otherwise return 
+                       data within any ROI region.
+        :param vol: If specified, restrict output to this volume index
+        :param invert: If True, invert the mask
+        :param flat: If True, return unmasked data only as flattened arrray
+        :param mask: If True, return boolean mask in same grid space as data
+        :return If ``flat``, 1-D Numpy array containing unmasked data. Otherwise, Numpy array
+                containing data with masked points zeroed. If ``mask`` also return
+                a boolean mask in the same grid space as the data.
+        """
+        ret = []
+        if vol is not None:
+            data = self.vol(vol)
+        else:
+            data = self.raw()
+        
+        if roi is None:
+            if flat:
+                ret.append(data.flatten())
+            else:
+                ret.append(data)
+            if mask:
+                ret.append(np.ones(data.shape, dtype=np.int))
+        else:
+            roi = roi.resample(self.grid)
+            if region is None:
+                mask = roi.raw() > 0
+            else:
+                mask = roi.raw() == region
+            if invert:
+                mask = np.logical_not(mask)
+            
+            if flat:
+                ret.append(data[mask])
+            else:
+                masked = np.zeros(data.shape)
+                masked[mask] = data[mask]
+                ret.append(masked)
+            if mask: 
+                ret.append(mask)
+        return tuple(ret)
 
     def resample(self, grid):
         """
@@ -440,7 +519,7 @@ class QpData(object):
                       slice will not in general be defined on the same grid as the data
         :param vol: volume index for use if this is a 4D data set
         """
-        rawdata = self.get_vol(vol)
+        rawdata = self.volume(vol)
 
         #debug("OrthoSlice: plane origin: %s" % str(plane.origin))
         #debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
@@ -521,26 +600,25 @@ class QpData(object):
                 return ax, math.copysign(1, v)
         return None, None
 
-    def strval(self, grid, pos):
-        """
-        Return the data value at pos as a string to an appropriate
-        number of decimal places
-        """
-        return sf(self.val(grid, pos))
-        #return str(np.around(self.val(pos), self.dps))
 
-    def val(self, grid, pos):
+    def set_2dt(self):
         """
-        Return the data value at pos
-        """
-        trans = Transform(grid, self.grid)
-        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
+        Force 3D static data into the form of 2D multi-volume
 
-        rawdata = self.get_vol(pos[3])
-        try:
-            return rawdata[tuple(data_pos)]
-        except IndexError:
-            return 0
+        This is useful for some broken NIFTI files. Note that the 3D extent of the grid
+        is completely ignored. In order to work, the underlying class must implement the
+        change in raw().
+        """
+        if self.nvols != 1 or self.grid.shape[2] == 1:
+            raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
+
+        self.raw_2dt = True
+        self.nvols = self.grid.shape[2]
+        self.ndim = 4
+
+        # The grid transform can't be properly interpreted because basically the file is broken,
+        # so just make it 2D and hope the remaining transform is sensible
+        self.grid.shape[2] = 1
 
     def set_roi(self, roi):
         """
