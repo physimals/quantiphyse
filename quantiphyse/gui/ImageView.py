@@ -166,10 +166,7 @@ class OrthoView(pg.GraphicsView):
         dz = int(event.delta()/120)
         pos = self.ivl.focus(self.ivm.main.grid)
         pos[self.zaxis] += dz
-        if pos[self.zaxis] >= self.ivm.main.grid.shape[self.zaxis] or pos[self.zaxis] < 0:
-            return
-
-        self.ivl.set_focus(pos + [pos[3], ], self.ivm.main.grid)
+        self.ivl.set_focus(pos, self.ivm.main.grid)
 
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
@@ -178,21 +175,12 @@ class OrthoView(pg.GraphicsView):
         if event.button() == QtCore.Qt.LeftButton:
             self.dragging = (self.ivl.drag_mode == DragMode.PICKER_DRAG)
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-            #print(self.transform())
-            #print(event.pos())
-            mx = int(coords.x())
-            my = int(coords.y())
-
-            if mx < 0 or mx >= self.ivm.main.grid.shape[self.xaxis]: return
-            if my < 0 or my >= self.ivm.main.grid.shape[self.yaxis]: return
 
             # Convert to view grid
             pos = self.ivl.focus(self.ivm.main.grid)
-            pos[self.xaxis] = mx
-            pos[self.yaxis] = my
-            t = Transform(self.ivl.grid, self.ivm.main.grid)
-            std_pos = list(t.transform_position(pos[:3]))
-            self.ivl.set_focus(pos + [pos[3], ], self.ivm.main.grid)
+            pos[self.xaxis] = int(coords.x())
+            pos[self.yaxis] = int(coords.y())
+            self.ivl.set_focus(pos, self.ivm.main.grid)
             self.sig_pick.emit(self.ivl.focus(), self.zaxis)
 
     def mouseReleaseEvent(self, event):
@@ -215,55 +203,6 @@ class OrthoView(pg.GraphicsView):
             self.sig_pick.emit(pos, self.zaxis)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
-
-class Navigator:
-    """
-    Slider control which alters position along an axis
-    """
-
-    def __init__(self, ivl, label, axis, layout_grid, layout_ypos):
-        self.ivl = ivl
-        self.axis = axis
-        self._pos = -1
-
-        layout_grid.addWidget(QtGui.QLabel(label), layout_ypos, 0)
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.slider.setMinimumWidth(100)
-        self.slider.valueChanged.connect(self._changed)
-        layout_grid.addWidget(self.slider, layout_ypos, 1)
-
-        self.spin = QtGui.QSpinBox()
-        self.spin.valueChanged.connect(self._changed)
-        layout_grid.addWidget(self.spin, layout_ypos, 2)
-
-    def _changed(self, value):
-        if value != self._pos:
-            self.set_pos(value)
-            pos = self.ivl.focus()
-            pos[self.axis] = value
-            self.ivl.set_focus(pos)
- 
-    def set_size(self, size):
-        try:
-            self.slider.blockSignals(True)
-            self.spin.blockSignals(True)
-            self.slider.setRange(0, size-1)
-            self.spin.setMaximum(size-1)
-        finally:
-            self.slider.blockSignals(False)
-            self.spin.blockSignals(False)
-
-    def set_pos(self, pos):
-        self._pos = pos
-        try:
-            self.slider.blockSignals(True)
-            self.spin.blockSignals(True)
-            self.slider.setValue(pos)
-            self.spin.setValue(pos)
-        finally:
-            self.slider.blockSignals(False)
-            self.spin.blockSignals(False)
 
 class DataSummary(QtGui.QWidget):
     """ Data summary bar """
@@ -317,10 +256,83 @@ class DataSummary(QtGui.QWidget):
         if self.ivl.ivm.current_data is not None:
             self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, str=True))
 
+class Navigator:
+    """
+    Slider control which alters position along an axis
+    """
+
+    def __init__(self, ivl, label, axis, layout_grid, layout_ypos):
+        self.ivl = ivl
+        self.axis = axis
+        self.data_axis = axis
+        self.data_grid = None
+        self._pos = -1
+
+        layout_grid.addWidget(QtGui.QLabel(label), layout_ypos, 0)
+        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.slider.setMinimumWidth(100)
+        self.slider.valueChanged.connect(self._changed)
+        layout_grid.addWidget(self.slider, layout_ypos, 1)
+
+        self.spin = QtGui.QSpinBox()
+        self.spin.valueChanged.connect(self._changed)
+        layout_grid.addWidget(self.spin, layout_ypos, 2)
+
+        self.ivl.ivm.sig_main_data.connect(self._main_data_changed)
+        self.ivl.sig_focus_changed.connect(self._focus_changed)
+
+    def _changed(self, value):
+        if value != self._pos and self.data_grid is not None:
+            pos = self.ivl.focus(self.data_grid)
+            pos[self.data_axis] = value
+            self.ivl.set_focus(pos, self.data_grid)
+ 
+    def _main_data_changed(self, data):
+        if data is not None:
+            self.data_grid = data.grid
+            self.data_axes = data.get_ras_axes()[self.axis]
+
+            if self.axis < 3:
+                self._set_size(self.data_grid.shape[self.data_axis])
+            else:
+                self._set_size(data.nvols)
+
+            self._focus_changed()
+        else:
+            self.data_grid = None
+            self.data_axes = self.axis
+            self.set_size(1)
+            self.set_pos(0)
+
+    def _focus_changed(self):
+        if self.data_grid is not None:
+            self._pos = self.ivl.focus(self.data_grid)[self.data_axis]
+            try:
+                self.slider.blockSignals(True)
+                self.spin.blockSignals(True)
+                self.slider.setValue(self._pos)
+                self.spin.setValue(self._pos)
+            finally:
+                self.slider.blockSignals(False)
+                self.spin.blockSignals(False)
+
+    def _set_size(self, size):
+        try:
+            self.slider.blockSignals(True)
+            self.spin.blockSignals(True)
+            self.slider.setRange(0, size-1)
+            self.spin.setMaximum(size-1)
+        finally:
+            self.slider.blockSignals(False)
+            self.spin.blockSignals(False)
+
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """
     def __init__(self, ivl):
         self.ivl = ivl
+        self.data_axes = None
+        self.data_grid = None
 
         QtGui.QGroupBox.__init__(self, "Navigation")
         grid = QtGui.QGridLayout()
@@ -333,24 +345,6 @@ class NavigationBox(QtGui.QGroupBox):
         self.navs.append(Navigator(ivl, "Volume", 3, grid, 3))
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 2)
-
-        ivl.ivm.sig_main_data.connect(self._main_data_changed)
-        ivl.sig_focus_changed.connect(self._focus_changed)
-
-    def _main_data_changed(self, data):
-        for nav in self.navs:
-            if data is not None:
-                if nav.axis < 3:
-                    nav.set_size(self.ivl.grid.shape[nav.axis])
-                else:
-                    nav.set_size(data.nvols)
-            else:
-                nav.set_size(1)
-            nav.set_pos(self.ivl.focus()[nav.axis])
-
-    def _focus_changed(self, pos):
-        for nav in self.navs:
-            nav.set_pos(pos[nav.axis])
 
 class RoiViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
@@ -755,8 +749,8 @@ class ImageView(QtGui.QSplitter):
         if grid is None:
             return list(self._pos)
         else:
-            world = self.grid.grid_to_world(self._pos[:3])
-            return list(grid.world_to_grid(world)) + [self._pos[3], ]
+            world = self.grid.grid_to_world(self._pos)
+            return list(grid.world_to_grid(world))
 
     def set_focus(self, pos, grid=None):
         """
@@ -766,10 +760,13 @@ class ImageView(QtGui.QSplitter):
                      If not specified, position is in current view grid co-ordinates
         """
         if grid is not None:
-            world = grid.grid_to_world(pos[:3])
-            pos = list(self.grid.world_to_grid(world)) + [pos[3], ]
+            world = grid.grid_to_world(pos)
+            pos = self.grid.world_to_grid(world)
 
         self._pos = list(pos)
+        if len(self._pos) != 4:
+            raise Exception("Position must be 4D")
+            
         debug("Cursor position: ", self._pos)
         self.sig_focus_changed.emit(self._pos)
 
@@ -831,10 +828,14 @@ class ImageView(QtGui.QSplitter):
             debug("RAS aligned")
             debug(self.grid.affine)
 
+            f = [int(v/2) for v in data.grid.shape] + [int(data.nvols/2)]
+            debug("Initial focus (data): ", f)
+            self.set_focus(f, grid=data.grid)
+            debug("Initial focus (std): ", self._pos)
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
-            # FIXME
-            #self._toggle_maximise(0, state=0)
-            #for d in range(3):
-            #    if self.grid.shape[d] == 1:
-            #        self._toggle_maximise(d, state=1)
+            self._toggle_maximise(0, state=0)
+            data_axes = data.get_ras_axes()
+            for d in range(3):
+                if data.grid.shape[data_axes[d]] == 1:
+                    self._toggle_maximise(d, state=1)

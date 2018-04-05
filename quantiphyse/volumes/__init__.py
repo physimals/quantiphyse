@@ -78,19 +78,29 @@ class DataGrid(object):
         """
         Transform grid co-ordinates to world co-ordinates
 
-        :param coords: 3D grid co-ordinates
-        :return: 3D world co-ordinates
+        :param coords: 3D or 4D grid co-ordinates. If 4D, last entry is returned unchanged
+        :return: List containing 3D or 4D world co-ordinates
         """
-        return np.dot(self.transform, coords) + self.origin
+        vec = np.array(coords[:3])
+        world_coords = np.dot(self.transform, vec) + np.array(self.origin)
+        if len(coords) == 4:
+            return list(world_coords) + [coords[3]]
+        else:
+            return list(world_coords)
 
     def world_to_grid(self, coords):
         """
         Transform world co-ordinates to grid co-ordinates
 
-        :param coords: 3D world co-ordinates
-        :return: 3D grid co-ordinates
+        :param coords: 3D world co-ordinates. If 4D, last entry is returned unchanged
+        :return: List containing 3D or 4D grid co-ordinates
         """
-        return np.dot(self.inv_transform, (coords - self.origin))
+        vec = list(coords[:3])
+        grid_coords = np.dot(self.inv_transform, (vec - np.array(self.origin)))
+        if len(coords) == 4:
+            return list(grid_coords) + [coords[3]]
+        else:
+            return list(grid_coords)
 
     def get_standard(self):
         """
@@ -105,11 +115,8 @@ class DataGrid(object):
         # We make slightly botched use of the Transform class for this - this
         # hack shouldn't be necessary really
         rasgrid = DataGrid([1, 1, 1], np.identity(4))
-        return rasgrid
         t = Transform(self, rasgrid)
         reorder, flip, tmatrix = t._simplify_transforms(t.tmatrix[t.OUT2IN])
-        print(tmatrix)
-        print(t.tmatrix[t.OUT2IN])
         new_shape = [self.shape[d] for d in reorder]
         return DataGrid(new_shape, tmatrix)
 
@@ -572,7 +579,7 @@ class QpData(object):
             slices[ax2] = self._get_slice(ax2, rawdata.shape[ax2], sign2)
 
             pos = data_origin[data_naxis]
-            if pos < rawdata.shape[data_naxis]:
+            if pos >= 0 and pos < rawdata.shape[data_naxis]:
                 slices[data_naxis] = int(pos)
                 debug("Using Numpy slice: ", slices, rawdata.shape)
                 sdata = rawdata[slices]
@@ -590,6 +597,23 @@ class QpData(object):
 
         #debug(data_naxis, sdata)
         return sdata, trans_v, offset
+
+    def get_ras_axes(self):
+        """
+        Get the data axes which best correspond to the RAS axes
+
+        :return: List of four integers giving the axes indices of the R, A and S axes.
+                 The fourth integer is always 3 indicating the volume axis
+        """
+        ret = []
+        origin_grid = self.grid.world_to_grid([0, 0, 0])
+        for idx in range(3):
+            vec = [0, 0, 0]
+            vec[idx] = 1
+            vec_grid = [v - o for v, o in zip(self.grid.world_to_grid(vec), origin_grid)]
+            axis = np.argmax(np.abs(vec_grid))
+            ret.append(axis)
+        return ret + [3, ]
 
     def _get_slice(self, axis, length, sign):
         if sign == 1:
