@@ -30,6 +30,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.view = view
         self.vol = 0
         self.imgs = []
+        self.updating = False
 
         self.ivl.sig_focus_changed.connect(self._focus_changed)
         self.view.sig_changed.connect(self._view_changed)
@@ -46,27 +47,33 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.imgs.remove(img)
 
     def _view_changed(self):
-        if self.view.opts["cmap"] != "custom":
-            try:
-                self.gradient.loadPreset(self.view.opts["cmap"])
-            except KeyError:
-                self._setMatplotlibGradient(self.view.opts["cmap"])
-        
-        if self.view.opts["cmap_range"] is not None:
-            self.region.setRegion(self.view.opts["cmap_range"])
+        try:
+            self.updating = True
+            if self.view.opts["cmap"] != "custom":
+                try:
+                    self.gradient.loadPreset(self.view.opts["cmap"])
+                except KeyError:
+                    self._setMatplotlibGradient(self.view.opts["cmap"])
+            
+            if self.view.opts["cmap_range"] is not None:
+                self.region.setRegion(self.view.opts["cmap_range"])
 
-        #self.lut = None
-        for img in self.imgs:
-            img.setLevels(self.region.getRegion())
-            img.setLookupTable(self._get_image_lut, update=True)
-        
+            #self.lut = None
+            for img in self.imgs:
+                img.setLevels(self.region.getRegion())
+                img.setLookupTable(self._get_image_lut, update=True)
+        finally:
+            self.updating = False
+
     def _levels_changed(self):
-        self.view.opts["cmap_range"] = list(self.region.getRegion())
-        self.view.sig_changed.emit(self.view)
+        if not self.updating:
+            self.view.opts["cmap_range"] = list(self.region.getRegion())
+            self.view.sig_changed.emit(self.view)
 
     def _lut_changed(self):
-        self.view.opts["cmap"] = "custom"
-        self.view.sig_changed.emit(self.view)
+        if not self.updating:
+            self.view.opts["cmap"] = "custom"
+            self.view.sig_changed.emit(self.view)
 
     def _focus_changed(self, pos):
         if self.vol != pos[3]:

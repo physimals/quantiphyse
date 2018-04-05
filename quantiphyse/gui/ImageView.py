@@ -506,11 +506,27 @@ class OverlayViewWidget(QtGui.QGroupBox):
             else:
                 self.ov_view_combo.setCurrentIndex(0)
 
-            idx = self.ov_cmap_combo.findText(view.opts["cmap"])
-            self.ov_cmap_combo.setCurrentIndex(idx)
+            # 'Custom' only appears as a flag to indicate the user has messed with the 
+            # LUT using the histogram widget. Otherwise is is hidden
+            cmap = view.opts["cmap"]
+            if cmap == "custom":
+                idx = self.ov_cmap_combo.findText("custom")
+                if idx >= 0:
+                    self.ov_cmap_combo.setCurrentIndex(idx)
+                else:
+                    self.ov_cmap_combo.addItem("custom")
+                    idx = self.ov_cmap_combo.findText("custom")
+                    self.ov_cmap_combo.setCurrentIndex(idx)
+            else:
+                idx = self.ov_cmap_combo.findText("custom")
+                if idx >= 0:
+                    self.ov_cmap_combo.removeItem(idx)
+                idx = self.ov_cmap_combo.findText(view.opts["cmap"])
+                self.ov_cmap_combo.setCurrentIndex(idx)
 
             self.ov_alpha_sld.setValue(view.opts["alpha"])
 
+            self.ov_levels_btn.setEnabled(view.data is not None)
             if view.data is not None:
                 idx = self.overlay_combo.findText(view.data.name)
                 debug("New current data: ", view.data.name, idx)
@@ -565,7 +581,7 @@ class LevelsDialog(QtGui.QDialog):
         self.ivm = ivm
         self.view = view
 
-        self.setWindowTitle("Levels for %s" % dv.name)
+        self.setWindowTitle("Levels for %s" % view.data.name)
         vbox = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
@@ -590,7 +606,7 @@ class LevelsDialog(QtGui.QDialog):
         self.combo = QtGui.QComboBox()
         self.combo.addItem("Transparent")
         self.combo.addItem("Clamped to max/min colour")
-        self.combo.setCurrentIndex(self.dv.boundary)
+        self.combo.setCurrentIndex(self.view.opts["boundary"])
         self.combo.currentIndexChanged.connect(self._bound_changed)
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
@@ -606,7 +622,7 @@ class LevelsDialog(QtGui.QDialog):
         spin = QtGui.QDoubleSpinBox()
         spin.setMaximum(1e20)
         spin.setMinimum(-1e20)
-        spin.setValue(self.view.cmap_range[row])
+        spin.setValue(self.view.opts["cmap_range"][row])
         spin.valueChanged.connect(self._val_changed(row))
         grid.addWidget(spin, row, 1)
         return spin
@@ -624,13 +640,11 @@ class LevelsDialog(QtGui.QDialog):
     def _reset(self):
         percentile = float(100 - self.percentile_spin.value()) / 2
         cmin, cmax = list(self.view.data.range)
-        within_roi = self.use_roi.isChecked()
-        if percentile > 0 or within_roi: 
-            data = self.view.data.resample(self.ivl.grid)
-            if within_roi and self.ivm.current_roi is not None:
-                roidata = self.ivm.current_roi.resample(self.ivl.grid)
-                data = data[roidata > 0]
-            flat = data.reshape(-1)
+        if percentile > 0:
+            if self.use_roi.isChecked() and self.ivm.current_roi is not None:
+                flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
+            else:
+                flat = self.view.data.raw().reshape(-1)    
             cmin = np.percentile(flat, percentile)
             cmax = np.percentile(flat, 100-percentile)
         self.min_spin.setValue(cmin)
