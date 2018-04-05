@@ -7,8 +7,8 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui, QtCore
-from quantiphyse.gui.widgets import QpWidget, HelpButton
-from quantiphyse.utils import debug, get_icon, get_version
+from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
+from quantiphyse.utils import debug, get_icon, get_version, get_local_file
 
 class OverviewWidget(QpWidget):
 
@@ -34,20 +34,23 @@ class OverviewWidget(QpWidget):
                           " \n \n"
                           "Creator: Benjamin Irving (mail@birving.com) \n"
                           "Contributors: Benjamin Irving, Martin Craig, Michael Chappell")
+        ta.setWordWrap(True)
         layout.addWidget(ta)
 
         box = QtGui.QGroupBox()
-        vbox = QtGui.QVBoxLayout()
-        box.setLayout(vbox)
+        hbox = QtGui.QHBoxLayout()
+        box.setLayout(hbox)
         disc = QtGui.QLabel("<font size=2> Disclaimer: This software has been developed for research purposes only, and "
                           "should not be used as a diagnostic tool. The authors or distributors will not be "
                           "responsible for any direct, indirect, special, incidental, or consequential damages "
-                          "arising of the use of this software."
-                          "\n\n"
-                          "By using the this software you agree to this disclaimer (see help for more information)</font>")
-        vbox.addWidget(disc)
-        ta.setWordWrap(True)
+                          "arising of the use of this software. By using the this software you agree to this disclaimer."
+                          "<p>"
+                          "Please read the Quantiphyse License for more information")
         disc.setWordWrap(True)
+        hbox.addWidget(disc, 10)
+        license_btn = QtGui.QPushButton("License")
+        license_btn.clicked.connect(self._view_license)
+        hbox.addWidget(license_btn)
         layout.addWidget(box)
 
         self.vols = DataListWidget(self)
@@ -63,6 +66,13 @@ class OverviewWidget(QpWidget):
         layout.addLayout(hbox)
 
         self.setLayout(layout)
+
+    def _view_license(self):
+        license_file = get_local_file("licence.md")
+        with open(license_file, "r") as f:
+            text = f.read()
+        dlg = TextViewerDialog(self, "Quantiphyse License", text=text)
+        dlg.exec_()
 
     def delete(self):
         if self.vols.selected is not None:
