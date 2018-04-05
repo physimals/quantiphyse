@@ -440,7 +440,7 @@ class QpData(object):
         except IndexError:
             return []
 
-    def mask(self, roi, region=None, vol=None, invert=False, flat=False, mask=False):
+    def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
         Mask the data
 
@@ -462,12 +462,12 @@ class QpData(object):
             data = self.raw()
         
         if roi is None:
-            if flat:
+            if output_flat:
                 ret.append(data.flatten())
             else:
                 ret.append(data)
-            if mask:
-                ret.append(np.ones(data.shape, dtype=np.int))
+            if output_mask:
+                ret.append(np.ones(data.shape[:3], dtype=np.int))
         else:
             roi = roi.resample(self.grid)
             if region is None:
@@ -477,16 +477,20 @@ class QpData(object):
             if invert:
                 mask = np.logical_not(mask)
             
-            if flat:
+            if output_flat:
                 ret.append(data[mask])
             else:
                 masked = np.zeros(data.shape)
                 masked[mask] = data[mask]
                 ret.append(masked)
-            if mask: 
+            if output_mask: 
                 ret.append(mask)
-        return tuple(ret)
 
+        if len(ret) > 1:
+            return tuple(ret)
+        else:
+            return ret[0]
+        
     def resample(self, grid):
         """
         Resample the data onto a new grid
