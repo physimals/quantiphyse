@@ -11,6 +11,7 @@ import threading
 
 from PySide import QtCore, QtGui
 
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 
@@ -84,56 +85,76 @@ class Process(QtCore.QObject):
         
         If no 'data' option is specified, go with main data if it exists
         If 'multi' then allow data to be a list of items
+
+        :param options: Dictionary of options - ``data`` will be consumed if present
+        :return: QpData instance
         """
         data_name = options.pop("data", None)
         if data_name is None:
             if self.ivm.main is None:
                 raise QpException("No data loaded")
-            data = self.ivm.main.raw()
+            data = self.ivm.main
         elif multi and isinstance(data_name, list):
             # Allow specifying a list of data volumes which are concatenated
+            if len(data_name) == 0:
+                raise QpException("Empty list given for data")
             for name in data_name:
                 if name not in self.ivm.data:
                     raise QpException("Data not found: %s" % name)
+
             multi_data = [self.ivm.data[name] for name in data_name]
             nvols = sum([d.nvols for d in multi_data])
             debug("Multivol: nvols=", nvols)
-            data = None
+            arr = None
+            grid = None
             v = 0
             for d in multi_data:
-                if data is None:
-                    data = np.zeros(d.grid.shape + [nvols,])
-                if d.shape[:3] != data.shape[:3]:
-                    raise QpException("Data shapes do not match")
-                data[:,:,:,v:v+d.nvols] = np.expand_dims(d.raw(), 3)
+                if grid is None:
+                    grid = d.grid
+                    arr = np.zeros(grid.shape + [nvols,])
+                d = d.resample(grid)
+                if d.nvols == 1:
+                    rawdata = np.expand_dims(d.raw(), 3)
+                else:
+                    rawdata= d.raw()
+                data[:,:,:,v:v+d.nvols] = rawdata
                 v += d.nvols
+            data = NumpyData(data, grid=grid, name="multi_data")
         else:
             if data_name in self.ivm.data:
-                data = self.ivm.data[data_name].raw()
+                data = self.ivm.data[data_name]
             else:
                 raise QpException("Data not found: %s" % data_name)
         return data
 
-    def get_roi(self, options):
+    def get_roi(self, options, grid=None):
         """
         Standard method to get the ROI the process is to operate on
 
         If no 'roi' option is specified, go with currently selected ROI, 
         if it exists.
+
+        :param options: Dictionary of options - ``roi`` will be consumed if present
+        :param grid:    If specified, return ROI on this grid
+        :return:        QpData instance. If no ROI can be found and ``grid`` is specified, will
+                        return an ROI where all voxels are unmasked.
         """
         roi_name = options.pop("roi", None)
         if roi_name is None:
             if self.ivm.current_roi is not None:
-                roidata = self.ivm.current_roi.raw()
-            elif self.ivm.grid is not None:
-                roidata = np.ones(self.ivm.grid.shape[:3])
+                roidata = self.ivm.current_roi
+            elif grid is not None:
+                roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi")
             else:
-                raise QpException("No data loaded")
+                raise QpException("No default ROI could be constructed")
         else:
             if roi_name in self.ivm.data:
-                roidata = self.ivm.rois[roi_name].raw()
+                roidata = self.ivm.rois[roi_name]
             else:
                 raise QpException("ROI not found: %s" % roi_name)
+
+        if grid is not None:
+            roidata = roidata.resample(grid)
         return roidata
 
     def run(self, options):
