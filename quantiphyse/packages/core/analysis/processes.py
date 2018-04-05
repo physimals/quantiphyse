@@ -277,7 +277,7 @@ class DataStatisticsProcess(Process):
         :return: Sequence of summary stats dictionary, roi labels
         """
         # Checks if either ROI or data is None
-        if roi is  None:
+        if roi is not None:
             roi = roi.resample(data.grid) 
         else:
             roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
