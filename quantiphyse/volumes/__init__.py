@@ -600,7 +600,6 @@ class QpData(object):
                 return ax, math.copysign(1, v)
         return None, None
 
-
     def set_2dt(self):
         """
         Force 3D static data into the form of 2D multi-volume
@@ -631,7 +630,7 @@ class QpData(object):
             if self.nvols != 1:
                 raise RuntimeError("ROIs must be static (single volume) 3D data")
             self.regions = np.unique(self.raw())
-            self.regions = [r for r in self.regions if r > 0]
+            self.regions = [int(r) for r in self.regions if r > 0]
 
     def get_bounding_box(self, ndim=3):
         """
