@@ -14,7 +14,7 @@ import pyqtgraph as pg
 from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
-from quantiphyse.gui.ImageView import PickMode
+from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
 from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug, sf
 
@@ -141,8 +141,13 @@ class SEPlot:
         if self.line is not None:
             self.remove()
 
-        self.line = self.plotwin.plot(global_opts.t_scale, line_values, pen=self.pen, width=4.0)
-        self.pts = self.plotwin.plot(global_opts.t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
+        # Make sure x-scale is correct length
+        t_scale = [0, ] * len(line_values)
+        n = min(len(line_values), len(global_opts.t_scale))
+        t_scale[:n] = global_opts.t_scale[:n]
+        print(line_values, t_scale)
+        self.line = self.plotwin.plot(t_scale, line_values, pen=self.pen, width=4.0)
+        self.pts = self.plotwin.plot(t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
                                 symbolSize=self.symbolSize)
 
     def remove(self):
