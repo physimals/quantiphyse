@@ -64,23 +64,27 @@ class ImageDataView(DataView):
         self.opts = dict(self.default_options)
         self.imgs = {}
         self.histogram = None
+        self.mask = None
         
-    def update(self, vb, slice_plane, slice_vol):    
-        if self.data is not None:
-            
+    def update(self, vb, slice_plane, slice_vol):   
+        img = self._get_img(vb) 
+        img.setVisible(self.data is not None and self.opts["visible"])
+        if img.isVisible():
             slicedata, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
-            #print(slicedata.shape, scale, offset)
-            img = self._get_img(vb)
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
             img.setImage(slicedata, autoLevels=False)
+            if self.mask is not None and self.opts["roi_only"]:
+                maskdata, _, _ = self.mask.slice_data(slice_plane)
+                img.mask = maskdata
+            else:
+                img.mask = None
             img.setZValue(self.opts["z_value"])
             img.setBoundaryMode(self.opts["boundary"])
-
-            vb.addItem(img)
-
+            
     def _get_img(self, vb):
         if vb.name not in self.imgs:
             img = MaskableImage(border='k')
+            vb.addItem(img)
             self.imgs[vb.name] = img
             if self.histogram is not None:
                 self.histogram.add_img(img)
@@ -184,7 +188,7 @@ class RoiView(ImageDataView):
             "z_value" : 1,
         })
         self._init_opts()
-        self.contours = []
+        self.contours = {}
 
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
         self.ivm.sig_all_rois.connect(self._cleanup_cache)
@@ -192,33 +196,31 @@ class RoiView(ImageDataView):
     def update(self, vb, slice_plane, slice_vol):
         if self.data is not None:
             slicedata, scale, offset = self.data.slice_data(slice_plane)
+            transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1])
 
-            if self.opts["shade"]:
-                if vb.name not in self.imgs:
-                    img = MaskableImage(border='k')
-                    self.imgs[vb.name] = img
-
-                img = self.imgs[vb.name]
+            img = self._get_img(vb)
+            img.setVisible(self.opts["shade"])
+            if img.isVisible():
                 lut = get_lut(self.data, self.opts["alpha"])
                 roi_levels = [0, len(lut)-1]
                 img.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
-                img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
+                img.setTransform(transform)
                 img.setZValue(self.opts["z_value"])
                 img.setBoundaryMode(DataView.BOUNDARY_TRANS)
-
-                vb.addItem(img)
-
+            
+            contours = self._get_contours(vb)
             n_contours = 0
             if self.opts["contour"]:
                 # Update data and level for existing contour items, and create new ones if needed
                 for val in self.data.regions:
                     pencol = get_pencol(self.data, val)
                     if val != 0:
-                        if n_contours == len(self.contours):
-                            self.contours.append(pg.IsocurveItem())
-                            vb.addItem(self.contours[n_contours])
+                        if n_contours == len(contours):
+                            contours.append(pg.IsocurveItem())
+                            vb.addItem(contours[n_contours])
 
-                        contour = self.contours[n_contours]
+                        contour = contours[n_contours]
+                        contour.setTransform(transform)
                         d = self._iso_prepare(slicedata, val)
                         contour.setData(d)
                         contour.setLevel(1)
@@ -226,10 +228,16 @@ class RoiView(ImageDataView):
                         n_contours += 1
 
             # Clear data from contours not required - FIXME delete them?
-            for idx in range(n_contours, len(self.contours)):
-                self.contours[idx].setData(None)
+            for idx in range(n_contours, len(contours)):
+                contours[idx].setData(None)
+
+    def _get_contours(self, vb):
+        if vb.name not in self.contours:
+            self.contours[vb.name] = []
+        return self.contours[vb.name]
 
     def _iso_prepare(self, arr, val):
+        return arr == val
         out = arr.copy()
         for row in range(len(arr)):
             for col in range(len(arr[0])):
@@ -287,8 +295,8 @@ class OrthoView(pg.GraphicsView):
     A single slice view of data and ROI
     """
 
-    # Signals when point of focus is changed
-    sig_focus = QtCore.Signal(tuple, int, bool)
+    # Signals when point is selected
+    sig_pick = QtCore.Signal(tuple, int)
 
     # Signals when view is maximised/minimised
     sig_maxmin = QtCore.Signal(int)
@@ -434,9 +442,11 @@ class OrthoView(pg.GraphicsView):
         if event.button() == QtCore.Qt.LeftButton:
             self.dragging = (self.ivl.drag_mode == DragMode.PICKER_DRAG)
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
+            #print(self.transform())
+            #print(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-
+           
             if mx < 0 or mx >= self.ivm.main.grid.shape[self.xaxis]: return
             if my < 0 or my >= self.ivm.main.grid.shape[self.yaxis]: return
 
@@ -447,6 +457,7 @@ class OrthoView(pg.GraphicsView):
             t = Transform(self.ivl.grid, self.ivm.main.grid)
             std_pos = list(t.transform_position(pos[:3]))
             self.ivl.set_focus(pos + [pos[3], ], self.ivm.main.grid)
+            self.sig_pick.emit(self.ivl.focus(), self.zaxis)
 
     def mouseReleaseEvent(self, event):
         super(OrthoView, self).mouseReleaseEvent(event)
@@ -459,13 +470,13 @@ class OrthoView(pg.GraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
-            coords = self.mapFromScene(event.pos())
+            coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
             pos = self.ivl.focus()
             pos[self.xaxis] = mx
             pos[self.yaxis] = my
-            self.sig_focus.emit(pos, self.zaxis, True)
+            self.sig_pick.emit(pos, self.zaxis)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
@@ -953,7 +964,7 @@ class ImageView(QtGui.QSplitter):
         self.win = {}
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
-            win.sig_focus.connect(self._pick)
+            win.sig_pick.connect(self._pick)
             win.sig_maxmin.connect(self._toggle_maximise)
             self.win[win.zaxis] = win
 
@@ -1027,16 +1038,13 @@ class ImageView(QtGui.QSplitter):
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
-    def _pick(self, pos, win, is_click):
+    def _pick(self, pos, win):
         if self.picker.win is not None and win != self.picker.win:
             # Bit of a hack. Ban focus changes in other windows when we 
             # have a single-window picker because it will change the slice 
             # visible in the pick window
             return
-        if is_click:
-            self.picker.add_point(pos, win)
-
-        self.set_focus(pos)
+        self.picker.add_point(pos, win)
 
     def _toggle_maximise(self, win, state=-1):
         """ 
