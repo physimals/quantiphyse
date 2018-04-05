@@ -15,281 +15,14 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
-from quantiphyse.utils import get_icon, get_lut, get_pencol, debug
+from quantiphyse.utils import get_icon, debug
 from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget
 from .pickers import DragMode, PICKERS, PointPicker
+from .data_views import MainDataView, OverlayView, RoiView
 
-class DataView(QtCore.QObject):
-    """
-    View of a data item
-    """
-
-    BOUNDARY_TRANS = 0
-    BOUNDARY_CLAMP = 1
-
-    # Signals when view parameters are changed
-    sig_changed = QtCore.Signal(object)
-
-    def __init__(self, ivm):
-        super(DataView, self).__init__()
-        self.ivm = ivm
-
-        self.default_options = {}
-        self.cached_options = {}
-        self.data = None
-        self.opts = dict(self.default_options)
-
-    def update(self, vb, slice_plane, slice_vol):    
-        pass
-
-class ImageDataView(DataView):
-    """
-    View of data rendered as an image slice
-    """
-
-    def __init__(self, ivm):
-        super(ImageDataView, self).__init__(ivm)
-        self.default_options = {
-            "visible" : True,
-            "roi_only" : False,
-            "boundary" : self.BOUNDARY_CLAMP,
-            "alpha" : 255,
-            "cmap" : "grey",
-            "cmap_range" : None,
-            "z_value" : -1,
-        }
-        self.opts = dict(self.default_options)
-        self.imgs = {}
-        self.histogram = None
-        self.mask = None
-        
-    def update(self, vb, slice_plane, slice_vol):   
-        img = self._get_img(vb) 
-        img.setVisible(self.data is not None and self.opts["visible"])
-        if img.isVisible():
-            slicedata, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
-            img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1]))
-            img.setImage(slicedata, autoLevels=False)
-            if self.mask is not None and self.opts["roi_only"]:
-                maskdata, _, _ = self.mask.slice_data(slice_plane)
-                img.mask = maskdata
-            else:
-                img.mask = None
-            img.setZValue(self.opts["z_value"])
-            img.setBoundaryMode(self.opts["boundary"])
-            
-    def _get_img(self, vb):
-        if vb.name not in self.imgs:
-            img = MaskableImage(border='k')
-            vb.addItem(img)
-            self.imgs[vb.name] = img
-            if self.histogram is not None:
-                self.histogram.add_img(img)
-        return self.imgs[vb.name]
-
-    def _init_opts(self):
-        """ 
-        Retrieve view options from cache or use defaults
-        """
-        if self.data is not None:
-            if self.data.name not in self.cached_options:
-                self.cached_options[self.data.name] = dict(self.default_options)
-            self.opts = self.cached_options[self.data.name]
-        else:
-            self.opts = dict(self.default_options)
-
-    def _init_cmap(self, percentile=100):
-        if self.data is not None and self.opts["cmap_range"] is None:
-            # Initial colourmap range
-            if percentile < 100: 
-                # FIXME
-                self.opts["cmap_range"] = [self.data.range[0], np.percentile(flat, percentile)]
-            else:
-                self.opts["cmap_range"] = list(self.data.range)
-
-    def _cleanup_cache(self, data_items):
-        """ 
-        Remove data items which no longer exist from the option cache
-        """
-        for key in self.cached_options.keys():
-            if key not in data_items:
-                del self.cached_options[key]
-    
-class MainDataView(ImageDataView):
-    """
-    View of main data
-    """
-
-    def __init__(self, ivm):
-        super(MainDataView, self).__init__(ivm)
-
-        self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.ivm.sig_all_data.connect(self._cleanup_cache)
-
-    def _main_data_changed(self, data):
-        self.data = data
-        self._init_opts()
-        self._init_cmap()
-        self.sig_changed.emit(self)
-
-class OverlayView(ImageDataView):
-    """
-    View of the current overlay
-    
-    Stores details about visual parameters, e.g. color map and range
-    """
-
-    def __init__(self, ivm):
-        super(OverlayView, self).__init__(ivm)
-        
-        self.default_options.update({
-            "boundary" : self.BOUNDARY_TRANS,
-            "cmap" : "jet",
-            "z_value" : 0,
-        })
-        self._init_opts()
-
-        self.ivm.sig_current_roi.connect(self._current_roi_changed)
-        self.ivm.sig_current_data.connect(self._current_data_changed)
-        self.ivm.sig_all_data.connect(self._cleanup_cache)
-           
-    def _current_roi_changed(self, roi):
-        if roi is not None and self.data is not None:
-            self.mask = roi.resample(self.data.grid)
-        else:
-            self.mask = None
-        self.sig_changed.emit(self)
-
-    def _current_data_changed(self, data):
-        self.data = data
-        self._init_opts()
-        self._init_cmap()
-        self._current_roi_changed(self.ivm.current_roi)
-        self.sig_changed.emit(self)
-
-class RoiView(ImageDataView):
-    """
-    View of a ROI, 
-    
-    Stores details about visual parameters, e.g. display style (contour, shaded, etc)
-    """
-
-    def __init__(self, ivm):
-        super(RoiView, self).__init__(ivm)
-        
-        self.default_options.update({
-            "shade" : True,
-            "contour" : False,
-            "alpha" : 150,
-            "outline_width" : 3.0,
-            "z_value" : 1,
-        })
-        self._init_opts()
-        self.contours = {}
-
-        self.ivm.sig_current_roi.connect(self._current_roi_changed)
-        self.ivm.sig_all_rois.connect(self._cleanup_cache)
-          
-    def update(self, vb, slice_plane, slice_vol):
-        if self.data is not None:
-            slicedata, scale, offset = self.data.slice_data(slice_plane)
-            transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1,0], scale[1, 1], offset[0], offset[1])
-
-            img = self._get_img(vb)
-            img.setVisible(self.opts["shade"])
-            if img.isVisible():
-                lut = get_lut(self.data, self.opts["alpha"])
-                roi_levels = [0, len(lut)-1]
-                img.setImage(slicedata, lut=lut, autoLevels=False, levels=roi_levels)
-                img.setTransform(transform)
-                img.setZValue(self.opts["z_value"])
-                img.setBoundaryMode(DataView.BOUNDARY_TRANS)
-            
-            contours = self._get_contours(vb)
-            n_contours = 0
-            if self.opts["contour"]:
-                # Update data and level for existing contour items, and create new ones if needed
-                for val in self.data.regions:
-                    pencol = get_pencol(self.data, val)
-                    if val != 0:
-                        if n_contours == len(contours):
-                            contours.append(pg.IsocurveItem())
-                            vb.addItem(contours[n_contours])
-
-                        contour = contours[n_contours]
-                        contour.setTransform(transform)
-                        d = self._iso_prepare(slicedata, val)
-                        contour.setData(d)
-                        contour.setLevel(1)
-                        contour.setPen(pg.mkPen(pencol, width=self.opts["outline_width"]))
-                        n_contours += 1
-
-            # Clear data from contours not required - FIXME delete them?
-            for idx in range(n_contours, len(contours)):
-                contours[idx].setData(None)
-
-    def _get_contours(self, vb):
-        if vb.name not in self.contours:
-            self.contours[vb.name] = []
-        return self.contours[vb.name]
-
-    def _iso_prepare(self, arr, val):
-        return arr == val
-        out = arr.copy()
-        for row in range(len(arr)):
-            for col in range(len(arr[0])):
-                if arr[row, col] == val:
-                    out[row, col] = 1
-                if arr[row, col] > val:
-                    out[row, col] = 2
-                if arr[row, col] < val:
-                    out[row, col] = 2
-        return out
-
-    def _current_roi_changed(self, roi):
-        self.data = roi
-        self._init_opts()
-        self.sig_changed.emit(self)
-           
-class MaskableImage(pg.ImageItem):
-    """
-    Minor addition to ImageItem to allow it to be masked by an RoiView
-    """
-    def __init__(self, image=None, **kwargs):
-        pg.ImageItem.__init__(self, image, **kwargs)
-        self.mask = None
-        self.boundary = DataView.BOUNDARY_TRANS
-        self.border = None
-
-    def setBoundaryMode(self, mode):
-        self.boundary = mode
-
-    def render(self):
-        """
-        Custom masked renderer based on PyQtGraph code
-        """
-        if self.image is None or self.image.size == 0:
-            return
-        if isinstance(self.lut, collections.Callable):
-            lut = self.lut(self.image)
-        else:
-            lut = self.lut
-            
-        argb, alpha = pg.functions.makeARGB(self.image, lut=lut, levels=self.levels)
-        if self.image.size > 1:
-            if self.mask is not None:
-                argb[:,:,3][self.mask == 0] = 0
-        
-            if self.boundary == DataView.BOUNDARY_TRANS:
-                # Make out of range values transparent
-                trans = np.logical_or(self.image < self.levels[0], self.image > self.levels[1])
-                argb[:,:,3][trans] = 0
-
-        self.qimage = pg.functions.makeQImage(argb, alpha)
-    
 class OrthoView(pg.GraphicsView):
     """
     A single slice view of data and ROI
@@ -309,12 +42,15 @@ class OrthoView(pg.GraphicsView):
         self.dragging = False
         self.contours = []
         self.arrows = []
+        self.focus_pos = [0, 0, 0, 0]
+        self.slice_plane = None
+        self.slice_vol = 0
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
         self.vline.setZValue(2)
         self.vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.vline.setVisible(False)
-        
+
         self.hline = pg.InfiniteLine(angle=0, movable=False)
         self.hline.setZValue(2)
         self.hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
@@ -367,7 +103,7 @@ class OrthoView(pg.GraphicsView):
     def add_arrow(self, pos, col):
         arrow = pg.ArrowItem(pen=col, brush=col)
         arrow.setPos(float(pos[self.xaxis]), float(pos[self.yaxis]))
-        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis]) 
+        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis])
         arrow.setZValue(2)
         self.vb.addItem(arrow)
         self.arrows.append((pos[self.zaxis], arrow))
@@ -388,7 +124,7 @@ class OrthoView(pg.GraphicsView):
             self.vb.invertX(self.ivl.opts.orientation == 0)
             if self.ivl.opts.orientation == self.ivl.opts.RADIOLOGICAL:
                 l, r = 1, 0
-            else: 
+            else:
                 l, r = 0, 1
             self.labels[r].setText("R")
             self.labels[l].setText("L")
@@ -402,8 +138,8 @@ class OrthoView(pg.GraphicsView):
         self.vb.addItem(self.hline, ignoreBounds=True)
 
     def _update_arrows(self):
-        """ 
-        Update arrows so only those visible are shown 
+        """
+        Update arrows so only those visible are shown
         """
         current_zpos = self.ivl.focus()[self.zaxis]
         for zpos, arrow in self.arrows:
@@ -438,7 +174,7 @@ class OrthoView(pg.GraphicsView):
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
         if self.ivm.main is None: return
-        
+
         if event.button() == QtCore.Qt.LeftButton:
             self.dragging = (self.ivl.drag_mode == DragMode.PICKER_DRAG)
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
@@ -446,7 +182,7 @@ class OrthoView(pg.GraphicsView):
             #print(event.pos())
             mx = int(coords.x())
             my = int(coords.y())
-           
+
             if mx < 0 or mx >= self.ivm.main.grid.shape[self.xaxis]: return
             if my < 0 or my >= self.ivm.main.grid.shape[self.yaxis]: return
 
@@ -462,7 +198,7 @@ class OrthoView(pg.GraphicsView):
     def mouseReleaseEvent(self, event):
         super(OrthoView, self).mouseReleaseEvent(event)
         self.dragging = False
-        
+
     def mouseDoubleClickEvent(self, event):
         super(OrthoView, self).mouseDoubleClickEvent(event)
         if event.button() == QtCore.Qt.LeftButton:
@@ -500,14 +236,14 @@ class Navigator:
         self.spin = QtGui.QSpinBox()
         self.spin.valueChanged.connect(self._changed)
         layout_grid.addWidget(self.spin, layout_ypos, 2)
-    
+
     def _changed(self, value):
         if value != self._pos:
             self.set_pos(value)
             pos = self.ivl.focus()
             pos[self.axis] = value
             self.ivl.set_focus(pos)
-        
+ 
     def set_size(self, size):
         try:
             self.slider.blockSignals(True)
@@ -528,7 +264,7 @@ class Navigator:
         finally:
             self.slider.blockSignals(False)
             self.spin.blockSignals(False)
-        
+
 class DataSummary(QtGui.QWidget):
     """ Data summary bar """
     def __init__(self, ivl):
@@ -563,7 +299,7 @@ class DataSummary(QtGui.QWidget):
     def show_options(self):
         self.opts.show()
         self.opts.raise_()
-  
+
     def _main_changed(self, data):
         name = ""
         if data is not None:
@@ -574,11 +310,11 @@ class DataSummary(QtGui.QWidget):
         self.vol_name.setText(name)
 
     def _focus_changed(self, pos):
-        if self.ivl.ivm.main is not None: 
+        if self.ivl.ivm.main is not None:
             self.vol_data.setText(self.ivl.ivm.main.value(pos, self.ivl.grid, str=True))
-        if self.ivl.ivm.current_roi is not None: 
+        if self.ivl.ivm.current_roi is not None:
             self.roi_region.setText(self.ivl.ivm.current_roi.value(pos, self.ivl.grid, str=True))
-        if self.ivl.ivm.current_data is not None: 
+        if self.ivl.ivm.current_data is not None:
             self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, str=True))
 
 class NavigationBox(QtGui.QGroupBox):
@@ -657,7 +393,7 @@ class RoiViewWidget(QtGui.QGroupBox):
                 self.roi_view_combo.blockSignals(True)
                 self.roi_alpha_sld.blockSignals(True)
                 self.roi_combo.blockSignals(True)
-                
+
                 if view.opts["shade"] and view.opts["contour"]:
                     self.roi_view_combo.setCurrentIndex(2)
                 elif view.opts["shade"]:
@@ -691,7 +427,7 @@ class RoiViewWidget(QtGui.QGroupBox):
         """ Set the ROI transparency """
         self.view.opts["alpha"] = alpha
         self.view.sig_changed.emit(self.view)
-        
+
     def _rois_changed(self, rois):
         """ Repopulate ROI combo, without sending signals """
         try:
@@ -710,10 +446,10 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.ivl = ivl
         self.ivm = ivl.ivm
         self.view = view
-        
+
         grid = QtGui.QGridLayout()
         self.setLayout(grid)
-        
+
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
         self.overlay_combo = QtGui.QComboBox()
         grid.addWidget(self.overlay_combo, 0, 1)
@@ -757,12 +493,12 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.view.sig_changed.connect(self._update)
 
     def _update(self, view):
-        widgets = [self.ov_view_combo, self.ov_cmap_combo, 
+        widgets = [self.ov_view_combo, self.ov_cmap_combo,
                    self.ov_alpha_sld, self.overlay_combo]
         try:
             for w in widgets:
                 w.blockSignals(True)
-                
+
             if not view.opts["visible"]:
                 self.ov_view_combo.setCurrentIndex(2)
             elif view.opts["roi_only"]:
@@ -795,7 +531,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         cmap = self.ov_cmap_combo.itemText(idx)
         self.view.opts["cmap"] = cmap
         self.view.sig_changed.emit(self.view)
-  
+
     def _view_changed(self, idx):
         """ Viewing style (all or within ROI only) changed """
         self.view.opts["visible"] = idx in (0, 1)
@@ -806,7 +542,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         """ Set the data transparency """
         self.view.opts["alpha"] = alpha
         self.view.sig_changed.emit(self.view)
-     
+
     def _show_ov_levels(self):
         dlg = LevelsDialog(self, self.ivm, self.view)
         dlg.exec_()
@@ -859,9 +595,9 @@ class LevelsDialog(QtGui.QDialog):
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
 
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
-        self.buttonBox.accepted.connect(self.close)
-        vbox.addWidget(self.buttonBox)
+        bbox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        bbox.accepted.connect(self.close)
+        vbox.addWidget(bbox)
 
         self.setLayout(vbox)
     
@@ -1023,7 +759,7 @@ class ImageView(QtGui.QSplitter):
         debug("Cursor position: ", self._pos)
         self.sig_focus_changed.emit(self._pos)
 
-    def set_picker(self, pickmode, drag_mode = DragMode.DEFAULT):
+    def set_picker(self, pickmode, drag_mode=DragMode.DEFAULT):
         self.picker.cleanup()
         self.picker = PICKERS[pickmode](self)
         self.drag_mode = drag_mode
@@ -1088,5 +824,3 @@ class ImageView(QtGui.QSplitter):
             #for d in range(3):
             #    if self.grid.shape[d] == 1:
             #        self._toggle_maximise(d, state=1)
-
-
