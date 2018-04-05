@@ -46,16 +46,12 @@ class SupervoxelsProcess(Process):
         roi_name = options.pop('roi', None)
         output_name = options.pop('output-name', "supervoxels")
         data = self.get_data(options)
-        roi = self.get_roi(options)
+        roi = self.get_roi(options, data.grid)
         img = data.raw()
 
-        if roi is not None:
-            roi = roi.resample(data.grid)
-            slices = roi.get_bounding_box()
-            img = img[slices]
-            mask = roi.raw()[slices]
-        else:
-            mask = None
+        slices = roi.get_bounding_box()
+        img = img[slices]
+        mask = roi.raw()[slices]
 
         if img.ndim > 3 and img.shape[3] > 1:
             # For 4D data, use PCA to reduce down to 3D
@@ -74,12 +70,8 @@ class SupervoxelsProcess(Process):
                            seed_type=seed_type, multichannel=False, multifeat=True,
                            enforce_connectivity=False, return_adjacency=False, spacing=vox_sizes,
                            mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
-        labels = np.array(labels, dtype=np.int) + 1
-        if roi is not None:
-            newroi = np.zeros(data.shape)
-            newroi[slices] = labels
-        else:
-            newroi = labels
+        newroi = np.zeros(data.grid.shape)
+        newroi[slices] = np.array(labels, dtype=np.int) + 1
         self.ivm.add_roi(NumpyData(newroi, grid=data.grid, name=output_name), make_current=True)
         self.status = Process.SUCCEEDED
 
@@ -94,16 +86,10 @@ class MeanValuesProcess(Process):
 
     def run(self, options):
         data = self.get_data(options)
-        roi = self.get_roi(options)
-        output_name = options.pop('output-name', None)
-        if data is None:
-            raise QpException("Data not found")
+        roi = self.get_roi(options, data.grid)
+        output_name = options.pop('output-name', data.name + "_means")
 
-        if output_name is None:
-            output_name = data.name + "_means"
-
-        ov_data = np.zeros(data.shape)
-        roi = roi.resample(data.grid)
+        ov_data = np.zeros(data.grid.shape)
         for region in roi.regions:
             if data.ndim > 3:
                 ov_data[roi.raw() == region] = np.mean(data[roi.raw() == region], axis=0)

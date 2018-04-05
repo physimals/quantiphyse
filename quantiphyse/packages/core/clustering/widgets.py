@@ -12,10 +12,11 @@ from sklearn.metrics import pairwise
 import pyqtgraph as pg
 from PySide import QtGui
 
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
 from quantiphyse.utils import get_pencol, debug
 
-from .kmeans import KMeansPCAProcess, KMeans3DProcess
+from .kmeans import KMeansProcess
 
 class ClusteringWidget(QpWidget):
     """
@@ -27,8 +28,7 @@ class ClusteringWidget(QpWidget):
         self.curves = {}
 
     def init_ui(self):
-        self.process_4d = KMeansPCAProcess(self.ivm)
-        self.process_3d = KMeans3DProcess(self.ivm)
+        self.process = KMeansProcess(self.ivm)
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -234,15 +234,11 @@ PCA reduction is used on 4D data to extract representative curves
         """
         options = self.batch_options()[1]
         data = self.ivm.data.get(options["data"], None)
-        if data.nvols > 1:
-            p = self.process_4d
-        else:
-            p = self.process_3d
-
+        
         try:
             self.run_btn.setDown(True)
             self.run_btn.setDisabled(True)
-            p.run(options)
+            self.process.run(options)
             self.update_voxel_count()
             self.update_plot()
         finally:
@@ -252,7 +248,7 @@ PCA reduction is used on 4D data to extract representative curves
 
     def update_voxel_count(self):
         self.count_table.clear()
-        self.count_table.setVerticalHeaderItem(1, QtGui.QStandardItem("Voxel count"))
+        self.count_table.setVerticalHeaderItem(0, QtGui.QStandardItem("Voxel count"))
 
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
@@ -261,7 +257,7 @@ PCA reduction is used on 4D data to extract representative curves
 
                 # Volume count
                 voxel_count = np.sum(roi.raw() == ii)
-                self.count_table.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
+                self.count_table.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def reset_graph(self):
         """
@@ -330,7 +326,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         self.curves = {}
         for region in regions:
-            roi_data, _ = data.mask(roi, region=region)
+            roi_data = data.mask(roi, region=region, output_flat=True)
             mean = np.median(roi_data, axis=0)
             self.curves[region] = mean
 
