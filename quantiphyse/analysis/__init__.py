@@ -148,7 +148,7 @@ class Process(QtCore.QObject):
             else:
                 raise QpException("No default ROI could be constructed")
         else:
-            if roi_name in self.ivm.data:
+            if roi_name in self.ivm.rois:
                 roidata = self.ivm.rois[roi_name]
             else:
                 raise QpException("ROI not found: %s" % roi_name)
