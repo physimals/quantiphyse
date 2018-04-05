@@ -630,11 +630,15 @@ class DataStatistics(QpWidget):
             self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
     def update_stats(self):
-        self.populate_stats_table(self.process)
+        self.populate_stats_table(self.process, {})
 
     def update_stats_current_slice(self):
-        selected_slice = self.sscombo.currentIndex()
-        self.populate_stats_table(self.process_ss, slice=selected_slice)
+        slice_dir = 2-self.sscombo.currentIndex()
+        options = {
+            "slice-dir" : slice_dir,
+            "slice-pos" : self.ivl.focus(self.ivm.main.grid)[slice_dir],
+        }
+        self.populate_stats_table(self.process_ss, options)
 
     def update_histogram(self):
         name = self.data_combo.currentText()
@@ -653,7 +657,7 @@ class DataStatistics(QpWidget):
                     curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
                 self.plt1.addItem(curve)
 
-    def populate_stats_table(self, process, **options):
+    def populate_stats_table(self, process, options):
         if self.data_combo.currentText() != "<all>":
             options["data"] = self.data_combo.currentText()
         process.run(options)

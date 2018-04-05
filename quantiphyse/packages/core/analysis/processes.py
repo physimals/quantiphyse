@@ -10,6 +10,7 @@ import sys
 
 from PySide import QtGui
 
+from quantiphyse.volumes import OrthoSlice
 from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.utils import table_to_str, debug, sf
 from quantiphyse.utils.exceptions import QpException
@@ -227,9 +228,7 @@ class DataStatisticsProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        roi_name = options.pop('roi', None)
         data_name = options.pop('data', None)
-        no_extra = options.pop('no-extras', False)
         if data_name is None:
             data_items = self.ivm.data.values()
             output_name = options.pop('output-name', "stats")
@@ -237,13 +236,22 @@ class DataStatisticsProcess(Process):
             data_items = [self.ivm.data[data_name]]
             output_name = options.pop('output-name', "%s_stats" % data_name)
             
+        roi_name = options.pop('roi', None)
         if roi_name is None:
             roi = self.ivm.current_roi
-            debug("Current=", roi)
         else:
             roi = self.ivm.rois[roi_name]
-            debug("Specified=", roi)
 
+        slice_dir = options.pop('slice-dir', None)
+        slice_pos = options.pop('slice-pos', 0)
+        sl = None
+        if slice_dir is not None:
+            sl = OrthoSlice(self.ivm.main.grid, slice_dir, slice_pos)
+        
+        no_extra = options.pop('no-extras', False)
+        hist_bins = options.pop('hist-bins', 20)
+        hist_range = options.pop('hist-bins', None)
+        
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
@@ -253,7 +261,7 @@ class DataStatisticsProcess(Process):
 
         col = 0
         for data in data_items:
-            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(data, roi, **options)
+            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice=sl)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (data.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
