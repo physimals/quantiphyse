@@ -85,7 +85,7 @@ class PointPicker(Picker):
     def add_point(self, pos, win):
         self.points = {self.col : [tuple(pos),]}
         self.point = tuple(pos)
-        self.ivl.sig_sel_changed.emit(self)
+        self.ivl.sig_point_picked.emit(self)
 
 class MultiPicker(PointPicker):
     def __init__(self, iv, col=(255, 0, 0)):
@@ -98,7 +98,7 @@ class MultiPicker(PointPicker):
         self.points[self.col].append(tuple(pos))
         for win in self.ivl.win.values():
             win.add_arrow(pos, self.col)
-        self.ivl.sig_sel_changed.emit(self)
+        self.ivl.sig_point_picked.emit(self)
     
     def cleanup(self):
         for w in range(3):
@@ -121,7 +121,7 @@ class SliceMultiPicker(MultiPicker):
             self.points[self.col].append(tuple(pos))
             self.ivl.win[win].add_arrow(pos, self.col)
 
-        self.ivl.sig_sel_changed.emit(self)
+        self.ivl.sig_point_picked.emit(self)
 
 class LassoPicker(Picker): 
 

@@ -33,7 +33,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self.updating = False
 
         self.ivl.sig_focus_changed.connect(self._focus_changed)
-        self.view.sig_changed.connect(self._view_changed)
+        self.view.sig_view_changed.connect(self._view_changed)
         self.sigLevelChangeFinished.connect(self._levels_changed)
         self.sigLevelsChanged.connect(self._levels_changed)
         self.sigLookupTableChanged.connect(self._lut_changed)
@@ -60,20 +60,17 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
 
             #self.lut = None
             for img in self.imgs:
-                img.setLevels(self.region.getRegion())
                 img.setLookupTable(self._get_image_lut, update=True)
         finally:
             self.updating = False
 
     def _levels_changed(self):
         if not self.updating:
-            self.view.opts["cmap_range"] = list(self.region.getRegion())
-            self.view.sig_changed.emit(self.view)
+            self.view.set("cmap_range", list(self.region.getRegion()))
 
     def _lut_changed(self):
         if not self.updating:
-            self.view.opts["cmap"] = "custom"
-            self.view.sig_changed.emit(self.view)
+            self.view.set("cmap", "custom")
 
     def _focus_changed(self, pos):
         if self.vol != pos[3]:

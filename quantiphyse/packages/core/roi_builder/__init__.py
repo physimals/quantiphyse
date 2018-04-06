@@ -72,11 +72,11 @@ class EraserTool(Tool):
 
     def selected(self):
         self.ivl.set_picker(PickMode.SINGLE, DragMode.PICKER_DRAG)
-        self.ivl.sig_sel_changed.connect(self.point_picked)
+        self.ivl.sig_point_picked.connect(self.point_picked)
 
     def deselected(self):
         Tool.deselected(self)
-        self.ivl.sig_sel_changed.disconnect(self.point_picked)
+        self.ivl.sig_point_picked.disconnect(self.point_picked)
 
     def point_picked(self, picker):
         pos = picker.point
@@ -123,13 +123,13 @@ class PickTool(Tool):
 
     def selected(self):
         self.ivl.set_picker(PickMode.SINGLE)
-        self.ivl.sig_sel_changed.connect(self.point_picked)
+        self.ivl.sig_point_picked.connect(self.point_picked)
         self.show_roi()
 
     def deselected(self):
         self.done()
         Tool.deselected(self)
-        self.ivl.sig_sel_changed.disconnect(self.point_picked)
+        self.ivl.sig_point_picked.disconnect(self.point_picked)
 
     def accepted(self):
         self.builder.add_to_roi(self.roi_new)
@@ -161,7 +161,7 @@ class PickTool(Tool):
         self.cancel_btn.setEnabled(True)
         self.done_btn.setEnabled(False)
         self.roi_combo.setEnabled(False)
-        self.ivl.sig_sel_changed.disconnect(self.point_picked)
+        self.ivl.sig_point_picked.disconnect(self.point_picked)
         
 class PenTool(PolygonTool):
     def __init__(self):
@@ -279,13 +279,13 @@ class WalkerTool(Tool):
         else:
             self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
             
-        self.ivl.sig_sel_changed.connect(self.points_changed)
+        self.ivl.sig_point_picked.connect(self.points_changed)
         self.labels = np.zeros(self.ivm.grid.shape)
         self.pickmode_changed(self.pickmode)
         
     def deselected(self):
         Tool.deselected(self)
-        self.ivl.sig_sel_changed.disconnect(self.points_changed)
+        self.ivl.sig_point_picked.disconnect(self.points_changed)
 
     def points_changed(self):
         for col, points in self.ivl.picker.points.items():

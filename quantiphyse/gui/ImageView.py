@@ -21,7 +21,7 @@ from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget
 from .pickers import DragMode, PICKERS, PointPicker
-from .data_views import MainDataView, OverlayView, RoiView
+from .data_views import MainDataView, OverlayView, RoiView, OverlayViewWidget, RoiViewWidget
 
 class OrthoView(pg.GraphicsView):
     """
@@ -29,10 +29,13 @@ class OrthoView(pg.GraphicsView):
     """
 
     # Signals when point is selected
-    sig_pick = QtCore.Signal(tuple, int)
+    sig_pick = QtCore.Signal(int, list)
 
-    # Signals when view is maximised/minimised
-    sig_maxmin = QtCore.Signal(int)
+    # Signals when drag region selection is changed
+    sig_drag = QtCore.Signal(int, list, list)
+
+    # Signals when view is double clicked
+    sig_doubleclick = QtCore.Signal(int)
 
     def __init__(self, ivl, ivm, ax_map, ax_labels):
         pg.GraphicsView.__init__(self)
@@ -40,7 +43,6 @@ class OrthoView(pg.GraphicsView):
         self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
         self.dragging = False
-        self.contours = []
         self.arrows = []
         self.focus_pos = [0, 0, 0, 0]
         self.slice_plane = None
@@ -74,9 +76,9 @@ class OrthoView(pg.GraphicsView):
         self.resizeEvent = self.resize_win
 
         self.ivl.sig_focus_changed.connect(self.update)
-        self.ivl.main_data_view.sig_changed.connect(self.update)
-        self.ivl.current_data_view.sig_changed.connect(self.update)
-        self.ivl.current_roi_view.sig_changed.connect(self.update)
+        self.ivl.main_data_view.sig_redraw.connect(self.update)
+        self.ivl.current_data_view.sig_redraw.connect(self.update)
+        self.ivl.current_roi_view.sig_redraw.connect(self.update)
 
     def update(self):
         """
@@ -96,9 +98,9 @@ class OrthoView(pg.GraphicsView):
         self._update_labels()
         self._update_crosshairs()
         self._update_arrows()
-        self.ivl.main_data_view.update(self.vb, self.slice_plane, self.slice_vol)
-        self.ivl.current_data_view.update(self.vb, self.slice_plane, self.slice_vol)
-        self.ivl.current_roi_view.update(self.vb, self.slice_plane, self.slice_vol)
+        self.ivl.main_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+        self.ivl.current_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+        self.ivl.current_roi_view.redraw(self.vb, self.slice_plane, self.slice_vol)
 
     def add_arrow(self, pos, col):
         arrow = pg.ArrowItem(pen=col, brush=col)
@@ -178,8 +180,8 @@ class OrthoView(pg.GraphicsView):
 
             # Convert to view grid
             pos = self.ivl.focus(self.ivm.main.grid)
-            pos[self.xaxis] = int(coords.x())
-            pos[self.yaxis] = int(coords.y())
+            pos[self.xaxis] = coords.x() - 0.5
+            pos[self.yaxis] = coords.y() - 0.5
             self.ivl.set_focus(pos, self.ivm.main.grid)
             self.sig_pick.emit(self.ivl.focus(), self.zaxis)
 
@@ -190,16 +192,14 @@ class OrthoView(pg.GraphicsView):
     def mouseDoubleClickEvent(self, event):
         super(OrthoView, self).mouseDoubleClickEvent(event)
         if event.button() == QtCore.Qt.LeftButton:
-            self.sig_maxmin.emit(self.zaxis)
+            self.sig_doubleclick.emit(self.zaxis)
 
     def mouseMoveEvent(self, event):
         if self.dragging:
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-            mx = int(coords.x())
-            my = int(coords.y())
             pos = self.ivl.focus()
-            pos[self.xaxis] = mx
-            pos[self.yaxis] = my
+            pos[self.xaxis] = coords.x()
+            pos[self.yaxis] = coords.y()
             self.sig_pick.emit(pos, self.zaxis)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
@@ -307,7 +307,8 @@ class Navigator:
 
     def _focus_changed(self):
         if self.data_grid is not None:
-            self._pos = self.ivl.focus(self.data_grid)[self.data_axis]
+            self._pos = int(self.ivl.focus(self.data_grid)[self.data_axis]+0.5)
+            debug("Pos for slider", self.axis, self._pos)
             try:
                 self.slider.blockSignals(True)
                 self.spin.blockSignals(True)
@@ -346,310 +347,21 @@ class NavigationBox(QtGui.QGroupBox):
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 2)
 
-class RoiViewWidget(QtGui.QGroupBox):
-    """ Change view options for ROI """
-    def __init__(self, ivl, view):
-        self.ivl = ivl
-        self.ivm = ivl.ivm
-        self.view = view
-
-        QtGui.QGroupBox.__init__(self, "ROI")
-        grid = QtGui.QGridLayout()
-        self.setLayout(grid)
-
-        grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = QtGui.QComboBox()
-        grid.addWidget(self.roi_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.roi_view_combo = QtGui.QComboBox()
-        self.roi_view_combo.addItem("Shaded")
-        self.roi_view_combo.addItem("Contour")
-        self.roi_view_combo.addItem("Both")
-        self.roi_view_combo.addItem("None")
-        grid.addWidget(self.roi_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 2, 0)
-        self.roi_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.roi_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.roi_alpha_sld.setRange(0, 255)
-        self.roi_alpha_sld.setValue(150)
-        grid.addWidget(self.roi_alpha_sld, 2, 1)
-        grid.setRowStretch(3, 1)
-
-        self.roi_combo.currentIndexChanged.connect(self._combo_changed)
-        self.roi_view_combo.currentIndexChanged.connect(self._view_changed)
-        self.roi_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self.ivm.sig_all_rois.connect(self._rois_changed)
-        view.sig_changed.connect(self._update)
-
-    def _update(self, view):
-        if view is not None:
-            try:
-                self.roi_view_combo.blockSignals(True)
-                self.roi_alpha_sld.blockSignals(True)
-                self.roi_combo.blockSignals(True)
-
-                if view.opts["shade"] and view.opts["contour"]:
-                    self.roi_view_combo.setCurrentIndex(2)
-                elif view.opts["shade"]:
-                    self.roi_view_combo.setCurrentIndex(0)
-                elif view.opts["contour"]:
-                    self.roi_view_combo.setCurrentIndex(1)
-                else:
-                    self.roi_view_combo.setCurrentIndex(3)
-                self.roi_alpha_sld.setValue(view.opts["alpha"])
-
-                if view.data is not None:
-                    idx = self.roi_combo.findText(view.data.name)
-                    self.roi_combo.setCurrentIndex(idx)
-
-            finally:
-                self.roi_view_combo.blockSignals(False)
-                self.roi_alpha_sld.blockSignals(False)
-                self.roi_combo.blockSignals(False)
-
-    def _combo_changed(self, idx):
-        if idx >= 0:
-            roi = self.roi_combo.itemText(idx)
-            self.ivl.ivm.set_current_roi(roi)
-
-    def _view_changed(self, idx):
-        self.view.opts["shade"] = idx in (0, 2)
-        self.view.opts["contour"] = idx in (1, 2)
-        self.view.sig_changed.emit(self.view)
-
-    def _alpha_changed(self, alpha):
-        """ Set the ROI transparency """
-        self.view.opts["alpha"] = alpha
-        self.view.sig_changed.emit(self.view)
-
-    def _rois_changed(self, rois):
-        """ Repopulate ROI combo, without sending signals """
-        try:
-            self.roi_combo.blockSignals(True)
-            self.roi_combo.clear()
-            for roi in rois:
-                self.roi_combo.addItem(roi)
-            self.roi_combo.updateGeometry()
-        finally:
-            self.roi_combo.blockSignals(False)
-
-class OverlayViewWidget(QtGui.QGroupBox):
-    """ Change view options for ROI """
-    def __init__(self, ivl, view):
-        QtGui.QGroupBox.__init__(self, "Overlay")
-        self.ivl = ivl
-        self.ivm = ivl.ivm
-        self.view = view
-
-        grid = QtGui.QGridLayout()
-        self.setLayout(grid)
-
-        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = QtGui.QComboBox()
-        grid.addWidget(self.overlay_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.ov_view_combo = QtGui.QComboBox()
-        self.ov_view_combo.addItem("All")
-        self.ov_view_combo.addItem("Only in ROI")
-        self.ov_view_combo.addItem("None")
-        grid.addWidget(self.ov_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
-        hbox = QtGui.QHBoxLayout()
-        self.ov_cmap_combo = QtGui.QComboBox()
-        self.ov_cmap_combo.addItem("jet")
-        self.ov_cmap_combo.addItem("hot")
-        self.ov_cmap_combo.addItem("gist_heat")
-        self.ov_cmap_combo.addItem("flame")
-        self.ov_cmap_combo.addItem("bipolar")
-        self.ov_cmap_combo.addItem("spectrum")
-        hbox.addWidget(self.ov_cmap_combo)
-        self.ov_levels_btn = QtGui.QPushButton()
-        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
-        self.ov_levels_btn.setFixedSize(16, 16)
-        self.ov_levels_btn.setToolTip("Adjust colour map levels")
-        self.ov_levels_btn.clicked.connect(self._show_ov_levels)
-        self.ov_levels_btn.setEnabled(False)
-        hbox.addWidget(self.ov_levels_btn)
-        grid.addLayout(hbox, 2, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
-        self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.ov_alpha_sld.setRange(0, 255)
-        self.ov_alpha_sld.setValue(255)
-        grid.addWidget(self.ov_alpha_sld, 3, 1)
-        grid.setRowStretch(4, 1)
-
-        self.overlay_combo.currentIndexChanged.connect(self._combo_changed)
-        self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
-        self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
-        self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self.ivm.sig_all_data.connect(self._data_changed)
-        self.view.sig_changed.connect(self._update)
-
-    def _update(self, view):
-        widgets = [self.ov_view_combo, self.ov_cmap_combo,
-                   self.ov_alpha_sld, self.overlay_combo]
-        try:
-            for w in widgets:
-                w.blockSignals(True)
-
-            if not view.opts["visible"]:
-                self.ov_view_combo.setCurrentIndex(2)
-            elif view.opts["roi_only"]:
-                self.ov_view_combo.setCurrentIndex(1)
-            else:
-                self.ov_view_combo.setCurrentIndex(0)
-
-            # 'Custom' only appears as a flag to indicate the user has messed with the 
-            # LUT using the histogram widget. Otherwise is is hidden
-            cmap = view.opts["cmap"]
-            if cmap == "custom":
-                idx = self.ov_cmap_combo.findText("custom")
-                if idx >= 0:
-                    self.ov_cmap_combo.setCurrentIndex(idx)
-                else:
-                    self.ov_cmap_combo.addItem("custom")
-                    idx = self.ov_cmap_combo.findText("custom")
-                    self.ov_cmap_combo.setCurrentIndex(idx)
-            else:
-                idx = self.ov_cmap_combo.findText("custom")
-                if idx >= 0:
-                    self.ov_cmap_combo.removeItem(idx)
-                idx = self.ov_cmap_combo.findText(view.opts["cmap"])
-                self.ov_cmap_combo.setCurrentIndex(idx)
-
-            self.ov_alpha_sld.setValue(view.opts["alpha"])
-
-            self.ov_levels_btn.setEnabled(view.data is not None)
-            if view.data is not None:
-                idx = self.overlay_combo.findText(view.data.name)
-                debug("New current data: ", view.data.name, idx)
-                self.overlay_combo.setCurrentIndex(idx)
-            else:
-                self.overlay_combo.setCurrentIndex(-1)
-
-        finally:
-            for w in widgets:
-                w.blockSignals(False)
-
-    def _combo_changed(self, idx):
-        if idx >= 0:
-            ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_data(ov)
-
-    def _cmap_changed(self, idx):
-        cmap = self.ov_cmap_combo.itemText(idx)
-        self.view.opts["cmap"] = cmap
-        self.view.sig_changed.emit(self.view)
-
-    def _view_changed(self, idx):
-        """ Viewing style (all or within ROI only) changed """
-        self.view.opts["visible"] = idx in (0, 1)
-        self.view.opts["roi_only"] = (idx == 1)
-        self.view.sig_changed.emit(self.view)
-
-    def _alpha_changed(self, alpha):
-        """ Set the data transparency """
-        self.view.opts["alpha"] = alpha
-        self.view.sig_changed.emit(self.view)
-
-    def _show_ov_levels(self):
-        dlg = LevelsDialog(self, self.ivm, self.view)
-        dlg.exec_()
-
-    def _data_changed(self, data):
-        """ Repopulate data combo, without sending signals"""
-        try:
-            self.overlay_combo.blockSignals(True)
-            self.overlay_combo.clear()
-            for ov in data:
-                self.overlay_combo.addItem(ov)
-            self.overlay_combo.updateGeometry()
-        finally:
-            self.overlay_combo.blockSignals(False)
-
-class LevelsDialog(QtGui.QDialog):
-
-    def __init__(self, parent, ivm, view):
-        super(LevelsDialog, self).__init__(parent)
-        self.ivm = ivm
-        self.view = view
-
-        self.setWindowTitle("Levels for %s" % view.data.name)
-        vbox = QtGui.QVBoxLayout()
-
-        grid = QtGui.QGridLayout()
-        self.min_spin = self._add_spin(grid, "Minimum", 0)
-        self.max_spin = self._add_spin(grid, "Maximum", 1)   
-
-        grid.addWidget(QtGui.QLabel("Percentage of data range"), 2, 0)
-        hbox = QtGui.QHBoxLayout()
-        self.percentile_spin = QtGui.QSpinBox()
-        self.percentile_spin.setMaximum(100)
-        self.percentile_spin.setMinimum(1)
-        self.percentile_spin.setValue(100)
-        hbox.addWidget(self.percentile_spin)
-        btn = QtGui.QPushButton("Reset")
-        btn.clicked.connect(self._reset)
-        hbox.addWidget(btn)
-        self.use_roi = QtGui.QCheckBox("Within ROI")
-        hbox.addWidget(self.use_roi)
-        grid.addLayout(hbox, 2, 1)
-
-        grid.addWidget(QtGui.QLabel("Values outside range are"), 4, 0)
-        self.combo = QtGui.QComboBox()
-        self.combo.addItem("Transparent")
-        self.combo.addItem("Clamped to max/min colour")
-        self.combo.setCurrentIndex(self.view.opts["boundary"])
-        self.combo.currentIndexChanged.connect(self._bound_changed)
-        grid.addWidget(self.combo, 4, 1)
-        vbox.addLayout(grid)
-
-        bbox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
-        bbox.accepted.connect(self.close)
-        vbox.addWidget(bbox)
-
-        self.setLayout(vbox)
-    
-    def _add_spin(self, grid, label, row):
-        grid.addWidget(QtGui.QLabel(label), row, 0)
-        spin = QtGui.QDoubleSpinBox()
-        spin.setMaximum(1e20)
-        spin.setMinimum(-1e20)
-        spin.setValue(self.view.opts["cmap_range"][row])
-        spin.valueChanged.connect(self._val_changed(row))
-        grid.addWidget(spin, row, 1)
-        return spin
-
-    def _val_changed(self, row):
-        def val_changed(val):
-            self.view.opts["cmap_range"][row] = val
-            self.view.sig_changed.emit(self.view)
-        return val_changed
-
-    def _bound_changed(self, idx):
-        self.view.opts["boundary"] = idx
-        self.view.sig_changed.emit(self.view)
-    
-    def _reset(self):
-        percentile = float(100 - self.percentile_spin.value()) / 2
-        cmin, cmax = list(self.view.data.range)
-        if percentile > 0:
-            if self.use_roi.isChecked() and self.ivm.current_roi is not None:
-                flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
-            else:
-                flat = self.view.data.raw().reshape(-1)    
-            cmin = np.percentile(flat, percentile)
-            cmax = np.percentile(flat, 100-percentile)
-        self.min_spin.setValue(cmin)
-        self.max_spin.setValue(cmax)
-        self.view.opts["cmap_range"] = [cmin, cmax]
-        self.view.sig_changed.emit(self.view)
-
 class ImageView(QtGui.QSplitter):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
     navigation sliders and data summary view.
+
+    The viewer maintains two main pieces of data: a grid defining the main co-ordinate
+    system of the viewer and a point of focus, in co-ordinates relative to the viewing grid.
+
+    In addition, the viewer supports 'arrows' to mark positions in space, and variable
+    pickers which control the selection of data.
+
+    The grid is generally either a straightforward 1mm RAS grid, or an approximate RAS grid
+    derived from the grid of the main data. Although the focus position is provided and set
+    according to this grid by default, the ``focus`` and ``set_focus`` methods allow for 
+    the co-ordinates to be set or retrieved according to another arbitrary grid.
 
     :ivar grid: Grid the ImageView uses as the basis for the orthogonal slices. 
                 This is typically an RAS-aligned version of the main data grid, or
@@ -659,8 +371,13 @@ class ImageView(QtGui.QSplitter):
     # Signals when point of focus is changed
     sig_focus_changed = QtCore.Signal(tuple)
 
-    # Signals when the selected points / region have changed
-    sig_sel_changed = QtCore.Signal(object)
+    # Signals when a point is picked. Emission of this signal depends
+    # on the picking mode selected
+    sig_point_picked = QtCore.Signal(object)
+
+    # Signals when a region is picked. Emission of this signal depends
+    # on the picking mode selected
+    sig_region_picked = QtCore.Signal(object)
 
     def __init__(self, ivm, opts):
         super(ImageView, self).__init__(QtCore.Qt.Vertical)
@@ -670,8 +387,8 @@ class ImageView(QtGui.QSplitter):
 
         self.ivm = ivm
         self.opts = opts
-        self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.opts.sig_options_changed.connect(self._opts_changed)
+        self.picker = PointPicker(self) 
+        self.drag_mode = DragMode.DEFAULT
 
         # Visualisation information for data and ROIs
         self.main_data_view = MainDataView(self.ivm)
@@ -686,12 +403,12 @@ class ImageView(QtGui.QSplitter):
         # Create the navigation sliders and the ROI/Overlay view controls
         vbox.addWidget(DataSummary(self))
         hbox = QtGui.QHBoxLayout()
-        self.nav_box = NavigationBox(self)
-        hbox.addWidget(self.nav_box)
-        self.roi_box = RoiViewWidget(self, self.current_roi_view)
-        hbox.addWidget(self.roi_box)
-        self.ovl_box = OverlayViewWidget(self, self.current_data_view)
-        hbox.addWidget(self.ovl_box)
+        nav_box = NavigationBox(self)
+        hbox.addWidget(nav_box)
+        roi_box = RoiViewWidget(self, self.current_roi_view)
+        hbox.addWidget(roi_box)
+        ovl_box = OverlayViewWidget(self, self.current_data_view)
+        hbox.addWidget(ovl_box)
         vbox.addLayout(hbox)  
 
         # Histogram which controls colour map and levels for main volume
@@ -705,12 +422,13 @@ class ImageView(QtGui.QSplitter):
         self.ax_labels = [("L", "R"), ("P", "A"), ("I", "S")]
 
         # Create three orthogonal views
-        self.win = {}
+        self.ortho_views = {}
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
             win.sig_pick.connect(self._pick)
-            win.sig_maxmin.connect(self._toggle_maximise)
-            self.win[win.zaxis] = win
+            win.sig_drag.connect(self._pick)
+            win.sig_doubleclick.connect(self._toggle_maximise)
+            self.ortho_views[win.zaxis] = win
 
         # Main graphics layout
         #gview = pg.GraphicsView(background='k')
@@ -719,10 +437,10 @@ class ImageView(QtGui.QSplitter):
         self.layout_grid.setHorizontalSpacing(2)
         self.layout_grid.setVerticalSpacing(2)
         self.layout_grid.setContentsMargins(0, 0, 0, 0)
-        self.layout_grid.addWidget(self.win[1], 0, 0,)
-        self.layout_grid.addWidget(self.win[0], 0, 1)
+        self.layout_grid.addWidget(self.ortho_views[1], 0, 0,)
+        self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
         self.layout_grid.addWidget(self.main_data_view.histogram, 0, 2)
-        self.layout_grid.addWidget(self.win[2], 1, 0)
+        self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
         self.layout_grid.addWidget(self.current_data_view.histogram, 1, 2)
         self.layout_grid.setColumnStretch(0, 3)
         self.layout_grid.setColumnStretch(1, 3)
@@ -735,8 +453,8 @@ class ImageView(QtGui.QSplitter):
         self.setStretchFactor(0, 5)
         self.setStretchFactor(1, 1)
 
-        self.picker = PointPicker(self) 
-        self.drag_mode = DragMode.DEFAULT
+        self.ivm.sig_main_data.connect(self._main_data_changed)
+        self.opts.sig_options_changed.connect(self._opts_changed)
       
     def focus(self, grid=None):
         """
@@ -776,22 +494,30 @@ class ImageView(QtGui.QSplitter):
         self.drag_mode = drag_mode
         
     def capture_view_as_image(self, window, outputfile):
-        """ Export an image using pyqtgraph """
+        """ 
+        Export an image using pyqtgraph 
+        
+        FIXME this is not working at the moment
+        """
         if window not in (1, 2, 3):
             raise RuntimeError("No such window: %i" % window)
 
-        expimg = self.win[window-1].img
+        expimg = self.ortho_views[window-1].img
         exporter = ImageExporter(expimg)
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
-    def _pick(self, pos, win):
-        if self.picker.win is not None and win != self.picker.win:
-            # Bit of a hack. Ban focus changes in other windows when we 
-            # have a single-window picker because it will change the slice 
-            # visible in the pick window
-            return
-        self.picker.add_point(pos, win)
+    def _pick(self, win, pos):
+        """
+        Called when a point is picked in one of the viewing windows
+        """
+        pass
+
+    def _drag(self, win, pos_start, pos_end):
+        """
+        Called when a drag selection is changed in one of the viewing windows
+        """
+        pass
 
     def _toggle_maximise(self, win, state=-1):
         """ 
@@ -800,20 +526,20 @@ class ImageView(QtGui.QSplitter):
         """
         o1 = (win+1) % 3
         o2 = (win+2) % 3
-        if state == 1 or (state == -1 and self.win[o1].isVisible()):
+        if state == 1 or (state == -1 and self.ortho_views[o1].isVisible()):
             # Maximise
-            self.layout_grid.addWidget(self.win[win], 0, 0, 2, 2)
-            self.win[o1].setVisible(False)
-            self.win[o2].setVisible(False)
-            self.win[win].setVisible(True)
-        elif state == 0 or (state == -1 and not self.win[o1].isVisible()):
+            self.layout_grid.addWidget(self.ortho_views[win], 0, 0, 2, 2)
+            self.ortho_views[o1].setVisible(False)
+            self.ortho_views[o2].setVisible(False)
+            self.ortho_views[win].setVisible(True)
+        elif state == 0 or (state == -1 and not self.ortho_views[o1].isVisible()):
             # Show all three
-            self.layout_grid.addWidget(self.win[1], 0, 0, )
-            self.layout_grid.addWidget(self.win[0], 0, 1)
-            self.layout_grid.addWidget(self.win[2], 1, 0)
-            self.win[o1].setVisible(True)
-            self.win[o2].setVisible(True)
-            self.win[win].setVisible(True)
+            self.layout_grid.addWidget(self.ortho_views[1], 0, 0, )
+            self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
+            self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
+            self.ortho_views[o1].setVisible(True)
+            self.ortho_views[o2].setVisible(True)
+            self.ortho_views[win].setVisible(True)
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)

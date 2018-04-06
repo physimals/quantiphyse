@@ -181,10 +181,10 @@ class Transform(object):
         :param in_grid: Input grid
         :param out_grid: Output grid
         """
-        debug("Transforming from")
-        debug(in_grid.affine)
-        debug("To")
-        debug(out_grid.affine)
+        #debug("Transforming from")
+        #debug(in_grid.affine)
+        #debug("To")
+        #debug(out_grid.affine)
 
         self.grid = [out_grid, in_grid]
         self.tmatrix = [None, None]
@@ -409,7 +409,7 @@ class QpData(object):
             grid = DataGrid([1, 1, 1], np.identity(4))
 
         trans = Transform(grid, self.grid)
-        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
+        data_pos = [int(v+0.5) for v in trans.transform_position(pos[:3])]
 
         rawdata = self.volume(pos[3])
         try:
@@ -580,7 +580,7 @@ class QpData(object):
 
             pos = data_origin[data_naxis]
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
-                slices[data_naxis] = int(pos)
+                slices[data_naxis] = int(pos+0.5)
                 debug("Using Numpy slice: ", slices, rawdata.shape)
                 sdata = rawdata[slices]
                 smask = np.ones(slice_shape)
