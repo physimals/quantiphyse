@@ -243,12 +243,14 @@ class SECurve(QpWidget):
     def activate(self):
         self.ivm.sig_main_data.connect(self.replot_graph)
         self.ivl.sig_selection_changed.connect(self.sel_changed)
+        self.ivl.set_picker(PickMode.MULTIPLE)
         self.activated = True
         self.replot_graph()
 
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.replot_graph)
         self.ivl.sig_selection_changed.disconnect(self.sel_changed)
+        self.ivl.set_picker(PickMode.SINGLE)
 
     def show_options(self):
         self.plot_opts.show()
@@ -323,6 +325,7 @@ class SECurve(QpWidget):
         """
         allpoints = []
         for col, points in picker.selection().items():
+            points = [tuple([int(p+0.5) for p in pos]) for pos in points]
             allpoints += points
             for point in points:
                 if point not in self.plots or self.plots[point].pen != col:
