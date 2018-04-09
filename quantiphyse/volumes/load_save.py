@@ -23,7 +23,7 @@ import numpy as np
 import nrrd
 
 from ..utils.exceptions import QpException
-from ..volumes import DataGrid, QpData, Transform
+from ..volumes import DataGrid, QpData
 
 HAVE_DCMSTACK = True
 try:
@@ -230,9 +230,8 @@ def save(data, fname, grid=None):
         grid = data.grid
         arr = data.raw()
     else:
-        t = Transform(data.grid, grid)
-        arr = t.transform_data(data.raw())
-
+        arr = data.resample(grid).raw()
+        
     img = nib.Nifti1Image(arr, grid.affine)
     img.update_header()
     img.to_filename(fname)

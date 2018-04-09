@@ -232,28 +232,6 @@ class Transform(object):
         # Affine transformation matrix from grid 1 to grid 2
         self.tmatrix[self.IN2OUT] = np.linalg.inv(self.tmatrix[self.OUT2IN])
 
-    def transform_position(self, v, direction=OUT2IN):
-        """
-        Transform a 3D position
-
-        :param v: 3D position vector
-        :param direction: Transform.OUT2IN to transform output grid position to input grid.
-                          Transform.IN2OUT for opposite
-        :return Transformed 3D position vector
-        """
-        return self.tmatrix[direction].dot(list(v) + [1,])[:3]
-
-    def transform_direction(self, v, direction=OUT2IN):
-        """
-        Transform a 3D direction (displacement vector). This does not make use of the grid origins
-
-        :param v: 3D direction vector
-        :param direction: Transform.OUT2IN to transform output grid position to input grid.
-                          Transform.IN2OUT for opposite
-        :return Transformed 3D direction vector
-        """
-        return self.tmatrix[direction][:3, :3].dot(v)
-
     def transform_data(self, data, direction=OUT2IN):
         """
         Transform 3D or 4D data from one grid to another
@@ -403,7 +381,6 @@ class QpData(object):
         # Whether raw data is 2d + time incorrectly returned as 3D
         self.raw_2dt = False
 
-
         # Treat as an ROI data set if requested
         self.set_roi(roi)
 
@@ -459,8 +436,7 @@ class QpData(object):
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
 
-        trans = Transform(grid, self.grid)
-        data_pos = [int(v+0.5) for v in trans.transform_position(pos[:3])]
+        data_pos = [int(v+0.5) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
 
         rawdata = self.volume(pos[3])
         try:
@@ -470,7 +446,6 @@ class QpData(object):
         
         if str:
             return sf(value)
-            #return str(np.around(value, self.dps))
         else:
             return value
 
@@ -489,8 +464,7 @@ class QpData(object):
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
             
-        trans = Transform(grid, self.grid)
-        data_pos = [int(v+0.5) for v in trans.transform_position(pos[:3])]
+        data_pos = [int(v+0.5) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
 
         rawdata = self.raw()
         try:
@@ -588,9 +562,11 @@ class QpData(object):
         #debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
         #debug("OrthoSlice: plane n: %s" % str(plane.normal))
 
-        trans = Transform(plane, self.grid)
-        data_origin = trans.transform_position((0, 0, 0))
-        data_normal = trans.transform_direction((0, 0, 1))
+        #trans = Transform(plane, self.grid)
+        #data_origin = trans.transform_position((0, 0, 0))
+        #data_normal = trans.transform_direction((0, 0, 1))
+        data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
+        data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane))
         data_naxis = np.argmax(np.absolute(data_normal))
 
         #debug("OrthoSlice: data origin: %s" % str(data_origin))

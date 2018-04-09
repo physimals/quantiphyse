@@ -14,7 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 
 from quantiphyse.utils import get_lut, get_pencol, debug, get_icon
-from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
+from quantiphyse.volumes import OrthoSlice, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget

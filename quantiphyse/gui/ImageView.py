@@ -16,7 +16,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
 from quantiphyse.utils import get_icon, debug
-from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
+from quantiphyse.volumes import OrthoSlice, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget
@@ -268,6 +268,9 @@ class DataSummary(QtGui.QWidget):
 
         ivl.ivm.sig_main_data.connect(self._main_changed)
         ivl.sig_focus_changed.connect(self._focus_changed)
+
+    def show_options(self):
+        pass
 
     def _main_changed(self, data):
         name = ""
