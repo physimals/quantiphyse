@@ -1,4 +1,3 @@
-
 """
 Quantiphyse - Picker classes for ImageView
 
@@ -15,67 +14,75 @@ from PIL import Image, ImageDraw
 from quantiphyse.utils import debug
 
 """
-How should picking work?
+General picking system
 
-On activation, widget will typically put the viewer in a pick mode. Some widgets might change the
-mode during use (e.g. ROI builder). The view will clear any existing selection at this point.
+On activation, a widget which wants to support picking will put the viewer in a pick mode.
+Some widgets might change the mode during use (e.g. ROI builder). The viewer will clear any
+existing selection at this point. Note that widgets which simply need to respond to changes
+in the point of focus can connect to the ``sig_focus`` signal instead of using the picking
+system.
 
-Once selection is initiated (generally by clicking in a window) a Picker is instantiated. Some pickers
-(e.g. single/multi point selection) are not tied to a particular view windows, however others (lasso / freehand)
-are. Clicks in other widows will not generate selection or focus events and will not change the focus point
-(as this may alter the visible slice in the picking window).
+The selected picker gets ``pick`` events from the image viewer which provide the position
+picked and the source window ID. Pickers may choose to ignore pick events from windows
+other than the initial source of picked points. Other pickers may accept pick events from
+any window.
 
-Widgets can choose when to stop picking, however the picker may also emit the sel_finished signal (e.g. when
-user goes back to the starting point in a lasso picker, or finishes drawing a selection box)
+The viewer will also emit a selection_changed signal when the set of picked points has
+changed. This might be for every click, e.g. for single/multi-point pickers, or it might
+only be emitted when a particular action occurs, e.g. the user selects the last point of
+a polygon, or ends a drag. Widgets may wish to connect to this event but they do not
+have to. If they do connect to this event they *must* disconnect from it when not
+activated, or they may receive events from different types of picker that they are not
+designed to support.
 
-Changes to the selection will trigger sel_changed events. For freehand selection this will only occur
-when mouse button is released.
+Selected points are retrieved by calling the ``selected()`` method on the picker. The
+objects returned are picker dependent and might be a list of point co-ordinates, a
+dictionary of colour to points selected, or a 3D ROI volume. Widgets are responsible
+for correctly interpreting the return value based on the picker they have chosen.
 
-Selected points are reported in IVL grid space, widgets can convert these easily to the coordinate space
-of whatever data they are interested in. For region selection pickers, the get_roi method takes a 
-QpData instance which is used to define the grid space on which the returned ROI is defined.
+Points and ROIs are by default provided in the viewer grid space, however the optional
+``grid`` parameter allows them to be provided relative to another grid.
 """
 
 class PickMode:
-    """ Single point picking. pick_points contains a single point """
+    """ Single point picking - see :class:`PointPicker` """
     SINGLE = 1
 
-    """ Multi-point picking. pick_points contains a list of points """
+    """ Multi-point picking - see :class:`MultiPicker` """
     MULTIPLE = 2
 
-    """ Multi-point picking in a single slice """
+    """ Multi-point picking in a single slice - see :class:`SliceMultiPicker`  """
     SLICE_MULTIPLE = 3
 
-    """ Select rectangular regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
+    """ Select rectangular regions - see :class:`RectPicker`"""
     RECT = 4
 
-    """ Select elliptical regions. pick_points contains opposite corners, get_pick_roi gets full set of points"""
+    """ Select elliptical regions - see :class:`EllipsePicker` """
     ELLIPSE = 5
 
-    """ Polygon lasso. pick_points contains line segment ends. Use get_pick_roi to get full set """
-    LASSO = 6
-    
-    """ Like LASSO but holding mouse down for continual freehand drawing."""
+    """ Select polygogn region bounded by points - see :class:`PolygonPicker` """
+    POLYGON = 6
+
+    """ Select regions by dragging around them - see :class:`FreehandPicker` """
     FREEHAND = 7
-    
-    """ Pick an ROI region. pick_points contains a single point. get_pick_roi gets the full region"""
-    ROI_REGION = 8
 
 class Picker:
+    """
+    Base class for pickers
+    """
     def __init__(self, iv):
         self.ivl = iv
-        self.win = None
         self.use_drag = False
 
     def pick(self, win, pos):
         """
         Point has been picked
-        
+
         :param win: ID of the window sending the event
         :param pos: Position picked
         """
         pass
-    
+
     def drag(self, win, pos):
         """
         Mouse has been dragged with left button down
@@ -89,7 +96,7 @@ class Picker:
         """
         Return the selection. This may be:
 
-         - A single point 
+         - A single point
          - A list of points
          - A dictionary of colour to list of points
          - A region defined by a binary mask
@@ -101,11 +108,11 @@ class Picker:
         :param grid: Return point co-ordinates relative to this grid.
                      If not specified, use viewer grid
         """
-        return []
+        pass
 
     def cleanup(self):
-        """ 
-        Remove picker objects from the view 
+        """
+        Remove picker objects from the view
         """
         pass
 
@@ -136,14 +143,15 @@ class MultiPicker(Picker):
     def __init__(self, ivl, col=(255, 0, 0)):
         Picker.__init__(self, ivl)
         self.col = col
+        self.win = None
         self._points = {}
 
     def pick(self, win, pos):
-        if self.col not in self._points: 
+        if self.col not in self._points:
             self._points[self.col] = []
         self._points[self.col].append(pos)
         self.ivl.add_arrow(pos, col=self.col)
-    
+
     def selection(self, grid=None):
         """
         :return: Dictionary of colour : list of picked points as 4D co-ords
@@ -165,6 +173,8 @@ class SliceMultiPicker(MultiPicker):
     """
     def __init__(self, iv, col=(255, 0, 0)):
         MultiPicker.__init__(self, iv, col)
+        self.zaxis = None
+        self.zpos = None
 
     def pick(self, win, pos):
         if self.win is None:
@@ -175,7 +185,7 @@ class SliceMultiPicker(MultiPicker):
         if win == self.win and pos[self.zaxis] == self.zpos:
             MultiPicker.pick(self, win, pos)
 
-class PolygonPicker(Picker): 
+class PolygonPicker(Picker):
     """
     Picker which selects a polygon region
     """
@@ -185,9 +195,9 @@ class PolygonPicker(Picker):
         self.roisel = None
         self._points = []
         self.view = None
-           
+
     def pick(self, win, pos):
-        if self.win is None: 
+        if self.win is None:
             self.win = win
             self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
             self.view = self.ivl.ortho_views[self.win]
@@ -200,10 +210,11 @@ class PolygonPicker(Picker):
         self.roisel.setPoints(self._points)
 
     def selection(self, grid=None, label=1):
-        """ 
+        """
         Get the selected points as an ROI
         """
-        if self.win is None: return None    
+        if self.win is None:
+            return None
 
         if grid is None:
             grid = self.ivl.grid
@@ -212,7 +223,7 @@ class PolygonPicker(Picker):
         w, h = grid.shape[gridx], grid.shape[gridy]
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).polygon(points, outline=label, fill=label)
-        
+
         ret = np.zeros(grid.shape, dtype=np.int)
         slice_mask = np.array(img).T
 
@@ -224,7 +235,7 @@ class PolygonPicker(Picker):
         return ret
 
     def cleanup(self):
-        if self.view is not None: 
+        if self.view is not None:
             self.view.vb.removeItem(self.roisel)
 
     def _xy_coords(self, pos):
@@ -237,7 +248,7 @@ class PolygonPicker(Picker):
         gridz = grid_axes[self.view.zaxis]
 
         # NB we are assuming here that the supplied grid is orthogonal to the
-        # viewer grid, otherwise things will not work. 
+        # viewer grid, otherwise things will not work.
         debug("points in std space are: ", self._points)
         points = []
         for x, y in self._points:
@@ -250,7 +261,7 @@ class PolygonPicker(Picker):
         debug("points in grid space are: ", points)
         return gridx, gridy, gridz, points
 
-class RectPicker(PolygonPicker): 
+class RectPicker(PolygonPicker):
     """
     Picker which selects a rectangular region
     """
@@ -263,7 +274,7 @@ class RectPicker(PolygonPicker):
 
         self.win = win
         self.view = self.ivl.ortho_views[self.win]
-        
+
         fx, fy = float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
         self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 255))
         self.view.vb.addItem(self.roisel)
@@ -276,7 +287,7 @@ class RectPicker(PolygonPicker):
         self.roisel.setSize((sx, sy))
         self._points = [(self.ox, self.oy), (self.ox, fy), (fx, fy), (fx, self.oy)]
 
-class EllipsePicker(PolygonPicker): 
+class EllipsePicker(PolygonPicker):
     """
     Picker which selects an elliptical region
     """
@@ -290,7 +301,7 @@ class EllipsePicker(PolygonPicker):
 
         self.win = win
         self.view = self.ivl.ortho_views[self.win]
-        
+
         fx, fy = self._xy_coords(pos)
         self.roisel = pg.EllipseROI((fx, fy), (1, 1), pen=(255, 0, 255))
         self.view.vb.addItem(self.roisel)
@@ -300,16 +311,19 @@ class EllipsePicker(PolygonPicker):
     def drag(self, win, pos):
         fx, fy = self._xy_coords(pos)
         sx, sy = fx-self.ox, fy-self.oy
-        if sx == 0: sx = 1
-        if sy == 0: sy = 1
+        if sx == 0:
+            sx = 1
+        if sy == 0:
+            sy = 1
         self.roisel.setSize((sx, sy))
         self._points = [(self.ox, self.oy), (fx, fy)]
 
     def selection(self, grid=None, label=1):
-        """ 
+        """
         Get the selected points as an ROI
         """
-        if self.win is None: return None    
+        if self.win is None:
+            return None
 
         if grid is None:
             grid = self.ivl.grid
@@ -322,7 +336,7 @@ class EllipsePicker(PolygonPicker):
         debug("getting selection with dimensions", w, h, label)
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).ellipse(points, outline=label, fill=label)
-        
+
         ret = np.zeros(grid.shape, dtype=np.int)
         slice_mask = np.array(img).T
         debug("selection nonzero: ", np.count_nonzero(slice_mask))
@@ -335,7 +349,7 @@ class EllipsePicker(PolygonPicker):
             ret[slices] = slice_mask
         return ret
 
-class FreehandPicker(PolygonPicker): 
+class FreehandPicker(PolygonPicker):
     """
     Picker which selects a region by dragging around the boundary
     """
@@ -349,12 +363,12 @@ class FreehandPicker(PolygonPicker):
         self.cleanup()
         self.win = win
         self.view = self.ivl.ortho_views[self.win]
-            
+
         fx, fy = float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
         self._points.append((fx, fy))
 
-        self.roisel = QtGui.QGraphicsPathItem() 
-        self.pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine, 
+        self.roisel = QtGui.QGraphicsPathItem()
+        self.pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine,
                               QtCore.Qt.SquareCap, QtCore.Qt.BevelJoin)
         self.roisel.setPen(self.pen)
         self.view.vb.addItem(self.roisel)
@@ -362,7 +376,7 @@ class FreehandPicker(PolygonPicker):
         self.roisel.setPath(self.path)
 
     def drag(self, win, pos):
-        if self.roisel is None: 
+        if self.roisel is None:
             raise RuntimeError("roisel is None")
         else:
             fx, fy = float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
@@ -373,12 +387,8 @@ class FreehandPicker(PolygonPicker):
 PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.MULTIPLE : MultiPicker,
            PickMode.SLICE_MULTIPLE : SliceMultiPicker,
-           PickMode.LASSO : PolygonPicker,
+           PickMode.POLYGON : PolygonPicker,
            PickMode.RECT : RectPicker,
            PickMode.ELLIPSE : EllipsePicker,
            PickMode.FREEHAND : FreehandPicker
           }
-
-class DragMode:
-    DEFAULT = 0
-    PICKER_DRAG = 1

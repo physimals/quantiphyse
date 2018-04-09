@@ -18,7 +18,6 @@ from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget
-from .pickers import DragMode, PICKERS, PointPicker
 
 class MaskableImage(pg.ImageItem):
     """

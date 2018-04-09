@@ -60,7 +60,7 @@ class PolygonTool(Tool):
 
     def selected(self):
         Tool.selected(self)
-        self.ivl.set_picker(PickMode.LASSO)
+        self.ivl.set_picker(PickMode.POLYGON)
 
     def interface(self):
         grid = Tool.interface(self)

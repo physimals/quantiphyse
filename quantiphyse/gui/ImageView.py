@@ -7,9 +7,9 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import collections
+import warnings
 
 from PySide import QtCore, QtGui
-import warnings
 import numpy as np
 
 import pyqtgraph as pg
@@ -20,7 +20,7 @@ from quantiphyse.volumes import OrthoSlice, Transform, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget
-from .pickers import DragMode, PICKERS, PointPicker
+from .pickers import PICKERS, PointPicker
 from .data_views import MainDataView, OverlayView, RoiView, OverlayViewWidget, RoiViewWidget
 
 class OrthoView(pg.GraphicsView):
@@ -99,7 +99,8 @@ class OrthoView(pg.GraphicsView):
 
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         if self.ivl.opts.size_scaling == self.ivl.opts.SCALE_VOXELS:
-            self.vb.setAspectLocked(True, ratio=(self.ivl.grid.spacing[self.xaxis] / self.ivl.grid.spacing[self.yaxis]))
+            spacing = self.ivl.grid.spacing
+            self.vb.setAspectLocked(True, ratio=(spacing[self.xaxis] / spacing[self.yaxis]))
         else:
             self.vb.setAspectLocked(True, ratio=1)
 
@@ -139,7 +140,7 @@ class OrthoView(pg.GraphicsView):
         for pos, col, item in self._arrow_items:
             arrow_zpos = int(pos[self.zaxis] + 0.5)
             item.setVisible(current_zpos == arrow_zpos)
-    
+
     def _arrows_changed(self, arrows):
         item_num = 0
         for pos, col in arrows:
@@ -154,10 +155,10 @@ class OrthoView(pg.GraphicsView):
             item.setZValue(2)
             self._arrow_items[item_num] = (pos, col, item)
             item_num += 1
-        
+
         for _, _, item in self._arrow_items[item_num:]:
             self.vb.removeItem(item)
-        
+
         self._arrow_items = self._arrow_items[:item_num]
         self._update_arrows()
 
@@ -185,8 +186,12 @@ class OrthoView(pg.GraphicsView):
         self.ivl.set_focus(pos)
 
     def mousePressEvent(self, event):
+        """
+        Called when mouse button is pressed on the view
+        """
         super(OrthoView, self).mousePressEvent(event)
-        if self.ivm.main is None: return
+        if self.ivm.main is None:
+            return
 
         if event.button() == QtCore.Qt.LeftButton:
             # Convert co-ords to view grid
@@ -201,15 +206,29 @@ class OrthoView(pg.GraphicsView):
             self.sig_pick.emit(self.zaxis, self.ivl.focus())
 
     def mouseReleaseEvent(self, event):
+        """
+        Called when mouse button is released on the view
+        """
         super(OrthoView, self).mouseReleaseEvent(event)
         self.dragging = False
 
     def mouseDoubleClickEvent(self, event):
+        """
+        Called when mouse button is double clicked on the view
+
+        This is used to maximise/minimise the view window
+        """
         super(OrthoView, self).mouseDoubleClickEvent(event)
         if event.button() == QtCore.Qt.LeftButton:
             self.sig_doubleclick.emit(self.zaxis)
 
     def mouseMoveEvent(self, event):
+        """
+        Called when the mouse is moved over the window.
+
+        The default behaviour is used unless we are dragging a
+        selection region
+        """
         if self.dragging:
             coords = self.dummy.mapFromScene(event.pos())
             pos = self.ivl.focus()
@@ -249,10 +268,6 @@ class DataSummary(QtGui.QWidget):
 
         ivl.ivm.sig_main_data.connect(self._main_changed)
         ivl.sig_focus_changed.connect(self._focus_changed)
-
-    def show_options(self):
-        self.opts.show()
-        self.opts.raise_()
 
     def _main_changed(self, data):
         name = ""
@@ -302,7 +317,7 @@ class Navigator:
             pos = self.ivl.focus(self.data_grid)
             pos[self.data_axis] = value
             self.ivl.set_focus(pos, self.data_grid)
- 
+
     def _main_data_changed(self, data):
         if data is not None:
             self.data_grid = data.grid
@@ -364,7 +379,7 @@ class NavigationBox(QtGui.QGroupBox):
 
 class ImageView(QtGui.QSplitter):
     """
-    Widget containing three orthogonal slice views, two histogram/LUT widgets plus 
+    Widget containing three orthogonal slice views, two histogram/LUT widgets plus
     navigation sliders and data summary view.
 
     The viewer maintains two main pieces of data: a grid defining the main co-ordinate
@@ -375,10 +390,10 @@ class ImageView(QtGui.QSplitter):
 
     The grid is generally either a straightforward 1mm RAS grid, or an approximate RAS grid
     derived from the grid of the main data. Although the focus position is provided and set
-    according to this grid by default, the ``focus`` and ``set_focus`` methods allow for 
+    according to this grid by default, the ``focus`` and ``set_focus`` methods allow for
     the co-ordinates to be set or retrieved according to another arbitrary grid.
 
-    :ivar grid: Grid the ImageView uses as the basis for the orthogonal slices. 
+    :ivar grid: Grid the ImageView uses as the basis for the orthogonal slices.
                 This is typically an RAS-aligned version of the main data grid, or
                 alternatively an RAS world-grid
     """
@@ -386,7 +401,7 @@ class ImageView(QtGui.QSplitter):
     # Signals when point of focus is changed
     sig_focus_changed = QtCore.Signal(list)
 
-    # Signals when the set of marker arrows has changed 
+    # Signals when the set of marker arrows has changed
     sig_arrows_changed = QtCore.Signal(list)
 
     # Signals when the picker mode is changed
@@ -404,7 +419,7 @@ class ImageView(QtGui.QSplitter):
 
         self.ivm = ivm
         self.opts = opts
-        self.picker = PointPicker(self) 
+        self.picker = PointPicker(self)
         self.arrows = []
 
         # Visualisation information for data and ROIs
@@ -415,7 +430,7 @@ class ImageView(QtGui.QSplitter):
         # Navigation controls layout
         control_box = QtGui.QWidget()
         vbox = QtGui.QVBoxLayout()
-        control_box.setLayout(vbox)  
+        control_box.setLayout(vbox)
 
         # Create the navigation sliders and the ROI/Overlay view controls
         vbox.addWidget(DataSummary(self))
@@ -426,11 +441,11 @@ class ImageView(QtGui.QSplitter):
         hbox.addWidget(roi_box)
         ovl_box = OverlayViewWidget(self, self.current_data_view)
         hbox.addWidget(ovl_box)
-        vbox.addLayout(hbox)  
+        vbox.addLayout(hbox)
 
         # Histogram which controls colour map and levels for main volume
         self.main_data_view.histogram = MultiImageHistogramWidget(self, self.main_data_view, percentile=99)
-        
+
         # Histogram which controls colour map and levels for data
         self.current_data_view.histogram = MultiImageHistogramWidget(self, self.current_data_view)
 
@@ -472,12 +487,12 @@ class ImageView(QtGui.QSplitter):
 
         self.ivm.sig_main_data.connect(self._main_data_changed)
         self.opts.sig_options_changed.connect(self._opts_changed)
-      
+
     def focus(self, grid=None):
         """
         Get the current focus position
 
-        :param grid: Report position using co-ordinates relative to this grid. 
+        :param grid: Report position using co-ordinates relative to this grid.
                      If not specified, report current view grid co-ordinates
         :return: 4D sequence containing position plus the current data volume index
         """
@@ -491,7 +506,7 @@ class ImageView(QtGui.QSplitter):
         """
         Set the current focus position
 
-        :param grid: Specify position using co-ordinates relative to this grid. 
+        :param grid: Specify position using co-ordinates relative to this grid.
                      If not specified, position is in current view grid co-ordinates
         """
         if grid is not None:
@@ -501,7 +516,7 @@ class ImageView(QtGui.QSplitter):
         self._pos = list(pos)
         if len(self._pos) != 4:
             raise Exception("Position must be 4D")
-            
+
         debug("Cursor position: ", self._pos)
         self.sig_focus_changed.emit(self._pos)
 
@@ -514,7 +529,7 @@ class ImageView(QtGui.QSplitter):
         self.picker.cleanup()
         self.picker = PICKERS[pickmode](self)
         self.sig_picker_changed.emit(self.picker)
-        
+
     def add_arrow(self, pos, grid=None, col=None):
         """
         Add an arrow to mark a particular position
@@ -527,7 +542,7 @@ class ImageView(QtGui.QSplitter):
         if grid is not None:
             world = grid.grid_to_world(pos)
             pos = self.grid.world_to_grid(world)
-        
+
         if col is None:
             # Default to grey arrow
             col = [127, 127, 127]
@@ -536,16 +551,16 @@ class ImageView(QtGui.QSplitter):
         self.sig_arrows_changed.emit(self.arrows)
 
     def remove_arrows(self):
-        """ 
-        Remove all the arrows that have been placed 
+        """
+        Remove all the arrows that have been placed
         """
         self.arrows = []
         self.sig_arrows_changed.emit(self.arrows)
 
     def capture_view_as_image(self, window, outputfile):
-        """ 
-        Export an image using pyqtgraph 
-        
+        """
+        Export an image using pyqtgraph
+
         FIXME this is not working at the moment
         """
         if window not in (1, 2, 3):
@@ -571,9 +586,9 @@ class ImageView(QtGui.QSplitter):
         self.sig_selection_changed.emit(self.picker)
 
     def _toggle_maximise(self, win, state=-1):
-        """ 
+        """
         Maximise/Minimise view window
-        If state=1, maximise, 0=show all, -1=toggle 
+        If state=1, maximise, 0=show all, -1=toggle
         """
         o1 = (win+1) % 3
         o2 = (win+2) % 3
