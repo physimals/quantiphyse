@@ -31,8 +31,8 @@ class OrthoView(pg.GraphicsView):
     # Signals when point is selected
     sig_pick = QtCore.Signal(int, list)
 
-    # Signals when drag region selection is changed
-    sig_drag = QtCore.Signal(int, list, list)
+    # Signals when mouse is draggged if picker uses drag selection
+    sig_drag = QtCore.Signal(int, list)
 
     # Signals when view is double clicked
     sig_doubleclick = QtCore.Signal(int)
@@ -43,10 +43,10 @@ class OrthoView(pg.GraphicsView):
         self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
         self.dragging = False
-        self.arrows = []
         self.focus_pos = [0, 0, 0, 0]
         self.slice_plane = None
         self.slice_vol = 0
+        self._arrow_items = []
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
         self.vline.setZValue(2)
@@ -76,6 +76,7 @@ class OrthoView(pg.GraphicsView):
         self.resizeEvent = self.resize_win
 
         self.ivl.sig_focus_changed.connect(self.update)
+        self.ivl.sig_arrows_changed.connect(self._arrows_changed)
         self.ivl.main_data_view.sig_redraw.connect(self.update)
         self.ivl.current_data_view.sig_redraw.connect(self.update)
         self.ivl.current_roi_view.sig_redraw.connect(self.update)
@@ -101,20 +102,6 @@ class OrthoView(pg.GraphicsView):
         self.ivl.main_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
         self.ivl.current_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
         self.ivl.current_roi_view.redraw(self.vb, self.slice_plane, self.slice_vol)
-
-    def add_arrow(self, pos, col):
-        arrow = pg.ArrowItem(pen=col, brush=col)
-        arrow.setPos(float(pos[self.xaxis]), float(pos[self.yaxis]))
-        arrow.setVisible(pos[self.zaxis] == pos[self.zaxis])
-        arrow.setZValue(2)
-        self.vb.addItem(arrow)
-        self.arrows.append((pos[self.zaxis], arrow))
-
-    def remove_arrows(self):
-        """ Remove all the arrows that have been placed """
-        for zpos, arrow in self.arrows:
-            self.vb.removeItem(arrow)
-        self.arrows = []
 
     def _update_labels(self):
         for l in self.labels:
@@ -143,9 +130,31 @@ class OrthoView(pg.GraphicsView):
         """
         Update arrows so only those visible are shown
         """
-        current_zpos = self.ivl.focus()[self.zaxis]
-        for zpos, arrow in self.arrows:
-            arrow.setVisible(current_zpos == zpos)
+        current_zpos = int(self.focus_pos[self.zaxis] + 0.5)
+        for pos, col, item in self._arrow_items:
+            arrow_zpos = int(pos[self.zaxis] + 0.5)
+            item.setVisible(current_zpos == arrow_zpos)
+    
+    def _arrows_changed(self, arrows):
+        item_num = 0
+        for pos, col in arrows:
+            if item_num == len(self._arrow_items):
+                item = pg.ArrowItem()
+                self.vb.addItem(item)
+                self._arrow_items.append((pos, col, item))
+            _, _, item = self._arrow_items[item_num]
+            item.setPos(float(pos[self.xaxis]), float(pos[self.yaxis]))
+            item.setPen(pg.mkPen(col))
+            item.setBrush(pg.mkBrush(col))
+            item.setZValue(2)
+            self._arrow_items[item_num] = (pos, col, item)
+            item_num += 1
+        
+        for _, _, item in self._arrow_items[item_num:]:
+            self.vb.removeItem(item)
+        
+        self._arrow_items = self._arrow_items[:item_num]
+        self._update_arrows()
 
     def resize_win(self, event):
         """
@@ -175,15 +184,16 @@ class OrthoView(pg.GraphicsView):
         if self.ivm.main is None: return
 
         if event.button() == QtCore.Qt.LeftButton:
-            self.dragging = (self.ivl.drag_mode == DragMode.PICKER_DRAG)
+            # Convert co-ords to view grid
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-
-            # Convert to view grid
             pos = self.ivl.focus(self.ivm.main.grid)
             pos[self.xaxis] = coords.x() - 0.5
             pos[self.yaxis] = coords.y() - 0.5
             self.ivl.set_focus(pos, self.ivm.main.grid)
-            self.sig_pick.emit(self.ivl.focus(), self.zaxis)
+
+            if self.ivl.picker.use_drag:
+                self.dragging = True
+            self.sig_pick.emit(self.zaxis, self.ivl.focus())
 
     def mouseReleaseEvent(self, event):
         super(OrthoView, self).mouseReleaseEvent(event)
@@ -197,10 +207,11 @@ class OrthoView(pg.GraphicsView):
     def mouseMoveEvent(self, event):
         if self.dragging:
             coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-            pos = self.ivl.focus()
-            pos[self.xaxis] = coords.x()
-            pos[self.yaxis] = coords.y()
-            self.sig_pick.emit(pos, self.zaxis)
+            pos = self.ivl.focus(self.ivm.main.grid)
+            pos[self.xaxis] = coords.x() - 0.5
+            pos[self.yaxis] = coords.y() - 0.5
+            pos = self.ivl.grid.grid_to_grid(pos, from_grid=self.ivm.main.grid)
+            self.sig_drag.emit(self.zaxis, pos)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
 
@@ -291,7 +302,7 @@ class Navigator:
     def _main_data_changed(self, data):
         if data is not None:
             self.data_grid = data.grid
-            self.data_axes = data.get_ras_axes()[self.axis]
+            self.data_axes = data.grid.get_ras_axes()[self.axis]
 
             if self.axis < 3:
                 self._set_size(self.data_grid.shape[self.data_axis])
@@ -302,8 +313,8 @@ class Navigator:
         else:
             self.data_grid = None
             self.data_axes = self.axis
-            self.set_size(1)
-            self.set_pos(0)
+            self._set_size(1)
+            self._pos = 0
 
     def _focus_changed(self):
         if self.data_grid is not None:
@@ -369,15 +380,17 @@ class ImageView(QtGui.QSplitter):
     """
 
     # Signals when point of focus is changed
-    sig_focus_changed = QtCore.Signal(tuple)
+    sig_focus_changed = QtCore.Signal(list)
+
+    # Signals when the set of marker arrows has changed 
+    sig_arrows_changed = QtCore.Signal(list)
+
+    # Signals when the picker mode is changed
+    sig_picker_changed = QtCore.Signal(object)
 
     # Signals when a point is picked. Emission of this signal depends
     # on the picking mode selected
-    sig_point_picked = QtCore.Signal(object)
-
-    # Signals when a region is picked. Emission of this signal depends
-    # on the picking mode selected
-    sig_region_picked = QtCore.Signal(object)
+    sig_selection_changed = QtCore.Signal(object)
 
     def __init__(self, ivm, opts):
         super(ImageView, self).__init__(QtCore.Qt.Vertical)
@@ -388,7 +401,7 @@ class ImageView(QtGui.QSplitter):
         self.ivm = ivm
         self.opts = opts
         self.picker = PointPicker(self) 
-        self.drag_mode = DragMode.DEFAULT
+        self.arrows = []
 
         # Visualisation information for data and ROIs
         self.main_data_view = MainDataView(self.ivm)
@@ -426,7 +439,7 @@ class ImageView(QtGui.QSplitter):
         for i in range(3):
             win = OrthoView(self, self.ivm, self.ax_map[i], self.ax_labels)
             win.sig_pick.connect(self._pick)
-            win.sig_drag.connect(self._pick)
+            win.sig_drag.connect(self._drag)
             win.sig_doubleclick.connect(self._toggle_maximise)
             self.ortho_views[win.zaxis] = win
 
@@ -488,11 +501,43 @@ class ImageView(QtGui.QSplitter):
         debug("Cursor position: ", self._pos)
         self.sig_focus_changed.emit(self._pos)
 
-    def set_picker(self, pickmode, drag_mode=DragMode.DEFAULT):
+    def set_picker(self, pickmode):
+        """
+        Set the picking mode
+
+        :param pickmode: Picking mode from :class:`PickMode`
+        """
         self.picker.cleanup()
         self.picker = PICKERS[pickmode](self)
-        self.drag_mode = drag_mode
+        self.sig_picker_changed.emit(self.picker)
         
+    def add_arrow(self, pos, grid=None, col=None):
+        """
+        Add an arrow to mark a particular position
+
+        :param pos:  Position co-ordinates
+        :param grid: Grid co-ordinates are relative to, if not specified
+                     uses viewing grid
+        :param col:  Colour as RGB sequence, if not specified uses a default
+        """
+        if grid is not None:
+            world = grid.grid_to_world(pos)
+            pos = self.grid.world_to_grid(world)
+        
+        if col is None:
+            # Default to grey arrow
+            col = [127, 127, 127]
+
+        self.arrows.append((pos, col))
+        self.sig_arrows_changed.emit(self.arrows)
+
+    def remove_arrows(self):
+        """ 
+        Remove all the arrows that have been placed 
+        """
+        self.arrows = []
+        self.sig_arrows_changed.emit(self.arrows)
+
     def capture_view_as_image(self, window, outputfile):
         """ 
         Export an image using pyqtgraph 
@@ -511,13 +556,15 @@ class ImageView(QtGui.QSplitter):
         """
         Called when a point is picked in one of the viewing windows
         """
-        pass
+        self.picker.pick(win, pos)
+        self.sig_selection_changed.emit(self.picker)
 
-    def _drag(self, win, pos_start, pos_end):
+    def _drag(self, win, pos):
         """
         Called when a drag selection is changed in one of the viewing windows
         """
-        pass
+        self.picker.drag(win, pos)
+        self.sig_selection_changed.emit(self.picker)
 
     def _toggle_maximise(self, win, state=-1):
         """ 
@@ -561,7 +608,7 @@ class ImageView(QtGui.QSplitter):
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
             self._toggle_maximise(0, state=0)
-            data_axes = data.get_ras_axes()
+            data_axes = data.grid.get_ras_axes()
             for d in range(3):
                 if data.grid.shape[data_axes[d]] == 1:
                     self._toggle_maximise(d, state=1)

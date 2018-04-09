@@ -136,7 +136,6 @@ class ImageDataView(DataView):
         img = self._get_img(vb)
         self.update()
         if img.isVisible():
-            print("redrawing")
             slicedata, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                               offset[0], offset[1]))
@@ -148,7 +147,7 @@ class ImageDataView(DataView):
             img.setZValue(self.opts["z_value"])
             img.setBoundaryMode(self.opts["boundary"])
             img.setLevels(self.opts["cmap_range"])
-            
+
             if self.mask is not None and self.opts["roi_only"]:
                 maskdata, _, _ = self.mask.slice_data(slice_plane)
                 img.mask = maskdata
@@ -271,12 +270,13 @@ class RoiView(ImageDataView):
         self.ivm.sig_all_rois.connect(self._cleanup_cache)
 
     def redraw(self, vb, slice_plane, slice_vol):
+        img = self._get_img(vb)
+        self.update()
         if self.data is not None:
             slicedata, scale, offset = self.data.slice_data(slice_plane)
             transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                          offset[0], offset[1])
 
-            img = self._get_img(vb)
             if img.isVisible():
                 img.setImage(slicedata, autoLevels=False)
                 img.setTransform(transform)
@@ -309,7 +309,7 @@ class RoiView(ImageDataView):
             img.setZValue(self.opts["z_value"])
             img.setBoundaryMode(self.opts["boundary"])
             lut = get_lut(self.data, self.opts["alpha"])
-            img.setLut(lut)
+            img.setLookupTable(lut)
             img.setLevels([0, len(lut)-1], update=True)
             
     def _get_contours(self, vb):
