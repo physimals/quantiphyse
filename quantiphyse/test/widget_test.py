@@ -14,6 +14,7 @@ import scipy
 
 from PySide import QtCore
 
+from quantiphyse.volumes import DataGrid
 from quantiphyse.volumes.volume_management import ImageVolumeManagement
 from quantiphyse.gui.ViewOptions import ViewOptions
 from quantiphyse.gui.ImageView import ImageView
@@ -87,6 +88,7 @@ class WidgetTest(unittest.TestCase):
         """
         centre = [float(v)/2 for v in TEST_SHAPE]
 
+        self.grid = DataGrid(TEST_SHAPE, np.identity(4))
         self.data_3d = np.zeros(TEST_SHAPE, dtype=np.float32)
         self.data_4d = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
         self.data_4d_moving = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
@@ -124,8 +126,8 @@ class WidgetTest(unittest.TestCase):
         """ 
         Exception handler which simply flags whether a user-exception or an error has been caught 
         """
-        if "--debug" in sys.argv:
-            traceback.print_exception(exc_type, value, tb)
         self.qpe = issubclass(exc_type, QpException)
         self.error = not self.qpe
+        if self.error or "--debug" in sys.argv:
+            traceback.print_exception(exc_type, value, tb)
         

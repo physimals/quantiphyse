@@ -27,7 +27,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.harmless_click(self.w.gen_btn)
 
     def test3dData(self):
-        self.ivm.add_data(self.data_3d, name="data_3d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
         self.w.ovl.setCurrentIndex(0)
         self.processEvents()
         self.assertFalse(self.w.n_comp.spin.isVisible())
@@ -39,7 +39,6 @@ class PerfSlicWidgetTest(WidgetTest):
 
         self.harmless_click(self.w.gen_btn)
         self.processEvents()
-        #print(self.ivm.rois[NAME].std())
 
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
@@ -49,18 +48,19 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test3dDataMask(self):
-        self.ivm.add_roi(self.mask, name="mask")
+        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.test3dData()
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
-        sv = self.ivm.rois[NAME].std()
-        self.assertTrue(np.all(sv[self.mask.std() == 0] == 0))
+        sv = self.ivm.rois[NAME].raw()
+        self.assertTrue(np.all(sv[self.mask == 0] == 0))
         self.assertFalse(self.error)
 
     def test4dData(self):
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         self.w.ovl.setCurrentIndex(0)
+        self.w.roi.setCurrentIndex(0)
         self.processEvents()
         self.assertTrue(self.w.n_comp.spin.isEnabled())
 
@@ -81,13 +81,14 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test4dDataMask(self):
-        self.ivm.add_roi(self.mask, name="mask")
+        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.w.ovl.setCurrentIndex(0)
+        self.w.roi.setCurrentIndex(0)
         self.test4dData()
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
-        sv = self.ivm.rois[NAME].std()
-        self.assertTrue(np.all(sv[self.mask.std() == 0] == 0))
+        sv = self.ivm.rois[NAME].raw()
+        self.assertTrue(np.all(sv[self.mask == 0] == 0))
         self.assertFalse(self.error)
 
 if __name__ == '__main__':

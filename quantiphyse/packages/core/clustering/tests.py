@@ -23,7 +23,7 @@ class ClusteringWidgetTest(WidgetTest):
 
     def test3dData(self):
         """ 3d clustering"""
-        self.ivm.add_data(self.data_3d, name="data_3d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()
         self.assertFalse(self.w.n_pca.spin.isVisible())
@@ -40,8 +40,8 @@ class ClusteringWidgetTest(WidgetTest):
         
     def test3dDataWithRoi(self):
         """ 3d clustering"""
-        self.ivm.add_data(self.data_3d, name="data_3d")
-        self.ivm.add_roi(self.mask, name="mask")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.w.data_combo.setCurrentIndex(0)
         self.w.roi_combo.setCurrentIndex(1)
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
@@ -53,13 +53,13 @@ class ClusteringWidgetTest(WidgetTest):
         self.assertEquals(self.ivm.current_roi.name, NAME)
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         # Cluster value is always zero outside the ROI
-        cl = self.ivm.rois[NAME].std()
-        self.assertTrue(np.all(cl[self.mask.std() == 0] == 0))
+        cl = self.ivm.rois[NAME].raw()
+        self.assertTrue(np.all(cl[self.mask == 0] == 0))
         self.assertFalse(self.error)
 
     def test4dData(self):
         """ 4d clustering """
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()            
         self.assertTrue(self.w.n_pca.spin.isVisible())
@@ -77,8 +77,8 @@ class ClusteringWidgetTest(WidgetTest):
         
     def test4dDataWithRoi(self):
         """ 4d clustering within an ROI"""
-        self.ivm.add_data(self.data_4d, name="data_4d")
-        self.ivm.add_roi(self.mask, name="mask")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.w.data_combo.setCurrentIndex(0)
         self.w.roi_combo.setCurrentIndex(1)
 
@@ -92,8 +92,8 @@ class ClusteringWidgetTest(WidgetTest):
         self.assertEquals(self.ivm.current_roi.name, NAME)
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         # Cluster value is always zero outside the ROI
-        cl = self.ivm.rois[NAME].std()
-        self.assertTrue(np.all(cl[self.mask.std() == 0] == 0))
+        cl = self.ivm.rois[NAME].raw()
+        self.assertTrue(np.all(cl[self.mask == 0] == 0))
         self.assertFalse(self.error)
 
 if __name__ == '__main__':
