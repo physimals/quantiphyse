@@ -58,11 +58,18 @@ class OrthoView(pg.GraphicsView):
         self.hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self.hline.setVisible(False)
 
+        self.dummy = pg.ImageItem()
+        self.dummy.setVisible(False)
+
         self.vb = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0, 0, 255), width=3.0))
         self.vb.setAspectLocked(True)
         self.vb.setBackgroundColor([0, 0, 0])
         self.vb.enableAutoRange()
         self.setCentralItem(self.vb)
+
+        self.vb.addItem(self.vline, ignoreBounds=True)
+        self.vb.addItem(self.hline, ignoreBounds=True)
+        self.vb.addItem(self.dummy, ignoreBounds=True)
 
         # Create static labels for the view directions
         self.labels = []
@@ -123,8 +130,6 @@ class OrthoView(pg.GraphicsView):
         self.hline.setPos(float(self.focus_pos[self.yaxis]))
         self.vline.setVisible(self.ivl.opts.crosshairs == self.ivl.opts.SHOW)
         self.hline.setVisible(self.ivl.opts.crosshairs == self.ivl.opts.SHOW)
-        self.vb.addItem(self.vline, ignoreBounds=True)
-        self.vb.addItem(self.hline, ignoreBounds=True)
 
     def _update_arrows(self):
         """
@@ -175,9 +180,9 @@ class OrthoView(pg.GraphicsView):
         and instead trigger a scroll through the volume
         """
         dz = int(event.delta()/120)
-        pos = self.ivl.focus(self.ivm.main.grid)
+        pos = self.ivl.focus()
         pos[self.zaxis] += dz
-        self.ivl.set_focus(pos, self.ivm.main.grid)
+        self.ivl.set_focus(pos)
 
     def mousePressEvent(self, event):
         super(OrthoView, self).mousePressEvent(event)
@@ -185,11 +190,11 @@ class OrthoView(pg.GraphicsView):
 
         if event.button() == QtCore.Qt.LeftButton:
             # Convert co-ords to view grid
-            coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-            pos = self.ivl.focus(self.ivm.main.grid)
+            coords = self.dummy.mapFromScene(event.pos())
+            pos = self.ivl.focus()
             pos[self.xaxis] = coords.x() - 0.5
             pos[self.yaxis] = coords.y() - 0.5
-            self.ivl.set_focus(pos, self.ivm.main.grid)
+            self.ivl.set_focus(pos)
 
             if self.ivl.picker.use_drag:
                 self.dragging = True
@@ -206,11 +211,10 @@ class OrthoView(pg.GraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
-            coords = self.ivl.main_data_view.imgs[self.vb.name].mapFromScene(event.pos())
-            pos = self.ivl.focus(self.ivm.main.grid)
+            coords = self.dummy.mapFromScene(event.pos())
+            pos = self.ivl.focus()
             pos[self.xaxis] = coords.x() - 0.5
             pos[self.yaxis] = coords.y() - 0.5
-            pos = self.ivl.grid.grid_to_grid(pos, from_grid=self.ivm.main.grid)
             self.sig_drag.emit(self.zaxis, pos)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
