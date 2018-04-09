@@ -74,6 +74,27 @@ class DataGrid(object):
         for d in range(3):
             self.nvoxels *= shape[d]
 
+    def grid_to_grid(self, coord, from_grid=None, to_grid=None):
+        """
+        Transform grid co-ordinates to another grid's co-ordinates
+
+        :param coords: 3D or 4D grid co-ordinates. If 4D, last entry is returned unchanged
+        :param from_grid: DataGrid the input co-ordinates are relative to. They will be returned
+                     relative to this grid
+        :param to_grid: DataGrid the input co-ordinates are to be transformed into. The input
+                   co-ordinates are assumed to be relative to this grid
+        :return: List containing 3D or 4D co-ordinates
+        """
+        if from_grid is not None and to_grid is None:
+            to_grid = self
+        elif from_grid is None and to_grid is not None:
+            from_grid = self
+        else:
+            raise RuntimeError("Exactly one of from_grid and to_grid must be specified")
+        
+        world = from_grid.grid_to_world(coord)
+        return to_grid.world_to_grid(world)
+
     def grid_to_world(self, coords):
         """
         Transform grid co-ordinates to world co-ordinates
@@ -119,6 +140,23 @@ class DataGrid(object):
         reorder, flip, tmatrix = t._simplify_transforms(t.tmatrix[t.OUT2IN])
         new_shape = [self.shape[d] for d in reorder]
         return DataGrid(new_shape, tmatrix)
+
+    def get_ras_axes(self):
+        """
+        Get the grid axes which best correspond to the RAS axes
+
+        :return: List of four integers giving the axes indices of the R, A and S axes.
+                 The fourth integer is always 3 indicating the volume axis
+        """
+        ret = []
+        origin_grid = self.world_to_grid([0, 0, 0])
+        for idx in range(3):
+            vec = [0, 0, 0]
+            vec[idx] = 1
+            vec_grid = [v - o for v, o in zip(self.world_to_grid(vec), origin_grid)]
+            axis = np.argmax(np.abs(vec_grid))
+            ret.append(axis)
+        return ret + [3, ]
 
     def matches(self, grid):
         """
@@ -578,9 +616,9 @@ class QpData(object):
             slices[ax1] = self._get_slice(ax1, rawdata.shape[ax1], sign1)
             slices[ax2] = self._get_slice(ax2, rawdata.shape[ax2], sign2)
 
-            pos = data_origin[data_naxis]
+            pos = int(data_origin[data_naxis]+0.5)
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
-                slices[data_naxis] = int(pos+0.5)
+                slices[data_naxis] = pos
                 debug("Using Numpy slice: ", slices, rawdata.shape)
                 sdata = rawdata[slices]
                 smask = np.ones(slice_shape)
@@ -597,23 +635,6 @@ class QpData(object):
 
         #debug(data_naxis, sdata)
         return sdata, trans_v, offset
-
-    def get_ras_axes(self):
-        """
-        Get the data axes which best correspond to the RAS axes
-
-        :return: List of four integers giving the axes indices of the R, A and S axes.
-                 The fourth integer is always 3 indicating the volume axis
-        """
-        ret = []
-        origin_grid = self.grid.world_to_grid([0, 0, 0])
-        for idx in range(3):
-            vec = [0, 0, 0]
-            vec[idx] = 1
-            vec_grid = [v - o for v, o in zip(self.grid.world_to_grid(vec), origin_grid)]
-            axis = np.argmax(np.abs(vec_grid))
-            ret.append(axis)
-        return ret + [3, ]
 
     def _get_slice(self, axis, length, sign):
         if sign == 1:
