@@ -140,11 +140,11 @@ class Process(QtCore.QObject):
                         return an ROI where all voxels are unmasked.
         """
         roi_name = options.pop("roi", None)
-        if roi_name is None:
+        if roi_name is None or roi_name.strip() == "":
             if self.ivm.current_roi is not None:
                 roidata = self.ivm.current_roi
             elif grid is not None:
-                roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi")
+                roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi", roi=True)
             else:
                 raise QpException("No default ROI could be constructed")
         else:
