@@ -145,7 +145,6 @@ class SEPlot:
         t_scale = [0, ] * len(line_values)
         n = min(len(line_values), len(global_opts.t_scale))
         t_scale[:n] = global_opts.t_scale[:n]
-        print(line_values, t_scale)
         self.line = self.plotwin.plot(t_scale, line_values, pen=self.pen, width=4.0)
         self.pts = self.plotwin.plot(t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
                                 symbolSize=self.symbolSize)
@@ -243,13 +242,13 @@ class SECurve(QpWidget):
 
     def activate(self):
         self.ivm.sig_main_data.connect(self.replot_graph)
-        self.ivl.sig_point_picked.connect(self.sel_changed)
+        self.ivl.sig_selection_changed.connect(self.sel_changed)
         self.activated = True
         self.replot_graph()
 
     def deactivate(self):
         self.ivm.sig_main_data.disconnect(self.replot_graph)
-        self.ivl.sig_point_picked.disconnect(self.sel_changed)
+        self.ivl.sig_selection_changed.disconnect(self.sel_changed)
 
     def show_options(self):
         self.plot_opts.show()
@@ -323,7 +322,7 @@ class SECurve(QpWidget):
         the mean curves
         """
         allpoints = []
-        for col, points in picker.points.items():
+        for col, points in picker.selection().items():
             allpoints += points
             for point in points:
                 if point not in self.plots or self.plots[point].pen != col:
@@ -633,12 +632,13 @@ class DataStatistics(QpWidget):
         self.populate_stats_table(self.process, {})
 
     def update_stats_current_slice(self):
-        slice_dir = 2-self.sscombo.currentIndex()
-        options = {
-            "slice-dir" : slice_dir,
-            "slice-pos" : self.ivl.focus(self.ivm.main.grid)[slice_dir],
-        }
-        self.populate_stats_table(self.process_ss, options)
+        if self.ivm.main is not None:
+            slice_dir = 2-self.sscombo.currentIndex()
+            options = {
+                "slice-dir" : slice_dir,
+                "slice-pos" : self.ivl.focus(self.ivm.main.grid)[slice_dir],
+            }
+            self.populate_stats_table(self.process_ss, options)
 
     def update_histogram(self):
         name = self.data_combo.currentText()
