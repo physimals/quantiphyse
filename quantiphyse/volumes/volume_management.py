@@ -113,9 +113,13 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, make_current=False, make_main=None):
-        if not isinstance(data, QpData):
-            raise QpException("add_data called with non-QpData")
+    def add_data(self, data, name=None, grid=None, make_current=False, make_main=None):
+        if isinstance(data, np.ndarray):
+            if grid is None or name is None:
+                raise RuntimeError("add_data: Numpy data must have a name and a grid")
+            data = NumpyData(data, grid, name)
+        elif not isinstance(data, QpData):
+            raise QpException("add_data: data must be Numpy array or QpData")
 
         if name is not None:
             data.name = name
@@ -139,10 +143,14 @@ class ImageVolumeManagement(QtCore.QObject):
         # Set save grid if first to be loaded
         self.save_grid = data.grid
         
-    def add_roi(self, roi, name=None, make_current=False, signal=True):
-        if not isinstance(roi, QpData):
-            raise QpException("add_roi called with non-QpData")
-        
+    def add_roi(self, roi, name=None, grid=None, make_current=False, signal=True):
+        if isinstance(roi, np.ndarray):
+            if grid is None or name is None:
+                raise RuntimeError("add_roi: Numpy data must have a name and a grid")
+            roi = NumpyData(roi, grid, name, roi=True)
+        elif not isinstance(roi, QpData):
+            raise QpException("add_roi: data must be Numpy array or QpData")
+
         if name is not None:
             roi.name = name
         roi.set_roi(True)
