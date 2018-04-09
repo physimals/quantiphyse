@@ -101,8 +101,8 @@ class HistogramProcess(Process):
         
         for data in data_items:
             hrange = [dmin, dmax]
-            if dmin is None: hrange[0] = data.range[0]
-            if dmax is None: hrange[1] = data.range[1]
+            if dmin is None: hrange[0] = np.min(data.raw())
+            if dmax is None: hrange[1] = np.max(data.raw())
             for region in roi_labels:
                 debug("Doing %s region %i" % (data.name, region))
                 if sel_region is not None and region != sel_region:

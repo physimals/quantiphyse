@@ -55,8 +55,8 @@ class NumpyData(QpData):
 
 class NiftiData(QpData):
     def __init__(self, fname):
-        nii = nib.load(fname)
-        shape = list(nii.shape)
+        self.nii = nib.load(fname)
+        shape = list(self.nii.shape)
         while len(shape) < 3:
             shape.append(1)
 
@@ -66,8 +66,9 @@ class NiftiData(QpData):
             nvols = 1
 
         self.rawdata = None
-        self.nifti_header = nii.header
-        grid = DataGrid(shape[:3], nii.header.get_best_affine())
+        self.voldata = None
+        self.nifti_header = self.nii.header
+        grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname)
 
     def raw(self):
@@ -76,18 +77,35 @@ class NiftiData(QpData):
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
         if self.rawdata is None:
-            nii = nib.load(self.fname)
-            self.rawdata = np.asarray(nii.get_data())
-            while self.rawdata.ndim < 3:
-                self.rawdata = np.expand_dims(self.rawdata, -1)
+            self.rawdata = np.asarray(self.nii.get_data())
+            self.rawdata = self._correct_dims(self.rawdata)
 
-            if self.raw_2dt:
-                # Single-slice, interpret 3rd dimension as time
-                if len(self.rawdata.shape) == 3:    
-                    self.rawdata = np.expand_dims(self.rawdata, 2)
-
+        self.voldata = None
         return self.rawdata
         
+    def volume(self, vol):
+        vol = min(vol, self.nvols-1)
+        if self.nvols == 1:
+            return self.raw()
+        elif self.rawdata is not None:
+            return self.rawdata[:, :, :, vol]
+        else:
+            if self.voldata is None:
+                self.voldata  = [None,] * self.nvols
+            if self.voldata[vol] is None:
+                self.voldata[vol] = self._correct_dims(self.nii.dataobj[..., vol])
+
+        return self.voldata[vol]
+
+    def _correct_dims(self, arr):
+        while arr.ndim < 3:
+            arr = np.expand_dims(arr, -1)
+
+        if self.raw_2dt and arr.ndim == 3:
+            # Single-slice, interpret 3rd dimension as time
+            arr = np.expand_dims(arr, 2)
+        return arr
+
 class DicomFolder(QpData):
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti

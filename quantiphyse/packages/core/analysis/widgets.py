@@ -564,8 +564,8 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             ov = self.ivm.data[name]
-            self.minSpin.setValue(ov.range[0])
-            self.maxSpin.setValue(ov.range[1])
+            self.minSpin.setValue(ov.raw().min())
+            self.maxSpin.setValue(ov.raw().max())
             self.minSpin.setDecimals(ov.dps)
             self.maxSpin.setDecimals(ov.dps)
             self.minSpin.setSingleStep(10**(1-ov.dps))
@@ -969,7 +969,7 @@ class ModelCurves(QpWidget):
     def update_minmax(self, data_items):
         dmin, dmax, first = 0, 100, True
         for name in data_items:
-            data_range = self.ivm.data[name].range
+            data_range = [self.ivm.data[name].raw().min(), self.ivm.data[name].raw().max()]
             if first or data_range[0] < dmin: dmin = data_range[0]
             if first or data_range[1] > dmax: dmax = data_range[1]
             first = False

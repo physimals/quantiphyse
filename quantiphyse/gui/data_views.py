@@ -177,11 +177,11 @@ class ImageDataView(DataView):
     def _init_cmap(self, percentile=100):
         if self.data is not None and self.opts["cmap_range"] is None:
             # Initial colourmap range
+            flat = self.data.volume(int(self.data.nvols/2)).flatten()
             if percentile < 100:
-                # FIXME percentile
-                self.opts["cmap_range"] = [self.data.range[0], np.percentile(flat, percentile)]
+                self.opts["cmap_range"] = [flat.min(), np.percentile(flat, percentile)]
             else:
-                self.opts["cmap_range"] = list(self.data.range)
+                self.opts["cmap_range"] = [flat.min(), flat.max()]
 
     def _cleanup_cache(self, data_items):
         """
@@ -204,7 +204,7 @@ class MainDataView(ImageDataView):
     def _main_data_changed(self, data):
         self.data = data
         self._init_opts()
-        self._init_cmap()
+        self._init_cmap(percentile=99)
         self.sig_view_changed.emit(self)
         self.sig_redraw.emit(self)
 
@@ -526,7 +526,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.view.set("alpha", alpha)
 
     def _show_ov_levels(self):
-        dlg = LevelsDialog(self, self.ivm, self.view)
+        dlg = LevelsDialog(self, self.ivl, self.ivm, self.view)
         dlg.exec_()
 
     def _data_changed(self, data):
@@ -542,8 +542,9 @@ class OverlayViewWidget(QtGui.QGroupBox):
 
 class LevelsDialog(QtGui.QDialog):
 
-    def __init__(self, parent, ivm, view):
+    def __init__(self, parent, ivl, ivm, view):
         super(LevelsDialog, self).__init__(parent)
+        self.ivl = ivl
         self.ivm = ivm
         self.view = view
 
@@ -605,12 +606,11 @@ class LevelsDialog(QtGui.QDialog):
     
     def _reset(self):
         percentile = float(100 - self.percentile_spin.value()) / 2
-        cmin, cmax = list(self.view.data.range)
+        flat = self.view.data.volume(self.ivl.focus()[3]).flatten()
+        cmin, cmax = flat.min(), flat.max()
         if percentile > 0:
             if self.use_roi.isChecked() and self.ivm.current_roi is not None:
                 flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
-            else:
-                flat = self.view.data.raw().reshape(-1)    
             cmin = np.percentile(flat, percentile)
             cmax = np.percentile(flat, 100-percentile)
         self.min_spin.setValue(cmin)

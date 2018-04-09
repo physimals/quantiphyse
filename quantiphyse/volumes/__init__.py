@@ -403,8 +403,6 @@ class QpData(object):
         # Whether raw data is 2d + time incorrectly returned as 3D
         self.raw_2dt = False
 
-        # Data range
-        self.range = self.raw().min(), self.raw().max()
 
         # Treat as an ROI data set if requested
         self.set_roi(roi)
@@ -418,6 +416,21 @@ class QpData(object):
         """
         raise NotImplementedError("Internal Error: raw() has not been implemented.")
 
+    def range(self, vol=None):
+        """
+        Return data max and min
+
+        Note that obtaining the range of a large 4D data set may be expensive!
+
+        :param vol: Index of volume to use, if not specified use whole data set
+        :return: Tuple of min value, max value
+        """ 
+        if vol is None:
+            return self.raw().min(), self.raw().max()
+        else:
+            voldata = self.volume(vol)
+            return voldata.min(), voldata.max()
+        
     def volume(self, vol):
         """
         Get the specified volume from a multi-volume data set
@@ -711,17 +724,6 @@ class QpData(object):
             slices[d] = slice(s1, s2+1)
 
         return slices
-
-    def _calc_dps(self):
-        """
-        Return appropriate number of decimal places for presenting data values
-        """
-        if self.range[0] == self.range[1]:
-            # Pathological case where data is uniform
-            return 0
-        else:
-            # Look at range of data and allow decimal places to give at least 1% steps
-            return max(1, 3-int(math.log(self.range[1]-self.range[0], 10)))
 
     def _remove_nans(self, data):
         """
