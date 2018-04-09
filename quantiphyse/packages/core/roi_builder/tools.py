@@ -17,26 +17,43 @@ from quantiphyse.gui.pickers import PickMode
 from quantiphyse.utils import debug
 from quantiphyse.analysis.feat_pca import PcaFeatReduce
 
-DESC = """
-Widget for creating test ROIs and basic manual segmentation
-"""
-
 class Tool:
     def __init__(self, name, tooltip=""):
+        """
+        :param name: Name of tool
+        :param tooltip: Descriptive text
+        """
         self.name = name
         self.tooltip = tooltip
 
     def selected(self):
+        """
+        Called when tool is selected by the user 
+        """
         self.ivl.set_picker(PickMode.SINGLE)
 
     def deselected(self):
+        """
+        Called when tool is deselected by the user 
+
+        Must disconnect any signals connected in the selected() method
+        """
         self.ivl.set_picker(PickMode.SINGLE)
 
     def interface(self):
+        """
+        Return a user interface 
+
+        :return: QtCore.QLayout suitable for embedding in toolbox
+        """
         grid = QtGui.QGridLayout()
         grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0, 1, 2)
         return grid
 
+class CrosshairsTool(Tool):
+    def __init__(self):
+        Tool.__init__(self, "Crosshairs", "Navigate data without adding to ROI")
+     
 class PolygonTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Polygon", "Select regions using a series of straight lines")
@@ -48,22 +65,59 @@ class PolygonTool(Tool):
     def interface(self):
         grid = Tool.interface(self)
         btn = QtGui.QPushButton("Add")
-        btn.clicked.connect(self.done)
+        btn.clicked.connect(self._add)
         grid.addWidget(btn, 1, 0)
+        btn = QtGui.QPushButton("Erase")
+        btn.clicked.connect(self._erase)
+        grid.addWidget(btn, 1, 1)
+        btn = QtGui.QPushButton("Mask")
+        btn.clicked.connect(self._mask)
+        grid.addWidget(btn, 2, 0)
         btn = QtGui.QPushButton("Discard")
         btn.clicked.connect(self.selected)
-        grid.addWidget(btn, 1, 1)
+        grid.addWidget(btn, 2, 1)
         return grid
 
-    def done(self):
-        slice_zaxis = self.ivl.picker.view.zaxis
-        slice_z = self.ivl.focus()[slice_zaxis]
-
+    def _add(self):
         roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
         self.builder.add_to_roi(roi_new)
-        
         self.selected()
 
+    def _erase(self):
+        roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
+        roi_new = np.logical_not(roi_new)
+        self.builder.add_to_roi(roi_new, erase=True)
+        self.selected()
+
+    def _mask(self):
+        roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
+        self.builder.add_to_roi(roi_new, erase=True)
+        self.selected()
+
+class PenTool(PolygonTool):
+    def __init__(self):
+        Tool.__init__(self, "Pen", "Draw around ROI region")
+
+    def selected(self):
+        PolygonTool.selected(self)
+        self.ivl.set_picker(PickMode.FREEHAND)
+     
+class RectTool(PolygonTool):
+    def __init__(self):
+        Tool.__init__(self, "Rectangle", "Click and drag to select rectangular region")
+
+    def selected(self):
+        PolygonTool.selected(self)
+        self.ivl.set_picker(PickMode.RECT)
+        
+class EllipseTool(PolygonTool):
+    def __init__(self):
+        Tool.__init__(self, "Ellipse", "Click and drag to select elliptical region")
+
+    def selected(self):
+        PolygonTool.selected(self)
+        self.ivl.set_picker(PickMode.ELLIPSE)
+        
 class EraserTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Eraser", "Remove voxels from the ROI")
@@ -164,67 +218,6 @@ class PickTool(Tool):
         self.roi_combo.setEnabled(False)
         self.ivl.sig_selection_changed.disconnect(self.point_picked)
         
-class PenTool(PolygonTool):
-    def __init__(self):
-        Tool.__init__(self, "Pen", "Draw around ROI region")
-
-    def interface(self):
-        grid = Tool.interface(self)
-
-        btn = QtGui.QPushButton("Add")
-        btn.clicked.connect(self.done)
-        grid.addWidget(btn, 1, 0)
-        btn = QtGui.QPushButton("Discard")
-        btn.clicked.connect(self.selected)
-        grid.addWidget(btn, 1, 1)
-
-        return grid
-
-    def selected(self):
-        self.ivl.set_picker(PickMode.FREEHAND)
-     
-class RectTool(PolygonTool):
-    def __init__(self):
-        Tool.__init__(self, "Rectangle", "Click and drag to select rectangular region")
-
-    def interface(self):
-        grid =  Tool.interface(self)
-
-        btn = QtGui.QPushButton("Add")
-        btn.clicked.connect(self.done)
-        grid.addWidget(btn, 1, 0)
-        btn = QtGui.QPushButton("Discard")
-        btn.clicked.connect(self.selected)
-        grid.addWidget(btn, 1, 1)
-
-        return grid
-
-    def selected(self):
-        self.ivl.set_picker(PickMode.RECT)
-        
-class EllipseTool(PolygonTool):
-    def __init__(self):
-        Tool.__init__(self, "Ellipse", "Click and drag to select elliptical region")
-
-    def interface(self):
-        grid  = Tool.interface(self)
-
-        btn = QtGui.QPushButton("Add")
-        btn.clicked.connect(self.done)
-        grid.addWidget(btn, 1, 0)
-        btn = QtGui.QPushButton("Discard")
-        btn.clicked.connect(self.selected)
-        grid.addWidget(btn, 1, 1)
-
-        return grid
-
-    def selected(self):
-        self.ivl.set_picker(PickMode.ELLIPSE)
-        
-class CrosshairsTool(Tool):
-    def __init__(self):
-        Tool.__init__(self, "Crosshairs", "Navigate data without adding to ROI")
-     
 class WalkerTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Walker", "Automatic segmentation using the random walk algorithm")
