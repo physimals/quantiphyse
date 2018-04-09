@@ -192,8 +192,8 @@ class OrthoView(pg.GraphicsView):
             # Convert co-ords to view grid
             coords = self.dummy.mapFromScene(event.pos())
             pos = self.ivl.focus()
-            pos[self.xaxis] = coords.x() - 0.5
-            pos[self.yaxis] = coords.y() - 0.5
+            pos[self.xaxis] = coords.x()
+            pos[self.yaxis] = coords.y()
             self.ivl.set_focus(pos)
 
             if self.ivl.picker.use_drag:
@@ -213,8 +213,8 @@ class OrthoView(pg.GraphicsView):
         if self.dragging:
             coords = self.dummy.mapFromScene(event.pos())
             pos = self.ivl.focus()
-            pos[self.xaxis] = coords.x() - 0.5
-            pos[self.yaxis] = coords.y() - 0.5
+            pos[self.xaxis] = coords.x()
+            pos[self.yaxis] = coords.y()
             self.sig_drag.emit(self.zaxis, pos)
         else:
             super(OrthoView, self).mouseMoveEvent(event)
