@@ -477,7 +477,7 @@ class QpData(object):
             grid = DataGrid([1, 1, 1], np.identity(4))
             
         trans = Transform(grid, self.grid)
-        data_pos = [int(v) for v in trans.transform_position(pos[:3])]
+        data_pos = [int(v+0.5) for v in trans.transform_position(pos[:3])]
 
         rawdata = self.raw()
         try:
