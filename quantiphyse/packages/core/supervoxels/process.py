@@ -38,17 +38,16 @@ class SupervoxelsProcess(Process):
         return feat_image
 
     def run(self, options):
+        data = self.get_data(options)
+        roi = self.get_roi(options, data.grid)
         comp = options.pop('compactness', 0.1)
         n_supervoxels = options.pop('n-supervoxels')
         sigma = options.pop('sigma', 1)
         recompute_seeds = options.pop('recompute-seeds', True)
         seed_type = options.get('seed-type', 'nrandom')
-        roi_name = options.pop('roi', None)
         output_name = options.pop('output-name', "supervoxels")
-        data = self.get_data(options)
-        roi = self.get_roi(options, data.grid)
-        img = data.raw()
 
+        img = data.raw()
         slices = roi.get_bounding_box()
         img = img[slices]
         mask = roi.raw()[slices]
