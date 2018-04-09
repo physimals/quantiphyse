@@ -93,32 +93,24 @@ class CompareDataWidget(QpWidget):
     def _update_data(self):
         name1 = self.d1_combo.currentText()
         name2 = self.d2_combo.currentText()
-        d1, d2 = None, None
-        if name1 in self.ivm.data:
-            qpd1 = self.ivm.data[name1]
-            d1 = qpd1.std()
-        if name2 in self.ivm.data:
-            qpd2 = self.ivm.data[name2]
-            d2 = qpd2.std()
+        roi_name = self.roi_combo.currentText()
+        qpd1 = self.ivm.data.get(name1, None)
+        qpd2 = self.ivm.data.get(name2, None)
+        roi = self.ivm.rois.get(roi_name, None)
 
-        roi = self.roi_combo.currentText()
-        roi_data = None
-        if roi in self.ivm.rois:
-            roi_data = self.ivm.rois[roi].std()
-
-        if d1 is not None and d2 is not None:
-            if qpd1.nvols != qpd2.nvols:
-                current_vol = self.ivm.cim_pos[3]
-                if qpd1.nvols == 1: d1 = np.expand_dims(d1, 3)
-                if qpd2.nvols == 1: d2 = np.expand_dims(d2, 3)
-                d1 = d1[:,:,:,min(qpd1.nvols-1, current_vol)]
-                d2 = d2[:,:,:,min(qpd2.nvols-1, current_vol)]
-            if roi_data is not None:
+        if qpd1 is not None and qpd2 is not None:
+            current_vol = self.ivl.focus()[3]
+            d1 = qpd1.volume(current_vol)
+            d2 = qpd2.resample(qpd1.grid).volume(current_vol)
+            
+            if roi is not None:
+                roi_data = roi.resample(qpd1.grid).raw()
                 d1 = d1[roi_data > 0]
                 d2 = d2[roi_data > 0]
             else:
                 d1 = d1.reshape(-1)
                 d2 = d2.reshape(-1)
+
             if self.sample_cb.isChecked():
                 n_samples = self.sample_spin.value()
                 idx = np.random.choice(np.arange(len(d1)), n_samples)
@@ -128,9 +120,11 @@ class CompareDataWidget(QpWidget):
             else:
                 self.warn_label.setVisible(True)
                         
-        self.d1 = d1
-        self.d2 = d2
-        self.run_btn.setEnabled(self.d1 is not None and self.d2 is not None)
+            self.d1 = d1
+            self.d2 = d2
+            self.run_btn.setEnabled(True)
+        else:
+            self.run_btn.setEnabled(False)
 
     def _run(self):
         self.plot.clear() 

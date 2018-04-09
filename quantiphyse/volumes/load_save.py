@@ -15,10 +15,8 @@ from __future__ import division, print_function
 
 import sys
 import os
-import math
 import warnings
 import glob
-import types
 
 import nibabel as nib
 import numpy as np
@@ -67,6 +65,7 @@ class NiftiData(QpData):
         else:
             nvols = 1
 
+        self.rawdata = None
         self.nifti_header = nii.header
         grid = DataGrid(shape[:3], nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname)
@@ -76,18 +75,19 @@ class NiftiData(QpData):
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
-        nii = nib.load(self.fname)
-        data = np.asarray(nii.get_data())
-        while data.ndim < 3:
-            data = np.expand_dims(data, -1)
+        if self.rawdata is None:
+            nii = nib.load(self.fname)
+            self.rawdata = np.asarray(nii.get_data())
+            while self.rawdata.ndim < 3:
+                self.rawdata = np.expand_dims(self.rawdata, -1)
 
-        if self.raw_2dt:
-            # Single-slice, interpret 3rd dimension as time
-            if len(data.shape) == 3:    
-                data = np.expand_dims(data, 2)
+            if self.raw_2dt:
+                # Single-slice, interpret 3rd dimension as time
+                if len(self.rawdata.shape) == 3:    
+                    self.rawdata = np.expand_dims(self.rawdata, 2)
 
-        return data
-
+        return self.rawdata
+        
 class DicomFolder(QpData):
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti
@@ -209,11 +209,11 @@ def load(fname):
 
 def save(data, fname, grid=None):
     if grid is None:
-        grid = data.stdgrid
-        arr = data.std()
+        grid = data.grid
+        arr = data.raw()
     else:
-        t = Transform(data.stdgrid, grid)
-        arr = t.transform_data(data.std())
+        t = Transform(data.grid, grid)
+        arr = t.transform_data(data.raw())
 
     img = nib.Nifti1Image(arr, grid.affine)
     img.update_header()

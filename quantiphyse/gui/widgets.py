@@ -15,7 +15,7 @@ from ..analysis import Process
 from ..utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url
 from ..utils.exceptions import QpException
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
-from ..volumes.io import save
+from ..volumes.load_save import save
 
 class QpWidget(QtGui.QWidget):
     """
@@ -628,7 +628,7 @@ class NumberGrid(QtGui.QTableView):
 
     def setValues(self, vals, validate=True, col_headers=None, row_headers=None):
         if validate:
-            if not vals: 
+            if vals is None or len(vals) == 0:
                 raise ValueError("No values provided")
             elif len(vals[0]) != self._model.columnCount() and not self.expandable[0]:
                 raise ValueError("Incorrect number of columns - expected %i" % self._model.columnCount())

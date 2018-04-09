@@ -7,8 +7,9 @@ Copyright (c) 2013-2018 University of Oxford
 import os
 
 from quantiphyse.utils import debug, warn
+
+from quantiphyse.volumes.load_save import load, save
 from quantiphyse.utils.exceptions import QpException
-from quantiphyse.volumes.io import load, save
 
 from . import Process
 
@@ -32,7 +33,7 @@ class LoadProcess(Process):
         for fname, name in data.items():
             qpdata = self._load_file(fname, name)
             if qpdata is not None: 
-                if force_mv and qpdata.nvols == 1 and qpdata.rawgrid.shape[2] > 1: 
+                if force_mv and qpdata.nvols == 1 and qpdata.grid.shape[2] > 1: 
                     qpdata.set_2dt()
                 self.ivm.add_data(qpdata, make_current=True)
 
@@ -83,7 +84,7 @@ class SaveProcess(Process):
             if output_grid_data is None:
                 raise QpException("No such data found as source of grid: %s" % output_grid_name)
             else:
-                output_grid = output_grid_data.rawgrid
+                output_grid = output_grid_data.grid
 
         for name in options.keys():
             try:

@@ -9,6 +9,7 @@ import scipy.ndimage.filters
 from quantiphyse.utils import debug, warn
 from quantiphyse.utils.exceptions import QpException
 from quantiphyse.analysis import Process
+from quantiphyse.volumes.load_save import NumpyData
 
 class SmoothingProcess(Process):
     """
@@ -36,8 +37,8 @@ class SmoothingProcess(Process):
         else:
             sigma = options.pop("sigma", 1)
         
-        data = self.ivm.data[data_name].std()
-        output = scipy.ndimage.filters.gaussian_filter(data, sigma, order=order, mode=mode)
-        self.ivm.add_data(output, name=output_name, make_current=True)
+        data = self.ivm.data[data_name]
+        output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigma, order=order, mode=mode)
+        self.ivm.add_data(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
 
         self.status = Process.SUCCEEDED

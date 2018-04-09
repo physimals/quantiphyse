@@ -13,7 +13,7 @@ import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.volumes.io import load
+from quantiphyse.volumes.load_save import load
 
 from .process import T10Process
 
@@ -73,7 +73,7 @@ class SourceImageList(QtGui.QVBoxLayout):
         """
         try:
             f = load(filename)
-            if len(f.rawgrid.shape) not in (3, 4):
+            if len(f.grid.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
                 raise

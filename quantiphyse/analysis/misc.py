@@ -7,6 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 import numpy as np
 import scipy
 
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.utils import debug
 from quantiphyse.utils.exceptions import QpException
 
@@ -51,12 +52,12 @@ class RoiCleanupProcess(Process):
             if fill_holes_slice is not None:
                 # slice-by-slice hole filling, appropriate when ROIs defined slice-by-slice
                 d = fill_holes_slice
-                new = np.copy(roi.std())
+                new = np.copy(roi.raw())
                 for sl in range(new.shape[int(d)]):
                     slices = [slice(None), slice(None), slice(None)]
                     slices[d] = sl
                     new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
             
-                self.ivm.add_roi(new, name=output_name)
+                self.ivm.add_roi(NumpyData(data=new, grid=roi.grid, name=output_name))
         
         self.status = Process.SUCCEEDED

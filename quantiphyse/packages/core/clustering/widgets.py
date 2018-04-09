@@ -12,10 +12,11 @@ from sklearn.metrics import pairwise
 import pyqtgraph as pg
 from PySide import QtGui
 
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
 from quantiphyse.utils import get_pencol, debug
 
-from .kmeans import KMeansPCAProcess, KMeans3DProcess
+from .kmeans import KMeansProcess
 
 class ClusteringWidget(QpWidget):
     """
@@ -27,8 +28,7 @@ class ClusteringWidget(QpWidget):
         self.curves = {}
 
     def init_ui(self):
-        self.process_4d = KMeansPCAProcess(self.ivm)
-        self.process_3d = KMeans3DProcess(self.ivm)
+        self.process = KMeansProcess(self.ivm)
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
@@ -210,23 +210,23 @@ PCA reduction is used on 4D data to extract representative curves
         
     def batch_options(self):
         options = {
-                "data" : self.data_combo.currentText(),
-                "roi" :  self.roi_combo.currentText(),
-                "n-clusters" : self.n_clusters.spin.value(),
-                "output-name" : self.output_name.text(),
-                "invert-roi" : False,
-            }
+            "data" : self.data_combo.currentText(),
+            "roi" :  self.roi_combo.currentText(),
+            "n-clusters" : self.n_clusters.spin.value(),
+            "output-name" : self.output_name.text(),
+            "invert-roi" : False,
+        }
+
+        if options["roi"] == "<none>":
+            del options["roi"]
 
         if self.n_pca.label.isVisible():
             # 4D PCA options
-            pname = "KMeansPCA"
             options["n-pca"] = self.n_pca.spin.value()
             options["reduction"] = "pca"
             options["norm-data"] = True
-        else:
-            pname = "KMeans"
 
-        return pname, options
+        return "KMeans", options
 
     def run_clustering(self):
         """
@@ -234,15 +234,11 @@ PCA reduction is used on 4D data to extract representative curves
         """
         options = self.batch_options()[1]
         data = self.ivm.data.get(options["data"], None)
-        if data.nvols > 1:
-            p = self.process_4d
-        else:
-            p = self.process_3d
-
+        
         try:
             self.run_btn.setDown(True)
             self.run_btn.setDisabled(True)
-            p.run(options)
+            self.process.run(options)
             self.update_voxel_count()
             self.update_plot()
         finally:
@@ -252,21 +248,16 @@ PCA reduction is used on 4D data to extract representative curves
 
     def update_voxel_count(self):
         self.count_table.clear()
-        self.count_table.setVerticalHeaderItem(0, QtGui.QStandardItem("Slice"))
-        self.count_table.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume"))
+        self.count_table.setVerticalHeaderItem(0, QtGui.QStandardItem("Voxel count"))
 
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
             for cc, ii in enumerate(roi.regions):
                 self.count_table.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
-                # Slice count
-                voxel_count_slice = np.sum(roi.std()[:, :, self.ivm.cim_pos[2]] == ii)
-                self.count_table.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count_slice))))
-
                 # Volume count
-                voxel_count = np.sum(roi.std() == ii)
-                self.count_table.setItem(1, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
+                voxel_count = np.sum(roi.raw() == ii)
+                self.count_table.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
         
     def reset_graph(self):
         """
@@ -335,17 +326,18 @@ PCA reduction is used on 4D data to extract representative curves
 
         self.curves = {}
         for region in regions:
-            mean = np.median(data.std()[roi.std() == region], axis=0)
+            roi_data = data.mask(roi, region=region, output_flat=True)
+            mean = np.median(roi_data, axis=0)
             self.curves[region] = mean
 
     def _merge(self, m1, m2):
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
-            roi = roi.std()
-            roi[roi == m1] = m2
+            roi_data = roi.raw()
+            roi_data[roi_data == m1] = m2
 
             # signal the change
-            self.ivm.add_roi(roi, name=self.output_name.text(), make_current=True)
+            self.ivm.add_roi(NumpyData(roi_data, grid=roi.grid, name=self.output_name.text()), make_current=True)
 
             # replot
             self.update_plot()

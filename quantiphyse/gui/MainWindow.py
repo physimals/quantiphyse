@@ -20,7 +20,7 @@ from .Register import RegisterDialog
 from .ImageView import ImageView
 
 from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
-from ..volumes.io import load, save
+from ..volumes.load_save import load, save
 from ..volumes.volume_management import ImageVolumeManagement
 from ..utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url
 from ..utils.exceptions import QpException
@@ -389,9 +389,9 @@ class MainWindow(QtGui.QMainWindow):
         # Places that the console has access to
         namespace = {'np': np, 'ivm': self.ivm, 'self': self}
         for name, ovl in self.ivm.data.items():
-            namespace[name] = ovl.std()
+            namespace[name] = ovl.raw()
         for name, roi in self.ivm.rois.items():
-            namespace[name] = roi.std()
+            namespace[name] = roi.raw()
 
         text = (
             """
@@ -432,7 +432,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
@@ -454,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
             data.set_2dt()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
+        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
             msgBox = QtGui.QMessageBox()
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)

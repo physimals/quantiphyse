@@ -10,7 +10,8 @@ import sys
 
 from PySide import QtGui
 
-from quantiphyse.volumes.io import NumpyData
+from quantiphyse.volumes import OrthoSlice
+from quantiphyse.volumes.load_save import NumpyData
 from quantiphyse.utils import table_to_str, debug, sf
 from quantiphyse.utils.exceptions import QpException
 
@@ -41,9 +42,9 @@ class CalcVolumesProcess(Process):
             else:
                 roi = self.ivm.rois[roi_name]
 
-            sizes = self.ivm.grid.spacing
             if roi is not None:
-                counts = np.bincount(roi.std().flatten())
+                sizes = roi.grid.spacing
+                counts = np.bincount(roi.raw().flatten())
                 for idx, region in enumerate(roi.regions):
                     if sel_region is None or region == sel_region:
                         nvoxels = counts[region]
@@ -52,8 +53,7 @@ class CalcVolumesProcess(Process):
                         self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
                         self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
 
-            no_extra = options.pop('no-extras', False)
-            if not no_extra: 
+            if not options.pop('no-extras', False): 
                 output_name = options.pop('output-name', "roi-vols")
                 self.ivm.add_extra(output_name, table_to_str(self.model))
 
@@ -71,45 +71,45 @@ class HistogramProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        ov_name = options.pop('data', None)
+        data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         sel_region = options.pop('region', None)
         dmin = options.pop('min', None)
         dmax = options.pop('max', None)
         bins = options.pop('bins', 20)
         output_name = options.pop('output-name', "histogram")
-        no_extra = options.pop('no-extras', False)
+
+        if data_name is None:
+            data_items = self.ivm.data.values()
+        else:
+            data_items = [self.ivm.data[data_name]]
+        if len(data_items) == 0:
+            raise QpException("No data to calculate histogram")
 
         if roi_name is None and self.ivm.current_roi is None:
-            roi = np.ones(self.ivm.grid.shape[:3])
-            roi_labels = [1,]
+            roi = NumpyData(data=np.ones(data_items[0].grid.shape), grid=data.grid, name="temp", roi=True)
         elif roi_name is None:
-            roi = self.ivm.current_roi.std()
-            roi_labels = self.ivm.current_roi.regions
+            roi = self.ivm.current_roi
         else:
-            roi = self.ivm.rois[roi_name].std()
-            roi_labels = self.ivm.rois[roi_name].regions
-
-        if ov_name is None:
-            ovs = self.ivm.data.values()
-        else:
-            ovs = [self.ivm.data[ov_name]]
+            roi = self.ivm.rois[roi_name]
+        roi_labels = roi.regions
 
         self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem("x0"))
         self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem("x1"))  
         self.xvals, self.edges, self.hist = None, None, {}
         col = 2
         
-        for ov in ovs:
+        for data in data_items:
             hrange = [dmin, dmax]
-            if dmin is None: hrange[0] = ov.std().min()
-            if dmax is None: hrange[1] = ov.std().max()
+            if dmin is None: hrange[0] = data.range[0]
+            if dmax is None: hrange[1] = data.range[1]
             for region in roi_labels:
-                debug("Doing %s region %i" % (ov.name, region))
+                debug("Doing %s region %i" % (data.name, region))
                 if sel_region is not None and region != sel_region:
                     debug("Ignoring this region")
                     continue
-                region_data = ov.std()[roi == region]
+                roi_fordata = roi.resample(data.grid).raw()
+                region_data = data.raw()[roi_fordata == region]
                 yvals, edges = np.histogram(region_data, bins=bins, range=hrange)
                 if self.xvals is None:
                     self.edges = edges
@@ -118,16 +118,17 @@ class HistogramProcess(Process):
                         self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(""))
                         self.model.setItem(idx, 0, QtGui.QStandardItem(str(self.edges[idx])))
                         self.model.setItem(idx, 1, QtGui.QStandardItem(str(self.edges[idx+1])))
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, region)))
+                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (data.name, region)))
                 for idx, v in enumerate(yvals):
                     self.model.setItem(idx, col, QtGui.QStandardItem(str(v)))
-                if ov.name not in self.hist: self.hist[ov.name] = {}
-                self.hist[ov.name][region] = yvals
+                if data.name not in self.hist: self.hist[data.name] = {}
+                self.hist[data.name][region] = yvals
                 col += 1
 
-        if not no_extra: 
+        if not options.pop('no-extras', False): 
             debug("Adding %s" % output_name)
             self.ivm.add_extra(output_name, table_to_str(self.model))
+
         self.status = Process.SUCCEEDED
 
 class RadialProfileProcess(Process):
@@ -142,40 +143,39 @@ class RadialProfileProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        ov_name = options.pop('data', None)
+        data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         #roi_region = options.pop('region', None)
-        centre = options.pop('centre', None)
+        centre = options.pop('centre')
         output_name = options.pop('output-name', "radial-profile")
         no_extra = options.pop('no-extras', False)
         bins = options.pop('bins', 20)
 
-        if roi_name is None:
-            if self.ivm.current_roi is not None:
-                roi = self.ivm.current_roi.std()
-            else:
-                roi = np.ones(self.ivm.grid.shape)
+        if data_name is None:
+            data_items = self.ivm.data.values()
+            grid = self.ivm.main.grid
         else:
-            roi = self.ivm.rois[roi_name].std()
+            data_items = [self.ivm.data[data_name]]
+            grid = self.ivm.data[data_name].grid
 
-        if ov_name is None:
-            ovs = self.ivm.data.values()
+        if len(data_items) == 0:
+            raise QpException("No data to calculate radial profile")
+        
+        if roi_name is None and self.ivm.current_roi is None:
+            roi = NumpyData(data=np.ones(data_items[0].grid.shape), grid=data.grid, name="temp", roi=True)
+        elif roi_name is None:
+            roi = self.ivm.current_roi
         else:
-            ovs = [self.ivm.data[ov_name]]
-
-        voxel_sizes = self.ivm.grid.spacing
-
-        if centre is not None:
-            centre = [int(v) for v in centre.split(",")]
-        else:
-            centre = self.ivm.cim_pos
+            roi = self.ivm.rois[roi_name]
 
         self.model.clear()
         self.rp = {}
         
+        voxel_sizes = grid.spacing
+
         # Generate an array whose entries are integer values of the distance
         # from the centre. Set masked values to distance of -1
-        x, y, z = np.indices((self.ivm.grid.shape))
+        x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         if roi is not None: 
             r[roi==0] = -1
@@ -194,7 +194,7 @@ class RadialProfileProcess(Process):
         for idx, xval in enumerate(self.xvals):
             self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(str(xval)))
 
-        for col, data in enumerate(ovs):
+        for col, data in enumerate(data_items):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
                 
             # If data is 4d, get current 3d volume
@@ -228,23 +228,30 @@ class DataStatisticsProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        roi_name = options.pop('roi', None)
-        ov_name = options.pop('data', None)
-        no_extra = options.pop('no-extras', False)
-        if ov_name is None:
-            ovs = self.ivm.data.values()
+        data_name = options.pop('data', None)
+        if data_name is None:
+            data_items = self.ivm.data.values()
             output_name = options.pop('output-name', "stats")
         else:
-            ovs = [self.ivm.data[ov_name]]
-            output_name = options.pop('output-name', "%s_stats" % ov_name)
+            data_items = [self.ivm.data[data_name]]
+            output_name = options.pop('output-name', "%s_stats" % data_name)
             
+        roi_name = options.pop('roi', None)
         if roi_name is None:
             roi = self.ivm.current_roi
-            debug("Current=", roi)
         else:
             roi = self.ivm.rois[roi_name]
-            debug("Specified=", roi)
 
+        slice_dir = options.pop('slice-dir', None)
+        slice_pos = options.pop('slice-pos', 0)
+        sl = None
+        if slice_dir is not None:
+            sl = OrthoSlice(self.ivm.main.grid, slice_dir, slice_pos)
+        
+        no_extra = options.pop('no-extras', False)
+        hist_bins = options.pop('hist-bins', 20)
+        hist_range = options.pop('hist-bins', None)
+        
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
@@ -253,10 +260,10 @@ class DataStatisticsProcess(Process):
         self.model.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
         col = 0
-        for ov in ovs:
-            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(ov, roi, **options)
+        for data in data_items:
+            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice=sl)
             for ii in range(len(stats1['mean'])):
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (ov.name, roi_labels[ii])))
+                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (data.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
                 self.model.setItem(1, col, QtGui.QStandardItem(sf(stats1['median'][ii])))
                 self.model.setItem(2, col, QtGui.QStandardItem(sf(stats1['std'][ii])))
@@ -268,46 +275,42 @@ class DataStatisticsProcess(Process):
             self.ivm.add_extra(output_name, table_to_str(self.model))
         self.status = Process.SUCCEEDED
 
-    def get_summary_stats(self, ovl, roi=None, hist_bins=20, hist_range=None, slice=None):
+    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice=None):
         """
-        Return:
-        @m1 mean for each ROI
-        @m2 median for each ROI
-        @m3 standard deviation for each ROI
-        @roi_labels label of each ROI
+        Get summary statistics
+
+        :param data: QpData instance for the data to get stats from
+        :param roi: Restrict data to within this roi
+
+        :return: Sequence of summary stats dictionary, roi labels
         """
         # Checks if either ROI or data is None
         if roi is not None:
-            roi_labels = roi.regions
+            roi = roi.resample(data.grid) 
         else:
-            roi = NumpyData(np.ones(ovl.stdgrid.shape[:3]), ovl.stdgrid, "temp", roi=True)
-            roi_labels = [1,]
+            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
 
-        if (ovl is None):
+        if (data is None):
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, roi_labels, np.array([0, 0]), np.array([0, 1])
+            return stat1, roi.regions, np.array([0, 0]), np.array([0, 1])
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
         hist1 = []
         hist1x = []
 
         if slice is None:
-            ovldata = ovl.std()
-            roidata = roi.std()
-        elif slice in (0, 1, 2):
-            axis = 2-slice
-            slicepos = self.ivm.cim_pos[axis]
-            ovldata = ovl.get_slice([(axis, slicepos)])
-            roidata = roi.get_slice([(axis, slicepos)])
+            data_arr = data.raw()
+            roi_arr = roi.raw()
         else:
-            raise RuntimeError("Invalid slice: " % slice)
+            data_arr, _, _ = data.slice_data(slice)
+            roi_arr, _, _ = roi.slice_data(slice)
 
-        for ii in roi_labels:
+        for region in roi.regions:
             # get data for a single label of the roi
-            vroi1 = ovldata[roidata == ii]
-            if vroi1.size > 0:
-                mean, med, std = np.mean(vroi1), np.median(vroi1), np.std(vroi1)
-                mx, mn = np.max(vroi1), np.min(vroi1)
+            in_roi = data_arr[roi_arr == region]
+            if in_roi.size > 0:
+                mean, med, std = np.mean(in_roi), np.median(in_roi), np.std(in_roi)
+                mx, mn = np.max(in_roi), np.min(in_roi)
             else:
                 mean, med, std, mx, mn = 0,0,0,0,0
 
@@ -316,10 +319,12 @@ class DataStatisticsProcess(Process):
             stat1['std'].append(std)
             stat1['max'].append(mx)
             stat1['min'].append(mn)
-            y, x = np.histogram(vroi1, bins=hist_bins, range=hist_range)
+
+            y, x = np.histogram(in_roi, bins=hist_bins, range=hist_range)
             hist1.append(y)
             hist1x.append(x)
-        return stat1, roi_labels, hist1, hist1x
+
+        return stat1, roi.regions, hist1, hist1x
 
 class ExecProcess(Process):
     
@@ -331,10 +336,10 @@ class ExecProcess(Process):
 
     def run(self, options):
         globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
-        for name, ovl in self.ivm.data.items():
-            globals[name] = ovl.std()
+        for name, data in self.ivm.data.items():
+            globals[name] = data.raw()
         for name, roi in self.ivm.rois.items():
-            globals[name] = roi.std()
+            globals[name] = roi.raw()
         for name in options.keys():
             proc = options.pop(name)
             if name == "exec":

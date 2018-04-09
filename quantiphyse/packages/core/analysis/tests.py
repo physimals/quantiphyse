@@ -21,7 +21,7 @@ class DataStatisticsTest(WidgetTest):
         self.harmless_click(self.w.rp_btn)
 
     def test3dData(self):
-        self.ivm.add_data(self.data_3d, name="data_3d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgen)
         self.assertTrue(self.w.stats_table.isVisible())
@@ -35,8 +35,8 @@ class DataStatisticsTest(WidgetTest):
         self.assertAlmostEquals(float(model.item(4, 0).text()), np.max(self.data_3d), delta=0.01)
         
     def testAllData(self):
-        self.ivm.add_data(self.data_3d, name="data_3d")
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         # Select 'all data'
         self.w.data_combo.setCurrentIndex(2)
         self.harmless_click(self.w.butgen)
@@ -51,7 +51,7 @@ class DataStatisticsTest(WidgetTest):
         self.assertFalse(self.w.stats_table.isVisible())
      
     def testCopy(self):
-        self.ivm.add_data(self.data_3d, name="data_3d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgen)
         self.harmless_click(self.w.copy_btn)
@@ -63,10 +63,10 @@ class DataStatisticsTest(WidgetTest):
         self.assertTrue(len(numbers) == 5)
         
     def testSliceStats(self):
-        self.ivm.add_data(self.data_3d, name="data_3d")
+        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgenss)
-        self.ivl.set_focus([0, 0, 2, 0], 0, True)
+        self.ivl.set_focus([0, 0, 2, 0])
         model = self.w.stats_table_ss.model()
         self.assertEquals(model.rowCount(), 5)
         self.assertEquals(model.columnCount(), 1)
@@ -81,7 +81,7 @@ class DataStatisticsTest(WidgetTest):
         self.assertAlmostEquals(float(model.item(4, 0).text()), np.max(self.data_3d[:,:,2]), delta=0.01)
           
         self.w.sscombo.setCurrentIndex(1) # Coronal slice (A/P)
-        self.ivl.set_focus([0, 4, 0, 0], 0, True)
+        self.ivl.set_focus([0, 4, 0, 0])
         self.processEvents()
         self.assertEquals(self.w.sscombo.currentText(), "Coronal")
         self.assertAlmostEquals(float(model.item(0, 0).text()), np.mean(self.data_3d[:,4,:]), delta=0.01)
@@ -91,7 +91,7 @@ class DataStatisticsTest(WidgetTest):
         self.assertAlmostEquals(float(model.item(4, 0).text()), np.max(self.data_3d[:,4,:]), delta=0.01)
         
         self.w.sscombo.setCurrentIndex(2) # Sagittal slice (R/L)
-        self.ivl.set_focus([3, 0, 0, 0], 0, True)
+        self.ivl.set_focus([3, 0, 0, 0])
         self.processEvents()
         self.assertEquals(self.w.sscombo.currentText(), "Sagittal")
         self.assertAlmostEquals(float(model.item(0, 0).text()), np.mean(self.data_3d[3,:,:]), delta=0.01)
@@ -130,9 +130,9 @@ class MultiVoxelAnalysisTest(WidgetTest):
         return SECurve
 
     def testClick(self):
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         pt = (2, 2, 2, 0)
-        self.ivl.set_focus(pt, 0, True)
+        self.ivl._pick(0, pt)
         self.processEvents()
         sig = self.data_4d[2,2,2,:]
         self.assertTrue(pt in self.w.plots)
@@ -143,14 +143,14 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertTrue(plot.pts in self.w.p1.items)
 
     def testMultiClick(self):
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         pt1 = (2, 2, 2, 0)
         sig1 = self.data_4d[2,2,2,:]
-        self.ivl.set_focus(pt1, 0, True)
+        self.ivl._pick(0, pt1)
         self.processEvents()
         pt2 = (3, 3, 3, 0)
         sig2 = self.data_4d[3,3,3,:]
-        self.ivl.set_focus(pt2, 0, True)
+        self.ivl._pick(0, pt2)
         self.processEvents()
 
         self.assertTrue(pt1 in self.w.plots)
@@ -168,12 +168,12 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertTrue(plot.pts in self.w.p1.items)
 
     def testMultiClickChangeColor(self):
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         self.w.color_combo.setCurrentIndex(6)
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
-        self.ivl.set_focus(pt1, 0, True)
+        self.ivl._pick(0, pt1)
         self.processEvents()
 
         self.assertTrue(pt1 in self.w.plots)
@@ -184,7 +184,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.processEvents()
 
         pt2 = (3, 3, 3, 0)
-        self.ivl.set_focus(pt2, 0, True)
+        self.ivl._pick(0, pt2)
         self.processEvents()
 
         self.assertTrue(pt2 in self.w.plots)
@@ -195,21 +195,21 @@ class MultiVoxelAnalysisTest(WidgetTest):
         """
         Select two points, show mean curves=On.
         """
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("red"))
         self.processEvents()
         self.w.mean_cb.setChecked(True)
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
-        self.ivl.set_focus(pt1, 0, True)
+        self.ivl._pick(0, pt1)
         self.processEvents()
 
         self.assertTrue(pt1 in self.w.plots)
         plot = self.w.plots[pt1]
 
         pt2 = (3, 3, 3, 0)
-        self.ivl.set_focus(pt2, 0, True)
+        self.ivl._pick(0, pt2)
         self.processEvents()
 
         plot = self.w.mean_plots[self.w.colors["red"]]
@@ -223,16 +223,16 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertFalse(plot.pts in self.w.p1.items)
 
     def testShowIndividualCurves(self):
-        self.ivm.add_data(self.data_4d, name="data_4d")
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
         self.w.indiv_cb.setChecked(False)
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
-        self.ivl.set_focus(pt1, 0, True)
+        self.ivl._pick(0, pt1)
         self.processEvents()
 
         pt2 = (3, 3, 3, 0)
-        self.ivl.set_focus(pt2, 0, True)
+        self.ivl._pick(0, pt2)
         self.processEvents()
 
         self.assertTrue(pt1 in self.w.plots)

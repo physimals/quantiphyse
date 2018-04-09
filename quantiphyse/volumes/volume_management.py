@@ -18,19 +18,17 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from ..utils import debug
-from ..utils.exceptions import QpException
+from quantiphyse.volumes import QpData
+from quantiphyse.volumes.load_save import NumpyData
 
-from .io import NumpyData
+from quantiphyse.utils import debug
+from quantiphyse.utils.exceptions import QpException
 
 class ImageVolumeManagement(QtCore.QObject):
     """
-    ImageVolumeManagement
-    1) Holds all image datas used in analysis
-    2) Better support for switching volumes instead of having a single volume hardcoded
+    Holds all image datas used in analysis
 
     Has to inherit from a Qt base class that supports signals
-    Note that the correct QT Model/View structure has not been set up but is intended in future
     """
     # Signals
 
@@ -60,12 +58,6 @@ class ImageVolumeManagement(QtCore.QObject):
         # Main background data
         self.main = None
 
-        # One True Grid
-        self.grid = None
-
-        # Grid to use when saving data - should come from the first file loaded
-        self.save_grid = None
-
         # Map from name to data object
         self.data = {}
 
@@ -80,10 +72,6 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # Processing extras
         self.extras = {}
-
-        # Current position of the cross hair as an array
-        # FIXME move to view?
-        self.cim_pos = np.array([0, 0, 0, 0], dtype=np.int)
 
         self.sig_main_data.emit(None)
         self.sig_current_data.emit(None)
@@ -122,29 +110,18 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def set_main_data(self, name):
         self._data_exists(name)
-        
         self.main = self.data[name]
-        self.grid = self.main.rawgrid.reorient_ras()
-        debug("Main data raw grid")
-        debug(self.main.rawgrid.affine)
-        debug("RAS aligned")
-        debug(self.grid.affine)
-
-        for data in self.data.values():
-            data.regrid(self.grid)
-        for roi in self.rois.values():
-            roi.regrid(self.grid)
-        
-        self.cim_pos = [int(d/2) for d in self.grid.shape]
-        self.cim_pos.append(int(self.main.nvols/2))
-        
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, make_current=False, make_main=None):
+    def add_data(self, data, name=None, grid=None, make_current=False, make_main=None):
         if isinstance(data, np.ndarray):
-            """ Data provided as a Numpy array is presumed to be on the current grid """
-            data = NumpyData(data.astype(np.float32), self.grid, name)
-        elif name is not None:
+            if grid is None or name is None:
+                raise RuntimeError("add_data: Numpy data must have a name and a grid")
+            data = NumpyData(data, grid, name)
+        elif not isinstance(data, QpData):
+            raise QpException("add_data: data must be Numpy array or QpData")
+
+        if name is not None:
             data.name = name
 
         self._valid_name(data.name)
@@ -153,11 +130,9 @@ class ImageVolumeManagement(QtCore.QObject):
         # Make main data if requested, or if the first data, or if the first 4d data
         # If not, regrid it onto the current OTG
         if make_main is None:
-            make_main = self.main is None or (data.nvols > 1 and self.main.nvols == 1)
+            make_main = self.main is None
         if make_main:
             self.set_main_data(data.name)
-        else:
-            data.regrid(self.grid)
 
         self.sig_all_data.emit(self.data.keys())
 
@@ -166,24 +141,22 @@ class ImageVolumeManagement(QtCore.QObject):
             self.set_current_data(data.name)
 
         # Set save grid if first to be loaded
-        self.save_grid = data.rawgrid
+        self.save_grid = data.grid
         
-    def add_roi(self, data, name=None, make_current=False, signal=True):
-        if isinstance(data, np.ndarray):
-            """ Data provided as a Numpy array is presumed to be on the current grid """
-            roi = NumpyData(data, self.grid, name, roi=True)
-        else:
-            if name is not None:
-                data.name = name
-            data.set_roi(True)
-            roi = data
+    def add_roi(self, roi, name=None, grid=None, make_current=False, signal=True):
+        if isinstance(roi, np.ndarray):
+            if grid is None or name is None:
+                raise RuntimeError("add_roi: Numpy data must have a name and a grid")
+            roi = NumpyData(roi, grid, name, roi=True)
+        elif not isinstance(roi, QpData):
+            raise QpException("add_roi: data must be Numpy array or QpData")
+
+        if name is not None:
+            roi.name = name
+        roi.set_roi(True)
 
         self._valid_name(roi.name)
         self.rois[roi.name] = roi
-
-        if self.grid is not None:
-            # FIXME regridding ROIs needs some thought - need to remain integers!
-            roi.regrid(self.grid)
 
         self.sig_all_rois.emit(self.rois.keys())
 
@@ -252,36 +225,6 @@ class ImageVolumeManagement(QtCore.QObject):
         self.current_roi = self.rois[name]
         self.sig_current_roi.emit(self.current_roi)
 
-    def get_data_value_curr_pos(self):
-        """
-        Get all the 3D data values at the current position
-        """
-        data_value = {}
-
-        # loop over all loaded data and save values in a dictionary
-        for name, qpd in self.data.items():
-            if qpd.nvols == 1:
-                data_value[name] = qpd.val(self.cim_pos)
-                
-        return data_value
-
-    def get_current_enhancement(self):
-        """
-        Return enhancement curves for all 4D data whose 4th dimension matches that of the main data
-        """
-        if self.main is None: return [], {}
-        if self.main.nvols > 1:
-            main_sig = self.main.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
-        else:
-            main_sig = []
-
-        qpd_sig = {}
-        for qpd in self.data.values():
-            if qpd.nvols > 1 and (qpd.nvols == self.main.nvols):
-                qpd_sig[qpd.name] = qpd.std()[self.cim_pos[0], self.cim_pos[1], self.cim_pos[2], :]
-
-        return main_sig, qpd_sig
-
     def add_extra(self, name, obj):
         """
         Add an 'extra', which can be any result of a process which
@@ -289,5 +232,44 @@ class ImageVolumeManagement(QtCore.QObject):
 
         Extras are only required to support str() conversion so they
         can be written to a file
+
+        :param name: Name to give the extra. If an extra already exists with this name
+                     it will be overwritten
+        :param obj: Object which should support str() conversion
         """
         self.extras[name] = obj
+
+    def values(self, pos, grid=None):
+        """
+        Get all the 3D data values at the current position
+
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :return: Dictionary of data name : value
+        """
+        values = {}
+
+        # loop over all loaded data and save values in a dictionary
+        for name, qpd in self.data.items():
+            if qpd.nvols == 1:
+                values[name] = qpd.value(pos, grid)
+                
+        return values
+
+    def timeseries(self, pos, grid=None):
+        """
+        Return time/volume series curves for all 4D data items
+       
+        :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
+                    (0 for 3D). If ``grid`` not specified, position is in world space
+        :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
+        :return: Dictionary of data name : sequence of values
+        """
+        timeseries = {}
+        for qpd in self.data.values():
+            if qpd.nvols > 1:
+                timeseries[qpd.name] = qpd.timeseries(pos, grid)
+                
+        return timeseries
+
