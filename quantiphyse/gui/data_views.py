@@ -140,6 +140,12 @@ class ImageDataView(DataView):
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                               offset[0], offset[1]))
             img.setImage(slicedata, autoLevels=False)
+
+            if self.mask is not None and self.opts["roi_only"]:
+                maskdata, _, _ = self.mask.slice_data(slice_plane)
+                img.mask = maskdata
+            else:
+                img.mask = None
        
     def update(self):
         for img in self.imgs.values():
@@ -147,12 +153,6 @@ class ImageDataView(DataView):
             img.setZValue(self.opts["z_value"])
             img.setBoundaryMode(self.opts["boundary"])
             img.setLevels(self.opts["cmap_range"])
-
-            if self.mask is not None and self.opts["roi_only"]:
-                maskdata, _, _ = self.mask.slice_data(slice_plane)
-                img.mask = maskdata
-            else:
-                img.mask = None
 
     def _get_img(self, vb):
         if vb.name not in self.imgs:
@@ -271,7 +271,9 @@ class RoiView(ImageDataView):
 
     def redraw(self, vb, slice_plane, slice_vol):
         img = self._get_img(vb)
+        contours = self._get_contours(vb)
         self.update()
+        n_contours = 0
         if self.data is not None:
             slicedata, scale, offset = self.data.slice_data(slice_plane)
             transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
@@ -281,8 +283,6 @@ class RoiView(ImageDataView):
                 img.setImage(slicedata, autoLevels=False)
                 img.setTransform(transform)
 
-            contours = self._get_contours(vb)
-            n_contours = 0
             if self.opts["contour"]:
                 # Update data and level for existing contour items, and create new ones if needed
                 for val in self.data.regions:
@@ -294,14 +294,14 @@ class RoiView(ImageDataView):
 
                         contour = contours[n_contours]
                         contour.setTransform(transform)
-                        contour.setData(arr == val)
+                        contour.setData(slicedata == val)
                         contour.setLevel(1)
                         contour.setPen(pg.mkPen(pencol, width=self.opts["outline_width"]))
                         n_contours += 1
 
-            # Clear data from contours not required - FIXME delete them?
-            for idx in range(n_contours, len(contours)):
-                contours[idx].setData(None)
+        # Clear data from contours not required - FIXME delete them?
+        for idx in range(n_contours, len(contours)):
+            contours[idx].setData(None)
 
     def update(self):
         for img in self.imgs.values():
@@ -395,7 +395,7 @@ class RoiViewWidget(QtGui.QGroupBox):
 
     def _alpha_changed(self, alpha):
         """ Set the ROI transparency """
-        self.view.opts.set("alpha", alpha)
+        self.view.set("alpha", alpha)
 
     def _rois_changed(self, rois):
         """ Repopulate ROI combo, without sending signals """
