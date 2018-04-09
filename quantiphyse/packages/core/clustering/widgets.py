@@ -210,26 +210,23 @@ PCA reduction is used on 4D data to extract representative curves
         
     def batch_options(self):
         options = {
-                "data" : self.data_combo.currentText(),
-                "roi" :  self.roi_combo.currentText(),
-                "n-clusters" : self.n_clusters.spin.value(),
-                "output-name" : self.output_name.text(),
-                "invert-roi" : False,
-            }
+            "data" : self.data_combo.currentText(),
+            "roi" :  self.roi_combo.currentText(),
+            "n-clusters" : self.n_clusters.spin.value(),
+            "output-name" : self.output_name.text(),
+            "invert-roi" : False,
+        }
 
         if options["roi"] == "<none>":
             del options["roi"]
 
         if self.n_pca.label.isVisible():
             # 4D PCA options
-            pname = "KMeansPCA"
             options["n-pca"] = self.n_pca.spin.value()
             options["reduction"] = "pca"
             options["norm-data"] = True
-        else:
-            pname = "KMeans"
 
-        return pname, options
+        return "KMeans", options
 
     def run_clustering(self):
         """
