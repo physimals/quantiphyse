@@ -73,8 +73,8 @@ class GridView(QtGui.QWidget):
                 affine[:3,3] = [x[0] for x in self.origin.values()]
             newgrid = DataGrid(self.data.grid.shape, affine)
             self.data.grid = newgrid
-            self.ivl.update_ortho_views()
-
+            self.ivl.set_focus(self.ivl.focus())
+            
 class DataInspectorWidget(QpWidget):
     """
     Widget that lets you tweak the orientation of data
