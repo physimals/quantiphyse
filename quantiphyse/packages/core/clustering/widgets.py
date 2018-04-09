@@ -217,6 +217,9 @@ PCA reduction is used on 4D data to extract representative curves
                 "invert-roi" : False,
             }
 
+        if options["roi"] == "<none>":
+            del options["roi"]
+
         if self.n_pca.label.isVisible():
             # 4D PCA options
             pname = "KMeansPCA"
