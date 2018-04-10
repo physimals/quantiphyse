@@ -8,10 +8,9 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.volumes import DataGrid
+from quantiphyse.data import DataGrid
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, NumberGrid
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, QpException
 
 class GridView(QtGui.QWidget):
 

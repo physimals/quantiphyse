@@ -6,12 +6,10 @@ Copyright (c) 2013-2018 University of Oxford
 
 import os
 
-from quantiphyse.utils import debug, warn
+from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.data import load, save
 
-from quantiphyse.volumes.load_save import load, save
-from quantiphyse.utils.exceptions import QpException
-
-from . import Process
+from .process import Process
 
 class LoadProcess(Process):
     """

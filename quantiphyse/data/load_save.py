@@ -22,8 +22,8 @@ import nibabel as nib
 import numpy as np
 import nrrd
 
-from ..utils.exceptions import QpException
-from ..volumes import DataGrid, QpData
+from quantiphyse.utils import QpException
+from .qpdata import DataGrid, QpData
 
 HAVE_DCMSTACK = True
 try:

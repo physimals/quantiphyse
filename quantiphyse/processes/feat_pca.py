@@ -21,7 +21,6 @@ class PcaFeatReduce(object):
 
     def __init__(self, img1, region1=None, labels1=None):
         """
-
         @param img1: 4D image to be processed
         @param region1: Optional sub region to extract
         @param labels1: (deprecated) labels are return with the region to make classification easier
@@ -71,7 +70,6 @@ class PcaFeatReduce(object):
         return im1
 
     def get_training_features(self, opt_normdata=1, opt_normimage=0, feature_volume=False, n_components=5, norm_type='perc'):
-
         """
         Return features for each voxel from the PCA reduction
 
@@ -119,7 +117,6 @@ class PcaFeatReduce(object):
             return feature_image, self.labels1
 
     def get_projected_test_features(self, img1_test, region1_test=None, feature_volume=False, exclude=None):
-
         #Test region to process
         if region1_test is None:
             region1 = np.ones(img1_test.shape[0:-1], dtype=bool)

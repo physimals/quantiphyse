@@ -11,11 +11,11 @@ from skimage.segmentation import random_walker
 
 from PySide import QtGui
 
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.utils import debug
-from quantiphyse.analysis.feat_pca import PcaFeatReduce
+from quantiphyse.processes.feat_pca import PcaFeatReduce
 
 class Tool:
     def __init__(self, name, tooltip=""):

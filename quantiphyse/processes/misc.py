@@ -7,11 +7,10 @@ Copyright (c) 2013-2018 University of Oxford
 import numpy as np
 import scipy
 
-from quantiphyse.volumes.load_save import NumpyData
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.data import NumpyData
+from quantiphyse.utils import debug, QpException
 
-from . import Process
+from .process import Process
 
 class RenameDataProcess(Process):
     """ Rename data  """

@@ -6,11 +6,10 @@ Copyright (c) 2013-2018 University of Oxford
 
 import numpy as np
 
-from quantiphyse.utils.exceptions import QpException
-
-from quantiphyse.analysis import Process
-from quantiphyse.analysis.feat_pca import PcaFeatReduce
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.utils import QpException
+from quantiphyse.processes import Process
+from quantiphyse.processes.feat_pca import PcaFeatReduce
+from quantiphyse.data import NumpyData
 
 from .perfusionslic import slic_feat
 

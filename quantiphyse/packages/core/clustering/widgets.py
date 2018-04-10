@@ -12,7 +12,7 @@ from sklearn.metrics import pairwise
 import pyqtgraph as pg
 from PySide import QtGui
 
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption
 from quantiphyse.utils import get_pencol, debug
 

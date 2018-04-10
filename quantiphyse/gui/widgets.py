@@ -11,11 +11,11 @@ import traceback
 
 from PySide import QtGui, QtCore
 
-from ..analysis import Process
-from ..utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.processes import Process
+from quantiphyse.utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url, QpException
+from quantiphyse.data import save
+
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
-from ..volumes.load_save import save
 
 class QpWidget(QtGui.QWidget):
     """

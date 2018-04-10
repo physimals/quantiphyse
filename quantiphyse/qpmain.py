@@ -12,13 +12,11 @@ import traceback
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
-from .utils.batch import BatchScriptRunner
-from .test import run_tests
-from .utils.exceptions import QpException
-from .utils import debug, warn, set_local_file_path, set_debug
-from .gui.MainWindow import MainWindow
-from .gui.QuickWindow import QuickWindow
-from .gui.dialogs import error_dialog, set_main_window
+from quantiphyse.test import run_tests
+from quantiphyse.utils import QpException, debug, warn, set_local_file_path, set_debug
+from quantiphyse.utils.batch import BatchScriptRunner
+from quantiphyse.gui import MainWindow, QuickWindow
+from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.
 if sys.version_info[0] > 2:

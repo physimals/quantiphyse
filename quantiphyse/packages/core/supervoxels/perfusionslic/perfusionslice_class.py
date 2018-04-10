@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import scipy.ndimage as ndi
 
-from quantiphyse.analysis.feat_pca import PcaFeatReduce
+from quantiphyse.processes.feat_pca import PcaFeatReduce
 from quantiphyse.utils import debug
 
 from . import slic_feat

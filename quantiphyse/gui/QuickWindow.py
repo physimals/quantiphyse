@@ -16,10 +16,8 @@ from PySide import QtCore, QtGui
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-from ..volumes.load_save import load, save
-from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.data import load, save, ImageVolumeManagement
+from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000

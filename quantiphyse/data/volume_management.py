@@ -18,11 +18,10 @@ from PySide import QtCore, QtGui
 
 import numpy as np
 
-from quantiphyse.volumes import QpData
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.utils import debug, QpException
 
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from .qpdata import QpData
+from .load_save import NumpyData
 
 class ImageVolumeManagement(QtCore.QObject):
     """

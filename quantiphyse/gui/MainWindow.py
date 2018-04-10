@@ -19,11 +19,9 @@ from .ViewOptions import ViewOptions
 from .Register import RegisterDialog
 from .ImageView import ImageView
 
-from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
-from ..volumes.load_save import load, save
-from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.data import load, save, ImageVolumeManagement
+from quantiphyse.gui.widgets import FingerTabBarWidget, FingerTabWidget
+from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000

@@ -10,8 +10,8 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from quantiphyse.volumes.load_save import load, NumpyData
-from quantiphyse.analysis import Process
+from quantiphyse.data import load, NumpyData
+from quantiphyse.processes import Process
 from quantiphyse.utils import debug
 
 from .t1_model import t10_map

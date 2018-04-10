@@ -23,8 +23,7 @@ import numpy as np
 import scipy
 import pyqtgraph as pg
 
-from quantiphyse.utils import debug, warn, sf
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, warn, sf, QpException
 
 """
 Tolerance for treating values as equal
@@ -513,7 +512,7 @@ class QpData(object):
                 raise QpException("ROIs must contain integers only")
             data = data.astype(np.int32)
 
-        from quantiphyse.volumes.load_save import NumpyData
+        from quantiphyse.data import NumpyData
         return NumpyData(data=data, grid=grid, name=self.name + "_resampled", roi=self.roi)
 
     def slice_data(self, plane, vol=0):

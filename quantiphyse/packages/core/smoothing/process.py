@@ -6,10 +6,9 @@ Copyright (c) 2013-2018 University of Oxford
 
 import scipy.ndimage.filters
 
-from quantiphyse.utils import debug, warn
-from quantiphyse.utils.exceptions import QpException
-from quantiphyse.analysis import Process
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.processes import Process
+from quantiphyse.data import NumpyData
 
 class SmoothingProcess(Process):
     """

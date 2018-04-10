@@ -11,9 +11,9 @@ import numpy as np
 import sklearn.cluster as cl
 from sklearn.decomposition import PCA
 
-from quantiphyse.volumes.load_save import NumpyData
-from quantiphyse.analysis import Process
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.data import NumpyData
+from quantiphyse.processes import Process
+from quantiphyse.utils import QpException
 
 class KMeansProcess(Process):
     """

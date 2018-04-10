@@ -10,10 +10,8 @@ import traceback
 
 import numpy as np
 
-from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path
-from quantiphyse.utils.exceptions import QpException
-
-from quantiphyse.analysis import Process, BackgroundProcess
+from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path, QpException
+from quantiphyse.processes import Process, BackgroundProcess
 
 # Known registration methods (case-insensitive)
 def get_reg_methods():

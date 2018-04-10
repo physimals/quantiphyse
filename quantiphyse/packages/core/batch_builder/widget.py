@@ -9,8 +9,7 @@ import os
 from PySide import QtGui, QtCore
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, QpException
 from quantiphyse.utils.batch import Script
 
 class BatchBuilderWidget(QpWidget):

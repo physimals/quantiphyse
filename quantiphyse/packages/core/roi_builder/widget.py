@@ -12,7 +12,7 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.volumes.load_save import NumpyData
+from quantiphyse.data import NumpyData
 from quantiphyse.gui.dialogs import error_dialog
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TitleWidget
 from quantiphyse.gui.pickers import PickMode

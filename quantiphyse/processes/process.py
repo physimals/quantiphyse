@@ -11,9 +11,8 @@ import threading
 
 from PySide import QtCore, QtGui
 
-from quantiphyse.volumes.load_save import NumpyData
-from quantiphyse.utils import debug, warn
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.data import NumpyData
+from quantiphyse.utils import debug, warn, QpException
 
 _pool = None
 

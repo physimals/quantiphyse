@@ -3,7 +3,7 @@ import os
 import sys
 import numpy as np
 
-from quantiphyse.volumes import DataGrid, SlicePlane, OrthoSlice
+from quantiphyse.data import DataGrid, SlicePlane, OrthoSlice
 
 GRIDSIZE = 5
 SLICEPOS = 2

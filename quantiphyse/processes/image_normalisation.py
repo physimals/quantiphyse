@@ -12,14 +12,11 @@ from scipy.ndimage.filters import gaussian_filter1d
 from quantiphyse.utils import debug
 
 class ImNorm(object):
-
     """
     Preprocesses the images to try and establish consistency without converting to Gd concentration
-
     """
 
     def __init__(self, img1):
-
         self.img1 = img1
 
         # convert to list of enhancement curves
@@ -39,7 +36,6 @@ class ImNorm(object):
         None
 
     def injection_time(self):
-
         """
         Find the injection time as the point of maximum enhancement
         @return:
@@ -59,15 +55,12 @@ class ImNorm(object):
         self.img1 = self.img1[:, :21]
 
     def offset_time(self):
-
         None
 
     def scale_norm(self, scale_position1=10):
-
         self.img1 = self.img1 / np.median(self.img1[:, scale_position1])
 
     def scale_percentile(self):
-
         perc1 = np.percentile(self.img1, 90)
         self.img1 = self.img1 / perc1
 
@@ -77,7 +70,6 @@ class ImNorm(object):
 
         @return:
         """
-
         min1 = np.tile(np.expand_dims(np.min(self.img1, axis=-1), axis=1), (1, self.img1.shape[-1]))
         self.img1 = self.img1 - min1
 
@@ -85,7 +77,6 @@ class ImNorm(object):
         self.img1 = self.img1 / (max1 + 0.001)
 
     def get_image(self):
-
         if self.image_input:
             None
         else:

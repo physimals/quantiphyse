@@ -16,7 +16,7 @@ import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
 from quantiphyse.utils import get_icon, debug
-from quantiphyse.volumes import OrthoSlice, DataGrid
+from quantiphyse.data import OrthoSlice, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
 from .HistogramWidget import MultiImageHistogramWidget

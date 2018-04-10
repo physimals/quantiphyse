@@ -13,7 +13,7 @@ import nibabel as nib
 from scipy.ndimage.filters import gaussian_filter
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.volumes.load_save import load
+from quantiphyse.data import load
 
 from .process import T10Process
 

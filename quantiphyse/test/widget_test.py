@@ -14,11 +14,9 @@ import scipy
 
 from PySide import QtCore
 
-from quantiphyse.volumes import DataGrid
-from quantiphyse.volumes.volume_management import ImageVolumeManagement
-from quantiphyse.gui.ViewOptions import ViewOptions
-from quantiphyse.gui.ImageView import ImageView
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.data import DataGrid, ImageVolumeManagement
+from quantiphyse.gui import ViewOptions, ImageView
+from quantiphyse.utils import QpException
 
 TEST_SHAPE = [10, 10, 10]
 TEST_NT = 20

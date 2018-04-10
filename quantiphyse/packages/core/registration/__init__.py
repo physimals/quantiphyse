@@ -13,10 +13,9 @@ from PySide import QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo, TitleWidget
 from quantiphyse.gui.dialogs import TextViewerDialog
 
-from quantiphyse.analysis import Process
+from quantiphyse.processes import Process
 
-from quantiphyse.utils import debug, get_plugins
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, get_plugins, QpException
 
 from .process import RegProcess, MocoProcess
     
