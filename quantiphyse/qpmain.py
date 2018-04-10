@@ -72,7 +72,10 @@ def main():
         # OS specific changes
         if sys.platform.startswith("darwin"):
             QtGui.QApplication.setGraphicsSystem('native')
-          
+        elif sys.platform.startswith('linux'):
+            # Broken opening of external links with PyInstaller - this is a hack to work around it
+            os.environ["XDG_DATA_DIRS"] = "/usr/share/gnome:/usr/local/share/:/usr/share/:" + os.environ.get("XDG_DATA_DIRS", "")
+
         app = QtGui.QApplication(sys.argv)
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
