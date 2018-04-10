@@ -225,7 +225,9 @@ class PolygonPicker(Picker):
         ImageDraw.Draw(img).polygon(points, outline=label, fill=label)
 
         ret = np.zeros(grid.shape, dtype=np.int)
-        slice_mask = np.array(img).T
+        slice_mask = np.array(img)
+        if gridx < gridy:
+            slice_mask = slice_mask.T
 
         slices = [slice(None)] * 3
         zpos = int(self.ivl.focus(grid)[gridz] + 0.5)
@@ -338,7 +340,9 @@ class EllipsePicker(PolygonPicker):
         ImageDraw.Draw(img).ellipse(points, outline=label, fill=label)
 
         ret = np.zeros(grid.shape, dtype=np.int)
-        slice_mask = np.array(img).T
+        slice_mask = np.array(img)
+        if gridx < gridy:
+            slice_mask = slice_mask.T
         debug("selection nonzero: ", np.count_nonzero(slice_mask))
 
         slices = [slice(None)] * 3
