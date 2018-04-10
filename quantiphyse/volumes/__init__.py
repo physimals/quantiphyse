@@ -18,26 +18,43 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import math
-import warnings
 
 import numpy as np
 import scipy
 import pyqtgraph as pg
 
-from PySide import QtGui
-
-from quantiphyse.utils import debug, sf
+from quantiphyse.utils import debug, warn, sf
 from quantiphyse.utils.exceptions import QpException
 
-# Tolerance for treating values as equal
-# Used to determine if matrices are diagonal or identity
+"""
+Tolerance for treating values as equal
+Used to determine if matrices are diagonal or identity
+"""
 EQ_TOL = 1e-3
 
-def IS_DIAGONAL(self, mat):
+def is_diagonal(mat):
+    """
+    :return: True if mat is diagonal, to within a tolerance of ``EQ_TOL``
+    """
     return np.all(np.abs(mat - np.diag(np.diag(mat))) < EQ_TOL)
 
-def IS_IDENTITY(self, mat):
+def is_identity(mat):
+    """
+    :return: True if mat is the identity matrix, to within a tolerance of ``EQ_TOL``
+    """
     return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
+
+def is_ortho_vector(vec):
+    """
+    Determine if a vector has a component in only one direction
+
+    :return: Tuple of axis, sign if vector is ortho, None, None otherwise
+    """
+    mod = np.linalg.norm(vec)
+    for ax, v in enumerate(vec):
+        if abs(abs(v/mod)-1) < EQ_TOL:
+            return ax, math.copysign(1, v)
+    return None, None
 
 class DataGrid(object):
     """
@@ -97,7 +114,7 @@ class DataGrid(object):
             from_grid = self
         else:
             raise RuntimeError("Exactly one of from_grid and to_grid must be specified")
-        
+
         world = from_grid.grid_to_world(coord, direction=direction)
         return to_grid.world_to_grid(world, direction=direction)
 
@@ -110,7 +127,7 @@ class DataGrid(object):
         """
         vec = np.array(coords[:3])
         world_coords = np.dot(self.transform, vec)
-        if not direction: 
+        if not direction:
             world_coords += np.array(self.origin, dtype=world_coords.dtype)
 
         if len(coords) == 4:
@@ -145,7 +162,7 @@ class DataGrid(object):
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
         """
-        reorder, flip, tmatrix = self._simplify_transforms(self.affine)
+        reorder, flip, tmatrix = self.simplify_transforms(self.affine)
         new_shape = [self.shape[d] for d in reorder]
         return DataGrid(new_shape, tmatrix)
 
@@ -175,12 +192,13 @@ class DataGrid(object):
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
 
-    def _simplify_transforms(self, mat):
-        # Convert the transformation into optional re-ordering and flipping
-        # of axes and a final optional affine transformation
-        # This enables us to use faster methods in the case where the
-        # grids are essentially the same or scaled
-
+    def simplify_transforms(self, mat):
+        """
+        Convert the transformation into optional re-ordering and flipping
+        of axes and a final optional affine transformation
+        This enables us to use faster methods in the case where the
+        grids are essentially the same or scaled
+        """
         # Flip/transpose the axes to put the biggest numbers on
         # the diagonal and make negative diagonal elements positive
         dim_order, dim_flip = [], []
@@ -314,13 +332,13 @@ class QpData(object):
 
         :param vol: Index of volume to use, if not specified use whole data set
         :return: Tuple of min value, max value
-        """ 
+        """
         if vol is None:
             return self.raw().min(), self.raw().max()
         else:
             voldata = self.volume(vol)
             return voldata.min(), voldata.max()
-        
+
     def volume(self, vol):
         """
         Get the specified volume from a multi-volume data set
@@ -356,7 +374,7 @@ class QpData(object):
             value = rawdata[tuple(data_pos)]
         except IndexError:
             value = 0
-        
+
         if str:
             return sf(value)
         else:
@@ -376,7 +394,7 @@ class QpData(object):
 
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
-            
+
         data_pos = [int(v+0.5) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
 
         rawdata = self.raw()
@@ -390,7 +408,7 @@ class QpData(object):
         Mask the data
 
         :param roi: ROI data item If None, return all data
-        :param region: If specified, return data within this region. Otherwise return 
+        :param region: If specified, return data within this region. Otherwise return
                        data within any ROI region.
         :param vol: If specified, restrict output to this volume index
         :param invert: If True, invert the mask
@@ -402,10 +420,10 @@ class QpData(object):
         """
         ret = []
         if vol is not None:
-            data = self.vol(vol)
+            data = self.volume(vol)
         else:
             data = self.raw()
-        
+
         if roi is None:
             if output_flat:
                 ret.append(data.flatten())
@@ -421,21 +439,21 @@ class QpData(object):
                 mask = roi.raw() == region
             if invert:
                 mask = np.logical_not(mask)
-            
+
             if output_flat:
                 ret.append(data[mask])
             else:
                 masked = np.zeros(data.shape)
                 masked[mask] = data[mask]
                 ret.append(masked)
-            if output_mask: 
+            if output_mask:
                 ret.append(mask)
 
         if len(ret) > 1:
             return tuple(ret)
         else:
             return ret[0]
-        
+
     def resample(self, grid):
         """
         Resample the data onto a new grid
@@ -447,7 +465,7 @@ class QpData(object):
 
         # Affine transformation matrix from current grid to new grid
         tmatrix = np.dot(np.linalg.inv(grid.affine), self.grid.affine)
-        reorder, flip, tmatrix = self.grid._simplify_transforms(tmatrix)
+        reorder, flip, tmatrix = self.grid.simplify_transforms(tmatrix)
 
         # Perform the flips and transpositions which simplify the transformation and
         # may avoid the need for an affine transformation, or make it a simple scaling
@@ -460,7 +478,7 @@ class QpData(object):
                 reorder = reorder + [3]
             data = np.transpose(data, reorder)
 
-        if not IS_IDENTITY(tmatrix):
+        if not is_identity(tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
             # so we will need an affine transformation
             # scipy requires the out->in transform so invert our in->out transform
@@ -475,7 +493,7 @@ class QpData(object):
                 offset.append(0)
                 output_shape.append(data.shape[3])
 
-            if IS_DIAGONAL(affine):
+            if is_diagonal(affine):
                 # The transformation is diagonal, so use faster sequence mode
                 affine = np.diagonal(affine)
             #debug("WARNING: affine_transform: ")
@@ -546,12 +564,12 @@ class QpData(object):
         offset = -np.array(self.grid.grid_to_grid(data_offset, to_grid=plane, direction=True))[:2]
         #debug("OrthoSlice: new plane offset: %s" % (str(offset)))
 
-        ax1, sign1 = self._is_ortho_vector(slice_basis[0])
-        ax2, sign2 = self._is_ortho_vector(slice_basis[1])
+        ax1, sign1 = is_ortho_vector(slice_basis[0])
+        ax2, sign2 = is_ortho_vector(slice_basis[1])
         if ax1 is not None and ax2 is not None:
             slices = [None, None, None]
-            slices[ax1] = self._get_slice(ax1, rawdata.shape[ax1], sign1)
-            slices[ax2] = self._get_slice(ax2, rawdata.shape[ax2], sign2)
+            slices[ax1] = self._get_slice(rawdata.shape[ax1], sign1)
+            slices[ax2] = self._get_slice(rawdata.shape[ax2], sign2)
 
             pos = int(data_origin[data_naxis]+0.5)
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
@@ -573,18 +591,11 @@ class QpData(object):
         #debug(data_naxis, sdata)
         return sdata, trans_v, offset
 
-    def _get_slice(self, axis, length, sign):
+    def _get_slice(self, length, sign):
         if sign == 1:
             return slice(0, length, 1)
         else:
             return slice(length-1, None, -1)
-
-    def _is_ortho_vector(self, vec):
-        mod = np.linalg.norm(vec)
-        for ax, v in enumerate(vec):
-            if abs(abs(v/mod)-1) < EQ_TOL:
-                return ax, math.copysign(1, v)
-        return None, None
 
     def set_2dt(self):
         """
@@ -655,5 +666,5 @@ class QpData(object):
         """
         notnans = np.isfinite(data)
         if not np.all(notnans):
-            warnings.warn("Image contains nans or infinity")
+            warn("Image: %s - contains nans or infinity" % self.name)
             data[np.logical_not(notnans)] = 0
