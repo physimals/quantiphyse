@@ -25,6 +25,12 @@ else:
     from .resources import resource_py2
 
 def my_catch_exceptions(exc_type, exc, tb):
+    """
+    Catch exceptions and format appropriately
+
+    QpException can occur due to bad user input so scary tracebacks are not included.
+    Other exception types are bugs so give full traceback
+    """
     if issubclass(exc_type, QpException):
         detail = exc.detail
     else:
@@ -35,9 +41,8 @@ def main():
     """
     Parse any input arguments and run the application
     """
-    
-    # Enable multiprocessing on windows frozen binaries
-    # Does nothing on other systems
+
+    # Enable multiprocessing on windows frozen binaries. Does nothing on other systems
     multiprocessing.freeze_support()
 
     # Parse input arguments to pass info to GUI
@@ -52,7 +57,8 @@ def main():
     args = parser.parse_args()
 
     set_debug(args.debug)
-    if args.debug: pg.systemInfo()
+    if args.debug:
+        pg.systemInfo()
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
@@ -60,9 +66,9 @@ def main():
     # OS specific changes
     if sys.platform.startswith("darwin"):
         QtGui.QApplication.setGraphicsSystem('native')
-        
+
     app = QtGui.QApplication(sys.argv)
-    app.setStyle('plastique') # windows, motif, cde, plastique, windowsxp, macintosh
+    app.setStyle('plastique')
     QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
     QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
     QtCore.QCoreApplication.setApplicationName("Quantiphyse")
@@ -74,7 +80,7 @@ def main():
     if args.self_test:
         run_tests()
         sys.exit(0)
-    elif (args.batch is not None):
+    elif args.batch is not None:
         runner = BatchScriptRunner(fname=args.batch)
         runner.run()
     else:
@@ -85,7 +91,5 @@ def main():
             win = MainWindow(load_data=args.data, load_roi=args.roi)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
-    
+
     sys.exit(app.exec_())
-
-

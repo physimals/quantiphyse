@@ -146,7 +146,7 @@ def text_to_matrix(text):
             try:
                 fval = float(val)
             except:
-                raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
+                raise QpException("Non-numeric value '%s' found in matrix" % val)
         fvals.append([float(v) for v in vals])     
     
     return fvals, len(fvals), ncols

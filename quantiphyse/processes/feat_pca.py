@@ -50,6 +50,7 @@ class PcaFeatReduce(object):
         self.reduced_data = None
         self.pca = None
         self.opt_normdata = None
+        self.opt_normimage = None
 
     @staticmethod
     def normalise_im(im1, norm_type='perc'):
