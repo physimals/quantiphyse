@@ -270,7 +270,8 @@ class DataSummary(QtGui.QWidget):
         ivl.sig_focus_changed.connect(self._focus_changed)
 
     def show_options(self):
-        pass
+        self.opts.show()
+        self.opts.raise_()
 
     def _main_changed(self, data):
         name = ""
