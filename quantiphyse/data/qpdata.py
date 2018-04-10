@@ -462,20 +462,25 @@ class QpData(object):
         """
         data = self.raw()
 
+        debug("Resampling from:")
+        debug(self.grid.affine)
+        debug("To:")
+        debug(grid.affine)
+
         # Affine transformation matrix from current grid to new grid
         tmatrix = np.dot(np.linalg.inv(grid.affine), self.grid.affine)
         reorder, flip, tmatrix = self.grid.simplify_transforms(tmatrix)
 
         # Perform the flips and transpositions which simplify the transformation and
         # may avoid the need for an affine transformation, or make it a simple scaling
-        if len(flip) != 0:
-            for d in flip:
-                data = np.flip(data, d)
-
         if reorder != range(3):
             if data.ndim == 4:
                 reorder = reorder + [3]
             data = np.transpose(data, reorder)
+            
+        if len(flip) != 0:
+            for d in flip:
+                data = np.flip(data, d)
 
         if not is_identity(tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
@@ -484,7 +489,7 @@ class QpData(object):
             tmatrix = np.linalg.inv(tmatrix)
             affine = tmatrix[:3, :3]
             offset = list(tmatrix[:3, 3])
-            output_shape = self.grid[direction].shape[:]
+            output_shape = grid.shape[:]
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
                 affine = np.append(affine, [[0, 0, 0]], 0)
@@ -506,9 +511,9 @@ class QpData(object):
         self._remove_nans(data)
 
         if self.roi:
-            if regridded_data.min() < 0 or regridded_data.max() > 2**32:
+            if data.min() < 0 or data.max() > 2**32:
                 raise QpException("ROIs must contain values between 0 and 2**32")
-            if not np.equal(np.mod(regridded_data, 1), 0).any():
+            if not np.equal(np.mod(data, 1), 0).any():
                 raise QpException("ROIs must contain integers only")
             data = data.astype(np.int32)
 
