@@ -33,6 +33,12 @@ from quantiphyse.utils.exceptions import QpException
 # Used to determine if matrices are diagonal or identity
 EQ_TOL = 1e-3
 
+def IS_DIAGONAL(self, mat):
+    return np.all(np.abs(mat - np.diag(np.diag(mat))) < EQ_TOL)
+
+def IS_IDENTITY(self, mat):
+    return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
+
 class DataGrid(object):
     """
     Defines a regular 3D grid in some 'world' space
@@ -74,7 +80,7 @@ class DataGrid(object):
         for d in range(3):
             self.nvoxels *= shape[d]
 
-    def grid_to_grid(self, coord, from_grid=None, to_grid=None):
+    def grid_to_grid(self, coord, from_grid=None, to_grid=None, direction=False):
         """
         Transform grid co-ordinates to another grid's co-ordinates
 
@@ -92,10 +98,10 @@ class DataGrid(object):
         else:
             raise RuntimeError("Exactly one of from_grid and to_grid must be specified")
         
-        world = from_grid.grid_to_world(coord)
-        return to_grid.world_to_grid(world)
+        world = from_grid.grid_to_world(coord, direction=direction)
+        return to_grid.world_to_grid(world, direction=direction)
 
-    def grid_to_world(self, coords):
+    def grid_to_world(self, coords, direction=False):
         """
         Transform grid co-ordinates to world co-ordinates
 
@@ -103,21 +109,27 @@ class DataGrid(object):
         :return: List containing 3D or 4D world co-ordinates
         """
         vec = np.array(coords[:3])
-        world_coords = np.dot(self.transform, vec) + np.array(self.origin)
+        world_coords = np.dot(self.transform, vec)
+        if not direction: 
+            world_coords += np.array(self.origin, dtype=world_coords.dtype)
+
         if len(coords) == 4:
             return list(world_coords) + [coords[3]]
         else:
             return list(world_coords)
 
-    def world_to_grid(self, coords):
+    def world_to_grid(self, coords, direction=False):
         """
         Transform world co-ordinates to grid co-ordinates
 
         :param coords: 3D world co-ordinates. If 4D, last entry is returned unchanged
         :return: List containing 3D or 4D grid co-ordinates
         """
-        vec = list(coords[:3])
-        grid_coords = np.dot(self.inv_transform, (vec - np.array(self.origin)))
+        vec = np.array(coords[:3])
+        if not direction:
+            vec -= np.array(self.origin, dtype=vec.dtype)
+        grid_coords = np.dot(self.inv_transform, vec)
+
         if len(coords) == 4:
             return list(grid_coords) + [coords[3]]
         else:
@@ -133,11 +145,7 @@ class DataGrid(object):
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
         """
-        # We make slightly botched use of the Transform class for this - this
-        # hack shouldn't be necessary really
-        rasgrid = DataGrid([1, 1, 1], np.identity(4))
-        t = Transform(self, rasgrid)
-        reorder, flip, tmatrix = t._simplify_transforms(t.tmatrix[t.OUT2IN])
+        reorder, flip, tmatrix = self._simplify_transforms(self.affine)
         new_shape = [self.shape[d] for d in reorder]
         return DataGrid(new_shape, tmatrix)
 
@@ -166,6 +174,51 @@ class DataGrid(object):
         :return: True if ``grid`` is identical to this grid
         """
         return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
+
+    def _simplify_transforms(self, mat):
+        # Convert the transformation into optional re-ordering and flipping
+        # of axes and a final optional affine transformation
+        # This enables us to use faster methods in the case where the
+        # grids are essentially the same or scaled
+
+        # Flip/transpose the axes to put the biggest numbers on
+        # the diagonal and make negative diagonal elements positive
+        dim_order, dim_flip = [], []
+
+        absmat = np.absolute(mat)
+        for d in range(3):
+            newd = np.argmax(absmat[:, d])
+            dim_order.append(newd)
+            if mat[newd, d] < 0:
+                dim_flip.append(newd)
+
+        new_mat = np.copy(mat)
+        if sorted(dim_order) == range(3):
+            # The transposition was consistent, so use it
+            debug("Before simplification")
+            debug(new_mat)
+            new_shape = [self.shape[d] for d in dim_order]
+            for idx, d in enumerate(dim_order):
+                new_mat[:, d] = mat[:, idx]
+            debug("After transpose", dim_order)
+            debug(new_mat)
+            for dim in dim_flip:
+                # Change signs to positive to flip a dimension
+                new_mat[:, dim] = -new_mat[:, dim]
+            debug("After flip", dim_flip)
+            debug(new_mat)
+            for dim in dim_flip:
+                # Adjust origin
+                new_mat[:3, 3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
+
+            debug("After adjust origin", new_shape)
+            debug(new_mat)
+
+            return dim_order, dim_flip, new_mat
+        else:
+            # Transposition was inconsistent, just go with general
+            # affine transform - this will work but might be slow
+            return range(3), [], new_mat
 
 class OrthoSlice(DataGrid):
     """
@@ -199,146 +252,6 @@ class OrthoSlice(DataGrid):
         DataGrid.__init__(self, shape, affine)
         self.basis = [tuple(self.transform[:, 0]), tuple(self.transform[:, 1])]
         self.normal = tuple(self.transform[:, 2])
-
-class Transform(object):
-    """
-    Transforms data on one grid into another
-
-    :ivar tmatrix: Sequence of 2 4x4 affine transformations. First is out grid->in grid, the second
-                   in_grid -> out_grid. The constants ``OUT2IN`` and ``IN2OUT`` allow you to index
-                   which you require (most methods default to using ``OUT2IN``)
-    """
-
-    OUT2IN = 0
-    IN2OUT = 1
-
-    def __init__(self, in_grid, out_grid):
-        """
-        Construct a transformation from one grid to another
-
-        :param in_grid: Input grid
-        :param out_grid: Output grid
-        """
-        #debug("Transforming from")
-        #debug(in_grid.affine)
-        #debug("To")
-        #debug(out_grid.affine)
-
-        self.grid = [out_grid, in_grid]
-        self.tmatrix = [None, None]
-
-        # Affine transformation matrix from grid 2 to grid 1
-        self.tmatrix[self.OUT2IN] = np.dot(np.linalg.inv(out_grid.affine), in_grid.affine)
-        # Affine transformation matrix from grid 1 to grid 2
-        self.tmatrix[self.IN2OUT] = np.linalg.inv(self.tmatrix[self.OUT2IN])
-
-    def transform_data(self, data, direction=OUT2IN):
-        """
-        Transform 3D or 4D data from one grid to another
-
-        :param data: 3D or 4D Numpy data
-        :param direction: Transform.OUT2IN to transform output grid position to input grid.
-                          Transform.IN2OUT for opposite
-        :return Transformed 3D or 4D data
-        """
-        reorder, flip, tmatrix = self._simplify_transforms(self.tmatrix[direction])
-
-        # Perform the flips and transpositions which simplify the transformation
-        # and may avoid the need for an affine transformation or make it a simple
-        # scaling
-        if len(flip) != 0:
-            #debug("Flipping axes: ", self.flip)
-            for d in flip:
-                data = np.flip(data, d)
-
-        if reorder != range(3):
-            if data.ndim == 4:
-                reorder = reorder + [3]
-            #debug("Re-ordering axes: ", reorder)
-            data = np.transpose(data, reorder)
-
-        if not self._is_identity(tmatrix):
-            # We were not able to reduce the transformation down to flips/transpositions
-            # so we will need an affine transformation
-
-            # scipy requires the out->in transform so invert our in->out transform
-            tmatrix = np.linalg.inv(tmatrix)
-            affine = tmatrix[:3, :3]
-            offset = list(tmatrix[:3, 3])
-            output_shape = self.grid[direction].shape[:]
-            if data.ndim == 4:
-                # Make 4D affine with identity transform in 4th dimension
-                affine = np.append(affine, [[0, 0, 0]], 0)
-                affine = np.append(affine, [[0], [0], [0], [1]], 1)
-                offset.append(0)
-                output_shape.append(data.shape[3])
-
-            if self._is_diagonal(affine):
-                # The transformation is diagonal, so use this sequence instead of
-                # the full matrix - this will be faster
-                affine = np.diagonal(affine)
-            else:
-                pass
-            #debug("WARNING: affine_transform: ")
-            #debug(affine)
-            #debug("Offset = ", offset)
-            #debug("Input shape=", data.shape, data.min(), data.max())
-            #debug("Output shape=", output_shape)
-            data = scipy.ndimage.affine_transform(data, affine, offset=offset,
-                                                  output_shape=output_shape, order=0)
-
-        return data
-
-    def _is_diagonal(self, mat):
-        return np.all(np.abs(mat - np.diag(np.diag(mat))) < EQ_TOL)
-
-    def _is_identity(self, mat):
-        return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
-
-    def _simplify_transforms(self, mat):
-        # Convert the transformation into optional re-ordering and flipping
-        # of axes and a final optional affine transformation
-        # This enables us to use faster methods in the case where the
-        # grids are essentially the same or scaled
-
-        # Flip/transpose the axes to put the biggest numbers on
-        # the diagonal and make negative diagonal elements positive
-        dim_order, dim_flip = [], []
-
-        absmat = np.absolute(mat)
-        for d in range(3):
-            newd = np.argmax(absmat[:, d])
-            dim_order.append(newd)
-            if mat[newd, d] < 0:
-                dim_flip.append(newd)
-
-        new_mat = np.copy(mat)
-        if sorted(dim_order) == range(3):
-            # The transposition was consistent, so use it
-            debug("Before simplification")
-            debug(new_mat)
-            new_shape = [self.grid[self.OUT2IN].shape[d] for d in dim_order]
-            for idx, d in enumerate(dim_order):
-                new_mat[:, d] = mat[:, idx]
-            debug("After transpose", dim_order)
-            debug(new_mat)
-            for dim in dim_flip:
-                # Change signs to positive to flip a dimension
-                new_mat[:, dim] = -new_mat[:, dim]
-            debug("After flip", dim_flip)
-            debug(new_mat)
-            for dim in dim_flip:
-                # Adjust origin
-                new_mat[:3, 3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
-
-            debug("After adjust origin", new_shape)
-            debug(new_mat)
-
-            return dim_order, dim_flip, new_mat
-        else:
-            # Transposition was inconsistent, just go with general
-            # affine transform - this will work but might be slow
-            return range(3), [], new_mat
 
 class QpData(object):
     """
@@ -530,22 +443,60 @@ class QpData(object):
         :param grid: :class:`DataGrid` to resample the data on to
         :return: New :class:`QpData` object
         """
-        t = Transform(self.grid, grid)
-        rawdata = self.raw()
-        if rawdata.ndim not in (3, 4):
-            raise RuntimeError("Data must be 3D or 4D (padded if necessary")
-        regridded_data = t.transform_data(rawdata)
-        self._remove_nans(regridded_data)
+        data = self.raw()
+
+        # Affine transformation matrix from current grid to new grid
+        tmatrix = np.dot(np.linalg.inv(grid.affine), self.grid.affine)
+        reorder, flip, tmatrix = self.grid._simplify_transforms(tmatrix)
+
+        # Perform the flips and transpositions which simplify the transformation and
+        # may avoid the need for an affine transformation, or make it a simple scaling
+        if len(flip) != 0:
+            for d in flip:
+                data = np.flip(data, d)
+
+        if reorder != range(3):
+            if data.ndim == 4:
+                reorder = reorder + [3]
+            data = np.transpose(data, reorder)
+
+        if not IS_IDENTITY(tmatrix):
+            # We were not able to reduce the transformation down to flips/transpositions
+            # so we will need an affine transformation
+            # scipy requires the out->in transform so invert our in->out transform
+            tmatrix = np.linalg.inv(tmatrix)
+            affine = tmatrix[:3, :3]
+            offset = list(tmatrix[:3, 3])
+            output_shape = self.grid[direction].shape[:]
+            if data.ndim == 4:
+                # Make 4D affine with identity transform in 4th dimension
+                affine = np.append(affine, [[0, 0, 0]], 0)
+                affine = np.append(affine, [[0], [0], [0], [1]], 1)
+                offset.append(0)
+                output_shape.append(data.shape[3])
+
+            if IS_DIAGONAL(affine):
+                # The transformation is diagonal, so use faster sequence mode
+                affine = np.diagonal(affine)
+            #debug("WARNING: affine_transform: ")
+            #debug(affine)
+            #debug("Offset = ", offset)
+            #debug("Input shape=", data.shape, data.min(), data.max())
+            #debug("Output shape=", output_shape)
+            data = scipy.ndimage.affine_transform(data, affine, offset=offset,
+                                                  output_shape=output_shape, order=0)
+
+        self._remove_nans(data)
 
         if self.roi:
             if regridded_data.min() < 0 or regridded_data.max() > 2**32:
                 raise QpException("ROIs must contain values between 0 and 2**32")
             if not np.equal(np.mod(regridded_data, 1), 0).any():
                 raise QpException("ROIs must contain integers only")
-            regridded_data = regridded_data.astype(np.int32)
+            data = data.astype(np.int32)
 
         from quantiphyse.volumes.load_save import NumpyData
-        return NumpyData(data=regridded_data, grid=grid, name=self.name + "_resampled", roi=self.roi)
+        return NumpyData(data=data, grid=grid, name=self.name + "_resampled", roi=self.roi)
 
     def slice_data(self, plane, vol=0):
         """
@@ -562,11 +513,8 @@ class QpData(object):
         #debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
         #debug("OrthoSlice: plane n: %s" % str(plane.normal))
 
-        #trans = Transform(plane, self.grid)
-        #data_origin = trans.transform_position((0, 0, 0))
-        #data_normal = trans.transform_direction((0, 0, 1))
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
-        data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane))
+        data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
         data_naxis = np.argmax(np.absolute(data_normal))
 
         #debug("OrthoSlice: data origin: %s" % str(data_origin))
@@ -584,18 +532,18 @@ class QpData(object):
             slice_shape.append(rawdata.shape[ax])
 
         #debug("OrthoSlice: data b: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
-        trans2 = Transform(self.grid, plane)
         trans_v = np.array([
-            trans2.transform_direction(slice_basis[0]),
-            trans2.transform_direction(slice_basis[1])
+            np.array(self.grid.grid_to_grid(slice_basis[0], to_grid=plane, direction=True)),
+            np.array(self.grid.grid_to_grid(slice_basis[1], to_grid=plane, direction=True)),
         ])
+
         trans_v = np.delete(trans_v, 2, 1)
         #debug("OrthoSlice: trans matrix: %s" % (str(trans_v)))
         slice_origin = [0, 0, 0]
         slice_origin[data_naxis] = np.dot(data_origin, data_normal) / data_normal[data_naxis]
         data_offset = data_origin - slice_origin + 0.5
         #debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
-        offset = -trans2.transform_direction(data_offset)[:2]
+        offset = -np.array(self.grid.grid_to_grid(data_offset, to_grid=plane, direction=True))[:2]
         #debug("OrthoSlice: new plane offset: %s" % (str(offset)))
 
         ax1, sign1 = self._is_ortho_vector(slice_basis[0])
