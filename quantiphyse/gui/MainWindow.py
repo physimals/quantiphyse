@@ -363,7 +363,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/v0.4/", QtCore.QUrl.TolerantMode))
 
     def show_about(self):
         text = """

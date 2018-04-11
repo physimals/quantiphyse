@@ -150,7 +150,7 @@ class HelpButton(QtGui.QPushButton):
     """
     A button for online help
     """
-    def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
+    def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/v0.4/'):
 
         super(HelpButton, self).__init__(parent)
 
