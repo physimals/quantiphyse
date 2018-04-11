@@ -17,7 +17,7 @@ from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  QpException
+from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  show_help, QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -260,8 +260,8 @@ class QuickWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
-
+        show_help()
+        
     def show_about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>

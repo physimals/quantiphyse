@@ -67,24 +67,6 @@ def set_local_file_path():
 
     debug("Local directory: ", LOCAL_FILE_PATH)
 
-def get_icon(name, dir=None):
-    """
-    Get path to the named icon
-    """
-    global LOCAL_FILE_PATH
-    name, extension = os.path.splitext(name)
-    if extension == "":
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            extension = ".png"
-        else:
-            extension = ".svg"
-    tries = []
-    if dir is not None: 
-        tries.append(os.path.join(dir, "%s%s" % (name, extension)))
-    tries.append(os.path.join(LOCAL_FILE_PATH, "icons", "%s%s" % (name, extension)))
-    for t in tries:
-        if os.path.isfile(t): return t
-
 def get_local_file(name, loc=None):
     """
     Get path to a file relative to the main Quantiphyse folder
@@ -107,6 +89,24 @@ def local_file_from_drop_url(url):
     else:
         return str(url.toLocalFile())
 
+def get_icon(name, dir=None):
+    """
+    Get path to the named icon
+    """
+    global LOCAL_FILE_PATH
+    name, extension = os.path.splitext(name)
+    if extension == "":
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            extension = ".png"
+        else:
+            extension = ".svg"
+    tries = []
+    if dir is not None: 
+        tries.append(os.path.join(dir, "%s%s" % (name, extension)))
+    tries.append(os.path.join(LOCAL_FILE_PATH, "icons", "%s%s" % (name, extension)))
+    for t in tries:
+        if os.path.isfile(t): return t
+
 def get_lib_fname(name):
     """ Get file name for named shared library on current platform """
     if sys.platform.startswith("win"):
@@ -122,6 +122,12 @@ def get_local_shlib(name, loc):
     """
     return get_local_file(get_lib_fname(name), loc)
     
+def show_help(section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
+    if section != "" and not section.endswith(".html") and not section.endswith("/"): 
+        section += ".html"
+    link = base + section
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl(link, QtCore.QUrl.TolerantMode))
+
 def load_matrix(filename):
     with open(filename, "r") as f:
         return text_to_matrix(f.read())

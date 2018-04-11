@@ -12,7 +12,7 @@ import traceback
 from PySide import QtGui, QtCore
 
 from quantiphyse.processes import Process
-from quantiphyse.utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url, QpException
+from quantiphyse.utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help
 from quantiphyse.data import save
 
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
@@ -150,28 +150,19 @@ class HelpButton(QtGui.QPushButton):
     """
     A button for online help
     """
-    def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
-
+    def __init__(self, parent, section=""):
         super(HelpButton, self).__init__(parent)
-
-        if section != "" and not section.endswith(".html"): section += ".html"
-        self.link = base + section
+        self.section = section
         self.setToolTip("Online Help")
 
         icon = QtGui.QIcon(get_icon("question-mark"))
         self.setIcon(icon)
         self.setIconSize(QtCore.QSize(14, 14))
+        self.clicked.connect(self._help_clicked)
 
-        self.clicked.connect(self.click_link)
-
-    def click_link(self):
-        """
-        Provide a clickable link to help files
-
-        :return:
-        """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl(self.link, QtCore.QUrl.TolerantMode))
-
+    def _help_clicked(self):
+        show_help(self.section)
+        
 class BatchButton(QtGui.QPushButton):
     """
     A button which displays the batch file code for the current analysis widget
