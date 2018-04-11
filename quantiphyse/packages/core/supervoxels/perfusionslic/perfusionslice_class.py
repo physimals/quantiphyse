@@ -69,12 +69,8 @@ class PerfSLIC(object):
         # ~~~~~~~~~~~~~~~~~~~~~~ 2) Feature extraction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         self.n_components = n_components
-        self.fe = PcaFeatReduce(self.img1)
-        self.feat1_image, _ = self.fe.get_training_features(opt_normdata=1,
-                                                            opt_normimage=normalise_input_image,
-                                                            feature_volume=True,
-                                                            n_components=self.n_components,
-                                                            norm_type=norm_type)
+        self.fe = PcaFeatReduce(n_components=self.n_components, norm_modes=True, norm_input=normalise_input_image, norm_type=norm_type)
+        self.feat1_image = self.fe.get_training_features(self.img1, feature_volume=True)
 
     def get_component(self, comp_choice):
         """

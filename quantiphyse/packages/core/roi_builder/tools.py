@@ -308,8 +308,8 @@ class WalkerTool(Tool):
         arr = data.raw()
         if arr.ndim > 3:
             # Reduce 4D data to PCA modes
-            Pfeat = PcaFeatReduce(arr)
-            arr, labels1 = Pfeat.get_training_features(feature_volume=True, n_components=5)
+            Pfeat = PcaFeatReduce(n_components=5)
+            arr, _ = Pfeat.get_training_features(arr, feature_volume=True)
             kwargs["multichannel"] = True
         else:
             # Normalize data

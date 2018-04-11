@@ -31,9 +31,8 @@ class SupervoxelsProcess(Process):
         img = img - np.tile(np.expand_dims(baseline, axis=-1), (1, 1, 1, img.shape[-1]))
         
         # Run PCA feature extraction
-        fe = PcaFeatReduce(img)
-        feat_image, _ = fe.get_training_features(opt_normdata=True, opt_normimage=normalise_input_image,
-                                                 feature_volume=True, n_components=ncomp, norm_type=norm_type)
+        fe = PcaFeatReduce(n_components=ncomp, norm_modes=True, norm_input=normalise_input_image, norm_type=norm_type)
+        feat_image = fe.get_training_features(img, feature_volume=True)
         return feat_image
 
     def run(self, options):
