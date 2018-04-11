@@ -968,9 +968,7 @@ class RunBox(QtGui.QGroupBox):
             if status == Process.SUCCEEDED:
                 if self.save_option and self.save_cb.isChecked():
                     save_folder = self.save_folder_edit.text()   
-                    data_to_save = []
-                    for o in result:
-                        if len(o.data) > 0: data_to_save = o.data.keys()
+                    data_to_save = self.process.output_data_items()
                     debug("Data to save: ", data_to_save)    
                     for d in data_to_save:
                         save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"), self.process.ivm.save_grid)
