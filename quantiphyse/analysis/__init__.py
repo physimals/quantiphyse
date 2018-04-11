@@ -125,12 +125,22 @@ class Process(QtCore.QObject):
         return roidata
 
     def run(self, options):
-        """ Override to run the process """
+        """ 
+        Override to run the process 
+
+        :param options: Dictionary of string : value for process options
+        """
         pass
+
+    def output_data_items(self):
+        """
+        :return: a list of data item names that were output
+        """
+        return []
 
 class BackgroundProcess(Process):
     """
-    A serial (non parallelized) asynchronous process
+    An asynchronous background process
     """
 
     def __init__(self, ivm, fn, **kwargs):
