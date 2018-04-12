@@ -64,7 +64,6 @@ class PcaFeatReduce(object):
         """
         
         # Variables
-        self.reduced_data = None
         self.pca = PCA(n_components=n_components)
         self.norm_modes = norm_modes
         self.norm_input = norm_input
@@ -135,11 +134,10 @@ class PcaFeatReduce(object):
         
         :return: Increasing sequence of numbers between 0 and 1 
         """ 
-        return [np.sum(self.pca.explained_variance_ratio_[:n]) 
+        return [np.sum(self.pca.explained_variance_ratio_[:n+1]) 
                 for n in range(self.pca.n_components_)]
 
     def _mask(self, data, roi):
-        data = np.array(data, dtype=np.float32)
         if roi is None:
             roi = np.ones(data.shape[0:-1], dtype=bool)
         else:
