@@ -843,11 +843,12 @@ class Citation(QtGui.QWidget):
         webbrowser.open(url, new=0, autoraise=True)
 
 class OptionsButton(QtGui.QPushButton):
-    def __init__(self, widget):
+    def __init__(self, widget=None):
         QtGui.QPushButton.__init__(self)
         self.setIcon(QtGui.QIcon(get_icon("options.png")))
         self.setIconSize(QtCore.QSize(14, 14))
-        self.clicked.connect(widget.show_options)
+        if widget:
+            self.clicked.connect(widget.show_options)
 
 class TitleWidget(QtGui.QWidget):
     def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False):
@@ -1063,4 +1064,3 @@ class OrderListButtons(QtGui.QVBoxLayout):
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
         self.addStretch(1)
-        
