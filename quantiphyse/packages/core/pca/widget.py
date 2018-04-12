@@ -7,6 +7,8 @@ Copyright (c) 2013-2018 University of Oxford
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.gui.plot import Plot
+from quantiphyse.utils import sf
 
 from .process import PcaProcess
     
@@ -58,7 +60,21 @@ class PcaWidget(QpWidget):
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        vbox.addStretch(1) 
+        self.plot = Plot(qpo=None, parent=self, title="PCA modes")
+
+        self.variance_model = QtGui.QStandardItemModel()
+        variance_table = QtGui.QTableView()
+        variance_table.verticalHeader().hide()
+        variance_table.setModel(self.variance_model)
+
+        tabs = QtGui.QTabWidget()
+        tabs.addTab(self.plot, "PCA modes")
+        tabs.addTab(variance_table, "Explained variance")
+        tabs.setCurrentWidget(self.plot)
+        vbox.addWidget(tabs)
+
+        vbox.addStretch(1)
+
         self._data_changed()  
     
     def _data_changed(self):
@@ -74,3 +90,24 @@ class PcaWidget(QpWidget):
     def run(self):
         process = PcaProcess(self.ivm)
         process.run(self.batch_options()[1])
+        self._update_plot(process)
+        self._update_table(process)
+
+    def _update_plot(self, process):
+        self.plot.clear()
+        for idx, mode in enumerate(process.pca_modes):
+            self.plot.add_line(name="Mode %i" % (idx+1), values=mode)
+        self.plot.add_line(name="Mean", values=process.mean, line_col=(255, 0, 0), line_width=3.0)
+
+    def _update_table(self, process):
+        self.variance_model.clear()
+        self.variance_model.setHorizontalHeaderItem(0, QtGui.QStandardItem("PCA mode"))
+        self.variance_model.setHorizontalHeaderItem(1, QtGui.QStandardItem("Variance explained"))
+        self.variance_model.setHorizontalHeaderItem(2, QtGui.QStandardItem("Cumulative"))
+        
+        cumulative = 0
+        for idx, variance in enumerate(process.explained_variance):
+            cumulative += variance
+            self.variance_model.setItem(idx, 0, QtGui.QStandardItem("Mode %i" % (idx+1)))
+            self.variance_model.setItem(idx, 1, QtGui.QStandardItem(sf(variance)))
+            self.variance_model.setItem(idx, 2, QtGui.QStandardItem(sf(cumulative)))
