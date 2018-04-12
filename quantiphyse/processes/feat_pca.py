@@ -10,25 +10,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from quantiphyse.utils import QpException, debug
-
-from . import image_normalisation as inorm
-
-def _normalise_data(data, norm_type='perc'):
-    """
-    Normalise image data
-    """
-    image_norm = inorm.ImNorm(data)
-    if norm_type == 'perc':
-        image_norm.scale_percentile()
-        image_norm.offset_time()
-    elif norm_type == 'max':
-        image_norm.scale_max()
-    else:
-        raise ValueError('Scaling type does not exist')
-
-    image_norm.smooth()
-    #image_norm.scale_indv()
-    return image_norm.get_image()
+from . import normalisation as norm
 
 def _normalise_modes(data):
     """
@@ -55,6 +37,8 @@ def _flat_data_to_image(data, roi):
 class PcaFeatReduce(object):
     """
     Extract PCA features from 4D image data
+
+    Thin wrapper around sklearn.decomposition.PCA
     """
 
     def __init__(self, n_components, norm_modes=True, norm_input=False, norm_type='perc'):
@@ -90,7 +74,10 @@ class PcaFeatReduce(object):
 
         if self.norm_modes:
             debug("Normalising PCA modes between 0 and 1")
-            reduced_data = _normalise_modes(reduced_data)
+            print("Reduced data shape=", reduced_data.shape)
+            reduced_data = norm.normalise(reduced_data, "indiv")
+            print("Reduced data shape2=", reduced_data.shape)
+            #reduced_data = _normalise_modes(reduced_data)
 
         if not feature_volume:
             return reduced_data
@@ -121,21 +108,42 @@ class PcaFeatReduce(object):
         # Scaling features
         if self.norm_modes:
             debug("Normalising PCA modes")
-            reduced_data = _normalise_modes(reduced_data)
+            reduced_data = norm.normalise(reduced_data, "indiv")
+            #reduced_data = _normalise_modes(reduced_data)
 
         if not feature_volume:
             return reduced_data
         
         return _flat_data_to_image(reduced_data, roi)
 
-    def explained_variance(self):
+    def explained_variance(self, cumulative=False):
         """
         Return the variance explained by including each of the modes cumulatively
         
-        :return: Increasing sequence of numbers between 0 and 1 
+        :param cumulative: If True, variance explained will be cumulative (i.e.
+                           variance explained by all modes up to and including each
+                           mode)
+        :return: Sequence of numbers giving variance explained for each component. 
         """ 
-        return [np.sum(self.pca.explained_variance_ratio_[:n+1]) 
-                for n in range(self.pca.n_components_)]
+        if cumulative:
+            return [np.sum(self.pca.explained_variance_ratio_[:n+1]) 
+                    for n in range(self.pca.n_components_)]
+        else:
+            return self.pca.explained_variance_ratio_
+
+    def modes(self):
+        """
+        :return: Fitted PCA modes
+        """
+        #return norm.normalise(self.pca.components_, "indiv")
+        return [comp + self.pca.mean_ for comp in self.pca.components_]
+
+    def mean(self):
+        """
+        :return: Training data mean
+        """
+        #return np.squeeze(norm.normalise(np.expand_dims(self.pca.mean_, axis=0), "indiv"))
+        return self.pca.mean_
 
     def _mask(self, data, roi):
         if roi is None:
@@ -145,6 +153,6 @@ class PcaFeatReduce(object):
         data_inmask = data[roi]
 
         if self.norm_input:
-            data_inmask = _normalise_data(data_inmask, self.norm_type)
+            data_inmask = norm.normalise(data_inmask, self.norm_type)
         return data_inmask, roi
     
