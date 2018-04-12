@@ -9,10 +9,9 @@ from __future__ import division, print_function, absolute_import
 import time
 import numpy as np
 import sklearn.cluster as cl
-from sklearn.decomposition import PCA
 
 from quantiphyse.data import NumpyData
-from quantiphyse.processes import Process
+from quantiphyse.processes import Process, normalisation, PCA
 from quantiphyse.utils import QpException
 
 class KMeansProcess(Process):
@@ -39,27 +38,17 @@ class KMeansProcess(Process):
         if data.nvols > 1:
             # Do PCA reduction
             norm_data = options.pop('norm-data', True)
+            norm_type = options.pop('norm-type', "sigenh")
             n_pca = options.pop('n-pca', 5)
             reduction = options.pop('reduction', 'pca')
 
-            # Normalisation: The first 3 volumes (if present) are averaged to give the baseline
-            baseline = np.mean(data.raw()[:, :, :, :min(3, data.nvols)], axis=-1)
-            baseline_4d = np.expand_dims(baseline[mask], axis=-1)
-            kmeans_data = kmeans_data / (baseline_4d + 0.001) - 1
-
             if reduction == "pca":
                 self.log += "Using PCA dimensionality reduction"
-                pca = PCA(n_components=n_pca)
-                kmeans_data = pca.fit_transform(kmeans_data)
-
-                if norm_data:
-                    self.log += "Normalising PCA modes"
-                    min1 = np.min(kmeans_data, axis=0)
-                    kmeans_data = kmeans_data - np.tile(np.expand_dims(min1, axis=0),
-                                                        (kmeans_data.shape[0], 1))
-                    max1 = np.max(kmeans_data, axis=0)
-                    kmeans_data = kmeans_data / np.tile(np.expand_dims(max1, axis=0),
-                                                        (kmeans_data.shape[0], 1))
+                pca = PCA(n_components=n_pca, norm_input=True, norm_type=norm_type,
+                          norm_modes=norm_data)
+                kmeans_data = pca.get_training_features(kmeans_data)
+            else:
+                raise QpException("Unknown reduction method: %s" % reduction)
         else:
             kmeans_data = kmeans_data[:, np.newaxis]
 
