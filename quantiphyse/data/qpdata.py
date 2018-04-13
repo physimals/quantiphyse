@@ -43,15 +43,16 @@ def is_identity(mat):
     """
     return np.all(np.abs(mat - np.identity(mat.shape[0])) < EQ_TOL)
 
-def is_ortho_vector(vec):
+def is_ortho_vector(vec, shape=1):
     """
     Determine if a vector has a component in only one direction
 
     :return: Tuple of axis, sign if vector is ortho, None, None otherwise
     """
+    tol = EQ_TOL / shape
     mod = np.linalg.norm(vec)
     for ax, v in enumerate(vec):
-        if abs(abs(v/mod)-1) < EQ_TOL:
+        if abs(abs(v/mod)-1) < tol:
             return ax, math.copysign(1, v)
     return None, None
 
@@ -530,47 +531,37 @@ class QpData(object):
         """
         rawdata = self.volume(vol)
 
-        #debug("OrthoSlice: plane origin: %s" % str(plane.origin))
-        #debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
-        #debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
-        #debug("OrthoSlice: plane n: %s" % str(plane.normal))
-
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
         data_naxis = np.argmax(np.absolute(data_normal))
 
-        #debug("OrthoSlice: data origin: %s" % str(data_origin))
-        #debug("OrthoSlice: data n: %s" % str(data_normal))
-        #debug("OrthoSlice: data naxis: %i" % data_naxis)
-
+        data_scaled_normal = np.array([data_normal[idx] * self.grid.spacing[idx] * self.grid.spacing[idx] for idx in range(3)])
+        
         data_axes = range(3)
         del data_axes[data_naxis]
         slice_basis, slice_shape = [], []
         for ax in data_axes:
             vec = [0, 0, 0]
             vec[ax] = 1
-            vec[data_naxis] = -(data_normal[ax] / data_normal[data_naxis])
+            vec[data_naxis] = -(data_scaled_normal[ax] / data_scaled_normal[data_naxis])
             slice_basis.append(vec)
             slice_shape.append(rawdata.shape[ax])
 
-        #debug("OrthoSlice: data b: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
         trans_v = np.array([
             np.array(self.grid.grid_to_grid(slice_basis[0], to_grid=plane, direction=True)),
             np.array(self.grid.grid_to_grid(slice_basis[1], to_grid=plane, direction=True)),
         ])
 
         trans_v = np.delete(trans_v, 2, 1)
-        #debug("OrthoSlice: trans matrix: %s" % (str(trans_v)))
         slice_origin = [0, 0, 0]
-        slice_origin[data_naxis] = np.dot(data_origin, data_normal) / data_normal[data_naxis]
+        slice_origin[data_naxis] = np.dot(data_origin, data_scaled_normal) / data_scaled_normal[data_naxis]
         data_offset = data_origin - slice_origin + 0.5
-        #debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
         offset = -np.array(self.grid.grid_to_grid(data_offset, to_grid=plane, direction=True))[:2]
-        #debug("OrthoSlice: new plane offset: %s" % (str(offset)))
 
-        ax1, sign1 = is_ortho_vector(slice_basis[0])
-        ax2, sign2 = is_ortho_vector(slice_basis[1])
+        ax1, sign1 = is_ortho_vector(slice_basis[0], slice_shape[0])
+        ax2, sign2 = is_ortho_vector(slice_basis[1], slice_shape[0])
         if ax1 is not None and ax2 is not None:
+            #debug("\nOrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
             slices = [None, None, None]
             slices[ax1] = self._get_slice(rawdata.shape[ax1], sign1)
             slices[ax2] = self._get_slice(rawdata.shape[ax2], sign2)
@@ -587,10 +578,35 @@ class QpData(object):
                 sdata = np.zeros(slice_shape)
                 smask = np.zeros(slice_shape)
         else:
-            debug("Full affine slice")
-            sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3))
-            mask = np.ones(rawdata.shape)
-            smask = pg.affineSlice(mask, slice_shape, data_origin, slice_basis, range(3))
+            debug("\nFull affine slice")
+
+            #debug("OrthoSlice: plane origin: %s" % str(plane.origin))
+            #debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
+            #debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
+            #debug("OrthoSlice: plane n: %s" % str(plane.normal))
+            #debug("OrthoSlice: Plane affine")
+            #debug(plane.affine)
+
+            #debug("OrthoSlice: data origin: %s" % str(data_origin))
+            #debug("OrthoSlice: data n: %s" % str(data_normal))
+            #debug("OrthoSlice: data naxis: %i" % data_naxis)
+            #debug("OrthoSlice: data affine")
+            #debug(self.grid.affine)
+            
+            #debug("OrthoSlice: new normal=", data_scaled_normal)
+            #debug("OrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
+            #debug("OrthoSlice: trans matrix:\n%s" % (str(trans_v)))
+            #debug("OrthoSlice: slice origin=", slice_origin)
+            #debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
+            #debug("OrthoSlice: new plane offset: %s" % (str(offset)))
+            
+            #debug("Origin: ", slice_origin)
+            #debug("Basis", slice_basis)
+            #debug("Shape", slice_shape)
+            sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=0)
+            #mask = np.ones(rawdata.shape)
+            #smask = pg.affineSlice(mask, slice_shape, data_origin, slice_basis, range(3))
+            debug("Done affine slice")
 
         #debug(data_naxis, sdata)
         return sdata, trans_v, offset
