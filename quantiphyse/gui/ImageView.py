@@ -45,7 +45,9 @@ class OrthoView(pg.GraphicsView):
         self.dragging = False
         self.focus_pos = [0, 0, 0, 0]
         self.slice_plane = None
-        self.slice_vol = 0
+        self.slice_vol = -1
+        self.slice_z  = -1
+        self.force_redraw = True
         self._arrow_items = []
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
@@ -84,19 +86,20 @@ class OrthoView(pg.GraphicsView):
 
         self.ivl.sig_focus_changed.connect(self.update)
         self.ivl.sig_arrows_changed.connect(self._arrows_changed)
-        self.ivl.main_data_view.sig_redraw.connect(self.update)
-        self.ivl.current_data_view.sig_redraw.connect(self.update)
-        self.ivl.current_roi_view.sig_redraw.connect(self.update)
+        self.ivl.main_data_view.sig_redraw.connect(self._update_slices)
+        self.ivl.current_data_view.sig_redraw.connect(self._update_slices)
+        self.ivl.current_roi_view.sig_redraw.connect(self._update_slices)
 
     def update(self):
         """
         Update the ortho view
         """
+        if not self.isVisible():
+            return
+
         # Get the current position and slice
         self.focus_pos = self.ivl.focus()
-        self.slice_plane = OrthoSlice(self.ivl.grid, self.zaxis, self.focus_pos[self.zaxis])
-        self.slice_vol = self.focus_pos[3]
-
+        
         # Adjust axis scaling depending on whether voxel size scaling is enabled
         if self.ivl.opts.size_scaling == self.ivl.opts.SCALE_VOXELS:
             spacing = self.ivl.grid.spacing
@@ -107,9 +110,19 @@ class OrthoView(pg.GraphicsView):
         self._update_labels()
         self._update_crosshairs()
         self._update_arrows()
-        self.ivl.main_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
-        self.ivl.current_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
-        self.ivl.current_roi_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+
+        if self.force_redraw or self.focus_pos[self.zaxis] != self.slice_z or self.slice_vol != self.focus_pos[3]:
+            self.slice_z = self.focus_pos[self.zaxis]
+            self.slice_vol = self.focus_pos[3]
+            self.slice_plane = OrthoSlice(self.ivl.grid, self.zaxis, self.focus_pos[self.zaxis])
+            self.force_redraw = False
+            self.ivl.main_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+            self.ivl.current_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+            self.ivl.current_roi_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+
+    def _update_slices(self):
+        self.force_redraw = True
+        self.update()
 
     def _update_labels(self):
         for l in self.labels:
@@ -608,8 +621,9 @@ class ImageView(QtGui.QSplitter):
             self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
             self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
             self.ortho_views[o1].setVisible(True)
+            self.ortho_views[o1].update()
             self.ortho_views[o2].setVisible(True)
-            self.ortho_views[win].setVisible(True)
+            self.ortho_views[o2].update()
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
