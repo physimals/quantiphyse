@@ -627,8 +627,8 @@ class ImageView(QtGui.QSplitter):
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
-        self.current_roi_view.opts["z_value"] = img.setZValue(z_roi)
-        self.current_data_view.opts["z_value"] = img.setZValue(1-z_roi)
+        self.current_roi_view.set("z_value", z_roi)
+        self.current_data_view.set("z_value", 1-z_roi)
 
     def _main_data_changed(self, data):
         if data is not None:

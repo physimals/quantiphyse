@@ -126,7 +126,7 @@ class ImageDataView(DataView):
             "z_value" : -1,
         }
         self.opts = dict(self.default_options)
-        self.redraw_options += ["visible", "roi_only"]
+        self.redraw_options += ["visible", "roi_only", "z_value"]
         self.imgs = {}
         self.histogram = None
         self.mask = None
@@ -263,7 +263,7 @@ class RoiView(ImageDataView):
         })
         self._init_opts()
         self.contours = {}
-        self.redraw_options += ["shade", "contour"]
+        self.redraw_options += ["shade", "contour", "z_value"]
 
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
         self.ivm.sig_all_rois.connect(self._cleanup_cache)
