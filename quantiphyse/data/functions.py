@@ -11,11 +11,16 @@ import numpy as np
 import decimal, re
 import ctypes
 import sys, struct
-from .python2_3 import asUnicode, basestring
-from .Qt import QtGui, QtCore, USE_PYSIDE
-from . import getConfigOption, setConfigOptions
-from . import debug
-from .metaarray import MetaArray
+
+# THIS CODE IS COPIED DIRECTLY FROM THE LATEST PYQTGRAPH GITHUB. THE RELATIVE
+# IMPORTS BELOW HAVE BEEN CHANGED TO POINT TO THE INSTALLED PYQTGRAPH AND
+# A MINOR FIX HAS BEEN APPLIED TO affineSlice / interpolateArray TO USE THE
+# cval ARGUMENT.
+from pyqtgraph.python2_3 import asUnicode, basestring
+from pyqtgraph.Qt import QtGui, QtCore, USE_PYSIDE
+from pyqtgraph import getConfigOption, setConfigOptions
+from pyqtgraph import debug
+from pyqtgraph.metaarray import MetaArray
 
 
 Colors = {
@@ -582,7 +587,7 @@ def affineSlice(data, shape, origin, vectors, axes, order=1, returnCoords=False,
         # map_coordinates expects the indexes as the first axis, whereas
         # interpolateArray expects indexes at the last axis. 
         tr = tuple(range(1, x.ndim)) + (0,)
-        output = interpolateArray(data, x.transpose(tr), order=order)
+        output = interpolateArray(data, x.transpose(tr), order=order, **kargs)
     
     tr = list(range(output.ndim))
     trb = []
@@ -600,7 +605,7 @@ def affineSlice(data, shape, origin, vectors, axes, order=1, returnCoords=False,
         return output
 
 
-def interpolateArray(data, x, default=0.0, order=1):
+def interpolateArray(data, x, default=0.0, order=1, **kargs):
     """
     N-dimensional interpolation similar to scipy.ndimage.map_coordinates.
     
@@ -664,6 +669,7 @@ def interpolateArray(data, x, default=0.0, order=1):
     if order not in (0, 1):
         raise ValueError("interpolateArray requires order=0 or 1 (got %s)" % order)
 
+    default = kargs.get("cval", default)
     prof = debug.Profiler()
 
     nd = data.ndim
