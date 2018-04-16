@@ -21,7 +21,7 @@ import math
 
 import numpy as np
 import scipy
-import pyqtgraph as pg
+from . import functions as pg
 
 from quantiphyse.utils import debug, warn, sf, QpException
 
@@ -603,13 +603,20 @@ class QpData(object):
             #debug("Origin: ", slice_origin)
             #debug("Basis", slice_basis)
             #debug("Shape", slice_shape)
-            sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=0)
-            #mask = np.ones(rawdata.shape)
-            #smask = pg.affineSlice(mask, slice_shape, data_origin, slice_basis, range(3))
+            if self.roi:
+                # Use nearest neighbour interpolation for ROIs
+                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=0)
+                smask = np.ones(sdata.shape)
+            else:
+                # Generate mask by flagging out of range data with value less than data minimum
+                dmin = np.min(rawdata)
+                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=1, mode='constant', cval=dmin-100)
+                smask = np.ones(sdata.shape)
+                smask[sdata < dmin] = 0
+                sdata[sdata < dmin] = 0
             debug("Done affine slice")
 
-        #debug(data_naxis, sdata)
-        return sdata, trans_v, offset
+        return sdata, smask, trans_v, offset
 
     def _get_slice(self, length, sign):
         if sign == 1:

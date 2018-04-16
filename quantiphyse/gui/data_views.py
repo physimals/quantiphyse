@@ -135,16 +135,16 @@ class ImageDataView(DataView):
         img = self._get_img(vb)
         self.update()
         if img.isVisible():
-            slicedata, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
+            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                               offset[0], offset[1]))
             img.setImage(slicedata, autoLevels=False)
 
             if self.mask is not None and self.opts["roi_only"]:
-                maskdata, _, _ = self.mask.slice_data(slice_plane)
-                img.mask = maskdata
+                maskdata, _, _, _ = self.mask.slice_data(slice_plane)
+                img.mask = np.logical_and(maskdata, slicemask)
             else:
-                img.mask = None
+                img.mask = slicemask
        
     def update(self):
         for img in self.imgs.values():
@@ -274,7 +274,7 @@ class RoiView(ImageDataView):
         self.update()
         n_contours = 0
         if self.data is not None:
-            slicedata, scale, offset = self.data.slice_data(slice_plane)
+            slicedata, _, scale, offset = self.data.slice_data(slice_plane)
             transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                          offset[0], offset[1])
 
