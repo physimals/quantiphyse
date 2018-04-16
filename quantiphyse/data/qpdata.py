@@ -521,13 +521,14 @@ class QpData(object):
         from quantiphyse.data import NumpyData
         return NumpyData(data=data, grid=grid, name=self.name + "_resampled", roi=self.roi)
 
-    def slice_data(self, plane, vol=0):
+    def slice_data(self, plane, vol=0, interp_order=0):
         """
         Extract a data slice in raw data resolution
 
         :param plane: OrthoSlice representing the slice to be extracted. Note that this
                       slice will not in general be defined on the same grid as the data
         :param vol: volume index for use if this is a 4D data set
+        :param interp_order: Order of interpolation for non-orthogonal slices
         """
         rawdata = self.volume(vol)
 
@@ -610,7 +611,8 @@ class QpData(object):
             else:
                 # Generate mask by flagging out of range data with value less than data minimum
                 dmin = np.min(rawdata)
-                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=1, mode='constant', cval=dmin-100)
+                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), 
+                                       order=interp_order, mode='constant', cval=dmin-100)
                 smask = np.ones(sdata.shape)
                 smask[sdata < dmin] = 0
                 sdata[sdata < dmin] = 0

@@ -124,9 +124,10 @@ class ImageDataView(DataView):
             "cmap" : "grey",
             "cmap_range" : None,
             "z_value" : -1,
+            "interp_order" : 0,
         }
         self.opts = dict(self.default_options)
-        self.redraw_options += ["visible", "roi_only", "z_value"]
+        self.redraw_options += ["visible", "roi_only", "z_value", "interp_order"]
         self.imgs = {}
         self.histogram = None
         self.mask = None
@@ -135,7 +136,7 @@ class ImageDataView(DataView):
         img = self._get_img(vb)
         self.update()
         if img.isVisible():
-            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol)
+            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol, interp_order=self.opts["interp_order"])
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                               offset[0], offset[1]))
             img.setImage(slicedata, autoLevels=False)
