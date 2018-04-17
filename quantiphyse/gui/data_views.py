@@ -294,7 +294,7 @@ class RoiView(ImageDataView):
 
                         contour = contours[n_contours]
                         contour.setTransform(transform)
-                        contour.setData(slicedata == val)
+                        contour.setData((slicedata == val).astype(np.int))
                         contour.setLevel(1)
                         contour.setPen(pg.mkPen(pencol, width=self.opts["outline_width"]))
                         n_contours += 1
