@@ -43,7 +43,6 @@ class SupervoxelsProcess(Process):
         sigma = options.pop('sigma', 1)
         recompute_seeds = options.pop('recompute-seeds', True)
         seed_type = options.get('seed-type', 'nrandom')
-        data_name = options.pop('data', None)
         roi_name = options.pop('roi', None)
         output_name = options.pop('output-name', "supervoxels")
         img = self.get_data(options)
