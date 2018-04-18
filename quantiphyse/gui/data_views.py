@@ -15,7 +15,7 @@ import pyqtgraph as pg
 
 from quantiphyse.utils import get_lut, get_pencol, debug, get_icon
 from quantiphyse.data import OrthoSlice, DataGrid
-from quantiphyse.gui.widgets import OptionsButton
+from quantiphyse.gui.widgets import OptionsButton, RoiCombo, OverlayCombo
 
 from .HistogramWidget import MultiImageHistogramWidget
 
@@ -335,7 +335,7 @@ class RoiViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = QtGui.QComboBox()
+        self.roi_combo = RoiCombo(self.ivm)
         grid.addWidget(self.roi_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.roi_view_combo = QtGui.QComboBox()
@@ -355,7 +355,6 @@ class RoiViewWidget(QtGui.QGroupBox):
         self.roi_combo.currentIndexChanged.connect(self._combo_changed)
         self.roi_view_combo.currentIndexChanged.connect(self._view_changed)
         self.roi_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self.ivm.sig_all_rois.connect(self._rois_changed)
         view.sig_view_changed.connect(self._update)
 
     def _update(self, view):
@@ -397,17 +396,6 @@ class RoiViewWidget(QtGui.QGroupBox):
         """ Set the ROI transparency """
         self.view.set("alpha", alpha)
 
-    def _rois_changed(self, rois):
-        """ Repopulate ROI combo, without sending signals """
-        try:
-            self.roi_combo.blockSignals(True)
-            self.roi_combo.clear()
-            for roi in rois:
-                self.roi_combo.addItem(roi)
-            self.roi_combo.updateGeometry()
-        finally:
-            self.roi_combo.blockSignals(False)
-
 class OverlayViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
     def __init__(self, ivl, view):
@@ -420,7 +408,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = QtGui.QComboBox()
+        self.overlay_combo = OverlayCombo(self.ivm)
         grid.addWidget(self.overlay_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.ov_view_combo = QtGui.QComboBox()
@@ -458,7 +446,6 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
         self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
         self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self.ivm.sig_all_data.connect(self._data_changed)
         self.view.sig_view_changed.connect(self._update)
 
     def _update(self, view):
@@ -528,17 +515,6 @@ class OverlayViewWidget(QtGui.QGroupBox):
     def _show_ov_levels(self):
         dlg = LevelsDialog(self, self.ivl, self.ivm, self.view)
         dlg.exec_()
-
-    def _data_changed(self, data):
-        """ Repopulate data combo, without sending signals"""
-        try:
-            self.overlay_combo.blockSignals(True)
-            self.overlay_combo.clear()
-            for ov in data:
-                self.overlay_combo.addItem(ov)
-            self.overlay_combo.updateGeometry()
-        finally:
-            self.overlay_combo.blockSignals(False)
 
 class LevelsDialog(QtGui.QDialog):
 
