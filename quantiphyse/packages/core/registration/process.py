@@ -5,8 +5,6 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import sys
-import os
-import traceback
 
 import numpy as np
 
@@ -25,7 +23,7 @@ def get_reg_method(method_name):
             return method
     return None
 
-def _run_reg(id, queue, method_name, options, regdata, refdata, voxel_sizes, warp_rois, ignore_idx=None):
+def _run_reg(worker_id, queue, method_name, options, regdata, refdata, voxel_sizes, warp_rois, ignore_idx=None):
     """
     Registration function for asynchronous process - used for moco and registration
     """
@@ -74,9 +72,9 @@ def _run_reg(id, queue, method_name, options, regdata, refdata, voxel_sizes, war
                 # FIXME this is not really right, need to do nearest-neighbour interpolation
                 warp_rois_out = np.around(warp_rois_out).astype(np.int)
             
-        return id, True, (regdata_out, warp_rois_out, log)
+        return worker_id, True, (regdata_out, warp_rois_out, log)
     except:
-        return id, False, sys.exc_info()[1]
+        return worker_id, False, sys.exc_info()[1]
 
 class RegProcess(BackgroundProcess):
     """
@@ -107,7 +105,6 @@ class RegProcess(BackgroundProcess):
         # TODO should not have to resample whole data to get single vol!
         self.grid = regdata.grid
         refdata = self.ivm.data[refdata_name].resample(self.grid)
-        self.ivm.add_data(refdata, name="temp", grid=self.grid)
         if refdata.nvols > 1:
             self.refvol = options.pop("ref-vol", "median")
             if self.refvol == "median":
@@ -150,7 +147,7 @@ class RegProcess(BackgroundProcess):
             options.pop(key)
 
         # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, options, regdata.raw(), refdata, self.grid.spacing, warp_rois])
+        self.start([self.method, options, regdata.raw(), refdata, self.grid.spacing, warp_rois])
 
     def timeout(self):
         if self.queue.empty(): return
