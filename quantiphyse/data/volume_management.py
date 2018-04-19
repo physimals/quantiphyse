@@ -139,9 +139,6 @@ class ImageVolumeManagement(QtCore.QObject):
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
 
-        # Set save grid if first to be loaded
-        self.save_grid = data.grid
-        
     def add_roi(self, roi, name=None, grid=None, make_current=False, signal=True):
         if isinstance(roi, np.ndarray):
             if grid is None or name is None:

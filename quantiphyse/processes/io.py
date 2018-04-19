@@ -75,7 +75,7 @@ class SaveProcess(Process):
 
     def run(self, options):
         # Note that output-grid is not a valid data name so will not clash
-        output_grid = self.ivm.save_grid
+        output_grid = None
         output_grid_name = options.pop("output-grid", None)
         if output_grid_name is not None:
             output_grid_data = self.ivm.data.get(output_grid_name, self.ivm.rois.get(output_grid_name, None))
@@ -125,7 +125,7 @@ class SaveAllExceptProcess(Process):
             try:
                 fname = os.path.join(self.outdir, "%s.nii" % name)
                 debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname, self.ivm.save_grid)
+                save(qpdata, fname)
             except:
                 warn("Failed to save %s" % name)
                 raise
@@ -136,7 +136,7 @@ class SaveAllExceptProcess(Process):
             try:
                 fname = os.path.join(self.outdir, "%s.nii" % name)
                 debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname, self.ivm.save_grid)
+                save(qpdata, fname)
             except:
                 warn("Failed to save %s" % name)
                 raise

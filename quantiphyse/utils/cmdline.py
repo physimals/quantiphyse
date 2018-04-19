@@ -38,10 +38,11 @@ class Script:
             pass
 
 class Workspace:
-    def __init__(self, ivm, workdir=None, path=[]):
+    def __init__(self, ivm, workdir=None, path=[], grid=None):
         print(ivm)
         self.ivm = ivm
         self.path = path
+        self.grid = grid
 
         if workdir is None:
             self.workdir = tempfile.mkdtemp(prefix="qp")
@@ -52,7 +53,7 @@ class Workspace:
 
     def add_data(self, data_name):
         fname = os.path.join(self.workdir, data_name)
-        save(self.ivm.data.get(data_name, self.ivm.rois.get(data_name)), fname)
+        save(self.ivm.data.get(data_name, self.ivm.rois.get(data_name)), fname, self.grid)
 
     def _find(self, cmd):
         """ 
@@ -165,6 +166,7 @@ class ExternalProgram:
         self.ivm = ivm
         self.cmd = self._find(cmd, path)
         self.workdir_istemp = False
+        self.grid = None
 
     def _find(self, cmd, path):
         """ 
@@ -190,9 +192,9 @@ class ExternalProgram:
 
         for d in data:
             if d in ivm.data:
-                save(ivm.data[d], os.path.join(path, "%s.nii.gz" % d), ivm.save_grid)
+                save(ivm.data[d], os.path.join(path, "%s.nii.gz" % d), self.grid)
             elif d in ivm.rois:
-                save(ivm.rois[d],  os.path.join(path, "%s.nii.gz" % d), ivm.save_grid)
+                save(ivm.rois[d],  os.path.join(path, "%s.nii.gz" % d), self.grid)
         return path, istemp
 
     def __call__(self, argline="", argdict={}, workdir=None, data=[], 

@@ -340,7 +340,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_data, fname, self.ivm.save_grid)
+                save(self.ivm.current_data, fname)
             else: # Cancelled
                 pass
 
@@ -353,7 +353,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_roi, fname, self.ivm.save_grid)
+                save(self.ivm.current_roi, fname)
             else: # Cancelled
                 pass
 
