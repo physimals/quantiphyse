@@ -679,12 +679,8 @@ class RoiAnalysisWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Roi Analysis</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(BatchButton(self))
-        hbox.addWidget(HelpButton(self))
-        layout.addLayout(hbox)
+        title = TitleWidget(self, help="roi_analysis")
+        layout.addWidget(title)
 
         info = QtGui.QLabel("<i><br>Calculate size and volume of an ROI<br></i>")
         info.setWordWrap(True)
