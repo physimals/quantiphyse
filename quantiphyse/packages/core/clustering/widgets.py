@@ -32,12 +32,8 @@ class ClusteringWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Data Clustering</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(BatchButton(self))
-        hbox.addWidget(HelpButton(self, "curve_cluster"))
-        layout.addLayout(hbox)
+        title = TitleWidget(self, help="cluster")
+        layout.addWidget(title)
         
         DESC = """
 <i>Performs clustering of 3D or 4D data using the K-means algorithm.

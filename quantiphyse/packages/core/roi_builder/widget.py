@@ -39,7 +39,7 @@ class RoiBuilderWidget(QpWidget):
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
         
-        title = TitleWidget(self, batch_btn=False)
+        title = TitleWidget(self, help="roibuilder", batch_btn=False)
         layout.addWidget(title)
 
         # Generic options

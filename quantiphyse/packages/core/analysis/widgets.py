@@ -755,6 +755,9 @@ class SimpleMathsWidget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
+        title = TitleWidget(self, help="simple_maths")
+        layout.addWidget(title)
+
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel('<font size="5">Simple Maths</font>'))
         hbox.addStretch(1)

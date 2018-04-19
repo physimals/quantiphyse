@@ -193,7 +193,7 @@ class T10Widget(QpWidget):
         layout = QtGui.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(TitleWidget(self))
+        layout.addWidget(TitleWidget(self, help="t1"))
        
         fabox = QtGui.QGroupBox()
         fabox.setTitle("Flip angle images")

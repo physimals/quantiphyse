@@ -23,7 +23,7 @@ class SmoothingWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self, title="Data Smoothing", subtitle="Smooth data using a Gaussian kernel")
+        title = TitleWidget(self, title="Data Smoothing", subtitle="Smooth data using a Gaussian kernel", help="smoothing")
         vbox.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()
