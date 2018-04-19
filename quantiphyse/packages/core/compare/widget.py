@@ -24,7 +24,7 @@ class CompareDataWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self, batch_btn=False)
+        title = TitleWidget(self, batch_btn=False, help="compare")
         vbox.addWidget(title)
 
         hbox = QtGui.QHBoxLayout()

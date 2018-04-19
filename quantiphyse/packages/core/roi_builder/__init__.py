@@ -15,7 +15,7 @@ from skimage.segmentation import random_walker
 from PySide import QtCore, QtGui
 
 from quantiphyse.gui.dialogs import error_dialog
-from quantiphyse.gui.widgets import QpWidget, HelpButton, OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.gui.widgets import QpWidget, HelpButton, OverlayCombo, RoiCombo, NumericOption, TitleWidget
 from quantiphyse.gui.ImageView import PickMode, DragMode
 from quantiphyse.utils import get_icon, debug
 from quantiphyse.analysis.feat_pca import PcaFeatReduce
@@ -352,12 +352,8 @@ class RoiBuilderWidget(QpWidget):
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
         
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("<font size=5>ROI Builder</font>"))
-        hbox.addStretch(1)
-        help_btn = HelpButton(self, "roi_builder")
-        hbox.addWidget(help_btn)
-        layout.addLayout(hbox)
+        title = TitleWidget(self, batch_btn=False, help="roibuilder")
+        layout.addWidget(title)
         
         desc = QtGui.QLabel(DESC)
         desc.setWordWrap(True)
