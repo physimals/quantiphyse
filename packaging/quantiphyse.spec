@@ -131,3 +131,9 @@ if sys.platform.startswith("darwin") and OSX_LIBPNG_HACK:
     if osx_bundle:
         dest = os.path.join(distdir, "quantiphyse.app/Contents/MacOS/")
         shutil.copy(libpng, dest)
+
+if sys.platform.startswith("linux"):
+    # Issue #83: Remove the libdrm library as it causes GL error on Ubuntu
+    libfile = os.path.join(distdir, "quantiphyse", "libdrm.so.2")
+    os.remove(libfile)
+
