@@ -7,13 +7,13 @@ Processing:
   - LoadData:
 
   # Clustering on 3D data
-  - KMeans3D:
+  - KMeans:
         data: testdata_3d
         n-clusters: 3
         output-name: test_clusters_3d
       
   # Clustering on 4D data
-  - KMeansPCA:
+  - KMeans:
         data: testdata_4d
         n-clusters: 4
         n-pca: 5
