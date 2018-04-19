@@ -447,7 +447,7 @@ class OrthoView(pg.GraphicsView):
         self.update_arrows()
 
     def _iso_prepare(self, arr, val):
-        return arr == val
+        return (arr == val).astype(np.int)
         out = arr.copy()
         for row in range(len(arr)):
             for col in range(len(arr[0])):
