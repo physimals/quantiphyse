@@ -952,6 +952,10 @@ class RunBox(QtGui.QGroupBox):
         # These should be set by the 'finished' CB but make sure in case it fails
         self.runBtn.setEnabled(True)
         self.cancelBtn.setEnabled(False)
+        if self.process is not None:
+            self.process.sig_finished.disconnect(self.finished)
+            self.process.sig_progress.disconnect(self.update_progress)
+            self.process = None
 
     def finished(self, status, result, log, exception):
         debug("Finished: ", status, result, len(log), exception)
@@ -972,9 +976,10 @@ class RunBox(QtGui.QGroupBox):
             elif exception is not None:
                 raise exception
         finally:
-            self.process.sig_finished.disconnect(self.finished)
-            self.process.sig_progress.disconnect(self.update_progress)
-            self.process = None
+            if self.process is not None:
+                self.process.sig_finished.disconnect(self.finished)
+                self.process.sig_progress.disconnect(self.update_progress)
+                self.process = None
             self.runBtn.setEnabled(True)
             self.logBtn.setEnabled(True)
             self.cancelBtn.setEnabled(False)
