@@ -66,20 +66,6 @@ class Process(QtCore.QObject):
       outdir - Output data folder if process needs to save data
     """
 
-    """ 
-    Signal may be emitted to track progress 
-
-    Argument should be between 0 and 1 and indicate degree of completion
-    """
-    sig_progress = QtCore.Signal(float)
-
-    """ 
-    Signal emitted when process finished 
-    
-    Arguments: (status, output, log, exception or None)
-    """
-    sig_finished = QtCore.Signal(int, list, str, object)
-
     NOTSTARTED = 0
     RUNNING = 1
     FAILED = 2
@@ -202,6 +188,27 @@ class BackgroundProcess(Process):
     An asynchronous background process
     """
 
+    """ 
+    Signal which may be emitted to track progress 
+
+    Argument should be between 0 and 1 and indicate degree of completion
+    """
+    sig_progress = QtCore.Signal(float)
+
+    """ 
+    Signal which will be emitted when process finishes
+    
+    Arguments: (status, log, if status not SUCCEEDED or CANCELLED, exception, otherwise object())
+    """
+    sig_finished = QtCore.Signal(int, str, object)
+
+    """ 
+    Signal which may be emitted when the process starts a new step
+    
+    Arguments is text description
+    """
+    sig_step = QtCore.Signal(str)
+
     def __init__(self, ivm, worker_fn, **kwargs):
         """
         :param ivm: ImageVolumeManagement object
@@ -228,7 +235,7 @@ class BackgroundProcess(Process):
         """
         Start background worker
         
-        This would normally called by run() after setting up the arguments to pass to the 
+        This would normally called by ``run()`` after setting up the arguments to pass to the 
         worker run function.
 
         :param args: Sequence of arguments to the worker run function. All must be pickleable objects
@@ -238,7 +245,6 @@ class BackgroundProcess(Process):
         self.status = Process.RUNNING
         if self._multiproc:
             self.workers = [_POOL.apply_async(self._worker_fn, worker_args, callback=self._worker_finished_cb)]
-            
             if self._sync:
                 self.workers[0].get()
             else:
@@ -277,13 +283,14 @@ class BackgroundProcess(Process):
                 traceback.print_exc(e)
                 warn("Error executing finished methods for process")
 
-            self.sig_finished.emit(self.status, self.output, self.log, self.exception)
+            self.sig_finished.emit(self.status, self.log, self.exception)
 
     def timeout(self):
         """
         Called every 1s while the process is running. 
         
-        Override to monitor progress of job via the queue and emit sig_progress
+        Override to monitor progress of job via the queue and emit 
+        sig_progress / sig_step as required
         """
         pass
 
@@ -330,7 +337,7 @@ class BackgroundProcess(Process):
             except Exception as e:
                 traceback.print_exc(e)
                 warn("Error executing finished methods for process")
-            self.sig_finished.emit(self.status, self.output, self.log, self.exception)
+            self.sig_finished.emit(self.status, self.log, self.exception)
 
 class ParallelProcess(BackgroundProcess):
     """
