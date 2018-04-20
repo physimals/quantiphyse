@@ -24,7 +24,7 @@ DESC = """
 Widget for creating test ROIs and basic manual segmentation
 """
 
-TOOLS = [CrosshairsTool(), PenTool(), WalkerTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool()]
+TOOLS = [CrosshairsTool(), PenTool(), WalkerTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool(), BucketTool()]
 
 class RoiBuilderWidget(QpWidget):
     """

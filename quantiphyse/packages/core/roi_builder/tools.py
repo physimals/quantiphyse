@@ -12,7 +12,7 @@ from skimage.segmentation import random_walker
 from PySide import QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption, NumericSlider
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.utils import debug
 from quantiphyse.processes.feat_pca import PcaFeatReduce
@@ -340,4 +340,85 @@ class WalkerTool(Tool):
         
         self.builder.add_to_roi(seg)
         self.init()
+             
+class BucketTool(Tool):
+    def __init__(self):
+        Tool.__init__(self, "Bucket", "2D or 3D flood fill with thresholding")
+        self.point = None
+
+    def interface(self):
+        grid  = Tool.interface(self)
+
+        #grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
+        #self.segmode_combo = QtGui.QComboBox()
+        #self.segmode_combo.addItem("Slice")
+        #self.segmode_combo.addItem("3D")
+        #self.segmode_combo.currentIndexChanged.connect(self._dims_changed)
+        #grid.addWidget(self.segmode_combo, 3, 1)
+
+        self.uthresh = NumericSlider("Upper threshold", grid, 4, 0, maxval=100, minval=0, default=50, hardmin=True)
+        self.uthresh.sig_changed.connect(self._update_roi)
+        self.lthresh = NumericSlider("Lower threshold", grid, 5, 0, maxval=100, minval=0, default=50, hardmin=True)
+        self.lthresh.sig_changed.connect(self._update_roi)
+
+        btn = QtGui.QPushButton("Add")
+        btn.clicked.connect(self._add)
+        grid.addWidget(btn, 6, 0)
+        btn = QtGui.QPushButton("Erase")
+        btn.clicked.connect(self._erase)
+        grid.addWidget(btn, 6, 1)
+        btn = QtGui.QPushButton("Mask")
+        btn.clicked.connect(self._mask)
+        grid.addWidget(btn, 7, 0)
+        btn = QtGui.QPushButton("Discard")
+        btn.clicked.connect(self.selected)
+        grid.addWidget(btn, 7, 1)
+        return grid
+
+    def init(self):
+        self.ivl.set_picker(PickMode.SINGLE)
+        self._point = None
+        if "_temp_bucket" in self.ivm.rois:
+            self.ivm.delete_roi("_temp_bucket")
+
+    def selected(self):
+        self.ivl.sig_selection_changed.connect(self._sel_changed)
+        self.init()
         
+    def deselected(self):
+        Tool.deselected(self)
+        self.ivl.sig_selection_changed.disconnect(self._sel_changed)
+        self.init()
+
+    def _sel_changed(self):
+        focus = self.ivl.picker.selection(grid=self.builder.grid)
+        self.point = [int(v+0.5) for v in focus[:3]]
+        self._update_roi()
+    
+    def _update_roi(self):
+        d = self.ivm.current_data.resample(self.builder.grid).raw()
+        focus_value = d[self.point[0], self.point[1], self.point[2]]
+        hi, lo = focus_value + self.uthresh.value(), focus_value - self.lthresh.value()
+        temp_roi = ((d < hi) & (d > lo)).astype(np.int)
+        import scipy.ndimage as img
+        self.roi, _ = img.measurements.label(temp_roi)
+        scipy_label = self.roi[self.point[0], self.point[1], self.point[2]]
+        self.roi[self.roi != scipy_label] = 0
+        self.roi[self.roi == scipy_label] = self.label
+        self.ivm.add_roi(self.roi, name="_temp_bucket", grid=self.builder.grid, make_current=True)
+
+    def _add(self):
+        self.builder.add_to_roi(self.roi)
+        self.init()
+
+    def _erase(self):
+        inverted = np.logical_not(self.roi)
+        self.builder.add_to_roi(inverted, erase=True)
+        self.init()
+
+    def _mask(self):
+        self.builder.add_to_roi(self.roi, erase=True)
+        self.init()
+
+    def _dims_changed(self):
+        pass
