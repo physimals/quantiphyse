@@ -257,7 +257,7 @@ class RegWidget(QpWidget):
         process.sig_finished.connect(self.finished_cb)
         process.run(options)
 
-    def finished_cb(self, status, results, log, exception):   
+    def finished_cb(self, status, log, exception):   
         self.log = log
         if status != Process.SUCCEEDED:
             QtGui.QMessageBox.warning(self, "Registration error", "Registration failed to run:\n\n" + str(exception),
