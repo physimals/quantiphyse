@@ -74,10 +74,7 @@ class PcaFeatReduce(object):
 
         if self.norm_modes:
             debug("Normalising PCA modes between 0 and 1")
-            print("Reduced data shape=", reduced_data.shape)
             reduced_data = norm.normalise(reduced_data, "indiv")
-            print("Reduced data shape2=", reduced_data.shape)
-            #reduced_data = _normalise_modes(reduced_data)
 
         if not feature_volume:
             return reduced_data
