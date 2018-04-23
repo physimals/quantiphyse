@@ -49,6 +49,7 @@ class OrthoView(pg.GraphicsView):
         self.slice_z  = -1
         self.force_redraw = True
         self._arrow_items = []
+        self._data_views = []
 
         self.vline = pg.InfiniteLine(angle=90, movable=False)
         self.vline.setZValue(2)
@@ -86,9 +87,15 @@ class OrthoView(pg.GraphicsView):
 
         self.ivl.sig_focus_changed.connect(self.update)
         self.ivl.sig_arrows_changed.connect(self._arrows_changed)
-        self.ivl.main_data_view.sig_redraw.connect(self._update_slices)
-        self.ivl.current_data_view.sig_redraw.connect(self._update_slices)
-        self.ivl.current_roi_view.sig_redraw.connect(self._update_slices)
+    
+    def add_data_view(self, view):
+        self._data_views.append(view)
+        view.sig_redraw.connect(self._update_slices)
+
+    def remove_data_view(self, view):
+        view.sig_redraw.disconnect(self._update_slices)
+        self._data_views.remove(view)
+        self._update_slices()
 
     def update(self):
         """
@@ -116,9 +123,8 @@ class OrthoView(pg.GraphicsView):
             self.slice_vol = self.focus_pos[3]
             self.slice_plane = OrthoSlice(self.ivl.grid, self.zaxis, self.focus_pos[self.zaxis])
             self.force_redraw = False
-            self.ivl.main_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
-            self.ivl.current_data_view.redraw(self.vb, self.slice_plane, self.slice_vol)
-            self.ivl.current_roi_view.redraw(self.vb, self.slice_plane, self.slice_vol)
+            for view in self._data_views:
+                view.redraw(self.vb, self.slice_plane, self.slice_vol)
 
     def _update_slices(self):
         self.force_redraw = True
@@ -477,6 +483,9 @@ class ImageView(QtGui.QSplitter):
             win.sig_pick.connect(self._pick)
             win.sig_drag.connect(self._drag)
             win.sig_doubleclick.connect(self._toggle_maximise)
+            win.add_data_view(self.main_data_view)
+            win.add_data_view(self.current_data_view)
+            win.add_data_view(self.current_roi_view)
             self.ortho_views[win.zaxis] = win
 
         # Main graphics layout
