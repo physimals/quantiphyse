@@ -15,6 +15,7 @@ Processing:
   - Load:
   
   - PkModelling:
+      data: qiba
       model:      1      # Model (see above)
       fa:         30     # degrees
       tr:         3.5    # ms
@@ -38,7 +39,7 @@ Cases:
         Folder:   test/data_static/qiba
         Load:
           data:
-            qiba_67tpts.nii:
+            qiba_67tpts.nii: qiba
             qiba_t10.nii: T10
           rois:
             qiba_mask.nii: mask

@@ -21,7 +21,6 @@ Processing:
       cost: normcorr
 
   - Fabber:
-      loadmodels: c:\Users\ctsu0221\fsl_x64_release\bin\fabber_models_dce.dll
       method: vb
       max-iterations: 30
       model:  poly
@@ -40,7 +39,8 @@ Processing:
 Cases:
     EG15:
         # Note that the folder is used to form input filenames
-        Folder:   c:\Users\ctsu0221\build\data\
+        #Folder: c:\Users\ctsu0221\build\data\
+        Folder: /home/ibmeuser/data
 
         # Data to load for this case
         Load:
