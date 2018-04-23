@@ -313,6 +313,7 @@ class QpData(object):
         self.raw_2dt = False
 
         # Treat as an ROI data set if requested
+        self._regions = None
         self.set_roi(roi)
 
     def raw(self):
@@ -462,6 +463,8 @@ class QpData(object):
         :return: New :class:`QpData` object
         """
         data = self.raw()
+        if self.grid.matches(grid):
+            return self
 
         debug("Resampling from:")
         debug(self.grid.affine)
@@ -645,18 +648,25 @@ class QpData(object):
         # so just make it 2D and hope the remaining transform is sensible
         self.grid.shape[2] = 1
 
+    def regions(self):
+        if not self.roi:
+            raise TypeError("Only ROIs have distinct regions")
+        
+        if self._regions is None:
+            self._regions = np.unique(self.raw())
+            self._regions = [int(r) for r in self._regions if r > 0]
+
+        return self._regions
+
     def set_roi(self, roi):
         """
         Set whether data should be interpreted as a region of interest
 
         :param roi: If True, interpret as roi
         """
+        if roi and self.nvols != 1:
+            raise TypeError("ROIs must be static (single volume) 3D data")
         self.roi = roi
-        if self.roi:
-            if self.nvols != 1:
-                raise RuntimeError("ROIs must be static (single volume) 3D data")
-            self.regions = np.unique(self.raw())
-            self.regions = [int(r) for r in self.regions if r > 0]
 
     def get_bounding_box(self, ndim=3):
         """

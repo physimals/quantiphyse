@@ -231,7 +231,7 @@ def get_lut(roi, alpha=None):
     """
     cmap = getattr(cm, 'jet')
     try:
-        mx = max(roi.regions)
+        mx = max(roi.regions())
     except:
         # No nonzero regions!
         mx = 1

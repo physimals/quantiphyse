@@ -248,7 +248,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
-            for cc, ii in enumerate(roi.regions):
+            for cc, ii in enumerate(roi.regions()):
                 self.count_table.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
 
                 # Volume count
@@ -280,7 +280,7 @@ PCA reduction is used on 4D data to extract representative curves
             self.plot.addLegend()
 
             # Plotting using single or multiple plots
-            for region in roi.regions:
+            for region in roi.regions():
                 if np.sum(self.curves[region]) == 0:
                     continue
 
@@ -318,7 +318,7 @@ PCA reduction is used on 4D data to extract representative curves
         Generate the mean curves for each cluster
         Returns:
         """
-        regions = roi.regions
+        regions = roi.regions()
 
         self.curves = {}
         for region in regions:
