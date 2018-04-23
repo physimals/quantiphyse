@@ -4,6 +4,10 @@ Main program entry point for Quantiphyse
 Copyright (c) 2013-2018 University of Oxford
 """
 import sys
+import warnings
+if "--debug" not in sys.argv:
+    warnings.simplefilter("ignore")
+
 import argparse
 import multiprocessing
 import signal
