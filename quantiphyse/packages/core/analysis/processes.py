@@ -299,8 +299,8 @@ class DataStatisticsProcess(Process):
             data_arr = data.raw()
             roi_arr = roi.raw()
         else:
-            data_arr, _, _ = data.slice_data(slice)
-            roi_arr, _, _ = roi.slice_data(slice)
+            data_arr, _, _, _ = data.slice_data(slice)
+            roi_arr, _, _, _ = roi.slice_data(slice)
 
         for region in roi.regions():
             # get data for a single label of the roi
