@@ -86,12 +86,13 @@ class MeanValuesProcess(Process):
         roi = self.get_roi(options, data.grid)
         output_name = options.pop('output-name', data.name + "_means")
 
-        ov_data = np.zeros(data.grid.shape)
+        out_data = np.zeros(data.grid.shape)
+        in_data = data.raw()
         for region in roi.regions:
             if data.ndim > 3:
-                ov_data[roi.raw() == region] = np.mean(data[roi.raw() == region], axis=0)
+                out_data[roi.raw() == region] = np.mean(in_data[roi.raw() == region], axis=0)
             else:
-                ov_data[roi.raw() == region] = np.mean(data[roi.raw() == region])
+                out_data[roi.raw() == region] = np.mean(in_data[roi.raw() == region])
 
-        self.ivm.add_data(NumpyData(ov_data, grid=data.grid, name=output_name), make_current=True)
+        self.ivm.add_data(NumpyData(out_data, grid=data.grid, name=output_name), make_current=True)
         self.status = Process.SUCCEEDED
