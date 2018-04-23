@@ -45,6 +45,8 @@ class NumpyData(QpData):
         
         if data.ndim > 3:
             nvols = data.shape[3]
+            if nvols == 1:
+                self.rawdata = np.squeeze(self.rawdata, axis=-1)
         else:
             nvols = 1
 
@@ -104,6 +106,8 @@ class NiftiData(QpData):
         if self.raw_2dt and arr.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             arr = np.expand_dims(arr, 2)
+        if self.nvols == 1 and arr.ndim == 4:
+            arr = np.squeeze(arr, axis=-1)
         return arr
 
 class DicomFolder(QpData):
