@@ -7,7 +7,8 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import numpy as np
-from skimage.segmentation import random_walker
+import skimage.segmentation
+import scipy.ndimage
 
 from PySide import QtGui
 
@@ -208,7 +209,7 @@ class PickTool(Tool):
         picked_region = roi_picked.value(pos)
 
         roi_picked_arr = roi_picked.resample(self.builder.grid).raw()
-        self.roi_new = np.zeros(self.builder.grid.shape)
+        self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int)
         self.roi_new[roi_picked_arr==picked_region] = self.label
 
         self.ivm.add_roi(NumpyData(self.roi_new, grid=self.builder.grid, name=self.temp_name), make_current=True)
@@ -273,7 +274,7 @@ class WalkerTool(Tool):
         else:
             self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
             
-        self.labels = np.zeros(self.builder.grid.shape)
+        self.labels = np.zeros(self.builder.grid.shape, dtype=np.int)
         self.pickmode_changed(self.pickmode)
 
     def selected(self):
@@ -326,12 +327,12 @@ class WalkerTool(Tool):
             labels = self.labels[sl]
             del spacing[zaxis] 
 
-        seg = random_walker(arr, labels, beta=self.beta.spin.value(), mode='cg_mg', 
-                            spacing=spacing, **kwargs)
+        seg = sklean.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
+                                                mode='cg_mg', spacing=spacing, **kwargs)
 
         if self.segmode == 0:
             # Create 3D volume using 2D slice
-            seg_3d = np.zeros(self.builder.grid.shape)
+            seg_3d = np.zeros(self.builder.grid.shape, dtype=np.int)
             seg_3d[sl] = seg
             seg = seg_3d
 
@@ -345,6 +346,7 @@ class BucketTool(Tool):
     def __init__(self):
         Tool.__init__(self, "Bucket", "2D or 3D flood fill with thresholding")
         self.point = None
+        self.vol = 0
 
     def interface(self):
         grid  = Tool.interface(self)
@@ -358,21 +360,23 @@ class BucketTool(Tool):
 
         self.uthresh = NumericSlider("Upper threshold", grid, 4, 0, maxval=100, minval=0, default=50, hardmin=True)
         self.uthresh.sig_changed.connect(self._update_roi)
-        self.lthresh = NumericSlider("Lower threshold", grid, 5, 0, maxval=100, minval=0, default=50, hardmin=True)
+        self.lthresh = NumericSlider("Lower threshold", grid, 5, 0, maxval=0, minval=-100, default=-50, hardmax=True)
         self.lthresh.sig_changed.connect(self._update_roi)
+        self.max_tile_size = NumericSlider("Max distance (voxels)", grid, 6, 0, intonly=True, maxval=500, minval=0, default=100, hardmin=True)
+        self.max_tile_size.sig_changed.connect(self._update_roi)
 
         btn = QtGui.QPushButton("Add")
         btn.clicked.connect(self._add)
-        grid.addWidget(btn, 6, 0)
+        grid.addWidget(btn, 7, 0)
         btn = QtGui.QPushButton("Erase")
         btn.clicked.connect(self._erase)
-        grid.addWidget(btn, 6, 1)
+        grid.addWidget(btn, 7, 1)
         btn = QtGui.QPushButton("Mask")
         btn.clicked.connect(self._mask)
-        grid.addWidget(btn, 7, 0)
+        grid.addWidget(btn, 8, 0)
         btn = QtGui.QPushButton("Discard")
         btn.clicked.connect(self.selected)
-        grid.addWidget(btn, 7, 1)
+        grid.addWidget(btn, 8, 1)
         return grid
 
     def init(self):
@@ -393,19 +397,54 @@ class BucketTool(Tool):
     def _sel_changed(self):
         focus = self.ivl.picker.selection(grid=self.builder.grid)
         self.point = [int(v+0.5) for v in focus[:3]]
+        self.vol = focus[3]
         self._update_roi()
     
     def _update_roi(self):
-        d = self.ivm.current_data.resample(self.builder.grid).raw()
+        d = self.ivm.current_data.resample(self.builder.grid).volume(self.vol)
         focus_value = d[self.point[0], self.point[1], self.point[2]]
-        hi, lo = focus_value + self.uthresh.value(), focus_value - self.lthresh.value()
-        temp_roi = ((d < hi) & (d > lo)).astype(np.int)
-        import scipy.ndimage as img
-        self.roi, _ = img.measurements.label(temp_roi)
-        scipy_label = self.roi[self.point[0], self.point[1], self.point[2]]
-        self.roi[self.roi != scipy_label] = 0
-        self.roi[self.roi == scipy_label] = self.label
+        hi, lo = focus_value + self.uthresh.value(), focus_value + self.lthresh.value()
+        # Heuristic optimization for large data sets. Start by looking at a tile +- 50 voxels
+        # around focus. If that contains the region, fine. If not, add 50 voxels to the tile
+        # size and go again until we get nothing on the boundary or end up taking the whole
+        # data set
+        max_tile_size = self.max_tile_size.value()
+        tile_size = min(50, max_tile_size)
+        while 1:
+            tile, offset = self._get_tile(d, self.point, tile_size, d.shape)
+            binarised = ((tile < hi) & (tile > lo)).astype(np.int)
+            labelled, _ = scipy.ndimage.measurements.label(binarised)
+            scipy_label = labelled[self.point[0]-offset[0], self.point[1]-offset[1], self.point[2]-offset[2]]
+            labelled[labelled != scipy_label] = 0
+            labelled[labelled == scipy_label] = self.label
+            if labelled.shape == d.shape or tile_size == max_tile_size:
+                debug("Reached full size, breaking: ", labelled.shape, d.shape)
+                break
+            elif (np.count_nonzero(labelled[:, :, 0]) == 0 and 
+                  np.count_nonzero(labelled[:, :, -1]) == 0 and
+                  np.count_nonzero(labelled[:, 0, :]) == 0 and
+                  np.count_nonzero(labelled[:, -1, :]) == 0 and
+                  np.count_nonzero(labelled[0, :, :]) == 0 and
+                  np.count_nonzero(labelled[-1, :, :]) == 0):
+                debug("Nothing on boundary, breaking")
+                break
+            tile_size = min(tile_size + 50, max_tile_size)
+
+        self.roi = np.zeros(self.builder.grid.shape, dtype=np.int)
+        tile_shape = labelled.shape
+        self.roi[offset[0]:offset[0]+tile_shape[0], offset[1]:offset[1]+tile_shape[1], offset[2]:offset[2]+tile_shape[2]] = labelled
         self.ivm.add_roi(self.roi, name="_temp_bucket", grid=self.builder.grid, make_current=True)
+        
+    def _get_tile(self, arr, centre, size, shape):
+        slices, offset = [], []
+        for i in range(3):
+            start, end = centre[i]-size, centre[i]+size
+            if start < 0: start = 0
+            if end > shape[i]: end = shape[i]
+            slices.append(slice(start, end))
+            offset.append(start)
+        debug("Tile: ", slices, offset)
+        return arr[slices], offset
 
     def _add(self):
         self.builder.add_to_roi(self.roi)
