@@ -173,15 +173,9 @@ class DataGrid(object):
         :return: List of four integers giving the axes indices of the R, A and S axes.
                  The fourth integer is always 3 indicating the volume axis
         """
-        ret = []
-        origin_grid = self.world_to_grid([0, 0, 0])
-        for idx in range(3):
-            vec = [0, 0, 0]
-            vec[idx] = 1
-            vec_grid = [v - o for v, o in zip(self.world_to_grid(vec), origin_grid)]
-            axis = np.argmax(np.abs(vec_grid))
-            ret.append(axis)
-        return ret + [3, ]
+        world_axes = [np.argmax(np.abs(self.transform[:, axis])) for axis in range(3)]
+        grid_axes = [world_axes.index(axis) for axis in range(3)]
+        return grid_axes + [3, ]
 
     def matches(self, grid):
         """
