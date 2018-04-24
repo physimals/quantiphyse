@@ -1115,6 +1115,7 @@ class OrderList(QtGui.QListWidget):
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        self.installEventFilter(self)
         #if col_headers:
         #    self.setVerticalHeaderLabels(col_headers)
         #else:
@@ -1139,6 +1140,11 @@ class OrderList(QtGui.QListWidget):
     def items(self):
         return [self.item(r).text() for r in range(self.count())]
 
+    def eventFilter(self, sender, event):
+        if event.type() == QtCore.QEvent.ChildRemoved:
+            self.sig_changed.emit()
+        return False # don't actually interrupt anything
+
     def currentUp(self):
         """ Move currently selected item up"""
         idx = self.currentRow()
@@ -1149,6 +1155,7 @@ class OrderList(QtGui.QListWidget):
             items[idx] = temp
             self.setItems(items)
             self.setCurrentRow(idx-1)
+            self.sig_changed.emit()
 
     def currentDown(self):
         """ Move currently selected item down"""
@@ -1160,6 +1167,7 @@ class OrderList(QtGui.QListWidget):
             items[idx] = temp
             self.setItems(items)
             self.setCurrentRow(idx+1)
+            self.sig_changed.emit()
 
 class OrderListButtons(QtGui.QVBoxLayout):
     def __init__(self, orderlist):
