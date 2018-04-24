@@ -86,7 +86,9 @@ def main():
         sys.exit(0)
     elif args.batch is not None:
         runner = BatchScriptRunner(fname=args.batch)
-        runner.run()
+        # Make sure script is run after the main loop starts in case it
+        # is completely synchronous
+        QtCore.QTimer.singleShot(100, runner.run)
     else:
         # Create window and start main loop
         if args.qv:

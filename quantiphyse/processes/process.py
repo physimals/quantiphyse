@@ -13,7 +13,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import debug, warn, QpException, get_plugins
 
 """ 
 Multiprocessing pool 
@@ -31,12 +31,16 @@ Whether to use multiprocessing - can be disabled for debugging
 """
 MULTIPROC = True
 
+def _worker_initialize():
+    # Make sure plugins are loaded for multiprocessing worker processes
+    get_plugins()
+
 def _init_pool():
     global _POOL
     if _POOL is None: 
         n_workers = multiprocessing.cpu_count()
         debug("Initializing multiprocessing using %i workers" % n_workers)
-        _POOL = multiprocessing.Pool(n_workers)
+        _POOL = multiprocessing.Pool(n_workers, initializer=_worker_initialize)
 
 class Process(QtCore.QObject):
     """
@@ -90,6 +94,8 @@ class Process(QtCore.QObject):
 
         self.log = ""
         self.status = Process.NOTSTARTED
+        # We seem to get a segfault when emitting a signal with a None object
+        self.exception = object()
 
     def get_data(self, options, multi=False):
         """ 
@@ -228,8 +234,6 @@ class BackgroundProcess(Process):
         self.queue = multiprocessing.Manager().Queue()
         self.workers = []
         self.output = []
-        # We seem to get a segfault when emitting a signal with a None object
-        self.exception = object()
 
     def start(self, args):
         """
