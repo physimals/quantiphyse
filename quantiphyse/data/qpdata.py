@@ -449,7 +449,7 @@ class QpData(object):
         else:
             return ret[0]
 
-    def resample(self, grid):
+    def resample(self, grid, order=0):
         """
         Resample the data onto a new grid
 
@@ -504,7 +504,7 @@ class QpData(object):
             #debug("Input shape=", data.shape, data.min(), data.max())
             #debug("Output shape=", output_shape)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
-                                                  output_shape=output_shape, order=0)
+                                                  output_shape=output_shape, order=order)
 
         self._remove_nans(data)
 
