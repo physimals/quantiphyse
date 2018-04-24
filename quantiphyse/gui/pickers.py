@@ -143,7 +143,6 @@ class MultiPicker(Picker):
     def __init__(self, ivl, col=(255, 0, 0)):
         Picker.__init__(self, ivl)
         self.col = col
-        self.win = None
         self._points = {}
 
     def pick(self, win, pos):
@@ -173,6 +172,7 @@ class SliceMultiPicker(MultiPicker):
     """
     def __init__(self, iv, col=(255, 0, 0)):
         MultiPicker.__init__(self, iv, col)
+        self.win = None
         self.zaxis = None
         self.zpos = None
 
@@ -195,6 +195,7 @@ class PolygonPicker(Picker):
         self.roisel = None
         self._points = []
         self.view = None
+        self.win = None
 
     def pick(self, win, pos):
         if self.win is None:
@@ -277,11 +278,11 @@ class RectPicker(PolygonPicker):
         self.win = win
         self.view = self.ivl.ortho_views[self.win]
 
-        fx, fy = float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
+        fx, fy = self._xy_coords(pos)
         self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 255))
         self.view.vb.addItem(self.roisel)
-        self.ox, self.oy = fx, fy
         self._points = [(fx, fy), (fx, fy+1), (fx+1, fy+1), (fx+1, fy)]
+        self.ox, self.oy = fx, fy
 
     def drag(self, win, pos):
         fx, fy = self._xy_coords(pos)
