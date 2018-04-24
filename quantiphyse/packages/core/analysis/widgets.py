@@ -627,7 +627,9 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             options = {"data" : name, 
-                       "no-extras" : True, "bins" : self.rp_nbins.value()}
+                       "no-extras" : True, 
+                       "bins" : self.rp_nbins.value(),
+                       "centre" : self.ivl.focus(grid=self.ivm.data[name].grid)}
             self.process_rp.run(options)
             self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
@@ -647,8 +649,8 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             options = {"data" : name, 
-                    "no-extras" : True, "bins" : self.nbinsSpin.value(),
-                    "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
+                       "no-extras" : True, "bins" : self.nbinsSpin.value(),
+                       "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
             self.process_hist.run(options)
 
             self.win1.removeItem(self.plt1)

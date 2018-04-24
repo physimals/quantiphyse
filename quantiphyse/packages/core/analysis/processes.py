@@ -69,27 +69,24 @@ class HistogramProcess(Process):
 
     def run(self, options):
         data_name = options.pop('data', None)
-        roi_name = options.pop('roi', None)
+        if data_name is None:
+            data_items = self.ivm.data.values()
+            grid = self.ivm.main.grid
+        else:
+            data_items = [self.ivm.data[data_name]]
+            grid = data_items[0].grid
+
+        if len(data_items) == 0:
+            raise QpException("No data to calculate histogram")
+        
+        roi = self.get_roi(options, grid)
+        roi_labels = roi.regions()
+        
         sel_region = options.pop('region', None)
         dmin = options.pop('min', None)
         dmax = options.pop('max', None)
         bins = options.pop('bins', 20)
         output_name = options.pop('output-name', "histogram")
-
-        if data_name is None:
-            data_items = self.ivm.data.values()
-        else:
-            data_items = [self.ivm.data[data_name]]
-        if len(data_items) == 0:
-            raise QpException("No data to calculate histogram")
-
-        if roi_name is None and self.ivm.current_roi is None:
-            roi = NumpyData(data=np.ones(data_items[0].grid.shape), grid=data.grid, name="temp", roi=True)
-        elif roi_name is None:
-            roi = self.ivm.current_roi
-        else:
-            roi = self.ivm.rois[roi_name]
-        roi_labels = roi.regions()
 
         self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem("x0"))
         self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem("x1"))  
@@ -141,29 +138,29 @@ class RadialProfileProcess(Process):
 
     def run(self, options):
         data_name = options.pop('data', None)
-        roi_name = options.pop('roi', None)
-        #roi_region = options.pop('region', None)
-        centre = options.pop('centre')
-        output_name = options.pop('output-name', "radial-profile")
-        no_extra = options.pop('no-extras', False)
-        bins = options.pop('bins', 20)
-
         if data_name is None:
             data_items = self.ivm.data.values()
             grid = self.ivm.main.grid
         else:
             data_items = [self.ivm.data[data_name]]
-            grid = self.ivm.data[data_name].grid
+            grid = data_items[0].grid
 
         if len(data_items) == 0:
             raise QpException("No data to calculate radial profile")
         
-        if roi_name is None and self.ivm.current_roi is None:
-            roi = NumpyData(data=np.ones(data_items[0].grid.shape), grid=data.grid, name="temp", roi=True)
-        elif roi_name is None:
-            roi = self.ivm.current_roi
-        else:
-            roi = self.ivm.rois[roi_name]
+        roi = self.get_roi(options, grid)
+        
+        #roi_region = options.pop('region', None)
+        centre = options.pop('centre')
+        if isinstance(centre, basestring):
+            centre = [float(v) for v in centre.split(",")]
+        vol = 0
+        if len(centre) == 4:
+            vol = centre[3]
+        
+        output_name = options.pop('output-name', "radial-profile")
+        no_extra = options.pop('no-extras', False)
+        bins = options.pop('bins', 20)
 
         self.model.clear()
         self.rp = {}
@@ -174,10 +171,8 @@ class RadialProfileProcess(Process):
         # from the centre. Set masked values to distance of -1
         x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
-        if roi is not None: 
-            r[roi==0] = -1
-            rmin = r[roi>0].min()   
-        else: rmin = r.min()
+        r[roi==0] = -1
+        rmin = r[roi>0].min()
 
         # Generate histogram of number of voxels in each bin
         # Use the range parameter to ignore masked values with negative distances
@@ -194,11 +189,7 @@ class RadialProfileProcess(Process):
         for col, data in enumerate(data_items):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
                 
-            # If data is 4d, get current 3d volume
-            if data.ndim == 4:
-                weights = data.std()[:, :, :, centre[3]]
-            else:
-                weights = data.std()
+            weights = data.resample(grid).volume(vol)
 
             # Generate histogram by distance, weighted by data
             rpd, junk = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
@@ -333,12 +324,22 @@ class ExecProcess(Process):
 
     def run(self, options):
         globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
+
+        # For general Numpy operations we will need a grid to put the
+        # results back into. This is specified by the 'grid' option.
+        # Note that all data is combined using their raw grids so these
+        # must all match if the result is to work - that is the user's job!
+        self.grid = self.ivm.main.grid
+
         for name, data in self.ivm.data.items():
             globals[name] = data.raw()
         for name, roi in self.ivm.rois.items():
             globals[name] = roi.raw()
+
         for name in options.keys():
             proc = options.pop(name)
+            if name == "grid":
+                self.grid = self.ivm.data[options[name]].grid
             if name == "exec":
                 for code in proc:
                     try:
@@ -348,7 +349,7 @@ class ExecProcess(Process):
             else:
                 try:
                     result = eval(proc, globals)
-                    self.ivm.add_data(result, name=name)
+                    self.ivm.add_data(result, grid=self.grid, name=name)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
        
