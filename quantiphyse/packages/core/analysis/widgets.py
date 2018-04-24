@@ -127,8 +127,6 @@ class SEPlot:
             pt_values = self.sig
 
         if plot_opts.smooth_cb.isChecked():
-            wsize = 3
-            cwin1 = np.ones(wsize)/wsize
             r1 = range(len(pt_values))
             # Tolerance does not scale by data value to scale input
             s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
@@ -266,7 +264,7 @@ class SECurve(QpWidget):
         for plt in self.plots.values(): plt.remove()
         for plt in self.mean_plots.values(): plt.remove()
         
-    def options_changed(self, opts):
+    def options_changed(self, _):
         if self.activated:
             self.replot_graph()
 
@@ -537,7 +535,7 @@ class DataStatistics(QpWidget):
         self.ovl_selection = idx
         self.update_all()
 
-    def focus_changed(self, pos):
+    def focus_changed(self, _):
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.stats_table_ss.isVisible():
@@ -1003,29 +1001,33 @@ class ModelCurves(QpWidget):
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
             idx = 0
             pos = self.ivl.focus()
-            for name in sorted(self.ivm.data.keys()):
-                main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
-                ovl = self.ivm.data[name]
-                if ovl.ndim == 4 and ovl.nvols == self.ivm.main.nvols:
-                    # Make sure data curve is correct length
-                    data_curve = ovl.timeseries(pos, grid=self.ivl.grid)
-                    data_curve.extend([0] * self.ivm.main.nvols)
-                    data_curve = data_curve[:self.ivm.main.nvols]
+            sigs = self.ivm.timeseries(pos, self.ivl.grid)
+            max_length = max([len(sig) for sig in sigs.values()])
 
-                    data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+            main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
+            main_curve.extend([0] * max_length)
+            main_curve = main_curve[:max_length]
 
-                    name_item = QtGui.QStandardItem(name)
-                    name_item.setCheckable(True)
-                    name_item.setEditable(False)
-                    if name not in self.data_enabled:
-                        self.data_enabled[name] = QtCore.Qt.Checked
-                    name_item.setCheckState(self.data_enabled[name])
-                    self.rms_table.setItem(idx, 0, name_item)
+            for name in sorted(sigs.keys()):
+                # Make sure data curve is correct length
+                data_curve = sigs[name]
+                data_curve.extend([0] * max_length)
+                data_curve = data_curve[:max_length]
 
-                    item = QtGui.QStandardItem(sf(data_rms))
-                    item.setEditable(False)
-                    self.rms_table.setItem(idx, 1, item)
-                    idx += 1
+                data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+
+                name_item = QtGui.QStandardItem(name)
+                name_item.setCheckable(True)
+                name_item.setEditable(False)
+                if name not in self.data_enabled:
+                    self.data_enabled[name] = QtCore.Qt.Checked
+                name_item.setCheckState(self.data_enabled[name])
+                self.rms_table.setItem(idx, 0, name_item)
+
+                item = QtGui.QStandardItem(sf(data_rms))
+                item.setEditable(False)
+                self.rms_table.setItem(idx, 1, item)
+                idx += 1
         finally:
             self.updating = False
 
@@ -1042,6 +1044,11 @@ class ModelCurves(QpWidget):
         self.plot.clear() 
         self.plot_rightaxis.clear()
 
+        # Get all timeseries signals and determine max number of timepoints
+        pos = self.ivl.focus()
+        sigs = self.ivm.timeseries(pos, self.ivl.grid)
+        max_length = max([len(sig) for name, sig in sigs.items() if self.data_enabled[name] == QtCore.Qt.Checked])
+        
         # FIXME custom range for residuals axis?
         self.plot_rightaxis.enableAutoRange()
         if self.plot_opts.auto_y_cb.isChecked():
@@ -1056,11 +1063,12 @@ class ModelCurves(QpWidget):
             legend_pos = self.plot.legend.pos()
             self.plot.legend.scene().removeItem(self.plot.legend)
         legend = self.plot.addLegend(offset=legend_pos)
-        
-        sigs = self.ivm.timeseries(self.ivl.focus(), self.ivl.grid)
 
         # Get x scale
         xx = self.opts.t_scale
+        unit = xx[-1] - xx[-2]
+        xx.extend([xx[-1] + unit*(idx+1) for idx in range(max_length)])
+        xx = xx[:max_length]
         frames1 = self.plot_opts.norm_frames.value()
         self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
@@ -1073,10 +1081,16 @@ class ModelCurves(QpWidget):
         else:
             self.plot.hideAxis('right')
 
-        # Plot each data item
-        idx, n_ovls = 0, len(sigs)
+        main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
+        main_curve.extend([0] * max_length)
+        main_curve = main_curve[:max_length]
+
+        idx, _ = 0, len(sigs)
         for ovl, sig_values in sigs.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
+                sig_values.extend([0] * max_length)
+                sig_values = sig_values[:max_length]
+
                 pen = get_kelly_col(idx)
 
                 if self.plot_opts.mode == 1:
@@ -1086,7 +1100,7 @@ class ModelCurves(QpWidget):
                 
                 if self.plot_opts.mode == 2 and ovl != self.ivm.main.name:
                     # Show residuals on the right hand axis
-                    resid_values = sig_values - sig
+                    resid_values = sig_values - main_curve
                     self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
                     
                 # Plot signal or signal enhancement
