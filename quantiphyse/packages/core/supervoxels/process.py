@@ -32,7 +32,7 @@ class SupervoxelsProcess(Process):
         
         # Run PCA feature extraction
         fe = PcaFeatReduce(n_components=ncomp, norm_modes=True, norm_input=normalise_input_image, norm_type=norm_type)
-        feat_image = fe.get_training_features(img, feature_volume=True)
+        feat_image = fe.get_training_features(img, smooth_timeseries=2.0, feature_volume=True)
         return feat_image
 
     def run(self, options):

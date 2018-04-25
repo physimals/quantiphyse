@@ -8,22 +8,10 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from sklearn.decomposition import PCA
+from scipy.ndimage.filters import gaussian_filter1d
 
 from quantiphyse.utils import QpException, debug
 from . import normalisation as norm
-
-def _normalise_modes(data):
-    """
-    Normalise PCA modes
-    """
-    # TODO should maybe normalise based on lambda instead
-    dmin = np.min(data, axis=0)
-    data = data - np.tile(np.expand_dims(dmin, axis=0),
-                          (data.shape[0], 1))
-    dmax = np.max(data, axis=0)
-    data = data / np.tile(np.expand_dims(dmax, axis=0),
-                          (data.shape[0], 1))
-    return data
 
 def _flat_data_to_image(data, roi):
     # return features in image format
@@ -53,12 +41,13 @@ class PcaFeatReduce(object):
         self.norm_input = norm_input
         self.norm_type = norm_type
 
-    def get_training_features(self, data, roi=None, feature_volume=False):
+    def get_training_features(self, data, roi=None, smooth_timeseries=None, feature_volume=False):
         """
         Train PCA reduction on data and return features for each voxel
 
         :param data: 4D data set
         :param roi: Optional 3D ROI
+        :param smooth_timeseries: Optional sigma for 1D Gaussian smoothing of each voxel timeseries
         :param feature_volume: determines whether the features are returned as a list or an image
 
         :return: If ``feature_volume``, 4D array with the same 3d dimensions as data and 
@@ -66,7 +55,7 @@ class PcaFeatReduce(object):
                  Otherwise, 2D array whose first dimension is unmasked voxels and 2nd dimension
                  is the PCA components
         """
-        data_inmask, roi = self._mask(data, roi)
+        data_inmask, roi = self._mask(data, roi, smooth_timeseries)
 
         debug("Using PCA dimensionality reduction")
         reduced_data = self.pca.fit_transform(data_inmask)
@@ -106,7 +95,6 @@ class PcaFeatReduce(object):
         if self.norm_modes:
             debug("Normalising PCA modes")
             reduced_data = norm.normalise(reduced_data, "indiv")
-            #reduced_data = _normalise_modes(reduced_data)
 
         if not feature_volume:
             return reduced_data
@@ -142,7 +130,7 @@ class PcaFeatReduce(object):
         #return np.squeeze(norm.normalise(np.expand_dims(self.pca.mean_, axis=0), "indiv"))
         return self.pca.mean_
 
-    def _mask(self, data, roi):
+    def _mask(self, data, roi, smooth_timeseries):
         if roi is None:
             roi = np.ones(data.shape[0:-1], dtype=bool)
         else:
@@ -151,5 +139,8 @@ class PcaFeatReduce(object):
 
         if self.norm_input:
             data_inmask = norm.normalise(data_inmask, self.norm_type)
+
+        if smooth_timeseries is not None:
+            data_inmask = gaussian_filter1d(data_inmask, sigma=smooth_timeseries, axis=-1)
         return data_inmask, roi
     
