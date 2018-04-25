@@ -106,7 +106,8 @@ class NiftiData(QpData):
         if self.raw_2dt and arr.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             arr = np.expand_dims(arr, 2)
-        if self.nvols == 1 and arr.ndim == 4:
+
+        if arr.ndim == 4 and arr.shape[3] == 1:
             arr = np.squeeze(arr, axis=-1)
         return arr
 
