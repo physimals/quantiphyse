@@ -213,6 +213,7 @@ class MainWindow(QtGui.QMainWindow):
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
+            w.inited = True
             w.index = index
         self.tab_widget.currentChanged.connect(self.select_tab)
         self.select_tab(0)
@@ -222,7 +223,9 @@ class MainWindow(QtGui.QMainWindow):
         w = self.sender().widget
         if not w.visible:
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
-            w.init_ui()
+            if not w.inited:
+                w.init_ui()
+                w.inited = True
             w.visible = True
             w.index = index
         self.tab_widget.setCurrentIndex(w.index)

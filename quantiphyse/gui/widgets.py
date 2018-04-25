@@ -40,7 +40,8 @@ class QpWidget(QtGui.QWidget):
         self.position = kwargs.get("position", 999)
         self.description = kwargs.get("desc", self.name)
         self.visible = False
-
+        self.inited = False
+        
         # This attempts to return the directory where the derived widget is defined - 
         # so we can look there for icons as well as in the default location
         self.pkgdir = os.path.abspath(os.path.dirname(inspect.getmodule(self).__file__))
