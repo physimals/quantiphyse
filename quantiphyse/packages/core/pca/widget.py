@@ -82,8 +82,11 @@ class PcaWidget(QpWidget):
         self.run_btn.setEnabled(self.data_combo.currentText() in self.ivm.data)
 
     def batch_options(self):
+        roi = self.roi_combo.currentText()
+        if roi == "<none>": 
+            roi = None
         return "PCA", {"data" : self.data_combo.currentText(),
-                       "roi" : self.roi_combo.currentText(),
+                       "roi" : roi,
                        "n-components" : self.n_comp.value(),
                        "output-name" : self.output_name.text()}
 
