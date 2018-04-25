@@ -307,10 +307,8 @@ class QuickWindow(QtGui.QMainWindow):
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         warnings = []
         if force_t:
-            warning = "Interpreted data as multiple 2D volumes although file contained 3D spatial data"
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warning)
-            msgBox.setInformativeText("Add data anyway?")
+            msgBox = QtGui.QMessageBox(self)
+            msgBox.setText("3D data was interpreted as multiple 2D volumes")
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
@@ -318,7 +316,7 @@ class QuickWindow(QtGui.QMainWindow):
         
         # Check for inappropriate ROI data
         if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
-            msgBox = QtGui.QMessageBox()
+            msgBox = QtGui.QMessageBox(self)
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
             msgBox.setInformativeText("Are you sure this is an ROI file?")
