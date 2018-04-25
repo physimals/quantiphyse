@@ -33,20 +33,13 @@ def norm_median(data, volume_idx=None):
 
 def norm_indiv(data):
     """
-    Scale each data point individually so it lies between 0 and 1
+    Scale each volume individually so it lies between 0 and 1
     
     :param data: Numpy array whose last dimension is assumed to be 
                  the volume sequence
     """
-    nvols = data.shape[-1]
-    tile_shape = [1, ] * data.ndim
-    tile_shape[-1] = nvols
-
-    dmin = np.min(data, axis=-1)
-    data = data - np.expand_dims(dmin, axis=-1)
-
-    dmax = np.max(data, axis=-1)
-    return data / np.expand_dims(dmax, axis=-1) + 0.001
+    data = data - np.min(data, axis=0)
+    return data / (np.max(data, axis=0) + 0.001)
 
 def norm_sigenh(data, nvols=3):
     """
