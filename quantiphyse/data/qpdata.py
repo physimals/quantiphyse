@@ -457,8 +457,6 @@ class QpData(object):
         :return: New :class:`QpData` object
         """
         data = self.raw()
-        if self.grid.matches(grid):
-            return self
 
         debug("Resampling from:")
         debug(self.grid.affine)
@@ -506,14 +504,14 @@ class QpData(object):
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
                                                   output_shape=output_shape, order=order)
 
-        self._remove_nans(data)
+            self._remove_nans(data)
 
-        if self.roi:
-            if data.min() < 0 or data.max() > 2**32:
-                raise QpException("ROIs must contain values between 0 and 2**32")
-            if not np.equal(np.mod(data, 1), 0).any():
-                raise QpException("ROIs must contain integers only")
-            data = data.astype(np.int32)
+            if self.roi:
+                if data.min() < 0 or data.max() > 2**32:
+                    raise QpException("ROIs must contain values between 0 and 2**32")
+                if not np.equal(np.mod(data, 1), 0).any():
+                    raise QpException("ROIs must contain integers only")
+                data = data.astype(np.int32)
 
         from quantiphyse.data import NumpyData
         return NumpyData(data=data, grid=grid, name=self.name + "_resampled", roi=self.roi)
