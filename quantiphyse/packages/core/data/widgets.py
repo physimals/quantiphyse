@@ -76,7 +76,7 @@ class ResampleDataWidget(QpWidget):
     Widget that lets you resample data onto a different grid
     """
     def __init__(self, **kwargs):
-        super(ResampleDataWidget, self).__init__(name="Resample Data", icon="inspect.png", 
+        super(ResampleDataWidget, self).__init__(name="Resample Data", icon="resample.png", 
                                                  desc="Resample data onto the same grid as another data item",
                                                  group="Utilities", **kwargs)
         
