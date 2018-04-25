@@ -28,7 +28,6 @@ from .exceptions import QpException
 BASIC_PROCESSES = {"RenameData"   : RenameDataProcess,
                    "RenameRoi"   : RenameRoiProcess,
                    "RoiCleanup" : RoiCleanupProcess,
-                   "Resample" : ResampleProcess,
                    "Load" : LoadProcess,
                    "Save" : SaveProcess,
                    "SaveAllExcept" : SaveAllExceptProcess,

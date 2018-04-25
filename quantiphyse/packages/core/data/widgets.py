@@ -8,9 +8,12 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.data import DataGrid
+from quantiphyse.volumes import DataGrid
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, NumberGrid
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton
 from quantiphyse.utils import debug, QpException
+
+from .processes import ResampleProcess
 
 class GridView(QtGui.QWidget):
 
@@ -46,42 +49,76 @@ class GridView(QtGui.QWidget):
         grid.setColumnStretch(3, 1)
     
     def set_data(self, data):
-        self.transform.blockSignals(True)
-        self.origin.blockSignals(True)
-        try:
-            self.data = data
-            if data is not None:
-                if hasattr(data, "nifti_header"):
-                    self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
-                self.transform.setValues(data.grid.transform)
-                self.origin.setValues([[x,] for x in data.grid.origin])
-            else:
-                self.coord_label.setText("unknown")
-                self.transform.setValues(np.identity(3))
-                self.origin.setValues([[0],]*3)
-        finally:
-            self.transform.blockSignals(False)
-            self.origin.blockSignals(False)
+        self.data = data
+        if data is not None:
+            if hasattr(data, "nifti_header"):
+                self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
+            self.transform.setValues(data.rawgrid.transform)
+            self.origin.setValues([[x,] for x in data.rawgrid.origin])
+        else:
+            self.coord_label.setText("unknown")
+            self.transform.setValues(np.identity(3))
+            self.origin.setValues([[0],]*3)
 
     def _changed(self):
         if self.data is not None:
-            affine = self.data.grid.affine
+            affine = self.data.rawgrid.affine
             if self.transform.valid():
                 affine[:3,:3] = self.transform.values()
             if self.origin.valid():
                 affine[:3,3] = [x[0] for x in self.origin.values()]
-            newgrid = DataGrid(self.data.grid.shape, affine)
-            self.data.grid = newgrid
-            self.ivl.set_focus(self.ivl.focus())
-            
-class DataInspectorWidget(QpWidget):
+            newgrid = DataGrid(self.data.rawgrid.shape, affine)
+            self.data.rawgrid = newgrid
+            self.data.stddata = None
+     
+class ResampleDataWidget(QpWidget):
+    """
+    Widget that lets you resample data onto a different grid
+    """
+    def __init__(self, **kwargs):
+        super(ResampleDataWidget, self).__init__(name="Resample Data", icon="inspect.png", 
+                                                 desc="Resample data onto the same grid as another data item",
+                                                 group="Utilities", **kwargs)
+        
+    def init_ui(self):
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        vbox.addWidget(TitleWidget(self))
+
+        optbox = OptionBox("Resampling options")
+        self.data = optbox.add("Data to resample", DataOption(self.ivm))
+        self.grid_data = optbox.add("Resample onto grid from", DataOption(self.ivm))
+        self.order = optbox.add("Interpolation", ChoiceOption(["Nearest neighbour", "Linear", "Quadratic", "Cubic"], [0, 1, 2, 3]))
+        self.output_name = optbox.add("Output name", OutputNameOption(src_data=self.data, suffix="_res"))
+        vbox.addWidget(optbox)
+
+        vbox.addWidget(RunButton("Resample", self._run))
+
+        vbox.addStretch(1)
+    
+    def batch_options(self):
+        options = {
+            "data" : self.data.value(),
+            "grid" : self.grid_data.value(),
+            "output-name" : self.output_name.value(),
+            "order" : self.order.value(),
+        }
+
+        return "Resample", options
+
+    def _run(self):
+        _, options = self.batch_options()
+        ResampleProcess(self.ivm).run(options)
+
+class OrientDataWidget(QpWidget):
     """
     Widget that lets you tweak the orientation of data
     """
     def __init__(self, **kwargs):
-        super(DataInspectorWidget, self).__init__(name="Data Inspector", icon="inspect.png", 
-                                                  desc="Manipulate data orientation", 
-                                                  group="Utilities", **kwargs)
+        super(OrientDataWidget, self).__init__(name="Orient Data", icon="inspect.png", 
+                                             desc="Manipulate data orientation", 
+                                             group="Utilities", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
