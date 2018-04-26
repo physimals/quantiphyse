@@ -8,14 +8,17 @@ import unittest
 
 from quantiphyse.utils import get_plugins
 
-def run_tests():
+def run_tests(test_filter=None):
     """
     Run all unit tests defined by packages and plugins
+
+    :param test_filter: Specifies name of test set to be run, None=run all
     """
     suite = unittest.TestSuite()
 
     tests = get_plugins("widget-tests")
     for test in tests:
-        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
+        if test_filter is None or test.__name__.startswith(test_filter):
+            suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
    
     unittest.TextTestRunner().run(suite)
