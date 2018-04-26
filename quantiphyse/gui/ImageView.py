@@ -1221,7 +1221,10 @@ class ImageView(QtGui.QSplitter):
 
     def current_data_changed(self, ov):
         if self.current_data_view is not None:
-            self.current_data_view.sig_changed.disconnect(self._dv_changed)
+            try:
+                self.current_data_view.sig_changed.disconnect(self._dv_changed)
+            except:
+                warn("Failed to disconnect signal from data view")
         if ov is not None:
             if ov.name not in self.data_views:
                 # Create a data view if we don't already have one for this data
