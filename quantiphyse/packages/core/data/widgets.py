@@ -93,7 +93,8 @@ class ResampleDataWidget(QpWidget):
         self.output_name = optbox.add("Output name", OutputNameOption(src_data=self.data, suffix="_res"))
         vbox.addWidget(optbox)
 
-        vbox.addWidget(RunButton("Resample", self._run))
+        self.run = RunButton("Resample", self._run)
+        vbox.addWidget(self.run)
 
         vbox.addStretch(1)
     
