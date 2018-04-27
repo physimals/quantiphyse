@@ -30,4 +30,3 @@ class ResampleProcess(Process):
         output_data = data.resample(grid, order=order)
         output_data.name = output_name
         self.ivm.add_data(output_data, make_current=True)
-        self.status = Process.SUCCEEDED

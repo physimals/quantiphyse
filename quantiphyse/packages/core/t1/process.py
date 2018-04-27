@@ -95,4 +95,3 @@ class T10Process(Process):
         if clamp is not None:
             np.clip(T10, clamp["min"], clamp["max"], out=T10)
         self.ivm.add_data(NumpyData(T10, grid=grid, name="T10"))
-        self.status = Process.SUCCEEDED

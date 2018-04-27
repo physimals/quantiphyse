@@ -7,7 +7,6 @@ Copyright (c) 2013-2018 University of Oxford
 import sys
 import os
 import os.path
-import errno
 import traceback
 import time
 
@@ -15,7 +14,7 @@ import yaml
 
 from PySide import QtCore
 
-from quantiphyse.processes import Process, BackgroundProcess
+from quantiphyse.processes import Process
 from quantiphyse.processes.io import *
 from quantiphyse.processes.misc import *
 
@@ -37,7 +36,7 @@ BASIC_PROCESSES = {"RenameData"   : RenameDataProcess,
                    "SaveArtifacts" : SaveArtifactsProcess,
                    "SaveExtras" : SaveArtifactsProcess}
 
-class Script(BackgroundProcess):
+class Script(Process):
     """
     A processing scripts. It consists of three types of information:
 
@@ -53,6 +52,7 @@ class Script(BackgroundProcess):
     sig_start_case = QtCore.Signal(object)
     sig_done_case = QtCore.Signal(object)
     sig_start_process = QtCore.Signal(object, dict)
+    sig_process_progress = QtCore.Signal(float)
     sig_done_process = QtCore.Signal(object, dict)
 
     def __init__(self, fname=None, code=None, yamlroot=None, ivm=None):
@@ -113,7 +113,7 @@ class Script(BackgroundProcess):
         # After removing processes and cases, remainder is the generic options
         self.generic_params = root
 
-    def start(self):
+    def run(self):
         if not self.cases:
             self.cases.append(BatchScriptCase("case", {}))
 
@@ -164,10 +164,9 @@ class Script(BackgroundProcess):
             self.sig_done_case.emit(self._current_case)
             self._next_case()
 
-    def _start_process(self, process):
-
+    def _start_process(self, proc_params):
         # Make copy so process does not mess up shared config
-        proc_params = dict(process)
+        proc_params = dict(proc_params)
         generic_params = dict(self.generic_params)
 
         # Override values which are defined in the individual case
@@ -182,7 +181,6 @@ class Script(BackgroundProcess):
         # Do not 'turn off' debugging if it has been enabled at higher level
         if generic_params.get("Debug", False): set_debug(True)
         try:
-            sync = True
             outdir = os.path.abspath(os.path.join(generic_params.get("OutputFolder", ""), 
                                                   generic_params.get("OutputId", ""),
                                                   generic_params.get("OutputSubFolder", "")))
@@ -194,52 +192,43 @@ class Script(BackgroundProcess):
             process = proc_params.pop("__impl")(self._current_ivm, indir=indir, outdir=outdir, proc_id=proc_id)
             self._current_process = process
             self._current_params = proc_params
-            
-            if hasattr(process, "sig_finished"):
-                sync = False
-                process.sig_finished.connect(self._process_finished)
-                process.sig_progress.connect(self._process_progress)
-            debug("Starting process %s" % proc_id)
+            process.sig_finished.connect(self._process_finished)
+            process.sig_progress.connect(self._process_progress)
+            debug("Executing process %s" % proc_id)
             self.sig_start_process.emit(process, dict(proc_params))
-            process.run(proc_params)
+            process.execute(proc_params)
         
         except Exception as e:
-            # Process faild to start!
+            # Could not create process - better abandon everything
             traceback.print_exc(e)
-            process.exception = e
-            process.status = Process.FAILED
-            sync = True
+            self.status = Process.FAILED
+            self.exception = e
+            self.sig_finished.emit(self.status, self.log, self.exception)
         finally:
             #set_debug(debug_orig)
-            if sync:
-                debug("Synchronous process completed")
-                self._process_progress(1.0)
-                self._process_finished(process.status, process.log, process.exception)
+            pass
             
     def _process_finished(self, status, log, exception):
         if self.status != self.RUNNING:
             return
 
-        if hasattr(self._current_process, "sig_finished"):
-            self._current_process.sig_finished.disconnect(self._process_finished)
-        if hasattr(self._current_process, "sig_progress"):
-            self._current_process.sig_progress.disconnect(self._process_progress)
-        
+        self._current_process.sig_finished.disconnect(self._process_finished)
+        self._current_process.sig_progress.disconnect(self._process_progress)
         self.log += log + "\n\n"
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
-        self._next_process()
-        #if status == Process.SUCCEEDED:
-        #    self._next_process()
-        #else:
-        #    debug("Basil: Fabber failed on step %i" % self.step_num)
-        #    self.log += "CANCELLED\n"
-        #    self.status = status
-        #    self.sig_finished.emit(self.status, self.log, exception)
+        if status == Process.SUCCEEDED:
+            self._next_process()
+        else:
+            debug("Process failed - stopping script")
+            self.log += "FAILED\n"
+            self.status = status
+            self.sig_finished.emit(self.status, self.log, exception)
 
     def _process_progress(self, complete):
-        complete = ((self._case_num-1)*len(self.pipeline) + 
-                   (self._process_num - 1 + complete)) / (len(self.pipeline)*len(self.cases))
-        self.sig_progress.emit(complete)
+        self.sig_process_progress.emit(complete)
+        script_complete = ((self._case_num-1)*len(self.pipeline) + 
+                          (self._process_num - 1 + complete)) / (len(self.pipeline)*len(self.cases))
+        self.sig_progress.emit(script_complete)
 
 class BatchScriptCase:
     """
@@ -264,6 +253,7 @@ class BatchScriptRunner:
         self.script.sig_start_case.connect(self._start_case)
         self.script.sig_done_case.connect(self._done_case)
         self.script.sig_start_process.connect(self._start_process)
+        self.script.sig_process_progress.connect(self._process_progress)
         self.script.sig_done_process.connect(self._done_process)
         self.script.sig_progress.connect(self._progress)
         self.script.sig_finished.connect(self._done_script)
@@ -271,7 +261,7 @@ class BatchScriptRunner:
         self.log = log
 
     def run(self):
-        self.script.start()
+        self.script.run()
 
     def _start_case(self, case):
         self.log.write("Processing case: %s\n" % case.case_id)
@@ -281,14 +271,14 @@ class BatchScriptRunner:
 
     def _start_process(self, process, params):
         self.start = time.time()
-        self.log.write("  - Running %s..." % process.proc_id)
+        self.log.write("  - Running %s...  0%%" % process.proc_id)
         for key, value in params.items():
             debug("      %s=%s" % (key, str(value)))
                 
     def _done_process(self, process, params):
         if process.status == Process.SUCCEEDED:
             end = time.time()
-            self.log.write("DONE (%.1fs)\n" % (end - self.start))
+            self.log.write(" DONE (%.1fs)\n" % (end - self.start))
             fname = os.path.join(process.outdir, "%s.log" % process.proc_id)
             self._save_text(process.log, fname)
             if len(params) != 0:
@@ -303,6 +293,11 @@ class BatchScriptRunner:
     def _progress(self, complete):
         #self.log.write("%i%%\n" % int(100*complete))
         pass
+
+    def _process_progress(self, complete):
+        percent = int(100*complete)
+        self.log.write("\b\b\b\b%3i%%" % percent)
+        self.log.flush()
 
     def _done_script(self):
         self.log.write("Script finished\n")

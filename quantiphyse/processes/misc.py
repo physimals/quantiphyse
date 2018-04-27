@@ -23,8 +23,6 @@ class RenameDataProcess(Process):
         for name in options.keys():
             newname = options.pop(name)
             self.ivm.rename_data(name, newname)
-          
-        self.status = Process.SUCCEEDED
 
 class RenameRoiProcess(Process):
     """ Rename ROI  """
@@ -35,8 +33,6 @@ class RenameRoiProcess(Process):
         for name in options.keys():
             newname = options.pop(name)
             self.ivm.rename_roi(name, newname)
-            
-        self.status = Process.SUCCEEDED
 
 class RoiCleanupProcess(Process):
     """
@@ -69,5 +65,4 @@ class RoiCleanupProcess(Process):
                     new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
             
                 self.ivm.add_roi(NumpyData(data=new, grid=roi.grid, name=output_name))
-        
-        self.status = Process.SUCCEEDED
+

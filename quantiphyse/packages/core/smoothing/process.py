@@ -40,4 +40,3 @@ class SmoothingProcess(Process):
         output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigma, order=order, mode=mode)
         self.ivm.add_data(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
 
-        self.status = Process.SUCCEEDED

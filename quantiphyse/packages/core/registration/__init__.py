@@ -255,7 +255,7 @@ class RegWidget(QpWidget):
         self.logBtn.setEnabled(False)
         process.sig_progress.connect(self.progress_cb)
         process.sig_finished.connect(self.finished_cb)
-        process.run(options)
+        process.execute(options)
 
     def finished_cb(self, status, log, exception):   
         self.log = log

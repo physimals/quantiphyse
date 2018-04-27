@@ -60,15 +60,62 @@ class Process(QtCore.QObject):
       roi - The name of the main input ROI if applicable
       output-name - The name of the output data set or ROI 
 
-    Simple 'fast' processes such as loading/saving data and very simple image processing tasks
-    should be implemented by subclassing Process and overriding ``run``. Processes which may
-    take time should subclass BackgroundProcess or ParallelProcess.
+    Processes are implemented by subclassing Process and overriding ``run``. 'Fast' 
+    processes such as loading/saving data and very simple image processing tasks 
+    should be implemented by subclassing Process and overriding ``run``. Failure should be
+    signalled by raising an exception.
+    
+    Processes which may take time can be run as background processes. To do this, the
+    ``run()`` method should end with a call to ``start_bg`` which will start the background
+    workers. This method supports simple parallel execution of suitable data processing tasks.
+
+    Background processes may override the ``finished()`` method to do any necessary post-processing
+    after all workers are completed. This typically consists of getting the output back from
+    the worker process(es), recombining it if required, and adding it to the IVM.
+
+    Background process may also override the ``timeout()`` method which will be called every
+    second during execution. Typically this is used to monitor the workers and emit
+    ``sig_progress``.
+
+    ``sig_finished`` is always emitted when a process completes, whether synchronously or
+    asynchronously. ``sig_progress`` is always emitted with a value of 1 when a process completes 
+    successfully.
 
     Attributes:
 
       indir - Input data folder if process needs to load data
       outdir - Output data folder if process needs to save data
+      status - Current process status. Subclasses should *not* set this attribute themselves.
+      exception - If the process failed, this attribute contains the exception object. Subclasses
+                  should *not* set this attribute themselves, they should simply raise the exception.
+                  or pass it back from a worker.
+      log - Log information from the process. Subclasses should add any useful logging information to this
+            attribute
+      queue - ``multiprocessing.Queue`` object which is passed to every worker process for background 
+              processes. It may be used to communicate progress information for use in the ``timeout()`` 
+              method 
     """
+
+    """ 
+    Signal which may be emitted to track progress 
+
+    Argument should be between 0 and 1 and indicate degree of completion
+    """
+    sig_progress = QtCore.Signal(float)
+
+    """ 
+    Signal which will be emitted when process finishes
+    
+    Arguments: (status, log, if status not SUCCEEDED or CANCELLED, exception, otherwise object())
+    """
+    sig_finished = QtCore.Signal(int, str, object)
+
+    """ 
+    Signal which may be emitted when the process starts a new step
+    
+    Arguments is text description
+    """
+    sig_step = QtCore.Signal(str)
 
     NOTSTARTED = 0
     RUNNING = 1
@@ -85,6 +132,14 @@ class Process(QtCore.QObject):
         :param proc_id: ID string for this process
         :param indir: Input data folder
         :param outdir: Output data folder
+        :param worker_fn: For background processes a worker function
+                          to call which will do the processing. This 
+                          function should take parameters:
+                          ``id``, ``queue``,  and a dictionary of ``options``.
+                          It should return ``id``, True/False ``success`` and
+                          an output object. If ``success=False`` the output
+                          object should be an exception. Otherwise it can
+                          be any pickleable object (e.g. Numpy array)
         """
         super(Process, self).__init__()
         self.ivm = ivm
@@ -96,6 +151,58 @@ class Process(QtCore.QObject):
         self.status = Process.NOTSTARTED
         # We seem to get a segfault when emitting a signal with a None object
         self.exception = object()
+
+        if "worker_fn" in kwargs:
+            # Only for background processes
+            self.queue = multiprocessing.Manager().Queue()
+            self.worker_output = []
+            self._worker_fn = kwargs.get("worker_fn", None)
+            self._sync = kwargs.get("sync", False)
+            self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
+            self._timer = None
+            self._workers = []
+
+    def execute(self, options):
+        """
+        Execute the process.
+
+        This method should **not** be overridden. It wraps the ``run()`` method
+        which should be reimplemented to do your processing. The differences
+        between calling ``execute()`` and calling ``run()`` are:
+
+         - ``execute`` will not throw an exception. Instead it will set the
+           status of the process to ``FAILED`` and set the ``exception`` 
+           attribute.
+         - ``execute`` will ensure that the ``status`` attribute is set and
+           ``sig_finished`` is called for synchronous processes, or for
+           asynchronous processes which fail on startup.
+
+        In general calling ``run()`` directly is preferred when widgets
+        call their own processes as it enables exceptions to be handled
+        more naturally (by catching or allowing the default exception handler
+        to catch them). Since asynchronous processes need to be able to 
+        handle exceptions in ``sig_finished``, they may prefer to 
+        call ``execute()`` instead so all the error handling can be in
+        the ``sig_finished`` handler.
+
+        :param options: Dictionary of process options
+        """
+        debug("Executing %s" % self.proc_id)
+        self.status = self.NOTSTARTED
+        try:
+            self.run(options)
+            if self.status == self.NOTSTARTED:
+                self.status = self.SUCCEEDED
+        except Exception, e:
+            self.status = self.FAILED
+            self.exception = e
+
+        if self.status != self.RUNNING:
+            # Synchronous process already finished
+            debug("Sync process done - completing")
+            self._complete()
+        else:
+            debug("Async process running - will wait")
 
     def get_data(self, options, multi=False):
         """ 
@@ -124,17 +231,17 @@ class Process(QtCore.QObject):
             nvols = sum([d.nvols for d in multi_data])
             debug("Multivol: nvols=", nvols)
             grid = None
-            v = 0
-            for d in multi_data:
+            num_vols = 0
+            for data in multi_data:
                 if grid is None:
-                    grid = d.grid
-                d = d.resample(grid)
-                if d.nvols == 1:
-                    rawdata = np.expand_dims(d.raw(), 3)
+                    grid = data.grid
+                data = data.resample(grid)
+                if data.nvols == 1:
+                    rawdata = np.expand_dims(data.raw(), 3)
                 else:
                     rawdata = d.raw()
-                data[..., v:v+d.nvols] = rawdata
-                v += d.nvols
+                data[..., num_vols:num_vols+data.nvols] = rawdata
+                num_vols += data.nvols
             data = NumpyData(data, grid=grid, name="multi_data")
         else:
             if data_name in self.ivm.data:
@@ -189,76 +296,52 @@ class Process(QtCore.QObject):
         """
         return []
 
-class BackgroundProcess(Process):
-    """
-    An asynchronous background process
-    """
-
-    """ 
-    Signal which may be emitted to track progress 
-
-    Argument should be between 0 and 1 and indicate degree of completion
-    """
-    sig_progress = QtCore.Signal(float)
-
-    """ 
-    Signal which will be emitted when process finishes
-    
-    Arguments: (status, log, if status not SUCCEEDED or CANCELLED, exception, otherwise object())
-    """
-    sig_finished = QtCore.Signal(int, str, object)
-
-    """ 
-    Signal which may be emitted when the process starts a new step
-    
-    Arguments is text description
-    """
-    sig_step = QtCore.Signal(str)
-
-    def __init__(self, ivm, worker_fn, **kwargs):
+    def start_bg(self, args, n_workers=1):
         """
-        :param ivm: ImageVolumeManagement object
-        :param worker_fn: Function which will be called to do the processing. This should
-                          take a sequence of arguments which are all pickleable objects. The
-                          first two arguments are the worker ID and the Queue object for
-                          passing results back. Remaining arguments are defined by the 
-                          implementation and should be passed to ``start``
-        """
-        super(BackgroundProcess, self).__init__(ivm, **kwargs)
-        _init_pool()
-        self._worker_fn = worker_fn
-        self._sync = kwargs.get("sync", False)
-        self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
-        self._timer = None
-
-        self.queue = multiprocessing.Manager().Queue()
-        self.workers = []
-        self.output = []
-
-    def start(self, args):
-        """
-        Start background worker
+        Start a set of background workers
         
         This would normally called by ``run()`` after setting up the arguments to pass to the 
         worker run function.
 
         :param args: Sequence of arguments to the worker run function. All must be pickleable objects
         """
-        worker_args = [0, self.queue, ] + [a for a in args]
-        self.output = [None, ]
+        """
+        Split input arguments into chunks and run in parallel. 
+        
+        This would normally called by run() after setting up the arguments to pass to the 
+        worker run function.
+
+        
+        :param args: Sequence of arguments to the worker run function. All must be pickleable objects.
+                     By default Numpy arrays will be split along SPLIT_AXIS and a chunk passed to each
+                     worker.
+        :param n_workers: Number of parallel worker processes to use
+        """
+        _init_pool()
+        worker_args = self.split_args(n_workers, args)
+        self.worker_output = [None, ] * n_workers
         self.status = Process.RUNNING
         if self._multiproc:
-            self.workers = [_POOL.apply_async(self._worker_fn, worker_args, callback=self._worker_finished_cb)]
+            self._workers = []
+            for i in range(n_workers):
+                debug("starting task %i..." % n_workers)
+                proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
+                self._workers.append(proc)
+            
             if self._sync:
-                self.workers[0].get()
+                debug("Running background task synchronously")
+                for i in range(n_workers):
+                    self._workers[i].get()
             else:
                 self._restart_timer()
         else:
-            result = self._worker_fn(*worker_args)
-            self.timeout()
-            if QtGui.qApp is not None: 
-                QtGui.qApp.processEvents()
-            self._worker_finished_cb(result)
+            for i in range(n_workers):
+                result = self._worker_fn(*worker_args[i])
+                self.timeout()
+                if QtGui.qApp is not None: QtGui.qApp.processEvents()
+                self._worker_finished_cb(result)
+                if self.status != Process.RUNNING: 
+                    break
 
     def cancel(self):
         """
@@ -272,7 +355,7 @@ class BackgroundProcess(Process):
                 # But workers will continue to work. Maybe look into
                 # abortable_worker solution?
                 pass
-                #for p in self.workers:
+                #for p in self._workers:
                 #    p.terminate()
                 #    p.join(timeout=1.0)
             else:
@@ -280,14 +363,7 @@ class BackgroundProcess(Process):
                 # will be started
                 pass
 
-            try:
-                self.timeout()
-                self.finished()
-            except Exception as e:
-                traceback.print_exc(e)
-                warn("Error executing finished methods for process")
-
-            self.sig_finished.emit(self.status, self.log, self.exception)
+        self._complete()
 
     def timeout(self):
         """
@@ -306,88 +382,6 @@ class BackgroundProcess(Process):
         """
         pass
     
-    def _restart_timer(self):
-        self._timer = threading.Timer(1, self._timer_cb)
-        self._timer.daemon = True
-        self._timer.start()
-
-    def _timer_cb(self):
-        if self.status == Process.RUNNING:
-            self.timeout()
-            self._restart_timer()
-
-    def _worker_finished_cb(self, result):
-        worker_id, success, output = result
-        debug("Finished: id=", worker_id, success, output)
-        
-        if self.status in (Process.FAILED, Process.CANCELLED):
-            # If one process has already failed or been cancelled, ignore results of others
-            debug("Ignoring, already failed")
-            return
-        elif success:
-            self.output[worker_id] = output
-            if None not in self.output:
-                self.status = Process.SUCCEEDED
-        else:
-            # If one process fails, they all fail. Output is just the first exception to be caught
-            # FIXME cancel other workers?
-            self.status = Process.FAILED
-            self.exception = output
-
-        if self.status != Process.RUNNING:
-            try:
-                self.timeout()
-                self.finished()
-            except Exception as e:
-                traceback.print_exc(e)
-                warn("Error executing finished methods for process")
-            self.sig_finished.emit(self.status, self.log, self.exception)
-
-class ParallelProcess(BackgroundProcess):
-    """
-    An background process which runs multiple workers in parallel
-    """
-
-    def start_parallel(self, args, n_workers):
-        """
-        Split input arguments into chunks and run in parallel. 
-        
-        This would normally called by run() after setting up the arguments to pass to the 
-        worker run function.
-
-        :param n_workers: Number of parallel worker processes to use
-        :param args: Sequence of arguments to the worker run function. All must be pickleable objects.
-                     By default Numpy arrays will be split along SPLIT_AXIS and a chunk passed to each
-                     worker.
-        """
-        worker_args = self.split_args(n_workers, args)
-        self.output = [None, ] * n_workers
-        self.status = Process.RUNNING
-        if self._multiproc:
-            self.workers = []
-            for i in range(n_workers):
-                debug("starting task %i..." % n_workers)
-                proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
-                self.workers.append(proc)
-            
-            if self._sync:
-                debug("synchronous")
-                for i in range(n_workers):
-                    self.workers[i].get()
-            else:
-                debug("async - restarting timer")
-                self._restart_timer()
-        else:
-            for i in range(n_workers):
-                if self.status != Process.RUNNING:
-                    break
-                result = self._worker_fn(*worker_args[i])
-                self.timeout()
-                if QtGui.qApp is not None: QtGui.qApp.processEvents()
-                self._worker_finished_cb(result)
-                if self.status != Process.RUNNING: break
-        debug("done start")
-
     def split_args(self, n_workers, args):
         """
         Split function arguments up across workers. 
@@ -409,7 +403,7 @@ class ParallelProcess(BackgroundProcess):
         # Transpose list of lists so first element is all the arguments for process 0, etc
         return map(list, zip(*split_args))
 
-    def recombine_data(self, data):
+    def recombine_data(self, data_list):
         """
         Recombine a sequence of data items into a single data item
 
@@ -418,7 +412,7 @@ class ParallelProcess(BackgroundProcess):
         could be overridden, especially if split_data has been overridden.
         """
         shape = None
-        for d in data:
+        for d in data_list:
             if d is not None:
                 shape = d.shape
         if shape is None:
@@ -427,13 +421,59 @@ class ParallelProcess(BackgroundProcess):
             debug("Recombining data with shape", shape)
         empty = np.zeros(shape)
         real_data = []
-        for d in data:
-            if d is None:
+        for data in data_list:
+            if data is None:
                 real_data.append(empty)
             else:
-                real_data.append(d)
+                real_data.append(data)
         
         return np.concatenate(real_data, SPLIT_AXIS)
 
-def _run_macro(worker_id, queue, script):
-    pass
+    def _complete(self):
+        """
+        Process completed
+        
+        Call finished method and emit sig_progress if successful, and 
+        emit finished signal regardless. 
+        """
+        debug("Process completing, status=%i" % self.status)
+        if self.status == self.SUCCEEDED:
+            try:
+                self.finished()
+                self.sig_progress.emit(1)
+            except Exception as e:
+                self.status = self.FAILED
+                self.exception = e
+            
+        self.sig_finished.emit(self.status, self.log, self.exception)
+
+    def _restart_timer(self):
+        self._timer = threading.Timer(1, self._timer_cb)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def _timer_cb(self):
+        if self.status == Process.RUNNING:
+            self.timeout()
+            self._restart_timer()
+
+    def _worker_finished_cb(self, result):
+        worker_id, success, output = result
+        debug("Process worker finished: id=%i, status=%s" % (worker_id, str(success)))
+        
+        if self.status in (Process.FAILED, Process.CANCELLED):
+            # If one process has already failed or been cancelled, ignore results of others
+            debug("Ignoring worker, process already failed or cancelled")
+            return
+        elif success:
+            self.worker_output[worker_id] = output
+            if None not in self.worker_output:
+                self.status = Process.SUCCEEDED
+        else:
+            # If one process fails, they all fail. Output is just the first exception to be caught
+            # FIXME cancel other workers?
+            self.status = Process.FAILED
+            self.exception = output
+
+        if self.status != Process.RUNNING:
+            self._complete()

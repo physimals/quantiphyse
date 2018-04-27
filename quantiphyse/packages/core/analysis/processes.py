@@ -54,7 +54,6 @@ class CalcVolumesProcess(Process):
                 output_name = options.pop('output-name', "roi-vols")
                 self.ivm.add_extra(output_name, table_to_str(self.model))
 
-        self.status = Process.SUCCEEDED
 
 class HistogramProcess(Process):
     """
@@ -122,8 +121,6 @@ class HistogramProcess(Process):
         if not options.pop('no-extras', False): 
             debug("Adding %s" % output_name)
             self.ivm.add_extra(output_name, table_to_str(self.model))
-
-        self.status = Process.SUCCEEDED
 
 class RadialProfileProcess(Process):
     """
@@ -202,7 +199,6 @@ class RadialProfileProcess(Process):
 
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_str(self.model))
-        self.status = Process.SUCCEEDED
 
 class DataStatisticsProcess(Process):
     """
@@ -261,7 +257,6 @@ class DataStatisticsProcess(Process):
 
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_str(self.model))
-        self.status = Process.SUCCEEDED
 
     def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice=None):
         """
@@ -352,5 +347,4 @@ class ExecProcess(Process):
                     self.ivm.add_data(result, grid=self.grid, name=name)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
-       
-        self.status = Process.SUCCEEDED
+

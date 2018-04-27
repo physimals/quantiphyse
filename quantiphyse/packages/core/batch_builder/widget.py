@@ -145,7 +145,7 @@ class BatchBuilderWidget(QpWidget):
 
     def _run(self):
         script = Script(code=self.proc_edit.toPlainText())
-        script.start()
+        script.run()
         script.wait()
 
     def _save(self):

@@ -61,4 +61,3 @@ class KMeansProcess(Process):
         label_image[mask] = kmeans.labels_ + 1
         self.ivm.add_roi(NumpyData(label_image, grid=data.grid, name=output_name), make_current=True)
 
-        self.status = Process.SUCCEEDED

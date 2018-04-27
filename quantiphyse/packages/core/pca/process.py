@@ -17,6 +17,7 @@ class PcaProcess(Process):
         Process.__init__(self, ivm, **kwargs)
         self.explained_variance = []
         self.pca_modes = []
+        self.mean = [0,]
 
     def run(self, options):
         data = self.get_data(options)
@@ -42,4 +43,3 @@ class PcaProcess(Process):
             name = "%s%i" % (output_name, comp_idx)
             self.ivm.add_data(feature_images[:, :, :, comp_idx], grid=data.grid, name=name, make_current=(comp_idx == 0))
 
-        self.status = Process.SUCCEEDED

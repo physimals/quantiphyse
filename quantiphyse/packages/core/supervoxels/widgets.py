@@ -87,10 +87,7 @@ class PerfSlicWidget(QpWidget):
     def _generate(self):
         process = SupervoxelsProcess(self.ivm, sync=True)
         process.run(self.batch_options()[1])
-        if process.status != SupervoxelsProcess.SUCCEEDED:
-            QtGui.QMessageBox.warning(None, "Process error", "Supervoxels process failed to run:\n\n" + str(process.output),
-                                      QtGui.QMessageBox.Close)
-
+        
 class MeanValuesWidget(QpWidget):
     """
     Convert a data + multi-level ROI into mean values data set
@@ -163,6 +160,3 @@ class MeanValuesWidget(QpWidget):
         
         process = MeanValuesProcess(self.ivm)
         process.run(options)
-        if process.status != SupervoxelsProcess.SUCCEEDED:
-            QtGui.QMessageBox.warning(None, "Process error", "MeanValues process failed to run:\n\n" + str(process.output),
-                                      QtGui.QMessageBox.Close)

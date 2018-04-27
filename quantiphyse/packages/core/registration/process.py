@@ -9,7 +9,7 @@ import sys
 import numpy as np
 
 from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path, QpException
-from quantiphyse.processes import Process, BackgroundProcess
+from quantiphyse.processes import Process
 
 def get_reg_method(method_name):
     """
@@ -76,7 +76,7 @@ def _run_reg(worker_id, queue, method_name, options, regdata, refdata, voxel_siz
     except:
         return worker_id, False, sys.exc_info()[1]
 
-class RegProcess(BackgroundProcess):
+class RegProcess(Process):
     """
     Asynchronous background process to run registration / motion correction
     """
@@ -84,7 +84,7 @@ class RegProcess(BackgroundProcess):
     PROCESS_NAME = "Reg"
 
     def __init__(self, ivm, **kwargs):
-        BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
+        Process.__init__(self, ivm, worker_fn=_run_reg, **kwargs)
 
     def run(self, options):
         self.replace = options.pop("replace-vol", False)
@@ -147,7 +147,7 @@ class RegProcess(BackgroundProcess):
             options.pop(key)
 
         # Function input data must be passed as list of arguments for multiprocessing
-        self.start([self.method, options, regdata.raw(), refdata, self.grid.spacing, warp_rois])
+        self.start_bg([self.method, options, regdata.raw(), refdata, self.grid.spacing, warp_rois])
 
     def timeout(self):
         if self.queue.empty(): return
@@ -160,7 +160,7 @@ class RegProcess(BackgroundProcess):
         """ Add output data to the IVM and set the log """
         self.log = ""
         if self.status == Process.SUCCEEDED:
-            output = self.output[0]
+            output = self.worker_output[0]
             self.ivm.add_data(output[0], name=self.output_name, grid=self.grid, make_current=True)
 
             if output[1] is not None: 

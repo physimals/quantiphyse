@@ -35,8 +35,6 @@ class LoadProcess(Process):
                     qpdata.set_2dt()
                 self.ivm.add_data(qpdata, make_current=True)
 
-        self.status = Process.SUCCEEDED
-
     def _load_file(self, fname, name):
         filepath = self._get_filepath(fname)
         if name is None:
@@ -106,8 +104,6 @@ class SaveProcess(Process):
                 warn("Failed to save %s" % name)
                 raise
 
-        self.status = Process.SUCCEEDED
-
 class SaveAllExceptProcess(Process):
     """
     Save all data to file apart from specified items
@@ -141,8 +137,6 @@ class SaveAllExceptProcess(Process):
                 warn("Failed to save %s" % name)
                 raise
 
-        self.status = Process.SUCCEEDED
-
 class SaveDeleteProcess(SaveProcess):
     """
     Save data to file and then delete it
@@ -156,8 +150,6 @@ class SaveDeleteProcess(SaveProcess):
         for name in options:
             if name in self.ivm.data: self.ivm.delete_data(name)
             if name in self.ivm.rois: self.ivm.delete_roi(name)
-
-        self.status = Process.SUCCEEDED
 
 class SaveArtifactsProcess(Process):
     """
@@ -175,8 +167,6 @@ class SaveArtifactsProcess(Process):
                 self._save_text(str(self.ivm.extras[name]), fname)
             else:
                 warn("Extra '%s' not found - not saving" % name)
-
-        self.status = Process.SUCCEEDED
 
     def _save_text(self, text, fname, ext="txt"):
         if len(text) > 0:

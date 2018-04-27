@@ -70,7 +70,6 @@ class SupervoxelsProcess(Process):
         newroi = np.zeros(data.grid.shape)
         newroi[slices] = np.array(labels, dtype=np.int) + 1
         self.ivm.add_roi(NumpyData(newroi, grid=data.grid, name=output_name), make_current=True)
-        self.status = Process.SUCCEEDED
 
 class MeanValuesProcess(Process):
     """
@@ -95,4 +94,3 @@ class MeanValuesProcess(Process):
                 out_data[roi.raw() == region] = np.mean(in_data[roi.raw() == region])
 
         self.ivm.add_data(NumpyData(out_data, grid=data.grid, name=output_name), make_current=True)
-        self.status = Process.SUCCEEDED

@@ -1041,13 +1041,7 @@ class RunBox(QtGui.QGroupBox):
         self.process.sig_finished.connect(self._finished)
         self.process.sig_progress.connect(self._update_progress)
         self.process.sig_step.connect(self._new_step)
-    
-        try:
-            self.process.run(rundata)
-        except Exception as e:
-            # Process failed to start, so call finished cb manually
-            debug(traceback.format_exc())
-            self._finished(Process.FAILED, "", e)
+        self.process.execute(rundata)
 
     def _cancel(self):
         self.process.cancel()
