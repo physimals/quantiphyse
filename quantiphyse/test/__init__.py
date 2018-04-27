@@ -18,7 +18,7 @@ def run_tests(test_filter=None):
 
     tests = get_plugins("widget-tests")
     for test in tests:
-        if test_filter is None or test.__name__.startswith(test_filter):
+        if test_filter is None or test.__name__.lower().startswith(test_filter.lower()):
             suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
    
     unittest.TextTestRunner().run(suite)

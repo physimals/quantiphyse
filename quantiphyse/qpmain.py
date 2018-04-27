@@ -55,8 +55,8 @@ def main():
     parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     parser.add_argument('--debug', help='Activate debug mode', action="store_true")
-    parser.add_argument('--self-test', help='Run self test', action="store_true")
-    parser.add_argument('--test-suite', help='Specify test suite to be run (default=run all)', default=None)
+    parser.add_argument('--test-all', help='Run all tests', action="store_true")
+    parser.add_argument('--test', help='Specify test suite to be run (default=run all)', default=None)
     parser.add_argument('--fast', help='Run only fast tests', action="store_true")
     parser.add_argument('--qv', help='Activate quick-view mode', action="store_true")
     args = parser.parse_args()
@@ -82,8 +82,8 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Check whether any batch processing arguments have been called
-    if args.self_test:
-        run_tests(args.test_suite)
+    if args.test_all or args.test:
+        run_tests(args.test)
         sys.exit(0)
     elif args.batch is not None:
         runner = BatchScriptRunner(fname=args.batch)
