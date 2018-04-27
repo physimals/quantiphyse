@@ -6,6 +6,7 @@ Copyright (c) 2013-2018 University of Oxford
 import sys
 import warnings
 if "--debug" not in sys.argv:
+    # Avoid ugly warnings from some third party packages unless we are debugging
     warnings.simplefilter("ignore")
 
 import argparse
@@ -89,7 +90,7 @@ def main():
         runner = BatchScriptRunner(fname=args.batch)
         # Make sure script is run after the main loop starts in case it
         # is completely synchronous
-        QtCore.QTimer.singleShot(100, runner.run)
+        QtCore.QTimer.singleShot(200, runner.run)
     else:
         # Create window and start main loop
         if args.qv:
