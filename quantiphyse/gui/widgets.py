@@ -12,7 +12,7 @@ import traceback
 from PySide import QtGui, QtCore
 
 from quantiphyse.processes import Process
-from quantiphyse.utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf
+from quantiphyse.utils import debug, warn, get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf
 from quantiphyse.data import save
 
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
@@ -1073,6 +1073,8 @@ class RunBox(QtGui.QGroupBox):
                 self.progress.setValue(0)
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
+                if get_debug(): 
+                    traceback.print_exc(exception)
                 raise exception
             else:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
