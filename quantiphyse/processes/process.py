@@ -135,7 +135,7 @@ class Process(QtCore.QObject):
         :param worker_fn: For background processes a worker function
                           to call which will do the processing. This 
                           function should take parameters:
-                          ``id``, ``queue``,  and a dictionary of ``options``.
+                          ``id``, ``queue``,  and a sequence of arguments.
                           It should return ``id``, True/False ``success`` and
                           an output object. If ``success=False`` the output
                           object should be an exception. Otherwise it can
