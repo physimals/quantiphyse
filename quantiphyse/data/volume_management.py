@@ -6,15 +6,10 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, print_function
 
-import sys
-import os
-import math
-import warnings
-import glob
 import keyword
 import re
 
-from PySide import QtCore, QtGui
+from PySide import QtCore
 
 import numpy as np
 
@@ -94,13 +89,13 @@ class ImageVolumeManagement(QtCore.QObject):
             name += "_"
 
         # Make it unique
-        n = 1
+        num = 1
         test_name = name
         while 1:
-            if test_name not in self.data and test_name not in self.rois:
+            if not ensure_unique or (test_name not in self.data and test_name not in self.rois):
                 break
-            n += 1
-            test_name = "%s_%i" % (name, n)
+            num += 1
+            test_name = "%s_%i" % (name, num)
         return test_name
 
     def _valid_name(self, name):
@@ -139,7 +134,7 @@ class ImageVolumeManagement(QtCore.QObject):
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
 
-    def add_roi(self, roi, name=None, grid=None, make_current=False, signal=True):
+    def add_roi(self, roi, name=None, grid=None, make_current=False):
         if isinstance(roi, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add_roi: Numpy data must have a name and a grid")
@@ -159,7 +154,7 @@ class ImageVolumeManagement(QtCore.QObject):
         if make_current:
             self.set_current_roi(roi.name)
             
-    def _data_exists(self, name, invert=False):
+    def _data_exists(self, name):
         if name not in self.data:
             raise RuntimeError("Data '%s' does not exist" % name)
 
@@ -208,7 +203,7 @@ class ImageVolumeManagement(QtCore.QObject):
             self.sig_main_data.emit(None)
         self.sig_all_data.emit(self.data.keys())
 
-    def delete_roi(self, name, signal=True):
+    def delete_roi(self, name):
         self._roi_exists(name)
         del self.rois[name]
         if self.current_roi.name == name:
@@ -216,7 +211,7 @@ class ImageVolumeManagement(QtCore.QObject):
             self.sig_current_roi.emit(None)
         self.sig_all_rois.emit(self.rois.keys())
 
-    def set_current_roi(self, name, signal=True):
+    def set_current_roi(self, name):
         self._roi_exists(name)
         self.current_roi = self.rois[name]
         self.sig_current_roi.emit(self.current_roi)
