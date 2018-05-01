@@ -1055,7 +1055,7 @@ class RunBox(QtGui.QGroupBox):
 
     def _finished(self, status, log, exception):
         try:
-            debug("Finished: ", status, len(log), exception)
+            debug("RunBox: Finished: ", status, len(log), exception)
             self.log = log
             if status == Process.SUCCEEDED:
                 self.progress.setValue(100)
