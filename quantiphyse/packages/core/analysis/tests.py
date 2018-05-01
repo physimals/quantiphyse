@@ -6,7 +6,7 @@ from PySide import QtGui
 
 from quantiphyse.test.widget_test import WidgetTest
 
-from .widgets import DataStatistics, SECurve
+from .widgets import DataStatistics, SECurve, ModelCurves
 
 class DataStatisticsTest(WidgetTest):
 
@@ -255,6 +255,18 @@ class MultiVoxelAnalysisTest(WidgetTest):
         plot = self.w.plots[pt2]
         self.assertTrue(plot.line in self.w.p1.items)
         self.assertTrue(plot.pts in self.w.p1.items)
+
+class VoxelAnalysisTest(WidgetTest):
+
+    def widget_class(self):
+        return ModelCurves
+
+    def test3dDataOnly(self):
+        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_3d")
+        pt = (2, 2, 2, 0)
+        self.ivl._pick(0, pt)
+        self.processEvents()
+        self.assertFalse(self.error)
 
 if __name__ == '__main__':
     unittest.main()

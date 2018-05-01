@@ -1002,7 +1002,10 @@ class ModelCurves(QpWidget):
             idx = 0
             pos = self.ivl.focus()
             sigs = self.ivm.timeseries(pos, self.ivl.grid)
-            max_length = max([len(sig) for sig in sigs.values()])
+            max_length = max([0,] + [len(sig) for sig in sigs.values()])
+
+            if not self.ivm.main:
+                return
 
             main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
             main_curve.extend([0] * max_length)
@@ -1047,7 +1050,10 @@ class ModelCurves(QpWidget):
         # Get all timeseries signals and determine max number of timepoints
         pos = self.ivl.focus()
         sigs = self.ivm.timeseries(pos, self.ivl.grid)
-        max_length = max([len(sig) for name, sig in sigs.items() if self.data_enabled[name] == QtCore.Qt.Checked])
+        max_length = max([0, ] + [len(sig) for name, sig in sigs.items() if self.data_enabled[name] == QtCore.Qt.Checked])
+        
+        if max_length == 0:
+            return
         
         # FIXME custom range for residuals axis?
         self.plot_rightaxis.enableAutoRange()
@@ -1080,6 +1086,9 @@ class ModelCurves(QpWidget):
             self.plot.getAxis('right').setLabel('Residual')
         else:
             self.plot.hideAxis('right')
+
+        if not self.ivm.main:
+            return
 
         main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
         main_curve.extend([0] * max_length)
