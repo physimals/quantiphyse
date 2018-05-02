@@ -529,10 +529,10 @@ class QpData(object):
 
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
-        data_naxis = np.argmax(np.absolute(data_normal))
 
         data_scaled_normal = np.array([data_normal[idx] * self.grid.spacing[idx] * self.grid.spacing[idx] for idx in range(3)])
-        
+        data_naxis = np.argmax(np.absolute(data_scaled_normal))
+
         data_axes = range(3)
         del data_axes[data_naxis]
         slice_basis, slice_shape = [], []
