@@ -439,6 +439,7 @@ class Process(QtCore.QObject):
         debug("Process completing, status=%i" % self.status)
         if self.status == self.SUCCEEDED:
             try:
+                self.timeout()
                 self.finished()
                 self.sig_progress.emit(1)
             except Exception as e:
