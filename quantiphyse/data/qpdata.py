@@ -21,9 +21,11 @@ import math
 
 import numpy as np
 import scipy
-from . import functions as pg
 
 from quantiphyse.utils import debug, warn, sf, QpException
+
+# Private copy of pyqtgraph functions for bug fixes
+from . import functions as pg
 
 """
 Tolerance for treating values as equal
@@ -162,7 +164,7 @@ class DataGrid(object):
         left->right, the y axis increases posterior->anterior and the
         z axis increases inferior->superior.
         """
-        reorder, flip, tmatrix = self.simplify_transforms(self.affine)
+        reorder, _, tmatrix = self.simplify_transforms(self.affine)
         new_shape = [self.shape[d] for d in reorder]
         return DataGrid(new_shape, tmatrix)
 
@@ -283,7 +285,7 @@ class QpData(object):
     :ivar roi: True if this data represents a region of interest
     """
 
-    def __init__(self, name, grid, nvols, fname=None, roi=False):
+    def __init__(self, name, grid, nvols, fname=None, metadata=None, roi=False):
         # Everyone needs a friendly name
         self.name = name
 
@@ -309,6 +311,13 @@ class QpData(object):
         # Treat as an ROI data set if requested
         self._regions = None
         self.set_roi(roi)
+
+        # Metadata - saved as NIFTI extension. Keys must be strings and
+        # values must be YAML-convertible
+        if metadata is not None:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def raw(self):
         """
