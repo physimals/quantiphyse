@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, QpException
+from quantiphyse.utils import debug, warn, QpException
 
 from .process import Process
 
@@ -33,6 +33,26 @@ class RenameRoiProcess(Process):
         for name in options.keys():
             newname = options.pop(name)
             self.ivm.rename_roi(name, newname)
+
+class DeleteProcess(Process):
+    """
+    Delete data or ROIs
+    """
+
+    PROCESS_NAME = "Delete"
+
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+
+    def run(self, options):
+        for name in options.copy().keys():
+            options.pop(name, None)
+            if name in self.ivm.data: 
+                self.ivm.delete_data(name)
+            elif name in self.ivm.rois: 
+                self.ivm.delete_roi(name)
+            else:
+                warn("Failed to delete %s: No such data or ROI" % name)
 
 class RoiCleanupProcess(Process):
     """
