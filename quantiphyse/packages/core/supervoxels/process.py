@@ -61,15 +61,13 @@ class SupervoxelsProcess(Process):
             img = (img - img.min()) / (img.max() - img.min())
 
         # FIXME enforce_connectivity=True does not seem to work in ROI mode?
-        vox_sizes = [float(s)/data.grid.spacing[0] for s in data.grid.spacing]
-        
         labels = slic_feat(img, n_segments=n_supervoxels, compactness=comp, sigma=sigma,
                            seed_type=seed_type, multichannel=False, multifeat=True,
-                           enforce_connectivity=False, return_adjacency=False, spacing=vox_sizes,
+                           enforce_connectivity=False, return_adjacency=False, spacing=data.grid.spacing,
                            mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
         newroi = np.zeros(data.grid.shape)
         newroi[slices] = np.array(labels, dtype=np.int) + 1
-        self.ivm.add_roi(NumpyData(newroi, grid=data.grid, name=output_name), make_current=True)
+        self.ivm.add_roi(newroi, grid=data.grid, name=output_name, make_current=True)
 
 class MeanValuesProcess(Process):
     """
