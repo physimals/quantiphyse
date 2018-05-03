@@ -26,6 +26,7 @@ from .exceptions import QpException
 # Default basic processes - all others are imported from packages
 BASIC_PROCESSES = {"RenameData"   : RenameDataProcess,
                    "RenameRoi"   : RenameRoiProcess,
+                   "Delete"   : DeleteProcess,
                    "RoiCleanup" : RoiCleanupProcess,
                    "Load" : LoadProcess,
                    "Save" : SaveProcess,
@@ -61,7 +62,7 @@ class Script(Process):
         code: YAML code as a string
         yamlroot: Parsed YAML code as Python objects
         """
-        super(Script, self).__init__(ivm, worker_fn=None)
+        super(Script, self).__init__(ivm)
         if fname is not None:
             with open(fname, "r") as f:
                 root = yaml.load(f)
@@ -77,6 +78,7 @@ class Script(Process):
             root = {}
 
         self.ivm = ivm
+        self._current_process = None
 
         # Find all the process implementations
         processes = dict(BASIC_PROCESSES)
@@ -94,7 +96,7 @@ class Script(Process):
             if proc is None:
                 raise QpException("Unknown process: %s" % name)
             else:
-                params["Id"] = params.get("Id", name)
+                params["id"] = params.get("id", name)
                 params["__impl"] = proc
                 self.pipeline.append(params)
 
@@ -107,8 +109,7 @@ class Script(Process):
         else:
             for case in yaml_cases:
                 case_id = case.keys()[0]
-                if case[case_id] is None: case[case_id] = {}
-                self.cases.append(BatchScriptCase(case_id, yaml_cases[case_id]))
+                self.cases.append(BatchScriptCase(case_id, case.get(case_id, {})))
         
         # After removing processes and cases, remainder is the generic options
         self.generic_params = root
@@ -172,7 +173,7 @@ class Script(Process):
         # Override values which are defined in the individual case
         if self._current_case is not None:
             case_params = dict(self._current_case.params)
-            override = case_params.pop(proc_params["Id"], {})
+            override = case_params.pop(proc_params["id"], {})
             proc_params.update(override)
             generic_params.update(case_params)
 
@@ -188,7 +189,7 @@ class Script(Process):
                                                  generic_params.get("InputId", ""),
                                                  generic_params.get("InputSubFolder", "")))
             
-            proc_id = proc_params.pop("Id")
+            proc_id = proc_params.pop("id")
             process = proc_params.pop("__impl")(self._current_ivm, indir=indir, outdir=outdir, proc_id=proc_id)
             self._current_process = process
             self._current_params = proc_params
@@ -200,6 +201,7 @@ class Script(Process):
         
         except Exception as e:
             # Could not create process - better abandon everything
+            warn("Failed to create process - stopping script")
             traceback.print_exc(e)
             self.status = Process.FAILED
             self.exception = e
@@ -207,8 +209,9 @@ class Script(Process):
         finally:
             #set_debug(debug_orig)
             pass
-            
+
     def _process_finished(self, status, log, exception):
+        debug("Process finished", self._current_process.proc_id)
         if self.status != self.RUNNING:
             return
 
@@ -222,6 +225,8 @@ class Script(Process):
             debug("Process failed - stopping script")
             self.log += "FAILED\n"
             self.status = status
+            self._current_process = None
+            self._current_params = None
             self.sig_finished.emit(self.status, self.log, exception)
 
     def _process_progress(self, complete):
