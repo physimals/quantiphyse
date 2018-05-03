@@ -1,5 +1,9 @@
 from .process import SmoothingProcess
 from .widget import SmoothingWidget
-    
-QP_MANIFEST = {"widgets" : [SmoothingWidget,],
-               "processes" : [SmoothingProcess,]}
+from .tests import SmoothingWidgetTests
+
+QP_MANIFEST = {
+    "widgets" : [SmoothingWidget,],
+    "widget-tests" : [SmoothingWidgetTests,],
+    "processes" : [SmoothingProcess,]
+}
