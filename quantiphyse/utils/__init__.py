@@ -207,6 +207,14 @@ def sf(num, sf=None):
     fmt = "%%.%ig" % sf
     return fmt % float(num)
 
+def remove_nans(data, fillvalue=0):
+    """
+    Check for and remove nans from data arrays
+    """
+    notnans = np.isfinite(data)
+    if not np.all(notnans):
+        data[np.logical_not(notnans)] = fillvalue
+
 def get_col(cmap, idx, out_of):
     """ Get RGB color for an index within a range, using a Matplotlib colour map """
     if out_of == 0: 
