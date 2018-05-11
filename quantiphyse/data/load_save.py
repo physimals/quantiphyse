@@ -22,7 +22,7 @@ import nibabel as nib
 import numpy as np
 import nrrd
 
-from quantiphyse.utils import QpException
+from quantiphyse.utils import debug, QpException
 from .qpdata import DataGrid, QpData
 
 HAVE_DCMSTACK = True
@@ -31,6 +31,8 @@ try:
 except:
     HAVE_DCMSTACK = False
     warnings.warn("DCMSTACK not found - may not be able to read DICOM folders")
+
+QP_NIFTI_EXTENSION_CODE = 42
 
 class NumpyData(QpData):
     def __init__(self, data, grid, name, **kwargs):
@@ -70,8 +72,16 @@ class NiftiData(QpData):
         self.rawdata = None
         self.voldata = None
         self.nifti_header = self.nii.header
+        metadata = None
+        for ext in self.nifti_header.extensions:
+            if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
+                import yaml
+                debug("Found QP metadata: %s" % ext.get_content())
+                metadata = yaml.load(ext.get_content())
+                debug(metadata)
+
         grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
-        QpData.__init__(self, fname, grid, nvols, fname=fname)
+        QpData.__init__(self, fname, grid, nvols, fname=fname, metadata=metadata)
 
     def raw(self):
         # NB: np.asarray convert data to an in-memory array instead of a numpy file memmap.
@@ -237,7 +247,18 @@ def save(data, fname, grid=None):
     else:
         arr = data.resample(grid).raw()
         
-    img = nib.Nifti1Image(arr, grid.affine)
+    if hasattr(data, "nifti_header"):
+        header = data.nifti_header.copy()
+    else:
+        header = None
+
+    img = nib.Nifti1Image(arr, grid.affine, header=header)
     img.update_header()
+    if data.metadata:
+        import yaml
+        yaml_metadata = yaml.dump(data.metadata, default_flow_style=False)
+        debug("Writing metadata: ", yaml_metadata)
+        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
+        img.header.extensions.append(ext)
     img.to_filename(fname)
     data.fname = fname
