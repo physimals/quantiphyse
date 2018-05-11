@@ -8,7 +8,7 @@ from PySide import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np
 
-from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, ChoiceOption
 from quantiphyse.utils import debug, warn, QpException
 
 class CompareDataWidget(QpWidget):
@@ -35,9 +35,6 @@ class CompareDataWidget(QpWidget):
         self.d2_combo = OverlayCombo(self.ivm)
         self.d2_combo.currentIndexChanged.connect(self._update_data)
         hbox.addWidget(self.d2_combo)
-        self.run_btn = QtGui.QPushButton("Go")
-        self.run_btn.clicked.connect(self._run)
-        hbox.addWidget(self.run_btn)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
@@ -72,20 +69,41 @@ class CompareDataWidget(QpWidget):
         self.warn_label.setStyleSheet("QLabel { color : red; }")
         self.warn_label.setVisible(False)
         grid.addWidget(self.warn_label, 2, 0)
-                
+        self.plot_mode = ChoiceOption("Plot mode", grid, 3, choices=["Scatter", "Heat map"])
+        self.plot_mode.combo.currentIndexChanged.connect(self._plot_mode_changed)
+        self.bins = NumericOption("Bins", grid, 3, xpos=2, minval=20, default=50, intonly=True)
+        self.bins.label.setVisible(False)
+        self.bins.spin.setVisible(False)
+        self.run_btn = QtGui.QPushButton("Update")
+        self.run_btn.clicked.connect(self._run)
+        grid.addWidget(self.run_btn, 4, 0)
         hbox.addWidget(gbox)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
+        hbox = QtGui.QHBoxLayout()
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
-        self.plot = win.addPlot()
-        vbox.addWidget(win)
+        self.plot = win.addPlot(enableAutoRange=True)
+        hbox.addWidget(win)
         
-        vbox.addStretch(1)  
+        self.hist = pg.HistogramLUTWidget()
+        self.hist.setVisible(False)
+        self.hist.setBackground(None)
+        self.hist.gradient.loadPreset("thermal")
+        hbox.addWidget(self.hist) 
+        vbox.addLayout(hbox)
+
         self._update_gui()
         self._update_data()
     
+    def _plot_mode_changed(self, idx):
+        self.bins.label.setVisible(idx == 1)
+        self.bins.spin.setVisible(idx == 1)
+        self.sample_cb.setChecked(idx == 0)
+        self._update_gui()
+        self._update_data()
+
     def _update_gui(self):
         self.sample_spin.setEnabled(self.sample_cb.isChecked())
 
@@ -117,7 +135,8 @@ class CompareDataWidget(QpWidget):
                 d2 = np.take(d2, idx)
                 self.warn_label.setVisible(False)
             else:
-                self.warn_label.setVisible(True)
+                # Warn about plotting all data in scatter mode
+                self.warn_label.setVisible(self.plot_mode.combo.currentIndex() == 0)
                         
             self.d1 = d1
             self.d2 = d2
@@ -129,9 +148,23 @@ class CompareDataWidget(QpWidget):
         self.plot.clear() 
         self.plot.setLabel('bottom', self.d1_combo.currentText())
         self.plot.setLabel('left', self.d2_combo.currentText())
-        self.plot.plot(self.d1, self.d2, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        if self.plot_mode.combo.currentIndex() == 0:
+            self.plot.setAspectLocked(False)
+            self.hist.setVisible(False)
+            self.plot.plot(self.d1, self.d2, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        else:
+            heatmap, xedges, yedges = np.histogram2d(self.d1, self.d2, bins=self.bins.value())
+            rect = QtCore.QRectF(xedges[0], yedges[0], xedges[-1]-xedges[0], yedges[-1]-yedges[0])
+            print(rect.left(), rect.right(), rect.top(), rect.bottom())
+            img = pg.ImageItem(heatmap)
+            img.setRect(rect)
+            #self.plot.setAspectLocked(True)
+            self.hist.setVisible(True)
+            self.hist.setImageItem(img)
+            self.plot.addItem(img)
+
         if self.id_cb.isChecked():
             real_min = max(self.d1.min(), self.d2.min())
             real_max = min(self.d1.max(), self.d2.max())
-            pen=pg.mkPen((255, 255, 255), style=QtCore.Qt.DashLine)
+            pen = pg.mkPen((255, 255, 255), style=QtCore.Qt.DashLine)
             self.plot.plot([real_min, real_max], [real_min, real_max], pen=pen, width=2.0)
