@@ -513,8 +513,6 @@ class QpData(object):
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
                                                   output_shape=output_shape, order=order)
 
-            self._remove_nans(data)
-
             if self.roi:
                 if data.min() < 0 or data.max() > 2**32:
                     raise QpException("ROIs must contain values between 0 and 2**32")
@@ -699,12 +697,3 @@ class QpData(object):
             slices[d] = slice(s1, s2+1)
 
         return slices
-
-    def _remove_nans(self, data):
-        """
-        Check for and remove nans from images
-        """
-        notnans = np.isfinite(data)
-        if not np.all(notnans):
-            warn("Image: %s - contains nans or infinity" % self.name)
-            data[np.logical_not(notnans)] = 0
