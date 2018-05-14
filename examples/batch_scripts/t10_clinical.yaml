@@ -21,7 +21,8 @@ Processing:
 
 Cases:
     RIT005:
-        Folder:   c:\Users\ctsu0221\build\data\Martin_test_data\RIT005_PRE
+        #Folder: c:\Users\ctsu0221\build\data\Martin_test_data\RIT005_PRE
+        Folder: /home/ibmeuser/data/dce/Martin_test_data/RIT005_PRE
         LoadData:
           dceMRI.nii:
           fa3_aligned.nii: fa3

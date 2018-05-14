@@ -11,11 +11,11 @@ import traceback
 
 from PySide import QtGui, QtCore
 
-from ..analysis import Process
-from ..utils import debug, warn, get_icon, load_matrix, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.processes import Process
+from quantiphyse.utils import debug, warn, get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf
+from quantiphyse.data import save
+
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
-from ..volumes.io import save
 
 class QpWidget(QtGui.QWidget):
     """
@@ -40,7 +40,8 @@ class QpWidget(QtGui.QWidget):
         self.position = kwargs.get("position", 999)
         self.description = kwargs.get("desc", self.name)
         self.visible = False
-
+        self.inited = False
+        
         # This attempts to return the directory where the derived widget is defined - 
         # so we can look there for icons as well as in the default location
         self.pkgdir = os.path.abspath(os.path.dirname(inspect.getmodule(self).__file__))
@@ -150,28 +151,19 @@ class HelpButton(QtGui.QPushButton):
     """
     A button for online help
     """
-    def __init__(self, parent, section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
-
+    def __init__(self, parent, section=""):
         super(HelpButton, self).__init__(parent)
-
-        if section != "" and not section.endswith(".html"): section += ".html"
-        self.link = base + section
+        self.section = section
         self.setToolTip("Online Help")
 
         icon = QtGui.QIcon(get_icon("question-mark"))
         self.setIcon(icon)
         self.setIconSize(QtCore.QSize(14, 14))
+        self.clicked.connect(self._help_clicked)
 
-        self.clicked.connect(self.click_link)
-
-    def click_link(self):
-        """
-        Provide a clickable link to help files
-
-        :return:
-        """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl(self.link, QtCore.QUrl.TolerantMode))
-
+    def _help_clicked(self):
+        show_help(self.section)
+        
 class BatchButton(QtGui.QPushButton):
     """
     A button which displays the batch file code for the current analysis widget
@@ -337,6 +329,106 @@ class NumericOption(QtGui.QWidget):
         else:
             raise QpException("'%s' is not a valid number")
         
+class NumericSlider(QtGui.QWidget):
+    """
+    Numeric option chooser which uses a slider and two spin boxes
+    """
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False, **kwargs):
+        QtGui.QWidget.__init__(self)
+        self.text = text
+        self.minval = minval
+        self.maxval = maxval
+        self.hardmin = kwargs.get("hardmin", False)
+        self.hardmax = kwargs.get("hardmax", False)
+        self.valid = True
+
+        if intonly:
+            self.rtype = int
+        else:
+            self.rtype = float
+            
+        self.label = QtGui.QLabel(text)
+        grid.addWidget(self.label, ypos, xpos)
+
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+
+        #self.min_edit = QtGui.QLineEdit(str(minval))
+        #self.min_edit.editingFinished.connect(self_min_changed)
+        #hbox.addWidget(self.min_edit)
+
+        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.slider.setMaximum(100)
+        self.slider.setMinimum(0)
+        self.slider.setSliderPosition(int(100 * (default - minval) / (maxval - minval)))
+        self.slider.valueChanged.connect(self._slider_changed)
+        hbox.addWidget(self.slider)
+
+        self.val_edit = QtGui.QLineEdit(str(default))
+        self.val_edit.editingFinished.connect(self._edit_changed)
+        hbox.addWidget(self.val_edit)
+
+        grid.addWidget(self, ypos, xpos+1)
+
+    def _changed(self):
+        self.sig_changed.emit()
+
+    def _edit_changed(self):
+        try:
+            val = self.rtype(self.val_edit.text())
+            self.valid = True
+            self.val_edit.setStyleSheet("")
+
+            if val > self.maxval and not self.hardmax:
+                self.maxval = val
+            if val < self.minval and not self.hardmin:
+                self.minval = val
+
+            val = self.value()
+            pos = 100 * (val - self.minval) / (self.maxval - self.minval)
+            try:
+                self.slider.blockSignals(True)
+                self.slider.setSliderPosition(int(pos))
+            finally:
+                self.slider.blockSignals(False)
+
+        except ValueError:
+            self.val_edit.setStyleSheet("QLineEdit {background-color: red}")
+            self.valid = False
+
+        self._changed()
+
+    def _slider_changed(self, value):
+        val = self.minval + (self.maxval - self.minval) * float(value) / 100
+        try:
+            self.val_edit.blockSignals(True)
+            self.val_edit.setText(sf(val))
+        finally:
+            self.val_edit.blockSignals(False)
+        self._changed()
+
+    def value(self):
+        """ Get the numeric value selected """
+        if self.valid:
+            return self.rtype(self.val_edit.text())
+        else:
+            raise QpException("'%s' is not a valid number")
+
+    def setLimits(self, minval=None, maxval=None):
+        if minval:
+            self.minval = minval
+        if maxval:
+            self.maxval = maxval
+
+        try:
+            self.blockSignals(True)
+            if self.valid:
+                self._edit_changed()
+        finally:
+            self.blockSignals(False)
+
 class OptionalName(QtGui.QWidget):
     """ String option which can be enabled or disabled """
 
@@ -628,7 +720,7 @@ class NumberGrid(QtGui.QTableView):
 
     def setValues(self, vals, validate=True, col_headers=None, row_headers=None):
         if validate:
-            if not vals: 
+            if vals is None or len(vals) == 0:
                 raise ValueError("No values provided")
             elif len(vals[0]) != self._model.columnCount() and not self.expandable[0]:
                 raise ValueError("Incorrect number of columns - expected %i" % self._model.columnCount())
@@ -754,14 +846,13 @@ class NumberGrid(QtGui.QTableView):
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
-            links = []
             for url in event.mimeData().urls():
                 self.loadFromFile(local_file_from_drop_url(url))
         else:
             event.ignore()
             
     def loadFromFile(self, filename):
-        fvals, nrows, ncols = load_matrix(filename)
+        fvals, _, ncols = load_matrix(filename)
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
         else:
@@ -782,7 +873,7 @@ class NumberVList(NumberGrid):
         NumberGrid.setValues(self, [[v,] for v in values], validate)
 
     def loadFromFile(self, filename):
-        fvals, nrows, ncols = load_matrix(filename)
+        fvals, _, ncols = load_matrix(filename)
         
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
@@ -852,11 +943,12 @@ class Citation(QtGui.QWidget):
         webbrowser.open(url, new=0, autoraise=True)
 
 class OptionsButton(QtGui.QPushButton):
-    def __init__(self, widget):
+    def __init__(self, widget=None):
         QtGui.QPushButton.__init__(self)
         self.setIcon(QtGui.QIcon(get_icon("options.png")))
         self.setIconSize(QtCore.QSize(14, 14))
-        self.clicked.connect(widget.show_options)
+        if widget:
+            self.clicked.connect(widget.show_options)
 
 class TitleWidget(QtGui.QWidget):
     def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False):
@@ -904,14 +996,18 @@ class RunBox(QtGui.QGroupBox):
         self.progress = QtGui.QProgressBar(self)
         hbox.addWidget(self.progress)
         self.cancelBtn = QtGui.QPushButton('Cancel', self)
-        self.cancelBtn.clicked.connect(self.cancel)
+        self.cancelBtn.clicked.connect(self._cancel)
         self.cancelBtn.setEnabled(False)
         hbox.addWidget(self.cancelBtn)
         self.logBtn = QtGui.QPushButton('View log', self)
-        self.logBtn.clicked.connect(self.view_log)
+        self.logBtn.clicked.connect(self._view_log)
         self.logBtn.setEnabled(False)
         hbox.addWidget(self.logBtn)
         vbox.addLayout(hbox)
+
+        self.step_label = QtGui.QLabel()
+        self.step_label.setVisible(False)
+        vbox.addWidget(self.step_label) 
 
         if self.save_option:
             hbox = QtGui.QHBoxLayout()
@@ -920,7 +1016,7 @@ class RunBox(QtGui.QGroupBox):
             self.save_folder_edit = QtGui.QLineEdit()
             hbox.addWidget(self.save_folder_edit)
             btn = QtGui.QPushButton("Choose folder")
-            btn.clicked.connect(self.choose_output_folder)
+            btn.clicked.connect(self._choose_output_folder)
             hbox.addWidget(btn)
             self.save_cb.stateChanged.connect(self.save_folder_edit.setEnabled)
             self.save_cb.stateChanged.connect(btn.setEnabled)
@@ -940,62 +1036,65 @@ class RunBox(QtGui.QGroupBox):
         self.runBtn.setEnabled(False)
         self.cancelBtn.setEnabled(True)
         self.logBtn.setEnabled(False)
+        self.step_label.setVisible(False)
 
-        self.process.sig_finished.connect(self.finished)
-        self.process.sig_progress.connect(self.update_progress)
-    
-        try:
-            self.process.run(rundata)
-        except:
-            # Process failed to start, so call finished cb manually
-            debug(traceback.format_exc())
-            self.finished(Process.FAILED, sys.exc_info()[1], "", sys.exc_info()[1])
+        self.process.sig_finished.connect(self._finished)
+        self.process.sig_progress.connect(self._update_progress)
+        self.process.sig_step.connect(self._new_step)
+        self.process.execute(rundata)
 
-    def update_progress(self, complete):
+    def _cancel(self):
+        self.process.cancel()
+
+    def _update_progress(self, complete):
         self.progress.setValue(100*complete)
 
-    def cancel(self):
-        self.process.cancel()
-        self.progress.setValue(0)
-        # These should be set by the 'finished' CB but make sure in case it fails
-        self.runBtn.setEnabled(True)
-        self.cancelBtn.setEnabled(False)
+    def _new_step(self, desc):
+        self.step_label.setText(desc)
+        self.step_label.setVisible(True)
 
-    def finished(self, status, result, log, exception):
-        debug("Finished: ", status, result, len(log), exception)
+    def _finished(self, status, log, exception):
         try:
+            debug("RunBox: Finished: ", status, len(log), exception)
             self.log = log
             if status == Process.SUCCEEDED:
+                self.progress.setValue(100)
+                self.step_label.setVisible(False)
                 if self.save_option and self.save_cb.isChecked():
                     save_folder = self.save_folder_edit.text()   
-                    data_to_save = []
-                    for o in result:
-                        if len(o.data) > 0: data_to_save = o.data.keys()
+                    data_to_save = self.process.output_data_items()
                     debug("Data to save: ", data_to_save)    
                     for d in data_to_save:
-                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"), self.process.ivm.save_grid)
+                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"))
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()
             elif status == Process.CANCELLED:
-                pass
-            elif exception is not None:
+                self.progress.setValue(0)
+                self.step_label.setVisible(False)
+            elif isinstance(exception, BaseException):
+                if get_debug(): 
+                    traceback.print_exc(exception)
                 raise exception
+            else:
+                raise QpException("Process finished with error status %i but no error was returned" % status)
         finally:
-            self.process.sig_finished.disconnect(self.finished)
-            self.process.sig_progress.disconnect(self.update_progress)
-            self.process = None
+            if self.process is not None:
+                self.process.sig_finished.disconnect(self._finished)
+                self.process.sig_progress.disconnect(self._update_progress)
+                self.process.sig_step.disconnect(self._new_step)
+                self.process = None
             self.runBtn.setEnabled(True)
             self.logBtn.setEnabled(True)
             self.cancelBtn.setEnabled(False)
             self.sig_postrun.emit()
             
-    def view_log(self):
+    def _view_log(self):
         self.logview = TextViewerDialog(text=self.log, parent=self)
         self.logview.show()
         self.logview.raise_()
 
-    def choose_output_folder(self):
+    def _choose_output_folder(self):
         outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
             self.save_folder_edit.setText(outputDir)
@@ -1013,6 +1112,7 @@ class OrderList(QtGui.QListWidget):
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        self.installEventFilter(self)
         #if col_headers:
         #    self.setVerticalHeaderLabels(col_headers)
         #else:
@@ -1037,6 +1137,11 @@ class OrderList(QtGui.QListWidget):
     def items(self):
         return [self.item(r).text() for r in range(self.count())]
 
+    def eventFilter(self, sender, event):
+        if event.type() == QtCore.QEvent.ChildRemoved:
+            self.sig_changed.emit()
+        return False # don't actually interrupt anything
+
     def currentUp(self):
         """ Move currently selected item up"""
         idx = self.currentRow()
@@ -1047,6 +1152,7 @@ class OrderList(QtGui.QListWidget):
             items[idx] = temp
             self.setItems(items)
             self.setCurrentRow(idx-1)
+            self.sig_changed.emit()
 
     def currentDown(self):
         """ Move currently selected item down"""
@@ -1058,6 +1164,7 @@ class OrderList(QtGui.QListWidget):
             items[idx] = temp
             self.setItems(items)
             self.setCurrentRow(idx+1)
+            self.sig_changed.emit()
 
 class OrderListButtons(QtGui.QVBoxLayout):
     def __init__(self, orderlist):
@@ -1074,4 +1181,3 @@ class OrderListButtons(QtGui.QVBoxLayout):
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
         self.addStretch(1)
-        

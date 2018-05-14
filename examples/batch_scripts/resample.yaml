@@ -1,0 +1,25 @@
+OutputFolder: test/examples_output
+Debug: False
+
+Processing:
+  - Load:
+      data:
+        test_data.nii: data
+        MNI152lin_T1_1mm_brain.nii.gz: mni
+
+  - Resample:
+      data: mni
+      order: 1 # Linear interpolation
+      grid: data
+      output-name: mni_resampled
+      
+  - Save:
+      mni_resampled:
+      data:
+      mni:
+
+Cases:
+  ResampleCase:
+      InputFolder: /home/ibmeuser/data
+
+

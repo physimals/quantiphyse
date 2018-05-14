@@ -9,9 +9,8 @@ import os
 from PySide import QtGui, QtCore
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
-from quantiphyse.utils.batch import run_batch, check_batch
+from quantiphyse.utils import debug, QpException
+from quantiphyse.utils.batch import Script
 
 class BatchBuilderWidget(QpWidget):
     """
@@ -140,13 +139,14 @@ class BatchBuilderWidget(QpWidget):
             self.proc_warn.setText("Tabs detected")
         else:
             try:
-                warnings = check_batch(code=t)
-                self.proc_warn.setText("\n".join([w for w in warnings]))
+                Script(code=t)
             except Exception, e:
-                self.proc_warn.setText("Invalid YAML: %s" % str(e))
+                self.proc_warn.setText("Invalid script: %s" % str(e))
 
     def _run(self):
-        run_batch(code=self.proc_edit.toPlainText())
+        script = Script(code=self.proc_edit.toPlainText())
+        script.run()
+        script.wait()
 
     def _save(self):
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save batch file', 

@@ -9,41 +9,84 @@ import sys
 import shlex
 import subprocess
 import tempfile
-import shutil
 import re
 
-from quantiphyse.volumes.io import load, save
+from quantiphyse.data import load, save
+from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.processes import Process
 
-from quantiphyse.utils import debug, warn
-from quantiphyse.utils.exceptions import QpException
-
-class Script:
+def _get_files(workdir):
     """
-    Sequence of external programs sharing a common PATH and working directory
-
-    FIXME unfinished, is this useful?
+    Get a list of files currently in a working directory
     """
-    def __init__(self, ivm, path=[]):
-        self.ivm = ivm
+    dir_files = []
+    for _, _, files in os.walk(workdir):
+        for f in files:
+            if os.path.isfile(f):
+                dir_files.append(f)
+    return dir_files
+
+def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
+    """
+    Multiprocessing worker to run a command in the background
+    """
+    try:
+        pre_run_files = _get_files(workdir)
+
+        cmd_args = shlex.split(cmdline, posix=not sys.platform.startswith("win"))
+        os.chdir(workdir)
+        log = ""
+        p = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        while 1:
+            # This returns None while subprocess is running
+            retcode = p.poll() 
+            line = p.stdout.readline()
+            log += line
+            queue.put(line)
+            if retcode is not None: break
+
+        if retcode != 0:
+            debug("External program failed: %s" % cmdline)
+            debug(log)
+            raise QpException("Failed to execute %s: return code %i" % (cmd_args[0], retcode), detail=log)
+
+        post_run_files = _get_files(workdir)
+        new_files = [f for f in post_run_files if f not in pre_run_files]
+        debug("New files: ", new_files)
+        data, rois = [], []
+
+        for f in new_files:
+            basename = f.split(".", 1)[0]
+            debug("Checking if we need to output: ", basename, expected_data, expected_rois)
+            if (basename in expected_data or 
+                    basename in expected_rois or 
+                    (len(expected_data) == 0 and len(expected_rois) == 0)):
+
+                debug("Adding output file %s" % f)
+                if basename in expected_data:
+                    data.append(f)
+                elif basename in expected_rois:
+                    rois.append(f)
+                else:
+                    data.append(f)
+
+        return worker_id, True, (log, data, rois)
+    except Exception as e:
+        import traceback
+        traceback.print_exc(e)
+        return worker_id, False, e
+
+class CommandProcess(Process):
+    """
+    Process which runs an external command in the background
+    """
+    def __init__(self, ivm, workdir=None, path=()):
+        Process.__init__(self, ivm, worker_fn=_run_cmd)
         self.path = path
-        self.workdir = tempfile.mkdtemp(prefix="qpscript")
-        self.cmds = []
-
-    def add(cmd):
-        """ 
-        Add an ExternalProgram to the script
-        """
-        self.cmds.add(ExternalProgram(cmd, self.ivm, self.path))
-
-    def __call__(self):
-        for cmd in self.cmds:
-            pass
-
-class Workspace:
-    def __init__(self, ivm, workdir=None, path=[]):
-        print(ivm)
-        self.ivm = ivm
-        self.path = path
+        self._expected_steps = [None,]
+        self._current_step = 0
+        self._current_data = None
+        self._current_roi = None
 
         if workdir is None:
             self.workdir = tempfile.mkdtemp(prefix="qp")
@@ -56,6 +99,81 @@ class Workspace:
         fname = os.path.join(self.workdir, data_name)
         save(self.ivm.data.get(data_name, self.ivm.rois.get(data_name)), fname)
 
+    def timeout(self):
+        """ 
+        Monitor queue for updates and send sig_progress 
+        """
+        if self.queue.empty(): return
+        while not self.queue.empty():
+            line = self.queue.get()
+            debug(line)
+            if self._current_step < len(self._expected_steps):
+                expected = self._expected_steps[self._current_step]
+                if expected is not None and re.match(expected, line):
+                    self._current_step += 1
+                    complete = float(self._current_step) / (len(self._expected_steps)+1)
+                    debug(complete)
+                    self.sig_progress.emit(complete)
+        
+    def finished(self):
+        """ 
+        Add data to IVM and set log 
+
+        Note that we need to call ``qpdata.raw()`` to make sure
+        data is all loaded into memory as the files may be temporary
+        """
+        if self.status == Process.SUCCEEDED:
+            self.log, data_files, roi_files = self.worker_output[0]
+            debug("Loading data: ", data_files, roi_files)
+            for f in data_files:
+                qpdata = load(os.path.join(self.workdir, f))
+                qpdata.name = self.ivm.suggest_name(f.split(".", 1)[0], ensure_unique=False)
+                qpdata.raw()
+                self.ivm.add_data(qpdata, make_current=(f == self._current_data))
+            for f in roi_files:
+                qpdata = load(os.path.join(self.workdir, f))
+                qpdata.name = self.ivm.suggest_name(f.split(".", 1)[0], ensure_unique=False)
+                qpdata.raw()
+                self.ivm.add_roi(qpdata, make_current=(f == self._current_roi))
+
+    def run(self, options):
+        """ 
+        Run a program
+        """
+        cmd = options.pop("cmd", None)
+        if cmd is None:
+            raise QpException("No command provided")
+
+        cmdline = options.pop("cmdline", None)
+        argdict = options.pop("argdict", {})
+        if cmdline is None and len(argdict) == 0:
+            raise QpException("No command arguments provided")
+            
+        for arg, value in argdict.items():
+            if value != "": 
+                cmdline += " --%s=%s" % (arg, value)
+            else:
+                cmdline += " --%s" % arg
+                
+        cmd = self._find(cmd)
+        cmdline = cmd + " " + cmdline
+        debug(cmdline)
+
+        expected_data = options.pop("output-data", [])
+        expected_rois = options.pop("output-rois", [])
+
+        self._expected_steps = options.pop("expected-steps", [None,])
+        self._current_step = 0
+        self._current_data = options.pop("set-current-data", None)
+        self._current_roi = options.pop("set-current-roi", None)
+
+        debug("Working directory: %s" % self.workdir)
+        self._add_data_from_cmdline(cmdline)
+
+        self.log = ""
+        worker_args = [self.workdir, cmdline, expected_data, expected_rois]
+        self.start_bg(worker_args)
+  
     def _find(self, cmd):
         """ 
         Find the program, either in the 'local' directory, or in $FSLDEVDIR/bin or $FSLDIR/bin 
@@ -79,170 +197,7 @@ class Workspace:
         """
         Add any data/roi item which match an argument to the working directory
         """
-        print("cmdline=", cmdline)
-        for arg in re.split("\s+|=|,|\n|\t", cmdline):
-            print("arg=", arg)
+        for arg in re.split(r"\s+|=|,|\n|\t", cmdline):
             if arg in self.ivm.data or arg in self.ivm.rois:
-                print("Adding data ", arg)
+                debug("Adding data from command line args: %s " % arg)
                 self.add_data(arg)
-
-    def _get_files(self):
-        """
-        Get a list of files currently in working directory
-        """
-        files = []
-        for _, _, fs in os.walk(self.workdir):
-            for f in fs:
-                if os.path.isfile(f):
-                    files.append(f)
-        return files
-
-    def run(self, cmd, argline="", argdict={}, output_data={}, output_rois={}, **kwargs):
-        """ Run a program in the workspace """
-        cwd = os.getcwd()
-
-        debug("Working directory: %s" % self.workdir)
-        os.chdir(self.workdir)
-        try:
-            cmd = self._find(cmd)
-            print(cmd)
-
-            cmd_args = shlex.split(cmd + " " + argline, posix=not sys.platform.startswith("win"))
-            print(cmd_args)
-            for arg, value in argdict.items():
-                cmd_args.append(arg)
-                if value != "": cmd_args.append(value)
-            cmdline = " ".join(cmd_args)
-            debug(cmdline)
-            self._add_data_from_cmdline(cmdline)
-            pre_run_contents = self._get_files()
-
-            out = ""
-            p = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            while 1:
-                # This returns None while subprocess is running
-                retcode = p.poll() 
-                line = p.stdout.readline()
-                out += line
-                if retcode is not None: break
-
-            if retcode != 0:
-                debug("External program failed: %s" % cmd)
-                debug(out)
-                raise QpException("Failed to execute %s: return code %i" % (cmd, retcode), detail=out)
-            
-            post_run_contents = self._get_files()
-            new_files = [f for f in post_run_contents if f not in pre_run_contents]
-            for f in new_files:
-                basename = f.split(".", 1)[0]
-                print("Looking for", basename, output_data, output_rois)
-                if basename in output_data or basename in output_rois or (len(output_data) == 0 and len(output_rois) == 0):
-                    debug("Loading output file %s" % f)
-                    try:
-                        qpdata = load(f)
-                        if basename in output_data:
-                            qpdata.name = output_data.get(basename)
-                            self.ivm.add_data(qpdata)
-                        elif basename in output_rois:
-                            qpdata.name = output_rois.get(basename)
-                            self.ivm.add_roi(qpdata)
-                        else:
-                            qpdata.name = basename
-                            self.ivm.add_data(qpdata)
-
-                        # Make sure data is loaded as file is temporary
-                        qpdata.std()
-                    except:
-                        warn("Error loading output file %s" % f)
-                        traceback.print_exc()
-
-            debug("New files: ", new_files)
-        finally:
-           os.chdir(cwd)
-        
-        return out
-
-class ExternalProgram:
-    def __init__(self, cmd, ivm, path=[]):
-        self.ivm = ivm
-        self.cmd = self._find(cmd, path)
-        self.workdir_istemp = False
-
-    def _find(self, cmd, path):
-        """ 
-        Find the program, either in the 'local' directory, or in $FSLDEVDIR/bin or $FSLDIR/bin 
-        This is called each time the program is run so the caller can control where programs
-        are searched for at any time
-        """
-        for d in path:
-            ex = os.path.join(d, cmd)
-            debug("Checking %s" % ex)
-            if os.path.isfile(ex) and os.access(ex, os.X_OK):
-                return ex
-        
-        warn("Failed to find command line program: %s" % cmd)
-        return cmd
-    
-    def _prepare_workspace(self, ivm, data=[], path=None):
-        if path is None:
-            path = tempfile.mkdtemp(prefix="qp")
-            istemp = True
-        else:
-            istemp = False
-
-        for d in data:
-            if d in ivm.data:
-                save(ivm.data[d], os.path.join(path, "%s.nii.gz" % d), ivm.save_grid)
-            elif d in ivm.rois:
-                save(ivm.rois[d],  os.path.join(path, "%s.nii.gz" % d), ivm.save_grid)
-        return path, istemp
-
-    def __call__(self, argline="", argdict={}, workdir=None, data=[], 
-                 outdata={}, outrois={}, outextras={}, **kwargs):
-        """ Run, writing output to stdout and returning retcode """
-        cwd = os.getcwd()
-        workdir, istemp = self._prepare_workspace(self.ivm, data, path=workdir)
-        debug("Working directory: %s" % workdir)
-        os.chdir(workdir)
-        try:
-            cmd_args = shlex.split(self.cmd + " " + argline)
-            for arg, value in argdict.items():
-                cmd_args.append(arg)
-                if value != "": cmd_args.append(value)
-
-            out = ""
-            debug(" ".join(cmd_args))
-            p = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            while 1:
-                # This returns None while subprocess is running
-                retcode = p.poll() 
-                line = p.stdout.readline()
-                out += line
-                if retcode is not None: break
-
-            if retcode != 0:
-                debug("External program failed: %s" % self.cmd)
-                debug(out)
-                raise QpException("Failed to execute %s: return code %i" % (self.cmd, retcode), detail=out)
-            else:
-                for dname, fname in outdata.items():
-                    path = os.path.join(workdir, fname)
-                    d = load(path)
-                    self.ivm.add_data(d, name=dname)
-                for dname, fname in outrois.items():
-                    path = os.path.join(workdir, fname)
-                    d = load(path)
-                    self.ivm.add_roi(d, name=dname)
-                for dname, fname in outextras.items():
-                    path = os.path.join(workdir, fname)
-                    with open(path) as f:
-                        self.ivm.add_extra(dname, f.read())
-                
-                return out
-        finally:
-            if istemp:
-                try:
-                    shutil.rmtree(workdir)
-                except:
-                    warn("Failed to delete temp dir: %s" % sys.exc_info()[1])
-            os.chdir(cwd)

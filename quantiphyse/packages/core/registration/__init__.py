@@ -13,10 +13,9 @@ from PySide import QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, RoiCombo, OverlayCombo, TitleWidget
 from quantiphyse.gui.dialogs import TextViewerDialog
 
-from quantiphyse.analysis import Process
+from quantiphyse.processes import Process
 
-from quantiphyse.utils import debug, get_plugins
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, get_plugins, QpException
 
 from .process import RegProcess, MocoProcess
     
@@ -256,9 +255,9 @@ class RegWidget(QpWidget):
         self.logBtn.setEnabled(False)
         process.sig_progress.connect(self.progress_cb)
         process.sig_finished.connect(self.finished_cb)
-        process.run(options)
+        process.execute(options)
 
-    def finished_cb(self, status, results, log, exception):   
+    def finished_cb(self, status, log, exception):   
         self.log = log
         if status != Process.SUCCEEDED:
             QtGui.QMessageBox.warning(self, "Registration error", "Registration failed to run:\n\n" + str(exception),

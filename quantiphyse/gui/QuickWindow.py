@@ -16,10 +16,8 @@ from PySide import QtCore, QtGui
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-from ..volumes.io import load, save
-from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.data import load, save, ImageVolumeManagement
+from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  show_help, QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -262,8 +260,8 @@ class QuickWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
-
+        show_help()
+        
     def show_about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
@@ -297,7 +295,7 @@ class QuickWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
@@ -309,18 +307,16 @@ class QuickWindow(QtGui.QMainWindow):
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         warnings = []
         if force_t:
-            warning = "Interpreted data as multiple 2D volumes although file contained 3D spatial data"
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warning)
-            msgBox.setInformativeText("Add data anyway?")
+            msgBox = QtGui.QMessageBox(self)
+            msgBox.setText("3D data was interpreted as multiple 2D volumes")
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
-            msgBox = QtGui.QMessageBox()
+        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
+            msgBox = QtGui.QMessageBox(self)
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
             msgBox.setInformativeText("Are you sure this is an ROI file?")
@@ -342,7 +338,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_data, fname, self.ivm.save_grid)
+                save(self.ivm.current_data, fname)
             else: # Cancelled
                 pass
 
@@ -355,7 +351,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_roi, fname, self.ivm.save_grid)
+                save(self.ivm.current_roi, fname)
             else: # Cancelled
                 pass
 

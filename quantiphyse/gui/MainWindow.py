@@ -19,11 +19,9 @@ from .ViewOptions import ViewOptions
 from .Register import RegisterDialog
 from .ImageView import ImageView
 
-from ..gui.widgets import FingerTabBarWidget, FingerTabWidget
-from ..volumes.io import load, save
-from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.data import load, save, ImageVolumeManagement
+from quantiphyse.gui.widgets import FingerTabBarWidget, FingerTabWidget
+from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help, QpException
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -215,6 +213,7 @@ class MainWindow(QtGui.QMainWindow):
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
+            w.inited = True
             w.index = index
         self.tab_widget.currentChanged.connect(self.select_tab)
         self.select_tab(0)
@@ -224,7 +223,9 @@ class MainWindow(QtGui.QMainWindow):
         w = self.sender().widget
         if not w.visible:
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
-            w.init_ui()
+            if not w.inited:
+                w.init_ui()
+                w.inited = True
             w.visible = True
             w.index = index
         self.tab_widget.setCurrentIndex(w.index)
@@ -363,7 +364,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/latest/", QtCore.QUrl.TolerantMode))
+        show_help()
 
     def show_about(self):
         text = """
@@ -389,9 +390,9 @@ class MainWindow(QtGui.QMainWindow):
         # Places that the console has access to
         namespace = {'np': np, 'ivm': self.ivm, 'self': self}
         for name, ovl in self.ivm.data.items():
-            namespace[name] = ovl.std()
+            namespace[name] = ovl.raw()
         for name, roi in self.ivm.rois.items():
-            namespace[name] = roi.std()
+            namespace[name] = roi.raw()
 
         text = (
             """
@@ -432,7 +433,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
@@ -444,18 +445,16 @@ class MainWindow(QtGui.QMainWindow):
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         warnings = []
         if force_t:
-            warning = "Interpreted data as multiple 2D volumes although file contained 3D spatial data"
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("Warning: There were problems loading this data:\n  - %s" % warning)
-            msgBox.setInformativeText("Add data anyway?")
+            msgBox = QtGui.QMessageBox(self)
+            msgBox.setText("3D data was interpreted as multiple 2D volumes")
             msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
             if msgBox.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
         # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
-            msgBox = QtGui.QMessageBox()
+        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
+            msgBox = QtGui.QMessageBox(self)
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
             msgBox.setInformativeText("Are you sure this is an ROI file?")
@@ -477,7 +476,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_data, fname, self.ivm.save_grid)
+                save(self.ivm.current_data, fname)
             else: # Cancelled
                 pass
 
@@ -490,7 +489,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_roi, fname, self.ivm.save_grid)
+                save(self.ivm.current_roi, fname)
             else: # Cancelled
                 pass
 

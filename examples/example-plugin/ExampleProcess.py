@@ -5,7 +5,7 @@ import traceback
 
 import numpy as np
 
-from quantiphyse.analysis import Process
+from quantiphyse.processes import Process
 
 class ExamplePluginProcess(Process):
 

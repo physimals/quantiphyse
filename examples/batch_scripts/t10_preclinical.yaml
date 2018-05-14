@@ -18,7 +18,8 @@ Processing:
 # List of cases to apply the processing to
 Cases:
     C96:
-        Folder:   c:\Users\ctsu0221\build\data\Martin_test_data\C96_R1L1_D3
+        #Folder: c:\Users\ctsu0221\build\data\Martin_test_data\C96_R1L1_D3
+        Folder: /home/ibmeuser/data/dce/Martin_test_data/C96_R1L1_D3
         LoadData:   
           SS3_VK1_16_3756_47_10DayTumour_DCEx60_Gd11_008--NULL.nii: data
           SS3_VK1_16_3756_47_10DayTumour_VFAx16_007--NULL.nii: vfadata
