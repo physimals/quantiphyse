@@ -462,8 +462,8 @@ class MainWindow(QtGui.QMainWindow):
             msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
-        if ftype == "DATA": 
-            self.ivm.add_data(data, make_current=True, make_main=make_main)
+        if ftype == "DATA":
+            self.ivm.add_data(data, make_current=not make_main, make_main=make_main)
         else:
             self.ivm.add_roi(data, make_current=True)
 
