@@ -9,6 +9,16 @@ from __future__ import print_function, division, absolute_import
 from PySide import QtGui, QtCore
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.utils import debug, get_icon, get_version, get_local_file
+from quantiphyse import __contrib__, __acknowledge__
+
+SUMMARY = """
+The GUI enables analysis of an MRI volume, and multiple ROIs and data 
+with pharmacokinetic modelling, subregion analysis and statistics included. 
+Please use help (?) buttons for more online information on each widget and the entire GUI.
+
+""" + \
+"Creators: " + ", ".join([author for author in __contrib__]) + \
+"\nAcknowlegements: " + ", ".join([ack for ack in __acknowledge__])
 
 class OverviewWidget(QpWidget):
 
@@ -28,12 +38,7 @@ class OverviewWidget(QpWidget):
         hbox.addWidget(b1)
         layout.addLayout(hbox)
 
-        ta = QtGui.QLabel("\n\nThe GUI enables analysis of an MRI volume, and multiple ROIs and data "
-                          "with pharmacokinetic modelling, subregion analysis and statistics included. "
-                          "Please use help (?) buttons for more online information on each widget and the entire GUI. "
-                          " \n \n"
-                          "Creator: Benjamin Irving (mail@birving.com) \n"
-                          "Contributors: Benjamin Irving, Martin Craig, Michael Chappell")
+        ta = QtGui.QLabel(SUMMARY)
         ta.setWordWrap(True)
         layout.addWidget(ta)
 

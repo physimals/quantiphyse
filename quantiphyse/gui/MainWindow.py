@@ -22,6 +22,7 @@ from .ImageView import ImageView
 from quantiphyse.data import load, save, ImageVolumeManagement
 from quantiphyse.gui.widgets import FingerTabBarWidget, FingerTabWidget
 from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help, QpException
+from quantiphyse import __contrib__, __acknowledge__
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -370,12 +371,15 @@ class MainWindow(QtGui.QMainWindow):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
-        <h2 align="center">Contributers</h2>
-        <p align="center">Martin Craig (current maintainer)</p>
-        <p align="center">Benjamin Irving (original author)</p>
-        <p align="center">Michael Chappell</p>
-        <p align="center">Paula Croal</p>
-        """ % get_version()
+        <h2 align="center">Contributers</h2>""" % get_version()
+        for author, role in __contrib__.items():
+            if role != "":
+                text += "<p align='center'>%s(%s)</p>" % (author, role)
+            else:
+                text += "<p align='center'>%s</p>" % author
+        for ack, role in __acknowledge__.items():
+            text += "<p align='center'>%s</p>" % ack
+
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
     #def install_packages(self):

@@ -18,6 +18,7 @@ from .ImageView import ImageView
 
 from quantiphyse.data import load, save, ImageVolumeManagement
 from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  show_help, QpException
+from quantiphyse import __contrib__, __acknowledge__
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -266,12 +267,15 @@ class QuickWindow(QtGui.QMainWindow):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
-        <p align="center">Created by Benjamin Irving</p>
-        <h2 align="center">Contributors</h2>
-        <p align="center">Benjamin Irving</p>
-        <p align="center">Martin Craig</p>
-        <p align="center">Michael Chappell</p>
-        """ % get_version()
+        <h2 align="center">Contributers</h2>""" % get_version()
+        for author, role in __contrib__.items():
+            if role != "":
+                text += "<p align='center'>%s(%s)</p>" % (author, role)
+            else:
+                text += "<p align='center'>%s</p>" % author
+        for ack, role in __acknowledge__.items():
+            text += "<p align='center'>%s</p>" % ack
+
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
     def load_data(self, fname=None, name=None, ftype=None):

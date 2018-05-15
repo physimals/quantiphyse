@@ -15,12 +15,6 @@ The software is for research purposes only.
 
 All artwork is also copyright of the contributers. 
 
-Contributers:
-
-Martin Craig (martin.craig@eng.ox.ac.uk)
-Benjamin Irving (benjamin.irving@eng.ox.ac.uk)
-Michael Chappell (michael.chappell@eng.ox.ac.uk)
-
 # Dependencies
 
 The following software packages are required for Quantiphyse to run and may be included in the distributed package. If you wish to modify or redistribute
