@@ -25,9 +25,10 @@ class GridView(QtGui.QWidget):
         4 : "MNI",
     }
 
-    def __init__(self, ivl, readonly=False):
-        self.ivl = ivl
+    def __init__(self, ivm, ivl, readonly=False):
+        self.ivm, self.ivl = ivm, ivl
         self.data = None
+        self._updating = False
 
         QtGui.QWidget.__init__(self)
         grid = QtGui.QGridLayout()
@@ -50,27 +51,35 @@ class GridView(QtGui.QWidget):
     
     def set_data(self, data):
         self.data = data
-        if data is not None:
-            if hasattr(data, "nifti_header"):
-                self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
-            self.transform.setValues(data.rawgrid.transform)
-            self.origin.setValues([[x,] for x in data.rawgrid.origin])
-        else:
-            self.coord_label.setText("unknown")
-            self.transform.setValues(np.identity(3))
-            self.origin.setValues([[0],]*3)
+        self._updating = True
+        try:
+            if data is not None:
+                if hasattr(data, "nifti_header"):
+                    self.coord_label.setText(self.COORD_LABELS[int(data.nifti_header['sform_code'])])
+                self.transform.setValues(data.grid.transform)
+                self.origin.setValues([[x,] for x in data.grid.origin])
+            else:
+                self.coord_label.setText("unknown")
+                self.transform.setValues(np.identity(3))
+                self.origin.setValues([[0],]*3)
+        finally:
+            self._updating = False
 
     def _changed(self):
-        if self.data is not None:
-            affine = self.data.rawgrid.affine
+        if self.data is not None and not self._updating:
+            affine = self.data.grid.affine
             if self.transform.valid():
                 affine[:3,:3] = self.transform.values()
             if self.origin.valid():
                 affine[:3,3] = [x[0] for x in self.origin.values()]
-            newgrid = DataGrid(self.data.rawgrid.shape, affine)
-            self.data.rawgrid = newgrid
-            self.data.stddata = None
-     
+            newgrid = DataGrid(self.data.grid.shape, affine)
+            self.data.grid = newgrid
+            # HACK
+            if self.data == self.ivm.current_data:
+                self.ivm.sig_current_data.emit(self.ivm.current_data)
+            elif self.data == self.ivm.main:
+                self.ivm.sig_main_data.emit(self.ivm.main)
+                
 class ResampleDataWidget(QpWidget):
     """
     Widget that lets you resample data onto a different grid
@@ -130,7 +139,7 @@ class OrientDataWidget(QpWidget):
 
         vbox.addWidget(QtGui.QLabel())
         vbox.addWidget(QtGui.QLabel('<font size="4">Main data grid</font>'))
-        self.maingrid = GridView(self.ivl, readonly=True)
+        self.maingrid = GridView(self.ivm, self.ivl, readonly=True)
         vbox.addWidget(self.maingrid)
 
         vbox.addWidget(QtGui.QLabel())
@@ -144,7 +153,7 @@ class OrientDataWidget(QpWidget):
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        self.selgrid = GridView(self.ivl)
+        self.selgrid = GridView(self.ivm, self.ivl)
         vbox.addWidget(self.selgrid)
         
         vbox.addStretch(1) 
