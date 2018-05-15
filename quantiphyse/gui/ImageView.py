@@ -97,6 +97,12 @@ class OrthoView(pg.GraphicsView):
         self._data_views.remove(view)
         self._update_slices()
 
+    def reset(self):
+        """
+        Reset the view to fit all data sets
+        """
+        self.vb.autoRange()
+
     def update(self):
         """
         Update the ortho view
@@ -657,5 +663,6 @@ class ImageView(QtGui.QSplitter):
             self._toggle_maximise(0, state=0)
             data_axes = data.grid.get_ras_axes()
             for d in range(3):
+                self.ortho_views[d].reset()
                 if data.grid.shape[data_axes[d]] == 1:
                     self._toggle_maximise(d, state=1)
