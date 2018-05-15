@@ -121,8 +121,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self._valid_name(data.name)
         self.data[data.name] = data
         
-        # Make main data if requested, or if the first data.
-        # If not, regrid it onto the current OTG
+        # Make main data if requested, or if not specified and it is the first data
         if make_main is None:
             make_main = self.main is None
         if make_main:
@@ -130,8 +129,10 @@ class ImageVolumeManagement(QtCore.QObject):
 
         self.sig_all_data.emit(self.data.keys())
 
-        # Make current if requested, or if there is no current overlay
-        if (make_current or self.current_data is None) and not make_main:
+        # Make current if requested, or if not specified and it is the first non-main data
+        if make_current is None:
+            make_current = self.current_data is None and not make_main
+        if make_current:
             self.set_current_data(data.name)
 
     def add_roi(self, roi, name=None, grid=None, make_current=False):
@@ -172,8 +173,11 @@ class ImageVolumeManagement(QtCore.QObject):
         return self.current_roi is not None and roi is not None and self.current_roi.name == roi.name
         
     def set_current_data(self, name):
-        self._data_exists(name)
-        self.current_data = self.data[name]
+        if name is not None:
+            self._data_exists(name)
+            self.current_data = self.data[name]
+        else:
+            self.current_data = None
         self.sig_current_data.emit(self.current_data)
 
     def rename_data(self, name, newname):
@@ -212,8 +216,11 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_rois.emit(self.rois.keys())
 
     def set_current_roi(self, name):
-        self._roi_exists(name)
-        self.current_roi = self.rois[name]
+        if name is not None:
+            self._roi_exists(name)
+            self.current_roi = self.rois[name]
+        else:
+            self.current_roi = None
         self.sig_current_roi.emit(self.current_roi)
 
     def add_extra(self, name, obj):

@@ -179,10 +179,12 @@ class ImageDataView(DataView):
             # Initial colourmap range
             flat = self.data.volume(int(self.data.nvols/2)).flatten()
             if percentile < 100:
-                self.opts["cmap_range"] = [flat.min(), np.percentile(flat, percentile)]
+                cmap = [flat.min(), np.percentile(flat, percentile)]
+                if cmap[0] == cmap[1]:
+                    cmap = [flat.min(), flat.max()]
+                self.opts["cmap_range"] = cmap
             else:
                 self.opts["cmap_range"] = [flat.min(), flat.max()]
-
     def _cleanup_cache(self, data_items):
         """
         Remove data items which no longer exist from the option cache
@@ -335,7 +337,7 @@ class RoiViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = RoiCombo(self.ivm)
+        self.roi_combo = RoiCombo(self.ivm, none_option=True)
         grid.addWidget(self.roi_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.roi_view_combo = QtGui.QComboBox()
@@ -384,9 +386,11 @@ class RoiViewWidget(QtGui.QGroupBox):
                 self.roi_combo.blockSignals(False)
 
     def _combo_changed(self, idx):
-        if idx >= 0:
+        if idx > 0:
             roi = self.roi_combo.itemText(idx)
             self.ivl.ivm.set_current_roi(roi)
+        else:
+            self.ivl.ivm.set_current_roi(None)
 
     def _view_changed(self, idx):
         self.view.set("shade", idx in (0, 2))
@@ -408,7 +412,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = OverlayCombo(self.ivm)
+        self.overlay_combo = OverlayCombo(self.ivm, none_option=True)
         grid.addWidget(self.overlay_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.ov_view_combo = QtGui.QComboBox()
@@ -495,9 +499,11 @@ class OverlayViewWidget(QtGui.QGroupBox):
                 w.blockSignals(False)
 
     def _combo_changed(self, idx):
-        if idx >= 0:
+        if idx > 0:
             ov = self.overlay_combo.itemText(idx)
             self.ivm.set_current_data(ov)
+        else:
+            self.ivl.ivm.set_current_data(None)
 
     def _cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
