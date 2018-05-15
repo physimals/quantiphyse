@@ -121,7 +121,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self._valid_name(data.name)
         self.data[data.name] = data
         
-        # Make main data if requested, or if the first data, or if the first 4d data
+        # Make main data if requested, or if the first data.
         # If not, regrid it onto the current OTG
         if make_main is None:
             make_main = self.main is None
@@ -130,7 +130,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
         self.sig_all_data.emit(self.data.keys())
 
-        # Make current if requested, or if first data
+        # Make current if requested, or if there is no current overlay
         if (make_current or self.current_data is None) and not make_main:
             self.set_current_data(data.name)
 
