@@ -8,7 +8,7 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.volumes import DataGrid
+from quantiphyse.data import DataGrid
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, NumberGrid
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton
 from quantiphyse.utils import debug, QpException
