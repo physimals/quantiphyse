@@ -948,16 +948,17 @@ class ModelCurves(QpWidget):
         self.plot_rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
 
     def show_options(self):
+        self.update_minmax(self.ivm.data)
         self.plot_opts.show()
         self.plot_opts.raise_()
 
     def activate(self):
-        self.ivm.sig_all_data.connect(self.update_minmax)
+        self.ivm.sig_all_data.connect(self.update)
         self.ivl.sig_focus_changed.connect(self.update)
-        self.update_minmax(self.ivm.data.keys())
+        self.update()
 
     def deactivate(self):
-        self.ivm.sig_all_data.disconnect(self.update_minmax)
+        self.ivm.sig_all_data.disconnect(self.update)
         self.ivl.sig_focus_changed.disconnect(self.update)
 
     def options_changed(self, opts):
@@ -968,13 +969,12 @@ class ModelCurves(QpWidget):
     def update_minmax(self, data_items):
         dmin, dmax, first = 0, 100, True
         for name in data_items:
-            data_range = [self.ivm.data[name].raw().min(), self.ivm.data[name].raw().max()]
+            data_range = self.ivm.data[name].range()
             if first or data_range[0] < dmin: dmin = data_range[0]
             if first or data_range[1] > dmax: dmax = data_range[1]
             first = False
         self.plot_opts.min_spin.setValue(dmin)
         self.plot_opts.max_spin.setValue(dmax)
-        self.update()
 
     def update(self, pos=None):
         self._update_table()

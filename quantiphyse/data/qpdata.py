@@ -310,6 +310,7 @@ class QpData(object):
 
         # Treat as an ROI data set if requested
         self._regions = None
+        self._range = None
         self.set_roi(roi)
 
         # Metadata - saved as NIFTI extension. Keys must be strings and
@@ -338,7 +339,9 @@ class QpData(object):
         :return: Tuple of min value, max value
         """
         if vol is None:
-            return self.raw().min(), self.raw().max()
+            if self._range is None:
+                self._range = self.raw().min(), self.raw().max()
+            return self._range
         else:
             voldata = self.volume(vol)
             return voldata.min(), voldata.max()
