@@ -85,6 +85,7 @@ class CompareDataWidget(QpWidget):
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
         self.plot = win.addPlot(enableAutoRange=True)
+        self.plot.clear() # Unsure why this is necessary
         hbox.addWidget(win)
         
         self.hist = pg.HistogramLUTWidget()
@@ -155,7 +156,6 @@ class CompareDataWidget(QpWidget):
         else:
             heatmap, xedges, yedges = np.histogram2d(self.d1, self.d2, bins=self.bins.value())
             rect = QtCore.QRectF(xedges[0], yedges[0], xedges[-1]-xedges[0], yedges[-1]-yedges[0])
-            print(rect.left(), rect.right(), rect.top(), rect.bottom())
             img = pg.ImageItem(heatmap)
             img.setRect(rect)
             #self.plot.setAspectLocked(True)
