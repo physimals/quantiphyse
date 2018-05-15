@@ -632,13 +632,12 @@ class ImageView(QtGui.QSplitter):
             self.ortho_views[win].setVisible(True)
         elif state == 0 or (state == -1 and not self.ortho_views[o1].isVisible()):
             # Show all three
-            self.layout_grid.addWidget(self.ortho_views[1], 0, 0, )
+            self.layout_grid.addWidget(self.ortho_views[1], 0, 0)
             self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
             self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
-            self.ortho_views[o1].setVisible(True)
-            self.ortho_views[o1].update()
-            self.ortho_views[o2].setVisible(True)
-            self.ortho_views[o2].update()
+            for w in range(3):
+                self.ortho_views[w].setVisible(True)
+                self.ortho_views[w].update()
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
