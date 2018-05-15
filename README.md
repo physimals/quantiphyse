@@ -2,12 +2,6 @@
 
 Viewer for 3D/4D data and Pk modelling
 
-Contributors:
-
-Benjamin Irving  
-Martin Craig  
-Michael Chappell
-
 ## Overview
 This viewer provides tools for modelling and analysis of MRI scans. 
 
@@ -22,8 +16,7 @@ Key features:
 - Quantification of parameters within subregions of the tumour
 - Python console to interact with the loaded data and analysis (advanced users)
 
-See:
-[http://quantiphyse.readthedocs.org/en/latest/](http://quantiphyse.readthedocs.org/en/latest/) for usage.
+See: [http://quantiphyse.readthedocs.org/en/latest/](http://quantiphyse.readthedocs.org/en/latest/) for full documentation.
 
 ## Installation
 
