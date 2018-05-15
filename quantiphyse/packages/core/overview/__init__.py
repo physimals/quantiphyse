@@ -68,6 +68,9 @@ class OverviewWidget(QpWidget):
         btn = QtGui.QPushButton("Delete")
         btn.clicked.connect(self.delete)
         hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Set as main data")
+        btn.clicked.connect(self.set_main)
+        hbox.addWidget(btn)
         layout.addLayout(hbox)
 
         self.setLayout(layout)
@@ -105,7 +108,11 @@ class OverviewWidget(QpWidget):
                     # Nothing else should care about the name of the main volume
                     self.ivm.main.name = text
                     self.vols.update_list(None)
-       
+
+    def set_main(self):
+        if self.vols.selected is not None:
+            self.ivm.set_main_data(self.vols.selected)
+            
 class DataListWidget(QtGui.QTableWidget):
     """
     Table showing loaded volumes
