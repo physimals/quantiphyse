@@ -22,6 +22,7 @@ hidden_imports = [
     'sklearn.metrics',
     'quantiphyse.processes.feat_pca',
     'quantiphyse.utils.cmdline',
+    'quantiphyse.test.widget_test',
 ]
 
 added_files = [
