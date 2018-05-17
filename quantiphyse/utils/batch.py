@@ -56,20 +56,39 @@ class Script(Process):
     sig_process_progress = QtCore.Signal(float)
     sig_done_process = QtCore.Signal(object, dict)
 
-    def __init__(self, fname=None, code=None, yamlroot=None, ivm=None):
+    def __init__(self, ivm=None, **kwargs):
         """
         fname: File name containing YAML code to load from
         code: YAML code as a string
         yamlroot: Parsed YAML code as Python objects
         """
-        super(Script, self).__init__(ivm)
-        if fname is not None:
-            with open(fname, "r") as f:
+        super(Script, self).__init__(ivm, **kwargs)
+        
+        self._current_ivm = None
+        self._current_process = None
+        self._current_params = None
+        self._process_num = 0
+        self._process_start = None
+        self._current_case = None
+        self._case_num = 0
+        self._pipeline = []
+        self._cases = []
+        self._generic_params = {}
+
+        # Find all the process implementations
+        self.known_processes = dict(BASIC_PROCESSES)
+        plugin_processes = get_plugins("processes")
+        for process in plugin_processes:
+            self.known_processes[process.PROCESS_NAME] = process
+
+    def run(self, options):
+        if "parsed-yaml" in options:
+            root = dict(options.pop("parsed-yaml"))
+        elif "yaml" in options:
+            root = yaml.load(options.pop("yaml"))
+        elif "yaml-file" in options:
+            with open(options.pop("yaml-file"), "r") as f:
                 root = yaml.load(f)
-        elif code is not None:
-            root = yaml.load(code)
-        elif yamlroot is not None:
-            root = dict(yamlroot)
         else:
             raise RuntimeError("Neither filename nor YAML code provided")
 
@@ -77,19 +96,28 @@ class Script(Process):
             # Handle special case of empty content
             root = {}
 
-        self.ivm = ivm
-        self._current_process = None
+        # Can set mode=check to just validate the YAML
+        mode = options.pop("mode", "run")
+        self._load_yaml(root)
+        if mode == "run":
+            self.status = Process.RUNNING
+            self._case_num = 0
+            self._next_case()
+        elif mode != "check":
+            raise QpException("Unknown mode: %s" % mode)
 
-        # Find all the process implementations
-        processes = dict(BASIC_PROCESSES)
-        plugin_processes = get_plugins("processes")
-        for process in plugin_processes:
-            processes[process.PROCESS_NAME] = process
-
-        self.pipeline = []
+    def cancel(self):
+        if self._current_process is not None:
+            self._current_process.cancel()
+    
+    def _load_yaml(self, root=None):
+        """
+        Load YAML content
+        """
+        self._pipeline = []
         for process in root.pop("Processing", []):
             name = process.keys()[0]
-            proc = processes.get(name, None)
+            proc = self.known_processes.get(name, None)
             params = process[name]
             if params is None: params = {}
 
@@ -98,40 +126,32 @@ class Script(Process):
             else:
                 params["id"] = params.get("id", name)
                 params["__impl"] = proc
-                self.pipeline.append(params)
+                self._pipeline.append(params)
 
         # Cases can be expressed as list or dict
-        self.cases = []
+        self._cases = []
         yaml_cases = root.pop("Cases", [])
         if isinstance(yaml_cases, dict):
             for case_id in sorted(yaml_cases.keys()):
-                self.cases.append(BatchScriptCase(case_id, yaml_cases[case_id]))
+                self._cases.append(BatchScriptCase(case_id, yaml_cases[case_id]))
         else:
             for case in yaml_cases:
                 case_id = case.keys()[0]
-                self.cases.append(BatchScriptCase(case_id, case.get(case_id, {})))
+                self._cases.append(BatchScriptCase(case_id, case.get(case_id, {})))
         
+        # Create default case if we have not been specified any
+        if not self._cases:
+            self._cases.append(BatchScriptCase("case", {}))
+
         # After removing processes and cases, remainder is the generic options
-        self.generic_params = root
-
-    def run(self):
-        if not self.cases:
-            self.cases.append(BatchScriptCase("case", {}))
-
-        self.status = Process.RUNNING
-        self._case_num = 0
-        self._next_case()
-
-    def cancel(self):
-        if self._current_process is not None:
-            self._current_process.cancel()
-        
+        self._generic_params = root
+    
     def _next_case(self):
         if self.status != self.RUNNING:
             return
         
-        if self._case_num < len(self.cases):
-            case = self.cases[self._case_num]
+        if self._case_num < len(self._cases):
+            case = self._cases[self._case_num]
             self._case_num += 1
             self.sig_start_case.emit(case)
             debug("Starting case %s" % case.case_id)
@@ -140,7 +160,7 @@ class Script(Process):
             debug("All cases complete")
             self.log += "COMPLETE\n"
             self.status = Process.SUCCEEDED
-            self.sig_finished.emit(self.status, self.log, self.exception)
+            self._complete()
 
     def _start_case(self, case):
         if self.ivm is not None:
@@ -155,8 +175,8 @@ class Script(Process):
         if self.status != self.RUNNING:
             return
         
-        if self._process_num < len(self.pipeline):
-            process = self.pipeline[self._process_num]
+        if self._process_num < len(self._pipeline):
+            process = self._pipeline[self._process_num]
             self._process_num += 1
             self._start_process(process)
         else:
@@ -168,7 +188,7 @@ class Script(Process):
     def _start_process(self, proc_params):
         # Make copy so process does not mess up shared config
         proc_params = dict(proc_params)
-        generic_params = dict(self.generic_params)
+        generic_params = dict(self._generic_params)
 
         # Override values which are defined in the individual case
         if self._current_case is not None:
@@ -195,7 +215,12 @@ class Script(Process):
             self._current_params = proc_params
             process.sig_finished.connect(self._process_finished)
             process.sig_progress.connect(self._process_progress)
-            debug("Executing process %s" % proc_id)
+            
+            self._process_start = time.time()
+            self.log += "Running %s\n\n" % process.proc_id
+            for key, value in proc_params.items():
+                debug("      %s=%s" % (key, str(value)))
+
             self.sig_start_process.emit(process, dict(proc_params))
             process.execute(proc_params)
         
@@ -205,7 +230,7 @@ class Script(Process):
             traceback.print_exc(e)
             self.status = Process.FAILED
             self.exception = e
-            self.sig_finished.emit(self.status, self.log, self.exception)
+            self._complete()
         finally:
             #set_debug(debug_orig)
             pass
@@ -215,27 +240,31 @@ class Script(Process):
         if self.status != self.RUNNING:
             return
 
+        self.log += log
+        end = time.time()
+
         self._current_process.sig_finished.disconnect(self._process_finished)
         self._current_process.sig_progress.disconnect(self._process_progress)
-        self.log += log + "\n\n"
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
         if status == Process.SUCCEEDED:
+            self.log += "\nDONE (%.1fs)\n" % (end - self._process_start)
             self._next_process()
         else:
             debug("Process failed - stopping script")
-            self.log += "FAILED\n"
+            self.log += "\nFAILED: %i\n" % status
             self.status = status
+            self.exception = exception
             self._current_process = None
             self._current_params = None
-            self.sig_finished.emit(self.status, self.log, exception)
+            self._complete()
 
     def _process_progress(self, complete):
         self.sig_process_progress.emit(complete)
-        script_complete = ((self._case_num-1)*len(self.pipeline) + 
-                          (self._process_num - 1 + complete)) / (len(self.pipeline)*len(self.cases))
+        script_complete = ((self._case_num-1)*len(self._pipeline) + 
+                           (self._process_num - 1 + complete)) / (len(self._pipeline)*len(self._cases))
         self.sig_progress.emit(script_complete)
 
-class BatchScriptCase:
+class BatchScriptCase(object):
     """
     An individual case (e.g. patient scan) which a processing pipeline is applied to
     """
@@ -246,7 +275,7 @@ class BatchScriptCase:
         # This would break compatibility so not for now
         #self.params["InputId"] = self.params.get("InputId", self.case_id)
 
-class BatchScriptRunner:
+class BatchScriptRunner(object):
     """
     Runs a batch script, sending human readable output to a log stream.
 
@@ -254,7 +283,8 @@ class BatchScriptRunner:
     """
 
     def __init__(self, fname, verbose=True, log=sys.stdout):
-        self.script = Script(fname=fname)
+        self.script = Script()
+        self.options = {"yaml-file" : fname}
         self.script.sig_start_case.connect(self._start_case)
         self.script.sig_done_case.connect(self._done_case)
         self.script.sig_start_process.connect(self._start_process)
@@ -266,7 +296,7 @@ class BatchScriptRunner:
         self.log = log
 
     def run(self):
-        self.script.run()
+        self.script.run(self.options)
 
     def _start_case(self, case):
         self.log.write("Processing case: %s\n" % case.case_id)
@@ -286,7 +316,7 @@ class BatchScriptRunner:
             self.log.write(" DONE (%.1fs)\n" % (end - self.start))
             fname = os.path.join(process.outdir, "%s.log" % process.proc_id)
             self._save_text(process.log, fname)
-            if len(params) != 0:
+            if params:
                 warn("Unused parameters")
                 for k, v in params.items():
                     warn("%s=%s" % (str(k), str(v)))
@@ -309,7 +339,7 @@ class BatchScriptRunner:
         QtCore.QCoreApplication.instance().quit()
 
     def _save_text(self, text, fname, ext="txt"):
-        if len(text) > 0:
+        if text:
             if "." not in fname: fname = "%s.%s" % (fname, ext)
             dirname = os.path.dirname(fname)
             if not os.path.exists(dirname): os.makedirs(dirname)
