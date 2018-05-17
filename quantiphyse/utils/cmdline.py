@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import tempfile
 import re
+import shutil
 
 from quantiphyse.data import load, save
 from quantiphyse.utils import debug, warn, QpException
@@ -94,6 +95,13 @@ class CommandProcess(Process):
         else:
             self.workdir = workdir
             self.workdir_istemp = False
+
+    def __del__(self):
+        if self.workdir_istemp:
+            try:
+                shutil.rmtree(self.workdir)
+            except:
+                warn("Failed to remove temporary directory: %s" % self.workdir)
 
     def add_data(self, data_name):
         fname = os.path.join(self.workdir, data_name)
