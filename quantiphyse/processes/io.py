@@ -1,5 +1,5 @@
 """
-Quantiphyse - Analysis processes for basic loading/saving of data
+Quantiphyse - Processes for basic loading/saving of data
 
 Copyright (c) 2013-2018 University of Oxford
 """
@@ -44,8 +44,8 @@ class LoadProcess(Process):
             data = load(filepath)
             data.name = name
             return data
-        except:
-            warn("Failed to load data: %s" % filepath)
+        except Exception as exc:
+            warn("Failed to load data: %s (%s)" % (filepath, str(exc)))
 
     def _get_filepath(self, fname, folder=None):
         if os.path.isabs(fname):
@@ -55,11 +55,21 @@ class LoadProcess(Process):
             return os.path.abspath(os.path.join(folder, fname))
 
 class LoadDataProcess(LoadProcess):
+    """
+    Process to load data
+
+    Deprecated: use LoadProcess
+    """
     def run(self, options):
         LoadProcess.run(self, {'data' : options})
         for key in options.keys(): options.pop(key)
 
 class LoadRoisProcess(LoadProcess):
+    """
+    Process to load ROIs
+
+    Deprecated: use LoadProcess
+    """
     def run(self, options):
         LoadProcess.run(self, {'rois' : options})
         for key in options.keys(): options.pop(key)
@@ -84,25 +94,14 @@ class SaveProcess(Process):
 
         for name in options.keys():
             try:
-                fname = options.pop(name)
-                if fname is None: fname = name
+                fname = options.pop(name, name)
                 qpdata = self.ivm.data.get(name, self.ivm.rois.get(name, None))
                 if qpdata is not None:
-                    if not fname.endswith(".nii"): 
-                        fname += ".nii"
-                    if not os.path.isabs(fname):
-                        fname = os.path.join(self.outdir, fname)
-                    debug("Saving %s as %s" % (name, fname))
-                    dirname = os.path.dirname(fname)
-                    if not os.path.exists(dirname):
-                        os.makedirs(dirname)
-
-                    save(qpdata, fname, output_grid)
+                    save(qpdata, fname, grid=output_grid, outdir=self.outdir)
                 else:
                     warn("Failed to save %s - no such data or ROI found" % name)
-            except:
-                warn("Failed to save %s" % name)
-                raise
+            except Exception as exc:
+                warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveAllExceptProcess(Process):
     """
@@ -119,35 +118,30 @@ class SaveAllExceptProcess(Process):
             if name in exceptions: 
                 continue
             try:
-                fname = os.path.join(self.outdir, "%s.nii" % name)
-                debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname)
-            except:
-                warn("Failed to save %s" % name)
-                raise
+                save(qpdata, name, outdir=self.outdir)
+            except Exception as exc:
+                warn("Failed to save %s: %s" % (name, str(exc)))
 
         for name, qpdata in self.ivm.rois.items():
             if name in exceptions: 
                 continue
             try:
-                fname = os.path.join(self.outdir, "%s.nii" % name)
-                debug("Saving %s as %s" % (name, fname))
-                save(qpdata, fname)
-            except:
-                warn("Failed to save %s" % name)
-                raise
+                save(qpdata, name, outdir=self.outdir)
+            except Exception as exc:
+                warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveDeleteProcess(SaveProcess):
     """
     Save data to file and then delete it
     """
     def __init__(self, ivm, **kwargs):
-        Process.__init__(self, ivm, **kwargs)
+        SaveProcess.__init__(self, ivm, **kwargs)
 
     def run(self, options):
+        options_save = dict(options)
         SaveProcess.run(self, options)
 
-        for name in options:
+        for name in options_save:
             if name in self.ivm.data: self.ivm.delete_data(name)
             if name in self.ivm.rois: self.ivm.delete_roi(name)
 
@@ -169,7 +163,7 @@ class SaveArtifactsProcess(Process):
                 warn("Extra '%s' not found - not saving" % name)
 
     def _save_text(self, text, fname, ext="txt"):
-        if len(text) > 0:
+        if text:
             if "." not in fname: fname = "%s.%s" % (fname, ext)
             fname = os.path.join(self.outdir, fname)
             dirname = os.path.dirname(fname)

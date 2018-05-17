@@ -240,7 +240,7 @@ def load(fname):
     else:
         raise QpException("%s: Unrecognized file type" % fname)
 
-def save(data, fname, grid=None):
+def save(data, fname, grid=None, outdir=""):
     if grid is None:
         grid = data.grid
         arr = data.raw()
@@ -260,5 +260,18 @@ def save(data, fname, grid=None):
         debug("Writing metadata: ", yaml_metadata)
         ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
         img.header.extensions.append(ext)
+
+    _, extension = os.path.splitext(fname)
+    if extension == "":
+        fname += ".nii"
+        
+    if not os.path.isabs(fname):
+        fname = os.path.join(outdir, fname)
+
+    dirname = os.path.dirname(fname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    debug("Saving %s as %s" % (data.name, fname))
     img.to_filename(fname)
     data.fname = fname
