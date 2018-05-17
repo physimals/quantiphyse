@@ -275,45 +275,41 @@ class BatchScriptCase(object):
         # This would break compatibility so not for now
         #self.params["InputId"] = self.params.get("InputId", self.case_id)
 
-class BatchScriptRunner(object):
+class BatchScript(Script):
     """
-    Runs a batch script, sending human readable output to a log stream.
+    A Script which sends human readable output to a log stream.
 
     This is used as the runner for batch scripts started from the console
     """
 
-    def __init__(self, fname, verbose=True, log=sys.stdout):
-        self.script = Script()
-        self.options = {"yaml-file" : fname}
-        self.script.sig_start_case.connect(self._start_case)
-        self.script.sig_done_case.connect(self._done_case)
-        self.script.sig_start_process.connect(self._start_process)
-        self.script.sig_process_progress.connect(self._process_progress)
-        self.script.sig_done_process.connect(self._done_process)
-        self.script.sig_progress.connect(self._progress)
-        self.script.sig_finished.connect(self._done_script)
-        self.verbose = verbose
-        self.log = log
+    def __init__(self, ivm=None, stdout=sys.stdout, **kwargs):
+        Script.__init__(self, ivm, **kwargs)
+        self.stdout = stdout
 
-    def run(self):
-        self.script.run(self.options)
+        self.sig_start_case.connect(self._log_start_case)
+        self.sig_done_case.connect(self._log_done_case)
+        self.sig_start_process.connect(self._log_start_process)
+        self.sig_process_progress.connect(self._log_process_progress)
+        self.sig_done_process.connect(self._log_done_process)
+        self.sig_progress.connect(self._log_progress)
+        self.sig_finished.connect(self._log_done_script)
 
-    def _start_case(self, case):
-        self.log.write("Processing case: %s\n" % case.case_id)
+    def _log_start_case(self, case):
+        self.stdout.write("Processing case: %s\n" % case.case_id)
 
-    def _done_case(self, case):
+    def _log_done_case(self, case):
         pass
 
-    def _start_process(self, process, params):
+    def _log_start_process(self, process, params):
         self.start = time.time()
-        self.log.write("  - Running %s...  0%%" % process.proc_id)
+        self.stdout.write("  - Running %s...  0%%" % process.proc_id)
         for key, value in params.items():
             debug("      %s=%s" % (key, str(value)))
                 
-    def _done_process(self, process, params):
+    def _log_done_process(self, process, params):
         if process.status == Process.SUCCEEDED:
             end = time.time()
-            self.log.write(" DONE (%.1fs)\n" % (end - self.start))
+            self.stdout.write(" DONE (%.1fs)\n" % (end - self.start))
             fname = os.path.join(process.outdir, "%s.log" % process.proc_id)
             self._save_text(process.log, fname)
             if params:
@@ -321,21 +317,21 @@ class BatchScriptRunner(object):
                 for k, v in params.items():
                     warn("%s=%s" % (str(k), str(v)))
         else:
-            self.log.write("FAILED: %i\n" % process.status)
+            self.stdout.write("FAILED: %i\n" % process.status)
             warn(str(process.exception))
             debug(traceback.format_exc(process.exception))
 
-    def _progress(self, complete):
-        #self.log.write("%i%%\n" % int(100*complete))
+    def _log_progress(self, complete):
+        #self.stdout.write("%i%%\n" % int(100*complete))
         pass
 
-    def _process_progress(self, complete):
+    def _log_process_progress(self, complete):
         percent = int(100*complete)
-        self.log.write("\b\b\b\b%3i%%" % percent)
-        self.log.flush()
+        self.stdout.write("\b\b\b\b%3i%%" % percent)
+        self.stdout.flush()
 
-    def _done_script(self):
-        self.log.write("Script finished\n")
+    def _log_done_script(self):
+        self.stdout.write("Script finished\n")
         QtCore.QCoreApplication.instance().quit()
 
     def _save_text(self, text, fname, ext="txt"):

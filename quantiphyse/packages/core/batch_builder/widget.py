@@ -9,7 +9,7 @@ import os
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, RunBox
-from quantiphyse.utils.batch import Script
+from quantiphyse.utils.batch import BatchScript
 
 class BatchBuilderWidget(QpWidget):
     """
@@ -19,7 +19,7 @@ class BatchBuilderWidget(QpWidget):
         super(BatchBuilderWidget, self).__init__(name="Batch Builder", icon="batch", 
                                                  desc="Simple helper for building and running batch files", 
                                                  group="Utilities", **kwargs)
-        self.process = Script(self.ivm)
+        self.process = BatchScript(self.ivm, stdout=open(os.devnull, "w"))
 
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()

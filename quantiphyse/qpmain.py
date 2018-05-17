@@ -19,7 +19,7 @@ import pyqtgraph as pg
 
 from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, debug, warn, set_local_file_path, set_debug
-from quantiphyse.utils.batch import BatchScriptRunner
+from quantiphyse.utils.batch import BatchScript
 from quantiphyse.gui import MainWindow, QuickWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
@@ -87,10 +87,10 @@ def main():
         run_tests(args.test)
         sys.exit(0)
     elif args.batch is not None:
-        runner = BatchScriptRunner(fname=args.batch)
+        runner = BatchScript()
         # Make sure script is run after the main loop starts in case it
         # is completely synchronous
-        QtCore.QTimer.singleShot(200, runner.run)
+        QtCore.QTimer.singleShot(200, lambda: runner.run({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
         if args.qv:
