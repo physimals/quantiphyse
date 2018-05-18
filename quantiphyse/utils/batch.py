@@ -97,8 +97,8 @@ class Script(Process):
             root = {}
 
         # Can set mode=check to just validate the YAML
-        mode = options.pop("mode", "run")
         self._load_yaml(root)
+        mode = options.pop("mode", "run")
         if mode == "run":
             self.status = Process.RUNNING
             self._case_num = 0
@@ -142,7 +142,6 @@ class Script(Process):
         # Create default case if we have not been specified any
         if not self._cases:
             self._cases.append(BatchScriptCase("case", {}))
-
         # After removing processes and cases, remainder is the generic options
         self._generic_params = root
     
@@ -270,6 +269,8 @@ class BatchScriptCase(object):
     """
     def __init__(self, case_id, params):
         self.case_id = case_id
+        if params is None:
+            params = {}
         self.params = params
         self.params["OutputId"] = self.params.get("OutputId", self.case_id)
         # This would break compatibility so not for now
