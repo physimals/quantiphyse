@@ -47,12 +47,29 @@ class ProcessTest(unittest.TestCase):
     def run_yaml(self, yaml):
         script = Script(self.ivm)
         script.sig_finished.connect(self._script_finished)
-        script.execute({"yaml" : yaml})
+
+        full_yaml = """
+OutputFolder: %s
+InputFolder: %s
+
+Processing:
+  - Load:
+        data:
+            data_3d.nii.gz:
+            data_4d.nii.gz:
+            data_4d_moving.nii.gz:
+        rois:
+            mask.nii.gz:
+"""  % (self.output_dir, self.input_dir) + yaml + """
+Cases:
+  - case:
+"""
+        script.execute({"yaml" : full_yaml})
         while script.status == Script.RUNNING:
             time.sleep(1)
         if self.status != Script.SUCCEEDED:
             raise self.exception 
-            
+
     def _script_finished(self, *args):
         self.status, self.log, self.exception = args
 
