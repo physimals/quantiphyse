@@ -23,6 +23,8 @@ hidden_imports = [
     'quantiphyse.processes.feat_pca',
     'quantiphyse.utils.cmdline',
     'quantiphyse.test.widget_test',
+    'quantiphyse.gui.options',
+    'quantiphyse.gui.plot',
 ]
 
 added_files = [
