@@ -30,29 +30,28 @@ class CalcVolumesProcess(Process):
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
         self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
 
-        if self.ivm.main is not None:
-            roi_name = options.pop('roi', None)
-            sel_region = options.pop('region', None)
+        roi_name = options.pop('roi', None)
+        sel_region = options.pop('region', None)
 
-            if roi_name is None:
-                roi = self.ivm.current_roi
-            else:
-                roi = self.ivm.rois[roi_name]
+        if roi_name is None:
+            roi = self.ivm.current_roi
+        else:
+            roi = self.ivm.rois[roi_name]
 
-            if roi is not None:
-                sizes = roi.grid.spacing
-                counts = np.bincount(roi.raw().flatten())
-                for idx, region in enumerate(roi.regions()):
-                    if sel_region is None or region == sel_region:
-                        nvoxels = counts[region]
-                        vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
-                        self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
-                        self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
-                        self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
+        if roi is not None:
+            sizes = roi.grid.spacing
+            counts = np.bincount(roi.raw().flatten())
+            for idx, region in enumerate(roi.regions()):
+                if sel_region is None or region == sel_region:
+                    nvoxels = counts[region]
+                    vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
+                    self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
+                    self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
+                    self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
 
-            if not options.pop('no-extras', False): 
-                output_name = options.pop('output-name', "roi-vols")
-                self.ivm.add_extra(output_name, table_to_str(self.model))
+        if not options.pop('no-extras', False):
+            output_name = options.pop('output-name', "roi-vols")
+            self.ivm.add_extra(output_name, table_to_str(self.model))
 
 
 class HistogramProcess(Process):
@@ -145,7 +144,7 @@ class RadialProfileProcess(Process):
         if len(data_items) == 0:
             raise QpException("No data to calculate radial profile")
         
-        roi = self.get_roi(options, grid)
+        roi = self.get_roi(options, grid).raw()
         
         #roi_region = options.pop('region', None)
         centre = options.pop('centre')
