@@ -261,6 +261,9 @@ def save(data, fname, grid=None, outdir=""):
         ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
         img.header.extensions.append(ext)
 
+    if not fname:
+        fname = data.name
+        
     _, extension = os.path.splitext(fname)
     if extension == "":
         fname += ".nii"
