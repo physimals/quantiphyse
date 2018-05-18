@@ -165,7 +165,8 @@ class SaveArtifactsProcess(Process):
     def _save_text(self, text, fname, ext="txt"):
         if text:
             if "." not in fname: fname = "%s.%s" % (fname, ext)
-            fname = os.path.join(self.outdir, fname)
+            if not os.path.isabs(fname):
+                fname = os.path.join(self.outdir, fname)
             dirname = os.path.dirname(fname)
             if not os.path.exists(dirname): os.makedirs(dirname)
             with open(fname, "w") as f:
