@@ -13,7 +13,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, warn, QpException, get_plugins
+from quantiphyse.utils import debug, warn, get_debug, QpException, get_plugins
 
 """ 
 Multiprocessing pool 
@@ -196,6 +196,8 @@ class Process(QtCore.QObject):
         except Exception, e:
             self.status = self.FAILED
             self.exception = e
+            if get_debug():
+                traceback.print_exc()
 
         if self.status != self.RUNNING:
             # Synchronous process already finished
