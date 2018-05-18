@@ -3,19 +3,17 @@ import time
 
 import numpy as np
 
+from quantiphyse.processes import Process
 from quantiphyse.test.widget_test import WidgetTest
 
 from .widget import BatchBuilderWidget
 
-FABBER = """
-  - Fabber:
+SV = """
+  - Supervoxels:
       data: data_4d
-      model: poly
-      degree: 2
-      method: vb
-      noise: white
-      save-mean:
-      save-model-fit:
+      roi: mask
+      n-supervoxels: 4
+      output-name: sv
 """
 class BatchBuilderWidgetTest(WidgetTest):
 
@@ -38,8 +36,9 @@ class BatchBuilderWidgetTest(WidgetTest):
         self.processEvents()
         self.assertFalse(self.error)
 
-    def testFabber(self):
+    def testAddProcess(self):
         self.ivm.add_data(self.data_3d, grid=self.grid, name="data_4d")
+        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.processEvents()
         yaml = self.w.proc_edit.toPlainText()
         add_str = "# Additional processing steps go here\n"
@@ -48,19 +47,17 @@ class BatchBuilderWidgetTest(WidgetTest):
         add_idx += len(add_str)
         pre = yaml[:add_idx]
         post = yaml[add_idx:]
-        self.w.proc_edit.setPlainText(pre + FABBER + post)
+        self.w.proc_edit.setPlainText(pre + SV + post)
         self.processEvents()
         
         self.w.run_box.runBtn.clicked.emit()
         while not self.error and not hasattr(self.w.run_box, "log"):
             self.processEvents()
             time.sleep(2)
-
+            
+        self.assertEqual(self.w.process.status, Process.SUCCEEDED)
         self.assertFalse(self.error)
-        self.assertTrue("mean_c0" in self.ivm.data)
-        self.assertTrue("mean_c1" in self.ivm.data)
-        self.assertTrue("mean_c2" in self.ivm.data)
-        self.assertTrue("modelfit" in self.ivm.data)
+        self.assertTrue("sv" in self.ivm.rois)
 
 if __name__ == '__main__':
     unittest.main()
