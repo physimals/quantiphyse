@@ -18,16 +18,6 @@ from quantiphyse.data import DataGrid, ImageVolumeManagement
 from quantiphyse.gui import ViewOptions, ImageView
 from quantiphyse.utils import QpException
 
-TEST_SHAPE = [10, 10, 10]
-TEST_NT = 20
-MOTION_SCALE = 0.5
-
-def _test_fn(x, y, z, t=None):
-    f = math.exp(-(x**2 + 2*y**2 + 3*z**2))
-    if t is not None:
-        f *= 1-math.cos(t*2*math.pi)
-    return f
-
 class WidgetTest(unittest.TestCase):
     """
     Base class for a test module for a QP WidgetTest
@@ -42,7 +32,7 @@ class WidgetTest(unittest.TestCase):
 
     Because of this, widget test classes should be stored in their respective packages and
     exposed to the test framework using the ``widget-tests`` key in ``QP_MANIFEST``. Tests are then
-    run using ``quantiphyse --self-test``
+    run using ``quantiphyse --test-all``
     """
     def setUp(self):
         self.qpe, self.error = False, False
@@ -61,7 +51,8 @@ class WidgetTest(unittest.TestCase):
         else:
             raise unittest.SkipTest("Plugin not found")
 
-        self.create_test_data()
+        from . import create_test_data
+        create_test_data(self)
         
     def tearDown(self):
         if hasattr(self, "w"):
@@ -76,40 +67,6 @@ class WidgetTest(unittest.TestCase):
         in order for the test to detect the effects
         """
         QtCore.QCoreApplication.instance().processEvents()
-
-    def create_test_data(self):
-        """
-        Create test data
-
-        This is done freshly for each test in case the data is modified
-        during the process of a test
-        """
-        centre = [float(v)/2 for v in TEST_SHAPE]
-
-        self.grid = DataGrid(TEST_SHAPE, np.identity(4))
-        self.data_3d = np.zeros(TEST_SHAPE, dtype=np.float32)
-        self.data_4d = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
-        self.data_4d_moving = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
-        self.mask = np.zeros(TEST_SHAPE, dtype=np.int)
-
-        for x in range(TEST_SHAPE[0]):
-            for y in range(TEST_SHAPE[1]):
-                for z in range(TEST_SHAPE[2]):
-                    nx = 2*float(x-centre[0])/TEST_SHAPE[0]
-                    ny = 2*float(y-centre[1])/TEST_SHAPE[1]
-                    nz = 2*float(z-centre[2])/TEST_SHAPE[2]
-                    d = math.sqrt(nx**2 + ny**2 + nz**2)
-                    self.data_3d[x, y, z] = _test_fn(nx, ny, nz)
-                    self.mask[x, y, z] = int(d < 0.5)
-                    for t in range(TEST_NT):
-                        nt = float(t)/TEST_NT
-                        self.data_4d[x, y, z, t] = _test_fn(nx, ny, nz, nt)
-        
-        for t in range(TEST_NT):
-            tdata = self.data_4d[:, :, :, t]
-            shift = np.random.normal(scale=MOTION_SCALE, size=3)
-            odata = scipy.ndimage.interpolation.shift(tdata, shift)
-            self.data_4d_moving[:, :, :, t] = odata
 
     def harmless_click(self, btn):
         """ 
