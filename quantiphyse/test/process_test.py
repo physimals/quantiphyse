@@ -17,6 +17,8 @@ import numpy as np
 import scipy
 import nibabel as nib
 
+from PySide import QtCore
+
 from quantiphyse.data import DataGrid, ImageVolumeManagement
 from quantiphyse.processes import Process
 from quantiphyse.utils.batch import Script
@@ -66,12 +68,23 @@ Cases:
 """
         script.execute({"yaml" : full_yaml})
         while script.status == Script.RUNNING:
+            self.processEvents()
             time.sleep(1)
         if self.status != Script.SUCCEEDED:
             raise self.exception 
 
     def _script_finished(self, *args):
         self.status, self.log, self.exception = args
+
+    def processEvents(self):
+        """
+        Process outstanding QT events, i.e. let handlers for widget
+        events that we have triggered run
+
+        This must be run every time a test triggers widget events
+        in order for the test to detect the effects
+        """
+        QtCore.QCoreApplication.instance().processEvents()
 
     def _create_test_data_files(self):
         """
