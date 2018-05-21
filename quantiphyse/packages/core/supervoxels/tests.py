@@ -7,7 +7,8 @@ import unittest
 
 import numpy as np
 
-from quantiphyse.test.widget_test import WidgetTest
+from quantiphyse.processes import Process
+from quantiphyse.test import WidgetTest, ProcessTest
 
 from .widgets import PerfSlicWidget
 
@@ -90,6 +91,47 @@ class PerfSlicWidgetTest(WidgetTest):
         sv = self.ivm.rois[NAME].raw()
         self.assertTrue(np.all(sv[self.mask == 0] == 0))
         self.assertFalse(self.error)
+
+class MeanValuesProcessTest(ProcessTest):
+
+    def test3d(self):
+        yaml = """
+  - MeanValues:
+        data: data_3d
+        roi: mask
+        output-name: data_roi_mean
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("data_roi_mean" in self.ivm.data)
+
+class SupervoxelsProcessTest(ProcessTest):
+
+    def test3d(self):
+        yaml = """
+  - Supervoxels:
+      data: data_3d
+      output-name: sv_3d
+      compactness: 0.01
+      n-supervoxels: 20
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("sv_3d" in self.ivm.rois)
+
+    def test4d(self):
+        yaml = """
+
+  - Supervoxels:
+      data: data_4d
+      output-name: sv_4d
+      n-components: 3
+      compactness: 0.02
+      n-supervoxels: 30
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("sv_4d" in self.ivm.rois)
 
 if __name__ == '__main__':
     unittest.main()
