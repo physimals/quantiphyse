@@ -88,9 +88,9 @@ def main():
         sys.exit(0)
     elif args.batch is not None:
         runner = BatchScript()
-        # Make sure script is run after the main loop starts in case it
-        # is completely synchronous
-        QtCore.QTimer.singleShot(200, lambda: runner.run({"yaml-file" : args.batch}))
+        # Add delay to make sure script is run after the main loop starts, in case
+        # batch script is completely synchronous
+        QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
         if args.qv:
