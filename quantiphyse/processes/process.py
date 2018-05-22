@@ -153,14 +153,19 @@ class Process(QtCore.QObject):
         self.exception = object()
 
         if "worker_fn" in kwargs:
-            # Only for background processes
-            self.queue = multiprocessing.Manager().Queue()
+            self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
             self.worker_output = []
             self._worker_fn = kwargs.get("worker_fn", None)
             self._sync = kwargs.get("sync", False)
-            self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
             self._timer = None
             self._workers = []
+
+            # Only for background processes
+            if self._multiproc:
+                self.queue = multiprocessing.Manager().Queue()
+            else:
+                import Queue
+                self.queue = Queue.Queue()
 
     def execute(self, options):
         """
@@ -319,7 +324,6 @@ class Process(QtCore.QObject):
                      worker.
         :param n_workers: Number of parallel worker processes to use
         """
-        _init_pool()
         worker_args = self.split_args(n_workers, args)
         self.worker_output = [None, ] * n_workers
         self.status = Process.RUNNING
@@ -327,6 +331,7 @@ class Process(QtCore.QObject):
             self._workers = []
             for i in range(n_workers):
                 debug("starting task %i..." % n_workers)
+                _init_pool()
                 proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
                 self._workers.append(proc)
             
