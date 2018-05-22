@@ -81,8 +81,8 @@ class CommandProcess(Process):
     """
     Process which runs an external command in the background
     """
-    def __init__(self, ivm, workdir=None, path=()):
-        Process.__init__(self, ivm, worker_fn=_run_cmd)
+    def __init__(self, ivm, workdir=None, path=(), **kwargs):
+        Process.__init__(self, ivm, worker_fn=_run_cmd, **kwargs)
         self.path = path
         self._expected_steps = [None,]
         self._current_step = 0
