@@ -1,0 +1,30 @@
+OutputFolder: test/examples_output
+Debug: False
+
+Processing:
+  - Load:
+      data:
+        mpld_asltc.nii.gz: asldata
+      rois:
+        mask.nii.gz: aslmask
+
+  - Basil:
+      data: asldata
+      roi : aslmask
+      order: prt
+      tis: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
+      casl: True
+      taus: [1.4, 1.4, 1.4, 1.4, 1.4, 1.4]
+      infertiss: True
+      
+  - Save:
+      asldata:
+      aslmask:
+      perfusion:
+      arrival:
+
+Cases:
+  Basil:
+      InputFolder: /home/ibmeuser/data/asl/fsl_course/ASL
+
+

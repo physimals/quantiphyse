@@ -32,6 +32,6 @@ Processing:
         testdata_hist:
 
 Cases:
-    EG13:
+    SummaryStats:
         Folder:   test/data_autogen
 

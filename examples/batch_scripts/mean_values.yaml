@@ -19,7 +19,7 @@ Processing:
       testdata_mean:
 
 Cases:
-    EG14:
-        Folder:   test/data_autogen
+    MeanValues:
+        InputFolder:   test/data_autogen
 
 

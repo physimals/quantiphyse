@@ -35,8 +35,8 @@ Processing:
       model_curves:
 
 Cases:
-    QIBA1:
-        Folder:   test/data_static/qiba
+    DCE_QIBA1:
+        InputFolder:   test/data_static/qiba
         Load:
           data:
             qiba_67tpts.nii: qiba

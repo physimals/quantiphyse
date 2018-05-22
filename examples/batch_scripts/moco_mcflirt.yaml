@@ -20,6 +20,6 @@ Processing:
         data_moco_mcflirt:
 
 Cases:
-    EG8:
-        Folder:   test/data_autogen   
+    McFlirt:
+        InputFolder:   test/data_autogen   
 

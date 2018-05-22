@@ -13,7 +13,7 @@ Processing:
         roi_vols:
 
 Cases:
-    EG9:
+    CalcVolumes:
         Folder:   test/data_autogen
         Load:  
           data:

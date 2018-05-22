@@ -37,10 +37,10 @@ Processing:
 
 # List of cases to apply the processing to
 Cases:
-    EG15:
+    Pipeline:
         # Note that the folder is used to form input filenames
-        #Folder: c:\Users\ctsu0221\build\data\
-        Folder: /home/ibmeuser/data
+        #InputFolder: c:\Users\ctsu0221\build\data\
+        InputFolder: /home/ibmeuser/data
 
         # Data to load for this case
         Load:

@@ -19,7 +19,7 @@ Processing:
       mni:
 
 Cases:
-  ResampleCase:
+  Resample:
       InputFolder: /home/ibmeuser/data
 
 

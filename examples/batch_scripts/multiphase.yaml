@@ -8,10 +8,14 @@ Processing:
       rois:
         mask.nii.gz: mask
 
-  - MultiphaseAsl:
+  - AslMultiphase:
       data: multiphase_data
       roi : mask
       nphases: 8
+      keep-temp: True
+      sigma: 1
+      n-supervoxels: 8
+      compactness: 0.1
       
   - Save:
       mean_phase_orig:
@@ -29,7 +33,7 @@ Processing:
       data_sv:
 
 Cases:
-  JLarkin:
+  AslMultiphase:
       InputFolder: /home/ibmeuser/data/asl/jlarkin/TagDurations/TD=1.4/asl_phase_shifted_5_OPTIMAL/
 
 

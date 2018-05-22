@@ -24,8 +24,8 @@ Processing:
         test_clusters_4d:
 
 Cases:
-    EG10:
-        Folder:   test/data_autogen
+    Clustering:
+        InputFolder:   test/data_autogen
         LoadData:   
             testdata_4d.nii.gz:
             testdata_3d.nii.gz:
