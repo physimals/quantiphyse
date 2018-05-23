@@ -23,7 +23,7 @@ def get_reg_method(method_name):
             return method
     return None
 
-def _run_reg(worker_id, queue, method_name, reg_data, reg_grid, ref_data, ref_grid, options):
+def _run_reg(worker_id, queue, method_name, mode, reg_data, reg_grid, ref_data, ref_grid, options):
     """
     Generic registration function for asynchronous process
     """
@@ -35,48 +35,34 @@ def _run_reg(worker_id, queue, method_name, reg_data, reg_grid, ref_data, ref_gr
 
         if not reg_data:
             raise QpException("No registration data")
+        elif mode == "moco":
+            # Motion correction mode
+            if len(reg_data) > 1:
+                raise QpException("Cannot have additional registration targets with motion correction")
+            
+            debug("Running motion correction")
+            out_data, transforms, log = method.moco(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            return worker_id, True, ([out_data], transforms, log)
         elif reg_data[0].ndim == 3: 
             # Register single volume data, may be more than one registration target
-            ret = method.reg(reg_data, reg_grid, ref_data, ref_grid, options)
-            return worker_id, True, ret
+            out_data = []
+            debug("Running 3D registration")
+            registered, transform, log = method.reg_3d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            out_data.append(registered)
+            for add_data in reg_data[1:]:
+                debug("Applying transformation to additional data")
+                registered, apply_log = method.apply_transform(add_data, reg_grid, ref_data, ref_grid, transform)
+                log += apply_log
+                out_data.append(registered)
+            return worker_id, True, (out_data, transform, log)
         else:
             # Register multi-volume data, can only be one registration target
             if len(reg_data) > 1:
                 raise QpException("Cannot have additional registration targets with 4D registration data")
-            reg_data = reg_data[0]
-
-            # Go through registration volumes and register each independently to the reference volume
-            regdata_out = np.zeros(reg_data.shape)
-            log = ""
-            for vol in range(reg_data.shape[-1]):
-                log += "Registering volume %i of %i\n" % (vol+1, reg_data.shape[-1])
-                reg_vol = reg_data[..., vol]
-                if vol == options.get("ignore-idx", -1):
-                    # Ignore this index (e.g. because it is the same as the ref volume)
-                    regdata_out[..., vol] = reg_vol
-                else:
-                    # Register this volume and set the output data
-                    out_vols, out_trans, reg_log = method.reg([reg_vol,], reg_grid, ref_data, ref_grid, options)
-                    log += reg_log
-                    regdata_out[..., vol] = out_vols[0]
-                queue.put(vol)
-
-            return worker_id, True, ([regdata_out, ], [], log)
-    except:
-        return worker_id, False, sys.exc_info()[1]
-
-def _run_moco(worker_id, queue, method_name, moco_data, moco_grid, ref_data, ref_grid, options):
-    """
-    Generic motion correction function for asynchronous process
-    """
-    try:
-        set_local_file_path()
-        method = get_reg_method(method_name)
-        if method is None: 
-            raise QpException("Unknown registration method: %s" % method_name)
-
-        ret = method.moco(moco_data, moco_grid, ref_data, ref_grid, options)
-        return worker_id, True, ret
+            
+            debug("Running 4D registration")
+            out_data, transforms, log = method.reg_4d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            return worker_id, True, ([out_data], transforms, log)
     except:
         return worker_id, False, sys.exc_info()[1]
 
@@ -89,7 +75,6 @@ class RegProcess(Process):
 
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, worker_fn=_run_reg, **kwargs)
-        self.nvols = None
         self.grid = None
         self.output_names = None
 
@@ -101,7 +86,6 @@ class RegProcess(Process):
         # and output data can be interpreted correctly
         regdata_name = options.pop("reg", self.ivm.main.name)
         regdata = self.ivm.data[regdata_name]
-        self.nvols = regdata.nvols
         self.grid = regdata.grid
         reg_data = [regdata.raw(), ]
 
@@ -152,13 +136,12 @@ class RegProcess(Process):
         debug("Have %i registration targets" % len(reg_data))
 
         # Function input data must be passed as list of arguments for multiprocessingmethod = get_reg_method(method_name)
-        self.start_bg([method_name, reg_data, self.grid.affine, ref_data, ref_grid.affine, options])
+        self.start_bg([method_name, mode, reg_data, self.grid.affine, ref_data, ref_grid.affine, options])
 
     def timeout(self):
         if self.queue.empty(): return
         while not self.queue.empty():
-            done = self.queue.get()
-        complete = float(done+1)/self.nvols
+            complete = self.queue.get()
         self.sig_progress.emit(complete)
 
     def finished(self):

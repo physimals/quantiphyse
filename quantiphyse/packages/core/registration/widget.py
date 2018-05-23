@@ -25,28 +25,45 @@ class RegMethod(object):
     def __init__(self, name):
         self.name = name
 
-    @staticmethod
-    def reg(reg_data, reg_grid, ref_data, ref_grid, options):
+    @classmethod
+    def apply_transform(cls, reg_data, reg_grid, ref_data, ref_grid, transform, queue):
         """
-        Registration
+        Apply a previously calculated transformation to a data set
 
-        Note that this is a function not a method because it needs to be usable
-        as a multiprocessing entry point.
+        :param reg_data: 3D Numpy arrays containing data to apply the transform to.
+        :param reg_grid: 4x4 array giving grid-to-world transformation for reg_data. World co-ordinates
+                         should be in mm.
+        :param ref_data: 3D Numpy array containing reference data. Normally this should not be
+                         required, however it is possible that the transform is relative to a particular
+                         reference.
+        :param ref_grid: 4x4 array giving grid-to-world transformation for ref_data. World co-ordinates
+                         should be in mm.
+        :param transform: Either an affine matrix transformation or a sequence of 3 warp images each
+                          the same shape as 'regdata'. This should be a transformation returned by
+                          a previous registration using the same method, the same reference data, and
+                          registration data in the same space as reg_data.
+        :return Tuple of Numpy array containing transformed data and log output as a string
+        """
+        raise NotImplementedError("Registration method has not implemented 'apply_transform'")
 
-        :param reg_data: Sequence of 3D Numpy arrays containing data to register. The first
-                         is the primary registration target and is used to determine the 
-                         transformation. The remaining data is transformed in the same 
-                         way as the first. All must be defined on the same space
+    @classmethod
+    def reg_3d(cls, reg_data, reg_grid, ref_data, ref_grid, options, queue):
+        """
+        3D Registration
+
+        :param reg_data: 3D Numpy array containing data to register.
         :param reg_grid: 4x4 array giving grid-to-world transformation for reg_data. World co-ordinates
                          should be in mm.
         :param ref_data: 3D Numpy array containing reference data.
         :param ref_grid: 4x4 array giving grid-to-world transformation for ref_data. World co-ordinates
                          should be in mm. If not specified, the same transform as ``reg_grid`` is used.
         :param options: Method options as dictionary
+        :param queue: Queue object which method may put progress information on to. Progress 
+                      should be given as a number between 0 and 1.
+
         :return Tuple of three items. 
         
-                First, a sequence of registered data, the first item is the registered 
-                version of ``regdata``, the remainder being the data in ``extra_reg``.
+                First, A Numpy array containing registered data
 
                 Second, if options contains ``output-transform : True``, transformation found. 
                 This is either an affine matrix transformation or a sequence of 3 warp images, 
@@ -57,17 +74,71 @@ class RegMethod(object):
         """
         raise NotImplementedError("Registration method has not implemented 'reg'")
 
-    @staticmethod
-    def moco(moco_data, moco_grid, ref, ref_grid, options):
+    @classmethod
+    def reg_4d(cls, reg_data, reg_grid, ref_data, ref_grid, options, queue):
+        """
+        4D Registration
+
+        The default implementation simply registers each volume of the data independently. However,
+        implementations can supply their own more optimal implementation if appropriate
+
+        :param reg_data: 4D Numpy array containing data to register.
+        :param reg_grid: 4x4 array giving grid-to-world transformation for reg_data. World co-ordinates
+                         should be in mm.
+        :param ref_data: 3D Numpy array containing reference data.
+        :param ref_grid: 4x4 array giving grid-to-world transformation for ref_data. World co-ordinates
+                         should be in mm. If not specified, the same transform as ``reg_grid`` is used.
+        :param options: Method options as dictionary
+        :param queue: Queue object which method may put progress information on to. Progress 
+                      should be given as a number between 0 and 1.
+
+        :return Tuple of three items. 
+        
+                First, A Numpy array containing registered data
+
+                Second, if options contains ``output-transform : True``, sequence of transformations
+                found, one for each volume in ``reg_data``. Each is either an affine matrix transformation 
+                or a sequence of 3 warp images, the same shape as ``regdata`` If ``output-transform`` 
+                is not given, returns None instead.
+
+                Third, log information from the registration as a string.
+        """
+        if reg_data.ndim != 4:
+            raise QpException("reg_4d expected 4D data")
+        
+        out_data = np.zeros(reg_data.shape)
+        transforms = []
+        log = ""
+        debug("Default 4D implementation")
+        for vol in range(reg_data.shape[-1]):
+            log += "Registering volume %i of %i\n" % (vol+1, reg_data.shape[-1])
+            debug("Vol %i of %i" % (vol+1, reg_data.shape[-1]))
+            if vol == options.get("ignore-idx", -1):
+                # Ignore this index (e.g. because it is the same as the ref volume)
+                out_data[..., vol] = reg_data[..., vol]
+                transforms.append(None)
+            else:
+                print("Calling reg_3d", cls, cls.reg_3d)
+                vols, transform, vol_log = cls.reg_3d(reg_data[..., vol], reg_grid, ref_data, ref_grid, options, queue)
+                out_data[..., vol] = vols
+                transforms.append(transform)
+                log += vol_log
+            queue.put(float(vol)/reg_data.shape[-1])
+
+        # If we are not saving transforms, the list will just be a list of None objects
+        if not options.get("save-transforms", False):
+            transforms = None
+
+        return out_data, transforms, log
+
+    @classmethod
+    def moco(cls, moco_data, moco_grid, ref, ref_grid, options, queue):
         """
         Motion correction
         
-        Note that this is a function not a method because it needs to be usable
-        as a multiprocessing entry point.
-
-        The default implementation uses the ``reg()`` function to perform motion correction
+        The default implementation uses the ``reg_4d`` function to perform motion correction
         as registration to a common reference, however this function can have a custom
-        implementation if required
+        implementation specific to motion correction if required.
         
         :param moco_data: A single 4D Numpy array containing data to motion correct.
         :param moco_grid: 4x4 array giving grid-to-world transformation for ``moco_data``. 
@@ -77,37 +148,31 @@ class RegMethod(object):
         :param ref_grid: 4x4 array giving grid-to-world transformation for ref_data. 
                          Ignored if ``ref`` is an integer.
         :param options: Method options as dictionary
+        :param queue: Queue object which method may put progress information on to. Progress 
+                      should be given as a number between 0 and 1.
         
-        :return Motion corrected data as a 4D Numpy array in the same space as ``moco_data``
+        :return Tuple of three items. 
         
-                If options contains ``output-transform : True`` also return a sequence 
-                of transformations. Each is either an affine matrix transformation
-                sequence of 3 warp images, each the same shape as a single volume of
-                ``moco_data``
+                First, motion corrected data as a 4D Numpy array in the same space as ``moco_data``
+        
+                Second, if options contains ``output-transform : True``, sequence of transformations
+                found, one for each volume in ``reg_data``. Each is either an affine matrix transformation 
+                or a sequence of 3 warp images, the same shape as ``regdata`` If ``output-transform`` 
+                is not given, returns None instead.
+
+                Third, log information from the registration as a string.
         """
         if moco_data.ndim != 4:
             raise QpException("Cannot motion correct 3D data")
         
+        debug("Default MOCO implementation")
         if isinstance(ref, int):
             if ref >= moco_data.shape[3]:
                 raise QpException("Reference volume index of %i, but data has only %i volumes" % (ref, moco_data.nvols))
             ref = moco_data[..., ref]
             ref_grid = moco_grid
 
-        out_data = np.zeros(moco_data.shape)
-        transforms = []
-        for vol in range(moco_data.nvols):
-            vols, transform, log = globals["reg"]([moco_data, ], moco_grid, ref, ref_grid, options)
-            out_data[..., vol] = vols[0]
-            transforms.append(transform)
-            log += log
-            #queue.put(v)
-
-        # If we are not saving transforms, the list will just be a list of None objects
-        if not options.get("save-transforms", False):
-            transforms = None
-
-        return out_data, transforms, log
+        return cls.reg_4d(moco_data, moco_grid, ref, ref_grid, options, queue)
 
     def interface(self):
         """
