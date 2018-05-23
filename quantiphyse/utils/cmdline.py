@@ -43,7 +43,7 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
             retcode = p.poll() 
             line = p.stdout.readline()
             log += line
-            queue.put(line)
+            if queue: queue.put(line)
             if retcode is not None: break
 
         if retcode != 0:
@@ -60,8 +60,8 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
             basename = f.split(".", 1)[0]
             debug("Checking if we need to output: ", basename, expected_data, expected_rois)
             if (basename in expected_data or 
-                    basename in expected_rois or 
-                    (len(expected_data) == 0 and len(expected_rois) == 0)):
+                basename in expected_rois or 
+                (len(expected_data) == 0 and len(expected_rois) == 0)):
 
                 debug("Adding output file %s" % f)
                 if basename in expected_data:
@@ -97,7 +97,7 @@ class CommandProcess(Process):
             self.workdir_istemp = False
 
     def __del__(self):
-        if self.workdir_istemp:
+        if hasattr(self, "workdir_istemp") and self.workdir_istemp:
             try:
                 shutil.rmtree(self.workdir)
             except:
@@ -144,10 +144,7 @@ class CommandProcess(Process):
                 qpdata.raw()
                 self.ivm.add_roi(qpdata, make_current=(f == self._current_roi))
 
-    def run(self, options):
-        """ 
-        Run a program
-        """
+    def get_cmdline(self, options):
         cmd = options.pop("cmd", None)
         if cmd is None:
             raise QpException("No command provided")
@@ -166,6 +163,13 @@ class CommandProcess(Process):
         cmd = self._find(cmd)
         cmdline = cmd + " " + cmdline
         debug(cmdline)
+        return cmdline
+
+    def run(self, options):
+        """ 
+        Run a program
+        """
+        cmdline = self.get_cmdline(options)
 
         expected_data = options.pop("output-data", [])
         expected_rois = options.pop("output-rois", [])
