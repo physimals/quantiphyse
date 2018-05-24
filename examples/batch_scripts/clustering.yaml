@@ -7,13 +7,13 @@ Processing:
   - LoadData:
 
   # Clustering on 3D data
-  - KMeans3D:
+  - KMeans:
         data: testdata_3d
         n-clusters: 3
         output-name: test_clusters_3d
       
   # Clustering on 4D data
-  - KMeansPCA:
+  - KMeans:
         data: testdata_4d
         n-clusters: 4
         n-pca: 5
@@ -24,8 +24,8 @@ Processing:
         test_clusters_4d:
 
 Cases:
-    EG10:
-        Folder:   test/data_autogen
+    Clustering:
+        InputFolder:   test/data_autogen
         LoadData:   
             testdata_4d.nii.gz:
             testdata_3d.nii.gz:

@@ -8,9 +8,8 @@ from PySide import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np
 
-from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption
-from quantiphyse.utils import debug, warn
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, ChoiceOption
+from quantiphyse.utils import debug, warn, QpException
 
 class CompareDataWidget(QpWidget):
     """
@@ -36,9 +35,6 @@ class CompareDataWidget(QpWidget):
         self.d2_combo = OverlayCombo(self.ivm)
         self.d2_combo.currentIndexChanged.connect(self._update_data)
         hbox.addWidget(self.d2_combo)
-        self.run_btn = QtGui.QPushButton("Go")
-        self.run_btn.clicked.connect(self._run)
-        hbox.addWidget(self.run_btn)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
@@ -73,52 +69,66 @@ class CompareDataWidget(QpWidget):
         self.warn_label.setStyleSheet("QLabel { color : red; }")
         self.warn_label.setVisible(False)
         grid.addWidget(self.warn_label, 2, 0)
-                
+        self.plot_mode = ChoiceOption("Plot mode", grid, 3, choices=["Scatter", "Heat map"])
+        self.plot_mode.combo.currentIndexChanged.connect(self._plot_mode_changed)
+        self.bins = NumericOption("Bins", grid, 3, xpos=2, minval=20, default=50, intonly=True)
+        self.bins.label.setVisible(False)
+        self.bins.spin.setVisible(False)
+        self.run_btn = QtGui.QPushButton("Update")
+        self.run_btn.clicked.connect(self._run)
+        grid.addWidget(self.run_btn, 4, 0)
         hbox.addWidget(gbox)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
+        hbox = QtGui.QHBoxLayout()
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
-        self.plot = win.addPlot()
-        vbox.addWidget(win)
+        self.plot = win.addPlot(enableAutoRange=True)
+        self.plot.clear() # Unsure why this is necessary
+        hbox.addWidget(win)
         
-        vbox.addStretch(1)  
+        self.hist = pg.HistogramLUTWidget()
+        self.hist.setVisible(False)
+        self.hist.setBackground(None)
+        self.hist.gradient.loadPreset("thermal")
+        hbox.addWidget(self.hist) 
+        vbox.addLayout(hbox)
+
         self._update_gui()
         self._update_data()
     
+    def _plot_mode_changed(self, idx):
+        self.bins.label.setVisible(idx == 1)
+        self.bins.spin.setVisible(idx == 1)
+        self.sample_cb.setChecked(idx == 0)
+        self._update_gui()
+        self._update_data()
+
     def _update_gui(self):
         self.sample_spin.setEnabled(self.sample_cb.isChecked())
 
     def _update_data(self):
         name1 = self.d1_combo.currentText()
         name2 = self.d2_combo.currentText()
-        d1, d2 = None, None
-        if name1 in self.ivm.data:
-            qpd1 = self.ivm.data[name1]
-            d1 = qpd1.std()
-        if name2 in self.ivm.data:
-            qpd2 = self.ivm.data[name2]
-            d2 = qpd2.std()
+        roi_name = self.roi_combo.currentText()
+        qpd1 = self.ivm.data.get(name1, None)
+        qpd2 = self.ivm.data.get(name2, None)
+        roi = self.ivm.rois.get(roi_name, None)
 
-        roi = self.roi_combo.currentText()
-        roi_data = None
-        if roi in self.ivm.rois:
-            roi_data = self.ivm.rois[roi].std()
-
-        if d1 is not None and d2 is not None:
-            if qpd1.nvols != qpd2.nvols:
-                current_vol = self.ivm.cim_pos[3]
-                if qpd1.nvols == 1: d1 = np.expand_dims(d1, 3)
-                if qpd2.nvols == 1: d2 = np.expand_dims(d2, 3)
-                d1 = d1[:,:,:,min(qpd1.nvols-1, current_vol)]
-                d2 = d2[:,:,:,min(qpd2.nvols-1, current_vol)]
-            if roi_data is not None:
+        if qpd1 is not None and qpd2 is not None:
+            current_vol = self.ivl.focus()[3]
+            d1 = qpd1.volume(current_vol)
+            d2 = qpd2.resample(qpd1.grid).volume(current_vol)
+            
+            if roi is not None:
+                roi_data = roi.resample(qpd1.grid).raw()
                 d1 = d1[roi_data > 0]
                 d2 = d2[roi_data > 0]
             else:
                 d1 = d1.reshape(-1)
                 d2 = d2.reshape(-1)
+
             if self.sample_cb.isChecked():
                 n_samples = self.sample_spin.value()
                 idx = np.random.choice(np.arange(len(d1)), n_samples)
@@ -126,19 +136,35 @@ class CompareDataWidget(QpWidget):
                 d2 = np.take(d2, idx)
                 self.warn_label.setVisible(False)
             else:
-                self.warn_label.setVisible(True)
+                # Warn about plotting all data in scatter mode
+                self.warn_label.setVisible(self.plot_mode.combo.currentIndex() == 0)
                         
-        self.d1 = d1
-        self.d2 = d2
-        self.run_btn.setEnabled(self.d1 is not None and self.d2 is not None)
+            self.d1 = d1
+            self.d2 = d2
+            self.run_btn.setEnabled(True)
+        else:
+            self.run_btn.setEnabled(False)
 
     def _run(self):
         self.plot.clear() 
         self.plot.setLabel('bottom', self.d1_combo.currentText())
         self.plot.setLabel('left', self.d2_combo.currentText())
-        self.plot.plot(self.d1, self.d2, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        if self.plot_mode.combo.currentIndex() == 0:
+            self.plot.setAspectLocked(False)
+            self.hist.setVisible(False)
+            self.plot.plot(self.d1, self.d2, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
+        else:
+            heatmap, xedges, yedges = np.histogram2d(self.d1, self.d2, bins=self.bins.value())
+            rect = QtCore.QRectF(xedges[0], yedges[0], xedges[-1]-xedges[0], yedges[-1]-yedges[0])
+            img = pg.ImageItem(heatmap)
+            img.setRect(rect)
+            #self.plot.setAspectLocked(True)
+            self.hist.setVisible(True)
+            self.hist.setImageItem(img)
+            self.plot.addItem(img)
+
         if self.id_cb.isChecked():
             real_min = max(self.d1.min(), self.d2.min())
             real_max = min(self.d1.max(), self.d2.max())
-            pen=pg.mkPen((255, 255, 255), style=QtCore.Qt.DashLine)
+            pen = pg.mkPen((255, 255, 255), style=QtCore.Qt.DashLine)
             self.plot.plot([real_min, real_max], [real_min, real_max], pen=pen, width=2.0)

@@ -20,5 +20,5 @@ Processing:
         data_moco_deeds:
 
 Cases:
-    EG7:
-        Folder:   test/data_autogen/   
+    Deeds:
+        InputFolder:   test/data_autogen/   

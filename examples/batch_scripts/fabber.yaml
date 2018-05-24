@@ -25,6 +25,6 @@ Processing:
         mask:
 
 Cases:
-    EG6:
-        Folder:   test/data_autogen
+    Fabber:
+        InputFolder:   test/data_autogen
         

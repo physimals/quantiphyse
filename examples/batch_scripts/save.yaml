@@ -13,5 +13,5 @@ Processing:
       struc: struc_resamp
 
 Cases:
-    regrid_asl:
+    SaveRegrid:
         Folder:  /home/ibmeuser/data/asl/asl_tutorial_data/basildata/data_pcasl/

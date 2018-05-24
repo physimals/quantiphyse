@@ -6,9 +6,9 @@ Copyright (c) 2013-2018 University of Oxford
 
 import scipy.ndimage.filters
 
-from quantiphyse.utils import debug, warn
-from quantiphyse.utils.exceptions import QpException
-from quantiphyse.analysis import Process
+from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.processes import Process
+from quantiphyse.data import NumpyData
 
 class SmoothingProcess(Process):
     """
@@ -20,24 +20,24 @@ class SmoothingProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        data_name = options.pop("data", None)
-        if data_name is None and self.ivm.current_data is None:
-            raise QpException("No data found")
-        elif data_name is None:
-            data_name = self.ivm.current_data.name
+        data = self.get_data(options)
 
-        output_name = options.pop("output-name", "%s_smoothed" % data_name)
-        kernel = options.pop("kernel", "gaussian")
+        output_name = options.pop("output-name", "%s_smoothed" % data.name)
+        #kernel = options.pop("kernel", "gaussian")
         order = options.pop("order", 0)
         mode = options.pop("boundary-mode", "reflect")
-        sigma = options.pop("sigma-list", None)
-        if sigma is not None:
-            sigma = sigma.replace(",", " ").split()
-        else:
-            sigma = options.pop("sigma", 1)
-        
-        data = self.ivm.data[data_name].std()
-        output = scipy.ndimage.filters.gaussian_filter(data, sigma, order=order, mode=mode)
-        self.ivm.add_data(output, name=output_name, make_current=True)
+        sigma = options.pop("sigma", 1.0)
 
-        self.status = Process.SUCCEEDED
+        # Sigma is in mm so scale with data voxel sizes
+        if type(sigma) in (int, float):
+            sigmas = [float(sigma) / size for size in data.grid.spacing]
+        else:
+            sigmas = [float(sig) / size for sig, size in zip(sigma, data.grid.spacing)]
+
+        # Smooth multiple volumes independently
+        if data.nvols > 1:
+            sigmas += [0, ]
+
+        output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigmas, order=order, mode=mode)
+        self.ivm.add_data(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
+

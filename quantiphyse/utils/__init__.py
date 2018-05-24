@@ -67,24 +67,6 @@ def set_local_file_path():
 
     debug("Local directory: ", LOCAL_FILE_PATH)
 
-def get_icon(name, dir=None):
-    """
-    Get path to the named icon
-    """
-    global LOCAL_FILE_PATH
-    name, extension = os.path.splitext(name)
-    if extension == "":
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            extension = ".png"
-        else:
-            extension = ".svg"
-    tries = []
-    if dir is not None: 
-        tries.append(os.path.join(dir, "%s%s" % (name, extension)))
-    tries.append(os.path.join(LOCAL_FILE_PATH, "icons", "%s%s" % (name, extension)))
-    for t in tries:
-        if os.path.isfile(t): return t
-
 def get_local_file(name, loc=None):
     """
     Get path to a file relative to the main Quantiphyse folder
@@ -107,6 +89,24 @@ def local_file_from_drop_url(url):
     else:
         return str(url.toLocalFile())
 
+def get_icon(name, dir=None):
+    """
+    Get path to the named icon
+    """
+    global LOCAL_FILE_PATH
+    name, extension = os.path.splitext(name)
+    if extension == "":
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            extension = ".png"
+        else:
+            extension = ".svg"
+    tries = []
+    if dir is not None: 
+        tries.append(os.path.join(dir, "%s%s" % (name, extension)))
+    tries.append(os.path.join(LOCAL_FILE_PATH, "icons", "%s%s" % (name, extension)))
+    for t in tries:
+        if os.path.isfile(t): return t
+
 def get_lib_fname(name):
     """ Get file name for named shared library on current platform """
     if sys.platform.startswith("win"):
@@ -122,6 +122,12 @@ def get_local_shlib(name, loc):
     """
     return get_local_file(get_lib_fname(name), loc)
     
+def show_help(section="", base='http://quantiphyse.readthedocs.io/en/latest/'):
+    if section != "" and not section.endswith(".html") and not section.endswith("/"): 
+        section += ".html"
+    link = base + section
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl(link, QtCore.QUrl.TolerantMode))
+
 def load_matrix(filename):
     with open(filename, "r") as f:
         return text_to_matrix(f.read())
@@ -146,7 +152,7 @@ def text_to_matrix(text):
             try:
                 fval = float(val)
             except:
-                raise QpException("Non-numeric value '%s' found in file %s" % (val, filename))
+                raise QpException("Non-numeric value '%s' found in matrix" % val)
         fvals.append([float(v) for v in vals])     
     
     return fvals, len(fvals), ncols
@@ -201,6 +207,14 @@ def sf(num, sf=None):
     fmt = "%%.%ig" % sf
     return fmt % float(num)
 
+def remove_nans(data, fillvalue=0):
+    """
+    Check for and remove nans from data arrays
+    """
+    notnans = np.isfinite(data)
+    if not np.all(notnans):
+        data[np.logical_not(notnans)] = fillvalue
+
 def get_col(cmap, idx, out_of):
     """ Get RGB color for an index within a range, using a Matplotlib colour map """
     if out_of == 0: 
@@ -225,7 +239,7 @@ def get_lut(roi, alpha=None):
     """
     cmap = getattr(cm, 'jet')
     try:
-        mx = max(roi.regions)
+        mx = max(roi.regions())
     except:
         # No nonzero regions!
         mx = 1
@@ -333,7 +347,7 @@ def get_plugins(key=None, class_name=None):
     if key is not None:
         plugins = PLUGIN_MANIFEST.get(key, [])
         if class_name is not None: 
-            plugins = [p for p in plugins if p.__name__==class_name]
+            plugins = [p for p in plugins if p.__name__ == class_name]
     else:
         plugins = PLUGIN_MANIFEST
     return plugins

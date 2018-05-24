@@ -21,7 +21,7 @@ Processing:
       test3:
 
 Cases:
-    EG11:
+    SimpleMaths:
         Folder:   test/data_autogen
         LoadData:   
           testdata_3d.nii.gz:

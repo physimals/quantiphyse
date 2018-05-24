@@ -5,73 +5,68 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import sys
-import os
-import traceback
 
 import numpy as np
 
-from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path, QpException
+from quantiphyse.processes import Process
 
-from quantiphyse.analysis import Process, BackgroundProcess
-
-# Known registration methods (case-insensitive)
-def get_reg_methods():
+def get_reg_method(method_name):
+    """
+    Get a named registration method (case insensitive)
+    """
     methods = get_plugins("reg-methods")
-    reg_methods = {}
-    for m in methods:
-        method = m()
-        reg_methods[method.name.lower()] = method
-    return reg_methods
+    debug("Known methods: ", methods)
+    for method_class in methods:
+        method = method_class()
+        if method.name.lower() == method_name.lower():
+            return method
+    return None
 
-"""
-Registration function for asynchronous process - used for moco and registration
-"""
-def _run_reg(id, queue, method_name, options, regdata, refdata, voxel_sizes, warp_rois, ignore_idx=None):
+def _run_reg(worker_id, queue, method_name, mode, reg_data, reg_grid, ref_data, ref_grid, options):
+    """
+    Generic registration function for asynchronous process
+    """
     try:
         set_local_file_path()
-        reg_methods = get_reg_methods()
-        debug("Known methods: ", reg_methods)
-        method = reg_methods.get(method_name.lower(), None)
+        method = get_reg_method(method_name)
         if method is None: 
             raise QpException("Unknown registration method: %s" % method_name)
 
-        full_log = ""
-        if regdata.ndim == 3: 
-            regdata = np.expand_dims(regdata, -1)
-            data_4d = False
-        else:
-            data_4d = True
-        regdata_out = np.zeros(regdata.shape)
-
-        if warp_rois is not None: 
-            warp_rois_out = np.zeros(warp_rois.shape)
-            full_log += "Warp ROIs max=%f\n" % np.max(warp_rois)
-        else: warp_rois_out = None
-
-        for t in range(regdata.shape[-1]):
-            full_log += "Registering volume %i of %i\n" % (t+1, regdata.shape[-1])
-            regvol = regdata[:,:,:,t]
-            if t == ignore_idx:
-                regdata_out[:,:,:,t] = regvol
-            else:
-                outvol, roivol, log = method.reg(regvol, refdata, voxel_sizes, warp_rois, options)
-                full_log += log
-                regdata_out[:,:,:,t] = outvol
-                if warp_rois is not None: 
-                    warp_rois_out = roivol
-                    full_log += "add data max=%f\n" % np.max(roivol)
-            queue.put(t)
-        if not data_4d: 
-            regdata_out = np.squeeze(regdata_out, -1)
-            if warp_rois is not None: 
-                warp_rois_out = (warp_rois_out > 0.5).astype(np.int)
+        if not reg_data:
+            raise QpException("No registration data")
+        elif mode == "moco":
+            # Motion correction mode
+            if len(reg_data) > 1:
+                raise QpException("Cannot have additional registration targets with motion correction")
             
-        return id, True, (regdata_out, warp_rois_out, full_log)
+            debug("Running motion correction")
+            out_data, transforms, log = method.moco(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            return worker_id, True, ([out_data], transforms, log)
+        elif reg_data[0].ndim == 3: 
+            # Register single volume data, may be more than one registration target
+            out_data = []
+            debug("Running 3D registration")
+            registered, transform, log = method.reg_3d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            out_data.append(registered)
+            for add_data in reg_data[1:]:
+                debug("Applying transformation to additional data")
+                registered, apply_log = method.apply_transform(add_data, reg_grid, ref_data, ref_grid, transform)
+                log += apply_log
+                out_data.append(registered)
+            return worker_id, True, (out_data, transform, log)
+        else:
+            # Register multi-volume data, can only be one registration target
+            if len(reg_data) > 1:
+                raise QpException("Cannot have additional registration targets with 4D registration data")
+            
+            debug("Running 4D registration")
+            out_data, transforms, log = method.reg_4d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            return worker_id, True, ([out_data], transforms, log)
     except:
-        return id, False, sys.exc_info()[1]
+        return worker_id, False, sys.exc_info()[1]
 
-class RegProcess(BackgroundProcess):
+class RegProcess(Process):
     """
     Asynchronous background process to run registration / motion correction
     """
@@ -79,92 +74,84 @@ class RegProcess(BackgroundProcess):
     PROCESS_NAME = "Reg"
 
     def __init__(self, ivm, **kwargs):
-        BackgroundProcess.__init__(self, ivm, _run_reg, **kwargs)
+        Process.__init__(self, ivm, worker_fn=_run_reg, **kwargs)
+        self.grid = None
+        self.output_names = None
 
     def run(self, options):
-        self.replace = options.pop("replace-vol", False)
-        self.method = options.pop("method", "deeds")
+        method_name = options.pop("method")
+        mode = options.pop("mode")
+
+        # Registration data. Need to know the reg data grid and number of volumes so progress
+        # and output data can be interpreted correctly
         regdata_name = options.pop("reg", self.ivm.main.name)
-        reg_data = self.ivm.data[regdata_name].std()
+        regdata = self.ivm.data[regdata_name]
+        self.grid = regdata.grid
+        reg_data = [regdata.raw(), ]
 
-        self.output_name = options.pop("output-name", "reg_%s" % regdata_name)
-        if reg_data.ndim == 4: self.nvols = reg_data.shape[-1]
-        else: self.nvols = 1
+        # Name of output data
+        if options.pop("replace-vol", False):
+            self.output_names = [regdata_name,]
+        else:
+            self.output_names = [options.pop("output-name", "reg_%s" % regdata_name), ]
 
-        # Reference data defaults to same as reg data so MoCo can be
+        # Reference data. Defaults to same as reg data so MoCo can be
         # supported as self-registration
         refdata_name = options.pop("ref", regdata_name)
-        ref_vols = self.ivm.data[refdata_name]
-
-        if ref_vols.nvols > 1:
-            self.refvol = options.pop("ref-vol", "median")
-            if self.refvol == "median":
-                refidx = ref_vols.nvols/2
-                refdata = ref_vols.std()[:,:,:,refidx]
-            elif self.refvol == "mean":
-                raise RuntimeException("Not yet implemented")
+        ref_data = self.ivm.data[refdata_name]
+        ref_grid = ref_data.grid
+        if ref_data.nvols > 1:
+            refvol = options.pop("ref-vol", "median")
+            if refvol == "median":
+                refidx = int(ref_data.nvols/2)
+            elif refvol == "mean":
+                raise NotImplementedError("Not yet implemented")
             else:
-                refidx = self.refvol
-                refdata = ref_vols.std()[:,:,:,refidx]
+                refidx = refvol
+            ref_data = ref_data.volume(refidx)
         else:
-            refdata = ref_vols.std()
+            ref_data = ref_data.raw()
 
-        # Linked ROIS can be specified which will be warped in the same way as the main 
-        # registration data. Useful for masks defined on an unregistered volume.
-        # We handle multiple warp ROIs by building 4D data in which each volume is
-        # a separate ROI. This is then unpacked at the end.
-        self.warp_roi_names = dict(options.pop("warp-rois", {}))
+        # Additional registration targets can be specified which will be transformed
+        # in the same way as the main registration data. 
+        # 
+        # Useful for masks defined on an unregistered volume.
+        add_reg = dict(options.pop("add-reg", options.pop("warp-rois", {})))
+        
+        # Deprecated
         warp_roi_name = options.pop("warp-roi", None)
-        if warp_roi_name is not None:  self.warp_roi_names[warp_roi_name] = warp_roi_name + "_warp"
+        if warp_roi_name:  
+            add_reg[warp_roi_name] = warp_roi_name + "_reg"
 
-        for roi_name in self.warp_roi_names.keys():
-            if roi_name not in self.ivm.rois:
-                warn("removing non-existant ROI: %s" % roi_name)
-                del self.warp_roi_names[roi_name]
+        for name, output_name in add_reg.items():
+            qpdata = self.ivm.data.get(name, self.ivm.rois.get(name, None))
+            if not qpdata:
+                warn("Removing non-existant data set from additional registration list: %s" % name)
+            else:
+                reg_data.append(qpdata.resample(self.grid).raw())
+                if not output_name:
+                    output_name = name + "_reg"
+                self.output_names.append(output_name)
+        
+        debug("Have %i registration targets" % len(reg_data))
 
-        if len(self.warp_roi_names) > 0:
-            warp_rois = np.zeros(list(refdata.shape) + [len(self.warp_roi_names)])
-            for idx, roi_name in enumerate(self.warp_roi_names):
-                roi = self.ivm.rois[roi_name].std()
-                if roi.shape != refdata.shape:
-                    raise RuntimeError("Warp ROI %s has different shape to registration data" % roi_name)
-                warp_rois[:,:,:,idx] = roi
-            debug("Have %i warped ROIs" % len(self.warp_roi_names))
-        else:
-            warp_rois = None
-        debug(self.warp_roi_names)
-
-        # Remove all option values - individual reg methods should warn if there
-        # are unexpected options
-        for key in options.keys():
-            options.pop(key)
-
-        # Function input data must be passed as list of arguments for multiprocessing
-        self.start(1, [self.method, options, reg_data, refdata, self.ivm.grid.spacing, warp_rois])
+        # Function input data must be passed as list of arguments for multiprocessingmethod = get_reg_method(method_name)
+        self.start_bg([method_name, mode, reg_data, self.grid.affine, ref_data, ref_grid.affine, options])
 
     def timeout(self):
         if self.queue.empty(): return
         while not self.queue.empty():
-            done = self.queue.get()
-        complete = float(done+1)/self.nvols
+            complete = self.queue.get()
         self.sig_progress.emit(complete)
 
     def finished(self):
         """ Add output data to the IVM and set the log """
         self.log = ""
         if self.status == Process.SUCCEEDED:
-            output = self.output[0]
-            self.ivm.add_data(output[0], name=self.output_name, make_current=True)
-            if output[1] is not None: 
-                for idx, roi_name in enumerate(self.warp_roi_names):
-                    roi = output[1][:,:,:,idx]
-                    debug("Adding warped ROI: %s" % self.warp_roi_names[roi_name])
-                    self.ivm.add_roi(roi, name=self.warp_roi_names[roi_name], make_current=False)
-            self.log = output[2]
+            registered_data, transforms, self.log = self.worker_output[0]
 
-class MocoProcess(RegProcess):
-    """
-    MoCo is identical to registration but has different batch name
-    """
-
-    PROCESS_NAME = "Moco"
+            first = True
+            for name, data in zip(self.output_names, registered_data):
+                # FIXME what if an ROI?
+                self.ivm.add_data(data, name=name, grid=self.grid, make_current=first)
+                first = False

@@ -6,12 +6,10 @@ Copyright (c) 2013-2018 University of Oxford
 
 import os
 
-from PySide import QtGui, QtCore
+from PySide import QtGui
 
-from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
-from quantiphyse.utils.batch import run_batch, check_batch
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, RunBox
+from quantiphyse.utils.batch import BatchScript
 
 class BatchBuilderWidget(QpWidget):
     """
@@ -21,7 +19,8 @@ class BatchBuilderWidget(QpWidget):
         super(BatchBuilderWidget, self).__init__(name="Batch Builder", icon="batch", 
                                                  desc="Simple helper for building and running batch files", 
                                                  group="Utilities", **kwargs)
-        
+        self.process = BatchScript(self.ivm, stdout=open(os.devnull, "w"))
+
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
@@ -31,7 +30,7 @@ class BatchBuilderWidget(QpWidget):
 
         self.proc_edit = QtGui.QPlainTextEdit()
         self.proc_edit.textChanged.connect(self._validate)
-        vbox.addWidget(self.proc_edit)
+        vbox.addWidget(self.proc_edit, stretch=2)
 
         hbox = QtGui.QHBoxLayout()
         #self.new_case_btn = QtGui.QPushButton("New Case")
@@ -43,14 +42,13 @@ class BatchBuilderWidget(QpWidget):
         hbox.addWidget(self.reset_btn)
         hbox.addStretch(1)
 
-        self.run_btn = QtGui.QPushButton("Run")
-        self.run_btn.clicked.connect(self._run)
-        hbox.addWidget(self.run_btn)
-
         self.save_btn = QtGui.QPushButton("Save")
         self.save_btn.clicked.connect(self._save)
         hbox.addWidget(self.save_btn)
         vbox.addLayout(hbox)
+
+        self.run_box = RunBox(self._get_process, self._get_options)
+        vbox.addWidget(self.run_box)
 
         self.proc_warn = QtGui.QLabel("")
         self.proc_warn.setStyleSheet("QLabel { color : red; }")
@@ -78,14 +76,14 @@ class BatchBuilderWidget(QpWidget):
     def _reset(self):
         if self.changed and self.proc_edit.toPlainText().strip() != "":
             ok = QtGui.QMessageBox.warning(self, "Reset to current data", 
-                                        "Changes to batch file will be lost",
-                                        QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                                           "Changes to batch file will be lost",
+                                           QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             if not ok: return
         
         t = ""
         if self.ivm.main is not None:
             filedata = [d for d in self.ivm.data.values() if hasattr(d, "fname") and d.fname is not None]
-            filerois= [d for d in self.ivm.rois.values() if hasattr(d, "fname") and d.fname is not None]
+            filerois = [d for d in self.ivm.rois.values() if hasattr(d, "fname") and d.fname is not None]
             
             casedir = os.getcwd()
             if hasattr(self.ivm.main, "fname") and self.ivm.main.fname is not None:
@@ -96,22 +94,24 @@ class BatchBuilderWidget(QpWidget):
             t += "\n"
             t += "Processing:\n"
             t += "  - Load:\n"
-            t += "      data:\n"
-            for qpd in filedata:
-                d, f = os.path.split(qpd.fname)
-                if d == casedir:
-                    path = f
-                else:
-                    path = qpd.fname
-                t += "        %s: %s\n" % (path, qpd.name)
-            t += "      rois:\n"
-            for qpd in filerois:
-                d, f = os.path.split(qpd.fname)
-                if d == casedir:
-                    path = f
-                else:
-                    path = qpd.fname
-                t += "        %s: %s\n" % (path, qpd.name)
+            if filedata:
+                t += "      data:\n"
+                for qpd in filedata:
+                    d, f = os.path.split(qpd.fname)
+                    if d == casedir:
+                        path = f
+                    else:
+                        path = qpd.fname
+                    t += "        %s: %s\n" % (path, qpd.name)
+            if filerois:
+                t += "      rois:\n"
+                for qpd in filerois:
+                    d, f = os.path.split(qpd.fname)
+                    if d == casedir:
+                        path = f
+                    else:
+                        path = qpd.fname
+                    t += "        %s: %s\n" % (path, qpd.name)
             t += "\n"
             t += "  # Additional processing steps go here\n"
             t += "\n"
@@ -140,13 +140,15 @@ class BatchBuilderWidget(QpWidget):
             self.proc_warn.setText("Tabs detected")
         else:
             try:
-                warnings = check_batch(code=t)
-                self.proc_warn.setText("\n".join([w for w in warnings]))
-            except Exception, e:
-                self.proc_warn.setText("Invalid YAML: %s" % str(e))
+                self.process.run({"yaml" : t, "mode" : "check"})
+            except Exception as e:
+                self.proc_warn.setText("Invalid script: %s" % str(e))
 
-    def _run(self):
-        run_batch(code=self.proc_edit.toPlainText())
+    def _get_process(self):
+        return self.process
+
+    def _get_options(self):
+        return {"yaml" : self.proc_edit.toPlainText()}
 
     def _save(self):
         fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save batch file', 

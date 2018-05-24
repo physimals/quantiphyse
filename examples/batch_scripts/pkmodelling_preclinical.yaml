@@ -13,6 +13,7 @@ Processing:
   - Load:
   
   - PkModelling:
+      data: data
       model:      3      # Model (see above)
       fa:         3      # degrees
       tr:         1.4    # ms
@@ -33,11 +34,12 @@ Processing:
       model_curves:
 
 Cases:
-    EG4_C91R2:
-        Folder:   Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
+    DCE_C91R2:
+        #Folder: Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
+        Folder: /home/ibmeuser/data/dce/Martin_test_data/C96_R1L1_D3_modelling/
         Load:
           data:
-            C91R2_dcex110_gd11.nii:
-            T10_corr.nii: T10
+            DCE.nii: data
+            T10.nii: T10
 
 

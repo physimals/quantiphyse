@@ -20,8 +20,12 @@ bin_files = [
 hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
-    'quantiphyse.analysis.feat_pca',
+    'scipy._lib.messagestream',
+    'quantiphyse.processes.feat_pca',
     'quantiphyse.utils.cmdline',
+    'quantiphyse.test.widget_test',
+    'quantiphyse.gui.options',
+    'quantiphyse.gui.plot',
 ]
 
 added_files = [

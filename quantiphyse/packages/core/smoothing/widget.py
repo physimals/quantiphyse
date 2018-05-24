@@ -7,8 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import debug, QpException
 
 from .process import SmoothingProcess
     
@@ -37,7 +36,7 @@ class SmoothingWidget(QpWidget):
         self.data_combo = OverlayCombo(self.ivm)
         self.data_combo.currentIndexChanged.connect(self.data_changed)
         grid.addWidget(self.data_combo, 0, 1)
-        self.sigma = NumericOption("Sigma", grid, xpos=0, ypos=1, minval=0, step=0.1, default=1.0)
+        self.sigma = NumericOption("Sigma (mm)", grid, xpos=0, ypos=1, minval=0, step=0.1, default=1.0)
         grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
         self.output_name = QtGui.QLineEdit()
         grid.addWidget(self.output_name, 2, 1)

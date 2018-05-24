@@ -93,6 +93,7 @@ class ViewOptions(QtGui.QDialog):
         self.t_res = 1.0
         self.t_scale = []
         self.display_order = self.ROI_ON_TOP
+        self.interp_order = 0
 
         grid = QtGui.QGridLayout()
         label = QtGui.QLabel('<font size="5">View Options</font>')
@@ -159,7 +160,17 @@ class ViewOptions(QtGui.QDialog):
         c.currentIndexChanged.connect(self.zorder_changed)
         grid.addWidget(c, 7, 1)
 
-        grid.setRowStretch(8, 1)
+        grid.addWidget(QtGui.QLabel("View interpolation"), 8, 0)
+        c = QtGui.QComboBox()
+        c.setToolTip("How data is interpolated for display on non-orthogonal grids")
+        c.addItem("Nearest neighbour (fast)", 0)
+        c.addItem("Linear", 1)
+        c.addItem("Cubic spline (slow)", 3)
+        c.setCurrentIndex(self.interp_order)
+        c.currentIndexChanged.connect(self.interp_changed)
+        grid.addWidget(c, 8, 1)
+
+        grid.setRowStretch(9, 1)
         self.setLayout(grid)
 
     def vol_changed(self, vol):
@@ -221,4 +232,11 @@ class ViewOptions(QtGui.QDialog):
         self.t_btn.setVisible(idx == 1)
         self.t_res_edit.setVisible(idx == 0)
         self.update_scale()
+        self.sig_options_changed.emit(self)
+
+    def interp_changed(self, idx):
+        if idx in (0, 1):
+            self.interp_order = idx
+        else:
+            self.interp_order = 3
         self.sig_options_changed.emit(self)

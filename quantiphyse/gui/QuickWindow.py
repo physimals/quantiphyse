@@ -16,10 +16,8 @@ from PySide import QtCore, QtGui
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-from ..volumes.io import load, save
-from ..volumes.volume_management import ImageVolumeManagement
-from ..utils import get_icon, get_local_file, get_version, local_file_from_drop_url
-from ..utils.exceptions import QpException
+from quantiphyse.data import load, save, ImageVolumeManagement
+from quantiphyse.utils import get_icon, get_local_file, get_version, local_file_from_drop_url,  show_help, QpException
 from quantiphyse import __contrib__, __acknowledge__
 
 # ROIs with values larger than this will trigger a warning
@@ -263,8 +261,13 @@ class QuickWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
+<<<<<<< HEAD
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/v0.4/", QtCore.QUrl.TolerantMode))
 
+=======
+        show_help()
+        
+>>>>>>> master
     def show_about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
@@ -301,7 +304,7 @@ class QuickWindow(QtGui.QMainWindow):
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.rawgrid.shape[2] > 1)
+        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
@@ -321,7 +324,11 @@ class QuickWindow(QtGui.QMainWindow):
             data.set_2dt()
         
         # Check for inappropriate ROI data
+<<<<<<< HEAD
         if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
+=======
+        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
+>>>>>>> master
             msgBox = QtGui.QMessageBox(self)
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
@@ -331,7 +338,7 @@ class QuickWindow(QtGui.QMainWindow):
             if msgBox.exec_() != QtGui.QMessageBox.Yes: return
 
         if ftype == "DATA": 
-            self.ivm.add_data(data, make_current=True, make_main=make_main)
+            self.ivm.add_data(data, make_current=not make_main, make_main=make_main)
         else:
             self.ivm.add_roi(data, make_current=True)
 
@@ -344,7 +351,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_data, fname, self.ivm.save_grid)
+                save(self.ivm.current_data, fname)
             else: # Cancelled
                 pass
 
@@ -357,7 +364,7 @@ class QuickWindow(QtGui.QMainWindow):
         else:
             fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
-                save(self.ivm.current_roi, fname, self.ivm.save_grid)
+                save(self.ivm.current_roi, fname)
             else: # Cancelled
                 pass
 

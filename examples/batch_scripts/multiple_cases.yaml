@@ -1,0 +1,38 @@
+# Example config file which runs fabber model fitting
+# on three cases, each with different polynomial degree
+
+OutputFolder: test/examples_output
+InputFolder: test/data_autogen
+Debug: False
+
+Processing:
+  - Load:
+        data:
+            testdata_4d.nii.gz:
+        rois:
+            testdata_mask.nii.gz: mask
+
+  - Fabber:
+        method: vb
+        max-iterations: 10
+        model:  poly
+        noise: white
+        save-mean:
+
+  - Save:
+        mean_c0 :
+        mean_c1:
+        mean_c2:
+        mask:
+
+Cases:
+    - MultiCase1:
+        Fabber:
+          degree: 1
+    - MultiCase2:
+        Fabber:
+          degree: 2
+    - MultiCase3:
+        Fabber:
+          degree: 3
+        

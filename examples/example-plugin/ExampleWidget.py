@@ -16,8 +16,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
-from quantiphyse.utils import debug
-from quantiphyse.utils.exceptions import QpException
+from quantiphyse.utils import QpException, debug
 from quantiphyse.gui.widgets import QpWidget, BatchButton, HelpButton
 
 DESC = """This is an example of how to create a plugin widget"""
