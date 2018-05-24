@@ -1065,7 +1065,9 @@ class RunBox(QtGui.QGroupBox):
                     data_to_save = self.process.output_data_items()
                     debug("Data to save: ", data_to_save)    
                     for d in data_to_save:
-                        save(self.process.ivm.data[d], os.path.join(save_folder, d + ".nii"))
+                        qpdata = self.process.ivm.data.get(d, self.process.ivm.rois.get(d, None))
+                        if qpdata:
+                            save(qpdata, os.path.join(save_folder, d + ".nii"))
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
                     logfile.write(self.log)
                     logfile.close()
