@@ -61,11 +61,11 @@ if "--maxi" in sys.argv or "--maximaxi" in sys.argv:
         "qp-dce" : "dce",
         "qp-fabber" : "fabber",
         "qp-deeds" : "deeds", 
+        "qp-basil" : "basil", 
     }
     if "--maximaxi" in sys.argv:
         # Include plugins not yet ready for release
         plugins.update({
-            "qp-basil" : "basil", 
             "qp-fsl" : "fslqp",
             "qp-fabber-t1" : "fabber_t1", 
             "veaslc/quantiphyse" : "veasl",
