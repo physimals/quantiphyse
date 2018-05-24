@@ -36,7 +36,7 @@ def run_tests(test_filter=None):
         if test_filter is None or test.__name__.lower().startswith(test_filter.lower()):
             suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
    
-    unittest.TextTestRunner().run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 def _test_fn(x, y, z, t=None):
     f = math.exp(-(x**2 + 2*y**2 + 3*z**2))
