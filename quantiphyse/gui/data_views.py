@@ -231,11 +231,14 @@ class OverlayView(ImageDataView):
         self.ivm.sig_current_data.connect(self._current_data_changed)
         self.ivm.sig_all_data.connect(self._cleanup_cache)
 
-    def _current_roi_changed(self, roi):
+    def _remask(self, roi):
         if roi is not None and self.data is not None:
             self.mask = roi.resample(self.data.grid)
         else:
             self.mask = None
+
+    def _current_roi_changed(self, roi):
+        self._remask(roi)
         self.sig_view_changed.emit(self)
         self.sig_redraw.emit(self)
 
@@ -243,7 +246,7 @@ class OverlayView(ImageDataView):
         self.data = data
         self._init_opts()
         self._init_cmap()
-        self._current_roi_changed(self.ivm.current_roi)
+        self._remask(self.ivm.current_roi)
         self.sig_view_changed.emit(self)
         self.sig_redraw.emit(self)
 
@@ -337,7 +340,7 @@ class RoiViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
-        self.roi_combo = RoiCombo(self.ivm, none_option=True)
+        self.roi_combo = RoiCombo(self.ivm, none_option=True, set_first=False)
         grid.addWidget(self.roi_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.roi_view_combo = QtGui.QComboBox()
@@ -412,7 +415,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = OverlayCombo(self.ivm, none_option=True)
+        self.overlay_combo = OverlayCombo(self.ivm, none_option=True, set_first=False)
         grid.addWidget(self.overlay_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.ov_view_combo = QtGui.QComboBox()
@@ -489,11 +492,12 @@ class OverlayViewWidget(QtGui.QGroupBox):
             self.ov_levels_btn.setEnabled(view.data is not None)
             if view.data is not None:
                 idx = self.overlay_combo.findText(view.data.name)
-                debug("New current data: ", view.data.name, idx)
                 self.overlay_combo.setCurrentIndex(idx)
             else:
                 self.overlay_combo.setCurrentIndex(-1)
-
+        except:
+            import traceback
+            traceback.print_exc()
         finally:
             for w in widgets:
                 w.blockSignals(False)

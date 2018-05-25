@@ -210,7 +210,7 @@ class OverlayCombo(QtGui.QComboBox):
 
     Really ugly hacks to make it work for data / rois
     """
-    def __init__(self, ivm, parent=None, static_only=False, none_option=False, all_option=False, data=True, rois=False):
+    def __init__(self, ivm, parent=None, static_only=False, none_option=False, all_option=False, data=True, rois=False, **kwargs):
         super(OverlayCombo, self).__init__(parent)
         self.ivm = ivm
         self.static_only = static_only
@@ -222,6 +222,12 @@ class OverlayCombo(QtGui.QComboBox):
             self.ivm.sig_all_rois.connect(self._data_changed)
         if self.data:
             self.ivm.sig_all_data.connect(self._data_changed)
+
+        # Whether the combo should automatically adopt the name of the
+        # first data set to be added
+        self._set_first = kwargs.get("set_first", True)
+        self._first_data = True
+
         self._data_changed()
     
     def _data_changed(self):
@@ -249,16 +255,23 @@ class OverlayCombo(QtGui.QComboBox):
             # Make sure names are visible even with drop down arrow
             width = self.minimumSizeHint().width()
             self.setMinimumWidth(width+50)
+        
+            idx = self.findText(current)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+            elif self.none_option:
+                self.setCurrentIndex(0)
+            elif self.all_option:
+                self.setCurrentIndex(len(data))
+            else:
+                self.setCurrentIndex(-1)
         finally:
             self.blockSignals(False)
-        
-        idx = self.findText(current)
-        if idx >= 0:
-            self.setCurrentIndex(idx)
-        else:
-            # Make sure signal is sent when first data arrives
-            self.setCurrentIndex(-1)
+
+        # If requested, initialize when the first data arrives (and send signal)
+        if self._set_first and self._first_data and len(data) > 0:
             self.setCurrentIndex(0)
+            self._first_data = False
 
 class RoiCombo(OverlayCombo):
     """
