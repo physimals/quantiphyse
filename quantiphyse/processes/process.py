@@ -436,6 +436,7 @@ class Process(QtCore.QObject):
         
         return np.concatenate(real_data, SPLIT_AXIS)
 
+    @QtCore.Slot()
     def _complete(self):
         """
         Process completed
@@ -484,4 +485,6 @@ class Process(QtCore.QObject):
             self.exception = output
 
         if self.status != Process.RUNNING:
-            self._complete()
+            # Need to use invokeMethod here because the process callback is in a 
+            # different thread and the IVM (called by _complete) is not threadsafe
+            self.metaObject().invokeMethod(self, "_complete", QtCore.Qt.QueuedConnection)
