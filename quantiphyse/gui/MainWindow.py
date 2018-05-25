@@ -365,11 +365,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def show_help(self):
         """ Provide a clickable link to help files """
-<<<<<<< HEAD
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://quantiphyse.readthedocs.io/en/v0.4/", QtCore.QUrl.TolerantMode))
-=======
         show_help()
->>>>>>> master
 
     def show_about(self):
         text = """
@@ -461,11 +457,7 @@ class MainWindow(QtGui.QMainWindow):
             data.set_2dt()
         
         # Check for inappropriate ROI data
-<<<<<<< HEAD
-        if ftype == "ROI" and np.max(data.std()) > ROI_MAXVAL_WARN:
-=======
         if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
->>>>>>> master
             msgBox = QtGui.QMessageBox(self)
             warntxt = "\n  -".join(warnings)
             msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
