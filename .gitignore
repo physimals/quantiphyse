@@ -23,6 +23,7 @@ packaging/msi
 packaging/*.log
 packaging/*.err
 packaging/licence.rtf
+packaging/images/qp.iconset
 .DS_Store
 .vscode
 test/data_autogen

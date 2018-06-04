@@ -168,5 +168,5 @@ if __name__ == "__main__":
     import update_version
 
     create_dmg(os.path.join(qpdir, "dist"), pkgdir,
-               update_version.update_version()[1], 
+               update_version.update_version("quantiphyse", qpdir)[1], 
                "osx")

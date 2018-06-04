@@ -116,7 +116,31 @@ coll = COLLECT(exe,
                 name='quantiphyse')
 
 if osx_bundle:
-    os.system("iconutil -c icns %s/images/qp.iconset" % pkgdir)
+    # Note that this requires ImageMagick to be installed for icon support
+    import distutils.spawn
+    if not distutils.spawn.find_executable("convert"):
+        print("Could not find 'convert' - ImageMagick required for icons")
+        icon = None
+    else:    
+        imgdir = os.path.join(pkgdir, "images")
+        base_icon = os.path.join(qpdir, "quantiphyse", "icons", "main_icon.png")
+        iconset_dir = os.path.join(imgdir, "qp.iconset")
+        os.system("rm -rf %s" % iconset_dir)
+        os.makedirs(iconset_dir)
+
+        os.system("convert -resize 16x16 %s %s/icon_16x16.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 32x32 %s %s/icon_16x16@2x.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 32x32 %s %s/icon_32x32.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 64x64 %s %s/icon_32x32@2x.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 128x128 %s %s/icon_128x128.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 256x256 %s %s/icon_128x128@2x.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 256x256 %s %s/icon_256x256.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 512x512 %s %s/icon_256x256@2x.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 512x512 %s %s/icon_512x512.png" % (base_icon, iconset_dir))
+        os.system("convert -resize 1024x1024 %s %s/icon_512x512@2x.png" % (base_icon, iconset_dir))
+        os.system("iconutil -c icns %s" % iconset_dir)
+        icon = os.path.join(imgdir, "qp.icns")
+
     app = BUNDLE(coll,
             name='quantiphyse.app',
             icon='%s/images/qp.icns' % pkgdir,
