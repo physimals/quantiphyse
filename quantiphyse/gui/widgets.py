@@ -1114,7 +1114,7 @@ class RunBox(QtGui.QGroupBox):
         if outputDir:
             self.save_folder_edit.setText(outputDir)
 
-class OrderList(QtGui.QListWidget):
+class OrderList(QtGui.QListView):
     """
     Vertical list of items which can be re-ordered but not changed directly
     """
@@ -1122,63 +1122,57 @@ class OrderList(QtGui.QListWidget):
     sig_changed = QtCore.Signal()
 
     def __init__(self, initial=[], col_headers=None):
-        QtGui.QListWidget.__init__(self)
+        QtGui.QListView.__init__(self)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.setDropIndicatorShown(True)
-        self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
-        self.installEventFilter(self)
+        self.model = QtGui.QStandardItemModel()
+        self.setModel(self.model)
         #if col_headers:
         #    self.setVerticalHeaderLabels(col_headers)
         #else:
         #    self.horizontalHeader().hide()
-
         self.setItems(initial)
 
     def setItems(self, items):
         self.blockSignals(True)
         try:
-            self.clear()
+            self.model.clear()
             for r, item in enumerate(items):
-                self.addItem(item)
+                item = QtGui.QStandardItem(item)
+                self.model.appendRow(item)
             height = 0
             for r in range(len(items)):
-                height += self.rectForIndex(self.indexFromItem(self.item(r))).height()
+                height += self.rectForIndex(self.model.index(r, 0)).height()
             self.setFixedHeight(height + 2*len(items))
         finally:
             self.blockSignals(False)
             self.sig_changed.emit()
 
     def items(self):
-        return [self.item(r).text() for r in range(self.count())]
-
-    def eventFilter(self, sender, event):
-        if event.type() == QtCore.QEvent.ChildRemoved:
-            self.sig_changed.emit()
-        return False # don't actually interrupt anything
+        return [self.model.item(r).text() for r in range(self.model.rowCount())]
 
     def currentUp(self):
         """ Move currently selected item up"""
-        idx = self.currentRow()
+        idx = self.currentIndex().row()
         if idx > 0:
             items = self.items()
             temp = items[idx-1]
             items[idx-1] = items[idx]
             items[idx] = temp
             self.setItems(items)
-            self.setCurrentRow(idx-1)
+            self.setCurrentIndex(self.model.index(idx-1, 0))
             self.sig_changed.emit()
 
     def currentDown(self):
         """ Move currently selected item down"""
-        idx = self.currentRow() 
-        if idx < self.count() - 1:
+        idx = self.currentIndex().row()
+        if idx < self.model.rowCount() - 1:
             items = self.items()
             temp = items[idx+1]
             items[idx+1] = items[idx]
             items[idx] = temp
             self.setItems(items)
-            self.setCurrentRow(idx+1)
+            self.setCurrentIndex(self.model.index(idx+1, 0))
             self.sig_changed.emit()
 
 class OrderListButtons(QtGui.QVBoxLayout):
