@@ -286,6 +286,7 @@ class BatchScript(Script):
     def __init__(self, ivm=None, stdout=sys.stdout, **kwargs):
         Script.__init__(self, ivm, **kwargs)
         self.stdout = stdout
+        self._quit_on_exit = kwargs.get("quit_on_exit", True)
 
         self.sig_start_case.connect(self._log_start_case)
         self.sig_done_case.connect(self._log_done_case)
@@ -333,7 +334,8 @@ class BatchScript(Script):
 
     def _log_done_script(self):
         self.stdout.write("Script finished\n")
-        QtCore.QCoreApplication.instance().quit()
+        if self._quit_on_exit:
+            QtCore.QCoreApplication.instance().quit()
 
     def _save_text(self, text, fname, ext="txt"):
         if text:
