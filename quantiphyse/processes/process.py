@@ -13,7 +13,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, warn, get_debug, QpException, get_plugins
+from quantiphyse.utils import debug, warn, get_debug, QpException, get_plugins, set_local_file_path
 
 """ 
 Multiprocessing pool 
@@ -33,6 +33,7 @@ MULTIPROC = True
 
 def _worker_initialize():
     # Make sure plugins are loaded for multiprocessing worker processes
+    set_local_file_path()
     get_plugins()
 
 def _init_pool():
