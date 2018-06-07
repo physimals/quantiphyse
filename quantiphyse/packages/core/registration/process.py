@@ -31,7 +31,7 @@ def _run_reg(worker_id, queue, method_name, mode, reg_data, reg_grid, ref_data, 
         set_local_file_path()
         method = get_reg_method(method_name)
         if method is None: 
-            raise QpException("Unknown registration method: %s" % method_name)
+            raise QpException("Unknown registration method: %s (known: %s)" % (method_name, str(get_plugins("reg-methods"))))
 
         if not reg_data:
             raise QpException("No registration data")
@@ -40,18 +40,20 @@ def _run_reg(worker_id, queue, method_name, mode, reg_data, reg_grid, ref_data, 
             if len(reg_data) > 1:
                 raise QpException("Cannot have additional registration targets with motion correction")
             
-            debug("Running motion correction")
-            out_data, transforms, log = method.moco(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log = "Running motion correction\n\n"
+            out_data, transforms, moco_log = method.moco(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log += moco_log
             return worker_id, True, ([out_data], transforms, log)
         elif reg_data[0].ndim == 3: 
             # Register single volume data, may be more than one registration target
             out_data = []
-            debug("Running 3D registration")
-            registered, transform, log = method.reg_3d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log = "Running 3D registration\n\n"
+            registered, transform, reg_log = method.reg_3d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log += reg_log
             out_data.append(registered)
-            for add_data in reg_data[1:]:
-                debug("Applying transformation to additional data")
-                registered, apply_log = method.apply_transform(add_data, reg_grid, ref_data, ref_grid, transform)
+            for idx, add_data in enumerate(reg_data[1:]):
+                log += "\nApplying transformation to additional data %i\n\n" % (idx+1)
+                registered, apply_log = method.apply_transform(add_data, reg_grid, ref_data, ref_grid, transform, queue)
                 log += apply_log
                 out_data.append(registered)
             return worker_id, True, (out_data, transform, log)
@@ -60,8 +62,9 @@ def _run_reg(worker_id, queue, method_name, mode, reg_data, reg_grid, ref_data, 
             if len(reg_data) > 1:
                 raise QpException("Cannot have additional registration targets with 4D registration data")
             
-            debug("Running 4D registration")
-            out_data, transforms, log = method.reg_4d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log = "Running 4D registration\n\n"
+            out_data, transforms, reg_log = method.reg_4d(reg_data[0], reg_grid, ref_data, ref_grid, options, queue)
+            log += reg_log
             return worker_id, True, ([out_data], transforms, log)
     except:
         return worker_id, False, sys.exc_info()[1]
@@ -80,16 +83,22 @@ class RegProcess(Process):
 
     def run(self, options):
         method_name = options.pop("method")
-        mode = options.pop("mode")
+        mode = options.pop("mode", "reg")
 
         # Registration data. Need to know the reg data grid and number of volumes so progress
         # and output data can be interpreted correctly
-        regdata_name = options.pop("reg", self.ivm.main.name)
+        regdata_name = options.pop("reg", options.pop("data", None))
+        if not regdata_name:
+            raise QpException("No registration data specified")
+        elif regdata_name not in self.ivm.data:
+            raise QpException("Registration data not found: %s" % regdata_name)
         regdata = self.ivm.data[regdata_name]
         self.grid = regdata.grid
         reg_data = [regdata.raw(), ]
 
-        # Name of output data
+
+        # Names of input / output data
+        self.input_names = [regdata_name,]
         if options.pop("replace-vol", False):
             self.output_names = [regdata_name,]
         else:
@@ -128,9 +137,10 @@ class RegProcess(Process):
             if not qpdata:
                 warn("Removing non-existant data set from additional registration list: %s" % name)
             else:
-                reg_data.append(qpdata.resample(self.grid).raw())
                 if not output_name:
                     output_name = name + "_reg"
+                reg_data.append(qpdata.resample(self.grid).raw())
+                self.input_names.append(name)
                 self.output_names.append(output_name)
         
         debug("Have %i registration targets" % len(reg_data))
@@ -150,8 +160,14 @@ class RegProcess(Process):
         if self.status == Process.SUCCEEDED:
             registered_data, transforms, self.log = self.worker_output[0]
 
-            first = True
-            for name, data in zip(self.output_names, registered_data):
-                # FIXME what if an ROI?
-                self.ivm.add_data(data, name=name, grid=self.grid, make_current=first)
-                first = False
+            first_roi, first_data = True, True
+            for input_name, output_name, data in zip(self.input_names, self.output_names, registered_data):
+                if input_name in self.ivm.rois:
+                    # This is not correct for multi-level ROIs - this would basically require support
+                    # from within the registration algorithm for roi (integer only) data
+                    data = (data > 0.5).astype(np.int)
+                    self.ivm.add_roi(data, name=output_name, grid=self.grid, make_current=first_roi)
+                    first_roi = False
+                else:
+                    self.ivm.add_data(data, name=output_name, grid=self.grid, make_current=first_data)
+                    first_data = False
