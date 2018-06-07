@@ -20,7 +20,7 @@ from quantiphyse.processes.misc import *
 
 from quantiphyse.data import ImageVolumeManagement, load, save
 
-from . import debug, warn, get_debug, set_debug, get_plugins
+from . import debug, warn, get_debug, set_debug, get_plugins, ifnone
 from .exceptions import QpException
 
 # Default basic processes - all others are imported from packages
@@ -50,6 +50,10 @@ class Script(Process):
     each case
     """
 
+    IGNORE = 1
+    NEXT_CASE = 2
+    FAIL = 3
+
     sig_start_case = QtCore.Signal(object)
     sig_done_case = QtCore.Signal(object)
     sig_start_process = QtCore.Signal(object, dict)
@@ -74,6 +78,7 @@ class Script(Process):
         self._pipeline = []
         self._cases = []
         self._generic_params = {}
+        self._error_action = Script.IGNORE
 
         # Find all the process implementations
         self.known_processes = dict(BASIC_PROCESSES)
@@ -195,18 +200,21 @@ class Script(Process):
             override = case_params.pop(proc_params["id"], {})
             proc_params.update(override)
             generic_params.update(case_params)
+            # OutputId defaults to the case ID if not specified
+            if "OutputId" not in generic_params:
+                generic_params["OutputId"] = self._current_case.case_id
 
         #debug_orig = get_debug() FIXME
 
         # Do not 'turn off' debugging if it has been enabled at higher level
         if generic_params.get("Debug", False): set_debug(True)
         try:
-            outdir = os.path.abspath(os.path.join(generic_params.get("OutputFolder", ""), 
-                                                  generic_params.get("OutputId", ""),
-                                                  generic_params.get("OutputSubFolder", "")))
-            indir = os.path.abspath(os.path.join(generic_params.get("InputFolder", generic_params.get("Folder", "")), 
-                                                 generic_params.get("InputId", ""),
-                                                 generic_params.get("InputSubFolder", "")))
+            outdir = os.path.abspath(os.path.join(ifnone(generic_params.get("OutputFolder", ""), ""), 
+                                                  ifnone(generic_params.get("OutputId", ""), ""),
+                                                  ifnone(generic_params.get("OutputSubFolder", ""), "")))
+            indir = os.path.abspath(os.path.join(ifnone(generic_params.get("InputFolder", generic_params.get("Folder", "")), ""), 
+                                                 ifnone(generic_params.get("InputId", ""), ""),
+                                                 ifnone(generic_params.get("InputSubFolder", ""), "")))
             
             proc_id = proc_params.pop("id")
             process = proc_params.pop("__impl")(self._current_ivm, indir=indir, outdir=outdir, proc_id=proc_id)
@@ -224,12 +232,8 @@ class Script(Process):
             process.execute(proc_params)
         
         except Exception as e:
-            # Could not create process - better abandon everything
-            warn("Failed to create process - stopping script")
-            traceback.print_exc(e)
-            self.status = Process.FAILED
-            self.exception = e
-            self._complete()
+            # Could not create process - treat as process failure
+            self._process_finished(Process.FAILED, "Process failed to start: " + str(e), e)
         finally:
             #set_debug(debug_orig)
             pass
@@ -249,13 +253,22 @@ class Script(Process):
             self.log += "\nDONE (%.1fs)\n" % (end - self._process_start)
             self._next_process()
         else:
-            debug("Process failed - stopping script")
             self.log += "\nFAILED: %i\n" % status
-            self.status = status
-            self.exception = exception
-            self._current_process = None
-            self._current_params = None
-            self._complete()
+            if self._error_action == Script.IGNORE:
+                debug("Process failed - ignoring")
+                self._next_process()
+            elif self._error_action == Script.FAIL:
+                debug("Process failed - stopping script")
+                self.status = status
+                self.exception = exception
+                self._current_process = None
+                self._current_params = None
+                self._complete()
+            elif self._error_action == Script.NEXT_CASE:
+                debug("Process failed - going to next case")
+                self.log += "CASE FAILED\n"
+                self.sig_done_case.emit(self._current_case)
+                self._next_case()
 
     def _process_progress(self, complete):
         self.sig_process_progress.emit(complete)
@@ -272,7 +285,6 @@ class BatchScriptCase(object):
         if params is None:
             params = {}
         self.params = params
-        self.params["OutputId"] = self.params.get("OutputId", self.case_id)
         # This would break compatibility so not for now
         #self.params["InputId"] = self.params.get("InputId", self.case_id)
 
@@ -319,7 +331,7 @@ class BatchScript(Script):
                 for k, v in params.items():
                     warn("%s=%s" % (str(k), str(v)))
         else:
-            self.stdout.write("FAILED: %i\n" % process.status)
+            self.stdout.write(" FAILED: %i\n" % process.status)
             warn(str(process.exception))
             debug(traceback.format_exc(process.exception))
 
