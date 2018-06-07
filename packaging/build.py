@@ -51,7 +51,7 @@ version_pkg_fname = std_version
 if "--snapshot" in sys.argv:
     version_pkg_fname = "snapshot"
 
-if "--maxi" in sys.argv or "--maximaxi" in sys.argv:
+if "--maxi" in sys.argv:
     print("Creating a maxi-package")
     # This is necessarily a bit of a hack but so is the concept of a maxi-package
     version_pkg_fname += "-maxi"
@@ -63,14 +63,6 @@ if "--maxi" in sys.argv or "--maximaxi" in sys.argv:
         "qp-deeds" : "deeds", 
         "qp-basil" : "basil", 
     }
-    if "--maximaxi" in sys.argv:
-        # Include plugins not yet ready for release
-        plugins.update({
-            "qp-fsl" : "fslqp",
-            "qp-fabber-t1" : "fabber_t1", 
-            "veaslc/quantiphyse" : "veasl",
-            "qp-dsc" : "dsc", 
-        })
     
     for plugin, plugin_pkg in plugins.items():
         sys.stdout.write("  - Building and bundling %s..." % plugin)
