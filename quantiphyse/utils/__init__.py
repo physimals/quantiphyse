@@ -42,6 +42,12 @@ def warn(msg):
     sys.stderr.write("WARNING: %s\n" % str(msg))
     sys.stderr.flush()
 
+def ifnone(obj, alt):
+    if obj is None:
+        return alt
+    else:
+        return obj
+    
 def set_local_file_path():
     global LOCAL_FILE_PATH
     LOCAL_FILE_PATH = ""
