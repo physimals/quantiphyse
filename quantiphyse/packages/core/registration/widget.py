@@ -108,8 +108,7 @@ class RegMethod(object):
         
         out_data = np.zeros(reg_data.shape)
         transforms = []
-        log = ""
-        debug("Default 4D implementation")
+        log = "Default 4D registration using multiple 3d registrations\n"
         for vol in range(reg_data.shape[-1]):
             log += "Registering volume %i of %i\n" % (vol+1, reg_data.shape[-1])
             debug("Vol %i of %i" % (vol+1, reg_data.shape[-1]))
@@ -118,7 +117,7 @@ class RegMethod(object):
                 out_data[..., vol] = reg_data[..., vol]
                 transforms.append(None)
             else:
-                print("Calling reg_3d", cls, cls.reg_3d)
+                debug("Calling reg_3d", cls, cls.reg_3d)
                 vols, transform, vol_log = cls.reg_3d(reg_data[..., vol], reg_grid, ref_data, ref_grid, options, queue)
                 out_data[..., vol] = vols
                 transforms.append(transform)
@@ -165,14 +164,16 @@ class RegMethod(object):
         if moco_data.ndim != 4:
             raise QpException("Cannot motion correct 3D data")
         
-        debug("Default MOCO implementation")
+        log = "Default MOCO implementation using multiple 3d registrations\n"
         if isinstance(ref, int):
             if ref >= moco_data.shape[3]:
                 raise QpException("Reference volume index of %i, but data has only %i volumes" % (ref, moco_data.nvols))
             ref = moco_data[..., ref]
             ref_grid = moco_grid
 
-        return cls.reg_4d(moco_data, moco_grid, ref, ref_grid, options, queue)
+        out_data, transforms, moco_log = cls.reg_4d(moco_data, moco_grid, ref, ref_grid, options, queue)
+        log += moco_log
+        return out_data, transforms, log
 
     def interface(self):
         """
