@@ -125,14 +125,14 @@ class DataListWidget(QtGui.QTableView):
         self._update_list()
 
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.clicked.connect(self._clicked)
 
         self.ivm.sig_main_data.connect(self._update_list)
-        self.ivm.sig_current_data.connect(self._update_list)
+        self.ivm.sig_current_data.connect(self._update_selection)
         self.ivm.sig_all_data.connect(self._update_list)
-        self.ivm.sig_current_roi.connect(self._update_list)
+        self.ivm.sig_current_roi.connect(self._update_selection)
         self.ivm.sig_all_rois.connect(self._update_list)
 
     @property
@@ -170,6 +170,9 @@ class DataListWidget(QtGui.QTableView):
                 self.model.appendRow(self._get_table_items(data))
         finally:
             self.blockSignals(False)
+
+    def _update_selection(self):
+        pass
 
     def _clicked(self, idx):
         row = idx.row()
