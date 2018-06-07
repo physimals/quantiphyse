@@ -1,0 +1,28 @@
+# Example config file for motion correction using DEEDS
+
+OutputFolder: test/examples_output
+Debug: False
+
+Processing:
+    - Load:
+        data:
+            testdata_3d.nii.gz: data
+            testdata_mask.nii.gz: mask
+    
+    - Reg:
+        method: deeds
+        reg: data
+        ref: data
+        output-name: data_reg_deeds 
+        add-reg:
+            mask: mask_reg_deeds
+
+    - Save:
+        data:
+        data_reg_deeds:
+        mask:
+        mask_reg_deeds:
+
+Cases:
+    DeedsReg:
+        InputFolder:   test/data_autogen/   
