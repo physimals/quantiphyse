@@ -57,7 +57,6 @@ if "--maxi" in sys.argv:
     version_pkg_fname += "-maxi"
     plugins = {
         "quanticest" : "quanticest", 
-        "qp-mcflirt" : "mcflirt", 
         "qp-dce" : "dce",
         "qp-fabber" : "fabber",
         "qp-deeds" : "deeds", 
