@@ -59,6 +59,14 @@ class MaskableImage(pg.ImageItem):
                 # Make out of range values transparent
                 trans = np.logical_or(self.image < self.levels[0], self.image > self.levels[1])
                 argb[:, :, 3][trans] = 0
+            elif self.boundary == DataView.BOUNDARY_LOWERTRANS:
+                # Make out of range values transparent
+                trans = self.image < self.levels[0]
+                argb[:, :, 3][trans] = 0
+            elif self.boundary == DataView.BOUNDARY_UPPERTRANS:
+                # Make out of range values transparent
+                trans = self.image > self.levels[1]
+                argb[:, :, 3][trans] = 0
 
         self.qimage = pg.functions.makeQImage(argb, alpha)
 
@@ -69,6 +77,8 @@ class DataView(QtCore.QObject):
 
     BOUNDARY_TRANS = 0
     BOUNDARY_CLAMP = 1
+    BOUNDARY_LOWERTRANS = 2
+    BOUNDARY_UPPERTRANS = 3
 
     # Signals when view parameters are changed
     sig_view_changed = QtCore.Signal(object)
@@ -559,6 +569,8 @@ class LevelsDialog(QtGui.QDialog):
         self.combo = QtGui.QComboBox()
         self.combo.addItem("Transparent")
         self.combo.addItem("Clamped to max/min colour")
+        self.combo.addItem("Transparent at lower, clamped at upper")
+        self.combo.addItem("Clamped at lower, transparent at upper")
         self.combo.setCurrentIndex(self.view.opts["boundary"])
         self.combo.currentIndexChanged.connect(self._bound_changed)
         grid.addWidget(self.combo, 4, 1)
