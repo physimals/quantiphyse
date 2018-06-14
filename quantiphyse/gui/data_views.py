@@ -188,13 +188,8 @@ class ImageDataView(DataView):
         if self.data is not None and self.opts["cmap_range"] is None:
             # Initial colourmap range
             flat = self.data.volume(int(self.data.nvols/2)).flatten()
-            if percentile < 100:
-                cmap = [flat.min(), np.percentile(flat, percentile)]
-                if cmap[0] == cmap[1]:
-                    cmap = [flat.min(), flat.max()]
-                self.opts["cmap_range"] = cmap
-            else:
-                self.opts["cmap_range"] = [flat.min(), flat.max()]
+            self.opts["cmap_range"] = _cmap_range(flat, percentile)
+
     def _cleanup_cache(self, data_items):
         """
         Remove data items which no longer exist from the option cache
@@ -603,14 +598,26 @@ class LevelsDialog(QtGui.QDialog):
         self.view.set("boundary", idx)
     
     def _reset(self):
-        percentile = float(100 - self.percentile_spin.value()) / 2
+        percentile = self.percentile_spin.value()
         flat = self.view.data.volume(self.ivl.focus()[3]).flatten()
-        cmin, cmax = flat.min(), flat.max()
-        if percentile > 0:
-            if self.use_roi.isChecked() and self.ivm.current_roi is not None:
-                flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
-            cmin = np.percentile(flat, percentile)
-            cmax = np.percentile(flat, 100-percentile)
+        if self.use_roi.isChecked() and self.ivm.current_roi is not None:
+            flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
+
+        cmin, cmax = _cmap_range(flat, percentile)
         self.min_spin.setValue(cmin)
         self.max_spin.setValue(cmax)
         self.view.set("cmap_range", [cmin, cmax])
+
+def _cmap_range(data, percentile=100):
+    cmin, cmax = data.min(), data.max()
+    # Issue #101: if min is exactly zero, make it slightly more
+    # as a heuristic for data sets where zero=background
+    if cmin == 0:
+        cmin = 1e-7*cmax
+
+    if percentile < 100:
+        perc_max = np.percentile(data, percentile)
+        if perc_max > cmin:
+            cmax = perc_max
+    
+    return cmin, cmax
