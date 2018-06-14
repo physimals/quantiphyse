@@ -14,10 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 
 from quantiphyse.utils import get_lut, get_pencol, debug, get_icon
-from quantiphyse.data import OrthoSlice, DataGrid
-from quantiphyse.gui.widgets import OptionsButton, RoiCombo, OverlayCombo
-
-from .HistogramWidget import MultiImageHistogramWidget
+from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
 
 class MaskableImage(pg.ImageItem):
     """
@@ -98,16 +95,24 @@ class DataView(QtCore.QObject):
         self.sig_view_changed.connect(self.update)
 
     def set(self, name, value):
+        """
+        Set a data view option
+
+        Depending on the option being set, the data view may be redrawn
+        
+        :param name: Option name
+        :param value: Option value
+        """
         self.opts[name] = value
         self.sig_view_changed.emit(self)
         if name in self.redraw_options:
             self.sig_redraw.emit(self)
 
-    def redraw(self, vb, slice_plane, slice_vol):
+    def redraw(self, viewbox, slice_plane, slice_vol):
         """
         Redraw graphics items associated with the specified pg.ViewBox
 
-        :param vb: pg.ViewBox to redraw
+        :param viewbox: pg.ViewBox to redraw
         :param slice_plane: OrthoSlice defining the slice to draw
         :param slice_vol: Index of the volume to use
         """
@@ -142,8 +147,8 @@ class ImageDataView(DataView):
         self.histogram = None
         self.mask = None
 
-    def redraw(self, vb, slice_plane, slice_vol):
-        img = self._get_img(vb)
+    def redraw(self, viewbox, slice_plane, slice_vol):
+        img = self._get_img(viewbox)
         self.update()
         if img.isVisible():
             slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol, interp_order=self.opts["interp_order"])
@@ -164,14 +169,14 @@ class ImageDataView(DataView):
             img.setBoundaryMode(self.opts["boundary"])
             img.setLevels(self.opts["cmap_range"])
 
-    def _get_img(self, vb):
-        if vb.name not in self.imgs:
+    def _get_img(self, viewbox):
+        if viewbox.name not in self.imgs:
             img = MaskableImage(border='k')
-            vb.addItem(img)
-            self.imgs[vb.name] = img
+            viewbox.addItem(img)
+            self.imgs[viewbox.name] = img
             if self.histogram is not None:
                 self.histogram.add_img(img)
-        return self.imgs[vb.name]
+        return self.imgs[viewbox.name]
  
     def _init_opts(self):
         """
@@ -279,9 +284,9 @@ class RoiView(ImageDataView):
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
         self.ivm.sig_all_rois.connect(self._cleanup_cache)
 
-    def redraw(self, vb, slice_plane, slice_vol):
-        img = self._get_img(vb)
-        contours = self._get_contours(vb)
+    def redraw(self, viewbox, slice_plane, slice_vol):
+        img = self._get_img(viewbox)
+        contours = self._get_contours(viewbox)
         self.update()
         n_contours = 0
         if self.data is not None:
@@ -300,7 +305,7 @@ class RoiView(ImageDataView):
                     if val != 0:
                         if n_contours == len(contours):
                             contours.append(pg.IsocurveItem())
-                            vb.addItem(contours[n_contours])
+                            viewbox.addItem(contours[n_contours])
 
                         contour = contours[n_contours]
                         contour.setTransform(transform)
@@ -322,10 +327,10 @@ class RoiView(ImageDataView):
             img.setLookupTable(lut)
             img.setLevels([0, len(lut)-1], update=True)
             
-    def _get_contours(self, vb):
-        if vb.name not in self.contours:
-            self.contours[vb.name] = []
-        return self.contours[vb.name]
+    def _get_contours(self, viewbox):
+        if viewbox.name not in self.contours:
+            self.contours[viewbox.name] = []
+        return self.contours[viewbox.name]
 
     def _current_roi_changed(self, roi):
         self.data = roi
@@ -464,8 +469,8 @@ class OverlayViewWidget(QtGui.QGroupBox):
         widgets = [self.ov_view_combo, self.ov_cmap_combo,
                    self.ov_alpha_sld, self.overlay_combo]
         try:
-            for w in widgets:
-                w.blockSignals(True)
+            for widget in widgets:
+                widget.blockSignals(True)
 
             if not view.opts["visible"]:
                 self.ov_view_combo.setCurrentIndex(2)
@@ -504,13 +509,13 @@ class OverlayViewWidget(QtGui.QGroupBox):
             import traceback
             traceback.print_exc()
         finally:
-            for w in widgets:
-                w.blockSignals(False)
+            for widget in widgets:
+                widget.blockSignals(False)
 
     def _combo_changed(self, idx):
         if idx > 0:
-            ov = self.overlay_combo.itemText(idx)
-            self.ivm.set_current_data(ov)
+            data_name = self.overlay_combo.itemText(idx)
+            self.ivm.set_current_data(data_name)
         else:
             self.ivl.ivm.set_current_data(None)
 
@@ -532,6 +537,9 @@ class OverlayViewWidget(QtGui.QGroupBox):
         dlg.exec_()
 
 class LevelsDialog(QtGui.QDialog):
+    """
+    Dialog box used to set the colourmap max/min for a data view
+    """
 
     def __init__(self, parent, ivl, ivm, view):
         super(LevelsDialog, self).__init__(parent)
@@ -588,11 +596,11 @@ class LevelsDialog(QtGui.QDialog):
         return spin
 
     def _val_changed(self, row):
-        def val_changed(val):
+        def _changed(val):
             cmap_range = self.view.opts["cmap_range"]
             cmap_range[row] = val
             self.view.set("cmap_range", cmap_range)
-        return val_changed
+        return _changed
 
     def _bound_changed(self, idx):
         self.view.set("boundary", idx)
