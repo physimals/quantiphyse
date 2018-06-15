@@ -341,12 +341,14 @@ class RoiView(ImageDataView):
 class RoiViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
     def __init__(self, ivl, view):
+        QtGui.QGroupBox.__init__(self)
         self.ivl = ivl
         self.ivm = ivl.ivm
         self.view = view
 
-        QtGui.QGroupBox.__init__(self, "ROI")
         grid = QtGui.QGridLayout()
+        grid.setVerticalSpacing(2)
+        grid.setContentsMargins(5, 5, 5, 5)
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("ROI"), 0, 0)
@@ -416,12 +418,14 @@ class RoiViewWidget(QtGui.QGroupBox):
 class OverlayViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
     def __init__(self, ivl, view):
-        QtGui.QGroupBox.__init__(self, "Overlay")
+        QtGui.QGroupBox.__init__(self)
         self.ivl = ivl
         self.ivm = ivl.ivm
         self.view = view
 
         grid = QtGui.QGridLayout()
+        grid.setVerticalSpacing(2)
+        grid.setContentsMargins(5, 5, 5, 5)
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)

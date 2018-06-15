@@ -387,12 +387,14 @@ class Navigator:
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """
     def __init__(self, ivl):
+        QtGui.QGroupBox.__init__(self)
         self.ivl = ivl
         self.data_axes = None
         self.data_grid = None
 
-        QtGui.QGroupBox.__init__(self, "Navigation")
         grid = QtGui.QGridLayout()
+        grid.setVerticalSpacing(2)
+        grid.setContentsMargins(5, 5, 5, 5)
         self.setLayout(grid)
 
         self.navs = []
@@ -456,6 +458,7 @@ class ImageView(QtGui.QSplitter):
         # Navigation controls layout
         control_box = QtGui.QWidget()
         vbox = QtGui.QVBoxLayout()
+        vbox.setSpacing(5)
         control_box.setLayout(vbox)
 
         # Create the navigation sliders and the ROI/Overlay view controls
