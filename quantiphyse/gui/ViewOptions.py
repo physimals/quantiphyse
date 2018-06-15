@@ -61,9 +61,6 @@ class ViewOptions(QtGui.QDialog):
     however it will probably be necessary to separate the two 
     as the options become more extensive
     """
-    SCALE_VOXELS = 0
-    ISOTROPIC = 1
-
     RADIOLOGICAL = 0
     NEUROLOGICAL = 1
     
@@ -84,7 +81,6 @@ class ViewOptions(QtGui.QDialog):
         self.ivm.sig_main_data.connect(self.vol_changed)
 
         # Options
-        self.size_scaling = self.SCALE_VOXELS
         self.orientation = self.RADIOLOGICAL
         self.crosshairs = self.SHOW
         self.t_type = "Volume"
@@ -98,14 +94,6 @@ class ViewOptions(QtGui.QDialog):
         grid = QtGui.QGridLayout()
         label = QtGui.QLabel('<font size="5">View Options</font>')
         grid.addWidget(label, 0, 0)
-
-        grid.addWidget(QtGui.QLabel("Voxel size scaling"), 1, 0)
-        c = QtGui.QComboBox()
-        c.addItem("Use main volume dimensions")
-        c.addItem("Display as isotropic")
-        c.setCurrentIndex(self.size_scaling)
-        c.currentIndexChanged.connect(self.voxel_scaling_changed)
-        grid.addWidget(c, 1, 1)
 
         grid.addWidget(QtGui.QLabel("Orientation"), 2, 0)
         c = QtGui.QComboBox()
@@ -208,10 +196,6 @@ class ViewOptions(QtGui.QDialog):
         if dlg.exec_():
             self.t_scale = dlg.table.values()
             debug("New t-scale: ", self.t_scale)
-        self.sig_options_changed.emit(self)
-
-    def voxel_scaling_changed(self, idx):
-        self.size_scaling = idx
         self.sig_options_changed.emit(self)
 
     def t_unit_changed(self):

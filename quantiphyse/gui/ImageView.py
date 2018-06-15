@@ -113,12 +113,9 @@ class OrthoView(pg.GraphicsView):
         # Get the current position and slice
         self.focus_pos = self.ivl.focus()
         
-        # Adjust axis scaling depending on whether voxel size scaling is enabled
-        if self.ivl.opts.size_scaling == self.ivl.opts.SCALE_VOXELS:
-            spacing = self.ivl.grid.spacing
-            self.vb.setAspectLocked(True, ratio=(spacing[self.xaxis] / spacing[self.yaxis]))
-        else:
-            self.vb.setAspectLocked(True, ratio=1)
+        # Adjust axis scaling to that of the viewing grid 
+        spacing = self.ivl.grid.spacing
+        self.vb.setAspectLocked(True, ratio=(spacing[self.xaxis] / spacing[self.yaxis]))
 
         self._update_labels()
         self._update_crosshairs()
