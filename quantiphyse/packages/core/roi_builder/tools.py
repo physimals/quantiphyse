@@ -310,7 +310,7 @@ class WalkerTool(Tool):
         if arr.ndim > 3:
             # Reduce 4D data to PCA modes
             Pfeat = PcaFeatReduce(n_components=5)
-            arr, _ = Pfeat.get_training_features(arr, feature_volume=True)
+            arr = Pfeat.get_training_features(arr, feature_volume=True)
             kwargs["multichannel"] = True
         else:
             # Normalize data
@@ -327,7 +327,7 @@ class WalkerTool(Tool):
             labels = self.labels[sl]
             del spacing[zaxis] 
 
-        seg = sklean.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
+        seg = skimage.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
                                                 mode='cg_mg', spacing=spacing, **kwargs)
 
         if self.segmode == 0:
