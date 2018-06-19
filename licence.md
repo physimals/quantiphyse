@@ -1,5 +1,5 @@
 Quantiphyse licence
-==============
+===================
 
 These licence terms apply to all licences granted by THE CHANCELLOR, MASTERS AND SCHOLARS OF THE UNIVERSITY OF OXFORD whose 
 administrative offices are at office at University Offices, Wellington Square, Oxford OX1 2JD, United Kingdom (the "University") 
@@ -27,7 +27,7 @@ THE SOFTWARE ARE INTENDED FOR ACADEMICS CARRYING OUT RESEARCH AND NOT FOR USE BY
 
   (e)	except to the extent expressly permitted under these terms, not attempt to: reverse compile, disassemble or copy, modify, duplicate, create derivative works from, frame, mirror, republish, download, display, transmit, or distribute all or any portion of the Software or Website in any form or media or by any means; and 
 
-  (f)	ensure that the Copyright Notice “Copyright © 2018, University of Oxford” appears prominently wherever results from the Software are used, and is referenced or cited with the Copyright Notice when the Software is described in any research publication or on any documents or other material created using the Software.
+  (f)	ensure that the Copyright Notice "Copyright © 2018, University of Oxford" appears prominently wherever results from the Software are used, and is referenced or cited with the Copyright Notice when the Software is described in any research publication or on any documents or other material created using the Software.
 
 1.2	the University reserves the right at any time and without liability or prior notice to the User to revise, modify and replace the functionality and performance of the access to and operation of the Software. 
 
@@ -39,7 +39,7 @@ THE SOFTWARE ARE INTENDED FOR ACADEMICS CARRYING OUT RESEARCH AND NOT FOR USE BY
 
 2.1	The User shall defend, indemnify and hold harmless the University against any claims, actions, proceedings, losses, damages, expenses and costs (including without limitation court costs and reasonable legal fees) arising out of or in connection with the User's possession or use of the Software, or any breach of these terms by the User. 
 
-2.2	The Software are provided on an ‘as is’ basis and the User uses the Software at their own risk. No representations, conditions, warranties or other terms of any kind are given in respect of the Software and all statutory warranties and conditions are excluded to the fullest extent permitted by law. Without affecting the generality of the previous sentences, the University gives no implied or express warranty and makes no representation that the Software or any part of them: 
+2.2	The Software are provided on an 'as is' basis and the User uses the Software at their own risk. No representations, conditions, warranties or other terms of any kind are given in respect of the Software and all statutory warranties and conditions are excluded to the fullest extent permitted by law. Without affecting the generality of the previous sentences, the University gives no implied or express warranty and makes no representation that the Software or any part of them: 
 
   (a) will enable specific results to be obtained; or 
 
