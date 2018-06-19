@@ -1109,7 +1109,7 @@ class ModelCurves(QpWidget):
                 
                 if self.plot_opts.mode == 2 and ovl != self.ivm.main.name:
                     # Show residuals on the right hand axis
-                    resid_values = sig_values - main_curve
+                    resid_values = [v1 - v2 for v1, v2 in zip(sig_values, main_curve)]
                     self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
                     
                 # Plot signal or signal enhancement
