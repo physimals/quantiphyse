@@ -291,8 +291,7 @@ class T10Widget(QpWidget):
             QtGui.QMessageBox.warning(self, "Invalid FA", "FA value for B0 correction is invalid", QtGui.QMessageBox.Close)
             return
 
-        options = {"tr" : self.trinp.val,
-                   "smooth" : self.smooth.isChecked()}
+        options = {"tr" : self.trinp.val}
 
         fa_vols, fa_angles = self.fatable.get_images()
         if len(fa_vols) == 0:
@@ -317,6 +316,11 @@ class T10Widget(QpWidget):
             for vol, tr in zip(afi_vols, afi_trs):
                 afi[vol] = tr
             options["afi"] = afi
+
+        if self.smooth.isChecked():
+            options["smooth"] = {"sigma" : self.sigma.value(), "truncate" : self.truncate.value()}
+        if self.clamp.isChecked():
+            options["clamp"] = {"min" : self.clampMin.value(), "max" : self.clampMax.value()}
 
         self.process.run(options)
         
