@@ -204,9 +204,9 @@ class PickTool(Tool):
     def point_picked(self, picker):
         if self.roi_name == "": return
 
-        pos = picker.selection()
+        pos = picker.selection(grid=self.builder.grid)
         roi_picked = self.ivm.rois[self.roi_name]
-        picked_region = roi_picked.value(pos)
+        picked_region = roi_picked.value(pos, grid=self.builder.grid)
 
         roi_picked_arr = roi_picked.resample(self.builder.grid).raw()
         self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int)
