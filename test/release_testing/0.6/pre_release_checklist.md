@@ -1,41 +1,24 @@
 # Quantiphyse pre-release test checklist
 
-This is an attempt to document steps to go through prior to each release.
-It isn't exhaustive, but it is intended to cover the basics so no obvious
-bugs go out to release.
-
-Release procedure is to copy this file into a directory for each release
-e.g. 0.6. Each check should be done on each release build (Windows, OSX, 
-Linux). Then fill in the checkboxes like `[x]` for each item 
-checked *if the behaviour is acceptable!*.
-
-In general failure on one platform is not acceptable, however minor 
-platform differences can be noted.
-
-Any comments should be recorded in the copy of the document (e.g. minor
-issues or observations). If bugs are
-found, a comment should be added with the issue number. *If the bug is a release
-blocker, the checkboxe should not be ticked until the bug is
-fixed and the comment removed*. If the bug is not a blocker the checkbox can be
-ticked and the comment remains.
-
 ## Target release
 
-> Release version being tested
+v0.6
 
-## Test build / system
+## Test build / systems
 
-> Fill in with the platform and distribution the test was done against
+Tested on Windows 7 x64, Linux (Ubuntu 16.04) and OSX (10.11.6)
 
 ## General checks
 
 Should do these last, tick to indicate that you have been doing the checks and
 not found any problems.
 
-- [ ] All dialogs, check cancel really does Cancel
-- [ ] Check console for errors - should be none
-- [ ] Test widgets fail gracefully without a volume and/or overlay/roi as required
-- [ ] No visible GUI artifacts
+- [x] All dialogs, check cancel really does Cancel
+- [x] Check console for errors - should be none
+- [x] Test widgets fail gracefully without a volume and/or overlay/roi as required
+- [x] No visible GUI artifacts
+
+Issue #69: pyqtgraph artifacts on OSX
 
 ## Basic volume viewing
 
@@ -53,8 +36,6 @@ not found any problems.
 - [x] Load second ROI, check switching
 - [x] Clear all data, load replacement data set check range handled correctly
 - [x] Load large volume / overlay / roi to check large file handling on 64 bit system
-
-### Notes
 
 Issue #103: Load Data/ROI from menu are completely equivalent and show the same image selection box
 Issue #69: Crosshairs sometimes ugly and some artifacts on OSX at high zoom levels
@@ -92,7 +73,7 @@ Issue #104: Automatic levels within ROI does not seem to make difference
 - [x] Check histogram range and bins
 - [x] Change to multi-region ROI, check recalculate
 
-Issue #69: Histogram and radial profile not working on OSX - not blocker
+Issue #69: Histogram and radial profile not working on OSX
 
 ## Voxel analysis widget
 
@@ -103,10 +84,9 @@ Issue #69: Histogram and radial profile not working on OSX - not blocker
 - [x] RMS comparison 
 - [x] Normalise frames changes plot (hard to validate actual effect!)
 - [x] Temporal resolution changes when volumes scale is changed
-- [ ] Residuals display correct (base data not displayed)
+- [x] Residuals display correct (base data not displayed)
 
 Legend remains after remove all data
-Issue #106 Data and Residuals not working, produces error
 
 ## Multi-voxel analysis
 
@@ -125,8 +105,8 @@ Colour defaults to red but menu says grey
 
 - [x] Compare self-self
 - [x] Compare 3D
-- [ ] Compare 3D-4D
-- [ ] Compare 4D
+- [x] Compare 3D-4D
+- [x] Compare 4D
 - [x] Check sample size and warning if disable
 - [x] Check within ROI, 3D and 4D
 
@@ -145,10 +125,14 @@ Grid for simple math widget not well defined and can lead to errors
 
 ## Registration
 
-- [ ] Run on artificial moving data - DEEDS and MCFLIRT
-- [ ] Modify parameters, check effect still sensible, no errors
-- [ ] Register to different volume than median
-- [ ] Register two 3D volumes
+- [x] Run on artificial moving data - DEEDS and MCFLIRT
+- [x] Modify parameters, check effect still sensible, no errors
+- [x] Register to different volume than median
+- [x] Register two 3D volumes
+- [x] Run MCFLIRT on ASL example
+
+MCFLIRT performed poorly on artifical data maybe due to unrealistic distances.
+When run on realistic data it looked fine.
 
 ## PCA widget
 
@@ -175,24 +159,22 @@ Needs more functionality and better test but only really a preview so far
 ## ROI analysis
 
 - [x] Run on single-region ROI
-- [ ] Run on multi-region ROI
-
-Issue #107
+- [x] Run on multi-region ROI
 
 ## ROI builder
 
-- [ ] Pen tool, check on each slice
-- [ ] random walker, check 3D and 4D
-- [ ] Eraser, check on each slice
-- [ ] Rectangle, check on each slice
-- [ ] Ellipse, check on each slice
-- [ ] Polygon, check on each slice
-- [ ] Pick region, check with multi-region ROI (e.g. supervoxels)
-- [ ] Check undo
-- [ ] Check current label respected
-- [ ] Check ROI name respected
+- [x] Pen tool, check on each slice
+- [x] random walker, check 3D and 4D
+- [x] Eraser, check on each slice
+- [x] Rectangle, check on each slice
+- [x] Ellipse, check on each slice
+- [x] Polygon, check on each slice
+- [x] Pick region, check with multi-region ROI (e.g. supervoxels)
+- [x] Check undo
+- [x] Check current label respected
+- [x] Check ROI name respected
 
-Issues #108: Multiple errors
+Issues #108: Multiple issues. Blockers fixed
 
 ## Mean in ROI widget
 
@@ -237,7 +219,21 @@ Issues #108: Multiple errors
 - [x] Check edit TR and run
 - [x] Check B0 correction enable/disable
 - [x] Load AFI as single 4d or multiple 3d images
-- [ ] Check edit FA and run
-- [ ] Check clamping, output overlay within clamp limits
+- [x] Check edit FA and run
+- [x] Check clamping, output overlay within clamp limits
 
-Issue #109: Various issues including error on B0 correction
+Issue #109: Various issues - blockers fixed
+
+## ASL tools
+
+ - [x] Single TI preprocessing (difference, average)
+ - [x] Single TI modelling
+ - [x] Multi-TI preprocessing (diff, average)
+ - [x] Multi-TI modelling
+ - [x] Spatial option
+ - [x] Voxelwise calibration (FSL course example)
+ - [x] Refregion calibration (FSL course example)
+ - [x] Multiphase with/without correction (JL example)
+
+One error on OSX - can't set 'perfusion' as current data. Looked like delay in adding data
+in multiple threads. Not blocker.
