@@ -204,9 +204,9 @@ class PickTool(Tool):
     def point_picked(self, picker):
         if self.roi_name == "": return
 
-        pos = picker.selection()
+        pos = picker.selection(grid=self.builder.grid)
         roi_picked = self.ivm.rois[self.roi_name]
-        picked_region = roi_picked.value(pos)
+        picked_region = roi_picked.value(pos, grid=self.builder.grid)
 
         roi_picked_arr = roi_picked.resample(self.builder.grid).raw()
         self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int)
@@ -310,7 +310,7 @@ class WalkerTool(Tool):
         if arr.ndim > 3:
             # Reduce 4D data to PCA modes
             Pfeat = PcaFeatReduce(n_components=5)
-            arr, _ = Pfeat.get_training_features(arr, feature_volume=True)
+            arr = Pfeat.get_training_features(arr, feature_volume=True)
             kwargs["multichannel"] = True
         else:
             # Normalize data
@@ -327,7 +327,7 @@ class WalkerTool(Tool):
             labels = self.labels[sl]
             del spacing[zaxis] 
 
-        seg = sklean.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
+        seg = skimage.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
                                                 mode='cg_mg', spacing=spacing, **kwargs)
 
         if self.segmode == 0:

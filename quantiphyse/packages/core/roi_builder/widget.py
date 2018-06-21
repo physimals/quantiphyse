@@ -166,7 +166,7 @@ class RoiBuilderWidget(QpWidget):
       
     def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
         if self.new_roi_name in self.ivm.rois:
-            roi_orig = self.ivm.rois[self.new_roi_name].raw()
+            roi_orig = self.ivm.rois[self.new_roi_name].resample(self.grid).raw()
         else:
             roi_orig = np.zeros(self.grid.shape)
 
