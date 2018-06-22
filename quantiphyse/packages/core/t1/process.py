@@ -10,7 +10,7 @@ import numpy as np
 
 from scipy.ndimage.filters import gaussian_filter
 
-from quantiphyse.data import load, NumpyData
+from quantiphyse.data import load
 from quantiphyse.processes import Process
 from quantiphyse.utils import debug
 
@@ -94,4 +94,4 @@ class T10Process(Process):
         clamp = options.pop("clamp", None)
         if clamp is not None:
             np.clip(T10, clamp["min"], clamp["max"], out=T10)
-        self.ivm.add_data(NumpyData(T10, grid=grid, name="T10"))
+        self.ivm.add_data(T10, grid=grid, name="T10", make_current=True)
