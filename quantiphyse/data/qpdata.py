@@ -374,13 +374,16 @@ class QpData(object):
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
 
-        data_pos = [int(v+0.5) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
-
-        rawdata = self.volume(pos[3])
-        try:
-            value = rawdata[tuple(data_pos)]
-        except IndexError:
+        data_pos = [int(math.floor(v+0.5)) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
+        if min(data_pos) < 0:
+            # Out of range but will be misinterpreted by indexing!
             value = 0
+        else:
+            rawdata = self.volume(pos[3])
+            try:
+                value = rawdata[tuple(data_pos)]
+            except IndexError:
+                value = 0
 
         if str:
             return sf(value)
@@ -402,13 +405,16 @@ class QpData(object):
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
 
-        data_pos = [int(v+0.5) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
-
-        rawdata = self.raw()
-        try:
-            return list(rawdata[data_pos[0], data_pos[1], data_pos[2], :])
-        except IndexError:
+        data_pos = [int(math.floor(v+0.5)) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
+        if min(data_pos) < 0:
+            # Out of range but will be misinterpreted by indexing!
             return []
+        else:
+            rawdata = self.raw()
+            try:
+                return list(rawdata[data_pos[0], data_pos[1], data_pos[2], :])
+            except IndexError:
+                return []
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
@@ -572,7 +578,7 @@ class QpData(object):
             slices[ax1] = self._get_slice(rawdata.shape[ax1], sign1)
             slices[ax2] = self._get_slice(rawdata.shape[ax2], sign2)
 
-            pos = int(data_origin[data_naxis]+0.5)
+            pos = int(math.floor(data_origin[data_naxis]+0.5))
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
                 slices[data_naxis] = pos
                 debug("Using Numpy slice: ", slices, rawdata.shape)
