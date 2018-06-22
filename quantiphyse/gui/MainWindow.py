@@ -6,23 +6,20 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
-import sys
 import os
-import requests
 
 import numpy as np
 
 from PySide import QtCore, QtGui
 import pyqtgraph.console
 
-from .ViewOptions import ViewOptions
-from .Register import RegisterDialog
-from .ImageView import ImageView
-
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.gui.widgets import FingerTabBarWidget, FingerTabWidget
+from quantiphyse.gui.widgets import FingerTabWidget
 from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help, QpException
 from quantiphyse import __contrib__, __acknowledge__
+
+from .ViewOptions import ViewOptions
+from .ImageView import ImageView
 
 # ROIs with values larger than this will trigger a warning
 ROI_MAXVAL_WARN = 1000
@@ -51,14 +48,14 @@ class DragOptions(QtGui.QDialog):
         hbox = QtGui.QHBoxLayout()
         if ftype is None:
             btn = QtGui.QPushButton("Data")
-            btn.clicked.connect(self.clicked("DATA"))
+            btn.clicked.connect(self._clicked("DATA"))
             hbox.addWidget(btn)
             btn = QtGui.QPushButton("ROI")
-            btn.clicked.connect(self.clicked("ROI"))
+            btn.clicked.connect(self._clicked("ROI"))
             hbox.addWidget(btn)
         else:
             btn = QtGui.QPushButton("Ok")
-            btn.clicked.connect(self.clicked(ftype.upper()))
+            btn.clicked.connect(self._clicked(ftype.upper()))
             hbox.addWidget(btn)
         btn = QtGui.QPushButton("Cancel")
         btn.clicked.connect(self.reject)
@@ -99,24 +96,27 @@ class DragOptions(QtGui.QDialog):
     def _adv_changed(self, state):
         self.adv_pane.setVisible(state)
 
-    def clicked(self, ret):
-        def cb():
+    def _clicked(self, ret):
+        def _clicked_cb():
             self.type = ret
             self.force_t = self.force_t_cb.isChecked()
             self.make_main = self.main_cb.isChecked()
             self.name = self.name_combo.currentText()
             if self.name in self.ivm.data or self.name in self.ivm.rois:
                 btn = QtGui.QMessageBox.warning(self, "Name already exists",
-                    "Data already exists with this name - overwrite?",
-                    QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                                                "Data already exists with this name - overwrite?",
+                                                QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
                 if btn == QtGui.QMessageBox.Ok:
                     self.accept()
             else:
                 self.accept()
-        return cb
+        return _clicked_cb
 
     @staticmethod
-    def getImageChoice(parent, fname, ivm, ftype=None, force_t_option=False, make_main=False):
+    def get_image_choice(parent, fname, ivm, ftype=None, force_t_option=False, make_main=False):
+        """
+        Pop up a mini-dialog to ask the user what type of data they are loading
+        """
         dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option, default_main=make_main)
         result = dialog.exec_()
         return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
@@ -132,7 +132,7 @@ class MainWindow(QtGui.QMainWindow):
     Loads data from command line options
     """
 
-    def __init__(self, load_data=None, load_roi=None):
+    def __init__(self, load_data=None, load_roi=None, widgets=True):
         super(MainWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
@@ -140,9 +140,9 @@ class MainWindow(QtGui.QMainWindow):
         self.ivl = ImageView(self.ivm, self.view_options_dlg)
 
         # Load style sheet
-        stFile = get_local_file("resources/darkorange.stylesheet")
-        with open(stFile, "r") as fs:
-            self.setStyleSheet(fs.read())
+        stylesheet = get_local_file("resources/darkorange.stylesheet")
+        with open(stylesheet, "r") as stylesheet_file:
+            self.setStyleSheet(stylesheet_file.read())
 
         # Default dir to load files from is the user's home dir
         self.default_directory = os.path.expanduser("~")
@@ -151,62 +151,49 @@ class MainWindow(QtGui.QMainWindow):
         self.widget_groups = {}
         self.current_widget = None
 
-        widgets = get_plugins("widgets")
-        for wclass in widgets:
-            w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
-            if w.group not in self.widget_groups:
-                self.widget_groups[w.group] = []
-            self.widget_groups[w.group].append(w)
-
-        for group, widgets in self.widget_groups.items():
-            widgets.sort(key=lambda x: x.position)
-
-        # Initialize menu and tabs
-        self.init_menu()
-        self.init_tabs()
-        
         # Main layout - image view to left, tabs to right
         main_widget = QtGui.QWidget()
         hbox = QtGui.QHBoxLayout()
         splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.ivl)
-        splitter.addWidget(self.tab_widget)
         splitter.setStretchFactor(0, 4)
-        splitter.setStretchFactor(1, 1)
         hbox.addWidget(splitter)
         main_widget.setLayout(hbox)
         self.setCentralWidget(main_widget)
         
+        if widgets:
+            default_size = (1000, 700)
+            widgets = get_plugins("widgets")
+            for wclass in widgets:
+                w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
+                if w.group not in self.widget_groups:
+                    self.widget_groups[w.group] = []
+                self.widget_groups[w.group].append(w)
+
+            for _, widgets in self.widget_groups.items():
+                widgets.sort(key=lambda x: x.position)
+
+            self._init_tabs()
+            splitter.addWidget(self.tab_widget)
+            splitter.setStretchFactor(1, 1)
+        else:
+            default_size = (700, 700)
+
+        self.init_menu()
+        
         # General properties of main window
         self.setWindowTitle("Quantiphyse %s" % get_version())
         self.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
-        self.resize(1000, 700)
+        self.resize(*default_size)
         self.setUnifiedTitleAndToolBarOnMac(True)
         self.setAcceptDrops(True)
         self.show()
 
-        settings = QtCore.QSettings()
-        reg = settings.value("registered", 0)
-        #reg = 0
-        if not reg:
-            try:
-                dlg = RegisterDialog(self)
-                res = dlg.exec_()
-                if res:
-                    dlg.send_register_email(dlg.name_edit.text(), dlg.inst_edit.text(), dlg.email_edit.text())
-                    settings.setValue("registered", 1)
-                else:
-                    self.close()
-                    QtCore.QCoreApplication.quit()
-            except:
-                # On failure, allow program to continue but do not mark user as registered
-                pass
-
         # autoload any files that have been passed from the command line
-        if load_data is not None: self.load_data(fname=load_data, ftype="DATA")
-        if load_roi is not None: self.load_data(fname=load_roi, ftype="ROI")
+        if load_data is not None: self.load_data(fname=load_data)
+        if load_roi is not None: self.load_data(fname=load_roi)
 
-    def init_tabs(self):
+    def _init_tabs(self):
         self.tab_widget = FingerTabWidget(self)
 
         # Add widgets flagged to appear by default
@@ -216,10 +203,10 @@ class MainWindow(QtGui.QMainWindow):
             w.visible = True
             w.inited = True
             w.index = index
-        self.tab_widget.currentChanged.connect(self.select_tab)
-        self.select_tab(0)
+        self.tab_widget.currentChanged.connect(self._tab_selected)
+        self._tab_selected(0)
 
-    def show_widget(self):
+    def _show_widget(self):
         # For some reason a closure did not work here - get the widget to show from the event sender
         w = self.sender().widget
         if not w.visible:
@@ -231,7 +218,7 @@ class MainWindow(QtGui.QMainWindow):
             w.index = index
         self.tab_widget.setCurrentIndex(w.index)
 
-    def select_tab(self, idx):
+    def _tab_selected(self, idx):
         if self.current_widget is not None:
             self.current_widget.deactivate()
         self.current_widget = self.tab_widget.widget(idx)
@@ -245,13 +232,8 @@ class MainWindow(QtGui.QMainWindow):
         # File --> Load Data
         load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
-        load_action.setStatusTip('Load a 3d or 4d image')
-        load_action.triggered.connect(self.load_vol)
-
-        # File --> Load ROI
-        load_roi_action = QtGui.QAction(QtGui.QIcon(get_icon("pencil")), '&Load ROI', self)
-        load_roi_action.setStatusTip('Load binary ROI')
-        load_roi_action.triggered.connect(self.load_roi)
+        load_action.setStatusTip('Load a 3d or 4d image or ROI')
+        load_action.triggered.connect(self.load_data)
 
         # File --> Save Data
         save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
@@ -267,7 +249,7 @@ class MainWindow(QtGui.QMainWindow):
         # File --> Clear all
         clear_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
         clear_action.setStatusTip('Remove all data from the viewer')
-        clear_action.triggered.connect(self.clear)
+        clear_action.triggered.connect(self._clear)
 
         # File --> Exit
         exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
@@ -278,12 +260,12 @@ class MainWindow(QtGui.QMainWindow):
         # About
         about_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
         about_action.setStatusTip('About Quantiphyse')
-        about_action.triggered.connect(self.show_about)
+        about_action.triggered.connect(self._show_about)
 
         # Help -- > Online help
         help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
-        help_action.triggered.connect(self.show_help)
+        help_action.triggered.connect(self._show_help)
 
         # Advanced --> Python Console
         console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
@@ -302,15 +284,14 @@ class MainWindow(QtGui.QMainWindow):
         help_menu = menubar.addMenu('&Help')
 
         file_menu.addAction(load_action)
-        file_menu.addAction(load_roi_action)
         file_menu.addAction(save_ovreg_action)
         file_menu.addAction(save_roi_action)
         file_menu.addAction(clear_action)
         file_menu.addAction(exit_action)
 
         widget_submenus = {"" : widget_menu}
-        DEFAULT_GROUPS = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
-        for group in DEFAULT_GROUPS:
+        default_widget_groups = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
+        for group in default_widget_groups:
             widget_submenus[group] = widget_menu.addMenu(group)
 
         for group in sorted(self.widget_groups.keys()):
@@ -322,7 +303,7 @@ class MainWindow(QtGui.QMainWindow):
                     action = QtGui.QAction(w.icon, '&%s' % w.name, self)
                     action.setStatusTip(w.description)
                     action.widget = w
-                    action.triggered.connect(self.show_widget)
+                    action.triggered.connect(self._show_widget)
                     widget_submenus[group].addAction(action)
 
         help_menu.addAction(help_action)
@@ -334,40 +315,46 @@ class MainWindow(QtGui.QMainWindow):
         # extra info displayed in the status bar
         self.statusBar()
 
-    def dragEnterEvent(self, e):
-        if e.mimeData().hasUrls:
-            e.accept()
+    def dragEnterEvent(self, drag_data):
+        """
+        Called when a drag object enters the interface
+        """
+        if drag_data.mimeData().hasUrls:
+            drag_data.accept()
         else:
-            e.ignore()
+            drag_data.ignore()
 
-    def dragMoveEvent(self, e):
-        if e.mimeData().hasUrls:
-            e.accept()
+    def dragMoveEvent(self, drag_data):
+        """
+        Called when a drag object is moved over the interface
+        """
+        if drag_data.mimeData().hasUrls:
+            drag_data.accept()
         else:
-            e.ignore()
+            drag_data.ignore()
 
-    def dropEvent(self, e):
+    def dropEvent(self, drag_data):
         """
         Called when a file or files are dropped on to the interface
         """
-        if e.mimeData().hasUrls:
-            e.setDropAction(QtCore.Qt.CopyAction)
-            e.accept()
+        if drag_data.mimeData().hasUrls:
+            drag_data.setDropAction(QtCore.Qt.CopyAction)
+            drag_data.accept()
             fnames = []
-            for url in e.mimeData().urls():
+            for url in drag_data.mimeData().urls():
                 fnames.append(local_file_from_drop_url(url))
             self.raise_()
             self.activateWindow()
             for fname in fnames:
                 self.load_data(fname)
         else:
-            e.ignore()
+            drag_data.ignore()
 
-    def show_help(self):
+    def _show_help(self):
         """ Provide a clickable link to help files """
         show_help()
 
-    def show_about(self):
+    def _show_about(self):
         text = """
         <h1 align="center">Quantiphyse %s</h1>
         <p align="center">Formerly 'PkView'</p>
@@ -411,12 +398,12 @@ class MainWindow(QtGui.QMainWindow):
               ivm: Access to all the stored image data
 
             """)
-        self.con1 = pyqtgraph.console.ConsoleWidget(namespace=namespace, text=text)
-        self.con1.setWindowTitle('Quantiphyse Console')
-        self.con1.setGeometry(QtCore.QRect(100, 100, 600, 600))
-        self.con1.show()
+        console = pyqtgraph.console.ConsoleWidget(namespace=namespace, text=text)
+        console.setWindowTitle('Quantiphyse Console')
+        console.setGeometry(QtCore.QRect(100, 100, 600, 600))
+        console.show()
 
-    def load_data(self, fname=None, name=None, ftype=None):
+    def load_data(self, fname=None, name=None):
         """
         Load data into the IVM from a file (which may already be known)
         """
@@ -441,30 +428,28 @@ class MainWindow(QtGui.QMainWindow):
         force_t = False
                 
         make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
-        ftype, name, ok, force_t_dialog, make_main = DragOptions.getImageChoice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
+        ftype, name, ok, force_t_dialog, make_main = DragOptions.get_image_choice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
         if not ok: return
         data.name = name
         if force_t_option: force_t = force_t_dialog
         
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
-        warnings = []
         if force_t:
-            msgBox = QtGui.QMessageBox(self)
-            msgBox.setText("3D data was interpreted as multiple 2D volumes")
-            msgBox.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Ok)
-            if msgBox.exec_() != QtGui.QMessageBox.Ok: return
+            msg_box = QtGui.QMessageBox(self)
+            msg_box.setText("3D data was interpreted as multiple 2D volumes")
+            msg_box.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+            if msg_box.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
         # Check for inappropriate ROI data
         if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
-            msgBox = QtGui.QMessageBox(self)
-            warntxt = "\n  -".join(warnings)
-            msgBox.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
-            msgBox.setInformativeText("Are you sure this is an ROI file?")
-            msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
-            if msgBox.exec_() != QtGui.QMessageBox.Yes: return
+            msg_box = QtGui.QMessageBox(self)
+            msg_box.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
+            msg_box.setInformativeText("Are you sure this is an ROI file?")
+            msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
+            msg_box.setDefaultButton(QtGui.QMessageBox.Cancel)
+            if msg_box.exec_() != QtGui.QMessageBox.Yes: return
 
         if ftype == "DATA":
             self.ivm.add_data(data, make_current=not make_main, make_main=make_main)
@@ -497,19 +482,13 @@ class MainWindow(QtGui.QMainWindow):
             else: # Cancelled
                 pass
 
-    def clear(self):
+    def _clear(self):
          # Check for inappropriate ROI data
-        if len(self.ivm.data) != 0:
-            msgBox = QtGui.QMessageBox()
-            msgBox.setText("Clear all data")
-            msgBox.setInformativeText("Are you sure you want to clear all data?")
-            msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
-            msgBox.setDefaultButton(QtGui.QMessageBox.Cancel)
-            if msgBox.exec_() != QtGui.QMessageBox.Yes: return
+        if self.ivm.data:
+            msg_box = QtGui.QMessageBox()
+            msg_box.setText("Clear all data")
+            msg_box.setInformativeText("Are you sure you want to clear all data?")
+            msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
+            msg_box.setDefaultButton(QtGui.QMessageBox.Cancel)
+            if msg_box.exec_() != QtGui.QMessageBox.Yes: return
         self.ivm.reset()
-
-    def load_vol(self):
-        self.load_data(ftype="DATA")
-
-    def load_roi(self):
-        self.load_data(ftype="ROI")

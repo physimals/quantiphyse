@@ -20,7 +20,7 @@ import pyqtgraph as pg
 from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, debug, warn, set_local_file_path, set_debug
 from quantiphyse.utils.batch import BatchScript
-from quantiphyse.gui import MainWindow, QuickWindow
+from quantiphyse.gui import MainWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.
@@ -93,10 +93,7 @@ def main():
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
-        if args.qv:
-            win = QuickWindow(load_data=args.data, load_roi=args.roi)
-        else:
-            win = MainWindow(load_data=args.data, load_roi=args.roi)
+        win = MainWindow(load_data=args.data, load_roi=args.roi, widgets=not args.qv)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
 
