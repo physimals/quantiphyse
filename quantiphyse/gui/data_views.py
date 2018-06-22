@@ -601,7 +601,7 @@ class LevelsDialog(QtGui.QDialog):
 
     def _val_changed(self, row):
         def _changed(val):
-            cmap_range = self.view.opts["cmap_range"]
+            cmap_range = list(self.view.opts["cmap_range"])
             cmap_range[row] = val
             self.view.set("cmap_range", cmap_range)
         return _changed
