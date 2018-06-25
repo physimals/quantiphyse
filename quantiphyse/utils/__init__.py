@@ -12,6 +12,7 @@ import glob
 import importlib
 import traceback
 import tempfile
+import logging
 
 from matplotlib import cm
 import numpy as np
@@ -26,21 +27,30 @@ PLUGIN_MANIFEST = None
 
 DEFAULT_SIG_FIG = 4
 
+# This is a generic logger for the application. Intention is to move to
+# per-widget loggers but in the interim this is what we use for calls to debug() etc
+GENERIC_LOGGER = logging.getLogger("quantiphyse")
+STDERR_HANDLER = logging.StreamHandler()
+GENERIC_LOGGER.addHandler(STDERR_HANDLER)
+
 def set_debug(debug):
-    global DEBUG
+    global DEBUG, GENERIC_LOGGER
     DEBUG = debug
+    if debug:
+        GENERIC_LOGGER.setLevel(logging.DEBUG)
+    else:
+        GENERIC_LOGGER.setLevel(logging.WARN)
 
 def get_debug():
     global DEBUG
     return DEBUG
     
 def debug(*msgs):
-    if DEBUG:
-        print(*msgs)
+    msg = " ".join([str(msg) for msg in msgs])
+    GENERIC_LOGGER.debug(msg)
 
 def warn(msg):
-    sys.stderr.write("WARNING: %s\n" % str(msg))
-    sys.stderr.flush()
+    GENERIC_LOGGER.warn(str(msg))
 
 def ifnone(obj, alt):
     if obj is None:
