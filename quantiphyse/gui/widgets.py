@@ -8,6 +8,7 @@ import os
 import sys
 import inspect
 import traceback
+import logging
 
 from PySide import QtGui, QtCore
 
@@ -41,6 +42,7 @@ class QpWidget(QtGui.QWidget):
         self.description = kwargs.get("desc", self.name)
         self.visible = False
         self.inited = False
+        self.log = logging.getLogger("widgets.%s" % self.name.replace(" ", "_").lower())
         
         # This attempts to return the directory where the derived widget is defined - 
         # so we can look there for icons as well as in the default location
@@ -54,6 +56,12 @@ class QpWidget(QtGui.QWidget):
         if self.opts:
             self.opts.sig_options_changed.connect(self.options_changed)
 
+    def debug(self, *args, **kwargs):
+        self.log.debug(*args, **kwargs)
+
+    def warn(self, *args, **kwargs):
+        self.log.warn(*args, **kwargs)
+        
     def get_local_file(self, name):
         """
         Get a file which is stored locally to the implementing class
