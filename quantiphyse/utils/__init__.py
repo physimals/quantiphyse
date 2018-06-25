@@ -29,9 +29,8 @@ DEFAULT_SIG_FIG = 4
 
 # This is a generic logger for the application. Intention is to move to
 # per-widget loggers but in the interim this is what we use for calls to debug() etc
+logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%H:%M:%S')
 GENERIC_LOGGER = logging.getLogger("quantiphyse")
-STDERR_HANDLER = logging.StreamHandler()
-GENERIC_LOGGER.addHandler(STDERR_HANDLER)
 
 def set_debug(debug):
     global DEBUG, GENERIC_LOGGER
