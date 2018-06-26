@@ -10,7 +10,7 @@ Copyright (c) 2013-2018 University of Oxford
 
 from PySide import QtGui, QtCore
 
-from ..utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 
 class OptionBox(QtGui.QGroupBox):
     """

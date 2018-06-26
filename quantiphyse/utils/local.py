@@ -42,6 +42,9 @@ def set_local_file_path():
     LOG.debug("Local directory: %s", LOCAL_FILE_PATH)
 
 def local_file_path():
+    """
+    :return: The path to locally installed files
+    """
     return LOCAL_FILE_PATH
 
 def get_local_file(name, loc=None):
@@ -52,7 +55,6 @@ def get_local_file(name, loc=None):
     (e.g. use __file__ to get file local to a python plugin module)
     """
     if loc is None:
-        global LOCAL_FILE_PATH
         loc = LOCAL_FILE_PATH
     else:
         loc = os.path.dirname(loc)
@@ -77,7 +79,6 @@ def get_icon(name, icon_dir=None):
     """
     Get path to the named icon
     """
-    global LOCAL_FILE_PATH
     name, extension = os.path.splitext(name)
     if extension == "":
         if sys.platform.startswith("win") or sys.platform.startswith("darwin"):

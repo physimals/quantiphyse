@@ -6,10 +6,12 @@ Copyright (c) 2013-2018 University of Oxford
 
 import os
 
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 from quantiphyse.data import load, save
 
 from .process import Process
+
+__all__ = ["LoadProcess", "LoadDataProcess", "LoadRoisProcess", "SaveProcess", "SaveAllExceptProcess", "SaveDeleteProcess", "SaveArtifactsProcess"]
 
 class LoadProcess(Process):
     """
@@ -99,9 +101,9 @@ class SaveProcess(Process):
                 if qpdata is not None:
                     save(qpdata, fname, grid=output_grid, outdir=self.outdir)
                 else:
-                    warn("Failed to save %s - no such data or ROI found" % name)
+                    self.warn("Failed to save %s - no such data or ROI found" % name)
             except Exception as exc:
-                warn("Failed to save %s: %s" % (name, str(exc)))
+                self.warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveAllExceptProcess(Process):
     """
@@ -120,7 +122,7 @@ class SaveAllExceptProcess(Process):
             try:
                 save(qpdata, name, outdir=self.outdir)
             except Exception as exc:
-                warn("Failed to save %s: %s" % (name, str(exc)))
+                self.warn("Failed to save %s: %s" % (name, str(exc)))
 
         for name, qpdata in self.ivm.rois.items():
             if name in exceptions: 
@@ -128,7 +130,7 @@ class SaveAllExceptProcess(Process):
             try:
                 save(qpdata, name, outdir=self.outdir)
             except Exception as exc:
-                warn("Failed to save %s: %s" % (name, str(exc)))
+                self.warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveDeleteProcess(SaveProcess):
     """
@@ -169,5 +171,5 @@ class SaveArtifactsProcess(Process):
                 fname = os.path.join(self.outdir, fname)
             dirname = os.path.dirname(fname)
             if not os.path.exists(dirname): os.makedirs(dirname)
-            with open(fname, "w") as f:
-                f.write(text)
+            with open(fname, "w") as text_file:
+                text_file.write(text)

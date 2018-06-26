@@ -6,6 +6,7 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, print_function
 
+import logging
 import keyword
 import re
 
@@ -13,10 +14,12 @@ from PySide import QtCore
 
 import numpy as np
 
-from quantiphyse.utils import debug, QpException
+from quantiphyse.utils import QpException
 
 from .qpdata import QpData
 from .load_save import NumpyData
+
+LOG = logging.getLogger(__name__)
 
 class ImageVolumeManagement(QtCore.QObject):
     """
@@ -103,11 +106,30 @@ class ImageVolumeManagement(QtCore.QObject):
             raise QpException("'%s' is not a valid name" % name)
 
     def set_main_data(self, name):
+        """
+        Set the named data item as the main data
+
+        :param name: Name of main data. Must be name of data item in IVM
+        """
         self._data_exists(name)
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, grid=None, make_current=False, make_main=None):
+    def add_data(self, data, name=None, grid=None, make_current=None, make_main=None):
+        """
+        Add data item to IVM
+
+        Data will be made the main data if make_main is True, or there is no main data
+        
+        Data will be made current if make_current is not specified and there is no
+        current data, and make_main is not True
+
+        :param data: Numpy array of QpData instance
+        :param name: Name which must be a valid name not already used in this IVM
+        :param grid: If data is a Numpy array, a DataGrid instance defining the orientation
+        :param make_current: If True, make this the current data item
+        :param make_main: If True, make this the main data.
+        """
         if isinstance(data, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add_data: Numpy data must have a name and a grid")
@@ -135,7 +157,18 @@ class ImageVolumeManagement(QtCore.QObject):
         if make_current:
             self.set_current_data(data.name)
 
-    def add_roi(self, roi, name=None, grid=None, make_current=False):
+    def add_roi(self, roi, name=None, grid=None, make_current=None):
+        """
+        Add ROI item to IVM
+
+        The ROI will be made current if make_current is not specified and there is no
+        current ROI
+
+        :param roi: Numpy array of QpData instance
+        :param name: Name which must be a valid name not already used in this IVM
+        :param grid: If roi is a Numpy array, a DataGrid instance defining the orientation
+        :param make_current: If True, make this the current ROI
+        """
         if isinstance(roi, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add_roi: Numpy data must have a name and a grid")
@@ -152,6 +185,8 @@ class ImageVolumeManagement(QtCore.QObject):
 
         self.sig_all_rois.emit(self.rois.keys())
 
+        if make_current is None:
+            make_current = self.current_roi is None
         if make_current:
             self.set_current_roi(roi.name)
             
@@ -164,15 +199,32 @@ class ImageVolumeManagement(QtCore.QObject):
             raise RuntimeError("ROI '%s' does not exist" % name)
 
     def is_main_data(self, qpd):
+        """
+        :param qpd: QpData instance
+        :return: True if qpd is the main data
+        """
         return self.main is not None and qpd is not None and self.main.name == qpd.name
 
     def is_current_data(self, qpd):
+        """
+        :param qpd: QpData instance
+        :return: True if qpd is the current data
+        """
         return self.current_data is not None and qpd is not None and self.current_data.name == qpd.name
 
     def is_current_roi(self, roi):
+        """
+        :param qpd: QpData instance
+        :return: True if qpd is the current ROI
+        """
         return self.current_roi is not None and roi is not None and self.current_roi.name == roi.name
         
     def set_current_data(self, name):
+        """
+        Set a named data item as the current data
+
+        :param name: Name of data item which must exist within the IVM
+        """
         if name is not None:
             self._data_exists(name)
             self.current_data = self.data[name]
@@ -181,6 +233,12 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_current_data.emit(self.current_data)
 
     def rename_data(self, name, newname):
+        """
+        Rename a data item
+
+        :param name: Name of data item which must exist within the IVM
+        :param newname: New name for this data item
+        """
         self._data_exists(name)
         qpd = self.data[name]
         qpd.name = newname
@@ -189,6 +247,12 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_data.emit(self.data.keys())
 
     def rename_roi(self, name, newname):
+        """
+        Rename an ROI
+
+        :param name: Name of ROI which must exist within the IVM
+        :param newname: New name for this ROI
+        """
         self._roi_exists(name)
         roi = self.rois[name]
         roi.name = newname
@@ -197,6 +261,11 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_rois.emit(self.rois.keys())
 
     def delete_data(self, name):
+        """
+        Delete a data item
+
+        :param name: Name of data item which must exist within the IVM
+        """
         self._data_exists(name)
         del self.data[name]
         if self.current_data is not None and self.current_data.name == name:
@@ -208,6 +277,11 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_data.emit(self.data.keys())
 
     def delete_roi(self, name):
+        """
+        Delete an ROI
+
+        :param name: Name of ROI which must exist within the IVM
+        """
         self._roi_exists(name)
         del self.rois[name]
         if self.current_roi.name == name:
@@ -216,6 +290,11 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_all_rois.emit(self.rois.keys())
 
     def set_current_roi(self, name):
+        """
+        Set a named ROI as the current ROI
+
+        :param name: Name of ROI which must exist within the IVM
+        """
         if name is not None:
             self._roi_exists(name)
             self.current_roi = self.rois[name]
@@ -270,4 +349,3 @@ class ImageVolumeManagement(QtCore.QObject):
                 timeseries[qpd.name] = qpd.timeseries(pos, grid)
                 
         return timeseries
-

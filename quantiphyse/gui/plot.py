@@ -235,6 +235,9 @@ class Plot(QtGui.QWidget):
         return line
 
     def clear(self):
+        """
+        Clear the plot
+        """
         for item in self.items:
             item.hide()
         self.items = []

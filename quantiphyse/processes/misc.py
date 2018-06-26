@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 
 from .process import Process
 
@@ -52,7 +52,7 @@ class DeleteProcess(Process):
             elif name in self.ivm.rois: 
                 self.ivm.delete_roi(name)
             else:
-                warn("Failed to delete %s: No such data or ROI" % name)
+                self.warn("Failed to delete %s: No such data or ROI" % name)
 
 class RoiCleanupProcess(Process):
     """
@@ -77,12 +77,11 @@ class RoiCleanupProcess(Process):
         if roi is not None:
             if fill_holes_slice is not None:
                 # slice-by-slice hole filling, appropriate when ROIs defined slice-by-slice
-                d = fill_holes_slice
+                slice_axis = fill_holes_slice
                 new = np.copy(roi.raw())
-                for sl in range(new.shape[int(d)]):
+                for slice_idx in range(new.shape[int(slice_axis)]):
                     slices = [slice(None), slice(None), slice(None)]
-                    slices[d] = sl
+                    slices[slice_axis] = slice_idx
                     new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
             
                 self.ivm.add_roi(NumpyData(data=new, grid=roi.grid, name=output_name))
-

@@ -96,7 +96,7 @@ def write_temp_matrix(prefix, matrix):
     Write a matrix to a temporary file, returning the filename
     """
     temp_file = tempfile.NamedTemporaryFile(prefix=prefix, delete=False)
-    LOG.debug("matrix: %s" % prefix)
+    LOG.debug("matrix: %s", prefix)
     for row in matrix:
         line = " ".join([str(v) for v in row]) + "\n"
         LOG.debug(line)

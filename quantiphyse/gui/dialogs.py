@@ -8,23 +8,24 @@ import os
 
 from PySide import QtGui
 
-from ..utils import debug
-
 MAINWIN = None
 
-def set_main_window(w):
+def set_main_window(win):
     """ Set the main window widget so it can be a parent to dialogs to make style match"""
     global MAINWIN
-    MAINWIN = w
+    MAINWIN = win
 
 def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
+    """
+    Show an error dialog box
+    """
     text = msg.replace(os.linesep, "<br>")
     if detail is not None:
         detail_str = ""
-        try:
+        if isinstance(detail, (list, tuple)):
             for item in detail:
                 detail_str += str(item) + os.linesep
-        except:
+        else:
             detail_str = str(detail)
         detail_str = detail_str.replace(os.linesep, "<br>")
         text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail_str)
@@ -32,8 +33,14 @@ def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
     QtGui.QMessageBox.warning(MAINWIN, title, text, QtGui.QMessageBox.Close)
 
 class MultiTextViewerDialog(QtGui.QDialog):
+    """
+    Text viewer dialog with multiple pages presented as tabs
 
-    def __init__(self, parent, title="Log", pages=[]):
+    :param title: Overall title
+    :param pages: Sequence of pages, each string content
+    """
+
+    def __init__(self, parent, title="Log", pages=()):
         super(MultiTextViewerDialog, self).__init__(parent)
         self.setWindowTitle(title)
         vbox = QtGui.QVBoxLayout()
@@ -50,31 +57,37 @@ class MultiTextViewerDialog(QtGui.QDialog):
         self.copy_btn.clicked.connect(self._copy)
         hbox.addWidget(self.copy_btn)
         hbox.addStretch(1)
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
-        self.buttonBox.accepted.connect(self.close)
-        hbox.addWidget(self.buttonBox)
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self.button_box.accepted.connect(self.close)
+        hbox.addWidget(self.button_box)
         vbox.addLayout(hbox)
 
         self.setLayout(vbox)
         self.resize(700, 500)
 
     def _text_browser(self, content):
-        tb = QtGui.QTextBrowser()
-        tb.setFontFamily("Courier")
-        tb.setText(content)
-        return tb
+        browser = QtGui.QTextBrowser()
+        browser.setFontFamily("Courier")
+        browser.setText(content)
+        return browser
 
     def _copy(self):
-        cb = QtGui.QApplication.clipboard()
-        cb.setText(self.tabs.currentWidget().toPlainText())
+        clipboard = QtGui.QApplication.clipboard()
+        clipboard.setText(self.tabs.currentWidget().toPlainText())
 
 class TextViewerDialog(MultiTextViewerDialog):
+    """
+    Simple text viewer dialog box
+    """
 
     def __init__(self, parent, title="Log", text=""):
         MultiTextViewerDialog.__init__(self, parent, title, [("", text)])
         self.tabs.tabBar().setVisible(False)
 
 class MatrixViewerDialog(QtGui.QDialog):
+    """
+    Dialog box enabling a read-only viewing of a number matrix
+    """
 
     def __init__(self, parent, vals, title="Data", text=""):
         super(MatrixViewerDialog, self).__init__(parent)
@@ -90,15 +103,18 @@ class MatrixViewerDialog(QtGui.QDialog):
         self.text = QtGui.QLabel(text)
         vbox.addWidget(self.text)
         
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        vbox.addWidget(self.buttonBox)
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        vbox.addWidget(self.button_box)
 
         self.setLayout(vbox)
         self.resize(500, 500)
 
 class GridEditDialog(QtGui.QDialog):
+    """
+    Dialog box enabling a numerical matrix to be edited
+    """
 
     def __init__(self, parent, vals, col_headers=None, row_headers=None, title="Data", text="", expandable=(True, True)):
         super(GridEditDialog, self).__init__(parent)
@@ -113,13 +129,13 @@ class GridEditDialog(QtGui.QDialog):
         self.text = QtGui.QLabel(text)
         vbox.addWidget(self.text)
         
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
-        vbox.addWidget(self.buttonBox)
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        vbox.addWidget(self.button_box)
 
         self.setLayout(vbox)
 
     def _validate(self):
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
+        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())

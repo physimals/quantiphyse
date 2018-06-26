@@ -6,16 +6,13 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-import collections
-import warnings
-
 from PySide import QtCore, QtGui
 import numpy as np
 
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
-from quantiphyse.utils import get_icon, LogSource
+from quantiphyse.utils import LogSource
 from quantiphyse.data import OrthoSlice, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
@@ -46,7 +43,7 @@ class OrthoView(pg.GraphicsView):
         self.focus_pos = [0, 0, 0, 0]
         self.slice_plane = None
         self.slice_vol = -1
-        self.slice_z  = -1
+        self.slice_z = -1
         self.force_redraw = True
         self._arrow_items = []
         self._data_views = []
@@ -76,12 +73,12 @@ class OrthoView(pg.GraphicsView):
 
         # Create static labels for the view directions
         self.labels = []
-        for ax in [self.xaxis, self.yaxis]:
-            self.labels.append(QtGui.QLabel(ax_labels[ax][0], parent=self))
-            self.labels.append(QtGui.QLabel(ax_labels[ax][1], parent=self))
-        for l in self.labels:
-            l.setVisible(False)
-            l.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        for axis in [self.xaxis, self.yaxis]:
+            self.labels.append(QtGui.QLabel(ax_labels[axis][0], parent=self))
+            self.labels.append(QtGui.QLabel(ax_labels[axis][1], parent=self))
+        for label in self.labels:
+            label.setVisible(False)
+            label.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.resizeEventOrig = self.resizeEvent
         self.resizeEvent = self.resize_win
 
@@ -89,10 +86,16 @@ class OrthoView(pg.GraphicsView):
         self.ivl.sig_arrows_changed.connect(self._arrows_changed)
     
     def add_data_view(self, view):
+        """
+        Add a data view instance to the ortho view
+        """
         self._data_views.append(view)
         view.sig_redraw.connect(self._update_slices)
 
     def remove_data_view(self, view):
+        """
+        Remove a data view instance from the ortho view
+        """
         view.sig_redraw.disconnect(self._update_slices)
         self._data_views.remove(view)
         self._update_slices()
@@ -134,19 +137,19 @@ class OrthoView(pg.GraphicsView):
         self.update()
 
     def _update_labels(self):
-        for l in self.labels:
-            l.setVisible(True)
+        for label in self.labels:
+            label.setVisible(True)
 
         # Flip left/right depending on the viewing convention selected
         if self.xaxis == 0:
             # X-axis is left/right
             self.vb.invertX(self.ivl.opts.orientation == 0)
             if self.ivl.opts.orientation == self.ivl.opts.RADIOLOGICAL:
-                l, r = 1, 0
+                left, right = 1, 0
             else:
-                l, r = 0, 1
-            self.labels[r].setText("R")
-            self.labels[l].setText("L")
+                left, right = 0, 1
+            self.labels[right].setText("R")
+            self.labels[left].setText("L")
 
     def _update_crosshairs(self):
         self.vline.setPos(float(self.focus_pos[self.xaxis]))
@@ -159,7 +162,7 @@ class OrthoView(pg.GraphicsView):
         Update arrows so only those visible are shown
         """
         current_zpos = int(self.focus_pos[self.zaxis] + 0.5)
-        for pos, col, item in self._arrow_items:
+        for pos, _, item in self._arrow_items:
             arrow_zpos = int(pos[self.zaxis] + 0.5)
             item.setVisible(current_zpos == arrow_zpos)
 
@@ -270,9 +273,9 @@ class DataSummary(QtGui.QWidget):
         hbox = QtGui.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
         self.vol_name = QtGui.QLineEdit()
-        p = self.vol_name.sizePolicy()
-        p.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
-        self.vol_name.setSizePolicy(p)
+        policy = self.vol_name.sizePolicy()
+        policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
+        self.vol_name.setSizePolicy(policy)
         hbox.addWidget(self.vol_name)
         hbox.setStretchFactor(self.vol_name, 1)
         self.vol_data = QtGui.QLineEdit()
@@ -292,6 +295,9 @@ class DataSummary(QtGui.QWidget):
         ivl.sig_focus_changed.connect(self._focus_changed)
 
     def show_options(self):
+        """
+        Show the view options dialog
+        """
         self.opts.show()
         self.opts.raise_()
 
@@ -348,7 +354,7 @@ class Navigator(LogSource):
     def _main_data_changed(self, data):
         if data is not None:
             self.data_grid = data.grid
-            self.data_axes = data.grid.get_ras_axes()[self.axis]
+            self.data_axis = data.grid.get_ras_axes()[self.axis]
 
             if self.axis < 3:
                 self._set_size(self.data_grid.shape[self.data_axis])
@@ -358,7 +364,7 @@ class Navigator(LogSource):
             self._focus_changed()
         else:
             self.data_grid = None
-            self.data_axes = self.axis
+            self.data_axis = self.axis
             self._set_size(1)
             self._pos = 0
 
@@ -390,8 +396,6 @@ class NavigationBox(QtGui.QGroupBox):
     def __init__(self, ivl):
         QtGui.QGroupBox.__init__(self)
         self.ivl = ivl
-        self.data_axes = None
-        self.data_grid = None
 
         grid = QtGui.QGridLayout()
         grid.setVerticalSpacing(2)
@@ -624,22 +628,22 @@ class ImageView(QtGui.QSplitter, LogSource):
         Maximise/Minimise view window
         If state=1, maximise, 0=show all, -1=toggle
         """
-        o1 = (win+1) % 3
-        o2 = (win+2) % 3
-        if state == 1 or (state == -1 and self.ortho_views[o1].isVisible()):
+        win1 = (win+1) % 3
+        win2 = (win+2) % 3
+        if state == 1 or (state == -1 and self.ortho_views[win1].isVisible()):
             # Maximise
             self.layout_grid.addWidget(self.ortho_views[win], 0, 0, 2, 2)
-            self.ortho_views[o1].setVisible(False)
-            self.ortho_views[o2].setVisible(False)
+            self.ortho_views[win1].setVisible(False)
+            self.ortho_views[win2].setVisible(False)
             self.ortho_views[win].setVisible(True)
-        elif state == 0 or (state == -1 and not self.ortho_views[o1].isVisible()):
+        elif state == 0 or (state == -1 and not self.ortho_views[win1].isVisible()):
             # Show all three
             self.layout_grid.addWidget(self.ortho_views[1], 0, 0)
             self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
             self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
-            for w in range(3):
-                self.ortho_views[w].setVisible(True)
-                self.ortho_views[w].update()
+            for oview in range(3):
+                self.ortho_views[oview].setVisible(True)
+                self.ortho_views[oview].update()
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
@@ -655,15 +659,15 @@ class ImageView(QtGui.QSplitter, LogSource):
             self.debug("RAS aligned")
             self.debug(self.grid.affine)
 
-            f = [int(v/2) for v in data.grid.shape] + [int(data.nvols/2)]
-            self.debug("Initial focus (data): %s", f)
-            self.set_focus(f, grid=data.grid)
+            initial_focus = [int(v/2) for v in data.grid.shape] + [int(data.nvols/2)]
+            self.debug("Initial focus (data): %s", initial_focus)
+            self.set_focus(initial_focus, grid=data.grid)
             self.debug("Initial focus (std): %s", self._pos)
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
             self._toggle_maximise(0, state=0)
             data_axes = data.grid.get_ras_axes()
-            for d in range(3):
-                self.ortho_views[d].reset()
-                if data.grid.shape[data_axes[d]] == 1:
-                    self._toggle_maximise(d, state=1)
+            for idx in range(3):
+                self.ortho_views[idx].reset()
+                if data.grid.shape[data_axes[idx]] == 1:
+                    self._toggle_maximise(idx, state=1)

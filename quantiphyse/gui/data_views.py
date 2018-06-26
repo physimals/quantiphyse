@@ -7,14 +7,17 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import division, unicode_literals, absolute_import, print_function
 
 import collections
+import logging
 
 from PySide import QtCore, QtGui
 import numpy as np
 
 import pyqtgraph as pg
 
-from quantiphyse.utils import get_lut, get_pencol, debug, get_icon
+from quantiphyse.utils import get_lut, get_pencol, get_icon
 from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
+
+LOG = logging.getLogger(__name__)
 
 class MaskableImage(pg.ImageItem):
     """

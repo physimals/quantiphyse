@@ -21,7 +21,8 @@ class QpException(Exception):
     QpException instead). A stack trace will be displayed.
     
     Currently we do not define more specific subclasses although this
-    might be useful in the future"""
+    might be useful in the future
+    """
 
     def __init__(self, msg, detail=None):
         super(QpException, self).__init__(msg)
@@ -29,5 +30,10 @@ class QpException(Exception):
         self.detail = detail
 
     def __str__(self):
-        """ Don't want QpException: in front of message"""
+        """ 
+        String representation of exception
+        
+        Don't want QpException: in front of message as this type of exception
+        is for the user to see
+        """
         return self.msg

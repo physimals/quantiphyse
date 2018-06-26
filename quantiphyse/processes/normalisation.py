@@ -8,8 +8,6 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from quantiphyse.utils import debug
-
 def norm_percentile(data, percentile=90):
     """
     Normalise the data by dividing by a given percentile
@@ -59,6 +57,13 @@ def norm_sigenh(data, nvols=3):
     return data / (baseline_expanded + 0.001) - 1
 
 def normalise(data, method, **kwargs):
+    """
+    Normalise data using named method
+
+    :param data: Numpy array containing data to be normalised
+    :param method: One of ``perc``, ``median``, ``indiv``, or ``sigenh``
+    :return: Normalised data as matching Numpy array
+    """
     norm_methods = {
         "perc" : norm_percentile,
         "median" : norm_median,
@@ -69,4 +74,3 @@ def normalise(data, method, **kwargs):
         return norm_methods[method](data, **kwargs)
     else:
         raise ValueError("Unknown normalisation method: %s" % method)
-

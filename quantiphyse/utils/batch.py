@@ -20,7 +20,7 @@ from quantiphyse.processes.misc import *
 
 from quantiphyse.data import ImageVolumeManagement, load, save
 
-from . import debug, warn, get_debug, set_debug, get_plugins, ifnone
+from . import set_debug, get_plugins, ifnone
 from .exceptions import QpException
 
 # Default basic processes - all others are imported from packages
@@ -94,8 +94,8 @@ class Script(Process):
         elif "yaml" in options:
             root = yaml.load(options.pop("yaml"))
         elif "yaml-file" in options:
-            with open(options.pop("yaml-file"), "r") as f:
-                root = yaml.load(f)
+            with open(options.pop("yaml-file"), "r") as yaml_file:
+                root = yaml.load(yaml_file)
         else:
             raise RuntimeError("Neither filename nor YAML code provided")
 
@@ -160,7 +160,7 @@ class Script(Process):
             case = self._cases[self._case_num]
             self._case_num += 1
             self.sig_start_case.emit(case)
-            self.debug("Starting case %s" % case.case_id)
+            self.debug("Starting case %s", case.case_id)
             self._start_case(case)
         else:
             self.debug("All cases complete")
@@ -233,9 +233,9 @@ class Script(Process):
             self.sig_start_process.emit(process, dict(proc_params))
             process.execute(proc_params)
         
-        except Exception as e:
+        except Exception as exc:
             # Could not create process - treat as process failure
-            self._process_finished(Process.FAILED, "Process failed to start: " + str(e), e)
+            self._process_finished(Process.FAILED, "Process failed to start: " + str(exc), exc)
         finally:
             #set_debug(debug_orig)
             pass
@@ -300,6 +300,7 @@ class BatchScript(Script):
     def __init__(self, ivm=None, stdout=sys.stdout, **kwargs):
         Script.__init__(self, ivm, **kwargs)
         self.stdout = stdout
+        self.start = None
         self._quit_on_exit = kwargs.get("quit_on_exit", True)
 
         self.sig_start_case.connect(self._log_start_case)
@@ -329,12 +330,12 @@ class BatchScript(Script):
             fname = os.path.join(process.outdir, "%s.log" % process.proc_id)
             self._save_text(process.log, fname)
             if params:
-                warn("Unused parameters")
-                for k, v in params.items():
-                    warn("%s=%s" % (str(k), str(v)))
+                self.warn("Unused parameters")
+                for key, val in params.items():
+                    self.warn("%s=%s", str(key), str(val))
         else:
             self.stdout.write(" FAILED: %i\n" % process.status)
-            warn(str(process.exception))
+            self.warn(str(process.exception))
             self.debug(traceback.format_exc(process.exception))
 
     def _log_progress(self, complete):
@@ -356,5 +357,5 @@ class BatchScript(Script):
             if "." not in fname: fname = "%s.%s" % (fname, ext)
             dirname = os.path.dirname(fname)
             if not os.path.exists(dirname): os.makedirs(dirname)
-            with open(fname, "w") as f:
-                f.write(text)
+            with open(fname, "w") as text_file:
+                text_file.write(text)

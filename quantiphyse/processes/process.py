@@ -14,22 +14,16 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import LogSource, debug, get_debug, QpException, get_plugins, set_local_file_path
+from quantiphyse.utils import LogSource, get_debug, QpException, get_plugins, set_local_file_path
 
-""" 
-Multiprocessing pool 
-"""
+#: Multiprocessing pool 
 _POOL = None
 
-""" 
-Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are 
-column-major by default
-"""
+#: Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays 
+#: which are column-major by default
 SPLIT_AXIS = 0
 
-"""
-Whether to use multiprocessing - can be disabled for debugging
-"""
+#: Whether to use multiprocessing - can be disabled for debugging
 MULTIPROC = True
 
 LOG = logging.getLogger(__name__)
@@ -43,7 +37,7 @@ def _init_pool():
     global _POOL
     if _POOL is None: 
         n_workers = multiprocessing.cpu_count()
-        LOG.debug("Initializing multiprocessing using %i workers" % n_workers)
+        LOG.debug("Initializing multiprocessing using %i workers", n_workers)
         _POOL = multiprocessing.Pool(n_workers, initializer=_worker_initialize)
 
 class Process(QtCore.QObject, LogSource):
@@ -100,25 +94,16 @@ class Process(QtCore.QObject, LogSource):
               method 
     """
 
-    """ 
-    Signal which may be emitted to track progress 
-
-    Argument should be between 0 and 1 and indicate degree of completion
-    """
+    #: Signal which may be emitted to track progress 
+    #: Argument should be between 0 and 1 and indicate degree of completion
     sig_progress = QtCore.Signal(float)
 
-    """ 
-    Signal which will be emitted when process finishes
-    
-    Arguments: (status, log, if status not SUCCEEDED or CANCELLED, exception, otherwise object())
-    """
+    #: Signal which will be emitted when process finishes
+    #: Arguments: (status, log, if status not SUCCEEDED or CANCELLED, exception, otherwise object())
     sig_finished = QtCore.Signal(int, str, object)
 
-    """ 
-    Signal which may be emitted when the process starts a new step
-    
-    Arguments is text description
-    """
+    #: Signal which may be emitted when the process starts a new step
+    #: Arguments is text description
     sig_step = QtCore.Signal(str)
 
     NOTSTARTED = 0
@@ -203,9 +188,9 @@ class Process(QtCore.QObject, LogSource):
             self.run(options)
             if self.status == self.NOTSTARTED:
                 self.status = self.SUCCEEDED
-        except Exception, e:
+        except Exception as exc:
             self.status = self.FAILED
-            self.exception = e
+            self.exception = exc
             if get_debug():
                 traceback.print_exc()
 
@@ -244,14 +229,15 @@ class Process(QtCore.QObject, LogSource):
             self.debug("Multivol: nvols=", nvols)
             grid = None
             num_vols = 0
-            for data in multi_data:
+            for data_item in multi_data:
                 if grid is None:
-                    grid = data.grid
-                data = data.resample(grid)
-                if data.nvols == 1:
-                    rawdata = np.expand_dims(data.raw(), 3)
+                    grid = data_item.grid
+                    data = np.zeros(list(grid.shape) + [nvols,])
+                data_item = data_item.resample(grid)
+                if data_item.nvols == 1:
+                    rawdata = np.expand_dims(data_item.raw(), 3)
                 else:
-                    rawdata = d.raw()
+                    rawdata = data_item.raw()
                 data[..., num_vols:num_vols+data.nvols] = rawdata
                 num_vols += data.nvols
             data = NumpyData(data, grid=grid, name="multi_data")
@@ -316,18 +302,6 @@ class Process(QtCore.QObject, LogSource):
         worker run function.
 
         :param args: Sequence of arguments to the worker run function. All must be pickleable objects
-        """
-        """
-        Split input arguments into chunks and run in parallel. 
-        
-        This would normally called by run() after setting up the arguments to pass to the 
-        worker run function.
-
-        
-        :param args: Sequence of arguments to the worker run function. All must be pickleable objects.
-                     By default Numpy arrays will be split along SPLIT_AXIS and a chunk passed to each
-                     worker.
-        :param n_workers: Number of parallel worker processes to use
         """
         worker_args = self.split_args(n_workers, args)
         self.worker_output = [None, ] * n_workers
@@ -396,12 +370,17 @@ class Process(QtCore.QObject, LogSource):
     
     def split_args(self, n_workers, args):
         """
-        Split function arguments up across workers. 
-
-        Numpy arrays are split along SPLIT_AXIS, other types of argument
-        are simply copied
+        Split input arguments into chunks for running in parallel
         
+        This would normally called by run() after setting up the arguments to pass to the 
+        worker run function.
+
         Note that this can be overridden to customize splitting behaviour
+        
+        :param args: Sequence of arguments to the worker run function. All must be pickleable objects.
+                     By default Numpy arrays will be split along SPLIT_AXIS and a chunk passed to each
+                     worker.
+        :param n_workers: Number of parallel worker processes to use
         """
         # First argument is worker ID, second is queue
         split_args = [range(n_workers), [self.queue,] * n_workers]
@@ -424,20 +403,20 @@ class Process(QtCore.QObject, LogSource):
         could be overridden, especially if split_data has been overridden.
         """
         shape = None
-        for d in data_list:
-            if d is not None:
-                shape = d.shape
+        for data_item in data_list:
+            if data_item is not None:
+                shape = data_item.shape
         if shape is None:
             raise RuntimeError("No data to re-combine")
         else:
             self.debug("Recombining data with shape", shape)
         empty = np.zeros(shape)
         real_data = []
-        for data in data_list:
-            if data is None:
+        for data_item in data_list:
+            if data_item is None:
                 real_data.append(empty)
             else:
-                real_data.append(data)
+                real_data.append(data_item)
         
         return np.concatenate(real_data, SPLIT_AXIS)
 
@@ -455,9 +434,9 @@ class Process(QtCore.QObject, LogSource):
                 self.timeout()
                 self.finished()
                 self.sig_progress.emit(1)
-            except Exception as e:
+            except Exception as exc:
                 self.status = self.FAILED
-                self.exception = e
+                self.exception = exc
             
         self.sig_finished.emit(self.status, self.log, self.exception)
 

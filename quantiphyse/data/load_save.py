@@ -21,15 +21,15 @@ import logging
 
 import nibabel as nib
 import numpy as np
-import nrrd
 
 from quantiphyse.utils import QpException
 from .qpdata import DataGrid, QpData
 
 HAVE_DCMSTACK = True
 try:
-    import dcmstack, dicom
-except:
+    import dcmstack
+    import dicom
+except ImportError:
     HAVE_DCMSTACK = False
     warnings.warn("DCMSTACK not found - may not be able to read DICOM folders")
 
@@ -37,6 +37,9 @@ QP_NIFTI_EXTENSION_CODE = 42
 LOG = logging.getLogger(__name__)
 
 class NumpyData(QpData):
+    """
+    QpData instance with in-memory Numpy data
+    """
     def __init__(self, data, grid, name, **kwargs):
         # Unlikely but possible that first data is added from the console
         if grid is None:
@@ -60,6 +63,9 @@ class NumpyData(QpData):
         return self.rawdata
 
 class NiftiData(QpData):
+    """
+    QpData from a Nifti file
+    """
     def __init__(self, fname):
         self.nii = nib.load(fname)
         shape = list(self.nii.shape)
@@ -124,6 +130,9 @@ class NiftiData(QpData):
         return arr
 
 class DicomFolder(QpData):
+    """
+    QpData instance loaded from a directory of DICOM files
+    """
     def __init__(self, fname):
         # A directory containing DICOMs. Convert them to Nifti
         print("Converting DICOMS in %s..." % (os.path.basename(fname)))
@@ -184,9 +193,9 @@ class DicomFolder(QpData):
                 print(dcm_affine)
                 try:
                     # Need all three of these to be of use
-                    ss = dcm[0x2005,0x100e].value
-                    rs = dcm[0x2005,0x140a].value
-                    ri = dcm[0x2005,0x1409].value
+                    ss = dcm[0x2005, 0x100e].value
+                    rs = dcm[0x2005, 0x140a].value
+                    ri = dcm[0x2005, 0x1409].value
                 except:
                     pass
                 first = False
@@ -217,7 +226,7 @@ class DicomFolder(QpData):
         data = np.zeros([dcm1.image_shape[0], dcm1.image_shape[1], len(slices), int(n_vols)])
         sidx, vidx = 0, 0
         for dcm in sorted(dcms, key=lambda x: x.GlobalIndex):
-            data[:,:,sidx, vidx] = (np.squeeze(dcm.pixel_array)*rs + ri)/ss
+            data[:, :, sidx, vidx] = (np.squeeze(dcm.pixel_array)*rs + ri)/ss
             sidx += 1
             if sidx == len(slices):
                 sidx = 0
@@ -227,22 +236,29 @@ class DicomFolder(QpData):
         nii.update_header()
         print("DONE")
         return nii
-        
-class NttrData(QpData):
-    def __init__(self, fname):
-        raise RuntimeError("NRRD support not currently enabled")
 
 def load(fname):
+    """
+    Load a data file
+
+    :return: QpData instance
+    """
     if os.path.isdir(fname):
         return DicomFolder(fname)
     elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
         return NiftiData(fname)
-    elif fname.endswith(".nrrd"):
-        return NttrData(fname)
     else:
         raise QpException("%s: Unrecognized file type" % fname)
 
 def save(data, fname, grid=None, outdir=""):
+    """
+    Save data to a file
+    
+    :param data: QpData instance
+    :param fname: File name
+    :param grid: If specified, grid to save the data on
+    :param outdir: Optional output directory if fname is not absolute
+    """
     if grid is None:
         grid = data.grid
         arr = data.raw()
@@ -277,6 +293,6 @@ def save(data, fname, grid=None, outdir=""):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    LOG.debug("Saving %s as %s" % (data.name, fname))
+    LOG.debug("Saving %s as %s", data.name, fname)
     img.to_filename(fname)
     data.fname = fname

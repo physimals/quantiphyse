@@ -144,4 +144,3 @@ class PcaFeatReduce(LogSource):
         if smooth_timeseries is not None:
             data_inmask = gaussian_filter1d(data_inmask, sigma=smooth_timeseries, axis=-1)
         return data_inmask, roi
-    

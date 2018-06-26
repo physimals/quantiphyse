@@ -11,8 +11,6 @@ import numpy as np
 
 import pyqtgraph as pg
 
-from ..utils import debug
-
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
     A histogram widget which has one array of 'source' data
@@ -41,9 +39,15 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         self._update_histogram()
 
     def add_img(self, img):
+        """
+        Add a pyqtgraph.ImageItem to the histogram
+        """
         self.imgs.append(img)
 
     def remove_img(self, img):
+        """
+        Remove a pyqtgraph.ImageItem from the histogram
+        """
         self.imgs.remove(img)
 
     def _view_changed(self):
@@ -53,7 +57,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
                 try:
                     self.gradient.loadPreset(self.view.opts["cmap"])
                 except KeyError:
-                    self._setMatplotlibGradient(self.view.opts["cmap"])
+                    self._set_matplotlib_gradient(self.view.opts["cmap"])
             
             if self.view.opts["cmap_range"] is not None:
                 self.region.setRegion(self.view.opts["cmap_range"])
@@ -81,10 +85,10 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         if self.view.data is not None:
             arr = self.view.data.volume(self.vol)
             flat = arr.reshape(-1)
-            ii = pg.ImageItem(flat.reshape([1, -1]))
-            h = ii.getHistogram()
-            if h[0] is None: return
-            self.plot.setData(*h)
+            img = pg.ImageItem(flat.reshape([1, -1]))
+            hist = img.getHistogram()
+            if hist[0] is None: return
+            self.plot.setData(*hist)
 
     def _get_image_lut(self, img):
         lut = self.getLookupTable(img, alpha=True)
@@ -95,7 +99,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         #self.lut = lut
         return lut
 
-    def _setMatplotlibGradient(self, name):
+    def _set_matplotlib_gradient(self, name):
         """
         Slightly hacky method to copy MatPlotLib gradients to pyqtgraph.
 

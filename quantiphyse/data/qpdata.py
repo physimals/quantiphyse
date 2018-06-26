@@ -23,16 +23,16 @@ import math
 import numpy as np
 import scipy
 
-from quantiphyse.utils import LogSource, sf, QpException
+from quantiphyse.utils import sf, QpException
 
 # Private copy of pyqtgraph functions for bug fixes
 from . import functions as pg
 
-"""
-Tolerance for treating values as equal
-Used to determine if matrices are diagonal or identity
-"""
+#: Tolerance for treating values as equal
+#: Used to determine if matrices are diagonal or identity
 EQ_TOL = 1e-3
+
+LOG = logging.getLogger(__name__)
 
 def is_diagonal(mat):
     """
@@ -54,12 +54,12 @@ def is_ortho_vector(vec, shape=1):
     """
     tol = EQ_TOL / shape
     mod = np.linalg.norm(vec)
-    for ax, v in enumerate(vec):
-        if abs(abs(v/mod)-1) < tol:
-            return ax, math.copysign(1, v)
+    for axis, val in enumerate(vec):
+        if abs(abs(val/mod)-1) < tol:
+            return axis, math.copysign(1, val)
     return None, None
 
-class DataGrid(LogSource):
+class DataGrid(object):
     """
     Defines a regular 3D grid in some 'world' space
 
@@ -80,7 +80,6 @@ class DataGrid(LogSource):
         :param shape: Sequence of 3 integers giving number of voxels along each axis
         :param affine: 4x4 affine transformation to world co-ordinates
         """
-        LogSource.__init__(self)
         # Dimensionality of the grid - 3D only
         if len(shape) != 3:
             raise RuntimeError("Grid shape must be 3D")
@@ -98,8 +97,8 @@ class DataGrid(LogSource):
 
         self.spacing = [np.linalg.norm(self.affine[:, i]) for i in range(3)]
         self.nvoxels = 1
-        for d in range(3):
-            self.nvoxels *= shape[d]
+        for dim in range(3):
+            self.nvoxels *= shape[dim]
 
     def grid_to_grid(self, coord, from_grid=None, to_grid=None, direction=False):
         """
@@ -202,33 +201,33 @@ class DataGrid(LogSource):
         dim_order, dim_flip = [], []
 
         absmat = np.absolute(mat)
-        for d in range(3):
-            newd = np.argmax(absmat[:, d])
+        for dim in range(3):
+            newd = np.argmax(absmat[:, dim])
             dim_order.append(newd)
-            if mat[newd, d] < 0:
+            if mat[newd, dim] < 0:
                 dim_flip.append(newd)
 
         new_mat = np.copy(mat)
         if sorted(dim_order) == range(3):
             # The transposition was consistent, so use it
-            self.debug("Before simplification")
-            self.debug(new_mat)
+            LOG.debug("Before simplification")
+            LOG.debug(new_mat)
             new_shape = [self.shape[d] for d in dim_order]
-            for idx, d in enumerate(dim_order):
-                new_mat[:, d] = mat[:, idx]
-            self.debug("After transpose %s", dim_order)
-            self.debug(new_mat)
+            for idx, dim in enumerate(dim_order):
+                new_mat[:, dim] = mat[:, idx]
+            LOG.debug("After transpose %s", dim_order)
+            LOG.debug(new_mat)
             for dim in dim_flip:
                 # Change signs to positive to flip a dimension
                 new_mat[:, dim] = -new_mat[:, dim]
-            self.debug("After flip %s", dim_flip)
-            self.debug(new_mat)
+            LOG.debug("After flip %s", dim_flip)
+            LOG.debug(new_mat)
             for dim in dim_flip:
                 # Adjust origin
                 new_mat[:3, 3] = new_mat[:3, 3] - new_mat[:3, dim] * (new_shape[dim]-1)
 
-            self.debug("After adjust origin %s", new_shape)
-            self.debug(new_mat)
+            LOG.debug("After adjust origin %s", new_shape)
+            LOG.debug(new_mat)
 
             return dim_order, dim_flip, new_mat
         else:
@@ -257,19 +256,19 @@ class OrthoSlice(DataGrid):
         affine = np.zeros((4, 4))
         shape = [1, 1, 1]
         col = 0
-        for ax in range(3):
-            if ax != zaxis:
-                affine[:, col] = grid.affine[:, ax]
-                shape[col] = grid.shape[ax]
+        for axis in range(3):
+            if axis != zaxis:
+                affine[:, col] = grid.affine[:, axis]
+                shape[col] = grid.shape[axis]
                 col += 1
             else:
-                affine[:, 2] = grid.affine[:, ax]
+                affine[:, 2] = grid.affine[:, axis]
         affine[:, 3] = grid.affine[:, 3] + pos * affine[:, 2]
         DataGrid.__init__(self, shape, affine)
         self.basis = [tuple(self.transform[:, 0]), tuple(self.transform[:, 1])]
         self.normal = tuple(self.transform[:, 2])
 
-class QpData(LogSource):
+class QpData(object):
     """
     3D or 4D data
 
@@ -288,8 +287,6 @@ class QpData(LogSource):
     """
 
     def __init__(self, name, grid, nvols, fname=None, metadata=None, roi=False):
-        LogSource.__init__(self)
-        
         # Everyone needs a friendly name
         self.name = name
 
@@ -366,7 +363,7 @@ class QpData(LogSource):
             rawdata = rawdata[:, :, :, min(vol, self.nvols-1)]
         return rawdata
 
-    def value(self, pos, grid=None, str=False):
+    def value(self, pos, grid=None, as_str=False):
         """
         Return the data value at a point
 
@@ -389,7 +386,7 @@ class QpData(LogSource):
             except IndexError:
                 value = 0
 
-        if str:
+        if as_str:
             return sf(value)
         else:
             return value
@@ -480,10 +477,10 @@ class QpData(LogSource):
         """
         data = self.raw()
 
-        self.debug("Resampling from:")
-        self.debug(self.grid.affine)
-        self.debug("To:")
-        self.debug(grid.affine)
+        LOG.debug("Resampling from:")
+        LOG.debug(self.grid.affine)
+        LOG.debug("To:")
+        LOG.debug(grid.affine)
 
         # Affine transformation matrix from current grid to new grid
         tmatrix = np.dot(np.linalg.inv(grid.affine), self.grid.affine)
@@ -496,9 +493,9 @@ class QpData(LogSource):
                 reorder = reorder + [3]
             data = np.transpose(data, reorder)
             
-        if len(flip) != 0:
-            for d in flip:
-                data = np.flip(data, d)
+        if flip:
+            for dim in flip:
+                data = np.flip(data, dim)
 
         if not is_identity(tmatrix):
             # We were not able to reduce the transformation down to flips/transpositions
@@ -518,11 +515,11 @@ class QpData(LogSource):
             if is_diagonal(affine):
                 # The transformation is diagonal, so use faster sequence mode
                 affine = np.diagonal(affine)
-            #self.debug("WARNING: affine_transform: ")
-            #self.debug(affine)
-            #self.debug("Offset = ", offset)
-            #self.debug("Input shape=", data.shape, data.min(), data.max())
-            #self.debug("Output shape=", output_shape)
+            #LOG.debug("WARNING: affine_transform: ")
+            #LOG.debug(affine)
+            #LOG.debug("Offset = ", offset)
+            #LOG.debug("Input shape=", data.shape, data.min(), data.max())
+            #LOG.debug("Output shape=", output_shape)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
                                                   output_shape=output_shape, order=order)
 
@@ -556,12 +553,12 @@ class QpData(LogSource):
         data_axes = range(3)
         del data_axes[data_naxis]
         slice_basis, slice_shape = [], []
-        for ax in data_axes:
+        for axis in data_axes:
             vec = [0, 0, 0]
-            vec[ax] = 1
-            vec[data_naxis] = -(data_scaled_normal[ax] / data_scaled_normal[data_naxis])
+            vec[axis] = 1
+            vec[data_naxis] = -(data_scaled_normal[axis] / data_scaled_normal[data_naxis])
             slice_basis.append(vec)
-            slice_shape.append(rawdata.shape[ax])
+            slice_shape.append(rawdata.shape[axis])
 
         trans_v = np.array([
             np.array(self.grid.grid_to_grid(slice_basis[0], to_grid=plane, direction=True)),
@@ -577,7 +574,7 @@ class QpData(LogSource):
         ax1, sign1 = is_ortho_vector(slice_basis[0], slice_shape[0])
         ax2, sign2 = is_ortho_vector(slice_basis[1], slice_shape[0])
         if ax1 is not None and ax2 is not None:
-            #self.debug("\nOrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
+            #LOG.debug("\nOrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
             slices = [None, None, None]
             slices[ax1] = self._get_slice(rawdata.shape[ax1], sign1)
             slices[ax2] = self._get_slice(rawdata.shape[ax2], sign2)
@@ -585,40 +582,40 @@ class QpData(LogSource):
             pos = int(math.floor(data_origin[data_naxis]+0.5))
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
                 slices[data_naxis] = pos
-                self.debug("Using Numpy slice: %s %s", slices, rawdata.shape)
+                LOG.debug("Using Numpy slice: %s %s", slices, rawdata.shape)
                 sdata = rawdata[slices]
                 smask = np.ones(slice_shape)
             else:
                 # Requested slice is outside the data range
-                self.debug("Outside data range: %i, %i" % (pos, rawdata.shape[data_naxis]))
+                LOG.debug("Outside data range: %i, %i", pos, rawdata.shape[data_naxis])
                 sdata = np.zeros(slice_shape)
                 smask = np.zeros(slice_shape)
         else:
-            self.debug("Full affine slice")
+            LOG.debug("Full affine slice")
 
-            #self.debug("OrthoSlice: plane origin: %s" % str(plane.origin))
-            #self.debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
-            #self.debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
-            #self.debug("OrthoSlice: plane n: %s" % str(plane.normal))
-            #self.debug("OrthoSlice: Plane affine")
-            #self.debug(plane.affine)
+            #LOG.debug("OrthoSlice: plane origin: %s" % str(plane.origin))
+            #LOG.debug("OrthoSlice: plane v1: %s" % str(plane.basis[0]))
+            #LOG.debug("OrthoSlice: plane v2: %s" % str(plane.basis[1]))
+            #LOG.debug("OrthoSlice: plane n: %s" % str(plane.normal))
+            #LOG.debug("OrthoSlice: Plane affine")
+            #LOG.debug(plane.affine)
 
-            #self.debug("OrthoSlice: data origin: %s" % str(data_origin))
-            #self.debug("OrthoSlice: data n: %s" % str(data_normal))
-            #self.debug("OrthoSlice: data naxis: %i" % data_naxis)
-            #self.debug("OrthoSlice: data affine")
-            #self.debug(self.grid.affine)
+            #LOG.debug("OrthoSlice: data origin: %s" % str(data_origin))
+            #LOG.debug("OrthoSlice: data n: %s" % str(data_normal))
+            #LOG.debug("OrthoSlice: data naxis: %i" % data_naxis)
+            #LOG.debug("OrthoSlice: data affine")
+            #LOG.debug(self.grid.affine)
             
-            #self.debug("OrthoSlice: new normal=", data_scaled_normal)
-            #self.debug("OrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
-            #self.debug("OrthoSlice: trans matrix:\n%s" % (str(trans_v)))
-            #self.debug("OrthoSlice: slice origin=", slice_origin)
-            #self.debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
-            #self.debug("OrthoSlice: new plane offset: %s" % (str(offset)))
+            #LOG.debug("OrthoSlice: new normal=", data_scaled_normal)
+            #LOG.debug("OrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
+            #LOG.debug("OrthoSlice: trans matrix:\n%s" % (str(trans_v)))
+            #LOG.debug("OrthoSlice: slice origin=", slice_origin)
+            #LOG.debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
+            #LOG.debug("OrthoSlice: new plane offset: %s" % (str(offset)))
             
-            #self.debug("Origin: ", slice_origin)
-            #self.debug("Basis", slice_basis)
-            #self.debug("Shape", slice_shape)
+            #LOG.debug("Origin: ", slice_origin)
+            #LOG.debug("Basis", slice_basis)
+            #LOG.debug("Shape", slice_shape)
             if self.roi:
                 # Use nearest neighbour interpolation for ROIs
                 sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), order=0)
@@ -631,7 +628,7 @@ class QpData(LogSource):
                 smask = np.ones(sdata.shape)
                 smask[sdata < dmin] = 0
                 sdata[sdata < dmin] = 0
-            self.debug("Done affine slice")
+            LOG.debug("Done affine slice")
 
         return sdata, smask, trans_v, offset
 
@@ -661,6 +658,9 @@ class QpData(LogSource):
         self.grid.shape[2] = 1
 
     def regions(self):
+        """
+        :return: Sequence of distinct ROI region integers, not including zero
+        """
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
         
@@ -703,10 +703,10 @@ class QpData(LogSource):
             raise RuntimeError("get_bounding_box() called on non-ROI data")
 
         slices = [slice(None)] * ndim
-        for d in range(min(ndim, 3)):
-            ax = [i for i in range(3) if i != d]
-            nonzero = np.any(self.raw(), axis=tuple(ax))
-            s1, s2 = np.where(nonzero)[0][[0, -1]]
-            slices[d] = slice(s1, s2+1)
+        for dim in range(min(ndim, 3)):
+            axes = [i for i in range(3) if i != dim]
+            nonzero = np.any(self.raw(), axis=tuple(axes))
+            bb_start, bb_start = np.where(nonzero)[0][[0, -1]]
+            slices[dim] = slice(bb_start, bb_start+1)
 
         return slices

@@ -23,7 +23,7 @@ def set_debug(enable_debug):
     else:
         BASE_LOG.setLevel(logging.WARN)
 
-def get_debug(name=None):
+def get_debug():
     """
     Get the generic debug level
 
