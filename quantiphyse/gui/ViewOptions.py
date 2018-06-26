@@ -195,7 +195,6 @@ class ViewOptions(QtGui.QDialog):
         dlg = ScaleEditDialog(self, self.t_scale)
         if dlg.exec_():
             self.t_scale = dlg.table.values()
-            debug("New t-scale: ", self.t_scale)
         self.sig_options_changed.emit(self)
 
     def t_unit_changed(self):

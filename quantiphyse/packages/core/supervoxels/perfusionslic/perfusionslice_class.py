@@ -12,11 +12,11 @@ import numpy as np
 import scipy.ndimage as ndi
 
 from quantiphyse.processes.feat_pca import PcaFeatReduce
-from quantiphyse.utils import debug
+from quantiphyse.utils import LogSource
 
 from . import slic_feat
 
-class PerfSLIC(object):
+class PerfSLIC(LogSource):
     """
     PerfSLIC
     Object that creates and visualises supervoxels created from 4D perfusion images
@@ -31,6 +31,7 @@ class PerfSLIC(object):
         :param vox_size: voxel size of loaded image
         :return:
         """
+        LogSource.__init__(self)
 
         self.img1 = img
         # cython is sensitive to the double definition
@@ -54,7 +55,7 @@ class PerfSLIC(object):
 
         # ~~~~~~~~~~~~~~~~~~~~~ 1) Normalise enhancement curves (optional) ~~~~~~~~~~~~~~~~~~~~~~
 
-        debug("Image norm")
+        self.debug("Image norm")
         baseline1 = np.mean(self.img1[:, :, :, :3], axis=-1)
         self.img1 = self.img1 - np.tile(np.expand_dims(baseline1, axis=-1), (1, 1, 1, self.img1.shape[-1]))
 
@@ -137,7 +138,7 @@ class PerfSLIC(object):
         """
 
         # saving nearest neighbour data
-        debug("Converting neighbour array to list...")
+        self.debug("Converting neighbour array to list...")
         neigh_store = []
         for pp in range(self.adj_mat.shape[0]):
             n1_ar = np.array(self.adj_mat[int(pp), :] == 1)

@@ -15,7 +15,7 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 
-from quantiphyse.utils import get_icon, debug
+from quantiphyse.utils import get_icon, LogSource
 from quantiphyse.data import OrthoSlice, DataGrid
 from quantiphyse.gui.widgets import OptionsButton
 
@@ -312,12 +312,13 @@ class DataSummary(QtGui.QWidget):
         if self.ivl.ivm.current_data is not None:
             self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, str=True))
 
-class Navigator:
+class Navigator(LogSource):
     """
     Slider control which alters position along an axis
     """
 
     def __init__(self, ivl, label, axis, layout_grid, layout_ypos):
+        LogSource.__init__(self)
         self.ivl = ivl
         self.axis = axis
         self.data_axis = axis
@@ -364,7 +365,7 @@ class Navigator:
     def _focus_changed(self):
         if self.data_grid is not None:
             self._pos = int(self.ivl.focus(self.data_grid)[self.data_axis]+0.5)
-            debug("Pos for slider", self.axis, self._pos)
+            self.debug("Pos for slider %i %i", self.axis, self._pos)
             try:
                 self.slider.blockSignals(True)
                 self.spin.blockSignals(True)
@@ -405,7 +406,7 @@ class NavigationBox(QtGui.QGroupBox):
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 2)
 
-class ImageView(QtGui.QSplitter):
+class ImageView(QtGui.QSplitter, LogSource):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus
     navigation sliders and data summary view.
@@ -440,7 +441,8 @@ class ImageView(QtGui.QSplitter):
     sig_selection_changed = QtCore.Signal(object)
 
     def __init__(self, ivm, opts):
-        super(ImageView, self).__init__(QtCore.Qt.Vertical)
+        LogSource.__init__(self)
+        QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
 
         self.grid = DataGrid([1, 1, 1], np.identity(4))
         self._pos = [0, 0, 0, 0]
@@ -549,7 +551,7 @@ class ImageView(QtGui.QSplitter):
         if len(self._pos) != 4:
             raise Exception("Position must be 4D")
 
-        debug("Cursor position: ", self._pos)
+        self.debug("Cursor position: %s", self._pos)
         self.sig_focus_changed.emit(self._pos)
 
     def set_picker(self, pickmode):
@@ -648,15 +650,15 @@ class ImageView(QtGui.QSplitter):
     def _main_data_changed(self, data):
         if data is not None:
             self.grid = data.grid.get_standard()
-            debug("Main data raw grid")
-            debug(data.grid.affine)
-            debug("RAS aligned")
-            debug(self.grid.affine)
+            self.debug("Main data raw grid")
+            self.debug(data.grid.affine)
+            self.debug("RAS aligned")
+            self.debug(self.grid.affine)
 
             f = [int(v/2) for v in data.grid.shape] + [int(data.nvols/2)]
-            debug("Initial focus (data): ", f)
+            self.debug("Initial focus (data): %s", f)
             self.set_focus(f, grid=data.grid)
-            debug("Initial focus (std): ", self._pos)
+            self.debug("Initial focus (std): %s", self._pos)
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice
             self._toggle_maximise(0, state=0)

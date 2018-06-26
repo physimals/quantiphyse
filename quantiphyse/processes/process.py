@@ -8,12 +8,13 @@ import multiprocessing
 import multiprocessing.pool
 import threading
 import traceback
+import logging
 
 import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import debug, warn, get_debug, QpException, get_plugins, set_local_file_path
+from quantiphyse.utils import LogSource, debug, get_debug, QpException, get_plugins, set_local_file_path
 
 """ 
 Multiprocessing pool 
@@ -31,6 +32,8 @@ Whether to use multiprocessing - can be disabled for debugging
 """
 MULTIPROC = True
 
+LOG = logging.getLogger(__name__)
+
 def _worker_initialize():
     # Make sure plugins are loaded for multiprocessing worker processes
     set_local_file_path()
@@ -40,10 +43,10 @@ def _init_pool():
     global _POOL
     if _POOL is None: 
         n_workers = multiprocessing.cpu_count()
-        debug("Initializing multiprocessing using %i workers" % n_workers)
+        LOG.debug("Initializing multiprocessing using %i workers" % n_workers)
         _POOL = multiprocessing.Pool(n_workers, initializer=_worker_initialize)
 
-class Process(QtCore.QObject):
+class Process(QtCore.QObject, LogSource):
     """
     A data processing task
     
@@ -142,12 +145,13 @@ class Process(QtCore.QObject):
                           object should be an exception. Otherwise it can
                           be any pickleable object (e.g. Numpy array)
         """
-        super(Process, self).__init__()
+        QtCore.QObject.__init__(self)
+        LogSource.__init__(self)
         self.ivm = ivm
         self.proc_id = kwargs.pop("proc_id", None)
         self.indir = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
-
+            
         self.log = ""
         self.status = Process.NOTSTARTED
         # We seem to get a segfault when emitting a signal with a None object
@@ -193,7 +197,7 @@ class Process(QtCore.QObject):
 
         :param options: Dictionary of process options
         """
-        debug("Executing %s" % self.proc_id)
+        self.debug("Executing %s" % self.proc_id)
         self.status = self.NOTSTARTED
         try:
             self.run(options)
@@ -207,10 +211,10 @@ class Process(QtCore.QObject):
 
         if self.status != self.RUNNING:
             # Synchronous process already finished
-            debug("Sync process done - completing")
+            self.debug("Sync process done - completing")
             self._complete()
         else:
-            debug("Async process running - will wait")
+            self.debug("Async process running - will wait")
 
     def get_data(self, options, multi=False):
         """ 
@@ -237,7 +241,7 @@ class Process(QtCore.QObject):
 
             multi_data = [self.ivm.data[name] for name in data_name]
             nvols = sum([d.nvols for d in multi_data])
-            debug("Multivol: nvols=", nvols)
+            self.debug("Multivol: nvols=", nvols)
             grid = None
             num_vols = 0
             for data in multi_data:
@@ -331,13 +335,13 @@ class Process(QtCore.QObject):
         if self._multiproc:
             self._workers = []
             for i in range(n_workers):
-                debug("starting task %i..." % n_workers)
+                self.debug("starting task %i..." % n_workers)
                 _init_pool()
                 proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
                 self._workers.append(proc)
             
             if self._sync:
-                debug("Running background task synchronously")
+                self.debug("Running background task synchronously")
                 for i in range(n_workers):
                     self._workers[i].get()
             else:
@@ -426,7 +430,7 @@ class Process(QtCore.QObject):
         if shape is None:
             raise RuntimeError("No data to re-combine")
         else:
-            debug("Recombining data with shape", shape)
+            self.debug("Recombining data with shape", shape)
         empty = np.zeros(shape)
         real_data = []
         for data in data_list:
@@ -445,7 +449,7 @@ class Process(QtCore.QObject):
         Call finished method and emit sig_progress if successful, and 
         emit finished signal regardless. 
         """
-        debug("Process completing, status=%i" % self.status)
+        self.debug("Process completing, status=%i" % self.status)
         if self.status == self.SUCCEEDED:
             try:
                 self.timeout()
@@ -469,11 +473,11 @@ class Process(QtCore.QObject):
 
     def _worker_finished_cb(self, result):
         worker_id, success, output = result
-        debug("Process worker finished: id=%i, status=%s" % (worker_id, str(success)))
+        self.debug("Process worker finished: id=%i, status=%s" % (worker_id, str(success)))
         
         if self.status in (Process.FAILED, Process.CANCELLED):
             # If one process has already failed or been cancelled, ignore results of others
-            debug("Ignoring worker, process already failed or cancelled")
+            self.debug("Ignoring worker, process already failed or cancelled")
             return
         elif success:
             self.worker_output[worker_id] = output

@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.widgets import OptionsButton
-from quantiphyse.utils import debug, get_kelly_col
+from quantiphyse.utils import LogSource, get_kelly_col
 
 class PlotOptions(QtGui.QDialog):
     """
@@ -117,11 +117,12 @@ class PlotOptions(QtGui.QDialog):
     def _changed(self):
         self.sig_options_changed.emit(self)
 
-class LinePlot(object):
+class LinePlot(LogSource):
     """
     A 1-D array of data to be plotted as a line
     """
     def __init__(self, name, plot, values, options, **kwargs):
+        LogSource.__init__(self)
         self.name = name
         self.plot = plot
         self.plot_options = options
@@ -152,7 +153,7 @@ class LinePlot(object):
             indexes = range(len(plot_values))
             # Tolerance does not scale by data value to scale input
             spline = UnivariateSpline(indexes, plot_values/plot_values.max(), s=0.1, k=4)
-            debug("Number of knots in B-spline smoothing: ", len(spline.get_knots()))
+            self.debug("Number of knots in B-spline smoothing: %i", len(spline.get_knots()))
             line_values = spline(indexes)*plot_values.max()
         else:
             line_values = plot_values

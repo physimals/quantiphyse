@@ -11,7 +11,7 @@ import numpy as np
 import pyqtgraph as pg
 from PIL import Image, ImageDraw
 
-from quantiphyse.utils import debug
+from quantiphyse.utils import LogSource
 
 """
 General picking system
@@ -66,11 +66,12 @@ class PickMode:
     """ Select regions by dragging around them - see :class:`FreehandPicker` """
     FREEHAND = 7
 
-class Picker:
+class Picker(LogSource):
     """
     Base class for pickers
     """
     def __init__(self, iv):
+        LogSource.__init__(self)
         self.ivl = iv
         self.use_drag = False
 
@@ -252,7 +253,7 @@ class PolygonPicker(Picker):
 
         # NB we are assuming here that the supplied grid is orthogonal to the
         # viewer grid, otherwise things will not work.
-        debug("points in std space are: ", self._points)
+        self.debug("points in std space are: %s", self._points)
         points = []
         for x, y in self._points:
             std_pt = [0, 0, 0, 0]
@@ -261,7 +262,7 @@ class PolygonPicker(Picker):
             std_pt[self.view.zaxis] = 0
             grid_pt = grid.grid_to_grid(std_pt, from_grid=self.ivl.grid)
             points.append((int(grid_pt[gridx]+0.5), int(grid_pt[gridy]+0.5)))
-        debug("points in grid space are: ", points)
+        self.debug("points in grid space are: %s", points)
         return gridx, gridy, gridz, points
 
 class RectPicker(PolygonPicker):
@@ -336,7 +337,7 @@ class EllipsePicker(PolygonPicker):
         points = [(min(points[0][0], points[1][0]), min(points[0][1], points[1][1])),
                   (max(points[0][0], points[1][0]), max(points[0][1], points[1][1]))]
         w, h = grid.shape[gridx], grid.shape[gridy]
-        debug("getting selection with dimensions", w, h, label)
+        self.debug("getting selection with dimensions %i %i %s", w, h, label)
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).ellipse(points, outline=label, fill=label)
 
@@ -344,11 +345,11 @@ class EllipsePicker(PolygonPicker):
         slice_mask = np.array(img)
         if gridx < gridy:
             slice_mask = slice_mask.T
-        debug("selection nonzero: ", np.count_nonzero(slice_mask))
+        self.debug("selection nonzero: %i", np.count_nonzero(slice_mask))
 
         slices = [slice(None)] * 3
         zpos = int(self.ivl.focus(grid)[gridz] + 0.5)
-        debug("zpos in grid space", zpos)
+        self.debug("zpos in grid space %i", zpos)
         if zpos >= 0 and zpos < grid.shape[gridz]:
             slices[gridz] = zpos
             ret[slices] = slice_mask

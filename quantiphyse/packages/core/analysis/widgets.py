@@ -16,7 +16,7 @@ from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
-from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, debug, sf
+from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, LogSource, sf
 
 from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess, HistogramProcess
 
@@ -107,8 +107,9 @@ class SECurveOptions(QtGui.QDialog):
         self.max_spin.setEnabled(not ch)
         self.parent.update()
         
-class SEPlot:
+class SEPlot(LogSource):
     def __init__(self, plotwin, sig, **kwargs):
+        LogSource.__init__()
         self.plotwin = plotwin
         self.sig = np.copy(np.array(sig, dtype=np.double))
         self.pen = kwargs.get("pen", (255, 255, 255))
@@ -131,7 +132,7 @@ class SEPlot:
             # Tolerance does not scale by data value to scale input
             s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
             knots1 = s.get_knots()
-            debug("Number of knots in B-spline smoothing: ", len(knots1))
+            self.debug("Number of knots in B-spline smoothing: ", len(knots1))
             line_values = s(r1)*pt_values.max()
         else:
             line_values = pt_values

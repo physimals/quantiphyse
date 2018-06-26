@@ -13,12 +13,12 @@ import logging
 from PySide import QtGui, QtCore
 
 from quantiphyse.processes import Process
-from quantiphyse.utils import debug, warn, get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf
+from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
 from quantiphyse.data import save
 
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
-class QpWidget(QtGui.QWidget):
+class QpWidget(QtGui.QWidget, LogSource):
     """
     Base class for a Quantiphyse widget
 
@@ -32,8 +32,9 @@ class QpWidget(QtGui.QWidget):
     """
 
     def __init__(self, **kwargs):
-        super(QpWidget, self).__init__()
-
+        LogSource.__init__(self)
+        QtGui.QWidget.__init__(self)
+        
         # Basic metadata
         self.name = kwargs.get("name", "")
         self.tabname = kwargs.get("tabname", self.name.replace(" ", "\n"))
@@ -42,8 +43,7 @@ class QpWidget(QtGui.QWidget):
         self.description = kwargs.get("desc", self.name)
         self.visible = False
         self.inited = False
-        self.log = logging.getLogger("widgets.%s" % self.name.replace(" ", "_").lower())
-        
+
         # This attempts to return the directory where the derived widget is defined - 
         # so we can look there for icons as well as in the default location
         self.pkgdir = os.path.abspath(os.path.dirname(inspect.getmodule(self).__file__))
@@ -56,12 +56,6 @@ class QpWidget(QtGui.QWidget):
         if self.opts:
             self.opts.sig_options_changed.connect(self.options_changed)
 
-    def debug(self, *args, **kwargs):
-        self.log.debug(*args, **kwargs)
-
-    def warn(self, *args, **kwargs):
-        self.log.warn(*args, **kwargs)
-        
     def get_local_file(self, name):
         """
         Get a file which is stored locally to the implementing class
@@ -991,7 +985,7 @@ class TitleWidget(QtGui.QWidget):
             subtitle = widget.description
         vbox.addWidget(QtGui.QLabel(subtitle))     
 
-class RunBox(QtGui.QGroupBox):
+class RunBox(QtGui.QGroupBox, LogSource):
 
     sig_postrun = QtCore.Signal()
 
@@ -1001,6 +995,7 @@ class RunBox(QtGui.QGroupBox):
     Designed for use with BackgroundTask
     """
     def __init__(self, get_process_fn, get_rundata_fn, title="Run", btn_label="Run", save_option=False):
+        LogSource.__init__(self)
         QtGui.QGroupBox.__init__(self)
         self.save_option = save_option
         
@@ -1076,7 +1071,7 @@ class RunBox(QtGui.QGroupBox):
 
     def _finished(self, status, log, exception):
         try:
-            debug("RunBox: Finished: ", status, len(log), exception)
+            self.debug("RunBox: Finished: %i %i %s", status, len(log), exception)
             self.log = log
             if status == Process.SUCCEEDED:
                 self.progress.setValue(100)
@@ -1084,7 +1079,7 @@ class RunBox(QtGui.QGroupBox):
                 if self.save_option and self.save_cb.isChecked():
                     save_folder = self.save_folder_edit.text()   
                     data_to_save = self.process.output_data_items()
-                    debug("Data to save: ", data_to_save)    
+                    self.debug("Data to save: %s", data_to_save)    
                     for d in data_to_save:
                         qpdata = self.process.ivm.data.get(d, self.process.ivm.rois.get(d, None))
                         if qpdata:

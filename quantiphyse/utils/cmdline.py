@@ -11,10 +11,13 @@ import subprocess
 import tempfile
 import re
 import shutil
+import logging
 
 from quantiphyse.data import load, save
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
+
+LOG = logging.getLogger(__name__)
 
 def _get_files(workdir):
     """
@@ -47,23 +50,23 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
             if retcode is not None: break
 
         if retcode != 0:
-            debug("External program failed: %s" % cmdline)
-            debug(log)
+            LOG.debug("External program failed: %s" % cmdline)
+            LOG.debug(log)
             raise QpException("Failed to execute %s: return code %i" % (cmd_args[0], retcode), detail=log)
 
         post_run_files = _get_files(workdir)
         new_files = [f for f in post_run_files if f not in pre_run_files]
-        debug("New files: ", new_files)
+        LOG.debug("New files: %s", new_files)
         data, rois = [], []
 
         for f in new_files:
             basename = f.split(".", 1)[0]
-            debug("Checking if we need to output: ", basename, expected_data, expected_rois)
+            LOG.debug("Checking if we need to output: %s %s %s", basename, expected_data, expected_rois)
             if (basename in expected_data or 
                 basename in expected_rois or 
                 (len(expected_data) == 0 and len(expected_rois) == 0)):
 
-                debug("Adding output file %s" % f)
+                LOG.debug("Adding output file %s" % f)
                 if basename in expected_data:
                     data.append(f)
                 elif basename in expected_rois:
@@ -101,7 +104,7 @@ class CommandProcess(Process):
             try:
                 shutil.rmtree(self.workdir)
             except:
-                warn("Failed to remove temporary directory: %s" % self.workdir)
+                LOG.warn("Failed to remove temporary directory: %s" % self.workdir)
 
     def add_data(self, data_name):
         fname = os.path.join(self.workdir, data_name)
@@ -114,13 +117,13 @@ class CommandProcess(Process):
         if self.queue.empty(): return
         while not self.queue.empty():
             line = self.queue.get()
-            debug(line)
+            LOG.debug(line)
             if self._current_step < len(self._expected_steps):
                 expected = self._expected_steps[self._current_step]
                 if expected is not None and re.match(expected, line):
                     self._current_step += 1
                     complete = float(self._current_step) / (len(self._expected_steps)+1)
-                    debug(complete)
+                    LOG.debug(complete)
                     self.sig_progress.emit(complete)
         
     def finished(self):
@@ -132,7 +135,7 @@ class CommandProcess(Process):
         """
         if self.status == Process.SUCCEEDED:
             self.log, data_files, roi_files = self.worker_output[0]
-            debug("Loading data: ", data_files, roi_files)
+            LOG.debug("Loading data: %s %s", data_files, roi_files)
             for f in data_files:
                 qpdata = load(os.path.join(self.workdir, f))
                 qpdata.name = self.ivm.suggest_name(f.split(".", 1)[0], ensure_unique=False)
@@ -162,7 +165,7 @@ class CommandProcess(Process):
                 
         cmd = self._find(cmd)
         cmdline = cmd + " " + cmdline
-        debug(cmdline)
+        LOG.debug(cmdline)
         return cmdline
 
     def run(self, options):
@@ -179,7 +182,7 @@ class CommandProcess(Process):
         self._current_data = options.pop("set-current-data", None)
         self._current_roi = options.pop("set-current-roi", None)
 
-        debug("Working directory: %s" % self.workdir)
+        LOG.debug("Working directory: %s" % self.workdir)
         self._add_data_from_cmdline(cmdline)
 
         self.log = ""
@@ -194,7 +197,7 @@ class CommandProcess(Process):
         """
         for d in self.path:
             ex = os.path.join(d, cmd)
-            debug("Checking %s" % ex)
+            LOG.debug("Checking %s" % ex)
             if os.path.isfile(ex) and os.access(ex, os.X_OK):
                 return ex
             elif sys.platform.startswith("win"):
@@ -202,7 +205,7 @@ class CommandProcess(Process):
                 if os.path.isfile(ex) and os.access(ex, os.X_OK):
                     return ex
             
-        warn("Failed to find command line program: %s" % cmd)
+        LOG.warn("Failed to find command line program: %s" % cmd)
         return cmd
     
     def _add_data_from_cmdline(self, cmdline):
@@ -211,5 +214,5 @@ class CommandProcess(Process):
         """
         for arg in re.split(r"\s+|=|,|\n|\t", cmdline):
             if arg in self.ivm.data or arg in self.ivm.rois:
-                debug("Adding data from command line args: %s " % arg)
+                LOG.debug("Adding data from command line args: %s " % arg)
                 self.add_data(arg)

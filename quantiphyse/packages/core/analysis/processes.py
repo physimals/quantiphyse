@@ -96,9 +96,9 @@ class HistogramProcess(Process):
             if dmin is None: hrange[0] = np.min(data.raw())
             if dmax is None: hrange[1] = np.max(data.raw())
             for region in roi_labels:
-                debug("Doing %s region %i" % (data.name, region))
+                self.debug("Doing %s region %i" % (data.name, region))
                 if sel_region is not None and region != sel_region:
-                    debug("Ignoring this region")
+                    self.debug("Ignoring this region")
                     continue
                 roi_fordata = roi.resample(data.grid).raw()
                 region_data = data.raw()[roi_fordata == region]
@@ -118,7 +118,7 @@ class HistogramProcess(Process):
                 col += 1
 
         if not options.pop('no-extras', False): 
-            debug("Adding %s" % output_name)
+            self.debug("Adding %s" % output_name)
             self.ivm.add_extra(output_name, table_to_str(self.model))
 
 class RadialProfileProcess(Process):

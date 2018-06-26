@@ -17,12 +17,13 @@ import sys
 import os
 import warnings
 import glob
+import logging
 
 import nibabel as nib
 import numpy as np
 import nrrd
 
-from quantiphyse.utils import debug, QpException
+from quantiphyse.utils import QpException
 from .qpdata import DataGrid, QpData
 
 HAVE_DCMSTACK = True
@@ -33,6 +34,7 @@ except:
     warnings.warn("DCMSTACK not found - may not be able to read DICOM folders")
 
 QP_NIFTI_EXTENSION_CODE = 42
+LOG = logging.getLogger(__name__)
 
 class NumpyData(QpData):
     def __init__(self, data, grid, name, **kwargs):
@@ -76,9 +78,9 @@ class NiftiData(QpData):
         for ext in self.nifti_header.extensions:
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
-                debug("Found QP metadata: %s" % ext.get_content())
+                self.debug("Found QP metadata: %s" % ext.get_content())
                 metadata = yaml.load(ext.get_content())
-                debug(metadata)
+                self.debug(metadata)
 
         grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname, metadata=metadata)
@@ -103,7 +105,7 @@ class NiftiData(QpData):
             return self.rawdata[:, :, :, vol]
         else:
             if self.voldata is None:
-                self.voldata  = [None,] * self.nvols
+                self.voldata = [None,] * self.nvols
             if self.voldata[vol] is None:
                 self.voldata[vol] = self._correct_dims(self.nii.dataobj[..., vol])
 
@@ -257,7 +259,7 @@ def save(data, fname, grid=None, outdir=""):
     if data.metadata:
         import yaml
         yaml_metadata = yaml.dump(data.metadata, default_flow_style=False)
-        debug("Writing metadata: ", yaml_metadata)
+        LOG.debug("Writing metadata: %s", yaml_metadata)
         ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
         img.header.extensions.append(ext)
 
@@ -275,6 +277,6 @@ def save(data, fname, grid=None, outdir=""):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    debug("Saving %s as %s" % (data.name, fname))
+    LOG.debug("Saving %s as %s" % (data.name, fname))
     img.to_filename(fname)
     data.fname = fname

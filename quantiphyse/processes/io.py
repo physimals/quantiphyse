@@ -39,13 +39,13 @@ class LoadProcess(Process):
         filepath = self._get_filepath(fname)
         if name is None:
             name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
-        debug("  - Loading data '%s' from %s" % (name, filepath))
+        self.debug("  - Loading data '%s' from %s" % (name, filepath))
         try:
             data = load(filepath)
             data.name = name
             return data
         except Exception as exc:
-            warn("Failed to load data: %s (%s)" % (filepath, str(exc)))
+            self.warn("Failed to load data: %s (%s)" % (filepath, str(exc)))
 
     def _get_filepath(self, fname, folder=None):
         if os.path.isabs(fname):
@@ -157,10 +157,10 @@ class SaveArtifactsProcess(Process):
             fname = options.pop(name)
             if not fname: fname = name
             if name in self.ivm.extras: 
-                debug("Saving '%s' to %s" % (name, fname))
+                self.debug("Saving '%s' to %s" % (name, fname))
                 self._save_text(str(self.ivm.extras[name]), fname)
             else:
-                warn("Extra '%s' not found - not saving" % name)
+                self.warn("Extra '%s' not found - not saving" % name)
 
     def _save_text(self, text, fname, ext="txt"):
         if text:

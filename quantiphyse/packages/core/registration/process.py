@@ -5,18 +5,21 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import sys
+import logging
 
 import numpy as np
 
 from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path, QpException
 from quantiphyse.processes import Process
 
+LOG = logging.getLogger(__name__)
+
 def get_reg_method(method_name):
     """
     Get a named registration method (case insensitive)
     """
     methods = get_plugins("reg-methods")
-    debug("Known methods: ", methods)
+    LOG.debug("Known methods: %s", methods)
     for method_class in methods:
         method = method_class()
         if method.name.lower() == method_name.lower():
@@ -143,7 +146,7 @@ class RegProcess(Process):
                 self.input_names.append(name)
                 self.output_names.append(output_name)
         
-        debug("Have %i registration targets" % len(reg_data))
+        self.debug("Have %i registration targets" % len(reg_data))
 
         # Function input data must be passed as list of arguments for multiprocessingmethod = get_reg_method(method_name)
         self.start_bg([method_name, mode, reg_data, self.grid.affine, ref_data, ref_grid.affine, options])

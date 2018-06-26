@@ -190,17 +190,17 @@ class RoiBuilderWidget(QpWidget):
             
         roi_orig[slices] = slice_orig
 
-        debug("Num nonzero new: ", np.count_nonzero(roi_new))
-        debug("Num nonzero: ", np.count_nonzero(roi_orig))
+        self.debug("Num nonzero new: %i", np.count_nonzero(roi_new))
+        self.debug("Num nonzero: %i", np.count_nonzero(roi_orig))
         self.ivm.add_roi(NumpyData(roi_orig, grid=self.grid, name=self.new_roi_name), make_current=True)
         self.undo_btn.setEnabled(True)
 
     def undo(self):
-        debug("ROI undo: ", len(self.history))
+        self.debug("ROI undo: %i", len(self.history))
         if len(self.history) == 0: return
 
         roi_name, axis, pos, roi_slice_orig = self.history.pop()
-        debug("Undoing: ", roi_name, axis, pos)
+        self.debug("Undoing: %s %i %i", roi_name, axis, pos)
         roi = self.ivm.rois.get(roi_name, None)
         if roi is not None:
             data = roi.raw()

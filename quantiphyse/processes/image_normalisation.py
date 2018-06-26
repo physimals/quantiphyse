@@ -9,9 +9,9 @@ from __future__ import division, print_function
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter1d
 
-from quantiphyse.utils import debug
+from quantiphyse.utils import LogSource
 
-class ImNorm(object):
+class ImNorm(LogSource):
 
     """
     Preprocesses the images to try and establish consistency without converting to Gd concentration
@@ -19,7 +19,7 @@ class ImNorm(object):
     """
 
     def __init__(self, img1):
-
+        LogSource.__init__(self)
         self.img1 = img1
 
         # convert to list of enhancement curves
@@ -49,7 +49,7 @@ class ImNorm(object):
         ind1 = np.argmax(d1)
         ind1 -= 1
         ind1 *= ind1 >= 0
-        debug("Offset time: ", ind1)
+        self.debug("Offset time: ", ind1)
 
         self.ind1 = ind1
 

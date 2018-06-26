@@ -35,7 +35,7 @@ class T10Process(Process):
         fa_vols, fas = [], []
         grid = None
         for fname, fa in options.pop("vfa").items():
-            debug("FA=", fa, fname)
+            self.debug("FA=%f: %s", fa, fname)
             if fname in self.ivm.data:
                 data = self.ivm.data[fname]
             else:

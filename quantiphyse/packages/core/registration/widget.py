@@ -10,11 +10,11 @@ import numpy as np
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, TitleWidget
 from quantiphyse.gui.dialogs import TextViewerDialog
 from quantiphyse.processes import Process
-from quantiphyse.utils import debug, get_plugins, QpException
+from quantiphyse.utils import LogSource, get_plugins, QpException
 
 from .process import RegProcess
     
-class RegMethod(object):
+class RegMethod(LogSource):
     """
     A registration method
 
@@ -23,6 +23,7 @@ class RegMethod(object):
     Methods may implement ``moco`` if motion correction is handled differently
     """
     def __init__(self, name):
+        LogSource.__init__(self)
         self.name = name
 
     @classmethod
@@ -111,13 +112,13 @@ class RegMethod(object):
         log = "Default 4D registration using multiple 3d registrations\n"
         for vol in range(reg_data.shape[-1]):
             log += "Registering volume %i of %i\n" % (vol+1, reg_data.shape[-1])
-            debug("Vol %i of %i" % (vol+1, reg_data.shape[-1]))
+            self.debug("Vol %i of %i" % (vol+1, reg_data.shape[-1]))
             if vol == options.get("ignore-idx", -1):
                 # Ignore this index (e.g. because it is the same as the ref volume)
                 out_data[..., vol] = reg_data[..., vol]
                 transforms.append(None)
             else:
-                debug("Calling reg_3d", cls, cls.reg_3d)
+                self.debug("Calling reg_3d", cls, cls.reg_3d)
                 vols, transform, vol_log = cls.reg_3d(reg_data[..., vol], reg_grid, ref_data, ref_grid, options, queue)
                 out_data[..., vol] = vols
                 transforms.append(transform)

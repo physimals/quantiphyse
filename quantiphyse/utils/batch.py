@@ -50,6 +50,8 @@ class Script(Process):
     each case
     """
 
+    PROCESS_NAME = "Script"
+
     IGNORE = 1
     NEXT_CASE = 2
     FAIL = 3
@@ -158,10 +160,10 @@ class Script(Process):
             case = self._cases[self._case_num]
             self._case_num += 1
             self.sig_start_case.emit(case)
-            debug("Starting case %s" % case.case_id)
+            self.debug("Starting case %s" % case.case_id)
             self._start_case(case)
         else:
-            debug("All cases complete")
+            self.debug("All cases complete")
             self.log += "COMPLETE\n"
             self.status = Process.SUCCEEDED
             self._complete()
@@ -184,7 +186,7 @@ class Script(Process):
             self._process_num += 1
             self._start_process(process)
         else:
-            debug("All processes complete")
+            self.debug("All processes complete")
             self.log += "CASE COMPLETE\n"
             self.sig_done_case.emit(self._current_case)
             self._next_case()
@@ -226,7 +228,7 @@ class Script(Process):
             self._process_start = time.time()
             self.log += "Running %s\n\n" % process.proc_id
             for key, value in proc_params.items():
-                debug("      %s=%s" % (key, str(value)))
+                self.debug("      %s=%s" % (key, str(value)))
 
             self.sig_start_process.emit(process, dict(proc_params))
             process.execute(proc_params)
@@ -239,7 +241,7 @@ class Script(Process):
             pass
 
     def _process_finished(self, status, log, exception):
-        debug("Process finished", self._current_process.proc_id)
+        self.debug("Process finished", self._current_process.proc_id)
         if self.status != self.RUNNING:
             return
 
@@ -255,17 +257,17 @@ class Script(Process):
         else:
             self.log += "\nFAILED: %i\n" % status
             if self._error_action == Script.IGNORE:
-                debug("Process failed - ignoring")
+                self.debug("Process failed - ignoring")
                 self._next_process()
             elif self._error_action == Script.FAIL:
-                debug("Process failed - stopping script")
+                self.debug("Process failed - stopping script")
                 self.status = status
                 self.exception = exception
                 self._current_process = None
                 self._current_params = None
                 self._complete()
             elif self._error_action == Script.NEXT_CASE:
-                debug("Process failed - going to next case")
+                self.debug("Process failed - going to next case")
                 self.log += "CASE FAILED\n"
                 self.sig_done_case.emit(self._current_case)
                 self._next_case()
@@ -318,7 +320,7 @@ class BatchScript(Script):
         self.start = time.time()
         self.stdout.write("  - Running %s...  0%%" % process.proc_id)
         for key, value in params.items():
-            debug("      %s=%s" % (key, str(value)))
+            self.debug("      %s=%s" % (key, str(value)))
                 
     def _log_done_process(self, process, params):
         if process.status == Process.SUCCEEDED:
@@ -333,7 +335,7 @@ class BatchScript(Script):
         else:
             self.stdout.write(" FAILED: %i\n" % process.status)
             warn(str(process.exception))
-            debug(traceback.format_exc(process.exception))
+            self.debug(traceback.format_exc(process.exception))
 
     def _log_progress(self, complete):
         #self.stdout.write("%i%%\n" % int(100*complete))

@@ -15,15 +15,16 @@ from PySide import QtGui
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption, NumericSlider
 from quantiphyse.gui.pickers import PickMode
-from quantiphyse.utils import debug
+from quantiphyse.utils import LogSource
 from quantiphyse.processes.feat_pca import PcaFeatReduce
 
-class Tool:
+class Tool(LogSource):
     def __init__(self, name, tooltip=""):
         """
         :param name: Name of tool
         :param tooltip: Descriptive text
         """
+        LogSource.__init__(self)
         self.name = name
         self.tooltip = tooltip
 
@@ -418,7 +419,7 @@ class BucketTool(Tool):
             labelled[labelled != scipy_label] = 0
             labelled[labelled == scipy_label] = self.label
             if labelled.shape == d.shape or tile_size == max_tile_size:
-                debug("Reached full size, breaking: ", labelled.shape, d.shape)
+                self.debug("Reached full size, breaking: ", labelled.shape, d.shape)
                 break
             elif (np.count_nonzero(labelled[:, :, 0]) == 0 and 
                   np.count_nonzero(labelled[:, :, -1]) == 0 and
@@ -426,7 +427,7 @@ class BucketTool(Tool):
                   np.count_nonzero(labelled[:, -1, :]) == 0 and
                   np.count_nonzero(labelled[0, :, :]) == 0 and
                   np.count_nonzero(labelled[-1, :, :]) == 0):
-                debug("Nothing on boundary, breaking")
+                self.debug("Nothing on boundary, breaking")
                 break
             tile_size = min(tile_size + 50, max_tile_size)
 
@@ -443,7 +444,7 @@ class BucketTool(Tool):
             if end > shape[i]: end = shape[i]
             slices.append(slice(start, end))
             offset.append(start)
-        debug("Tile: ", slices, offset)
+        self.debug("Tile: ", slices, offset)
         return arr[slices], offset
 
     def _add(self):

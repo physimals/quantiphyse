@@ -52,7 +52,7 @@ class ImageExportWidget(QpWidget):
             return
 
         for ii in range(shape[-1]):
-            debug("Frame number:", ii)
+            self.debug("Frame number:", ii)
             self.ivl.set_time_pos(ii)
             output_name = fname + '/' + str(ii).zfill(3) + '.png'
             self.ivl.capture_view_as_image(1, output_name)

@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from scipy.ndimage.filters import gaussian_filter1d
 
-from quantiphyse.utils import QpException, debug
+from quantiphyse.utils import QpException, LogSource
 from . import normalisation as norm
 
 def _flat_data_to_image(data, roi):
@@ -22,7 +22,7 @@ def _flat_data_to_image(data, roi):
     image[roi] = data
     return image
 
-class PcaFeatReduce(object):
+class PcaFeatReduce(LogSource):
     """
     Extract PCA features from 4D image data
 
@@ -34,7 +34,8 @@ class PcaFeatReduce(object):
         :param data: 4D image to be processed
         :param roi: Optional sub region to extract
         """
-        
+        LogSource.__init__(self)
+
         # Variables
         self.pca = PCA(n_components=n_components)
         self.norm_modes = norm_modes
@@ -57,12 +58,12 @@ class PcaFeatReduce(object):
         """
         data_inmask, roi = self._mask(data, roi, smooth_timeseries)
 
-        debug("Using PCA dimensionality reduction")
+        self.debug("Using PCA dimensionality reduction")
         reduced_data = self.pca.fit_transform(data_inmask)
-        debug("Number of components", reduced_data.shape[1])
+        self.debug("Number of components", reduced_data.shape[1])
 
         if self.norm_modes:
-            debug("Normalising PCA modes between 0 and 1")
+            self.debug("Normalising PCA modes between 0 and 1")
             reduced_data = norm.normalise(reduced_data, "indiv")
 
         if not feature_volume:
@@ -70,7 +71,7 @@ class PcaFeatReduce(object):
 
         return _flat_data_to_image(reduced_data, roi)
 
-    def get_projected_test_features(self, data, roi=None, feature_volume=False):
+    def get_projected_test_features(self, data, roi=None, smooth_timeseries=None, feature_volume=False):
         """
         Return features for each voxel from previously trained PCA modes
 
@@ -83,7 +84,7 @@ class PcaFeatReduce(object):
                  Otherwise, 2D array whose first dimension is unmasked voxels and 2nd dimension
                  is the PCA components
         """
-        data_inmask, roi = self._mask(data, roi)
+        data_inmask, roi = self._mask(data, roi, smooth_timeseries)
         
         #Projecting the data using training set PCA
         if data_inmask.shape[1] != self.pca.mean_.shape[0]:
@@ -93,7 +94,7 @@ class PcaFeatReduce(object):
 
         # Scaling features
         if self.norm_modes:
-            debug("Normalising PCA modes")
+            self.debug("Normalising PCA modes")
             reduced_data = norm.normalise(reduced_data, "indiv")
 
         if not feature_volume:
