@@ -109,7 +109,7 @@ class SECurveOptions(QtGui.QDialog):
         
 class SEPlot(LogSource):
     def __init__(self, plotwin, sig, **kwargs):
-        LogSource.__init__()
+        LogSource.__init__(self)
         self.plotwin = plotwin
         self.sig = np.copy(np.array(sig, dtype=np.double))
         self.pen = kwargs.get("pen", (255, 255, 255))
