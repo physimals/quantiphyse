@@ -16,7 +16,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from .exceptions import QpException
-from .logger import LogSource, get_debug, set_debug, debug, warn
+from .logger import LogSource, get_debug, set_debug
 from .plugins import get_plugins
 from .local import get_local_file, get_local_shlib, get_icon, set_local_file_path, local_file_from_drop_url
 

@@ -7,7 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption
-from quantiphyse.utils import debug, QpException
+from quantiphyse.utils import QpException
 
 from .process import SmoothingProcess
     

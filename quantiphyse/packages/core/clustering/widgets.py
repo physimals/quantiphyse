@@ -14,7 +14,7 @@ from PySide import QtGui
 
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption, TitleWidget
-from quantiphyse.utils import get_pencol, debug
+from quantiphyse.utils import get_pencol
 
 from .kmeans import KMeansProcess
 

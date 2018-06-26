@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import numpy as np
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, NumericOption, ChoiceOption
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 
 class CompareDataWidget(QpWidget):
     """

@@ -8,7 +8,7 @@ from __future__ import print_function, division, absolute_import
 
 from PySide import QtGui
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
-from quantiphyse.utils import debug, get_icon, get_local_file
+from quantiphyse.utils import get_icon, get_local_file
 from quantiphyse import __contrib__, __acknowledge__
 
 SUMMARY = """

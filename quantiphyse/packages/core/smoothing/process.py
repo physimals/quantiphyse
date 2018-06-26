@@ -6,7 +6,7 @@ Copyright (c) 2013-2018 University of Oxford
 
 import scipy.ndimage.filters
 
-from quantiphyse.utils import debug, warn, QpException
+from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 from quantiphyse.data import NumpyData
 

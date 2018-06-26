@@ -9,7 +9,7 @@ import logging
 
 import numpy as np
 
-from quantiphyse.utils import debug, warn, get_plugins, set_local_file_path, QpException
+from quantiphyse.utils import get_plugins, set_local_file_path, QpException
 from quantiphyse.processes import Process
 
 LOG = logging.getLogger(__name__)

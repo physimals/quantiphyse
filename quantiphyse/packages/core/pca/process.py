@@ -3,7 +3,7 @@ Quantiphyse - PCA reduction process
 
 Copyright (c) 2013-2018 University of Oxford
 """
-from quantiphyse.utils import QpException, debug
+from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 from quantiphyse.processes.feat_pca import PcaFeatReduce
 

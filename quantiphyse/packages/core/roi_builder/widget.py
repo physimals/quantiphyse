@@ -16,7 +16,7 @@ from quantiphyse.data import NumpyData
 from quantiphyse.gui.dialogs import error_dialog
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TitleWidget
 from quantiphyse.gui.pickers import PickMode
-from quantiphyse.utils import get_icon, debug
+from quantiphyse.utils import get_icon
 
 from .tools import *
 

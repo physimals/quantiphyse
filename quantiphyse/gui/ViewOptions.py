@@ -8,7 +8,6 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 from PySide import QtCore, QtGui
 
-from quantiphyse.utils import debug
 from quantiphyse.gui.widgets import NumberVList
 
 class ScaleEditDialog(QtGui.QDialog):

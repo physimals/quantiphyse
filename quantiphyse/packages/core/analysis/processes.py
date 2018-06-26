@@ -11,7 +11,7 @@ import sys
 from PySide import QtGui
 
 from quantiphyse.data import NumpyData, OrthoSlice
-from quantiphyse.utils import QpException, table_to_str, debug, sf
+from quantiphyse.utils import QpException, table_to_str, sf
 from quantiphyse.processes import Process
 
 class CalcVolumesProcess(Process):

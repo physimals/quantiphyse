@@ -18,7 +18,7 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
 from quantiphyse.test import run_tests
-from quantiphyse.utils import QpException, debug, warn, set_local_file_path, set_debug
+from quantiphyse.utils import QpException, set_local_file_path, set_debug
 from quantiphyse.utils.batch import BatchScript
 from quantiphyse.gui import MainWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window

@@ -12,7 +12,6 @@ from scipy.ndimage.filters import gaussian_filter
 
 from quantiphyse.data import load
 from quantiphyse.processes import Process
-from quantiphyse.utils import debug
 
 from .t1_model import t10_map
 
