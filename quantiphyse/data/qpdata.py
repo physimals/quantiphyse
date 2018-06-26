@@ -706,7 +706,7 @@ class QpData(object):
         for dim in range(min(ndim, 3)):
             axes = [i for i in range(3) if i != dim]
             nonzero = np.any(self.raw(), axis=tuple(axes))
-            bb_start, bb_start = np.where(nonzero)[0][[0, -1]]
-            slices[dim] = slice(bb_start, bb_start+1)
+            bb_start, bb_end = np.where(nonzero)[0][[0, -1]]
+            slices[dim] = slice(bb_start, bb_end+1)
 
         return slices
