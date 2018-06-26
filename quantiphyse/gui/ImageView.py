@@ -312,11 +312,11 @@ class DataSummary(QtGui.QWidget):
 
     def _focus_changed(self, pos):
         if self.ivl.ivm.main is not None:
-            self.vol_data.setText(self.ivl.ivm.main.value(pos, self.ivl.grid, str=True))
+            self.vol_data.setText(self.ivl.ivm.main.value(pos, self.ivl.grid, as_str=True))
         if self.ivl.ivm.current_roi is not None:
-            self.roi_region.setText(self.ivl.ivm.current_roi.value(pos, self.ivl.grid, str=True))
+            self.roi_region.setText(self.ivl.ivm.current_roi.value(pos, self.ivl.grid, as_str=True))
         if self.ivl.ivm.current_data is not None:
-            self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, str=True))
+            self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, as_str=True))
 
 class Navigator(LogSource):
     """
