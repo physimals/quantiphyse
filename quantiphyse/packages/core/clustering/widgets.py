@@ -169,7 +169,7 @@ PCA reduction is used on 4D data to extract representative curves
         data = self.ivm.data.get(self.data_combo.currentText(), None)
         if data is not None:
             is4d = data.nvols > 1
-            self.warn("Number of vols: %i, 4d=%s", data.nvols, is4d)
+            self.debug("Number of vols: %i, 4d=%s", data.nvols, is4d)
             self.n_pca.label.setVisible(is4d)
             self.n_pca.spin.setVisible(is4d)
             self.show_curves_btn.setVisible(is4d)
