@@ -33,27 +33,32 @@ def _load_plugins_from_dir(dirname, pkgname, manifest):
     LOG.debug("Loading plugins from %s", dirname)
     submodules = glob.glob(os.path.join(os.path.abspath(dirname), "*"))
     done = set()
-    sys.path.append(dirname)
-    for mod_file in submodules:
-        mod = _possible_module(mod_file)
-        if mod is not None and mod not in done:
-            done.add(mod)
-            try:
-                LOG.debug("Trying to import %s", mod)
-                module = importlib.import_module(mod, pkgname)
-                if hasattr(module, "QP_WIDGETS"):
-                    LOG.debug("Widgets found: %s %s", mod, module.QP_WIDGETS)
-                    manifest["widgets"] = manifest.get("widgets", []) + module.QP_WIDGETS
-                if hasattr(module, "QP_PROCESSES"):
-                    LOG.debug("Processes found: %s %s", mod, module.QP_PROCESSES)
-                    manifest["processes"] = manifest.get("processes", []) + module.QP_PROCESSES
-                if hasattr(module, "QP_MANIFEST"):
-                    for key, val in module.QP_MANIFEST.items():
-                        LOG.debug("%s found: %s %s", key, mod, val)
-                        manifest[key] = manifest.get(key, []) + val
-            except ImportError:
-                LOG.warn("Error loading plugin: %s", mod)
-                traceback.print_exc()
+    pythonpath = list(sys.path)
+    try:
+        sys.path.insert(0, dirname)
+        for mod_file in submodules:
+            mod = _possible_module(mod_file)
+            if mod is not None and mod not in done:
+                done.add(mod)
+                try:
+                    LOG.debug("Trying to import %s", mod)
+                    module = importlib.import_module(mod, pkgname)
+                    LOG.debug("Got %s (%s)", module.__name__, module.__file__)
+                    if hasattr(module, "QP_WIDGETS"):
+                        LOG.debug("Widgets found: %s %s", mod, module.QP_WIDGETS)
+                        manifest["widgets"] = manifest.get("widgets", []) + module.QP_WIDGETS
+                    if hasattr(module, "QP_PROCESSES"):
+                        LOG.debug("Processes found: %s %s", mod, module.QP_PROCESSES)
+                        manifest["processes"] = manifest.get("processes", []) + module.QP_PROCESSES
+                    if hasattr(module, "QP_MANIFEST"):
+                        for key, val in module.QP_MANIFEST.items():
+                            LOG.debug("%s found: %s %s", key, mod, val)
+                            manifest[key] = manifest.get(key, []) + val
+                except ImportError:
+                    LOG.warn("Error loading plugin: %s", mod)
+                    traceback.print_exc()
+    finally:
+        sys.path = pythonpath
 
 def get_plugins(key=None, class_name=None):
     """
