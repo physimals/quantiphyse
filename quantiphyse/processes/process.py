@@ -182,7 +182,7 @@ class Process(QtCore.QObject, LogSource):
 
         :param options: Dictionary of process options
         """
-        self.debug("Executing %s" % self.proc_id)
+        self.debug("Executing %s", self.proc_id)
         self.status = self.NOTSTARTED
         try:
             self.run(options)
@@ -226,7 +226,7 @@ class Process(QtCore.QObject, LogSource):
 
             multi_data = [self.ivm.data[name] for name in data_name]
             nvols = sum([d.nvols for d in multi_data])
-            self.debug("Multivol: nvols=", nvols)
+            self.debug("Multivol: nvols=%i", nvols)
             grid = None
             num_vols = 0
             for data_item in multi_data:
@@ -309,7 +309,7 @@ class Process(QtCore.QObject, LogSource):
         if self._multiproc:
             self._workers = []
             for i in range(n_workers):
-                self.debug("starting task %i..." % n_workers)
+                self.debug("starting task %i...", n_workers)
                 _init_pool()
                 proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
                 self._workers.append(proc)
@@ -409,7 +409,7 @@ class Process(QtCore.QObject, LogSource):
         if shape is None:
             raise RuntimeError("No data to re-combine")
         else:
-            self.debug("Recombining data with shape", shape)
+            self.debug("Recombining data with shape: %s", shape)
         empty = np.zeros(shape)
         real_data = []
         for data_item in data_list:
@@ -428,7 +428,7 @@ class Process(QtCore.QObject, LogSource):
         Call finished method and emit sig_progress if successful, and 
         emit finished signal regardless. 
         """
-        self.debug("Process completing, status=%i" % self.status)
+        self.debug("Process completing, status=%i", self.status)
         if self.status == self.SUCCEEDED:
             try:
                 self.timeout()
@@ -452,7 +452,7 @@ class Process(QtCore.QObject, LogSource):
 
     def _worker_finished_cb(self, result):
         worker_id, success, output = result
-        self.debug("Process worker finished: id=%i, status=%s" % (worker_id, str(success)))
+        self.debug("Process worker finished: id=%i, status=%s", worker_id, str(success))
         
         if self.status in (Process.FAILED, Process.CANCELLED):
             # If one process has already failed or been cancelled, ignore results of others
