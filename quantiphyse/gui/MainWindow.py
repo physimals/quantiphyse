@@ -62,31 +62,35 @@ class DragOptions(QtGui.QDialog):
         hbox.addWidget(btn)
         layout.addLayout(hbox)
         
-        hbox = QtGui.QHBoxLayout()
-        self.adv_cb = QtGui.QCheckBox("Advanced Options")
-        self.adv_cb.stateChanged.connect(self._adv_changed)
-        hbox.addWidget(self.adv_cb)
-        layout.addLayout(hbox)
-
-        self.adv_pane = QtGui.QWidget()
-        vbox = QtGui.QVBoxLayout()
-        self.adv_pane.setLayout(vbox)
-
-        grid = QtGui.QGridLayout()
         self.main_cb = QtGui.QCheckBox("Set as main data")
         self.main_cb.setChecked(default_main)
         self.make_main = default_main
-        grid.addWidget(self.main_cb, 0, 0)
-
+        layout.addWidget(self.main_cb)
+        
         self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
-        self.force_t_cb.setVisible(force_t_option)
-        grid.addWidget(self.force_t_cb, 1, 0)
-        
-        grid.setColumnStretch(2, 1)
-        vbox.addLayout(grid)
-        
-        self.adv_pane.setVisible(False)
-        layout.addWidget(self.adv_pane)
+        if force_t_option:
+            # Currently only one possible advanced option so hide it when this is not required
+            hbox = QtGui.QHBoxLayout()
+            self.adv_cb = QtGui.QCheckBox("Advanced Options")
+            self.adv_cb.stateChanged.connect(self._adv_changed)
+            hbox.addWidget(self.adv_cb)
+            layout.addLayout(hbox)
+
+            self.adv_pane = QtGui.QWidget()
+            vbox = QtGui.QVBoxLayout()
+            self.adv_pane.setLayout(vbox)
+
+            grid = QtGui.QGridLayout()
+            grid.setColumnStretch(2, 1)
+
+            self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
+            #self.force_t_cb.setVisible(force_t_option)
+            grid.addWidget(self.force_t_cb, 0, 0)
+            
+            vbox.addLayout(grid)
+            
+            self.adv_pane.setVisible(False)
+            layout.addWidget(self.adv_pane)
 
         self.setLayout(layout)
         self.type = ""
@@ -427,7 +431,7 @@ class MainWindow(QtGui.QMainWindow):
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
-        make_main = (self.ivm.main is None) or (self.ivm.main.nvols == 1 and data.nvols > 1)
+        make_main = self.ivm.main is None
         ftype, name, ok, force_t_dialog, make_main = DragOptions.get_image_choice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
         if not ok: return
         data.name = name
