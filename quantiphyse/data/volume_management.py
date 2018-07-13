@@ -81,15 +81,13 @@ class ImageVolumeManagement(QtCore.QObject):
         Suggest a name for new data that is suitable for use as a Python variable.
         If required, ensure name does not clash with existing names
         """
-        # Remove invalid characters
+        # Remove invalid characters and make sure there's something left
         name = re.sub('[^0-9a-zA-Z_]', '', name)
+        if not name: name = "data"
 
-        # Remove leading characters until we find a letter or underscore
-        name = re.sub('^[^a-zA-Z_]+', '', name)
-
-        # Add underscore if it's a keyword
-        if keyword.iskeyword(name):
-            name += "_"
+        # Add underscore if it's a keyword or starts with a digit
+        if name[0] in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') or keyword.iskeyword(name):
+            name = "_" + name
 
         # Make it unique
         num = 1
