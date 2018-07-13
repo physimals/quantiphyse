@@ -111,7 +111,9 @@ class DataOption(Option, QtGui.QComboBox):
         super(DataOption, self).__init__(parent)
         self.ivm = ivm
 
-        self.static_only = kwargs.get("static_only", False)
+        self.include_3d = kwargs.get("include_3d", True)
+        self.include_4d = kwargs.get("include_4d", True)
+        self.include_4d = not kwargs.get("static_only", not self.include_4d)
         self.none_option = kwargs.get("none_option", False)
         self.all_option = kwargs.get("all_option", False)
         self.rois = kwargs.get("rois", False)
@@ -148,7 +150,9 @@ class DataOption(Option, QtGui.QComboBox):
 
             for name in sorted(data):
                 data = self.ivm.data.get(name, self.ivm.rois.get(name, None))
-                if data.nvols == 1 or not self.static_only:
+                if data.nvols == 1 and self.include_3d:
+                    self.addItem(data.name)
+                elif data.nvols > 1 and self.include_4d:
                     self.addItem(data.name)
 
             if self.all_option:
