@@ -1193,3 +1193,26 @@ class OrderListButtons(QtGui.QVBoxLayout):
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
         self.addStretch(1)
+
+class WarningBox(QtGui.QWidget):
+    """
+    Widget which just displays a warning, e.g. when a QpWidget can't be used for some reason
+    """
+
+    def __init__(self, text):
+        QtGui.QWidget.__init__(self)
+        hbox = QtGui.QHBoxLayout()
+        hbox.setSpacing(0)
+        self.setLayout(hbox)
+
+        self.warn_icon = QtGui.QIcon.fromTheme("dialog-error")
+        self.icon = QtGui.QLabel()
+        self.icon.setPixmap(self.warn_icon.pixmap(32, 32))
+        hbox.addWidget(self.icon)
+
+        self.text = QtGui.QLabel(text)
+        self.text.setWordWrap(True)
+        hbox.addWidget(self.text)
+        hbox.setStretchFactor(self.text, 2)
+
+        self.setStyleSheet("QWidget { background-color: orange; color: black; padding: 5px 5px 5px 5px;}")
