@@ -24,6 +24,7 @@ from PySide import QtGui, QtCore
 
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url
 from quantiphyse.gui.dialogs import MatrixViewerDialog
+from quantiphyse.gui.pickers import PickMode
 
 LOG = logging.getLogger(__name__)
 
@@ -53,17 +54,28 @@ class OptionBox(QtGui.QGroupBox):
                      Must be specified when there are multiple options, and
                      must have the same length as the number of options.
         """
+        checked = kwargs.get("checked", False)
+        enabled = kwargs.get("enabled", False)
         key = kwargs.get("key", label)
         keys = kwargs.get("keys", [key,])
         
         if len(keys) != len(options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
 
-        self.grid.addWidget(QtGui.QLabel(label), self._current_row, 0)
+        if checked:
+            cb = QtGui.QCheckBox(label)
+            cb.setChecked(enabled)
+            self.grid.addWidget(cb, self._current_row, 0)
+        else:
+            self.grid.addWidget(QtGui.QLabel(label), self._current_row, 0)
+            
         for idx, keyopt in enumerate(zip(keys, options)):
             key, option = keyopt
             LOG.debug("Adding option: %s (key=%s)", option, key)
             self.grid.addWidget(option, self._current_row, idx+1)
+            if checked:
+                option.setEnabled(enabled)
+                cb.stateChanged.connect(self._cb_toggled(option))
             self._options[key] = option
 
         self._current_row += 1
@@ -86,8 +98,14 @@ class OptionBox(QtGui.QGroupBox):
         """
         ret = {}
         for key, option in self._options.items():
-            ret[key] = option.value()
+            if option.isEnabled():
+                ret[key] = option.value()
         return ret
+
+    def _cb_toggled(self, option):
+        def _toggled(state):
+            option.setEnabled(state)
+        return _toggled
 
 class Option(object):
     """
@@ -255,6 +273,7 @@ class NumericOption(Option, QtGui.QWidget):
             self.decimals = decimals
             
         hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
 
         #self.min_edit = QtGui.QLineEdit(str(minval))
@@ -301,10 +320,13 @@ class NumericOption(Option, QtGui.QWidget):
         self._changed()
 
     def _slider_changed(self, value):
-        val = self.minval + (self.maxval - self.minval) * float(value) / 100
+        val = self.rtype(self.minval + (self.maxval - self.minval) * float(value) / 100)
         try:
             self.val_edit.blockSignals(True)
-            self.val_edit.setText(sf(val, sig_fig=self.decimals))
+            if self.rtype == int:
+                self.val_edit.setText(str(val))
+            else:
+                self.val_edit.setText(sf(val, sig_fig=self.decimals))
         finally:
             self.val_edit.blockSignals(False)
         self._changed()
@@ -600,7 +622,7 @@ class VectorOption(MatrixOption):
 
     def loadFromFile(self, filename):
         fvals, nrows, ncols = load_matrix(filename)
-        print(fvals, nrows, ncols)
+        LOG.debug(fvals, nrows, ncols)
 
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
@@ -630,6 +652,82 @@ class VectorOption(MatrixOption):
                     # Column select
                     return None, r.leftColumn()
         return None, None    
+
+class PickPointOption(Option, QtGui.QWidget):
+    """ 
+    Option used to specify a single point in a data set
+    """
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, ivl, grid=None, intonly=True):
+        """
+        :param grid: DataGrid instance - output position will be reported relative to this grid
+        :param intonly: If True, positions will be rounded to nearest integer
+        """
+        QtGui.QWidget.__init__(self)
+        self._ivl = ivl
+        self._grid = grid
+        if intonly:
+            self._rtype = int
+            self._offset = 0.5
+        else:
+            self._rtype = float
+            self._offset = 0
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(hbox)
+
+        self._edit = QtGui.QLineEdit()
+        self._edit.editingFinished.connect(self._edit_changed)
+        hbox.addWidget(self._edit)
+        self._btn = QtGui.QPushButton("Pick point")
+        self._btn.clicked.connect(self._pick_point)
+        hbox.addWidget(self._btn)
+
+        self._point = None
+        
+    def value(self):
+        """ 
+        :return: 3D position as float sequence relative to the grid specified in ``setGrid``
+        """
+        return self._point
+    
+    def setGrid(self, grid):
+        """
+        Set the grid to be used when reporting the output point
+        
+        :param grid: DataGrid instance
+        """
+        if self._point:
+            self._set_point(grid.grid_to_grid(self._point, from_grid=self._grid))
+        self._grid = grid
+
+    def _edit_changed(self):
+        self._point = None
+        try:
+            point = [self.rtype(v) for v in self._edit.text().split()]
+            if len(point) == 3:
+                self._point = point
+        except ValueError:
+            # Leave point as None if text is not valid
+            pass
+
+        self.sig_changed.emit()
+      
+    def _pick_point(self):
+        self._ivl.set_picker(PickMode.SINGLE)
+        self._ivl.sig_selection_changed.connect(self._point_picked)
+        self._btn.setEnabled(False)
+
+    def _point_picked(self, picker):
+        self._set_point(picker.selection(self._grid))
+        self._btn.setEnabled(True)
+        self._ivl.sig_selection_changed.disconnect(self._point_picked)
+
+    def _set_point(self, point):
+        self._edit.setText(" ".join([str(self._rtype(v+self._offset)) for v in point[:3]]))
+        self._edit_changed()
 
 class RunButton(QtGui.QWidget):
     """
