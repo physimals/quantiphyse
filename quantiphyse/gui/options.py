@@ -58,7 +58,10 @@ class OptionBox(QtGui.QGroupBox):
         enabled = kwargs.get("enabled", False)
         key = kwargs.get("key", label)
         keys = kwargs.get("keys", [key,])
-        
+        if not options:
+            # Allow no options for just a label
+            options = [None]
+
         if len(keys) != len(options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
 
@@ -71,6 +74,7 @@ class OptionBox(QtGui.QGroupBox):
             
         for idx, keyopt in enumerate(zip(keys, options)):
             key, option = keyopt
+            if option is None: continue
             LOG.debug("Adding option: %s (key=%s)", option, key)
             self.grid.addWidget(option, self._current_row, idx+1)
             if checked:
