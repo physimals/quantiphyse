@@ -66,11 +66,11 @@ class DataGrid(object):
     :ivar affine: 4D affine matrix which describes the transformation from
                   grid co-ordinates to standard space co-ordinates
     :ivar origin: 3D origin of grid in world co-ordinates (last column of ``affine``)
-    :ivar transform: 3x3 submatrix of ``affine`` used to transform directions to world space
+    :ivar transform: 3x3 submatrix of ``affine`` used to transform grid space directions to world space
+    :ivar inv_transform: 3x3 submatrix of ``affine`` used to transform world space directions to grid space
     :ivar spacing: Sequence of length 3 giving spacing between voxels in world units
-    :ivar nvoxels: Number of voxels in the grid
-
-    A DataGrid is not formally immutable but are not designed to be modified
+    :ivar shape: Sequence of length 3 giving number of voxels in each grid dimension
+    :ivar nvoxels: Total number of voxels in the grid
     """
 
     def __init__(self, shape, affine):
@@ -83,22 +83,60 @@ class DataGrid(object):
         # Dimensionality of the grid - 3D only
         if len(shape) != 3:
             raise RuntimeError("Grid shape must be 3D")
-        self.shape = list(shape)[:]
 
         # 3D Affine transformation from grid-space to standard space
         # This is a 4x4 matrix - includes constant offset (origin)
         if len(affine.shape) != 2 or affine.shape[0] != 4 or affine.shape[1] != 4:
             raise RuntimeError("Grid affine must be 4x4 matrix")
 
-        self.affine = np.copy(affine)
-        self.origin = tuple(affine[:3, 3])
-        self.transform = affine[:3, :3]
-        self.inv_transform = np.linalg.inv(self.transform)
+        self.affine = affine
+        self._shape = list(shape)[:]
+        self._affine_orig = np.copy(affine)
+        
+    @property
+    def affine(self):
+        return np.copy(self._affine)
 
-        self.spacing = [np.linalg.norm(self.affine[:, i]) for i in range(3)]
-        self.nvoxels = 1
+    @affine.setter
+    def affine(self, mat):
+        self._affine = np.copy(mat)
+
+    @property
+    def affine_orig(self):
+        return np.copy(self._affine_orig)
+
+    @property
+    def shape(self):
+        return np.copy(self._shape)
+
+    @property
+    def transform(self):
+        return np.copy(self._affine[:3, :3])
+
+    @property
+    def inv_transform(self):
+        return np.linalg.inv(self.transform)
+
+    @property
+    def origin(self):
+        return np.copy(self._affine[:3, 3])
+
+    @property
+    def spacing(self):
+        return [np.linalg.norm(self._affine[:, i]) for i in range(3)]
+
+    @property
+    def nvoxels(self):
+        nvoxels = 1
         for dim in range(3):
-            self.nvoxels *= shape[dim]
+            nvoxels *= self._shape[dim]
+        return nvoxels
+
+    def reset(self):
+        """
+        Reset to original orientation
+        """
+        self.affine = self._affine_orig
 
     def grid_to_grid(self, coord, from_grid=None, to_grid=None, direction=False):
         """
