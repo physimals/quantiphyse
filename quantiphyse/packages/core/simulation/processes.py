@@ -70,7 +70,7 @@ class SimMotionProcess(Process):
         for vol in range(data.nvols):
             voldata = data.volume(vol)
             if padding > 0:
-                voldata = np.pad(voldata, [(v, v) for v in padding_voxels], 'constant', constant_value=0) 
+                voldata = np.pad(voldata, [(v, v) for v in padding_voxels], 'constant', constant_values=0) 
             shift = np.random.normal(scale=std_voxels, size=3)
             shifted_data = scipy.ndimage.interpolation.shift(voldata, shift)
             moving_data[..., vol] = shifted_data
