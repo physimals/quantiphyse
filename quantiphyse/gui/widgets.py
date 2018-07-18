@@ -392,7 +392,7 @@ class NumericSlider(QtGui.QWidget):
 
     def _edit_changed(self):
         try:
-            val = self.rtype(self.val_edit.text())
+            val = self.rtype(float(self.val_edit.text()))
             self.valid = True
             self.val_edit.setStyleSheet("")
 
@@ -427,7 +427,7 @@ class NumericSlider(QtGui.QWidget):
     def value(self):
         """ Get the numeric value selected """
         if self.valid:
-            return self.rtype(self.val_edit.text())
+            return self.rtype(float(self.val_edit.text()))
         else:
             raise QpException("'%s' is not a valid number")
 
