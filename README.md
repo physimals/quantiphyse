@@ -3,18 +3,16 @@
 Viewer for 3D/4D data and Pk modelling
 
 ## Overview
-This viewer provides tools for modelling and analysis of MRI scans. 
+
+This viewer provides tools for modelling and analysis of 3D/4D volumetric data, principally MRI data. 
 
 Key features:
-- 4D DCE-MRI images can be loaded and viewed from nifti images
-- Signal enhancement curves can be visualised and analysed
-- Pharmacokinetic modelling
-- Visualisation of model fitting quality
-- Visualisation of parameter maps
-- Clustering of a region based on the perfusion curves
-- Clustering of a region based on a parameter map
-- Quantification of parameters within subregions of the tumour
-- Python console to interact with the loaded data and analysis (advanced users)
+- Loading/Saving 3D/4D NIFTI files
+- Analysis tools including single/multiple voxel analysis and data comparison
+- Generic processing including smoothing, resampling, clustering
+- Specialised processing including registration, motion correction
+- Specialised modelling tools for DCE, ASL and CEST MRI
+- Integration of selected FSL tools, if installed
 
 See: [http://quantiphyse.readthedocs.org/en/latest/](http://quantiphyse.readthedocs.org/en/latest/) for full documentation.
 
@@ -29,20 +27,13 @@ does have the advantage of making them standalone.
 
 Running from source is recommended only if your are interested in developing the software further.
 
-1. Install the following dependencies:
+1. Install the dependencies:
 
-Python 2.7 or python 3.4
+The list of Python dependencies is in `requirements.txt`
 
-Python libraries:
-- PySide
-- matplotlib
-- numpy 
-- nibabel
-- pyqtgraph
-- Cython
-- scikit-image
-- scikit-learn
-- scipy
+For example:
+
+    pip install -r requirements.txt
 
 2. Build extensions
 
@@ -52,17 +43,15 @@ Python libraries:
 
 `python qp.py`
 
-### Packaging
+#### Packaging
 
 The scripts packaging/build.py is used to build a frozen distribution package in the form of a compressed archive (`tar.gz` or `.zip`) and a platform-dependent package (`deb`, `msi` or `dpg`). It should run autonomously, however you may need to input the sudo password on Linux in order to build a `deb` package. 
 
 The `--snapshot` option removes the version number from package filenames so you can provided them for download without having to change the link URLs.
 
-The `--maxi` option builds a package which includes the Fabber frontend widgets.
+The `--maxi` option builds a package which includes selected plugins, assuming these are downloaded
 
 #### OSx 10.11
-
-*NB: this guide is still a work in progress. Please let me know if something doesn't work*
 
 Installing from source on OSX is not fun. The major issue is QT since the required version (4.8) is 
 deprecated and hard to install properly. 
@@ -79,29 +68,24 @@ affecting the underlying system.
 already installed. 
 
 2) Install python
-```bash
-brew update
-brew install python
-```
+
+    brew update
+    brew install python
 
 2) git clone this repository
 
 3) cd into the directory
 
-```bash
-# Install dependencies
-pip install -U pip
-pip install -U setuptools
-pip install numpy 
-pip install scipy
-pip install -r requirements.txt
-pip install PySide
-```
+    pip install -U pip
+    pip install -U setuptools
+    pip install numpy 
+    pip install scipy
+    pip install -r requirements.txt
+    pip install PySide
 
 4) Run the script
-```bash
-python quantiphyse.py
-```
+    
+    python qp.py
 
 #### Using a python virtualenv
 
@@ -110,9 +94,7 @@ dependencies you install do not affect anything else on your system. See (https:
 
 On Windows, Anaconda is recommended and comes with virtual environment support as standard.
 
-## Additional notes:
-
-### Resource file
+#### Resource file
 
 The resource file is compiled by
 
@@ -124,3 +106,81 @@ pyside-rcc resource -o resource.py -py3
 
 This is then imported at the beginning of the app so that the program can find the resources. 
 
+## To Do list
+
+### Issue tracker
+
+Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng.ox.ac.uk/quantiphyse/quantiphyse/issues)
+
+### Roadmap
+
+#### v0.6 (Released June 2018)
+
+ - ASL tools first version (preprocess, model fit, calibration, multiphase)
+ - Improved viewer (full resolution, aligned)
+
+#### v0.8 (Target August 2018)
+
+ - Integration of selected FSL tools (FLIRT, FAST, BET)
+ - Improved manual data alignment tools
+ - Improved registration support (apply transform)
+ - ENABLE
+ - Fabber T1 (integrate with existing T1 widget?)
+ - Fabber DCE (integrate with existing DCE widget?)
+
+#### v1.0 (Target October/November 2018)
+
+No firm plans yet - selection from 'Vague plans' below
+
+#### Vague Plans for Future
+
+ - MoCo/Registration
+   - Definitely want Bartek's MC method
+   - Revise interface to allow for MC and registration to be treated separately (MCFLIRT/FLIRT) (or not)
+   - Standard way to save the transformation (matrix or warp map)
+   - Could add FNIRT based option
+
+ - 3D view
+   - Probably not that useful but fun and may be easy(?) with vispy
+
+ - Add Jola's texture analysis which sounds cool, whatever it is
+
+ - PK modelling validation
+   - QIBA in progress
+   - QIN
+
+ - Simplify/rewrite generic Fabber interface
+
+ - Improve memory usage by swapping out data which are not being displayed?
+
+ - All widgets which process within ROI should work with the subimage within the bounding box of the
+   ROI, not the whole image. 
+    - Supervoxels does this already with great performance improvement.
+
+ - Improve batch processing unification
+   - Most GUI tools now use the new Process system so they are available in batch
+
+ - Support other file formats using NIBABEL.
+   - DICOM conversion included where DCMSTACK is available
+
+ - Improve /rethink generic maths/processing widget / console
+   - Need to link data grids with data 
+
+ - Add semiquantitative DCE-MRI measures
+   - Area under the curve
+   - Enhancing fraction
+
+ - Simulation tools
+   - Motion simulation  DONE
+   - Add noise          DONE
+   - Fabber test data
+   - 'Simulated brain'
+
+### Migration to PySide2
+
+ - The current implementation uses PySide which is based on Qt4
+ - Update to PySide2 when released which uses Qt5
+ - Will provide support for HiDPI screens and proper scaling in OSx
+ - PyQtgraph is currently the stumbling block as release version does not support Pyside2
+ - Current git version has PySide2 modifications but not yet tested
+ - Consider move to VisPy if this does not come to fruition
