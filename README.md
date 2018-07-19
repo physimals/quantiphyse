@@ -98,11 +98,13 @@ On Windows, Anaconda is recommended and comes with virtual environment support a
 
 The resource file is compiled by
 
-For python 2
-pyside-rcc resource -o resource.py
+For python 2:
 
-For python 3
-pyside-rcc resource -o resource.py -py3
+    pyside-rcc resource -o resource.py
+
+For python 3:
+
+    pyside-rcc resource -o resource.py -py3
 
 This is then imported at the beginning of the app so that the program can find the resources. 
 
