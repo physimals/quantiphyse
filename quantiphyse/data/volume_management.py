@@ -176,7 +176,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
         if name is not None:
             roi.name = name
-        roi.set_roi(True)
+        roi.roi = True
 
         self._valid_name(roi.name)
         self.rois[roi.name] = roi

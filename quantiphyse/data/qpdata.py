@@ -62,15 +62,6 @@ def is_ortho_vector(vec, shape=1):
 class DataGrid(object):
     """
     Defines a regular 3D grid in some 'world' space
-
-    :ivar affine: 4D affine matrix which describes the transformation from
-                  grid co-ordinates to standard space co-ordinates
-    :ivar origin: 3D origin of grid in world co-ordinates (last column of ``affine``)
-    :ivar transform: 3x3 submatrix of ``affine`` used to transform grid space directions to world space
-    :ivar inv_transform: 3x3 submatrix of ``affine`` used to transform world space directions to grid space
-    :ivar spacing: Sequence of length 3 giving spacing between voxels in world units
-    :ivar shape: Sequence of length 3 giving number of voxels in each grid dimension
-    :ivar nvoxels: Total number of voxels in the grid
     """
 
     def __init__(self, shape, affine):
@@ -89,12 +80,13 @@ class DataGrid(object):
         if len(affine.shape) != 2 or affine.shape[0] != 4 or affine.shape[1] != 4:
             raise RuntimeError("Grid affine must be 4x4 matrix")
 
-        self.affine = affine
+        self._affine = np.copy(affine)
         self._shape = list(shape)[:]
         self._affine_orig = np.copy(affine)
         
     @property
     def affine(self):
+        """ 4D affine matrix which describes the transformation from grid co-ordinates to world space co-ordinates"""
         return np.copy(self._affine)
 
     @affine.setter
@@ -103,30 +95,37 @@ class DataGrid(object):
 
     @property
     def affine_orig(self):
+        """ Original 4D affine matrix from the initial creation of the grid. """
         return np.copy(self._affine_orig)
 
     @property
     def shape(self):
+        """ Sequence of 3 integers giving number of voxels along each axis"""
         return np.copy(self._shape)
 
     @property
     def transform(self):
+        """ 3x3 submatrix of ``affine`` used to transform grid space directions to world space """
         return np.copy(self._affine[:3, :3])
 
     @property
     def inv_transform(self):
+        """ 3x3 submatrix of ``affine`` used to transform world space directions to grid space"""
         return np.linalg.inv(self.transform)
 
     @property
     def origin(self):
+        """ 3D origin of grid in world co-ordinates (last column of ``affine``)"""
         return np.copy(self._affine[:3, 3])
 
     @property
     def spacing(self):
+        """ Sequence of length 3 giving spacing between voxels in mm"""
         return [np.linalg.norm(self._affine[:, i]) for i in range(3)]
 
     @property
     def nvoxels(self):
+        """ Total number of voxels in the grid"""
         nvoxels = 1
         for dim in range(3):
             nvoxels *= self._shape[dim]
@@ -276,11 +275,6 @@ class DataGrid(object):
 class OrthoSlice(DataGrid):
     """
     DataGrid defined as a 2D orthogonal slice through another grid
-
-    Has same attributes as :class:`DataGrid`, in addition:
-
-    :ivar basis: Sequence of two 3D basis vectors for the plane in world co-ordinates
-    :ivar normal: 3D normal vector to the plane in world co-ordinates
     """
 
     def __init__(self, grid, zaxis, pos):
@@ -303,8 +297,18 @@ class OrthoSlice(DataGrid):
                 affine[:, 2] = grid.affine[:, axis]
         affine[:, 3] = grid.affine[:, 3] + pos * affine[:, 2]
         DataGrid.__init__(self, shape, affine)
-        self.basis = [tuple(self.transform[:, 0]), tuple(self.transform[:, 1])]
-        self.normal = tuple(self.transform[:, 2])
+        self._basis = [tuple(self.transform[:, 0]), tuple(self.transform[:, 1])]
+        self._normal = tuple(self.transform[:, 2])
+
+    @property
+    def basis(self):
+        """ Sequence of two 3D basis vectors for the plane in world co-ordinates"""
+        return self._basis
+
+    @property
+    def normal(self):
+        """ 3D normal vector to the plane in world co-ordinates"""
+        return self._normal
 
 class QpData(object):
     """
@@ -315,13 +319,9 @@ class QpData(object):
     :ivar name: Identifying name for the data the :class:`ImageVolumeManagement` class will
                 require this to be a valid and Python variable name and unique within the IVM.
     :ivar grid: :class:`DataGrid` instance the data is defined on
-    :ivar nvols: Number of volumes (1=3D data)
-    :ivar ndim: 3 or 4 for 3D or 4D data
     :ivar fname: File name data came from if relevant
     :ivar dps: Number of decimal places to display data to
-    :ivar raw_2dt: Whether raw data is 3D but being interpreted as 2D multi-volume
     :ivar range: Data range tuple (min, max)
-    :ivar roi: True if this data represents a region of interest
     """
 
     def __init__(self, name, grid, nvols, fname=None, metadata=None, roi=False):
@@ -332,12 +332,8 @@ class QpData(object):
         self.grid = grid
 
         # Number of volumes (1=3D data)
-        self.nvols = nvols
-        if self.nvols == 1:
-            self.ndim = 3
-        else:
-            self.ndim = 4
-
+        self._nvols = nvols
+        
         # File it was loaded from, if relevant
         self.fname = fname
 
@@ -345,12 +341,12 @@ class QpData(object):
         self.dps = 1
 
         # Whether raw data is 2d + time incorrectly returned as 3D
-        self.raw_2dt = False
+        self._raw_2dt = False
 
         # Treat as an ROI data set if requested
         self._regions = None
         self._range = None
-        self.set_roi(roi)
+        self.roi = roi
 
         # Metadata - saved as NIFTI extension. Keys must be strings and
         # values must be YAML-convertible
@@ -358,6 +354,67 @@ class QpData(object):
             self.metadata = metadata
         else:
             self.metadata = {}
+
+    @property
+    def ndim(self):
+        """ 3 or 4 for 3D or 4D data"""
+        if self.nvols == 1:
+            return 3
+        else:
+            return 4
+
+    @property
+    def nvols(self):
+        """ Number of volumes (1=3D data)"""
+        return self._nvols
+
+    @property
+    def roi(self):
+        """ True if this data represents a region of interest"""
+        return self._roi
+
+    @roi.setter
+    def roi(self, is_roi):
+        """
+        Set whether data should be interpreted as a region of interest
+
+        :param roi: If True, interpret as roi
+        """
+        if is_roi and self.nvols != 1:
+            raise TypeError("ROIs must be static (single volume) 3D data")
+        self._roi = is_roi
+
+    @property
+    def regions(self):
+        """
+        Sequence of distinct ROI region integers, not including zero
+        """
+        if not self.roi:
+            raise TypeError("Only ROIs have distinct regions")
+        
+        if self._regions is None:
+            self._regions = np.unique(self.raw().astype(np.int))
+            self._regions = [int(r) for r in self._regions if r > 0]
+
+        return self._regions
+
+    def set_2dt(self):
+        """
+        Force 3D static data into the form of 2D multi-volume
+
+        This is useful for some broken NIFTI files. Note that the 3D extent of the grid
+        is completely ignored. In order to work, the underlying class must implement the
+        change in raw().
+        """
+        if self.nvols != 1 or self.grid.shape[2] == 1:
+            raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
+
+        self._raw_2dt = True
+        self._nvols = self.grid.shape[2]
+
+        # The grid transform can't be properly interpreted because basically the file is broken,
+        # so just make it 2D and hope the remaining transform is sensible
+        self.grid.shape[2] = 1
 
     def raw(self):
         """
@@ -675,48 +732,6 @@ class QpData(object):
             return slice(0, length, 1)
         else:
             return slice(length-1, None, -1)
-
-    def set_2dt(self):
-        """
-        Force 3D static data into the form of 2D multi-volume
-
-        This is useful for some broken NIFTI files. Note that the 3D extent of the grid
-        is completely ignored. In order to work, the underlying class must implement the
-        change in raw().
-        """
-        if self.nvols != 1 or self.grid.shape[2] == 1:
-            raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
-
-        self.raw_2dt = True
-        self.nvols = self.grid.shape[2]
-        self.ndim = 4
-
-        # The grid transform can't be properly interpreted because basically the file is broken,
-        # so just make it 2D and hope the remaining transform is sensible
-        self.grid.shape[2] = 1
-
-    def regions(self):
-        """
-        :return: Sequence of distinct ROI region integers, not including zero
-        """
-        if not self.roi:
-            raise TypeError("Only ROIs have distinct regions")
-        
-        if self._regions is None:
-            self._regions = np.unique(self.raw().astype(np.int))
-            self._regions = [int(r) for r in self._regions if r > 0]
-
-        return self._regions
-
-    def set_roi(self, roi):
-        """
-        Set whether data should be interpreted as a region of interest
-
-        :param roi: If True, interpret as roi
-        """
-        if roi and self.nvols != 1:
-            raise TypeError("ROIs must be static (single volume) 3D data")
-        self.roi = roi
 
     def get_bounding_box(self, ndim=3):
         """

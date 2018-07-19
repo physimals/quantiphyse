@@ -121,7 +121,7 @@ class NiftiData(QpData):
         while arr.ndim < 3:
             arr = np.expand_dims(arr, -1)
 
-        if self.raw_2dt and arr.ndim == 3:
+        if self._raw_2dt and arr.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             arr = np.expand_dims(arr, 2)
 
