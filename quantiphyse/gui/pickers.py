@@ -65,8 +65,11 @@ class PickMode(object):
     #: Select polygogn region bounded by points - see :class:`PolygonPicker`
     POLYGON = 6
 
-   #: Select regions by dragging around them - see :class:`FreehandPicker`
+    #: Select regions by dragging around them - see :class:`FreehandPicker`
     FREEHAND = 7
+
+    #: Select a set of points by dragging - see :class:`PaintPicker`
+    PAINT = 8
 
 class Picker(LogSource):
     """
@@ -76,6 +79,12 @@ class Picker(LogSource):
         LogSource.__init__(self)
         self.ivl = iv
         self.use_drag = False
+
+    def reset(self):
+        """
+        Reset the picker, discarding any existing selection
+        """
+        pass
 
     def pick(self, win, pos):
         """
@@ -141,6 +150,36 @@ class PointPicker(Picker):
         else:
             return self._point
 
+class PaintPicker(Picker):
+    """
+    Picker which selects a series of points by clicking and dragging
+    """
+    def __init__(self, ivl):
+        Picker.__init__(self, ivl)
+        self._points = []
+        self.use_drag = True
+
+    def reset(self):
+        print("paint picker reset")
+        self._points = []
+
+    def pick(self, win, pos):
+        print("paint picker pick", pos)
+        self._points = [pos,]
+
+    def drag(self, win, pos):
+        print("paint picker drag", pos)
+        self._points.append(pos)
+
+    def selection(self, grid=None, **kwargs):
+        """
+        :return: The selected point as a sequence of 4D co-ordinates
+        """
+        if grid is not None:
+            return [grid.grid_to_grid(pos, from_grid=self.ivl.grid) for pos in self._points]
+        else:
+            return self._points
+            
 class MultiPicker(Picker):
     """
     Picker which picks multiple points, potentially in different colours
@@ -406,5 +445,6 @@ PICKERS = {PickMode.SINGLE : PointPicker,
            PickMode.POLYGON : PolygonPicker,
            PickMode.RECT : RectPicker,
            PickMode.ELLIPSE : EllipsePicker,
-           PickMode.FREEHAND : FreehandPicker
+           PickMode.FREEHAND : FreehandPicker,
+           PickMode.PAINT : PaintPicker,
           }
