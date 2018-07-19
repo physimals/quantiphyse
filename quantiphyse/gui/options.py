@@ -335,6 +335,10 @@ class NumericOption(Option, QtGui.QWidget):
             self.val_edit.blockSignals(False)
         self._changed()
 
+    def setValue(self, value):
+        self.val_edit.setText(str(value))
+        self._edit_changed()
+
     def value(self):
         """ Get the numeric value selected """
         if self.valid:
