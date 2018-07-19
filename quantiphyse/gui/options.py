@@ -714,7 +714,7 @@ class PickPointOption(Option, QtGui.QWidget):
     def _edit_changed(self):
         self._point = None
         try:
-            point = [self.rtype(v) for v in self._edit.text().split()]
+            point = [self._rtype(float(v)) for v in self._edit.text().split()]
             if len(point) == 3:
                 self._point = point
         except ValueError:
