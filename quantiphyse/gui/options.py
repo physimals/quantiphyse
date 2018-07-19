@@ -88,6 +88,17 @@ class OptionBox(QtGui.QGroupBox):
             return options[0]
         return options
     
+    def clear(self):
+        """
+        Clear all widgets out of the options box
+        """
+        while self.grid.count():
+            child = self.grid.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+        self._current_row = 0
+        self._options = {}
+
     def option(self, key):
         """
         :return: The option widget having key=``key``
@@ -200,8 +211,12 @@ class ChoiceOption(Option, QtGui.QComboBox):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, choices=(), return_values=None):
+    def __init__(self, choices, return_values=None):
         QtGui.QComboBox.__init__(self)
+        self.setChoices(choices, return_values)
+        self.currentIndexChanged.connect(self._changed)
+
+    def setChoices(self, choices, return_values=None):
         if return_values is None:
             return_values = list(choices)
 
@@ -209,10 +224,14 @@ class ChoiceOption(Option, QtGui.QComboBox):
             raise QpException("Number of return values must match number of choices")
         self.choice_map = dict(zip(choices, return_values))
         
-        for choice in choices:
-            self.addItem(choice)
-        self.currentIndexChanged.connect(self._changed)
-
+        try:
+            self.blockSignals(True)
+            self.clear()
+            for choice in choices:
+                self.addItem(choice)
+        finally:
+            self.blockSignals(False)
+            
     def value(self):
         """ 
         :return: Value of currently selected option. This is either
