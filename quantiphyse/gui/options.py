@@ -32,6 +32,8 @@ class OptionBox(QtGui.QGroupBox):
     """
     A box containing structured options for a QpWidget
     """
+    sig_changed = QtCore.Signal()
+
     def __init__(self, title):
         QtGui.QGroupBox.__init__(self, title)
         self.grid = QtGui.QGridLayout()
@@ -58,11 +60,15 @@ class OptionBox(QtGui.QGroupBox):
         enabled = kwargs.get("enabled", False)
         key = kwargs.get("key", label)
         keys = kwargs.get("keys", [key,])
-        if not options:
-            # Allow no options for just a label
-            options = [None]
+        
+        real_options = [opt for opt in options if isinstance(opt, Option)]
+        extra_widgets = [opt for opt in options if opt not in real_options]
 
-        if len(keys) != len(options):
+        if not real_options:
+            # Allow no options for just a label
+            real_options = [None]
+
+        if len(keys) != len(real_options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
 
         if checked:
@@ -72,7 +78,7 @@ class OptionBox(QtGui.QGroupBox):
         else:
             self.grid.addWidget(QtGui.QLabel(label), self._current_row, 0)
             
-        for idx, keyopt in enumerate(zip(keys, options)):
+        for idx, keyopt in enumerate(zip(keys, real_options)):
             key, option = keyopt
             if option is None: continue
             LOG.debug("Adding option: %s (key=%s)", option, key)
@@ -81,12 +87,17 @@ class OptionBox(QtGui.QGroupBox):
                 option.setEnabled(enabled)
                 cb.stateChanged.connect(self._cb_toggled(option))
             self._options[key] = option
+            option.sig_changed.connect(self.sig_changed.emit)
+
+        for extra_idx, widget in enumerate(extra_widgets):
+            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+1)
 
         self._current_row += 1
 
-        if len(options) == 1:
-            return options[0]
-        return options
+        if len(real_options) == 1:
+            return real_options[0]
+        else:
+            return real_options
     
     def clear(self):
         """
@@ -114,7 +125,7 @@ class OptionBox(QtGui.QGroupBox):
         ret = {}
         for key, option in self._options.items():
             if option.isEnabled():
-                ret[key] = option.value()
+                ret[key] = option.value
         return ret
 
     def _cb_toggled(self, option):
@@ -126,11 +137,24 @@ class Option(object):
     """
     Base class for  an option
 
-    This is simply so we can detect instances of option widgets.
-    We would like to define sig_changed here but this requires
+    We have a base class mainly so we can use ``isinstance`` to detect option
+    widgets.
+    
+    All option widgets *must* define a ``value`` property method which returns the
+    current value of the option in whatever type makes sense to the particular
+    option type. Options must also define a Qt signal ``sig_changed`` which takes
+    no parameters and is emitted whenever the option value changes.
+
+    We would like to define sig_changed in the base class but this requires
     the class to be a QObject and we would end up with 
     multiple inheritance from QObject, QWidget which is probably
     very bad if it gets into the C++
+    
+    Options should probably make the ``value`` property settable so the option
+    UI can be updated programatically.
+    
+    Options may support other properties, e.g. ``choices`` to set the current set
+    of options in a ChoiceOption.
     """
     pass
 
@@ -158,12 +182,23 @@ class DataOption(Option, QtGui.QComboBox):
         self._data_changed()
         self.currentIndexChanged.connect(self._changed)
     
+    @property
     def value(self):
-        """
-        :return: Name of currently selected data
-        """
+        """ Name of currently selected data """
         return self.currentText()
 
+    @value.setter
+    def value(self, data_name):
+        """ Set the selected data name""" 
+        if data_name is None:
+            data_name = "<none>"
+
+        idx = self.findText(data_name)
+        if idx >= 0:
+            self.setCurrentIndex(idx)
+        else:
+            raise ValueError("Data item %s is not a valid choice for this option")
+            
     def _changed(self):
         self.sig_changed.emit()
 
@@ -211,7 +246,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, choices, return_values=None):
+    def __init__(self, choices=(), return_values=None):
         QtGui.QComboBox.__init__(self)
         self.setChoices(choices, return_values)
         self.currentIndexChanged.connect(self._changed)
@@ -229,17 +264,29 @@ class ChoiceOption(Option, QtGui.QComboBox):
             self.clear()
             for choice in choices:
                 self.addItem(choice)
+            self.setCurrentIndex(0)
         finally:
             self.blockSignals(False)
-            
+        self._changed()
+
+    @property
     def value(self):
         """ 
-        :return: Value of currently selected option. This is either
-                 the selected text, or the corresponding return value
-                 if these were supplied when the object was created
+        Value of currently selected option. 
+        
+        This is either the selected text, or the corresponding return value
+        if these were supplied when the object was created
         """
-        return self.choice_map[self.currentText()]
+        return self.choice_map.get(self.currentText(), None)
     
+    @value.setter
+    def value(self, choice):
+        idx = self.findText(choice)
+        if idx >= 0:
+            self.setCurrentIndex(idx)
+        else:
+            raise ValueError("Value %s is not a valid choice for this option")
+            
     def _changed(self):
         self.sig_changed.emit()
 
@@ -259,12 +306,15 @@ class OutputNameOption(Option, QtGui.QLineEdit):
             src_data.sig_changed.connect(self._reset)
         self.editingFinished.connect(self._changed)
 
+    @property
     def value(self):
-        """ 
-        :return: Current text
-        """
+        """ Current text """
         return self.text()
     
+    @value.setter
+    def value(self, name):
+        self.setText(name)
+
     def _changed(self):
         self.sig_changed.emit()
 
@@ -328,7 +378,7 @@ class NumericOption(Option, QtGui.QWidget):
             if val < self.minval and not self.hardmin:
                 self.minval = val
 
-            val = self.value()
+            val = self.value
             pos = 100 * (val - self.minval) / (self.maxval - self.minval)
             try:
                 self.slider.blockSignals(True)
@@ -354,16 +404,18 @@ class NumericOption(Option, QtGui.QWidget):
             self.val_edit.blockSignals(False)
         self._changed()
 
-    def setValue(self, value):
-        self.val_edit.setText(str(value))
-        self._edit_changed()
-
+    @property
     def value(self):
-        """ Get the numeric value selected """
+        """ The numeric value selected """
         if self.valid:
             return self.rtype(self.val_edit.text())
         else:
             raise QpException("'%s' is not a valid number")
+
+    @value.setter
+    def value(self, value):
+        self.val_edit.setText(str(value))
+        self._edit_changed()
 
     def setLimits(self, minval=None, maxval=None):
         """
@@ -392,12 +444,15 @@ class BoolOption(Option, QtGui.QCheckBox):
         self.setChecked(default)
         self.stateChanged.connect(self._changed)
 
+    @property
     def value(self):
-        """ 
-        :return: True or False according to whether the option is selected
-        """
+        """ True or False according to whether the option is selected """
         return self.isChecked()
     
+    @value.setter
+    def value(self, checked):
+        self.setChecked(checked)
+
     def _changed(self):
         self.sig_changed.emit()
       
@@ -443,10 +498,9 @@ class MatrixOption(Option, QtGui.QTableView):
         except ValueError:
             return False
 
+    @property
     def value(self):
-        """
-        :return: Matrix of numbers as a sequence of sequences
-        """
+        """ Matrix of numbers as a sequence of sequences """
         rows = []
         try:
             for r in range(self._model.rowCount()-int(self.expandable[1])):
@@ -455,6 +509,10 @@ class MatrixOption(Option, QtGui.QTableView):
         except:
             raise ValueError("Non-numeric data in list")
         return np.array(rows)
+
+    @value.setter
+    def value(self, mat):
+        self.setMatrix(mat)
 
     def _set_size(self):
         # QTableWidget is completely incapable of choosing a sensible size. We do our best
@@ -641,8 +699,10 @@ class VectorOption(MatrixOption):
         else:
             return np.array([row[0] for row in matrix])
 
+    @property
     def value(self):
-        return self._from_matrix(MatrixOption.value(self))
+        """ Sequence of numbers """
+        return self._from_matrix(MatrixOption.value.fget(self))
 
     def setList(self, values, **kwargs):
         MatrixOption.setMatrix(self, self._to_matrix(values), **kwargs)
@@ -714,10 +774,9 @@ class PickPointOption(Option, QtGui.QWidget):
 
         self._point = None
         
+    @property
     def value(self):
-        """ 
-        :return: 3D position as float sequence relative to the grid specified in ``setGrid``
-        """
+        """ 3D position as float sequence relative to the grid specified in ``setGrid`` """
         return self._point
     
     def setGrid(self, grid):

@@ -44,10 +44,10 @@ class ResampleDataWidget(QpWidget):
     
     def batch_options(self):
         options = {
-            "data" : self.data.value(),
-            "grid" : self.grid_data.value(),
-            "output-name" : self.output_name.value(),
-            "order" : self.order.value(),
+            "data" : self.data.value,
+            "grid" : self.grid_data.value,
+            "output-name" : self.output_name.value,
+            "order" : self.order.value,
         }
 
         return "Resample", options
