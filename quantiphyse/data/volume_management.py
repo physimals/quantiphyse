@@ -139,14 +139,21 @@ class ImageVolumeManagement(QtCore.QObject):
             data.name = name
 
         self._valid_name(data.name)
-        self.data[data.name] = data
         
-        # Make main data if requested, or if not specified and it is the first data
+        # If replacing existing data, delete the old one first
+        if data.name in self.data:
+            self.delete_data(data.name)
+            
+        self.data[data.name] = data
+
+        # Make main data if requested or if not specified and there is no current main data
         if make_main is None:
             make_main = self.main is None
+
         if make_main:
             self.set_main_data(data.name)
 
+        # Emit the 'data changed' signal
         self.sig_all_data.emit(self.data.keys())
 
         # Make current if requested, or if not specified and it is the first non-main data
