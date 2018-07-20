@@ -45,14 +45,14 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertEquals(self.ivm.current_roi.name, NAME)
         # Don't check regions as we know this doesn't work. Really you shouldn't be running
         # supervoxels without an ROI, we are just checking it handles it gracefully if you do
-        #self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_SV)
+        #self.assertEquals(len(self.ivm.rois[NAME].regions, NUM_SV)
         self.assertFalse(self.error)
 
     def test3dDataMask(self):
         self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.test3dData()
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_SV)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
         sv = self.ivm.rois[NAME].raw()
         self.assertTrue(np.all(sv[self.mask == 0] == 0))
@@ -78,7 +78,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertEquals(self.ivm.current_roi.name, NAME)
         # Don't check regions as we know this doesn't work. Really you shouldn't be running
         # supervoxels without an ROI, we are just checking it handles it gracefully if you do
-        #self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_SV)
+        #self.assertEquals(len(self.ivm.rois[NAME].regions, NUM_SV)
         self.assertFalse(self.error)
 
     def test4dDataMask(self):
@@ -86,7 +86,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.w.ovl.setCurrentIndex(0)
         self.w.roi.setCurrentIndex(0)
         self.test4dData()
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_SV)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
         # Supervoxel value is always zero outside the ROI
         sv = self.ivm.rois[NAME].raw()
         self.assertTrue(np.all(sv[self.mask == 0] == 0))

@@ -303,7 +303,7 @@ class RoiView(ImageDataView):
 
             if self.opts["contour"]:
                 # Update data and level for existing contour items, and create new ones if needed
-                for val in self.data.regions():
+                for val in self.data.regions:
                     pencol = get_pencol(self.data, val)
                     if val != 0:
                         if n_contours == len(contours):

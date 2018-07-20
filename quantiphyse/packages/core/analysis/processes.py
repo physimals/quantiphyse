@@ -41,7 +41,7 @@ class CalcVolumesProcess(Process):
         if roi is not None:
             sizes = roi.grid.spacing
             counts = np.bincount(roi.raw().flatten().astype(np.int))
-            for idx, region in enumerate(roi.regions()):
+            for idx, region in enumerate(roi.regions):
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
                     vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
@@ -78,7 +78,7 @@ class HistogramProcess(Process):
             raise QpException("No data to calculate histogram")
         
         roi = self.get_roi(options, grid)
-        roi_labels = roi.regions()
+        roi_labels = roi.regions
         
         sel_region = options.pop('region', None)
         dmin = options.pop('min', None)
@@ -274,7 +274,7 @@ class DataStatisticsProcess(Process):
 
         if (data is None):
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, roi.regions(), np.array([0, 0]), np.array([0, 1])
+            return stat1, roi.regions, np.array([0, 0]), np.array([0, 1])
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
         hist1 = []
@@ -287,7 +287,7 @@ class DataStatisticsProcess(Process):
             data_arr, _, _, _ = data.slice_data(slice)
             roi_arr, _, _, _ = roi.slice_data(slice)
 
-        for region in roi.regions():
+        for region in roi.regions:
             # get data for a single label of the roi
             in_roi = data_arr[roi_arr == region]
             if in_roi.size > 0:
@@ -306,7 +306,7 @@ class DataStatisticsProcess(Process):
             hist1.append(y)
             hist1x.append(x)
 
-        return stat1, roi.regions(), hist1, hist1x
+        return stat1, roi.regions, hist1, hist1x
 
 class ExecProcess(Process):
     

@@ -37,7 +37,7 @@ class ClusteringWidgetTest(WidgetTest):
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_CLUSTERS)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         self.assertFalse(self.error)
         
     def test3dDataWithRoi(self):
@@ -53,7 +53,7 @@ class ClusteringWidgetTest(WidgetTest):
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_CLUSTERS)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         # Cluster value is always zero outside the ROI
         cl = self.ivm.rois[NAME].raw()
         self.assertTrue(np.all(cl[self.mask == 0] == 0))
@@ -74,7 +74,7 @@ class ClusteringWidgetTest(WidgetTest):
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_CLUSTERS)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         self.assertFalse(self.error)
         
     def test4dDataWithRoi(self):
@@ -92,7 +92,7 @@ class ClusteringWidgetTest(WidgetTest):
         
         self.assertTrue(NAME in self.ivm.rois)
         self.assertEquals(self.ivm.current_roi.name, NAME)
-        self.assertEquals(len(self.ivm.rois[NAME].regions()), NUM_CLUSTERS)
+        self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_CLUSTERS)
         # Cluster value is always zero outside the ROI
         cl = self.ivm.rois[NAME].raw()
         self.assertTrue(np.all(cl[self.mask == 0] == 0))

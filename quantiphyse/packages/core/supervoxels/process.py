@@ -85,7 +85,7 @@ class MeanValuesProcess(Process):
 
         in_data = data.raw()
         out_data = np.zeros(in_data.shape)
-        for region in roi.regions():
+        for region in roi.regions:
             if data.ndim > 3:
                 out_data[roi.raw() == region] = np.mean(in_data[roi.raw() == region], axis=0)
             else:
