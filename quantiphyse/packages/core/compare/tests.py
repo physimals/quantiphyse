@@ -65,11 +65,12 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.any(self.w.d1 != self.w.d2))
 
     def testCurrentVolume(self):
-        data_4d = np.ones(self.grid.shape + [2,])
-        data_4d[..., -1] = 2
+        data_4d = np.ones(list(self.grid.shape) + [2,])
+        data_4d[..., 1] = 2
 
         data_3d = np.ones(self.grid.shape)
         data_3d[...] = 3
+
         self.ivm.add_data(data_3d, grid=self.grid, name="data_3d")
         self.ivm.add_data(data_4d, grid=self.grid, name="data_4d")
         self.processEvents()
@@ -80,7 +81,7 @@ class CompareDataWidgetTest(WidgetTest):
         self.processEvents()
 
         self.w.d1_combo.setCurrentIndex(self.w.d1_combo.findText("data_3d"))
-        self.w.d2_combo.setCurrentIndex(self.w.d1_combo.findText("data_4d"))
+        self.w.d2_combo.setCurrentIndex(self.w.d2_combo.findText("data_4d"))
         self.processEvents()
         self.assertTrue(self.w.run_btn.isEnabled())
 
