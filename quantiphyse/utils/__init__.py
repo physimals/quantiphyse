@@ -112,7 +112,7 @@ def get_version():
         from .._version import __version__
         return __version__
     except ImportError:
-        warn(sys.exc_info()[1])
+        LOG.warn(sys.exc_info()[1])
         return "<version not found>"
 
 def table_to_str(tabmod):
