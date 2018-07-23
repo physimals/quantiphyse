@@ -30,7 +30,7 @@ class ResampleDataWidgetTest(WidgetTest):
 
         self.assertEqual(self.w.data.currentText(), "data_3d")
         self.assertEqual(self.w.grid_data.currentText(), "data_3d")
-        self.assertEqual(self.w.output_name.value(), "data_3d_res")
+        self.assertEqual(self.w.output_name.value, "data_3d_res")
 
         self.w.run.btn.clicked.emit()
         self.processEvents()
@@ -51,7 +51,7 @@ class ResampleDataWidgetTest(WidgetTest):
 
         self.assertEqual(self.w.data.currentText(), "data_4d")
         self.assertEqual(self.w.grid_data.currentText(), "data_4d")
-        self.assertEqual(self.w.output_name.value(), "data_4d_res")
+        self.assertEqual(self.w.output_name.value, "data_4d_res")
 
         self.w.run.btn.clicked.emit()
         self.processEvents()
@@ -76,7 +76,7 @@ class ResampleDataWidgetTest(WidgetTest):
         self.w.grid_data.setCurrentIndex(self.w.grid_data.findText("hires_data"))
         self.processEvents()
 
-        self.assertEqual(self.w.output_name.value(), "data_3d_res")
+        self.assertEqual(self.w.output_name.value, "data_3d_res")
         
         self.w.run.btn.clicked.emit()
         self.processEvents()
@@ -109,7 +109,7 @@ class ResampleDataWidgetTest(WidgetTest):
         self.w.grid_data.setCurrentIndex(self.w.grid_data.findText("hires_data"))
         self.processEvents()
 
-        self.assertEqual(self.w.output_name.value(), "data_3d_res")
+        self.assertEqual(self.w.output_name.value, "data_3d_res")
         
         self.w.run.btn.clicked.emit()
         self.processEvents()
