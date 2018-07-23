@@ -4,7 +4,7 @@ Quantiphyse - 2d ortho slice image viewer
 Copyright (c) 2013-2018 University of Oxford
 """
 
-from __future__ import division, unicode_literals, absolute_import, print_function
+from __future__ import division, unicode_literals, absolute_import
 
 from PySide import QtCore, QtGui
 import numpy as np
@@ -391,6 +391,24 @@ class Navigator(LogSource):
             self.slider.blockSignals(False)
             self.spin.blockSignals(False)
 
+class VolumeNavigator(Navigator):
+    """
+    Slider navigator control specifically for the volume axis
+    """
+
+    def __init__(self, *args, **kwargs):
+        Navigator.__init__(self, label="Volume", axis=3, *args, **kwargs)
+        self.ivl.ivm.sig_all_data.connect(self._data_changed)
+
+    def _main_data_changed(self, data):
+        self.data_grid = data.grid
+        self._data_changed()
+
+    def _data_changed(self):
+        max_num_vols = max([d.nvols for d in self.ivl.ivm.data.values()] + [1, ])
+        self._set_size(max_num_vols)
+        self._focus_changed()
+
 class NavigationBox(QtGui.QGroupBox):
     """ Box containing 4D navigators """
     def __init__(self, ivl):
@@ -406,7 +424,7 @@ class NavigationBox(QtGui.QGroupBox):
         self.navs.append(Navigator(ivl, "Axial", 2, grid, 0))
         self.navs.append(Navigator(ivl, "Sagittal", 0, grid, 1))
         self.navs.append(Navigator(ivl, "Coronal", 1, grid, 2))
-        self.navs.append(Navigator(ivl, "Volume", 3, grid, 3))
+        self.navs.append(VolumeNavigator(ivl, layout_grid=grid, layout_ypos=3))
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 2)
 
