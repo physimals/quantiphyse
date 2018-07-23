@@ -10,8 +10,8 @@ add any of the option widgets to it, providing a label and generally
 a key. The ``values()`` method then returns a dictionary of option
 values suitable to feeding in to a ``Process``. 
 
-Alternatively options can be used directly. All have a ``value()``
-method which returns an appropriate value, and a ``sig_changed`` signal
+Alternatively options can be used directly. All have a ``value``
+property which returns an appropriate value, and a ``sig_changed`` signal
 which is emitted whenever this value changes
 
 Copyright (c) 2013-2018 University of Oxford
@@ -320,7 +320,7 @@ class OutputNameOption(Option, QtGui.QLineEdit):
 
     def _reset(self):
         if self.src_data is not None:
-            self.setText(self.src_data.value() + self.suffix)
+            self.setText(self.src_data.value + self.suffix)
         else:
             self.setText(self.initial)
       
