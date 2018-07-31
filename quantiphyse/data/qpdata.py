@@ -320,24 +320,19 @@ class QpData(object):
                 require this to be a valid and Python variable name and unique within the IVM.
     :ivar grid: :class:`DataGrid` instance the data is defined on
     :ivar fname: File name data came from if relevant
-    :ivar dps: Number of decimal places to display data to
-    :ivar range: Data range tuple (min, max)
+    :ivar metadata: General purpose metadata dictionary. Keys are strings and values are YAML
+                    convertible objects
     """
 
     def __init__(self, name, grid, nvols, fname=None, metadata=None, roi=False):
-        # Everyone needs a friendly name
         self.name = name
-
-        # Grid the data was defined on.
         self.grid = grid
+        self.fname = fname
 
         # Number of volumes (1=3D data)
         self._nvols = nvols
         
-        # File it was loaded from, if relevant
-        self.fname = fname
-
-        # Number of decimal places to display data to
+        # DEPRECATED: Number of decimal places to display data to
         self.dps = 1
 
         # Whether raw data is 2d + time incorrectly returned as 3D
@@ -348,8 +343,6 @@ class QpData(object):
         self._range = None
         self.roi = roi
 
-        # Metadata - saved as NIFTI extension. Keys must be strings and
-        # values must be YAML-convertible
         if metadata is not None:
             self.metadata = metadata
         else:
