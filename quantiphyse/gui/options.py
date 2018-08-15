@@ -655,11 +655,11 @@ class MatrixOption(Option, QtGui.QTableView):
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
             for url in event.mimeData().urls():
-                self.loadFromFile(local_file_from_drop_url(url))
+                self._load_file(local_file_from_drop_url(url))
         else:
             event.ignore()
             
-    def loadFromFile(self, filename):
+    def _load_file(self, filename):
         fvals, _, ncols = load_matrix(filename)
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")
@@ -707,7 +707,7 @@ class VectorOption(MatrixOption):
     def setList(self, values, **kwargs):
         MatrixOption.setMatrix(self, self._to_matrix(values), **kwargs)
 
-    def loadFromFile(self, filename):
+    def _load_file(self, filename):
         fvals, nrows, ncols = load_matrix(filename)
         LOG.debug(fvals, nrows, ncols)
 
