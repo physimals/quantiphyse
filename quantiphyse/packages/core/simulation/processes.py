@@ -28,9 +28,9 @@ class AddNoiseProcess(Process):
         std = float(options.pop("std"))
 
         noise = np.random.normal(loc=0, scale=std, size=list(data.grid.shape) + [data.nvols,])
-        if data.nvols > 1: 
+        if data.nvols == 1: 
             noise = np.squeeze(noise, -1)
-        noisy_data = data.raw() + np.squeeze(noise, -1)
+        noisy_data = data.raw() + noise
         self.ivm.add_data(noisy_data, grid=data.grid, name=output_name, make_current=True)
 
 class SimMotionProcess(Process):
