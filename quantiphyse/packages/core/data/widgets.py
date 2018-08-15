@@ -121,8 +121,8 @@ class OrientDataWidget(QpWidget):
                 self._transform_cache[name] = ([0, 0, 0], [0, 0, 0])
             translation, rotations = self._transform_cache[name]
             for axis in range(3):
-                self.trans[axis].setValue(translation[axis])
-                self.rot[axis].setValue(rotations[axis])
+                self.trans[axis].value = translation[axis]
+                self.rot[axis].value = rotations[axis]
             self._set()
 
     def _translate(self, axis, label):
