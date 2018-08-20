@@ -58,7 +58,7 @@ if "--maxi" in sys.argv:
     plugins = {
         "quanticest" : "quanticest", 
         "qp-dce" : "dce",
-        "qp-fabber" : "fabber",
+        "qp-fabber" : "fabberqp",
         "qp-deeds" : "deeds", 
         "qp-basil" : "basil", 
         "qp-fsl" : "fslqp",
