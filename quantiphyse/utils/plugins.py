@@ -51,6 +51,12 @@ def _load_plugins_from_dir(dirname, pkgname, manifest):
                         LOG.debug("Processes found: %s %s", mod, module.QP_PROCESSES)
                         manifest["processes"] = manifest.get("processes", []) + module.QP_PROCESSES
                     if hasattr(module, "QP_MANIFEST"):
+                        # Module directories are added to the global PYTHONPATH
+                        for deps_dir in module.QP_MANIFEST.pop("module-dirs", []):
+                            deps_path = os.path.join(dirname, mod_file, deps_dir)
+                            if os.path.isdir(deps_path):
+                                pythonpath.append(deps_path)
+                        # Everything else is added to the global manifest
                         for key, val in module.QP_MANIFEST.items():
                             LOG.debug("%s found: %s %s", key, mod, val)
                             manifest[key] = manifest.get(key, []) + val
