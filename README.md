@@ -121,12 +121,13 @@ Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng
  - ASL tools first version (preprocess, model fit, calibration, multiphase)
  - Improved viewer (full resolution, aligned)
 
-#### v0.8 (Target August 2018)
+#### v0.8 (Target September 2018)
 
  - Integration of selected FSL tools (FLIRT, FAST, BET)
  - Improved manual data alignment tools
  - Improved registration support (apply transform)
  - ENABLE
+ - VEASL
  - Fabber T1 (integrate with existing T1 widget?)
  - Fabber DCE (integrate with existing DCE widget?)
 
