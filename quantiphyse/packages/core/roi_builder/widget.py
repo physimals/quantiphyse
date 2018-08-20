@@ -1,6 +1,8 @@
 """
 Quantiphyse - Widgets allowing the user to build simple ROIs
 
+A new ROI is based on the grid of an existing data set - chosen by the user.
+
 Copyright (c) 2013-2018 University of Oxford
 """
 
@@ -13,12 +15,12 @@ import numpy as np
 from PySide import QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.gui.dialogs import error_dialog
-from quantiphyse.gui.widgets import QpWidget, HelpButton, TitleWidget
+from quantiphyse.gui.options import DataOption
+from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.utils import get_icon
 
-from .tools import *
+from .tools import CrosshairsTool, PenTool, WalkerTool, EraserTool, RectTool, EllipseTool, PolygonTool, PickTool, BucketTool
 
 DESC = """
 Widget for creating test ROIs and basic manual segmentation
@@ -31,10 +33,17 @@ class RoiBuilderWidget(QpWidget):
     Widget for building ROIs
     """
 
+    ADD = 1
+    ERASE = 2
+    MASK = 3
+
     def __init__(self, **kwargs):
         super(RoiBuilderWidget, self).__init__(name="ROI Builder", icon="roi_builder", desc=DESC,  
                                                group="ROIs", **kwargs)
-        self.history = collections.deque(maxlen=10)
+        self._history = collections.deque(maxlen=10)
+        self._label = 1
+        self._tool = None
+        self.grid = None
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -44,43 +53,47 @@ class RoiBuilderWidget(QpWidget):
 
         # Generic options
         hbox = QtGui.QHBoxLayout()
+
         optbox = QtGui.QGroupBox()
         optbox.setTitle("Options")
         grid = QtGui.QGridLayout()
         optbox.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("ROI name"), 0, 0)
-        self.name_edit = QtGui.QLineEdit("ROI_BUILDER")
-        self.name_edit.editingFinished.connect(self.name_changed)
-        self.new_roi_name = self.name_edit.text()
-        grid.addWidget(self.name_edit, 0, 1)
+        grid.addWidget(QtGui.QLabel("Data space for new ROI"), 0, 0)
+        self.base_data = DataOption(self.ivm)
+        self.base_data.sig_changed.connect(self._set_grid)
+        grid.addWidget(self.base_data, 0, 1)
 
-        grid.addWidget(QtGui.QLabel("Current label"), 1, 0)
+        grid.addWidget(QtGui.QLabel("ROI name"), 1, 0)
+        self.name_edit = QtGui.QLineEdit("ROI_BUILDER")
+        self.name_edit.editingFinished.connect(self._roi_name_changed)
+        grid.addWidget(self.name_edit, 1, 1)
+
+        grid.addWidget(QtGui.QLabel("Current label"), 2, 0)
         self.label_spin = QtGui.QSpinBox()
         self.label_spin.setMinimum(1)
-        self.label_spin.valueChanged.connect(self.label_changed)
-        grid.addWidget(self.label_spin, 1, 1)
+        self.label_spin.valueChanged.connect(self._label_changed)
+        grid.addWidget(self.label_spin, 2, 1)
 
         self.undo_btn = QtGui.QPushButton("Undo last change")
         self.undo_btn.clicked.connect(self.undo)
         self.undo_btn.setEnabled(False)
-        grid.addWidget(self.undo_btn, 2, 0)
+        grid.addWidget(self.undo_btn, 3, 0)
 
         hbox.addWidget(optbox)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        # Toolbox buttons
+        # Add toolbox buttons in a grid
         hbox = QtGui.QHBoxLayout()
         toolbox = QtGui.QGroupBox()
         toolbox.setTitle("Toolbox")
         self.tools_grid = QtGui.QGridLayout()
         toolbox.setLayout(self.tools_grid)
 
-        self.tool = None
         x, y, cols = 0, 0, 4
         for tool in TOOLS:
-            self.add_tool(tool, y, x)
+            self._add_tool(tool, y, x)
             x += 1
             if x == cols:
                 y += 1
@@ -92,121 +105,151 @@ class RoiBuilderWidget(QpWidget):
 
         # Tool options box - initially invisible
         hbox = QtGui.QHBoxLayout()
-        self.tool_optbox = QtGui.QGroupBox()
-        self.tool_optbox.setVisible(False)
+        self._tool_options = QtGui.QGroupBox()
+        self._tool_options.setVisible(False)
 
-        hbox.addWidget(self.tool_optbox)
+        hbox.addWidget(self._tool_options)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
         layout.addStretch(1)
         self.setLayout(layout)
-        self.grid = self.ivl.grid
-
-        self.ivm.sig_main_data.connect(self._main_data_changed)
 
     def activate(self):
-        self._main_data_changed(self.ivm.main)
+        self._set_grid()
+        self._roi_name_changed()
         self.ivl.set_picker(PickMode.SINGLE)
-        if self.tool is not None:
-            self.tool.selected()
+        if self._tool is not None:
+            self._tool.selected()
 
     def deactivate(self):
         self.ivl.set_picker(PickMode.SINGLE)
-        if self.tool is not None:
-            self.tool.deselected()
+        if self._tool is not None:
+            self._tool.deselected()
 
-    def _main_data_changed(self, data):
-        if data is not None:
-            self.grid = data.grid
+    def modify(self, vol=None, slice2d=None, points=None, mode=None):
+        """
+        Make a change to the ROI we are building
 
-    def add_tool(self, tool, x, y):
+        :param roi_new: Numpy array containing the updated ROI data on the current base grid
+        :param vol: 3D Numpy array containing updated ROI data on the current base grid
+        :param slice2d: Tuple of (2D Numpy array, axis index, position) for 2D slice based ROI data 
+        :param axis: If specified, roi_new contains a slice normal to this axis
+        :param pos: If specified, roi_new contains a slice in this position
+        :param erase: If True, the specified data will be used to erase ROI regions rather 
+                      than add to them
+        """
+        # Get a Numpy array of the ROI we are building on the current base grid
+        roi_orig = self._get_roidata()
+
+        slices = [slice(None)] * 3
+        if vol is not None:
+            data_new = vol
+            data_orig = roi_orig
+        elif slice2d is not None:
+            # Update the slices to identify the part of the ROI we are affecting
+            data_new, axis, pos = slice2d
+            slices[axis] = pos
+            data_orig = roi_orig[slices]
+        elif points is not None:
+            data_new = np.zeros(roi_orig.shape)
+            for point in points:
+                data_new[point[0], point[1], point[2]] = 1
+            data_orig = roi_orig
+        else:
+            raise ValueError("Neither volume nor slice nor points provided")
+
+        # Save the previous state of the data in the history list
+        self._history.append((np.copy(data_orig), slices))
+
+        if mode == self.ADD:
+            self.debug("Adding: %i", np.count_nonzero(data_new))
+            data_orig[data_new > 0] = self._label
+        elif mode == self.ERASE:
+            self.debug("Erasing: %i", np.count_nonzero(data_new))
+            data_orig[data_new > 0] = 0
+        elif mode == self.MASK:
+            self.debug("Masking: %i", np.count_nonzero(data_new))
+            data_orig[data_new == 0] = 0
+        else:
+            raise ValueError("Invalid mode: %i" % mode)
+        
+        roi_orig[slices] = data_orig
+
+        self.ivm.add_roi(NumpyData(roi_orig, grid=self.grid, name=self.roi_name), make_current=True)
+        self.undo_btn.setEnabled(True)
+
+    def undo(self):
+        """
+        Undo the last change
+        """
+        self.debug("ROI undo: %i", len(self._history))
+        if not self._history: 
+            return
+
+        data_prev, slices = self._history.pop()
+        roidata = self._get_roidata()
+        roidata[slices] = data_prev
+        self.ivm.add_roi(NumpyData(roidata, grid=self.grid, name=self.roi_name), make_current=True)
+        self.undo_btn.setEnabled(len(self._history) > 0)
+      
+    def _label_changed(self, label):
+        self._label = label
+        
+    def _roi_name_changed(self):
+        self.roi_name = self.name_edit.text()
+        # Throw away old history. FIXME is this right, should we keep existing data and history?
+        # Also should we cache old history in case we go back to this ROI?
+        self._history = []
+        self.undo_btn.setEnabled(False)
+        
+    def _set_grid(self):
+        self.grid = None
+        data_name = self.base_data.value
+        if data_name is not None:
+            base_data = self.ivm.data.get(data_name, self.ivm.rois.get(data_name, None))
+            if base_data:
+                self.grid = base_data.grid
+        
+        # Need to throw away history as it is defined on the old grid
+        self._history = []
+        self.undo_btn.setEnabled(False)
+
+    def _get_roidata(self):
+        if self.roi_name in self.ivm.rois:
+            return self.ivm.rois[self.roi_name].resample(self.grid).raw()
+        else:
+            return np.zeros(self.grid.shape)
+
+    def _tool_selected(self, tool):
+        def _select():
+            if self.ivm.main is None:
+                return
+
+            if self._tool is not None:
+                self._tool.btn.setStyleSheet("")
+                self._tool.deselected()
+            
+            self._tool = tool
+            self._tool.btn.setStyleSheet("border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);")
+            self._tool.selected()
+            # Replace the old tool options with the new one. Need to reparent the
+            # existing layout to a temporary widget which will then get deleted 
+            QtGui.QWidget().setLayout(self._tool_options.layout())
+            self._tool_options.setLayout(self._tool.interface())
+            self._tool_options.setTitle(tool.name)
+            self._tool_options.setVisible(True)
+
+        return _select
+    
+    def _add_tool(self, tool, x, y):
         tool.ivm = self.ivm
         tool.ivl = self.ivl
-        tool.label = self.label_spin.value()
-        tool.new_roi_name = self.name_edit.text()
         tool.builder = self
         btn = QtGui.QPushButton()
         btn.setIcon(QtGui.QIcon(get_icon(tool.name.lower())))
         btn.setToolTip(tool.tooltip)
         btn.setFixedSize(32, 32)
-        btn.clicked.connect(self.tool_clicked(tool))
+        btn.clicked.connect(self._tool_selected(tool))
         tool.btn = btn
         self.tools_grid.addWidget(btn, x, y)
-
-    def tool_clicked(self, tool):
-        def tool_clicked():
-            if self.ivm.main is None:
-                return
-
-            if self.tool is not None:
-                self.tool.btn.setStyleSheet("")
-                self.tool.deselected()
-            
-            self.tool = tool
-            self.tool.btn.setStyleSheet("border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);")
-            self.tool.selected()
-            # Replace the old tool options with the new one. Need to reparent the
-            # existing layout to a temporary widget which will then get deleted 
-            QtGui.QWidget().setLayout(self.tool_optbox.layout())
-            self.tool_optbox.setLayout(self.tool.interface())
-            self.tool_optbox.setTitle(tool.name)
-            self.tool_optbox.setVisible(True)
-
-        return tool_clicked
-    
-    def label_changed(self, label):
-        for tool in TOOLS:
-            tool.label = label
-        
-    def name_changed(self):
-        self.new_roi_name = self.name_edit.text()
-        if self.tool is not None:
-            self.tool.new_roi_name = self.new_roi_name
-      
-    def add_to_roi(self, roi_new, axis=None, pos=None, erase=False):
-        if self.new_roi_name in self.ivm.rois:
-            roi_orig = self.ivm.rois[self.new_roi_name].resample(self.grid).raw()
-        else:
-            roi_orig = np.zeros(self.grid.shape)
-
-        slices = [slice(None)] * 3
-        if axis is not None and pos is not None:
-            slices[axis] = pos
-            slice_orig = roi_orig[slices]
-            if roi_new.ndim == 3: 
-                slice_new = roi_new[slices]
-            else:
-                slice_new = roi_new
-        else:
-            slice_orig = roi_orig
-            slice_new = roi_new
-
-        self.history.append((self.new_roi_name, axis, pos, np.copy(slice_orig)))
-        if erase:
-            slice_orig[slice_new == 0] = 0
-        else:
-            slice_orig[slice_new > 0] = slice_new[slice_new > 0]
-            
-        roi_orig[slices] = slice_orig
-
-        self.debug("Num nonzero new: %i", np.count_nonzero(roi_new))
-        self.debug("Num nonzero: %i", np.count_nonzero(roi_orig))
-        self.ivm.add_roi(NumpyData(roi_orig, grid=self.grid, name=self.new_roi_name), make_current=True)
-        self.undo_btn.setEnabled(True)
-
-    def undo(self):
-        self.debug("ROI undo: %i", len(self.history))
-        if len(self.history) == 0: return
-
-        roi_name, axis, pos, roi_slice_orig = self.history.pop()
-        self.debug("Undoing: %s %i %i", roi_name, axis, pos)
-        roi = self.ivm.rois.get(roi_name, None)
-        if roi is not None:
-            data = roi.raw()
-            slices = [slice(None)] * 3
-            if axis is not None and pos is not None:
-                slices[axis] = pos
-            data[slices] = roi_slice_orig
-            self.ivm.add_roi(NumpyData(data, grid=roi.grid, name=roi_name), make_current=True)
-        self.undo_btn.setEnabled(len(self.history) > 0)

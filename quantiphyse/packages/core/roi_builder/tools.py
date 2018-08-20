@@ -19,6 +19,10 @@ from quantiphyse.utils import LogSource
 from quantiphyse.processes.feat_pca import PcaFeatReduce
 
 class Tool(LogSource):
+    """
+    An ROI builder tool
+    """
+
     def __init__(self, name, tooltip=""):
         """
         :param name: Name of tool
@@ -38,7 +42,7 @@ class Tool(LogSource):
         """
         Called when tool is deselected by the user 
 
-        Must disconnect any signals connected in the selected() method
+        *Must* reliably disconnect any signals connected in the selected() method
         """
         self.ivl.set_picker(PickMode.SINGLE)
 
@@ -53,93 +57,102 @@ class Tool(LogSource):
         return grid
 
 class CrosshairsTool(Tool):
+    """
+    'Tool' which does nothing but allow the user to navigate the views without
+    any side effects
+    """
     def __init__(self):
         Tool.__init__(self, "Crosshairs", "Navigate data without adding to ROI")
      
-class PolygonTool(Tool):
-    def __init__(self):
-        Tool.__init__(self, "Polygon", "Select regions using a series of straight lines")
+class PickedRegionTool(Tool):
+    """
+    Base class for tools which identify a picked region which can then be added
+    erased or used as a mask
+    """
+
+    def __init__(self, name, desc, picker):
+        Tool.__init__(self, name, desc)
+        self._picker = picker
 
     def selected(self):
         Tool.selected(self)
-        self.ivl.set_picker(PickMode.POLYGON)
-
+        self.ivl.set_picker(self._picker)
+   
     def interface(self):
         grid = Tool.interface(self)
         btn = QtGui.QPushButton("Add")
-        btn.clicked.connect(self._add)
+        btn.clicked.connect(self._change(self.builder.ADD))
         grid.addWidget(btn, 1, 0)
         btn = QtGui.QPushButton("Erase")
-        btn.clicked.connect(self._erase)
+        btn.clicked.connect(self._change(self.builder.ERASE))
         grid.addWidget(btn, 1, 1)
         btn = QtGui.QPushButton("Mask")
-        btn.clicked.connect(self._mask)
+        btn.clicked.connect(self._change(self.builder.MASK))
         grid.addWidget(btn, 2, 0)
         btn = QtGui.QPushButton("Discard")
         btn.clicked.connect(self.selected)
         grid.addWidget(btn, 2, 1)
         return grid
 
-    def _add(self):
-        roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
-        self.builder.add_to_roi(roi_new)
-        self.selected()
+    def _change(self, mode):
+        def _cb():
+            selected_points = self.ivl.picker.selection(grid=self.builder.grid)
+            self.builder.modify(vol=selected_points, mode=mode)
+            self.selected()
+        return _cb
 
-    def _erase(self):
-        roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
-        roi_new = np.logical_not(roi_new)
-        self.builder.add_to_roi(roi_new, erase=True)
-        self.selected()
-
-    def _mask(self):
-        roi_new = self.ivl.picker.selection(grid=self.builder.grid, label=self.label)
-        self.builder.add_to_roi(roi_new, erase=True)
-        self.selected()
-
-class PenTool(PolygonTool):
+class PolygonTool(PickedRegionTool):
+    """ Tool which selects a polygon region """
     def __init__(self):
-        Tool.__init__(self, "Pen", "Draw around ROI region")
+        PickedRegionTool.__init__(self, "Polygon", "Select regions using a series of straight lines", PickMode.POLYGON)
 
-    def selected(self):
-        PolygonTool.selected(self)
-        self.ivl.set_picker(PickMode.FREEHAND)
+class PenTool(PickedRegionTool):
+    """ Tool which selects a region drawn around in freehand """
+    def __init__(self):
+        PickedRegionTool.__init__(self, "Pen", "Draw around ROI region", PickMode.FREEHAND)
      
-class RectTool(PolygonTool):
+class RectTool(PickedRegionTool):
+    """ Tool which selects a rectangular region """
     def __init__(self):
-        Tool.__init__(self, "Rectangle", "Click and drag to select rectangular region")
+        PickedRegionTool.__init__(self, "Rectangle", "Click and drag to select rectangular region", PickMode.RECT)
 
-    def selected(self):
-        PolygonTool.selected(self)
-        self.ivl.set_picker(PickMode.RECT)
-        
-class EllipseTool(PolygonTool):
+class EllipseTool(PickedRegionTool):
+    """ Tool which selects an elliptical region """
     def __init__(self):
-        Tool.__init__(self, "Ellipse", "Click and drag to select elliptical region")
-
-    def selected(self):
-        PolygonTool.selected(self)
-        self.ivl.set_picker(PickMode.ELLIPSE)
+        PickedRegionTool.__init__(self, "Ellipse", "Click and drag to select elliptical region", PickMode.ELLIPSE)
         
 class EraserTool(Tool):
+    """
+    Tool which erases voxels when clicked
+    """
     def __init__(self):
         Tool.__init__(self, "Eraser", "Remove voxels from the ROI")
 
     def selected(self):
-        self.ivl.set_picker(PickMode.SINGLE)
-        self.ivl.sig_selection_changed.connect(self.point_picked)
+        self.ivl.set_picker(PickMode.PAINT)
+        self.ivl.sig_selection_changed.connect(self._point_picked)
 
     def deselected(self):
+        self.ivl.sig_selection_changed.disconnect(self._point_picked)
         Tool.deselected(self)
-        self.ivl.sig_selection_changed.disconnect(self.point_picked)
 
-    def point_picked(self, picker):
-        pos = picker.selection(grid=self.builder.grid)
-        pos = [int(v + 0.5) for v in pos]
-        sl = np.ones(self.builder.grid.shape, dtype=np.int)
-        sl[pos[0], pos[1], pos[2]] = 0
-        self.builder.add_to_roi(sl, erase=True)
+    def _point_picked(self, picker):
+        print("eraser - point picked")
+        points = picker.selection(grid=self.builder.grid)
+        print(points)
+        grid_points = []
+        for point in points:
+            grid_point = [int(v + 0.5) for v in point]
+            if not grid_points or grid_point != grid_points[-1]:
+                grid_points.append(grid_point)
+        print(grid_points)
+        self.builder.modify(points=grid_points, mode=self.builder.ERASE)
+        picker.reset()
 
 class PickTool(Tool):
+    """
+    Tool which adds entire regions from another ROI
+    """
     def __init__(self):
         Tool.__init__(self, "Pick", "Pick regions of an existing ROI")
         self.roi_name = ""
@@ -150,59 +163,59 @@ class PickTool(Tool):
 
         grid.addWidget(QtGui.QLabel("Existing ROI"), 1, 0)
         self.roi_combo = RoiCombo(self.ivm, none_option=True)
-        self.roi_combo.currentIndexChanged.connect(self.set_roi)
+        self.roi_combo.currentIndexChanged.connect(self._existing_roi_changed)
         grid.addWidget(self.roi_combo, 1, 1)
 
         self.ok_btn = QtGui.QPushButton("Accept")
         self.ok_btn.setEnabled(False)
-        self.ok_btn.clicked.connect(self.accepted)
+        self.ok_btn.clicked.connect(self._accepted)
         grid.addWidget(self.ok_btn, 2, 0)
         self.cancel_btn = QtGui.QPushButton("Cancel")
         self.cancel_btn.setEnabled(False)
-        self.cancel_btn.clicked.connect(self.reset)
+        self.cancel_btn.clicked.connect(self._reset)
         grid.addWidget(self.cancel_btn, 2, 1)
         self.done_btn = QtGui.QPushButton("Done")
         self.done_btn.setEnabled(False)
-        self.done_btn.clicked.connect(self.done)
+        self.done_btn.clicked.connect(self._show_builder_roi)
         grid.addWidget(self.done_btn, 2, 2)
-
         return grid
-
-    def set_roi(self):
-        self.roi_name = self.roi_combo.currentText()
-        self.show_roi()
-
-    def show_roi(self):
-        if self.roi_name in self.ivm.rois:
-            self.ivm.set_current_roi(self.roi_name)
 
     def selected(self):
         self.ivl.set_picker(PickMode.SINGLE)
-        self.ivl.sig_selection_changed.connect(self.point_picked)
-        self.show_roi()
+        self._show_existing_roi()
+        self.ivl.sig_selection_changed.connect(self._point_picked)
 
     def deselected(self):
-        self.done()
+        self.ivl.sig_selection_changed.disconnect(self._point_picked)
+        self._show_builder_roi()
         Tool.deselected(self)
-        self.ivl.sig_selection_changed.disconnect(self.point_picked)
 
-    def accepted(self):
-        self.builder.add_to_roi(self.roi_new)
-        self.reset()
-
-    def done(self):
-        self.ivm.set_current_roi(self.builder.new_roi_name)
-
-    def reset(self):
+    def _reset(self):
         self.roi_new = None
         self.ivm.delete_roi(self.temp_name)
         self.ok_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
         self.done_btn.setEnabled(True)
         self.roi_combo.setEnabled(True)
-        self.selected()
+        self._show_builder_roi()
 
-    def point_picked(self, picker):
+    def _show_builder_roi(self):
+        if self.builder.roi_name in self.ivm.rois:
+            self.ivm.set_current_roi(self.builder.roi_name)
+
+    def _show_existing_roi(self):
+        if self.roi_name in self.ivm.rois:
+            self.ivm.set_current_roi(self.roi_name)
+
+    def _existing_roi_changed(self):
+        self.roi_name = self.roi_combo.currentText()
+        self._show_existing_roi()
+
+    def _accepted(self):
+        self.builder.modify(vol=self.roi_new, mode=self.builder.ADD)
+        self._reset()
+
+    def _point_picked(self, picker):
         if self.roi_name == "": return
 
         pos = picker.selection(grid=self.builder.grid)
@@ -211,65 +224,70 @@ class PickTool(Tool):
 
         roi_picked_arr = roi_picked.resample(self.builder.grid).raw()
         self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int)
-        self.roi_new[roi_picked_arr==picked_region] = self.label
+        self.roi_new[roi_picked_arr == picked_region] = 1
 
         self.ivm.add_roi(NumpyData(self.roi_new, grid=self.builder.grid, name=self.temp_name), make_current=True)
         self.ok_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
         self.done_btn.setEnabled(False)
         self.roi_combo.setEnabled(False)
-        self.ivl.sig_selection_changed.disconnect(self.point_picked)
         
 class WalkerTool(Tool):
+    """
+    Tool which uses the random walker method to select a region
+
+    FIXME this does not work properly in slice mode at the moment because the zaxis/pos 
+    given by the picker does not necessarily correspond to the data axes.
+    """
     def __init__(self):
         Tool.__init__(self, "Walker", "Automatic segmentation using the random walk algorithm")
         self.segmode = 0
         self.pickmode = 0
 
     def interface(self):
-        grid  = Tool.interface(self)
+        grid = Tool.interface(self)
 
         grid.addWidget(QtGui.QLabel("Source data: "), 1, 0)
-        self.ov_combo=OverlayCombo(self.ivm)
+        self.ov_combo = OverlayCombo(self.ivm)
         grid.addWidget(self.ov_combo)
 
         grid.addWidget(QtGui.QLabel("Click to select points: "), 2, 0)
         self.pickmode_combo = QtGui.QComboBox()
         self.pickmode_combo.addItem("Inside the ROI")
         self.pickmode_combo.addItem("Outside the ROI")
-        self.pickmode_combo.currentIndexChanged.connect(self.pickmode_changed)
+        self.pickmode_combo.currentIndexChanged.connect(self._pick_mode_changed)
         grid.addWidget(self.pickmode_combo, 2, 1)
         
         grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
         self.segmode_combo = QtGui.QComboBox()
         self.segmode_combo.addItem("Slice")
         self.segmode_combo.addItem("3D")
-        self.segmode_combo.currentIndexChanged.connect(self.segmode_changed)
+        self.segmode_combo.currentIndexChanged.connect(self._seg_mode_changed)
         grid.addWidget(self.segmode_combo, 3, 1)
 
         self.beta = NumericOption("Diffusion difficulty", grid, 4, 0, intonly=True, maxval=20000, default=10000, step=1000)
 
         btn = QtGui.QPushButton("Segment")
-        btn.clicked.connect(self.segment)
+        btn.clicked.connect(self._segment)
         grid.addWidget(btn, 5, 0)
         btn = QtGui.QPushButton("Clear points")
-        btn.clicked.connect(self.selected)
+        btn.clicked.connect(self._init)
         grid.addWidget(btn, 5, 1)
 
         return grid
 
-    def pickmode_changed(self, idx=None):
+    def _pick_mode_changed(self, idx=None):
         self.pickmode = idx
         if self.pickmode == 0:
             self.ivl.picker.col = (255, 0, 0)
         else:
             self.ivl.picker.col = (255, 255, 255)
 
-    def segmode_changed(self, idx=None):
+    def _seg_mode_changed(self, idx=None):
         self.segmode = idx
-        self.init()
+        self._init()
 
-    def init(self):
+    def _init(self):
         if self.segmode == 1:
             self.ivl.set_picker(PickMode.MULTIPLE)
         else:
@@ -279,25 +297,26 @@ class WalkerTool(Tool):
         self.pickmode_changed(self.pickmode)
 
     def selected(self):
-        self.ivl.sig_selection_changed.connect(self.points_changed)
-        self.init()
+        self.ivl.sig_selection_changed.connect(self._points_changed)
+        self._init()
         
     def deselected(self):
+        self.ivl.sig_selection_changed.disconnect(self._points_changed)
         Tool.deselected(self)
-        self.ivl.sig_selection_changed.disconnect(self.points_changed)
 
-    def points_changed(self):
+    def _points_changed(self):
         for col, points in self.ivl.picker.selection(grid=self.builder.grid).items():
-            if (col == (255, 0, 0)):
+            if col == ((255, 0, 0)):
                 label = 1
             else:
                 label = 2
 
             for pos in points:
-                pos =  [int(p+0.5) for p in pos]
+                pos = [int(p+0.5) for p in pos]
+                print(pos, label)
                 self.labels[pos[0], pos[1], pos[2]] = label
 
-    def segment(self):
+    def _segment(self):
         data = self.ivm.data[self.ov_combo.currentText()].resample(self.builder.grid)
         labels = self.labels
 
@@ -310,8 +329,8 @@ class WalkerTool(Tool):
         arr = data.raw()
         if arr.ndim > 3:
             # Reduce 4D data to PCA modes
-            Pfeat = PcaFeatReduce(n_components=5)
-            arr = Pfeat.get_training_features(arr, feature_volume=True)
+            pca = PcaFeatReduce(n_components=5)
+            arr = pca.get_training_features(arr, feature_volume=True)
             kwargs["multichannel"] = True
         else:
             # Normalize data
@@ -322,14 +341,18 @@ class WalkerTool(Tool):
             # Segment using 2D slice only
             zaxis = self.ivl.picker.zaxis
             zpos = int(self.ivl.picker.zpos + 0.5)
+            print(zaxis, zpos)
             sl = [slice(None)] * 3
             sl[zaxis] = zpos
             arr = arr[sl]
             labels = self.labels[sl]
             del spacing[zaxis] 
+            print(labels)
+            print(np.count_nonzero(labels))
+            print(np.count_nonzero(arr))
 
         seg = skimage.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
-                                                mode='cg_mg', spacing=spacing, **kwargs)
+                                                 mode='cg_mg', spacing=spacing, **kwargs)
 
         if self.segmode == 0:
             # Create 3D volume using 2D slice
@@ -338,19 +361,23 @@ class WalkerTool(Tool):
             seg = seg_3d
 
         # Label 2 is used for 'outside region'
-        seg[seg==2] = 0
+        seg[seg == 2] = 0
         
-        self.builder.add_to_roi(seg)
+        self.builder.modify(vol=seg, mode=self.builder.ADD)
         self.init()
              
 class BucketTool(Tool):
+    """
+    Tool which performs a thresholded bucket fill
+    """
+
     def __init__(self):
         Tool.__init__(self, "Bucket", "2D or 3D flood fill with thresholding")
         self.point = None
         self.vol = 0
 
     def interface(self):
-        grid  = Tool.interface(self)
+        grid = Tool.interface(self)
 
         #grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
         #self.segmode_combo = QtGui.QComboBox()
@@ -363,7 +390,7 @@ class BucketTool(Tool):
         self.uthresh.sig_changed.connect(self._update_roi)
         self.lthresh = NumericSlider("Lower threshold", grid, 5, 0, maxval=0, minval=-100, default=-50, hardmax=True)
         self.lthresh.sig_changed.connect(self._update_roi)
-        self.max_tile_size = NumericSlider("Max distance (voxels)", grid, 6, 0, intonly=True, maxval=500, minval=0, default=100, hardmin=True)
+        self.max_tile_size = NumericSlider("Max distance (voxels)", grid, 6, 0, intonly=True, maxval=500, minval=1, default=100, hardmin=True)
         self.max_tile_size.sig_changed.connect(self._update_roi)
 
         btn = QtGui.QPushButton("Add")
@@ -376,11 +403,11 @@ class BucketTool(Tool):
         btn.clicked.connect(self._mask)
         grid.addWidget(btn, 8, 0)
         btn = QtGui.QPushButton("Discard")
-        btn.clicked.connect(self.selected)
+        btn.clicked.connect(self._init)
         grid.addWidget(btn, 8, 1)
         return grid
 
-    def init(self):
+    def _init(self):
         self.ivl.set_picker(PickMode.SINGLE)
         self._point = None
         if "_temp_bucket" in self.ivm.rois:
@@ -388,12 +415,12 @@ class BucketTool(Tool):
 
     def selected(self):
         self.ivl.sig_selection_changed.connect(self._sel_changed)
-        self.init()
+        self._init()
         
     def deselected(self):
-        Tool.deselected(self)
         self.ivl.sig_selection_changed.disconnect(self._sel_changed)
-        self.init()
+        Tool.deselected(self)
+        self._init()
 
     def _sel_changed(self):
         focus = self.ivl.picker.selection(grid=self.builder.grid)
@@ -402,9 +429,9 @@ class BucketTool(Tool):
         self._update_roi()
     
     def _update_roi(self):
-        d = self.ivm.current_data.resample(self.builder.grid).volume(self.vol)
-        focus_value = d[self.point[0], self.point[1], self.point[2]]
-        hi, lo = focus_value + self.uthresh.value(), focus_value + self.lthresh.value()
+        src_data = self.ivm.current_data.resample(self.builder.grid).volume(self.vol)
+        focus_value = src_data[self.point[0], self.point[1], self.point[2]]
+        thr_hi, thr_lo = focus_value + self.uthresh.value(), focus_value + self.lthresh.value()
         # Heuristic optimization for large data sets. Start by looking at a tile +- 50 voxels
         # around focus. If that contains the region, fine. If not, add 50 voxels to the tile
         # size and go again until we get nothing on the boundary or end up taking the whole
@@ -412,14 +439,14 @@ class BucketTool(Tool):
         max_tile_size = self.max_tile_size.value()
         tile_size = min(50, max_tile_size)
         while 1:
-            tile, offset = self._get_tile(d, self.point, tile_size, d.shape)
-            binarised = ((tile < hi) & (tile > lo)).astype(np.int)
+            tile, offset = self._get_tile(src_data, self.point, tile_size, src_data.shape)
+            binarised = ((tile <= thr_hi) & (tile >= thr_lo)).astype(np.int)
             labelled, _ = scipy.ndimage.measurements.label(binarised)
             scipy_label = labelled[self.point[0]-offset[0], self.point[1]-offset[1], self.point[2]-offset[2]]
             labelled[labelled != scipy_label] = 0
-            labelled[labelled == scipy_label] = self.label
-            if labelled.shape == d.shape or tile_size == max_tile_size:
-                self.debug("Reached full size, breaking: ", labelled.shape, d.shape)
+            labelled[labelled == scipy_label] = 1
+            if labelled.shape == src_data.shape or tile_size == max_tile_size:
+                self.debug("Reached full size, breaking: ", labelled.shape, src_data.shape)
                 break
             elif (np.count_nonzero(labelled[:, :, 0]) == 0 and 
                   np.count_nonzero(labelled[:, :, -1]) == 0 and
@@ -448,16 +475,15 @@ class BucketTool(Tool):
         return arr[slices], offset
 
     def _add(self):
-        self.builder.add_to_roi(self.roi)
+        self.builder.modify(vol=self.roi, mode=self.builder.ADD)
         self.init()
 
     def _erase(self):
-        inverted = np.logical_not(self.roi)
-        self.builder.add_to_roi(inverted, erase=True)
+        self.builder.modify(vol=self.roi, mode=self.builder.ERASE)
         self.init()
 
     def _mask(self):
-        self.builder.add_to_roi(self.roi, erase=True)
+        self.builder.modify(vol=self.roi, mode=self.builder.MASK)
         self.init()
 
     def _dims_changed(self):
