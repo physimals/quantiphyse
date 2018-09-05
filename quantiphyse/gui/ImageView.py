@@ -401,7 +401,8 @@ class VolumeNavigator(Navigator):
         self.ivl.ivm.sig_all_data.connect(self._data_changed)
 
     def _main_data_changed(self, data):
-        self.data_grid = data.grid
+        if data is not None:
+            self.data_grid = data.grid
         self._data_changed()
 
     def _data_changed(self):
