@@ -86,7 +86,7 @@ class ViewOptions(QtGui.QDialog):
         self.t_unit = ""
         self.t_scale_type = 0
         self.t_res = 1.0
-        self.t_scale = []
+        self.t_scale = [0, ]
         self.display_order = self.ROI_ON_TOP
         self.interp_order = 0
 
@@ -174,7 +174,7 @@ class ViewOptions(QtGui.QDialog):
         we have a uniform scale, if not only do it if the number of points has
         changed (as a starting point for customisation)
         """
-        if self.ivm.main is not None and self.ivm.main.nvols > 1 and \
+        if self.ivm.main is not None and \
            (self.t_scale_type == 0 or self.ivm.main.nvols != len(self.t_scale)):
             self.t_scale = [i*self.t_res for i in range(self.ivm.main.nvols)]
 

@@ -1073,7 +1073,10 @@ class ModelCurves(QpWidget):
 
         # Get x scale
         xx = self.opts.t_scale
-        unit = xx[-1] - xx[-2]
+        if len(xx) > 1:
+            unit = xx[-1] - xx[-2]
+        else:
+            unit = 1
         xx.extend([xx[-1] + unit*(idx+1) for idx in range(max_length)])
         xx = xx[:max_length]
         frames1 = self.plot_opts.norm_frames.value()
