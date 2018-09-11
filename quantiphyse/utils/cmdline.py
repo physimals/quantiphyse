@@ -12,12 +12,36 @@ import tempfile
 import re
 import shutil
 import logging
+import six
 
 from quantiphyse.data import load, save
 from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 
 LOG = logging.getLogger(__name__)
+
+class OutputStreamMonitor(object):
+    """
+    Simple file-like object which listens to the output
+    of an FSL command and sends each line to a Queue
+    """
+    def __init__(self, queue, suppress_duplicates=True):
+        self._queue = queue
+        self._suppress_duplicates = suppress_duplicates
+        self._last_line = None
+
+    def write(self, text):
+        """ Handle output from the process - send each line to the queue """
+        lines = text.splitlines()
+        for line in lines:
+            if line != self._last_line:
+                self._queue.put(line)
+            if self._suppress_duplicates:
+                self._last_line = line
+
+    def flush(self):
+        """ Ignore flush requests """
+        pass
 
 def _get_files(workdir):
     """
@@ -80,15 +104,48 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
         traceback.print_exc(exc)
         return worker_id, False, exc
 
-class CommandProcess(Process):
+class LogProcess(Process):
+    """
+    Process which produces a log stream which can be used to 
+    monitor progress
+    """
+    def __init__(self, ivm, **kwargs):
+        Process.__init__(self, ivm, **kwargs)
+        self.expected_steps = []
+        self.current_step = 0
+        self.allow_skipping_steps = kwargs.pop("allow_skipping_steps", True)
+
+    def timeout(self):
+        """ 
+        Monitor queue for updates and send sig_progress 
+        """
+        if self.queue.empty(): return
+        while not self.queue.empty():
+            line = self.queue.get()
+            check_step = self.current_step
+            while check_step < len(self.expected_steps):
+                # Expected steps can be string regexes, or tuple of (regex, description)
+                expected, desc = self.expected_steps[check_step], None
+                if not isinstance(expected, six.string_types):
+                    expected, desc = expected
+                    
+                if expected is not None and re.match(expected, line):
+                    complete = float(check_step) / len(self.expected_steps)
+                    self.current_step = check_step + 1
+                    self.sig_progress.emit(complete)
+                    if desc:
+                        self.sig_step.emit(desc)
+                    break
+                if self.allow_skipping_steps:
+                    check_step += 1
+
+class CommandProcess(LogProcess):
     """
     Process which runs an external command in the background
     """
     def __init__(self, ivm, workdir=None, path=(), **kwargs):
-        Process.__init__(self, ivm, worker_fn=_run_cmd, **kwargs)
+        LogProcess.__init__(self, ivm, worker_fn=_run_cmd, **kwargs)
         self.path = path
-        self._expected_steps = [None,]
-        self._current_step = 0
         self._current_data = None
         self._current_roi = None
 
@@ -113,22 +170,6 @@ class CommandProcess(Process):
         fname = os.path.join(self.workdir, data_name)
         save(self.ivm.data.get(data_name, self.ivm.rois.get(data_name)), fname)
 
-    def timeout(self):
-        """ 
-        Monitor queue for updates and send sig_progress 
-        """
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            line = self.queue.get()
-            LOG.debug(line)
-            if self._current_step < len(self._expected_steps):
-                expected = self._expected_steps[self._current_step]
-                if expected is not None and re.match(expected, line):
-                    self._current_step += 1
-                    complete = float(self._current_step) / (len(self._expected_steps)+1)
-                    LOG.debug(complete)
-                    self.sig_progress.emit(complete)
-        
     def finished(self):
         """ 
         Add data to IVM and set log 
@@ -180,8 +221,8 @@ class CommandProcess(Process):
         expected_data = options.pop("output-data", [])
         expected_rois = options.pop("output-rois", [])
 
-        self._expected_steps = options.pop("expected-steps", [None,])
-        self._current_step = 0
+        self.expected_steps = options.pop("expected-steps", [None,])
+        self.current_step = 0
         self._current_data = options.pop("set-current-data", None)
         self._current_roi = options.pop("set-current-roi", None)
 

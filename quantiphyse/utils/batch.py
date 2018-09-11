@@ -241,7 +241,7 @@ class Script(Process):
             pass
 
     def _process_finished(self, status, log, exception):
-        self.debug("Process finished", self._current_process.proc_id)
+        self.debug("Process finished: %s", self._current_process.proc_id)
         if self.status != self.RUNNING:
             return
 
