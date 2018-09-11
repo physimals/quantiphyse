@@ -15,8 +15,13 @@ from quantiphyse.utils import get_plugins
 
 from .widget_test import WidgetTest
 from .process_test import ProcessTest
+from .slice_plane_test import OrthoSliceTest
+from .ivm_test import IVMTest
+from .qpd_test import NumpyDataTest
 
 __all__ = ["WidgetTest", "ProcessTest", "run_tests", "create_test_data"]
+
+class_tests = [IVMTest, NumpyDataTest, OrthoSliceTest,]
 
 def run_tests(test_filter=None):
     """
@@ -25,6 +30,10 @@ def run_tests(test_filter=None):
     :param test_filter: Specifies name of test set to be run, None=run all
     """
     suite = unittest.TestSuite()
+
+    for test in class_tests:
+        if test_filter is None or test.__name__.lower().startswith(test_filter.lower()):
+            suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
 
     tests = get_plugins("widget-tests")
     for test in tests:
