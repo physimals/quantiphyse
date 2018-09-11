@@ -60,7 +60,11 @@ class NumpyData(QpData):
         QpData.__init__(self, name, grid, nvols, **kwargs)
     
     def raw(self):
-        return self.rawdata
+        if self._raw_2dt and self.rawdata.ndim == 3:
+            # Single-slice, interpret 3rd dimension as time
+            return np.expand_dims(self.rawdata, 2)
+        else:
+            return self.rawdata
 
 class NiftiData(QpData):
     """
