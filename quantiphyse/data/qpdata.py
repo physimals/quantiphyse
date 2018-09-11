@@ -463,7 +463,9 @@ class QpData(object):
         """
         if grid is None:
             grid = DataGrid([1, 1, 1], np.identity(4))
-
+        if len(pos) == 3:
+            pos = list(pos) + [0,]
+            
         data_pos = [int(math.floor(v+0.5)) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
         if min(data_pos) < 0:
             # Out of range but will be misinterpreted by indexing!
