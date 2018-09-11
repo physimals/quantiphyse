@@ -1,6 +1,9 @@
-import unittest
-import os
-import sys
+"""
+Quantiphyse - Tests for OrthoSlice class
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+
 import numpy as np
 
 from quantiphyse.data import DataGrid, NumpyData, OrthoSlice

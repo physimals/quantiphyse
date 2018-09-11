@@ -1,5 +1,7 @@
 """
-Quantiphyse - tests for ImageVolumeManagement
+Quantiphyse - tests for QpData classes
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 import unittest
@@ -12,6 +14,7 @@ GRIDSIZE = 5
 NVOLS = 4
 
 class NumpyDataTest(unittest.TestCase):
+    """ Tests for the NumpyData subclass of QpData """
 
     def setUp(self):
         self.shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]

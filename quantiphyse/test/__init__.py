@@ -53,7 +53,7 @@ def _test_fn(x, y, z, t=None):
         f *= 1-math.cos(t*2*math.pi)
     return f
 
-def create_test_data(obj, shape=[10, 10, 10], nt=20, motion_scale=0.5):
+def create_test_data(obj, shape=(10, 10, 10), nt=20, motion_scale=0.5):
     """
     Create test data
 

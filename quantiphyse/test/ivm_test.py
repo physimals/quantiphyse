@@ -1,10 +1,10 @@
 """
 Quantiphyse - tests for ImageVolumeManagement
+
+Copyright (c) 2013-2018 University of Oxford
 """
 
 import unittest
-import os
-import sys
 import numpy as np
 
 from quantiphyse.data import ImageVolumeManagement, NumpyData, DataGrid
