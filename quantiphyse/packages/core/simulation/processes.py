@@ -31,7 +31,7 @@ class AddNoiseProcess(Process):
         if data.nvols == 1: 
             noise = np.squeeze(noise, -1)
         noisy_data = data.raw() + noise
-        self.ivm.add_data(noisy_data, grid=data.grid, name=output_name, make_current=True)
+        self.ivm.add(noisy_data, grid=data.grid, name=output_name, make_current=True)
 
 class SimMotionProcess(Process):
     """
@@ -75,4 +75,4 @@ class SimMotionProcess(Process):
             shifted_data = scipy.ndimage.interpolation.shift(voldata, shift)
             moving_data[..., vol] = shifted_data
 
-        self.ivm.add_data(moving_data, grid=output_grid, name=output_name, make_current=True)
+        self.ivm.add(moving_data, grid=output_grid, name=output_name, make_current=True)

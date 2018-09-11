@@ -158,7 +158,7 @@ class CommandProcess(LogProcess):
             except:
                 LOG.warn("Failed to remove temporary directory: %s", self.workdir)
 
-    def add_data(self, data_name):
+    def add(self, data_name):
         """
         Add a data item to the working directory from the IVM
         """
@@ -179,7 +179,7 @@ class CommandProcess(LogProcess):
                 qpdata = load(os.path.join(self.workdir, data_file))
                 qpdata.name = self.ivm.suggest_name(data_file.split(".", 1)[0], ensure_unique=False)
                 qpdata.raw()
-                self.ivm.add_data(qpdata, make_current=(data_file == self._current_data))
+                self.ivm.add(qpdata, make_current=(data_file == self._current_data))
 
     def _get_cmdline(self, options):
         cmd = options.pop("cmd", None)
@@ -248,4 +248,4 @@ class CommandProcess(LogProcess):
         for arg in re.split(r"\s+|=|,|\n|\t", cmdline):
             if arg in self.ivm.data:
                 LOG.debug("Adding data from command line args: %s", arg)
-                self.add_data(arg)
+                self.add(arg)

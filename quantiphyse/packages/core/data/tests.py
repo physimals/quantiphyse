@@ -24,7 +24,7 @@ class ResampleDataWidgetTest(WidgetTest):
 
     def testResampleToSelf3d(self):
         """ 3d data resampled to self"""
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.order.setCurrentIndex(0)
         self.processEvents()
 
@@ -45,7 +45,7 @@ class ResampleDataWidgetTest(WidgetTest):
         
     def testResampleToSelf4d(self):
         """ 4d data resampled to self"""
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.order.setCurrentIndex(0)
         self.processEvents()
 
@@ -65,11 +65,11 @@ class ResampleDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.ivm.data["data_4d_res"].raw() == self.data_4d))
         
     def testResampleToHiResNN(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         hires_shape = [dim*2 for dim in self.data_3d.shape]
         hires_grid = DataGrid(hires_shape, np.identity(4) / 2)
         hires_data = np.tile(self.data_3d, (2, 2, 2))
-        self.ivm.add_data(hires_data, grid=hires_grid, name="hires_data")
+        self.ivm.add(hires_data, grid=hires_grid, name="hires_data")
 
         self.w.order.setCurrentIndex(0)
         self.w.data.setCurrentIndex(self.w.data.findText("data_3d"))
@@ -98,11 +98,11 @@ class ResampleDataWidgetTest(WidgetTest):
                         self.assertEqual(data_res[x, y, z], 0)
                             
     def testResampleToHiResLinear(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         hires_shape = [dim*2 for dim in self.data_3d.shape]
         hires_grid = DataGrid(hires_shape, np.identity(4) / 2)
         hires_data = np.tile(self.data_3d, (2, 2, 2))
-        self.ivm.add_data(hires_data, grid=hires_grid, name="hires_data")
+        self.ivm.add(hires_data, grid=hires_grid, name="hires_data")
 
         self.w.order.setCurrentIndex(1)
         self.w.data.setCurrentIndex(self.w.data.findText("data_3d"))

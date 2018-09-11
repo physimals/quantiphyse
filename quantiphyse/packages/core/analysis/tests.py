@@ -21,7 +21,7 @@ class DataStatisticsTest(WidgetTest):
         self.harmless_click(self.w.rp_btn)
 
     def test3dData(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgen)
         self.assertTrue(self.w.stats_table.isVisible())
@@ -35,8 +35,8 @@ class DataStatisticsTest(WidgetTest):
         self.assertAlmostEquals(float(model.item(4, 0).text()), np.max(self.data_3d), delta=0.01)
         
     def testAllData(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         # Select 'all data'
         self.w.data_combo.setCurrentIndex(2)
         self.harmless_click(self.w.butgen)
@@ -51,7 +51,7 @@ class DataStatisticsTest(WidgetTest):
         self.assertFalse(self.w.stats_table.isVisible())
      
     def testCopy(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgen)
         self.harmless_click(self.w.copy_btn)
@@ -63,7 +63,7 @@ class DataStatisticsTest(WidgetTest):
         self.assertTrue(len(numbers) == 5)
         
     def testSliceStats(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.harmless_click(self.w.butgenss)
         self.ivl.set_focus([0, 0, 2, 0])
@@ -130,7 +130,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         return SECurve
 
     def testClick(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         pt = (2, 2, 2, 0)
         self.ivl._pick(0, pt)
         self.processEvents()
@@ -143,7 +143,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertTrue(plot.pts in self.w.p1.items)
 
     def testMultiClick(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         pt1 = (2, 2, 2, 0)
         sig1 = self.data_4d[2,2,2,:]
         self.ivl._pick(0, pt1)
@@ -168,7 +168,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertTrue(plot.pts in self.w.p1.items)
 
     def testMultiClickChangeColor(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.color_combo.setCurrentIndex(6)
         self.processEvents()
 
@@ -195,7 +195,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         """
         Select two points, show mean curves=On.
         """
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("red"))
         self.processEvents()
         self.w.mean_cb.setChecked(True)
@@ -223,7 +223,7 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.assertFalse(plot.pts in self.w.p1.items)
 
     def testShowIndividualCurves(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.indiv_cb.setChecked(False)
         self.processEvents()
 
@@ -262,7 +262,7 @@ class VoxelAnalysisTest(WidgetTest):
         return ModelCurves
 
     def test3dDataOnly(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_3d")
         pt = (2, 2, 2, 0)
         self.ivl._pick(0, pt)
         self.processEvents()

@@ -21,7 +21,7 @@ class PcaWidgetTest(WidgetTest):
 
     def test3dData(self):
         """ 4D data required but error should be produced to inform user of reason """
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()            
         self.assertTrue(self.w.run_btn.isEnabled())
@@ -37,7 +37,7 @@ class PcaWidgetTest(WidgetTest):
         
     def test4dData(self):
         """ 4d clustering """
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()            
         self.assertTrue(self.w.run_btn.isEnabled())
@@ -57,8 +57,8 @@ class PcaWidgetTest(WidgetTest):
         
     def test4dDataWithRoi(self):
         """ 4d clustering within an ROI"""
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
-        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.mask, grid=self.grid, name="mask")
         self.w.data_combo.setCurrentIndex(0)
         self.w.roi_combo.setCurrentIndex(1)
 

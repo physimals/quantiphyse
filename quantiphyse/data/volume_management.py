@@ -110,7 +110,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, grid=None,  make_current=None, make_main=None):
+    def add(self, data, name=None, grid=None,  make_current=None, make_main=None):
         """
         Add data item to IVM
 
@@ -127,10 +127,10 @@ class ImageVolumeManagement(QtCore.QObject):
         """
         if isinstance(data, np.ndarray):
             if grid is None or name is None:
-                raise RuntimeError("add_data: Numpy data must have a name and a grid")
+                raise RuntimeError("add: Numpy data must have a name and a grid")
             data = NumpyData(data, grid, name)       
         elif not isinstance(data, QpData):
-            raise QpException("add_data: data must be Numpy array or QpData")
+            raise QpException("add: data must be Numpy array or QpData")
 
         if name is not None:
             data.name = name

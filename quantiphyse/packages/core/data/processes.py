@@ -29,4 +29,4 @@ class ResampleProcess(Process):
         grid = self.ivm.data[grid_data].grid
         output_data = data.resample(grid, order=order)
         output_data.name = output_name
-        self.ivm.add_data(output_data, make_current=True)
+        self.ivm.add(output_data, make_current=True)

@@ -19,7 +19,7 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertEqual(len(self.w.plot.listDataItems()), 0)
 
     def test3dDataVsItself(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
         self.processEvents()
@@ -34,7 +34,7 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.w.d1 == self.w.d2))
 
     def test4dDataVsItself(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
         self.processEvents()
@@ -49,8 +49,8 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.w.d1 == self.w.d2))
 
     def test3dVs4d(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(1)
         self.processEvents()
@@ -71,8 +71,8 @@ class CompareDataWidgetTest(WidgetTest):
         data_3d = np.ones(self.grid.shape)
         data_3d[...] = 3
 
-        self.ivm.add_data(data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add_data(data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(data_4d, grid=self.grid, name="data_4d")
         self.processEvents()
 
         focus = self.ivl.focus()
@@ -95,7 +95,7 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.w.d2 == 2))
 
     def testSampleSize(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
         self.processEvents()
@@ -115,7 +115,7 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.w.d1 == self.w.d2))
 
     def testSampleSizeOff(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
         self.processEvents()
@@ -139,8 +139,8 @@ class CompareDataWidgetTest(WidgetTest):
         data_3d = np.ones(self.grid.shape)
         roi = np.random.choice(a=[False, True], size=self.grid.shape)
         data_3d[roi] = 3
-        self.ivm.add_data(data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add_data(roi, grid=self.grid, name="roi")
+        self.ivm.add(data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(roi, grid=self.grid, name="roi")
         self.processEvents()
 
         self.w.d1_combo.setCurrentIndex(0)
@@ -160,7 +160,7 @@ class CompareDataWidgetTest(WidgetTest):
 
     def testIdLine(self):
         # Check 
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
         self.processEvents()

@@ -31,7 +31,7 @@ class LoadProcess(Process):
             if qpdata is not None: 
                 if force_mv and qpdata.nvols == 1 and qpdata.grid.shape[2] > 1: 
                     qpdata.set_2dt()
-                self.ivm.add_data(qpdata, make_current=True)
+                self.ivm.add(qpdata, make_current=True)
 
     def _load_file(self, fname, name):
         filepath = self._get_filepath(fname)
@@ -93,7 +93,7 @@ class SaveProcess(Process):
         for name in options.keys():
             try:
                 fname = options.pop(name, name)
-                qpdata = self.ivm.data.get(name, self.ivm.rois.get(name, None))
+                qpdata = self.ivm.data.get(name, None)
                 if qpdata is not None:
                     save(qpdata, fname, grid=output_grid, outdir=self.outdir)
                 else:
@@ -113,14 +113,6 @@ class SaveAllExceptProcess(Process):
         for k in options.keys(): options.pop(k)
 
         for name, qpdata in self.ivm.data.items():
-            if name in exceptions: 
-                continue
-            try:
-                save(qpdata, name, outdir=self.outdir)
-            except Exception as exc:
-                self.warn("Failed to save %s: %s" % (name, str(exc)))
-
-        for name, qpdata in self.ivm.rois.items():
             if name in exceptions: 
                 continue
             try:

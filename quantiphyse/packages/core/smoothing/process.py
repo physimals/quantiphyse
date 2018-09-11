@@ -39,5 +39,5 @@ class SmoothingProcess(Process):
             sigmas += [0, ]
 
         output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigmas, order=order, mode=mode)
-        self.ivm.add_data(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
+        self.ivm.add(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
 

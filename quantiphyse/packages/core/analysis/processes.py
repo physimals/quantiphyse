@@ -343,7 +343,7 @@ class ExecProcess(Process):
             else:
                 try:
                     result = eval(proc, globals)
-                    self.ivm.add_data(result, grid=self.grid, name=name)
+                    self.ivm.add(result, grid=self.grid, name=name)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
 

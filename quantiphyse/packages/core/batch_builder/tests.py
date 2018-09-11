@@ -28,7 +28,7 @@ class BatchBuilderWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def testDataLoaded(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.processEvents()
         self.assertTrue(self.w.proc_edit.toPlainText() != "")
 
@@ -37,8 +37,8 @@ class BatchBuilderWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def testAddProcess(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_4d")
-        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.mask, grid=self.grid, name="mask")
         self.processEvents()
         yaml = self.w.proc_edit.toPlainText()
         add_str = "# Additional processing steps go here\n"

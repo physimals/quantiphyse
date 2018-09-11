@@ -203,10 +203,11 @@ class DataOption(Option, QtGui.QComboBox):
         self.blockSignals(True)
         try:
             data = []
-            if self.rois:
-                data += self.ivm.rois.keys()
-            if self.data:
-                data += self.ivm.data.keys()
+            for name, qpd in self.ivm.data.items():
+                if qpd.roi and self.rois:
+                    data.append(name)
+                elif not qpd.roi and self.data:
+                    data.append(name)
 
             current = self.currentText()
             self.clear()

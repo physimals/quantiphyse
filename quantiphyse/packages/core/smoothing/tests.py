@@ -25,7 +25,7 @@ class SmoothingWidgetTests(WidgetTest):
 
     def testNoSmoothing(self):
         """ Check that data is unchanged if sigma = 0 """
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()
 
@@ -43,7 +43,7 @@ class SmoothingWidgetTests(WidgetTest):
         self.assertTrue(np.all(d == self.data_3d))
 
     def test3dData(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()
 
@@ -61,7 +61,7 @@ class SmoothingWidgetTests(WidgetTest):
         self.assertFalse(np.all(d == self.data_3d))
 
     def test4dData(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.data_combo.setCurrentIndex(0)
         self.processEvents()
 

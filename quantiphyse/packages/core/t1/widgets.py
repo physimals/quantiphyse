@@ -175,7 +175,7 @@ class SourceImageList(QtGui.QVBoxLayout):
             # NB need to pass main volume affine to ensure consistant orientation
             vol = load(filename)
             vol.name = "fa%i" % file_vals[0]
-            self.ivm.add_data(vol)
+            self.ivm.add(vol)
             # FIXME need to check dimensions against volume?
             vols.append(vol.name)
             vals.append(file_vals)

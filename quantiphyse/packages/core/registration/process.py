@@ -180,8 +180,8 @@ class RegProcess(Process):
                     # This is not correct for multi-level ROIs - this would basically require support
                     # from within the registration algorithm for roi (integer only) data
                     data = NumpyData((data.raw() > 0.5).astype(np.int), grid=data.grid, name=data.name)
-                    self.ivm.add_data(data, name=output_name, make_current=first_roi)
+                    self.ivm.add(data, name=output_name, make_current=first_roi)
                     first_roi = False
                 else:
-                    self.ivm.add_data(data, name=output_name, make_current=first_data)
+                    self.ivm.add(data, name=output_name, make_current=first_data)
                     first_data = False

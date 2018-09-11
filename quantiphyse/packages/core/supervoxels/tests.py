@@ -28,7 +28,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.harmless_click(self.w.gen_btn)
 
     def test3dData(self):
-        self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.ovl.setCurrentIndex(0)
         self.processEvents()
         self.assertFalse(self.w.n_comp.spin.isVisible())
@@ -49,7 +49,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test3dDataMask(self):
-        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.test3dData()
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
@@ -59,7 +59,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test4dData(self):
-        self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.w.ovl.setCurrentIndex(0)
         self.w.roi.setCurrentIndex(0)
         self.processEvents()
@@ -82,7 +82,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test4dDataMask(self):
-        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, name="mask")
         self.w.ovl.setCurrentIndex(0)
         self.w.roi.setCurrentIndex(0)
         self.test4dData()

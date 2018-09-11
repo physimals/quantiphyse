@@ -93,4 +93,4 @@ class T10Process(Process):
         clamp = options.pop("clamp", None)
         if clamp is not None:
             np.clip(T10, clamp["min"], clamp["max"], out=T10)
-        self.ivm.add_data(T10, grid=grid, name="T10", make_current=True)
+        self.ivm.add(T10, grid=grid, name="T10", make_current=True)
