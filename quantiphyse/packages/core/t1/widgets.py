@@ -235,7 +235,7 @@ class T10Widget(QpWidget):
         self.truncate.setDecimals(1)
         hbox.addWidget(self.truncate)
         hbox.addWidget(QtGui.QLabel("st.devs"))
-        self.smooth_changed()
+        self._smooth_changed()
         hbox.addStretch(1)
         self.trtable.addLayout(hbox)
 

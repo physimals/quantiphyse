@@ -147,7 +147,7 @@ PCA reduction is used on 4D data to extract representative curves
         self.ivl.sig_focus_changed.connect(self._focus_changed)
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.data_changed()
+        self._data_changed()
 
     def deactivate(self):
         self.ivl.sig_focus_changed.disconnect(self._focus_changed)

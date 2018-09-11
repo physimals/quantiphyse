@@ -265,7 +265,7 @@ class Process(QtCore.QObject, LogSource):
             if self.ivm.current_roi is not None:
                 roidata = self.ivm.current_roi
             elif grid is not None:
-                roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi", roi=True)
+                roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi")
             else:
                 raise QpException("No default ROI could be constructed")
         else:

@@ -270,7 +270,7 @@ class DataStatisticsProcess(Process):
         if roi is not None:
             roi = roi.resample(data.grid) 
         else:
-            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
+            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp")
 
         if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
