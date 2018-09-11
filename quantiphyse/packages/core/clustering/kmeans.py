@@ -59,5 +59,5 @@ class KMeansProcess(Process):
 
         label_image = np.zeros(data.grid.shape, dtype=np.int)
         label_image[mask] = kmeans.labels_ + 1
-        self.ivm.add_roi(NumpyData(label_image, grid=data.grid, name=output_name), make_current=True)
+        self.ivm.add_data(NumpyData(label_image, grid=data.grid, name=output_name), make_current=True)
 

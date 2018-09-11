@@ -21,9 +21,6 @@ from quantiphyse import __contrib__, __acknowledge__
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-# ROIs with values larger than this will trigger a warning
-ROI_MAXVAL_WARN = 1000
-
 class DragOptions(QtGui.QDialog):
     """
     Interface for dealing with drag and drop
@@ -46,17 +43,9 @@ class DragOptions(QtGui.QDialog):
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
         hbox = QtGui.QHBoxLayout()
-        if ftype is None:
-            btn = QtGui.QPushButton("Data")
-            btn.clicked.connect(self._clicked("DATA"))
-            hbox.addWidget(btn)
-            btn = QtGui.QPushButton("ROI")
-            btn.clicked.connect(self._clicked("ROI"))
-            hbox.addWidget(btn)
-        else:
-            btn = QtGui.QPushButton("Ok")
-            btn.clicked.connect(self._clicked(ftype.upper()))
-            hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Ok")
+        btn.clicked.connect(self._clicked)
+        hbox.addWidget(btn)
         btn = QtGui.QPushButton("Cancel")
         btn.clicked.connect(self.reject)
         hbox.addWidget(btn)
@@ -100,21 +89,18 @@ class DragOptions(QtGui.QDialog):
     def _adv_changed(self, state):
         self.adv_pane.setVisible(state)
 
-    def _clicked(self, ret):
-        def _clicked_cb():
-            self.type = ret
-            self.force_t = self.force_t_cb.isChecked()
-            self.make_main = self.main_cb.isChecked()
-            self.name = self.name_combo.currentText()
-            if self.name in self.ivm.data or self.name in self.ivm.rois:
-                btn = QtGui.QMessageBox.warning(self, "Name already exists",
-                                                "Data already exists with this name - overwrite?",
-                                                QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-                if btn == QtGui.QMessageBox.Ok:
-                    self.accept()
-            else:
+    def _clicked(self):
+        self.force_t = self.force_t_cb.isChecked()
+        self.make_main = self.main_cb.isChecked()
+        self.name = self.name_combo.currentText()
+        if self.name in self.ivm.data:
+            btn = QtGui.QMessageBox.warning(self, "Name already exists",
+                                            "Data already exists with this name - overwrite?",
+                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            if btn == QtGui.QMessageBox.Ok:
                 self.accept()
-        return _clicked_cb
+        else:
+            self.accept()
 
     @staticmethod
     def get_image_choice(parent, fname, ivm, ftype=None, force_t_option=False, make_main=False):
@@ -123,7 +109,7 @@ class DragOptions(QtGui.QDialog):
         """
         dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option, default_main=make_main)
         result = dialog.exec_()
-        return dialog.type, dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
+        return dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
 
 class MainWindow(QtGui.QMainWindow):
     """
@@ -136,7 +122,7 @@ class MainWindow(QtGui.QMainWindow):
     Loads data from command line options
     """
 
-    def __init__(self, load_data=None, load_roi=None, widgets=True):
+    def __init__(self, load_data=None, widgets=True):
         super(MainWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
@@ -195,7 +181,6 @@ class MainWindow(QtGui.QMainWindow):
 
         # autoload any files that have been passed from the command line
         if load_data is not None: self.load_data(fname=load_data)
-        if load_roi is not None: self.load_data(fname=load_roi)
 
     def _init_tabs(self):
         self.tab_widget = FingerTabWidget(self)
@@ -386,8 +371,6 @@ class MainWindow(QtGui.QMainWindow):
         namespace = {'np': np, 'ivm': self.ivm, 'self': self}
         for name, ovl in self.ivm.data.items():
             namespace[name] = ovl.raw()
-        for name, roi in self.ivm.rois.items():
-            namespace[name] = roi.raw()
 
         text = (
             """
@@ -420,19 +403,13 @@ class MainWindow(QtGui.QMainWindow):
         # options we offer
         data = load(fname)
 
-        # FIXME not doing this because a lot of ROIs seem to come in as float data? 
-        #if ftype is None and issubclass(dtype.type, np.floating):
-        #    # Floating point is assumed to be data (not ROI)
-        #    print(dtype)
-        #    ftype = "DATA"
-
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
         make_main = self.ivm.main is None
-        ftype, name, ok, force_t_dialog, make_main = DragOptions.get_image_choice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
+        name, ok, force_t_dialog, make_main = DragOptions.get_image_choice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
         if not ok: return
         data.name = name
         if force_t_option: force_t = force_t_dialog
@@ -446,19 +423,7 @@ class MainWindow(QtGui.QMainWindow):
             if msg_box.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
-        # Check for inappropriate ROI data
-        if ftype == "ROI" and np.max(data.raw()) > ROI_MAXVAL_WARN:
-            msg_box = QtGui.QMessageBox(self)
-            msg_box.setText("Warning: ROI contains values larger than %i" % ROI_MAXVAL_WARN)
-            msg_box.setInformativeText("Are you sure this is an ROI file?")
-            msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Cancel)
-            if msg_box.exec_() != QtGui.QMessageBox.Yes: return
-
-        if ftype == "DATA":
-            self.ivm.add_data(data, make_current=not make_main, make_main=make_main)
-        else:
-            self.ivm.add_roi(data, make_current=True)
+        self.ivm.add_data(data, make_main=make_main)
 
     def save_data(self):
         """
@@ -487,7 +452,6 @@ class MainWindow(QtGui.QMainWindow):
                 pass
 
     def _clear(self):
-         # Check for inappropriate ROI data
         if self.ivm.data:
             msg_box = QtGui.QMessageBox()
             msg_box.setText("Clear all data")

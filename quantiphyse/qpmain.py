@@ -53,7 +53,6 @@ def main():
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', help='Load data file', default=None, type=str)
-    parser.add_argument('--roi', help='Load ROI file', default=None, type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     parser.add_argument('--debug', help='Activate debug mode', action="store_true")
     parser.add_argument('--test-all', help='Run all tests', action="store_true")
@@ -93,7 +92,7 @@ def main():
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
-        win = MainWindow(load_data=args.data, load_roi=args.roi, widgets=not args.qv)
+        win = MainWindow(load_data=args.data, widgets=not args.qv)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
 

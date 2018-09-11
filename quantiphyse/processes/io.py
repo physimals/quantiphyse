@@ -26,11 +26,7 @@ class LoadProcess(Process):
         # Force 3D data to be multiple 2D volumes 
         force_mv = options.pop('force-multivol', False)
 
-        for fname, name in rois.items():
-            qpdata = self._load_file(fname, name)
-            if qpdata is not None: self.ivm.add_roi(qpdata, make_current=True)
-
-        for fname, name in data.items():
+        for fname, name in data.items() + rois.items():
             qpdata = self._load_file(fname, name)
             if qpdata is not None: 
                 if force_mv and qpdata.nvols == 1 and qpdata.grid.shape[2] > 1: 
@@ -144,12 +140,10 @@ class SaveDeleteProcess(SaveProcess):
         SaveProcess.run(self, options)
 
         for name in options_save:
-            if name in self.ivm.data: self.ivm.delete_data(name)
-            if name in self.ivm.rois: self.ivm.delete_roi(name)
+            if name in self.ivm.data: self.ivm.delete(name)
 
 class SaveArtifactsProcess(Process):
     """
-    Save data to file and then delete it
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)

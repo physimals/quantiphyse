@@ -285,7 +285,7 @@ class RoiView(ImageDataView):
         self.redraw_options += ["shade", "contour", "z_value"]
 
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
-        self.ivm.sig_all_rois.connect(self._cleanup_cache)
+        self.ivm.sig_all_data.connect(self._cleanup_cache)
 
     def redraw(self, viewbox, slice_plane, slice_vol):
         img = self._get_img(viewbox)

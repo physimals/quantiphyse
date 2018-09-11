@@ -91,10 +91,7 @@ class OverviewWidget(QpWidget):
             ok = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % name,
                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
             if ok:
-                if name in self.ivm.data:
-                    self.ivm.delete_data(name)
-                else:
-                    self.ivm.delete_roi(name)
+                self.ivm.delete(name)
 
     def _rename(self):
         if self.data_list.selected is not None:
@@ -102,10 +99,7 @@ class OverviewWidget(QpWidget):
             text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name", 
                                                       QtGui.QLineEdit.Normal, name)
             if result:
-                if name in self.ivm.data:
-                    self.ivm.rename_data(name, text)
-                else:
-                    self.ivm.rename_roi(name, text)
+                self.ivm.rename(name, text)
 
     def _set_main(self):
         if self.data_list.selected is not None:
@@ -133,7 +127,6 @@ class DataListWidget(QtGui.QTableView):
         self.ivm.sig_current_data.connect(self._update_selection)
         self.ivm.sig_all_data.connect(self._update_list)
         self.ivm.sig_current_roi.connect(self._update_selection)
-        self.ivm.sig_all_rois.connect(self._update_list)
 
     @property
     def selected(self):
@@ -165,8 +158,8 @@ class DataListWidget(QtGui.QTableView):
             self.model.setColumnCount(3)
             self.model.setHorizontalHeaderLabels(["Name", "ROI?", "File"])
             self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
-            for name in sorted(self.ivm.data.keys() + self.ivm.rois.keys()):
-                data = self.ivm.data.get(name, self.ivm.rois.get(name))
+            for name in sorted(self.ivm.data.keys()):
+                data = self.ivm.data.get(name)
                 self.model.appendRow(self._get_table_items(data))
         finally:
             self.blockSignals(False)
@@ -177,9 +170,5 @@ class DataListWidget(QtGui.QTableView):
     def _clicked(self, idx):
         row = idx.row()
         name = self.model.item(row, 0).text()
-        if name in self.ivm.rois:
-            self._selected = self.ivm.rois[name]
-            self.ivm.set_current_roi(name)
-        else:
-            self._selected = self.ivm.data[name]
-            self.ivm.set_current_data(name)
+        self._selected = self.ivm.data[name]
+        self.ivm.set_current(name)

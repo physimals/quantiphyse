@@ -175,10 +175,7 @@ class DataOption(Option, QtGui.QComboBox):
         self.all_option = kwargs.get("all_option", False)
         self.rois = kwargs.get("rois", False)
         self.data = kwargs.get("data", True)
-        if self.rois:
-            self.ivm.sig_all_rois.connect(self._data_changed)
-        if self.data:
-            self.ivm.sig_all_data.connect(self._data_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
         self._data_changed()
         self.currentIndexChanged.connect(self._changed)
     
@@ -217,7 +214,7 @@ class DataOption(Option, QtGui.QComboBox):
                 self.addItem("<none>")
 
             for name in sorted(data):
-                data = self.ivm.data.get(name, self.ivm.rois.get(name, None))
+                data = self.ivm.data.get(name, None)
                 if data.nvols == 1 and self.include_3d:
                     self.addItem(data.name)
                 elif data.nvols > 1 and self.include_4d:

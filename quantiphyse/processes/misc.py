@@ -48,9 +48,7 @@ class DeleteProcess(Process):
         for name in options.copy().keys():
             options.pop(name, None)
             if name in self.ivm.data: 
-                self.ivm.delete_data(name)
-            elif name in self.ivm.rois: 
-                self.ivm.delete_roi(name)
+                self.ivm.delete(name)
             else:
                 self.warn("Failed to delete %s: No such data or ROI" % name)
 
@@ -84,4 +82,4 @@ class RoiCleanupProcess(Process):
                     slices[slice_axis] = slice_idx
                     new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
             
-                self.ivm.add_roi(NumpyData(data=new, grid=roi.grid, name=output_name))
+                self.ivm.add_data(NumpyData(data=new, grid=roi.grid, name=output_name))

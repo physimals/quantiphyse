@@ -43,7 +43,7 @@ class ClusteringWidgetTest(WidgetTest):
     def test3dDataWithRoi(self):
         """ 3d clustering"""
         self.ivm.add_data(self.data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
+        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
         self.w.data_combo.setCurrentIndex(0)
         self.w.roi_combo.setCurrentIndex(1)
         self.w.n_clusters.spin.setValue(NUM_CLUSTERS)
@@ -80,7 +80,7 @@ class ClusteringWidgetTest(WidgetTest):
     def test4dDataWithRoi(self):
         """ 4d clustering within an ROI"""
         self.ivm.add_data(self.data_4d, grid=self.grid, name="data_4d")
-        self.ivm.add_roi(self.mask, grid=self.grid, name="mask")
+        self.ivm.add_data(self.mask, grid=self.grid, name="mask")
         self.w.data_combo.setCurrentIndex(0)
         self.w.roi_combo.setCurrentIndex(1)
 

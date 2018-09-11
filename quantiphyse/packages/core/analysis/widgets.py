@@ -710,12 +710,12 @@ class RoiAnalysisWidget(QpWidget):
 
     def activate(self):
         self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_all_rois.connect(self.update)
+        self.ivm.sig_all_data.connect(self.update)
         self.update()
 
     def deactivate(self):
         self.ivm.sig_current_roi.disconnect(self.current_roi_changed)
-        self.ivm.sig_all_rois.disconnect(self.update)
+        self.ivm.sig_all_data.disconnect(self.update)
 
     def batch_options(self):
         return "CalcVolumes", {"roi" : self.combo.currentText()}

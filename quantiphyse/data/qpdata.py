@@ -324,7 +324,7 @@ class QpData(object):
                     convertible objects
     """
 
-    def __init__(self, name, grid, nvols, fname=None, metadata=None, roi=False):
+    def __init__(self, name, grid, nvols, fname=None, metadata=None):
         self.name = name
         self.grid = grid
         self.fname = fname
@@ -338,10 +338,10 @@ class QpData(object):
         # Whether raw data is 2d + time incorrectly returned as 3D
         self._raw_2dt = False
 
-        # Treat as an ROI data set if requested
+        # Lazily evaluated properties
         self._regions = None
         self._range = None
-        self.roi = roi
+        self._is_roi = None
 
         if metadata is not None:
             self.metadata = metadata
@@ -363,19 +363,20 @@ class QpData(object):
 
     @property
     def roi(self):
-        """ True if this data represents a region of interest"""
-        return self._roi
-
-    @roi.setter
-    def roi(self, is_roi):
-        """
-        Set whether data should be interpreted as a region of interest
-
-        :param roi: If True, interpret as roi
-        """
-        if is_roi and self.nvols != 1:
-            raise TypeError("ROIs must be static (single volume) 3D data")
-        self._roi = is_roi
+        """ True if this data could be a region of interest data set"""
+        ROI_MAXVALS = 2000
+        if self._is_roi is None:
+            self._is_roi = True
+            if self.nvols != 1:
+                self._is_roi = False
+            else:
+                rawdata = self.raw()
+                if not np.all(np.equal(np.mod(rawdata, 1), 0)):
+                    self._is_roi = False
+                if np.max(rawdata) > ROI_MAXVALS:
+                    self._is_roi = False
+        
+        return self._is_roi
 
     @property
     def regions(self):
@@ -612,14 +613,12 @@ class QpData(object):
                                                   output_shape=output_shape, order=order)
 
             if self.roi:
-                if data.min() < 0 or data.max() > 2**32:
-                    raise QpException("ROIs must contain values between 0 and 2**32")
-                if not np.equal(np.mod(data, 1), 0).any():
-                    raise QpException("ROIs must contain integers only")
+                # If source data was ROI, output should be, however resampling could have
+                # led to non-integer data
                 data = data.astype(np.int32)
 
         from quantiphyse.data import NumpyData
-        return NumpyData(data=data, grid=grid, name=self.name + "_resampled", roi=self.roi)
+        return NumpyData(data=data, grid=grid, name=self.name + "_resampled")
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """

@@ -54,7 +54,7 @@ def _get_files(workdir):
                 dir_files.append(dir_file)
     return dir_files
 
-def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
+def _run_cmd(worker_id, queue, workdir, cmdline, expected_data):
     """
     Multiprocessing worker to run a command in the background
     """
@@ -81,24 +81,19 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data, expected_rois):
         post_run_files = _get_files(workdir)
         new_files = [f for f in post_run_files if f not in pre_run_files]
         LOG.debug("New files: %s", new_files)
-        data, rois = [], []
+        data = []
 
         for new_file in new_files:
             basename = new_file.split(".", 1)[0]
-            LOG.debug("Checking if we need to output: %s %s %s", basename, expected_data, expected_rois)
-            if (basename in expected_data or 
-                    basename in expected_rois or 
-                    (not expected_data and not expected_rois)):
-
+            LOG.debug("Checking if we need to output: %s %s %s", basename, expected_data)
+            if basename in expected_data or not expected_data:
                 LOG.debug("Adding output file %s", new_file)
                 if basename in expected_data:
                     data.append(new_file)
-                elif basename in expected_rois:
-                    rois.append(new_file)
                 else:
                     data.append(new_file)
 
-        return worker_id, True, (log, data, rois)
+        return worker_id, True, (log, data)
     except Exception as exc:
         import traceback
         traceback.print_exc(exc)
@@ -128,7 +123,7 @@ class LogProcess(Process):
                 expected, desc = self.expected_steps[check_step], None
                 if not isinstance(expected, six.string_types):
                     expected, desc = expected
-                    
+
                 if expected is not None and re.match(expected, line):
                     complete = float(check_step) / len(self.expected_steps)
                     self.current_step = check_step + 1
@@ -168,7 +163,7 @@ class CommandProcess(LogProcess):
         Add a data item to the working directory from the IVM
         """
         fname = os.path.join(self.workdir, data_name)
-        save(self.ivm.data.get(data_name, self.ivm.rois.get(data_name)), fname)
+        save(self.ivm.data[data_name], fname)
 
     def finished(self):
         """ 
@@ -178,18 +173,13 @@ class CommandProcess(LogProcess):
         data is all loaded into memory as the files may be temporary
         """
         if self.status == Process.SUCCEEDED:
-            self.log, data_files, roi_files = self.worker_output[0]
-            LOG.debug("Loading data: %s %s", data_files, roi_files)
+            self.log, data_files = self.worker_output[0]
+            LOG.debug("Loading data: %s %s", data_files)
             for data_file in data_files:
                 qpdata = load(os.path.join(self.workdir, data_file))
                 qpdata.name = self.ivm.suggest_name(data_file.split(".", 1)[0], ensure_unique=False)
                 qpdata.raw()
                 self.ivm.add_data(qpdata, make_current=(data_file == self._current_data))
-            for roi_file in roi_files:
-                qpdata = load(os.path.join(self.workdir, roi_file))
-                qpdata.name = self.ivm.suggest_name(roi_file.split(".", 1)[0], ensure_unique=False)
-                qpdata.raw()
-                self.ivm.add_roi(qpdata, make_current=(roi_file == self._current_roi))
 
     def _get_cmdline(self, options):
         cmd = options.pop("cmd", None)
@@ -219,7 +209,6 @@ class CommandProcess(LogProcess):
         cmdline = self._get_cmdline(options)
 
         expected_data = options.pop("output-data", [])
-        expected_rois = options.pop("output-rois", [])
 
         self.expected_steps = options.pop("expected-steps", [None,])
         self.current_step = 0
@@ -230,7 +219,7 @@ class CommandProcess(LogProcess):
         self._add_data_from_cmdline(cmdline)
 
         self.log = ""
-        worker_args = [self.workdir, cmdline, expected_data, expected_rois]
+        worker_args = [self.workdir, cmdline, expected_data]
         self.start_bg(worker_args)
   
     def _find(self, cmd):
@@ -257,6 +246,6 @@ class CommandProcess(LogProcess):
         Add any data/roi item which match an argument to the working directory
         """
         for arg in re.split(r"\s+|=|,|\n|\t", cmdline):
-            if arg in self.ivm.data or arg in self.ivm.rois:
+            if arg in self.ivm.data:
                 LOG.debug("Adding data from command line args: %s", arg)
                 self.add_data(arg)

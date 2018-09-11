@@ -220,10 +220,7 @@ class OverlayCombo(QtGui.QComboBox):
         self.all_option = all_option
         self.rois = rois
         self.data = data
-        if self.rois:
-            self.ivm.sig_all_rois.connect(self._data_changed)
-        if self.data:
-            self.ivm.sig_all_data.connect(self._data_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
 
         # Whether the combo should automatically adopt the name of the
         # first data set to be added

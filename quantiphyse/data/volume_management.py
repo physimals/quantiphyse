@@ -4,7 +4,7 @@ Quantiphyse - Data management framework
 Copyright (c) 2013-2018 University of Oxford
 """
 
-from __future__ import division, print_function
+from __future__ import division
 
 import logging
 import keyword
@@ -41,9 +41,6 @@ class ImageVolumeManagement(QtCore.QObject):
     # Change to current ROI
     sig_current_roi = QtCore.Signal(object)
 
-    # Change to set of ROIs (e.g. new one added)
-    sig_all_rois = QtCore.Signal(list)
-
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
         self.reset()
@@ -61,9 +58,6 @@ class ImageVolumeManagement(QtCore.QObject):
         # Current data object
         self.current_data = None
 
-        # Map from name to ROI object
-        self.rois = {}
-
         # Current ROI object
         self.current_roi = None
 
@@ -73,8 +67,11 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_main_data.emit(None)
         self.sig_current_data.emit(None)
         self.sig_current_roi.emit(None)
-        self.sig_all_rois.emit([])
         self.sig_all_data.emit([])
+
+    @property
+    def rois(self):
+        return dict([(data.name, data) for data in self.data.values() if data.roi])
 
     def suggest_name(self, name, ensure_unique=True):
         """
@@ -93,7 +90,7 @@ class ImageVolumeManagement(QtCore.QObject):
         num = 1
         test_name = name
         while 1:
-            if not ensure_unique or (test_name not in self.data and test_name not in self.rois):
+            if not ensure_unique or (test_name not in self.data):
                 break
             num += 1
             test_name = "%s_%i" % (name, num)
@@ -113,7 +110,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add_data(self, data, name=None, grid=None, make_current=None, make_main=None):
+    def add_data(self, data, name=None, grid=None,  make_current=None, make_main=None):
         """
         Add data item to IVM
 
@@ -131,7 +128,7 @@ class ImageVolumeManagement(QtCore.QObject):
         if isinstance(data, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add_data: Numpy data must have a name and a grid")
-            data = NumpyData(data, grid, name)
+            data = NumpyData(data, grid, name)       
         elif not isinstance(data, QpData):
             raise QpException("add_data: data must be Numpy array or QpData")
 
@@ -142,7 +139,7 @@ class ImageVolumeManagement(QtCore.QObject):
         
         # If replacing existing data, delete the old one first
         if data.name in self.data:
-            self.delete_data(data.name)
+            self.delete(data.name)
             
         self.data[data.name] = data
 
@@ -156,45 +153,15 @@ class ImageVolumeManagement(QtCore.QObject):
         # Emit the 'data changed' signal
         self.sig_all_data.emit(self.data.keys())
 
-        # Make current if requested, or if not specified and it is the first non-main data
+        # Make current if requested, or if not specified and it is the first non-main data/ROI
         if make_current is None:
-            make_current = self.current_data is None and not make_main
+            make_current = ((data.roi and self.current_roi is None) or (not data.roi and self.current_data is None)) and not make_main
         if make_current:
-            self.set_current_data(data.name)
+            if data.roi:
+                self.set_current_roi(data.name)
+            else:
+                self.set_current_data(data.name)
 
-    def add_roi(self, roi, name=None, grid=None, make_current=None):
-        """
-        Add ROI item to IVM
-
-        The ROI will be made current if make_current is not specified and there is no
-        current ROI
-
-        :param roi: Numpy array of QpData instance
-        :param name: Name which must be a valid name not already used in this IVM
-        :param grid: If roi is a Numpy array, a DataGrid instance defining the orientation
-        :param make_current: If True, make this the current ROI
-        """
-        if isinstance(roi, np.ndarray):
-            if grid is None or name is None:
-                raise RuntimeError("add_roi: Numpy data must have a name and a grid")
-            roi = NumpyData(roi, grid, name, roi=True)
-        elif not isinstance(roi, QpData):
-            raise QpException("add_roi: data must be Numpy array or QpData")
-
-        if name is not None:
-            roi.name = name
-        roi.roi = True
-
-        self._valid_name(roi.name)
-        self.rois[roi.name] = roi
-
-        self.sig_all_rois.emit(self.rois.keys())
-
-        if make_current is None:
-            make_current = self.current_roi is None
-        if make_current:
-            self.set_current_roi(roi.name)
-            
     def _data_exists(self, name):
         if name not in self.data:
             raise RuntimeError("Data '%s' does not exist" % name)
@@ -237,7 +204,18 @@ class ImageVolumeManagement(QtCore.QObject):
             self.current_data = None
         self.sig_current_data.emit(self.current_data)
 
-    def rename_data(self, name, newname):
+    def set_current(self, name):
+        if name is not None:
+            self._data_exists(name)
+            if self.data[name].roi:
+                self.set_current_roi(name)
+            else:
+                self.set_current_data(name)
+        else:
+            self.set_current_data(None)
+            self.set_current_roi(None)
+
+    def rename(self, name, newname):
         """
         Rename a data item
 
@@ -251,21 +229,7 @@ class ImageVolumeManagement(QtCore.QObject):
         del self.data[name]
         self.sig_all_data.emit(self.data.keys())
 
-    def rename_roi(self, name, newname):
-        """
-        Rename an ROI
-
-        :param name: Name of ROI which must exist within the IVM
-        :param newname: New name for this ROI
-        """
-        self._roi_exists(name)
-        roi = self.rois[name]
-        roi.name = newname
-        self.rois[newname] = roi
-        del self.rois[name]
-        self.sig_all_rois.emit(self.rois.keys())
-
-    def delete_data(self, name):
+    def delete(self, name):
         """
         Delete a data item
 
@@ -280,19 +244,6 @@ class ImageVolumeManagement(QtCore.QObject):
             self.main = None
             self.sig_main_data.emit(None)
         self.sig_all_data.emit(self.data.keys())
-
-    def delete_roi(self, name):
-        """
-        Delete an ROI
-
-        :param name: Name of ROI which must exist within the IVM
-        """
-        self._roi_exists(name)
-        del self.rois[name]
-        if self.current_roi.name == name:
-            self.current_roi = None
-            self.sig_current_roi.emit(None)
-        self.sig_all_rois.emit(self.rois.keys())
 
     def set_current_roi(self, name):
         """

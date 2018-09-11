@@ -192,7 +192,7 @@ class PickTool(Tool):
 
     def _reset(self):
         self.roi_new = None
-        self.ivm.delete_roi(self.temp_name)
+        self.ivm.delete(self.temp_name)
         self.ok_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
         self.done_btn.setEnabled(True)
@@ -226,7 +226,7 @@ class PickTool(Tool):
         self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int)
         self.roi_new[roi_picked_arr == picked_region] = 1
 
-        self.ivm.add_roi(NumpyData(self.roi_new, grid=self.builder.grid, name=self.temp_name), make_current=True)
+        self.ivm.add_data(NumpyData(self.roi_new, grid=self.builder.grid, name=self.temp_name), make_current=True)
         self.ok_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
         self.done_btn.setEnabled(False)
@@ -411,7 +411,7 @@ class BucketTool(Tool):
         self.ivl.set_picker(PickMode.SINGLE)
         self._point = None
         if "_temp_bucket" in self.ivm.rois:
-            self.ivm.delete_roi("_temp_bucket")
+            self.ivm.delete("_temp_bucket")
 
     def selected(self):
         self.ivl.sig_selection_changed.connect(self._sel_changed)
@@ -461,7 +461,7 @@ class BucketTool(Tool):
         self.roi = np.zeros(self.builder.grid.shape, dtype=np.int)
         tile_shape = labelled.shape
         self.roi[offset[0]:offset[0]+tile_shape[0], offset[1]:offset[1]+tile_shape[1], offset[2]:offset[2]+tile_shape[2]] = labelled
-        self.ivm.add_roi(self.roi, name="_temp_bucket", grid=self.builder.grid, make_current=True)
+        self.ivm.add_data(self.roi, name="_temp_bucket", grid=self.builder.grid, make_current=True)
         
     def _get_tile(self, arr, centre, size, shape):
         slices, offset = [], []
