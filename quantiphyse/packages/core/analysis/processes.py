@@ -3,10 +3,10 @@ Quantiphyse - Generic analysis processes
 
 Copyright (c) 2013-2018 University of Oxford
 """
+import sys
 
 import numpy as np
 import scipy
-import sys
 
 from PySide import QtGui
 
@@ -74,7 +74,7 @@ class HistogramProcess(Process):
             data_items = [self.ivm.data[data_name]]
             grid = data_items[0].grid
 
-        if len(data_items) == 0:
+        if not data_items:
             raise QpException("No data to calculate histogram")
         
         roi = self.get_roi(options, grid)
@@ -141,7 +141,7 @@ class RadialProfileProcess(Process):
             data_items = [self.ivm.data[data_name]]
             grid = data_items[0].grid
 
-        if len(data_items) == 0:
+        if not data_items:
             raise QpException("No data to calculate radial profile")
         
         roi = self.get_roi(options, grid).raw()
@@ -167,8 +167,8 @@ class RadialProfileProcess(Process):
         # from the centre. Set masked values to distance of -1
         x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
-        r[roi==0] = -1
-        rmin = r[roi>0].min()
+        r[roi == 0] = -1
+        rmin = r[roi > 0].min()
 
         # Generate histogram of number of voxels in each bin
         # Use the range parameter to ignore masked values with negative distances
@@ -176,7 +176,7 @@ class RadialProfileProcess(Process):
 
         # Prevent divide by zero, if there are no voxels in a bin, this is OK because
         # there will be no data either
-        voxels_per_bin[voxels_per_bin==0] = 1
+        voxels_per_bin[voxels_per_bin == 0] = 1
         self.xvals = [(self.edges[i] + self.edges[i+1])/2 for i in range(len(self.edges)-1)]
 
         for idx, xval in enumerate(self.xvals):
@@ -188,7 +188,7 @@ class RadialProfileProcess(Process):
             weights = data.resample(grid).volume(vol)
 
             # Generate histogram by distance, weighted by data
-            rpd, junk = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
+            rpd, _ = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
 
             # Divide by number of voxels in each bin to get average value by distance.
             rp = rpd / voxels_per_bin
@@ -244,7 +244,7 @@ class DataStatisticsProcess(Process):
 
         col = 0
         for data in data_items:
-            stats1, roi_labels, hist1, hist1x = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice=sl)
+            stats1, roi_labels, _, _ = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice_loc=sl)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (data.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
@@ -257,7 +257,7 @@ class DataStatisticsProcess(Process):
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_str(self.model))
 
-    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice=None):
+    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice_loc=None):
         """
         Get summary statistics
 
@@ -272,7 +272,7 @@ class DataStatisticsProcess(Process):
         else:
             roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
 
-        if (data is None):
+        if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
             return stat1, roi.regions, np.array([0, 0]), np.array([0, 1])
 
@@ -280,12 +280,12 @@ class DataStatisticsProcess(Process):
         hist1 = []
         hist1x = []
 
-        if slice is None:
+        if slice_loc is None:
             data_arr = data.raw()
             roi_arr = roi.raw()
         else:
-            data_arr, _, _, _ = data.slice_data(slice)
-            roi_arr, _, _, _ = roi.slice_data(slice)
+            data_arr, _, _, _ = data.slice_data(slice_loc)
+            roi_arr, _, _, _ = roi.slice_data(slice_loc)
 
         for region in roi.regions:
             # get data for a single label of the roi
@@ -294,7 +294,7 @@ class DataStatisticsProcess(Process):
                 mean, med, std = np.mean(in_roi), np.median(in_roi), np.std(in_roi)
                 mx, mn = np.max(in_roi), np.min(in_roi)
             else:
-                mean, med, std, mx, mn = 0,0,0,0,0
+                mean, med, std, mx, mn = 0, 0, 0, 0, 0
 
             stat1['mean'].append(mean)
             stat1['median'].append(med)
@@ -309,6 +309,9 @@ class DataStatisticsProcess(Process):
         return stat1, roi.regions, hist1, hist1x
 
 class ExecProcess(Process):
+    """
+    Process which can execute arbitrary Python code
+    """
     
     PROCESS_NAME = "Exec"
     
@@ -317,7 +320,7 @@ class ExecProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
+        exec_globals = {'np': np, 'scipy' : scipy, 'ivm': self.ivm}
 
         # For general Numpy operations we will need a grid to put the
         # results back into. This is specified by the 'grid' option.
@@ -326,9 +329,9 @@ class ExecProcess(Process):
         self.grid = self.ivm.main.grid
 
         for name, data in self.ivm.data.items():
-            globals[name] = data.raw()
+            exec_globals[name] = data.raw()
         for name, roi in self.ivm.rois.items():
-            globals[name] = roi.raw()
+            exec_globals[name] = roi.raw()
 
         for name in options.keys():
             proc = options.pop(name)
@@ -337,13 +340,12 @@ class ExecProcess(Process):
             if name == "exec":
                 for code in proc:
                     try:
-                        exec(code, globals)
+                        exec(code, exec_globals)
                     except:
                         raise QpException("'%s' is not valid Python code (Reason: %s)" % (code, sys.exc_info()[1]))
             else:
                 try:
-                    result = eval(proc, globals)
+                    result = eval(proc, exec_globals)
                     self.ivm.add(result, grid=self.grid, name=name)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
-

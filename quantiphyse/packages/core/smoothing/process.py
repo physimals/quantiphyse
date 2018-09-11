@@ -6,7 +6,6 @@ Copyright (c) 2013-2018 University of Oxford
 
 import scipy.ndimage.filters
 
-from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 from quantiphyse.data import NumpyData
 
@@ -29,7 +28,7 @@ class SmoothingProcess(Process):
         sigma = options.pop("sigma", 1.0)
 
         # Sigma is in mm so scale with data voxel sizes
-        if type(sigma) in (int, float):
+        if isinstance(sigma, (int, float)):
             sigmas = [float(sigma) / size for size in data.grid.spacing]
         else:
             sigmas = [float(sig) / size for sig, size in zip(sigma, data.grid.spacing)]
@@ -40,4 +39,3 @@ class SmoothingProcess(Process):
 
         output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigmas, order=order, mode=mode)
         self.ivm.add(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
-

@@ -13,7 +13,7 @@ import pyqtgraph as pg
 from PySide import QtGui
 
 from quantiphyse.data import NumpyData
-from quantiphyse.gui.widgets import QpWidget, HelpButton, BatchButton, OverlayCombo, RoiCombo, NumericOption, TitleWidget
+from quantiphyse.gui.widgets import QpWidget, OverlayCombo, RoiCombo, NumericOption, TitleWidget
 from quantiphyse.utils import get_pencol
 
 from .kmeans import KMeansProcess
@@ -52,7 +52,7 @@ PCA reduction is used on 4D data to extract representative curves
         # Data to cluster
         grid.addWidget(QtGui.QLabel("Data"), 0, 0)
         self.data_combo = OverlayCombo(self.ivm)
-        self.data_combo.currentIndexChanged.connect(self.data_changed)
+        self.data_combo.currentIndexChanged.connect(self._data_changed)
         grid.addWidget(self.data_combo, 0, 1)
 
         grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
@@ -83,7 +83,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         # Plot window, showing representative curves for 4D data
         self.show_curves_btn = QtGui.QPushButton('Show representative curves', self)
-        self.show_curves_btn.clicked.connect(self.show_curves)
+        self.show_curves_btn.clicked.connect(self._show_curves)
         layout.addWidget(self.show_curves_btn)
         self.plotwin = pg.GraphicsLayoutWidget()
         self.plotwin.setBackground(background=None)
@@ -93,7 +93,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         # Statistics
         self.show_count_btn = QtGui.QPushButton('Show voxel counts', self)
-        self.show_count_btn.clicked.connect(self.show_counts)
+        self.show_count_btn.clicked.connect(self._show_counts)
         layout.addWidget(self.show_count_btn)
         self.stats_gbox = QtGui.QGroupBox()
         self.stats_gbox.setTitle('Voxel count')
@@ -111,7 +111,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         # Merge regions
         self.show_merge_btn = QtGui.QPushButton('Show merge options', self)
-        self.show_merge_btn.clicked.connect(self.show_merge)
+        self.show_merge_btn.clicked.connect(self._show_merge)
         layout.addWidget(self.show_merge_btn)
         
         self.merge_gbox = QtGui.QGroupBox()
@@ -121,7 +121,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         hbox = QtGui.QHBoxLayout()
         self.merge_btn = QtGui.QPushButton('Merge', self)
-        self.merge_btn.clicked.connect(self.run_merge)
+        self.merge_btn.clicked.connect(self._run_merge)
         hbox.addWidget(self.merge_btn)
         hbox.addWidget(QtGui.QLabel('Merge region '))
         self.merge_region1 = QtGui.QLineEdit('1', self)
@@ -133,7 +133,7 @@ PCA reduction is used on 4D data to extract representative curves
 
         hbox = QtGui.QHBoxLayout()
         self.auto_merge_btn = QtGui.QPushButton('AutoMerge', self)
-        self.auto_merge_btn.clicked.connect(self.run_automerge)
+        self.auto_merge_btn.clicked.connect(self._run_automerge)
         hbox.addWidget(self.auto_merge_btn)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
@@ -144,28 +144,28 @@ PCA reduction is used on 4D data to extract representative curves
         layout.addStretch(1)
 
     def activate(self):
-        self.ivl.sig_focus_changed.connect(self.focus_changed)
-        self.ivm.sig_current_roi.connect(self.current_roi_changed)
-        self.ivm.sig_main_data.connect(self.main_data_changed)
+        self.ivl.sig_focus_changed.connect(self._focus_changed)
+        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+        self.ivm.sig_main_data.connect(self._main_data_changed)
         self.data_changed()
 
     def deactivate(self):
-        self.ivl.sig_focus_changed.disconnect(self.focus_changed)
-        self.ivm.sig_current_roi.disconnect(self.current_roi_changed)
-        self.ivm.sig_main_data.disconnect(self.main_data_changed)
+        self.ivl.sig_focus_changed.disconnect(self._focus_changed)
+        self.ivm.sig_current_roi.disconnect(self._current_roi_changed)
+        self.ivm.sig_main_data.disconnect(self._main_data_changed)
 
-    def current_roi_changed(self, roi):
+    def _current_roi_changed(self, roi):
         if roi is not None and roi.name != self.output_name.text():
             self.roi_combo.setCurrentIndex(self.roi_combo.findText(roi.name))
         
-    def main_data_changed(self, data):
+    def _main_data_changed(self, data):
         if data is not None:
             idx = self.data_combo.findText(data.name)
         else:
             idx = 0
         self.data_combo.setCurrentIndex(idx)
 
-    def data_changed(self):
+    def _data_changed(self):
         data = self.ivm.data.get(self.data_combo.currentText(), None)
         if data is not None:
             is4d = data.nvols > 1
@@ -177,10 +177,10 @@ PCA reduction is used on 4D data to extract representative curves
             self.auto_merge_btn.setEnabled(is4d)
         self.run_btn.setEnabled(data is not None)
 
-    def focus_changed(self, pos):
-        self.update_voxel_count()
+    def _focus_changed(self):
+        self._update_voxel_count()
 
-    def show_curves(self):
+    def _show_curves(self):
         if self.plotwin.isVisible():
             self.plotwin.setVisible(False)
             self.show_curves_btn.setText("Show representative curves")
@@ -188,7 +188,7 @@ PCA reduction is used on 4D data to extract representative curves
             self.plotwin.setVisible(True)
             self.show_curves_btn.setText("Hide representative curves")
             
-    def show_counts(self):
+    def _show_counts(self):
         if self.stats_gbox.isVisible():
             self.stats_gbox.setVisible(False)
             self.show_count_btn.setText("Show voxel counts")
@@ -196,7 +196,7 @@ PCA reduction is used on 4D data to extract representative curves
             self.stats_gbox.setVisible(True)
             self.show_count_btn.setText("Hide voxel counts")
         
-    def show_merge(self):
+    def _show_merge(self):
         if self.merge_gbox.isVisible():
             self.merge_gbox.setVisible(False)
             self.show_merge_btn.setText("Show merge_options")
@@ -229,20 +229,19 @@ PCA reduction is used on 4D data to extract representative curves
         Run kmeans clustering using normalised PCA modes
         """
         options = self.batch_options()[1]
-        data = self.ivm.data.get(options["data"], None)
         
         try:
             self.run_btn.setDown(True)
             self.run_btn.setDisabled(True)
             self.process.run(options)
-            self.update_voxel_count()
+            self._update_voxel_count()
             self.update_plot()
         finally:
             # enable button again
             self.run_btn.setDown(False)
             self.run_btn.setDisabled(False)
 
-    def update_voxel_count(self):
+    def _update_voxel_count(self):
         self.count_table.clear()
         self.count_table.setVerticalHeaderItem(0, QtGui.QStandardItem("Voxel count"))
 
@@ -290,12 +289,12 @@ PCA reduction is used on 4D data to extract representative curves
                 xx = np.arange(len(self.curves[region]))
                 curve.setData(xx, self.curves[region])
 
-    def run_merge(self):
+    def _run_merge(self):
         m1 = int(self.merge_region1.text())
         m2 = int(self.merge_region2.text())
         self._merge(m1, m2)
 
-    def run_automerge(self):
+    def _run_automerge(self):
         # Use PCA features or true curves?
         # Mean features from each cluster
         # Distance matrix between features
@@ -337,4 +336,4 @@ PCA reduction is used on 4D data to extract representative curves
 
             # replot
             self.update_plot()
-            self.update_voxel_count()
+            self._update_voxel_count()

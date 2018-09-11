@@ -8,7 +8,6 @@ import numpy as np
 import scipy
 
 from quantiphyse.data import NumpyData
-from quantiphyse.utils import QpException
 
 from .process import Process
 

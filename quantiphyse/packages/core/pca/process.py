@@ -42,4 +42,3 @@ class PcaProcess(Process):
         for comp_idx in range(n_components):
             name = "%s%i" % (output_name, comp_idx)
             self.ivm.add(feature_images[:, :, :, comp_idx], grid=data.grid, name=name, make_current=(comp_idx == 0))
-

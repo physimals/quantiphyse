@@ -42,7 +42,7 @@ class LoadProcess(Process):
             data = load(filepath)
             data.name = name
             return data
-        except Exception as exc:
+        except QpException as exc:
             self.warn("Failed to load data: %s (%s)" % (filepath, str(exc)))
 
     def _get_filepath(self, fname, folder=None):
@@ -98,7 +98,7 @@ class SaveProcess(Process):
                     save(qpdata, fname, grid=output_grid, outdir=self.outdir)
                 else:
                     self.warn("Failed to save %s - no such data or ROI found" % name)
-            except Exception as exc:
+            except QpException as exc:
                 self.warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveAllExceptProcess(Process):
@@ -117,7 +117,7 @@ class SaveAllExceptProcess(Process):
                 continue
             try:
                 save(qpdata, name, outdir=self.outdir)
-            except Exception as exc:
+            except QpException as exc:
                 self.warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveDeleteProcess(SaveProcess):
@@ -136,6 +136,7 @@ class SaveDeleteProcess(SaveProcess):
 
 class SaveArtifactsProcess(Process):
     """
+    Save 'extras' (previously known as 'artifacts')
     """
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)

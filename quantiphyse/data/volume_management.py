@@ -43,12 +43,7 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
-        self.reset()
 
-    def reset(self):
-        """
-        Reset to empty, signalling any connected widgets
-        """
         # Main background data
         self.main = None
 
@@ -69,8 +64,15 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_current_roi.emit(None)
         self.sig_all_data.emit([])
 
+    def reset(self):
+        """ Clear all data """
+        self.__init__()
+
     @property
     def rois(self):
+        """
+        :return: Dictionary of name : QpData for all data items which can be used as ROIs
+        """
         return dict([(data.name, data) for data in self.data.values() if data.roi])
 
     def suggest_name(self, name, ensure_unique=True):
@@ -110,7 +112,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add(self, data, name=None, grid=None,  make_current=None, make_main=None):
+    def add(self, data, name=None, grid=None, make_current=None, make_main=None):
         """
         Add data item to IVM
 
@@ -205,6 +207,9 @@ class ImageVolumeManagement(QtCore.QObject):
         self.sig_current_data.emit(self.current_data)
 
     def set_current(self, name):
+        """
+        Set a named data item as current (ROI or data as required)
+        """
         if name is not None:
             self._data_exists(name)
             if self.data[name].roi:

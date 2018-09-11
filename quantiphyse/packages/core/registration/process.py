@@ -85,7 +85,6 @@ def _run_reg(worker_id, queue, method_name, mode, reg_data, ref_data, options):
             log += reg_log
             return worker_id, True, ([out_data], transforms, log)
     except:
-        print(log)
         traceback.print_exc()
         return worker_id, False, sys.exc_info()[1]
 
@@ -171,7 +170,7 @@ class RegProcess(Process):
         """ Add output data to the IVM and set the log """
         self.log = ""
         if self.status == Process.SUCCEEDED:
-            registered_data, transforms, self.log = self.worker_output[0]
+            registered_data, _, self.log = self.worker_output[0]
 
             first_roi, first_data = True, True
             for data in registered_data:

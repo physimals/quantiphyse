@@ -15,7 +15,7 @@ import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
 from quantiphyse.gui.widgets import FingerTabWidget
-from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help, QpException
+from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
 from quantiphyse import __contrib__, __acknowledge__
 
 from .ViewOptions import ViewOptions
@@ -26,7 +26,7 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ivm, ftype=None, force_t_option=False, default_main=False):
+    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
@@ -103,11 +103,11 @@ class DragOptions(QtGui.QDialog):
             self.accept()
 
     @staticmethod
-    def get_image_choice(parent, fname, ivm, ftype=None, force_t_option=False, make_main=False):
+    def get_image_choice(parent, fname, ivm, force_t_option=False, make_main=False):
         """
         Pop up a mini-dialog to ask the user what type of data they are loading
         """
-        dialog = DragOptions(parent, fname, ivm, ftype=ftype, force_t_option=force_t_option, default_main=make_main)
+        dialog = DragOptions(parent, fname, ivm, force_t_option=force_t_option, default_main=make_main)
         result = dialog.exec_()
         return dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
 

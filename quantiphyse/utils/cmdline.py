@@ -85,7 +85,7 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data):
 
         for new_file in new_files:
             basename = new_file.split(".", 1)[0]
-            LOG.debug("Checking if we need to output: %s %s %s", basename, expected_data)
+            LOG.debug("Checking if we need to output: %s %s", basename, expected_data)
             if basename in expected_data or not expected_data:
                 LOG.debug("Adding output file %s", new_file)
                 if basename in expected_data:
@@ -174,7 +174,7 @@ class CommandProcess(LogProcess):
         """
         if self.status == Process.SUCCEEDED:
             self.log, data_files = self.worker_output[0]
-            LOG.debug("Loading data: %s %s", data_files)
+            LOG.debug("Loading data: %s", data_files)
             for data_file in data_files:
                 qpdata = load(os.path.join(self.workdir, data_file))
                 qpdata.name = self.ivm.suggest_name(data_file.split(".", 1)[0], ensure_unique=False)

@@ -6,18 +6,19 @@ Copyright (c) 2013-2018 University of Oxford
 
 import os.path
 import re
-import numpy as np
 
 from PySide import QtGui
-import nibabel as nib
-from scipy.ndimage.filters import gaussian_filter
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.data import load
+from quantiphyse.utils import QpException
 
 from .process import T10Process
 
 class NumberInput(QtGui.QHBoxLayout):
+    """
+    Edit box which only accepts numbers
+    """
     def __init__(self, text, initial_val):
         super(NumberInput, self).__init__()
         self.text = text
@@ -27,21 +28,25 @@ class NumberInput(QtGui.QHBoxLayout):
         self.addWidget(label)
         self.edit = QtGui.QLineEdit(str(self.val))
         self.addWidget(self.edit)
-        self.edit.editingFinished.connect(self.changed)
+        self.edit.editingFinished.connect(self._changed)
         self.addStretch(1)
         self.valid = True
 
-    def changed(self):
+    def _changed(self):
         try:
             self.val = float(self.edit.text())
             self.valid = True
-        except:
+        except ValueError:
             self.valid = False
             QtGui.QMessageBox.warning(None, "Invalid value", "%s must be a number" % self.text, QtGui.QMessageBox.Close)
             self.edit.setFocus()
             self.edit.selectAll()
 
 class SourceImageList(QtGui.QVBoxLayout):
+    """
+    List of VFA source images
+    """
+
     def __init__(self, header_text, val_range=None):
         super(SourceImageList, self).__init__()
 
@@ -58,14 +63,14 @@ class SourceImageList(QtGui.QVBoxLayout):
 
         bbox = QtGui.QHBoxLayout()
         b1 = QtGui.QPushButton('Add')
-        b1.clicked.connect(self.add)
+        b1.clicked.connect(self._add)
         bbox.addWidget(b1)
         b2 = QtGui.QPushButton('Remove')
-        b2.clicked.connect(self.remove)
+        b2.clicked.connect(self._remove)
         bbox.addWidget(b2)
         self.addLayout(bbox)
 
-    def check_file(self, filename):
+    def _check_file(self, filename):
         """
         Check that filename is a valid FA image. It must be
         3D (currently - 4D may be possible but must be handled differently)
@@ -76,22 +81,15 @@ class SourceImageList(QtGui.QVBoxLayout):
             if len(f.grid.shape) not in (3, 4):
                 QtGui.QMessageBox.warning(None, "Invalid file", "File must be 3D or 4D volumes",
                                           QtGui.QMessageBox.Close)
-                raise
                 return 0
-
-            #if f.grid.shape[:3] != self.ivm.grid.shape[:3]:
-            #    QtGui.QMessageBox.warning(None, "Invalid file", "File dimensions must match the loaded volume",
-            #                              QtGui.QMessageBox.Close)
-            #    return []
-        except:
+        except QpException:
             QtGui.QMessageBox.warning(None, "Invalid file", "Files must be NIFTI volumes",
                                       QtGui.QMessageBox.Close)
-            raise
             return 0
 
         return f.nvols
 
-    def load_image(self, filename):
+    def _load_image(self, filename):
         # Try to guess the value from the filename - if it ends in a number, go with that
         self.dir, name = os.path.split(filename)
         name = name.split(".")[0]
@@ -114,13 +112,13 @@ class SourceImageList(QtGui.QVBoxLayout):
                         self.table.setItem(0, 0, QtGui.QTableWidgetItem(filename))
                         self.table.setItem(0, 1, QtGui.QTableWidgetItem(text))
                         break
-                except:
+                except ValueError:
                     QtGui.QMessageBox.warning(None, "Invalid value", "Must be a number", QtGui.QMessageBox.Close)
             else:
                 break
 
-    def load_multi_images(self, filename, n):
-        guess=""
+    def _load_multi_images(self, filename, n):
+        guess = ""
         while 1:
             text, result = QtGui.QInputDialog.getText(None, "Enter values",
                                                       "Enter %s as a series of %i comma-separated values" % (self.header_text, n),
@@ -138,13 +136,13 @@ class SourceImageList(QtGui.QVBoxLayout):
                         self.table.setItem(0, 0, QtGui.QTableWidgetItem(filename))
                         self.table.setItem(0, 1, QtGui.QTableWidgetItem(text))
                         break
-                except:
+                except ValueError:
                     QtGui.QMessageBox.warning(None, "Invalid value", "Must be a series of comma-separated numbers",
                                               QtGui.QMessageBox.Close)
             else:
                 break
 
-    def add(self):
+    def _add(self):
         if self.ivm.main is None:
             QtGui.QMessageBox.warning(None, "No image", "Load an image volume before generating T1 map",
                                       QtGui.QMessageBox.Close)
@@ -153,20 +151,22 @@ class SourceImageList(QtGui.QVBoxLayout):
         if self.dir is None and self.ivm.main.fname is not None:
             self.dir = os.path.dirname(self.ivm.main.fname)
 
-        filename, junk = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
+        filename, _ = QtGui.QFileDialog.getOpenFileName(None, "Open image", dir=self.dir)
         if filename:
-            nvols = self.check_file(filename)
+            nvols = self._check_file(filename)
             if nvols == 1:
-                self.load_image(filename)
+                self._load_image(filename)
             else:
-                self.load_multi_images(filename, nvols)
+                self._load_multi_images(filename, nvols)
 
-    def remove(self):
+    def _remove(self):
         row = self.table.currentRow()
         self.table.removeRow(row)
-        fa_angles = []
 
     def get_images(self):
+        """
+        :return: Tuple of (sequence of data names, sequence of flip angles in data)
+        """
         vols = []
         vals = []
         for i in range(self.table.rowCount()):
@@ -204,7 +204,7 @@ class T10Widget(QpWidget):
         layout.addWidget(fabox)
         
         self.preclin = QtGui.QCheckBox("Use B0 correction (Preclinical)")
-        self.preclin.stateChanged.connect(self.preclin_changed)
+        self.preclin.stateChanged.connect(self._preclin_changed)
         self.preclin.setChecked(False)
         layout.addWidget(self.preclin)
 
@@ -218,7 +218,7 @@ class T10Widget(QpWidget):
 
         hbox = QtGui.QHBoxLayout()
         self.smooth = QtGui.QCheckBox("Gaussian smoothing: ")
-        self.smooth.stateChanged.connect(self.smooth_changed)
+        self.smooth.stateChanged.connect(self._smooth_changed)
         hbox.addWidget(self.smooth)
         hbox.addWidget(QtGui.QLabel("sigma"))
         self.sigma = QtGui.QDoubleSpinBox()
@@ -243,7 +243,7 @@ class T10Widget(QpWidget):
 
         hbox = QtGui.QHBoxLayout()
         self.clamp = QtGui.QCheckBox("Clamp T1 values between")
-        self.clamp.stateChanged.connect(self.clamp_changed)
+        self.clamp.stateChanged.connect(self._clamp_changed)
         self.clamp.setChecked(False)
         hbox.addWidget(self.clamp)
         self.clampMin = QtGui.QDoubleSpinBox()
@@ -253,13 +253,13 @@ class T10Widget(QpWidget):
         self.clampMax = QtGui.QDoubleSpinBox()
         self.clampMax.setValue(5)
         hbox.addWidget(self.clampMax)
-        self.clamp_changed()
+        self._clamp_changed()
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
         hbox = QtGui.QHBoxLayout()
         self.gen = QtGui.QPushButton('Generate T1 map', self)
-        self.gen.clicked.connect(self.generate)
+        self.gen.clicked.connect(self._generate)
         hbox.addWidget(self.gen)
         hbox.addStretch(1)
         layout.addLayout(hbox)
@@ -269,18 +269,18 @@ class T10Widget(QpWidget):
 
         self.process = T10Process(self.ivm)
         
-    def smooth_changed(self):
+    def _smooth_changed(self):
         self.sigma.setEnabled(self.smooth.isChecked())
         self.truncate.setEnabled(self.smooth.isChecked())
 
-    def preclin_changed(self):
+    def _preclin_changed(self):
         self.preclinGroup.setVisible(self.preclin.isChecked())
 
-    def clamp_changed(self):
+    def _clamp_changed(self):
         self.clampMin.setEnabled(self.clamp.isChecked())
         self.clampMax.setEnabled(self.clamp.isChecked())
 
-    def generate(self):
+    def _generate(self):
         if self.ivm.main is None:
             QtGui.QMessageBox.warning(self, "No volume", "Load a volume before generating T1 map", QtGui.QMessageBox.Close)
             return
@@ -294,7 +294,7 @@ class T10Widget(QpWidget):
         options = {"tr" : self.trinp.val}
 
         fa_vols, fa_angles = self.fatable.get_images()
-        if len(fa_vols) == 0:
+        if not fa_vols:
             QtGui.QMessageBox.warning(self, "No FA images", "Load FA images before generating T1 map",
                                       QtGui.QMessageBox.Close)
             return
@@ -308,7 +308,7 @@ class T10Widget(QpWidget):
             options["fa-afi"] = self.fainp.val
 
             afi_vols, afi_trs = self.trtable.get_images()
-            if len(afi_vols) == 0:
+            if not afi_vols:
                 QtGui.QMessageBox.warning(self, "No AFI images", "Load AFI images before using B0 correction",
                                           QtGui.QMessageBox.Close)
                 return

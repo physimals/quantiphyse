@@ -22,6 +22,9 @@ def _get_filepath(fname, folder):
         return os.path.abspath(os.path.join(folder, fname))
 
 class T10Process(Process):
+    """
+    Process which calculates T1 map from VFA images
+    """
 
     PROCESS_NAME = "T10"
     
@@ -50,7 +53,7 @@ class T10Process(Process):
                 if len(fa) > 1:
                     for i, a in enumerate(fa):
                         fas.append(a)
-                        fa_vols.append(arr[:,:,:,i])
+                        fa_vols.append(arr[:, :, :, i])
                 else:
                     fas.append(fa[0])
                     fa_vols.append(arr)
@@ -76,7 +79,7 @@ class T10Process(Process):
                 if isinstance(t, list):
                     for i, a in enumerate(t):
                         trs.append(float(a)/1000)
-                        afi_vols.append(arr[:,:,:,i])
+                        afi_vols.append(arr[:, :, :, i])
                 else:
                     trs.append(t)
                     afi_vols.append(arr)

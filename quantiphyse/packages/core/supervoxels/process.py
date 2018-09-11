@@ -6,7 +6,6 @@ Copyright (c) 2013-2018 University of Oxford
 
 import numpy as np
 
-from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 from quantiphyse.processes.feat_pca import PcaFeatReduce
 from quantiphyse.data import NumpyData
