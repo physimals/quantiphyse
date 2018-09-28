@@ -5,16 +5,17 @@ Copyright (c) 2013-2018 University of Oxford
 """
 
 import os
-import sys
 import inspect
 import traceback
-import logging
 
 from PySide import QtGui, QtCore
+
+import yaml
 
 from quantiphyse.processes import Process
 from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
 from quantiphyse.data import save
+from quantiphyse.utils.batch import Script
 
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
@@ -88,6 +89,22 @@ class QpWidget(QtGui.QWidget, LogSource):
         Override to respond to global option changes
         """
         pass
+
+    def processes(self):
+        """
+        Get the processes to be run for this widget in its current state
+
+        This should be implemented for widgets which run a Process or multiple 
+        Processes (i.e. most widgets). Otherwise the default method should 
+        be left (which throws a NotImplementedError).
+
+        :return: Structure defining one or more processes to be run, in 
+        the format expected by the batch system. This is one of the following:
+
+          - A dictionary of Process name : Options dictionary
+          - A sequence of the above
+        """
+        raise NotImplementedError("This widget does not support the batch process system")
 
 class FingerTabBarWidget(QtGui.QTabBar):
     """
@@ -186,25 +203,33 @@ class BatchButton(QtGui.QPushButton):
         """
         Show a dialog box containing the batch options supplied by the parent
         """
-        if hasattr(self.widget, "batch_options"):
-            batchopts = self.widget.batch_options()
-            if len(batchopts) == 2:
-                proc_name, opts = batchopts
+        try:
+            processes = self.widget.processes()
+            if isinstance(processes, dict):
+                processes = [processes,]
+            text = yaml.safe_dump(processes, default_flow_style=False)
+            TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
+        except NotImplementedError:
+            # Fallback to older method
+            if hasattr(self.widget, "batch_options"):
+                batchopts = self.widget.batch_options()
+                if len(batchopts) == 2:
+                    proc_name, opts = batchopts
 
-                text = "  - %s:\n" % proc_name
-                text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
-                text += "\n"
-                TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
-            elif len(batchopts) == 3:
-                proc_name, opts, support_files = batchopts
-                text = "  - %s:\n" % proc_name
-                text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
-                text += "\n"
-                support_files.insert(0, ("Batch code", text))
-                MultiTextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, 
-                                      pages=support_files).show()     
-        else:
-            error_dialog("This widget does not provide a list of batch options")
+                    text = "  - %s:\n" % proc_name
+                    text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                    text += "\n"
+                    TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
+                elif len(batchopts) == 3:
+                    proc_name, opts, support_files = batchopts
+                    text = "  - %s:\n" % proc_name
+                    text += "\n".join(["      %s: %s" % (str(k), str(v)) for k, v in opts.items()])
+                    text += "\n"
+                    support_files.insert(0, ("Batch code", text))
+                    MultiTextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, 
+                                        pages=support_files).show()     
+            else:
+                error_dialog("This widget does not provide a list of batch options")
 
 class OverlayCombo(QtGui.QComboBox):
     """
@@ -991,7 +1016,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
 
     Designed for use with BackgroundTask
     """
-    def __init__(self, get_process_fn, get_rundata_fn, title="Run", btn_label="Run", save_option=False):
+    def __init__(self, get_process_fn=None, get_rundata_fn=None, widget=None, ivm=None, title="Run", btn_label="Run", save_option=False):
         LogSource.__init__(self)
         QtGui.QGroupBox.__init__(self)
         self.save_option = save_option
@@ -1037,13 +1062,23 @@ class RunBox(QtGui.QGroupBox, LogSource):
 
         self.get_process_fn = get_process_fn
         self.get_rundata_fn = get_rundata_fn
+        self.widget = widget
+        self.ivm = ivm
+        self.process = None
 
     def start(self):
         """
         Start running the process
         """
-        self.process = self.get_process_fn()
-        rundata = self.get_rundata_fn()
+        if self.get_process_fn is not None:
+            self.process = self.get_process_fn()
+            rundata = self.get_rundata_fn()
+        else:
+            processes = self.widget.processes()
+            if isinstance(processes, dict):
+                processes = [processes,]
+            self.process = Script(self.ivm)
+            rundata = {"parsed-yaml" : {"Processing" : processes}}
 
         self.progress.setValue(0)
         self.runBtn.setEnabled(False)
@@ -1121,7 +1156,7 @@ class OrderList(QtGui.QListView):
     
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=[], col_headers=None):
+    def __init__(self, initial=(), col_headers=None):
         QtGui.QListView.__init__(self)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
@@ -1213,3 +1248,46 @@ class WarningBox(QtGui.QWidget):
         hbox.setStretchFactor(self.text, 2)
 
         self.setStyleSheet("QWidget { background-color: orange; color: black; padding: 5px 5px 5px 5px;}")
+
+class MultiExpander(QtGui.QWidget):
+    """
+    Generic expander widget, alternative to tab box which allows all to be 'closed'
+    """
+    def __init__(self, widgets, parent=None, default_visible=None):
+        super(MultiExpander, self).__init__(parent)
+
+        vbox = QtGui.QVBoxLayout()
+
+        self.arrow_right = self.style().standardIcon(QtGui.QStyle.SP_ArrowRight)
+        self.arrow_down = self.style().standardIcon(QtGui.QStyle.SP_ArrowDown)
+        self.widgets = widgets
+        self.toggle_btns = {}
+
+        btn_hbox = QtGui.QHBoxLayout()
+        w_hbox = QtGui.QHBoxLayout()
+        for name, w in self.widgets.items():
+            if name == default_visible:
+                w.setVisible(True)
+                self.toggle_btns[name] = QtGui.QPushButton(self.arrow_down, name)
+            else:
+                w.setVisible(False)
+                self.toggle_btns[name] = QtGui.QPushButton(self.arrow_right, name)
+            self.toggle_btns[name].clicked.connect(self._toggle(name))
+            btn_hbox.addWidget(self.toggle_btns[name])
+            w_hbox.addWidget(w)
+
+        vbox.addLayout(btn_hbox)
+        vbox.addLayout(w_hbox)
+        self.setLayout(vbox)
+
+    def _toggle(self, name):
+        """ Return 'toggle' callback for named widget """
+        def _cb():
+            for wname, w in self.widgets.items():
+                if wname == name and not w.isVisible():
+                    self.toggle_btns[wname].setIcon(self.arrow_down)
+                    w.setVisible(True)
+                else:
+                    self.toggle_btns[wname].setIcon(self.arrow_right)
+                    w.setVisible(False)
+        return _cb
