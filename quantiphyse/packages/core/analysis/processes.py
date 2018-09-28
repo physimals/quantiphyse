@@ -330,8 +330,6 @@ class ExecProcess(Process):
 
         for name, data in self.ivm.data.items():
             exec_globals[name] = data.raw()
-        for name, roi in self.ivm.rois.items():
-            exec_globals[name] = roi.raw()
 
         for name in options.keys():
             proc = options.pop(name)
