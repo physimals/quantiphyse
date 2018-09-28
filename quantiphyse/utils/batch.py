@@ -105,6 +105,7 @@ class Script(Process):
 
         # Can set mode=check to just validate the YAML
         self._load_yaml(root)
+        self.debug(self._pipeline)
         mode = options.pop("mode", "run")
         if mode == "run":
             self.status = Process.RUNNING
