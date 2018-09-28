@@ -3,6 +3,7 @@ Quantiphyse - Tests for OrthoSlice class
 
 Copyright (c) 2013-2018 University of Oxford
 """
+import unittest
 
 import numpy as np
 
