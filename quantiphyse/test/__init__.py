@@ -65,6 +65,7 @@ def create_test_data(obj, shape=(10, 10, 10), nt=20, motion_scale=0.5):
      - data_4d_moving
      - mask
     """
+    shape = list(shape)
     centre = [float(v)/2 for v in shape]
 
     obj.grid = DataGrid(shape, np.identity(4))
