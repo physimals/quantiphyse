@@ -26,6 +26,16 @@ class ImageVolumeManagement(QtCore.QObject):
     Holds all image datas used in analysis
 
     Has to inherit from a Qt base class that supports signals
+
+    Attributes
+    ----------
+
+      ``main`` 'main' QpData - typically viewed as a greyscale background
+      ``data`` Mapping from data set name to QpData object
+      ``current_data`` QpData which is the 'current' overlay data set
+      ``current_roi`` QpData with ``roi=True`` used as the current ROI
+      ``extras`` Mapping from name to object for miscellaneous extra data.
+                 Extras must support string-conversion for writing to files.
     """
     # Signals
 
@@ -43,30 +53,20 @@ class ImageVolumeManagement(QtCore.QObject):
 
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
+        self.reset()
 
-        # Main background data
+    def reset(self):
+        """ Clear all data """
         self.main = None
-
-        # Map from name to data object
         self.data = {}
-
-        # Current data object
         self.current_data = None
-
-        # Current ROI object
         self.current_roi = None
-
-        # Processing extras
         self.extras = {}
 
         self.sig_main_data.emit(None)
         self.sig_current_data.emit(None)
         self.sig_current_roi.emit(None)
         self.sig_all_data.emit([])
-
-    def reset(self):
-        """ Clear all data """
-        self.__init__()
 
     @property
     def rois(self):
