@@ -30,6 +30,10 @@ class DragOptions(QtGui.QDialog):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
+        self.force_t = False
+        self.make_main = default_main
+        self.type = ""
+        self.name = ""
 
         layout = QtGui.QVBoxLayout()
 
@@ -43,8 +47,11 @@ class DragOptions(QtGui.QDialog):
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
         hbox = QtGui.QHBoxLayout()
-        btn = QtGui.QPushButton("Ok")
-        btn.clicked.connect(self._clicked)
+        btn = QtGui.QPushButton("ROI")
+        btn.clicked.connect(self._roi)
+        hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Data")
+        btn.clicked.connect(self._data)
         hbox.addWidget(btn)
         btn = QtGui.QPushButton("Cancel")
         btn.clicked.connect(self.reject)
@@ -53,7 +60,6 @@ class DragOptions(QtGui.QDialog):
         
         self.main_cb = QtGui.QCheckBox("Set as main data")
         self.main_cb.setChecked(default_main)
-        self.make_main = default_main
         layout.addWidget(self.main_cb)
         
         self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
@@ -82,14 +88,19 @@ class DragOptions(QtGui.QDialog):
             layout.addWidget(self.adv_pane)
 
         self.setLayout(layout)
-        self.type = ""
-        self.name = ""
-        self.force_t = False
 
     def _adv_changed(self, state):
         self.adv_pane.setVisible(state)
 
-    def _clicked(self):
+    def _data(self):
+        self.type = "data"
+        self._accepted()
+
+    def _roi(self):
+        self.type = "roi"
+        self._accepted()
+
+    def _accepted(self):
         self.force_t = self.force_t_cb.isChecked()
         self.make_main = self.main_cb.isChecked()
         self.name = self.name_combo.currentText()
@@ -101,15 +112,6 @@ class DragOptions(QtGui.QDialog):
                 self.accept()
         else:
             self.accept()
-
-    @staticmethod
-    def get_image_choice(parent, fname, ivm, force_t_option=False, make_main=False):
-        """
-        Pop up a mini-dialog to ask the user what type of data they are loading
-        """
-        dialog = DragOptions(parent, fname, ivm, force_t_option=force_t_option, default_main=make_main)
-        result = dialog.exec_()
-        return dialog.name, result == QtGui.QDialog.Accepted, dialog.force_t, dialog.make_main
 
 class MainWindow(QtGui.QMainWindow):
     """
@@ -408,11 +410,12 @@ class MainWindow(QtGui.QMainWindow):
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
-        make_main = self.ivm.main is None
-        name, ok, force_t_dialog, make_main = DragOptions.get_image_choice(self, fname, self.ivm, force_t_option=force_t_option, make_main=make_main)
-        if not ok: return
-        data.name = name
-        if force_t_option: force_t = force_t_dialog
+        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, default_main=self.ivm.main is None)
+        if not options.exec_(): return
+        
+        data.name = options.name
+        data.roi = options.type == "roi"
+        if force_t_option: force_t = options.force_t
         
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         if force_t:
@@ -423,7 +426,7 @@ class MainWindow(QtGui.QMainWindow):
             if msg_box.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
-        self.ivm.add(data, make_main=make_main)
+        self.ivm.add(data, make_main=options.make_main)
 
     def save_data(self):
         """
