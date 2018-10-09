@@ -563,8 +563,8 @@ class DataStatistics(QpWidget):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
             ov = self.ivm.data[name]
-            self.minSpin.setValue(ov.raw().min())
-            self.maxSpin.setValue(ov.raw().max())
+            self.minSpin.setValue(np.nanmin(ov.raw()))
+            self.maxSpin.setValue(np.nanmax(ov.raw()))
             self.minSpin.setDecimals(ov.dps)
             self.maxSpin.setDecimals(ov.dps)
             self.minSpin.setSingleStep(10**(1-ov.dps))

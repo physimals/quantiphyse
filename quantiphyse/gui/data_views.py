@@ -624,14 +624,14 @@ class LevelsDialog(QtGui.QDialog):
         self.view.set("cmap_range", [cmin, cmax])
 
 def _cmap_range(data, percentile=100):
-    cmin, cmax = data.min(), data.max()
+    cmin, cmax = np.nanmin(data), np.nanmax(data)
     # Issue #101: if min is exactly zero, make it slightly more
     # as a heuristic for data sets where zero=background
     if cmin == 0:
         cmin = 1e-7*cmax
 
     if percentile < 100:
-        perc_max = np.percentile(data, percentile)
+        perc_max = np.nanpercentile(data, percentile)
         if perc_max > cmin:
             cmax = perc_max
     

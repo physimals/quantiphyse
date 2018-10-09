@@ -59,6 +59,11 @@ def is_ortho_vector(vec, shape=1):
             return axis, math.copysign(1, val)
     return None, None
 
+def remove_nans(x, replace_val=0):
+    x = x.copy()
+    x[~np.isfinite(x)] = replace_val
+    return x
+
 class DataGrid(object):
     """
     Defines a regular 3D grid in some 'world' space
@@ -438,11 +443,11 @@ class QpData(object):
         """
         if vol is None:
             if self._range is None:
-                self._range = self.raw().min(), self.raw().max()
+                self._range = np.nanmin(self.raw()), np.nanmax(self.raw())
             return self._range
         else:
             voldata = self.volume(vol)
-            return voldata.min(), voldata.max()
+            return np.nanmin(voldata), np.nanmax(voldata)
 
     def volume(self, vol):
         """
@@ -639,8 +644,8 @@ class QpData(object):
         :param vol: volume index for use if this is a 4D data set
         :param interp_order: Order of interpolation for non-orthogonal slices
         """
-        rawdata = self.volume(vol)
-
+        rawdata = remove_nans(self.volume(vol))
+        
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
 
