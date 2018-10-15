@@ -150,6 +150,7 @@ class OptionBox(QtGui.QGroupBox):
     def _cb_toggled(self, option):
         def _toggled(state):
             option.setEnabled(state)
+            option.sig_changed.emit()
         return _toggled
 
 class Option(object):
