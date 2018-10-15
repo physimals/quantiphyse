@@ -36,6 +36,8 @@ class OptionBox(QtGui.QGroupBox):
 
     def __init__(self, title=""):
         QtGui.QGroupBox.__init__(self, title)
+        if not title:
+            self.setStyleSheet("border: none")
         self.grid = QtGui.QGridLayout()
         self.setLayout(self.grid)
         self._current_row = 0
@@ -872,7 +874,7 @@ class PickPointOption(Option, QtGui.QWidget):
         self._edit.setText(" ".join([str(self._rtype(v+self._offset)) for v in point[:3]]))
         self._edit_changed()
 
-class FileOption(QtGui.QWidget):
+class FileOption(Option, QtGui.QWidget):
     """ 
     Option used to specify a file or directory
     """
@@ -884,13 +886,28 @@ class FileOption(QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self)
         self._dirs = dirs
-        self._file = None
+        
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+        self._edit = QtGui.QLineEdit()
+        hbox.addWidget(self._edit)
+        self._btn = QtGui.QPushButton("Choose")
+        self._btn.clicked.connect(self._clicked)
+        hbox.addWidget(self._btn)
         
     @property
     def value(self):
         """ Return path of selected file """
-        return self._file
-    
+        return self._edit.text()
+
+    def _clicked(self):
+        if self._dirs:
+            path = QtGui.QFileDialog.getExistingDirectory()
+        else:
+            path = QtGui.QFileDialog.getOpenFileName()
+        self._edit.setText(path)
+        self.sig_changed.emit()
+
 class RunButton(QtGui.QWidget):
     """
     A button which, when clicked, runs an analysis process
