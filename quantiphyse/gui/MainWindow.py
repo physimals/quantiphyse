@@ -426,7 +426,7 @@ class MainWindow(QtGui.QMainWindow):
             if msg_box.exec_() != QtGui.QMessageBox.Ok: return
             data.set_2dt()
         
-        self.ivm.add(data, make_main=options.make_main)
+        self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
 
     def save_data(self):
         """
