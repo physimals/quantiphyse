@@ -12,7 +12,7 @@ for reproducibility
 import os, sys
 import uuid
 import shutil
-from StringIO import StringIO
+from six import StringIO
 
 MSI_SUBDIR = "msi"
 
