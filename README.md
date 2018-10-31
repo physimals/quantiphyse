@@ -123,11 +123,10 @@ Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng
 
 #### v0.8 (Target September 2018)
 
- - Integration of selected FSL tools (FLIRT, FAST, BET)
- - Improved manual data alignment tools
+ - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)
  - Improved registration support (apply transform)
- - ENABLE
- - VEASL
+ - Improved manual data alignment tools
+ - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)
  - Fabber T1 (integrate with existing T1 widget?)
  - Fabber DCE (integrate with existing DCE widget?)
 
@@ -137,6 +136,8 @@ No firm plans yet - selection from 'Vague plans' below
 
 #### Vague Plans for Future
 
+ - Python 3 compatible (untested currently)
+ 
  - MoCo/Registration
    - Definitely want Bartek's MC method
    - Revise interface to allow for MC and registration to be treated separately (MCFLIRT/FLIRT) (or not)
