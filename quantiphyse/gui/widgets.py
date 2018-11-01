@@ -1077,7 +1077,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
             processes = self.widget.processes()
             if isinstance(processes, dict):
                 processes = [processes,]
-            self.process = Script(self.ivm)
+            self.process = Script(self.ivm, error_action=Script.FAIL)
             rundata = {"parsed-yaml" : {"Processing" : processes}}
 
         self.progress.setValue(0)
