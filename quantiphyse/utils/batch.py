@@ -80,7 +80,7 @@ class Script(Process):
         self._pipeline = []
         self._cases = []
         self._generic_params = {}
-        self._error_action = Script.IGNORE
+        self._error_action = kwargs.get("error_action", Script.IGNORE)
 
         # Find all the process implementations
         self.known_processes = dict(BASIC_PROCESSES)
