@@ -143,7 +143,7 @@ class OptionBox(QtGui.QGroupBox):
         """
         ret = {}
         for key, option in self._options.items():
-            if option.isEnabled():
+            if option.isEnabled() and option.isVisible():
                 ret[key] = option.value
         return ret
 
