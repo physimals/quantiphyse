@@ -116,6 +116,7 @@ class OptionBox(QtGui.QGroupBox):
             if item is None:
                 break
             item.widget().setVisible(visible)
+            item.widget().setEnabled(visible)
             col += 1
 
     def clear(self):
@@ -143,7 +144,7 @@ class OptionBox(QtGui.QGroupBox):
         """
         ret = {}
         for key, option in self._options.items():
-            if option.isEnabled() and option.isVisible():
+            if option.isEnabled() and option.value is not None:
                 ret[key] = option.value
         return ret
 
