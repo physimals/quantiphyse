@@ -117,6 +117,8 @@ class LogProcess(Process):
         if self.queue.empty(): return
         while not self.queue.empty():
             line = self.queue.get()
+            self.log += line
+            self.debug(line)
             check_step = self.current_step
             while check_step < len(self.expected_steps):
                 # Expected steps can be string regexes, or tuple of (regex, description)
