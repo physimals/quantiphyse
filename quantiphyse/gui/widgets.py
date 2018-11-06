@@ -1159,7 +1159,7 @@ class OrderList(QtGui.QListView):
     def __init__(self, initial=(), col_headers=None):
         QtGui.QListView.__init__(self)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        #self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         self.model = QtGui.QStandardItemModel()
         self.setModel(self.model)
         #if col_headers:
@@ -1224,30 +1224,41 @@ class OrderListButtons(QtGui.QVBoxLayout):
         self.down_btn.setFixedSize(16, 16)
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
-        self.addStretch(1)
 
 class WarningBox(QtGui.QWidget):
     """
     Widget which just displays a warning, e.g. when a QpWidget can't be used for some reason
     """
 
-    def __init__(self, text):
+    def __init__(self, text=""):
         QtGui.QWidget.__init__(self)
         hbox = QtGui.QHBoxLayout()
         hbox.setSpacing(0)
         self.setLayout(hbox)
 
-        self.warn_icon = QtGui.QIcon.fromTheme("dialog-error")
+        #self.warn_icon = QtGui.QIcon.fromTheme("dialog-error")
         self.icon = QtGui.QLabel()
+        self.warn_icon = self.icon.style().standardIcon(QtGui.QStyle.SP_MessageBoxWarning)
         self.icon.setPixmap(self.warn_icon.pixmap(32, 32))
         hbox.addWidget(self.icon)
 
-        self.text = QtGui.QLabel(text)
+        self.text = QtGui.QLabel()
         self.text.setWordWrap(True)
         hbox.addWidget(self.text)
         hbox.setStretchFactor(self.text, 2)
 
-        self.setStyleSheet("QWidget { background-color: orange; color: black; padding: 5px 5px 5px 5px;}")
+        self.setStyleSheet("QWidget { background-color: #ddcca8; color: black; padding: 5px 5px 5px 5px; border-radius: 5;}")
+        self.warn(text)
+
+    def warn(self, text=""):
+        if text:
+            self.text.setText(text)
+            self.setVisible(True)
+        else:
+            self.clear()
+        
+    def clear(self):
+        self.setVisible(False)
 
 class MultiExpander(QtGui.QWidget):
     """
