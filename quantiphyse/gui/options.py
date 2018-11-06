@@ -263,9 +263,15 @@ class ChoiceOption(Option, QtGui.QComboBox):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, choices=(), return_values=None):
+    def __init__(self, choices=(), return_values=None, default=None):
         QtGui.QComboBox.__init__(self)
         self.setChoices(choices, return_values)
+        if default:
+            if default in self.choice_map:
+                self.value = default
+            else:
+                # default is a key - Need reverse lookup as choice map maps real text to keys
+                self.value = key = [key for key, value in self.choice_map.items() if value == default][0]
         self.currentIndexChanged.connect(self._changed)
 
     def setChoices(self, choices, return_values=None):
@@ -309,7 +315,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
         if idx >= 0:
             self.setCurrentIndex(idx)
         else:
-            raise ValueError("Value %s is not a valid choice for this option")
+            raise ValueError("Value %s is not a valid choice for this option" % choice)
             
     def _changed(self):
         self.sig_changed.emit()
