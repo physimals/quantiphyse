@@ -1,5 +1,13 @@
 """
-Quantiphyse - Generic analysis processes
+Quantiphyse - Generic analysis process
+
+This module defines the ``Process`` class which is the basis of most
+data processing tasks. A process takes a dictionary of options and
+acts on an ``ImageVolumeManagement`` object which contains data items.
+
+By defining a task as a Process, it becomes accessible to the batch
+system. A GUI interface can then be created for the Process as a
+QpWidget.
 
 Copyright (c) 2013-2018 University of Oxford
 """
@@ -19,8 +27,8 @@ from quantiphyse.utils import LogSource, get_debug, QpException, get_plugins, se
 #: Multiprocessing pool 
 _POOL = None
 
-#: Axis to split along. Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays 
-#: which are column-major by default
+#: Axis to split along when splitting up data sets for multiprocessing
+#: Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major by default
 SPLIT_AXIS = 0
 
 #: Whether to use multiprocessing - can be disabled for debugging
@@ -29,11 +37,21 @@ MULTIPROC = True
 LOG = logging.getLogger(__name__)
 
 def _worker_initialize():
-    # Make sure plugins are loaded for multiprocessing worker processes
+    """
+    Initializer function for multiprocessing workers.
+    
+    This makes sure plugins are loaded and paths to local files are set
+    """
     set_local_file_path()
     get_plugins()
 
 def _init_pool():
+    """
+    Initializer function for the multiprocessing worker pool
+
+    We create a pool with one worker per CPU as reported by the
+    ``mutiprocessing.cpu_count()``
+    """
     global _POOL
     if _POOL is None: 
         n_workers = multiprocessing.cpu_count()
@@ -60,8 +78,9 @@ class Process(QtCore.QObject, LogSource):
 
     Processes are implemented by subclassing Process and overriding ``run``. 'Fast' 
     processes such as loading/saving data and very simple image processing tasks 
-    should be implemented by subclassing Process and overriding ``run``. Failure should be
-    signalled by raising an exception.
+    should carry out their data processing in this method. Failure should be
+    signalled by raising an exception - ``QpException`` for 'expected' failures related
+    to invalid user options, any other exception would imply a bug.
     
     Processes which may take time can be run as background processes. To do this, the
     ``run()`` method should end with a call to ``start_bg`` which will start the background
@@ -165,7 +184,7 @@ class Process(QtCore.QObject, LogSource):
         which should be reimplemented to do your processing. The differences
         between calling ``execute()`` and calling ``run()`` are:
 
-         - ``execute`` will not throw an exception. Instead it will set the
+         - ``execute`` will never throw an exception. Instead it will set the
            status of the process to ``FAILED`` and set the ``exception`` 
            attribute.
          - ``execute`` will ensure that the ``status`` attribute is set and
@@ -173,7 +192,7 @@ class Process(QtCore.QObject, LogSource):
            asynchronous processes which fail on startup.
 
         In general calling ``run()`` directly is preferred when widgets
-        call their own processes as it enables exceptions to be handled
+        call their synchronous processes as it enables exceptions to be handled
         more naturally (by catching or allowing the default exception handler
         to catch them). Since asynchronous processes need to be able to 
         handle exceptions in ``sig_finished``, they may prefer to 
@@ -284,7 +303,7 @@ class Process(QtCore.QObject, LogSource):
 
         :param options: Dictionary of string : value for process options
         """
-        pass
+        raise NotImplementedError("Process subclasses must override `run`")
 
     def output_data_items(self):
         """
