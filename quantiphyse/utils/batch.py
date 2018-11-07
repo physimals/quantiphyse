@@ -1,5 +1,17 @@
 """
-Quantiphyse - Implements the batch processing system for Quantiphyse
+Quantiphyse - Implements the batch processing system
+
+The ``Script`` class defines a processing pipeline. It consists
+of a series of ``Process`` objects and, optionally, a series of ``BatchCase``
+objects, each of which describes a separate execution of the same process
+pipeline. It is also in itself a ``Process``.
+
+``Script`` can be used as a means of defining a macro process but is also
+used as the basis of the batch processing system. The pipeline can be
+defined programatically or via a YAML document.
+
+``BatchScript`` is a subclass of ``Script`` which adds human-readable 
+output suitable for command line batch execution.
 
 Copyright (c) 2013-2018 University of Oxford
 """
@@ -24,22 +36,24 @@ from . import set_debug, get_plugins, ifnone
 from .exceptions import QpException
 
 # Default basic processes - all others are imported from packages
-BASIC_PROCESSES = {"RenameData"   : RenameDataProcess,
-                   "RenameRoi"   : RenameRoiProcess,
-                   "Delete"   : DeleteProcess,
-                   "RoiCleanup" : RoiCleanupProcess,
-                   "Load" : LoadProcess,
-                   "Save" : SaveProcess,
-                   "SaveAllExcept" : SaveAllExceptProcess,
-                   "SaveAndDelete" : SaveDeleteProcess,
-                   "LoadData" : LoadDataProcess,
-                   "LoadRois" : LoadRoisProcess,
-                   "SaveArtifacts" : SaveArtifactsProcess,
-                   "SaveExtras" : SaveArtifactsProcess}
+BASIC_PROCESSES = {
+    "RenameData"   : RenameDataProcess,
+    "RenameRoi"   : RenameRoiProcess,
+    "Delete"   : DeleteProcess,
+    "RoiCleanup" : RoiCleanupProcess,
+    "Load" : LoadProcess,
+    "Save" : SaveProcess,
+    "SaveAllExcept" : SaveAllExceptProcess,
+    "SaveAndDelete" : SaveDeleteProcess,
+    "LoadData" : LoadDataProcess,
+    "LoadRois" : LoadRoisProcess,
+    "SaveArtifacts" : SaveArtifactsProcess,
+    "SaveExtras" : SaveArtifactsProcess
+}
 
 class Script(Process):
     """
-    A processing scripts. It consists of three types of information:
+    A processing script. It consists of three types of information:
 
      - Generic options (e.g. debug mode)
      - A single pipeline of processing steps
@@ -89,6 +103,22 @@ class Script(Process):
             self.known_processes[process.PROCESS_NAME] = process
 
     def run(self, options):
+        """
+        Run the script
+
+        The pipeline is created first, either from supplied
+        YAML code, a filename or a set of parsed objects
+
+        If no ``Case`` are included, a single default ``Case``
+        is created. The completed pipeline is then run on all
+        cases.
+
+        Runs are asynchronous - initially we start the first
+        process of the first case, and connect to the 'process finished'
+        signal. When the slot is called, we start the next process, 
+        or the next case as required. So the ``run()`` method returns
+        as soon as the first process is started. 
+        """
         if "parsed-yaml" in options:
             root = dict(options.pop("parsed-yaml"))
         elif "yaml" in options:
@@ -141,15 +171,15 @@ class Script(Process):
         yaml_cases = root.pop("Cases", [])
         if isinstance(yaml_cases, dict):
             for case_id in sorted(yaml_cases.keys()):
-                self._cases.append(BatchScriptCase(case_id, yaml_cases[case_id]))
+                self._cases.append(Case(case_id, yaml_cases[case_id]))
         else:
             for case in yaml_cases:
                 case_id = case.keys()[0]
-                self._cases.append(BatchScriptCase(case_id, case.get(case_id, {})))
+                self._cases.append(Case(case_id, case.get(case_id, {})))
         
         # Create default case if we have not been specified any
         if not self._cases:
-            self._cases.append(BatchScriptCase("case", {}))
+            self._cases.append(Case("case", {}))
         # After removing processes and cases, remainder is the generic options
         self._generic_params = root
     
@@ -279,7 +309,7 @@ class Script(Process):
                            (self._process_num - 1 + complete)) / (len(self._pipeline)*len(self._cases))
         self.sig_progress.emit(script_complete)
 
-class BatchScriptCase(object):
+class Case(object):
     """
     An individual case (e.g. patient scan) which a processing pipeline is applied to
     """
@@ -293,11 +323,12 @@ class BatchScriptCase(object):
 
 class BatchScript(Script):
     """
-    A Script which sends human readable output to a log stream.
+    A Script which sends human readable output to a log stream. It also
+    saves the logs of the processes to a file in the output folder.
 
     This is used as the runner for batch scripts started from the console
+    or from the ``BatchBuilder`` widget.
     """
-
     def __init__(self, ivm=None, stdout=sys.stdout, **kwargs):
         Script.__init__(self, ivm, **kwargs)
         self.stdout = stdout
