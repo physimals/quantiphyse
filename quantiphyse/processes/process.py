@@ -83,6 +83,9 @@ class Process(QtCore.QObject, LogSource):
     asynchronously. ``sig_progress`` is always emitted with a value of 1 when a process completes 
     successfully.
 
+    ``sig_log`` is emitted when a message is added to the log using the ``logmsg`` method. It
+    can be used to show an updating log from the process.
+    
     Attributes:
 
       indir - Input data folder if process needs to load data
@@ -92,7 +95,8 @@ class Process(QtCore.QObject, LogSource):
                   should *not* set this attribute themselves, they should simply raise the exception.
                   or pass it back from a worker.
       log - Log information from the process. Subclasses should add any useful logging information to this
-            attribute
+            attribute. The best way to do this is to use the ``logmsg`` method which also emits ``sig_log``.
+            In the future, direct access to the log attribute may be deprecated and possibly removed.
     """
 
     #: Signal which may be emitted to track progress 
@@ -104,8 +108,12 @@ class Process(QtCore.QObject, LogSource):
     sig_finished = QtCore.Signal(int, str, object)
 
     #: Signal which may be emitted when the process starts a new step
-    #: Arguments is text description
+    #: Argument is text description
     sig_step = QtCore.Signal(str)
+
+    #: Signal which is emitted when a message is added to the log
+    #: Argument is the message
+    sig_log = QtCore.Signal(str)
 
     NOTSTARTED = 0
     RUNNING = 1
@@ -281,6 +289,13 @@ class Process(QtCore.QObject, LogSource):
         :param options: Dictionary of string : value for process options
         """
         raise NotImplementedError("Process subclasses must override `run`")
+
+    def logmsg(self, msg):
+        """
+        Add text to the log and emit sig_log
+        """
+        self.log += msg
+        self.sig_log.emit(msg)
 
     def output_data_items(self):
         """
