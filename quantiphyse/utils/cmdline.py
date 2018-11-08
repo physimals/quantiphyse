@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 class OutputStreamMonitor(object):
     """
     Simple file-like object which listens to the output
-    of an FSL command and sends each line to a Queue
+    of a command and sends each line to a Queue
     """
     def __init__(self, queue, suppress_duplicates=True):
         self._queue = queue
@@ -32,7 +32,7 @@ class OutputStreamMonitor(object):
 
     def write(self, text):
         """ Handle output from the process - send each line to the queue """
-        lines = text.splitlines()
+        lines = text.splitlines(True)
         for line in lines:
             if line != self._last_line:
                 self._queue.put(line)
@@ -99,6 +99,15 @@ def _run_cmd(worker_id, queue, workdir, cmdline, expected_data):
         traceback.print_exc(exc)
         return worker_id, False, exc
 
+def apply_backspaces(s):
+    while True:
+        # if you find a character followed by a backspace, remove both
+        t = re.sub('.\b', '', s, count=1)
+        if len(s) == len(t):
+            # now remove any backspaces from beginning of string
+            return re.sub('\b+', '', t)
+        s = t
+
 class LogProcess(Process):
     """
     Process which produces a log stream which can be used to 
@@ -110,15 +119,16 @@ class LogProcess(Process):
         self.current_step = 0
         self.allow_skipping_steps = kwargs.pop("allow_skipping_steps", True)
 
-    def timeout(self):
+    def timeout(self, queue):
         """ 
         Monitor queue for updates and send sig_progress 
         """
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            line = self.queue.get()
-            self.log += line
-            self.debug(line)
+        if queue.empty(): return
+        while not queue.empty():
+            line = queue.get()
+            # Some commands may use backspaces to show updating progress!
+            self.log = apply_backspaces(self.log + line)
+            self.debug(line.rstrip("\n"))
             check_step = self.current_step
             while check_step < len(self.expected_steps):
                 # Expected steps can be string regexes, or tuple of (regex, description)
@@ -167,7 +177,7 @@ class CommandProcess(LogProcess):
         fname = os.path.join(self.workdir, data_name)
         save(self.ivm.data[data_name], fname)
 
-    def finished(self):
+    def finished(self, worker_output):
         """ 
         Add data to IVM and set log 
 
@@ -175,7 +185,7 @@ class CommandProcess(LogProcess):
         data is all loaded into memory as the files may be temporary
         """
         if self.status == Process.SUCCEEDED:
-            self.log, data_files = self.worker_output[0]
+            self.log, data_files = worker_output[0]
             LOG.debug("Loading data: %s", data_files)
             for data_file in data_files:
                 qpdata = load(os.path.join(self.workdir, data_file))
