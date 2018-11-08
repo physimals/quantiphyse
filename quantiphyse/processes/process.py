@@ -17,15 +17,13 @@ import multiprocessing.pool
 import threading
 import traceback
 import logging
+import Queue
 
 import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData
 from quantiphyse.utils import LogSource, get_debug, QpException, get_plugins, set_local_file_path
-
-#: Multiprocessing pool 
-_POOL = None
 
 #: Axis to split along when splitting up data sets for multiprocessing
 #: Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major by default
@@ -44,19 +42,6 @@ def _worker_initialize():
     """
     set_local_file_path()
     get_plugins()
-
-def _init_pool():
-    """
-    Initializer function for the multiprocessing worker pool
-
-    We create a pool with one worker per CPU as reported by the
-    ``mutiprocessing.cpu_count()``
-    """
-    global _POOL
-    if _POOL is None: 
-        n_workers = multiprocessing.cpu_count()
-        LOG.debug("Initializing multiprocessing using %i workers", n_workers)
-        _POOL = multiprocessing.Pool(n_workers, initializer=_worker_initialize)
 
 class Process(QtCore.QObject, LogSource):
     """
@@ -108,9 +93,6 @@ class Process(QtCore.QObject, LogSource):
                   or pass it back from a worker.
       log - Log information from the process. Subclasses should add any useful logging information to this
             attribute
-      queue - ``multiprocessing.Queue`` object which is passed to every worker process for background 
-              processes. It may be used to communicate progress information for use in the ``timeout()`` 
-              method 
     """
 
     #: Signal which may be emitted to track progress 
@@ -161,20 +143,15 @@ class Process(QtCore.QObject, LogSource):
         # We seem to get a segfault when emitting a signal with a None object
         self.exception = object()
 
-        if "worker_fn" in kwargs:
-            self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
-            self.worker_output = []
-            self._worker_fn = kwargs.get("worker_fn", None)
-            self._sync = kwargs.get("sync", False)
-            self._timer = None
-            self._workers = []
-
-            # Only for background processes
-            if self._multiproc:
-                self.queue = multiprocessing.Manager().Queue()
-            else:
-                import Queue
-                self.queue = Queue.Queue()
+        # Multiprocessing initialization
+        self._multiproc = MULTIPROC and kwargs.get("multiproc", True)
+        self._worker_fn = kwargs.get("worker_fn", None)
+        self._sync = kwargs.get("sync", False)
+        self._timer = None
+        self._workers = []
+        self._pool = None
+        self._worker_output = []
+        self._queue = None
 
     def execute(self, options):
         """
@@ -322,15 +299,18 @@ class Process(QtCore.QObject, LogSource):
 
         :param args: Sequence of arguments to the worker run function. All must be pickleable objects
         """
+        # Only for background processes
+        self._pool, self._queue = self._init_multiproc(n_workers)
+        
         worker_args = self.split_args(n_workers, args)
-        self.worker_output = [None, ] * n_workers
+        self._worker_output = [None, ] * n_workers
         self.status = Process.RUNNING
+
         if self._multiproc:
             self._workers = []
             for i in range(n_workers):
-                self.debug("starting task %i...", n_workers)
-                _init_pool()
-                proc = _POOL.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
+                self.debug("Starting task %i/%s...", i+1, n_workers)
+                proc = self._pool.apply_async(self._worker_fn, worker_args[i], callback=self._worker_finished_cb)
                 self._workers.append(proc)
             
             if self._sync:
@@ -342,11 +322,23 @@ class Process(QtCore.QObject, LogSource):
         else:
             for i in range(n_workers):
                 result = self._worker_fn(*worker_args[i])
-                self.timeout()
+                self.timeout(self._queue)
                 if QtGui.qApp is not None: QtGui.qApp.processEvents()
                 self._worker_finished_cb(result)
                 if self.status != Process.RUNNING: 
                     break
+
+    def _init_multiproc(self, num_tasks):
+        if self._multiproc:
+            LOG.debug("Initializing multiprocessing")
+            queue = multiprocessing.Manager().Queue()
+            pool_size = max(num_tasks, multiprocessing.cpu_count())
+            pool = multiprocessing.Pool(pool_size, initializer=_worker_initialize)
+        else:
+            LOG.debug("Not using multiprocessing")
+            queue = Queue.Queue()
+            pool = None
+        return pool, queue
 
     def cancel(self):
         """
@@ -370,7 +362,7 @@ class Process(QtCore.QObject, LogSource):
 
         self._complete()
 
-    def timeout(self):
+    def timeout(self, queue):
         """
         Called every 1s while the process is running. 
         
@@ -379,7 +371,7 @@ class Process(QtCore.QObject, LogSource):
         """
         pass
 
-    def finished(self):
+    def finished(self, worker_output):
         """
         Called when process completes, successful or not, before sig_finished is emitted.
 
@@ -402,7 +394,7 @@ class Process(QtCore.QObject, LogSource):
         :param n_workers: Number of parallel worker processes to use
         """
         # First argument is worker ID, second is queue
-        split_args = [range(n_workers), [self.queue,] * n_workers]
+        split_args = [range(n_workers), [self._queue,] * n_workers]
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
@@ -450,13 +442,22 @@ class Process(QtCore.QObject, LogSource):
         self.debug("Process completing, status=%i", self.status)
         if self.status == self.SUCCEEDED:
             try:
-                self.timeout()
-                self.finished()
+                self.timeout(self._queue)
+                self.finished(self._worker_output)
                 self.sig_progress.emit(1)
             except Exception as exc:
                 self.status = self.FAILED
                 self.exception = exc
             
+        # Get rid of all references to multprocessing workers and their output
+        # this is necessary to avoid memory and process leakage
+        if self._pool is not None:
+            self._pool.close()
+        self._pool = None
+        self._workers = []
+        self._queue = None
+        self._worker_output = []
+        self.debug("Emitting sig_finished")
         self.sig_finished.emit(self.status, self.log, self.exception)
 
     def _restart_timer(self):
@@ -466,20 +467,21 @@ class Process(QtCore.QObject, LogSource):
 
     def _timer_cb(self):
         if self.status == Process.RUNNING:
-            self.timeout()
+            self.timeout(self._queue)
             self._restart_timer()
 
     def _worker_finished_cb(self, result):
         worker_id, success, output = result
         self.debug("Process worker finished: id=%i, status=%s", worker_id, str(success))
-        
+        self._workers[worker_id] = None
+
         if self.status in (Process.FAILED, Process.CANCELLED):
             # If one process has already failed or been cancelled, ignore results of others
             self.debug("Ignoring worker, process already failed or cancelled")
             return
         elif success:
-            self.worker_output[worker_id] = output
-            if None not in self.worker_output:
+            self._worker_output[worker_id] = output
+            if None not in self._worker_output:
                 self.status = Process.SUCCEEDED
         else:
             # If one process fails, they all fail. Output is just the first exception to be caught

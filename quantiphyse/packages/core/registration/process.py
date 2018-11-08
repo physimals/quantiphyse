@@ -160,17 +160,17 @@ class RegProcess(Process):
         # Function input data must be passed as list of arguments for multiprocessingmethod = get_reg_method(method_name)
         self.start_bg([method_name, mode, reg_data, ref_data, options])
 
-    def timeout(self):
-        if self.queue.empty(): return
-        while not self.queue.empty():
-            complete = self.queue.get()
+    def timeout(self, queue):
+        if queue.empty(): return
+        while not queue.empty():
+            complete = queue.get()
         self.sig_progress.emit(complete)
 
-    def finished(self):
+    def finished(self, worker_output):
         """ Add output data to the IVM and set the log """
         self.log = ""
         if self.status == Process.SUCCEEDED:
-            registered_data, _, self.log = self.worker_output[0]
+            registered_data, _, self.log = worker_output[0]
 
             first_roi, first_data = True, True
             for data in registered_data:
