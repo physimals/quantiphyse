@@ -111,12 +111,17 @@ class OptionBox(QtGui.QGroupBox):
         """
         row = self._rows[key]
         col = 0
+        checked = True
         while 1:
             item = self.grid.itemAtPosition(row, col)
             if item is None:
                 break
             item.widget().setVisible(visible)
-            item.widget().setEnabled(visible)
+            if col == 0 and isinstance(item.widget(), QtGui.QCheckBox):
+                checked = item.widget().isChecked()
+                item.widget().setEnabled(visible)
+            else:
+                item.widget().setEnabled(visible and checked)
             col += 1
 
     def clear(self):
