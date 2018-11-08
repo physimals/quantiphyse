@@ -22,6 +22,7 @@ import os.path
 import traceback
 import time
 
+import six
 import yaml
 
 from PySide import QtCore
@@ -50,6 +51,54 @@ BASIC_PROCESSES = {
     "SaveArtifacts" : SaveArtifactsProcess,
     "SaveExtras" : SaveArtifactsProcess
 }
+
+def to_yaml(processes, indent=""):
+    """
+    Turn a process list into YAML
+
+    The reason for using this function instead of the built-in PyYAML
+    dump functions is to get the flow we want and also handle Numpy 
+    arrays. In particular, we want lists to be inline but dictionaries
+    to be in block format.
+
+    This only supports a small subset of YAML types:
+    
+     - The processes must either be a list of dictionaries, or a single dictionary.
+     - Dictionary keys must be strings
+     - Dictionary values must be strings, numbers, lists, Numpy arrays or dictionaries
+    
+    Anything else will throw a ValueError. While the list of supported types might
+    increase in the future, part of the intention is to constrain the types that
+    processes can use in for options, so it will not change much.
+
+    This does not affect the parsing of YAML code which uses PyYAML and can use
+    any supported YAML code.
+    """
+    def _dict_to_yaml(stream, valdict, indent=""):
+        for key, value in valdict.items():
+            if not isinstance(key, six.string_types):
+                raise ValueError("Keys must be strings")
+            stream.write("%s%s: " % (indent, key))
+            if isinstance(value, six.string_types):
+                stream.write("%s\n" % value)
+            elif isinstance(value, (int, float, list)):
+                stream.write("%s\n" % str(value))
+            elif isinstance(value, np.ndarray):
+                stream.write("%s\n" % str(value.tolist()))
+            elif isinstance(value, dict):
+                stream.write("\n")
+                _dict_to_yaml(stream, value, indent + "  ")
+            else:
+                raise ValueError("Unsupported option value type: %s" % type(value))            
+
+    if isinstance(processes, dict):
+        processes = [processes,]
+
+    yaml_str = six.StringIO()
+    for process in processes:
+        _dict_to_yaml(yaml_str, process, indent)
+        yaml_str.write("\n")
+    return yaml_str.getvalue()
 
 class Script(Process):
     """
@@ -95,6 +144,7 @@ class Script(Process):
         self._cases = []
         self._generic_params = {}
         self._error_action = kwargs.get("error_action", Script.IGNORE)
+        self._embed_log = kwargs.get("embed_log", False)
 
         # Find all the process implementations
         self.known_processes = dict(BASIC_PROCESSES)
@@ -195,7 +245,6 @@ class Script(Process):
             self._start_case(case)
         else:
             self.debug("All cases complete")
-            self.log += "COMPLETE\n"
             self.status = Process.SUCCEEDED
             self._complete()
 
@@ -218,7 +267,8 @@ class Script(Process):
             self._start_process(process)
         else:
             self.debug("All processes complete")
-            self.log += "CASE COMPLETE\n"
+            if len(self._cases) > 1:
+                self.log += "CASE COMPLETE\n"
             self.sig_done_case.emit(self._current_case)
             self._next_case()
 
@@ -257,7 +307,8 @@ class Script(Process):
             process.sig_progress.connect(self._process_progress)
             
             self._process_start = time.time()
-            self.log += "Running %s\n\n" % process.proc_id
+            if len(self._pipeline) > 1:
+                self.log += "Running %s\n\n" % process.proc_id
             for key, value in proc_params.items():
                 self.debug("      %s=%s" % (key, str(value)))
 
@@ -276,14 +327,17 @@ class Script(Process):
         if self.status != self.RUNNING:
             return
 
-        self.log += log
+        if self._embed_log:
+            self.debug("Embedding log:\n%s" % log)
+            self.log += log
         end = time.time()
 
         self._current_process.sig_finished.disconnect(self._process_finished)
         self._current_process.sig_progress.disconnect(self._process_progress)
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
         if status == Process.SUCCEEDED:
-            self.log += "\nDONE (%.1fs)\n" % (end - self._process_start)
+            if len(self._pipeline) > 1:
+                self.log += "\nDONE (%.1fs)\n" % (end - self._process_start)
             self._next_process()
         else:
             self.log += "\nFAILED: %i\n" % status
