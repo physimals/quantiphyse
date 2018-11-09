@@ -9,13 +9,13 @@ import inspect
 import traceback
 
 from PySide import QtGui, QtCore
-
-import yaml
+  
+import numpy as np
 
 from quantiphyse.processes import Process
 from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
 from quantiphyse.data import save
-from quantiphyse.utils.batch import Script
+from quantiphyse.utils.batch import Script, to_yaml
 
 from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 
@@ -182,7 +182,7 @@ class HelpButton(QtGui.QPushButton):
 
     def _help_clicked(self):
         show_help(self.section)
-        
+
 class BatchButton(QtGui.QPushButton):
     """
     A button which displays the batch file code for the current analysis widget
@@ -205,9 +205,7 @@ class BatchButton(QtGui.QPushButton):
         """
         try:
             processes = self.widget.processes()
-            if isinstance(processes, dict):
-                processes = [processes,]
-            text = yaml.safe_dump(processes, default_flow_style=False)
+            text = to_yaml(processes)
             TextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, text=text).show()
         except NotImplementedError:
             # Fallback to older method
@@ -1077,7 +1075,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
             processes = self.widget.processes()
             if isinstance(processes, dict):
                 processes = [processes,]
-            self.process = Script(self.ivm, error_action=Script.FAIL)
+            self.process = Script(self.ivm, error_action=Script.FAIL, embed_log=True)
             rundata = {"parsed-yaml" : {"Processing" : processes}}
 
         self.progress.setValue(0)
@@ -1141,6 +1139,134 @@ class RunBox(QtGui.QGroupBox, LogSource):
             
     def _view_log(self):
         self.logview = TextViewerDialog(text=self.log, parent=self)
+        self.logview.show()
+        self.logview.raise_()
+
+    def _choose_output_folder(self):
+        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
+        if outputDir:
+            self.save_folder_edit.setText(outputDir)
+
+class RunWidget(QtGui.QGroupBox, LogSource):
+    """
+    Box containing a 'run' button, a progress bar, a 'cancel' button and a 'view log' button
+
+    Designed for use with QpWidget that implements the ``processes`` method. 
+    """
+
+    sig_postrun = QtCore.Signal()
+
+    def __init__(self, widget, title="Run", btn_label="Run", save_option=False):
+        LogSource.__init__(self)
+        QtGui.QGroupBox.__init__(self)
+        self.save_option = save_option
+        
+        self.setTitle(title)
+        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.runBtn = QtGui.QPushButton(btn_label, self)
+        self.runBtn.clicked.connect(self.start)
+        hbox.addWidget(self.runBtn)
+        self.progress = QtGui.QProgressBar(self)
+        hbox.addWidget(self.progress)
+        self.cancelBtn = QtGui.QPushButton('Cancel', self)
+        self.cancelBtn.clicked.connect(self._cancel)
+        self.cancelBtn.setEnabled(False)
+        hbox.addWidget(self.cancelBtn)
+        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn.clicked.connect(self._view_log)
+        hbox.addWidget(self.logBtn)
+        vbox.addLayout(hbox)
+
+        self.step_label = QtGui.QLabel()
+        self.step_label.setVisible(False)
+        vbox.addWidget(self.step_label) 
+
+        if self.save_option:
+            hbox = QtGui.QHBoxLayout()
+            self.save_cb = QtGui.QCheckBox("Save copy of output data")
+            hbox.addWidget(self.save_cb)
+            self.save_folder_edit = QtGui.QLineEdit()
+            hbox.addWidget(self.save_folder_edit)
+            btn = QtGui.QPushButton("Choose folder")
+            btn.clicked.connect(self._choose_output_folder)
+            hbox.addWidget(btn)
+            self.save_cb.stateChanged.connect(self.save_folder_edit.setEnabled)
+            self.save_cb.stateChanged.connect(btn.setEnabled)
+            vbox.addLayout(hbox)
+
+        self.widget = widget
+        self.logview = TextViewerDialog(parent=self)
+        self.process = Script(widget.ivm, error_action=Script.FAIL, embed_log=True)
+
+        self.process.sig_finished.connect(self._finished)
+        self.process.sig_progress.connect(self._update_progress)
+        self.process.sig_step.connect(self._new_step)
+        self.process.sig_log.connect(self._log)
+
+    def start(self):
+        self.log = ""
+        self.logview.text = self.log
+        self.progress.setValue(0)
+        self.runBtn.setEnabled(False)
+        self.cancelBtn.setEnabled(True)
+        self.step_label.setVisible(False)
+
+        processes = self.widget.processes()
+        if isinstance(processes, dict):
+            processes = [processes,]
+        self.process.execute({"parsed-yaml" : {"Processing" : processes}})
+
+    def _cancel(self):
+        self.process.cancel()
+
+    def _update_progress(self, complete):
+        self.progress.setValue(100*complete)
+
+    def _new_step(self, desc):
+        self.step_label.setText(desc)
+        self.step_label.setVisible(True)
+
+    def _log(self, msg):
+        self.logview.text = self.process.log
+
+    def _finished(self, status, log, exception):
+        try:
+            self.debug("RunBox: Finished: %i %i %s", status, len(log), exception)
+            self.log = log
+            if status == Process.SUCCEEDED:
+                self.progress.setValue(100)
+                self.step_label.setVisible(False)
+                if self.save_option and self.save_cb.isChecked():
+                    save_folder = self.save_folder_edit.text()   
+                    data_to_save = self.process.output_data_items()
+                    self.debug("Data to save: %s", data_to_save)    
+                    for d in data_to_save:
+                        qpdata = self.process.ivm.data.get(d, self.process.ivm.rois.get(d, None))
+                        if qpdata:
+                            save(qpdata, os.path.join(save_folder, d + ".nii"))
+                    logfile = open(os.path.join(save_folder, "logfile"), "w")
+                    logfile.write(log)
+                    logfile.close()
+            elif status == Process.CANCELLED:
+                self.progress.setValue(0)
+                self.step_label.setVisible(False)
+            elif isinstance(exception, BaseException):
+                if get_debug(): 
+                    traceback.print_exc(exception)
+                raise exception
+            else:
+                raise QpException("Process finished with error status %i but no error was returned" % status)
+        finally:
+            self.runBtn.setEnabled(True)
+            self.cancelBtn.setEnabled(False)
+            self.sig_postrun.emit()
+            
+    def _view_log(self):
         self.logview.show()
         self.logview.raise_()
 
