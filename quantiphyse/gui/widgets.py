@@ -1115,7 +1115,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
                         if qpdata:
                             save(qpdata, os.path.join(save_folder, d + ".nii"))
                     logfile = open(os.path.join(save_folder, "logfile"), "w")
-                    logfile.write(self.log)
+                    logfile.write(log)
                     logfile.close()
             elif status == Process.CANCELLED:
                 self.progress.setValue(0)
@@ -1204,8 +1204,8 @@ class RunWidget(QtGui.QGroupBox, LogSource):
         self.process = Script(widget.ivm, error_action=Script.FAIL, embed_log=True)
 
         self.process.sig_finished.connect(self._finished)
-        self.process.sig_progress.connect(self._update_progress)
-        self.process.sig_step.connect(self._new_step)
+        self.process.sig_progress.connect(self._progress)
+        self.process.sig_step.connect(self._step)
         self.process.sig_log.connect(self._log)
 
     def start(self):
@@ -1224,19 +1224,19 @@ class RunWidget(QtGui.QGroupBox, LogSource):
     def _cancel(self):
         self.process.cancel()
 
-    def _update_progress(self, complete):
+    def _progress(self, complete):
         self.progress.setValue(100*complete)
 
-    def _new_step(self, desc):
+    def _step(self, desc):
         self.step_label.setText(desc)
         self.step_label.setVisible(True)
 
     def _log(self, msg):
-        self.logview.text = self.process.log
+        self.logview.text = self.process.get_log()
 
     def _finished(self, status, log, exception):
         try:
-            self.debug("RunBox: Finished: %i %i %s", status, len(log), exception)
+            self.debug("RunWidget: Finished: %i %i %s", status, len(log), exception)
             self.log = log
             if status == Process.SUCCEEDED:
                 self.progress.setValue(100)

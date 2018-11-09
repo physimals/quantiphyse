@@ -32,7 +32,6 @@ class KMeansProcess(Process):
         output_name = options.pop('output-name', data.name + '_clusters')
         
         kmeans_data, mask = data.mask(roi, invert=invert_roi, output_flat=True, output_mask=True)
-        self.log = ""
         start1 = time.time()
 
         if data.nvols > 1:
@@ -43,7 +42,7 @@ class KMeansProcess(Process):
             reduction = options.pop('reduction', 'pca')
 
             if reduction == "pca":
-                self.log += "Using PCA dimensionality reduction"
+                self.log("Using PCA dimensionality reduction")
                 pca = PCA(n_components=n_pca, norm_input=True, norm_type=norm_type,
                           norm_modes=norm_data)
                 kmeans_data = pca.get_training_features(kmeans_data)
@@ -55,7 +54,7 @@ class KMeansProcess(Process):
         kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=1)
         kmeans.fit(kmeans_data)
         
-        self.log += "Elapsed time: %s" % (time.time() - start1)
+        self.log("Elapsed time: %s" % (time.time() - start1))
 
         label_image = np.zeros(data.grid.shape, dtype=np.int)
         label_image[mask] = kmeans.labels_ + 1

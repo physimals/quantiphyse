@@ -168,9 +168,9 @@ class RegProcess(Process):
 
     def finished(self, worker_output):
         """ Add output data to the IVM and set the log """
-        self.log = ""
         if self.status == Process.SUCCEEDED:
-            registered_data, _, self.log = worker_output[0]
+            registered_data, _, log = worker_output[0]
+            self.log(log)
 
             first_roi, first_data = True, True
             for data in registered_data:

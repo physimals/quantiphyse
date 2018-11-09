@@ -126,8 +126,8 @@ class LogProcess(Process):
         if queue.empty(): return
         while not queue.empty():
             line = queue.get()
-            # Some commands may use backspaces to show updating progress!
-            self.log = apply_backspaces(self.log + line)
+            # FIXME Some commands may use backspaces to show updating progress!
+            self.log(line)
             self.debug(line.rstrip("\n"))
             check_step = self.current_step
             while check_step < len(self.expected_steps):
@@ -185,8 +185,9 @@ class CommandProcess(LogProcess):
         data is all loaded into memory as the files may be temporary
         """
         if self.status == Process.SUCCEEDED:
-            self.log, data_files = worker_output[0]
-            LOG.debug("Loading data: %s", data_files)
+            log, data_files = worker_output[0]
+            self.log(log)
+            self.debug("Loading data: %s", data_files)
             for data_file in data_files:
                 qpdata = load(os.path.join(self.workdir, data_file))
                 qpdata.name = self.ivm.suggest_name(data_file.split(".", 1)[0], ensure_unique=False)
@@ -230,7 +231,6 @@ class CommandProcess(LogProcess):
         LOG.debug("Working directory: %s", self.workdir)
         self._add_data_from_cmdline(cmdline)
 
-        self.log = ""
         worker_args = [self.workdir, cmdline, expected_data]
         self.start_bg(worker_args)
   

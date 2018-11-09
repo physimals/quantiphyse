@@ -17,6 +17,7 @@ import multiprocessing.pool
 import threading
 import traceback
 import logging
+import re
 import Queue
 
 import numpy as np
@@ -146,7 +147,7 @@ class Process(QtCore.QObject, LogSource):
         self.indir = kwargs.pop("indir", "")
         self.outdir = kwargs.pop("outdir", "")
             
-        self.log = ""
+        self._log = ""
         self.status = Process.NOTSTARTED
         # We seem to get a segfault when emitting a signal with a None object
         self.exception = object()
@@ -188,6 +189,7 @@ class Process(QtCore.QObject, LogSource):
         """
         self.debug("Executing %s", self.proc_id)
         self.status = self.NOTSTARTED
+        self._log = ""
         try:
             self.run(options)
             if self.status == self.NOTSTARTED:
@@ -290,12 +292,24 @@ class Process(QtCore.QObject, LogSource):
         """
         raise NotImplementedError("Process subclasses must override `run`")
 
-    def logmsg(self, msg):
+    def log(self, msg):
         """
         Add text to the log and emit sig_log
         """
-        self.log += msg
+        def apply_backspaces(s):
+            while True:
+                # if you find a character followed by a backspace, remove both
+                t = re.sub('.\b', '', s, count=1)
+                if len(s) == len(t):
+                    # now remove any backspaces from beginning of string
+                    return re.sub('\b+', '', t)
+                s = t
+
+        self._log = apply_backspaces(self._log + msg)
         self.sig_log.emit(msg)
+
+    def get_log(self):
+        return self._log
 
     def output_data_items(self):
         """
@@ -390,7 +404,15 @@ class Process(QtCore.QObject, LogSource):
         """
         Called when process completes, successful or not, before sig_finished is emitted.
 
-        Should combine output data and add to the ivm and set self.log 
+        May do some or all of the followings:
+
+         - Recombine data items split for parallel processing
+         - Add output data/ROIs/extras to the IVM
+         - log output from the worker using the ``log`` method
+         - Set data items to be returned by ``output_data_items()``
+        
+        This method should not generally signal other components - they should connect
+        to sig_finished instead
         """
         pass
     
@@ -473,7 +495,7 @@ class Process(QtCore.QObject, LogSource):
         self._queue = None
         self._worker_output = []
         self.debug("Emitting sig_finished")
-        self.sig_finished.emit(self.status, self.log, self.exception)
+        self.sig_finished.emit(self.status, self._log, self.exception)
 
     def _restart_timer(self):
         self._timer = threading.Timer(1, self._timer_cb)

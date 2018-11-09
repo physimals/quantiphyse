@@ -268,7 +268,7 @@ class Script(Process):
         else:
             self.debug("All processes complete")
             if len(self._cases) > 1:
-                self.log += "CASE COMPLETE\n"
+                self.log("CASE COMPLETE\n")
             self.sig_done_case.emit(self._current_case)
             self._next_case()
 
@@ -305,10 +305,11 @@ class Script(Process):
             self._current_params = proc_params
             process.sig_finished.connect(self._process_finished)
             process.sig_progress.connect(self._process_progress)
+            process.sig_log.connect(self._process_log)
             
             self._process_start = time.time()
             if len(self._pipeline) > 1:
-                self.log += "Running %s\n\n" % process.proc_id
+                self.log("Running %s\n\n" % process.proc_id)
             for key, value in proc_params.items():
                 self.debug("      %s=%s" % (key, str(value)))
 
@@ -327,20 +328,18 @@ class Script(Process):
         if self.status != self.RUNNING:
             return
 
-        if self._embed_log:
-            self.debug("Embedding log:\n%s" % log)
-            self.log += log
         end = time.time()
 
         self._current_process.sig_finished.disconnect(self._process_finished)
         self._current_process.sig_progress.disconnect(self._process_progress)
+        self._current_process.sig_log.disconnect(self._process_log)
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
         if status == Process.SUCCEEDED:
             if len(self._pipeline) > 1:
-                self.log += "\nDONE (%.1fs)\n" % (end - self._process_start)
+                self.log("\nDONE (%.1fs)\n" % (end - self._process_start))
             self._next_process()
         else:
-            self.log += "\nFAILED: %i\n" % status
+            self.log("\nFAILED: %i\n" % status)
             if self._error_action == Script.IGNORE:
                 self.debug("Process failed - ignoring")
                 self._next_process()
@@ -353,7 +352,7 @@ class Script(Process):
                 self._complete()
             elif self._error_action == Script.NEXT_CASE:
                 self.debug("Process failed - going to next case")
-                self.log += "CASE FAILED\n"
+                self.log("CASE FAILED\n")
                 self.sig_done_case.emit(self._current_case)
                 self._next_case()
 
@@ -363,6 +362,9 @@ class Script(Process):
                            (self._process_num - 1 + complete)) / (len(self._pipeline)*len(self._cases))
         self.sig_progress.emit(script_complete)
 
+    def _process_log(self, msg):
+        self.log(msg)
+        
 class Case(object):
     """
     An individual case (e.g. patient scan) which a processing pipeline is applied to
@@ -414,7 +416,7 @@ class BatchScript(Script):
             end = time.time()
             self.stdout.write(" DONE (%.1fs)\n" % (end - self.start))
             fname = os.path.join(process.outdir, "%s.log" % process.proc_id)
-            self._save_text(process.log, fname)
+            self._save_text(process.get_log(), fname)
             if params:
                 self.warn("Unused parameters")
                 for key, val in params.items():
