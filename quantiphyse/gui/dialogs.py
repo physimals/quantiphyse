@@ -46,8 +46,10 @@ class MultiTextViewerDialog(QtGui.QDialog):
         vbox = QtGui.QVBoxLayout()
 
         self.tabs = QtGui.QTabWidget()
+        self._browsers = {}
         for heading, content in pages:
             browser = self._text_browser(content)
+            self._browsers[heading] = browser
             self.tabs.addTab(browser, heading)
 
         vbox.addWidget(self.tabs)
@@ -64,6 +66,20 @@ class MultiTextViewerDialog(QtGui.QDialog):
 
         self.setLayout(vbox)
         self.resize(700, 500)
+
+    def text(self, heading):
+        if heading not in self._browsers:
+            raise ValueError("Tab not found: %s" % heading)
+        return self._browsers[heading].text()
+
+    def setText(self, heading, content):
+        if heading not in self._browsers:
+            raise ValueError("Tab not found: %s" % heading)
+        scrollbar = self._browsers[heading].verticalScrollBar()
+        was_at_end = scrollbar.value() == scrollbar.maximum()
+        self._browsers[heading].setText(content)
+        if was_at_end:
+            scrollbar.setValue(scrollbar.maximum())
 
     def _text_browser(self, content):
         browser = QtGui.QTextBrowser()
@@ -83,6 +99,14 @@ class TextViewerDialog(MultiTextViewerDialog):
     def __init__(self, parent, title="Log", text=""):
         MultiTextViewerDialog.__init__(self, parent, title, [("", text)])
         self.tabs.tabBar().setVisible(False)
+
+    @property
+    def text(self):
+        return MultiTextViewerDialog.text(self, "")
+
+    @text.setter
+    def text(self, newtext):
+        self.setText("", newtext)
 
 class MatrixViewerDialog(QtGui.QDialog):
     """
