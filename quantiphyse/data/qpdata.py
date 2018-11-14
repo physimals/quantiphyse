@@ -644,7 +644,7 @@ class QpData(object):
         :param vol: volume index for use if this is a 4D data set
         :param interp_order: Order of interpolation for non-orthogonal slices
         """
-        rawdata = remove_nans(self.volume(vol))
+        rawdata = self.volume(vol)
         
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
@@ -732,7 +732,7 @@ class QpData(object):
                 sdata[sdata < dmin] = 0
             LOG.debug("Done affine slice")
 
-        return sdata, smask, trans_v, offset
+        return remove_nans(sdata), smask, trans_v, offset
 
     def _get_slice(self, length, sign):
         if sign == 1:
