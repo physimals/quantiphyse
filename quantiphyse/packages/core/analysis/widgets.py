@@ -363,6 +363,10 @@ class DataStatistics(QpWidget):
         self.data_combo = OverlayCombo(self.ivm, all_option=True)
         self.data_combo.currentIndexChanged.connect(self.update_all)
         hbox.addWidget(self.data_combo)
+        hbox.addWidget(QtGui.QLabel("ROI"))
+        self.roi_combo = RoiCombo(self.ivm, none_option=True)
+        self.roi_combo.currentIndexChanged.connect(self.update_all)
+        hbox.addWidget(self.roi_combo)
         hbox.addStretch(1)
         main_vbox.addLayout(hbox)
 
@@ -625,10 +629,13 @@ class DataStatistics(QpWidget):
     def update_radial_profile(self):
         name = self.data_combo.currentText()
         if name in self.ivm.data:
-            options = {"data" : name, 
+            options = {"data" : name,
                        "no-extras" : True, 
                        "bins" : self.rp_nbins.value(),
                        "centre" : self.ivl.focus(grid=self.ivm.data[name].grid)}
+            roi = self.roi_combo.currentText()
+            if roi in self.ivm.data:
+                options["roi"] = roi
             self.process_rp.run(options)
             self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
@@ -650,6 +657,9 @@ class DataStatistics(QpWidget):
             options = {"data" : name, 
                        "no-extras" : True, "bins" : self.nbinsSpin.value(),
                        "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
+            roi = self.roi_combo.currentText()
+            if roi in self.ivm.data:
+                options["roi"] = roi
             self.process_hist.run(options)
 
             self.win1.removeItem(self.plt1)
@@ -664,6 +674,9 @@ class DataStatistics(QpWidget):
     def populate_stats_table(self, process, options):
         if self.data_combo.currentText() != "<all>":
             options["data"] = self.data_combo.currentText()
+        roi = self.roi_combo.currentText()
+        if roi in self.ivm.data:
+            options["roi"] = roi
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):

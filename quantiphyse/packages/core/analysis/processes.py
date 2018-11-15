@@ -5,6 +5,7 @@ Copyright (c) 2013-2018 University of Oxford
 """
 import sys
 
+import six
 import numpy as np
 import scipy
 
@@ -148,7 +149,7 @@ class RadialProfileProcess(Process):
         
         #roi_region = options.pop('region', None)
         centre = options.pop('centre')
-        if isinstance(centre, basestring):
+        if isinstance(centre, six.string_types):
             centre = [float(v) for v in centre.split(",")]
         vol = 0
         if len(centre) == 4:
@@ -220,9 +221,8 @@ class DataStatisticsProcess(Process):
             output_name = options.pop('output-name', "%s_stats" % data_name)
             
         roi_name = options.pop('roi', None)
-        if roi_name is None:
-            roi = self.ivm.current_roi
-        else:
+        roi = None
+        if roi_name is not None:
             roi = self.ivm.rois[roi_name]
 
         slice_dir = options.pop('slice-dir', None)
