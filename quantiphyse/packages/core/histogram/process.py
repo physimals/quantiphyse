@@ -3,6 +3,8 @@ Quantiphyse - PCA reduction process
 
 Copyright (c) 2013-2018 University of Oxford
 """
+import six
+
 from quantiphyse.utils import QpException, table_to_str
 from quantiphyse.processes import Process
 
@@ -22,15 +24,16 @@ class HistogramProcess(Process):
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        data_name = options.pop('data', None)
-        if data_name is None:
-            data_items = self.ivm.data.values()
-        else:
-            data_items = [self.ivm.data[data_name]]
+        data_items = options.pop('data', None)
+        if data_items is None:
+            data_items = self.ivm.data.keys()
+        elif isinstance(data_items, six.string_types):
+            data_items = [data_items,]
 
         if not data_items:
             raise QpException("No data to calculate histogram")
         
+        data_items = [self.ivm.data[name] for name in data_items]
         roi = self.get_roi(options, use_current=False)
         
         sel_region = options.pop('region', None)

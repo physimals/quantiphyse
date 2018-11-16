@@ -18,6 +18,7 @@ Copyright (c) 2013-2018 University of Oxford
 """
 import logging
 
+import six
 import numpy as np
 
 from PySide import QtGui, QtCore
@@ -199,6 +200,7 @@ class DataOption(Option, QtGui.QComboBox):
         self.include_4d = not kwargs.get("static_only", not self.include_4d)
         self.none_option = kwargs.get("none_option", False)
         self.all_option = kwargs.get("all_option", False)
+        self.multi_option = kwargs.get("multi_option", False)
         self.rois = kwargs.get("rois", False)
         self.data = kwargs.get("data", True)
         self.ivm.sig_all_data.connect(self._data_changed)
@@ -207,24 +209,40 @@ class DataOption(Option, QtGui.QComboBox):
     
     @property
     def value(self):
-        """ Name of currently selected data """
+        """ 
+        If neither all option nor multi options are specified, returns
+        name of currently selected data. Otherwise returns list of 
+        all specified data items
+        """
         ret = self.currentText()
         if self.none_option and ret == "<none>":
             ret = None
+        if self.all_option and ret == "<all>":
+            ret = list(self.ivm.data.keys())
+        elif self.all_option or self.multi_option:
+            ret = [ret,]
         return ret
         
     @value.setter
     def value(self, data_name):
-        """ Set the selected data name""" 
-        if data_name is None:
-            data_name = "<none>"
+        """ 
+        Set the selected data name
+        """ 
+        if isinstance(data_name, six.string_types):
+            if data_name is None:
+                data_name = "<none>"
 
-        idx = self.findText(data_name)
-        if idx >= 0:
-            self.setCurrentIndex(idx)
+            idx = self.findText(data_name)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+            else:
+                raise ValueError("Data item %s is not a valid choice for this option")
+        elif not self.multi_option:
+            raise ValueError("Can't specify multiple data items")
         else:
-            raise ValueError("Data item %s is not a valid choice for this option")
-            
+            # FIXME handle multi data
+            pass
+    
     def _changed(self):
         self.sig_changed.emit()
 

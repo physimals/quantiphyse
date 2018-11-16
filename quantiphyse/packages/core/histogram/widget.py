@@ -64,8 +64,6 @@ class HistogramWidget(QpWidget):
         opts = self.options.values()
         if not opts.pop("allvols", False):
             opts["vol"] = self.ivl.focus()[3]
-        if opts["data"] == "<all>":
-            opts.pop("data")
 
         return {
             "Histogram" : opts
@@ -78,22 +76,19 @@ class HistogramWidget(QpWidget):
         if self._updating: return
         self._updating = True
         try:
-            data_name = self.options.option("data").value
-            alldata = data_name == "<all>"
+            data_names = self.options.option("data").value
             vol = None
             if self.options.option("allvols").value:
                 vol = self.ivl.focus()[3]
-            dmin, dmax = None, None
-            if alldata:
-                for qpdata in self.ivm.data.values():
-                    _dmin, _dmax = qpdata.range(vol=vol)
-                    if dmin is None or dmin > _dmin:
-                        dmin = _dmin
-                    if dmax is None or dmax > dmax:
-                        dmax = _dmax
-
-            elif data_name in self.ivm.data:
-                dmin, dmax = self.ivm.data[data_name].range()
+            dmin, dmax, multivol = None, None, False
+            for data_name in data_names:
+                qpdata = self.ivm.data[data_name]
+                multivol = multivol or qpdata.nvols > 1
+                _dmin, _dmax = qpdata.range(vol=vol)
+                if dmin is None or dmin > _dmin:
+                    dmin = _dmin
+                if dmax is None or dmax > dmax:
+                    dmax = _dmax
             
             if dmin is not None and dmax is not None:
                 self.options.option("min").value = dmin
@@ -101,7 +96,7 @@ class HistogramWidget(QpWidget):
                 self.options.option("max").value = dmax
                 self.options.option("max").setLimits(dmin, dmax)
                 
-            self.options.set_visible("allvols", data_name in self.ivm.data and self.ivm.data[data_name].nvols > 1)
+            self.options.set_visible("allvols", multivol)
             self._update()
         finally:
             self._updating = False
