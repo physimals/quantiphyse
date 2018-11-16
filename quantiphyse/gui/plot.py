@@ -4,7 +4,7 @@ Quantiphyse - Plotting widgets
 Copyright (c) 2013-2018 University of Oxford
 """
 
-from __future__ import division, unicode_literals, print_function, absolute_import
+from __future__ import division, unicode_literals, absolute_import
 
 import numpy as np
 import pyqtgraph as pg
@@ -21,80 +21,85 @@ class PlotOptions(QtGui.QDialog):
 
     sig_options_changed = QtCore.Signal(object)
 
-    def __init__(self, qpo, parent=None):
+    def __init__(self, parent=None, **kwargs):
         QtGui.QDialog.__init__(self, parent)
-        self.qpo = qpo
         self.sig_enh = False
         self.smooth = False
-        self.t_scale = range(10)
 
         self.setWindowTitle('Plot options')
         grid = QtGui.QGridLayout()
         self.setLayout(grid)
 
+        row = 0
         # Display mode
-        grid.addWidget(QtGui.QLabel("Display mode"), 0, 0)
-        mode_combo = QtGui.QComboBox()
-        mode_combo.addItem("Signal")
-        mode_combo.addItem("Signal Enhancement")
-        mode_combo.currentIndexChanged.connect(self._mode_changed)
-        grid.addWidget(mode_combo, 0, 1)
+        if kwargs.get("display_mode", True):
+            grid.addWidget(QtGui.QLabel("Display mode"), row, 0)
+            mode_combo = QtGui.QComboBox()
+            mode_combo.addItem("Signal")
+            mode_combo.addItem("Signal Enhancement")
+            mode_combo.currentIndexChanged.connect(self._mode_changed)
+            grid.addWidget(mode_combo, row, 1)
+            row += 1
+
+            # Signal enhancement baseline
+            self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
+            self.se_lbl.setEnabled(False)
+            grid.addWidget(self.se_lbl, row, 0)
+
+            hbox = QtGui.QHBoxLayout()
+            self.norm_frames = QtGui.QSpinBox()
+            self.norm_frames.setValue(3)
+            self.norm_frames.setMinimum(1)
+            self.norm_frames.setMaximum(100)
+            self.norm_frames.valueChanged.connect(parent.update)
+            self.norm_frames.setEnabled(False)
+            hbox.addWidget(self.norm_frames)
+            self.se_lbl2 = QtGui.QLabel('frames as baseline')
+            self.se_lbl2.setEnabled(False)
+            hbox.addWidget(self.se_lbl2)
+            hbox.addStretch(1)
+            grid.addLayout(hbox, row, 1)
+            row += 1
 
         # Y-axis scale
-        hbox = QtGui.QHBoxLayout()
+        if kwargs.get("y_scale", True):
+            hbox = QtGui.QHBoxLayout()
+            auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+            auto_y_cb.setChecked(True)
+            auto_y_cb.stateChanged.connect(self._auto_y_changed)
+            grid.addWidget(auto_y_cb, row, 0)
 
-        auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
-        auto_y_cb.setChecked(True)
-        auto_y_cb.stateChanged.connect(self._auto_y_changed)
-        grid.addWidget(auto_y_cb, 1, 0)
+            self.min_lbl = QtGui.QLabel("Min")
+            self.min_lbl.setEnabled(False)
+            hbox.addWidget(self.min_lbl)
+            self.min_spin = QtGui.QDoubleSpinBox()
+            self.min_spin.setMinimum(-1e20)
+            self.min_spin.setMaximum(1e20)
+            self.min_spin.valueChanged.connect(self._changed)
+            self.min_spin.setEnabled(False)
+            hbox.addWidget(self.min_spin)
 
-        self.min_lbl = QtGui.QLabel("Min")
-        self.min_lbl.setEnabled(False)
-        hbox.addWidget(self.min_lbl)
-        self.min_spin = QtGui.QDoubleSpinBox()
-        self.min_spin.setMinimum(-1e20)
-        self.min_spin.setMaximum(1e20)
-        self.min_spin.valueChanged.connect(self._changed)
-        self.min_spin.setEnabled(False)
-        hbox.addWidget(self.min_spin)
+            self.max_lbl = QtGui.QLabel("Max")
+            self.max_lbl.setEnabled(False)
+            hbox.addWidget(self.max_lbl)
+            self.max_spin = QtGui.QDoubleSpinBox()
+            self.max_spin.setMinimum(-1e20)
+            self.max_spin.setMaximum(1e20)
+            self.max_spin.valueChanged.connect(self._changed)
+            self.max_spin.setEnabled(False)
+            hbox.addWidget(self.max_spin)
 
-        self.max_lbl = QtGui.QLabel("Max")
-        self.max_lbl.setEnabled(False)
-        hbox.addWidget(self.max_lbl)
-        self.max_spin = QtGui.QDoubleSpinBox()
-        self.max_spin.setMinimum(-1e20)
-        self.max_spin.setMaximum(1e20)
-        self.max_spin.valueChanged.connect(self._changed)
-        self.max_spin.setEnabled(False)
-        hbox.addWidget(self.max_spin)
-
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 1, 1)
-
-        # Signal enhancement baseline
-        self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
-        self.se_lbl.setEnabled(False)
-        grid.addWidget(self.se_lbl, 2, 0)
-
-        hbox = QtGui.QHBoxLayout()
-        self.norm_frames = QtGui.QSpinBox()
-        self.norm_frames.setValue(3)
-        self.norm_frames.setMinimum(1)
-        self.norm_frames.setMaximum(100)
-        self.norm_frames.valueChanged.connect(parent.update)
-        self.norm_frames.setEnabled(False)
-        hbox.addWidget(self.norm_frames)
-        self.se_lbl2 = QtGui.QLabel('frames as baseline')
-        self.se_lbl2.setEnabled(False)
-        hbox.addWidget(self.se_lbl2)
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 2, 1)
+            hbox.addStretch(1)
+            grid.addLayout(hbox, row, 1)
+            row += 1
 
         # Smoothing
-        smooth_cb = QtGui.QCheckBox('Smooth curves', self)
-        smooth_cb.setChecked(self.smooth)
-        smooth_cb.stateChanged.connect(self._smooth_changed)
-        grid.addWidget(smooth_cb, 3, 0)
+        if kwargs.get("smoothing", True):
+            smooth_cb = QtGui.QCheckBox('Smooth curves', self)
+            smooth_cb.setChecked(self.smooth)
+            smooth_cb.stateChanged.connect(self._smooth_changed)
+            grid.addWidget(smooth_cb, row, 0)
+            row += 1
 
     def _mode_changed(self, idx):
         self.sig_enh = (idx == 1)
@@ -121,14 +126,15 @@ class LinePlot(LogSource):
     """
     A 1-D array of data to be plotted as a line
     """
-    def __init__(self, name, plot, values, options, **kwargs):
+    def __init__(self, name, plot, yvalues, xvalues, options, **kwargs):
         LogSource.__init__(self)
         self.name = name
         self.plot = plot
         self.plot_options = options
         self.plot_options.sig_options_changed.connect(self.show)
 
-        self.values = np.copy(np.array(values, dtype=np.double))
+        self.yvalues = np.copy(np.array(yvalues, dtype=np.double))
+        self.xvalues = np.copy(np.array(xvalues, dtype=np.double))
         self.line_col = kwargs.get("line_col", (255, 255, 255))
         self.line_width = kwargs.get("line_width", 1.0)
         self.point_col = kwargs.get("point_col", "k")
@@ -144,10 +150,11 @@ class LinePlot(LogSource):
         Draw the line on to the plot
         """
         if self.plot_options.sig_enh:
-            mean = np.mean(self.values[:self.plot_options.norm_frames.value()])
-            plot_values = self.values / mean - 1
+            norm_frames = min(len(self.yvalues), self.plot_options.norm_frames.value())
+            mean = np.mean(self.yvalues[:norm_frames])
+            plot_values = self.yvalues / mean - 1
         else:
-            plot_values = self.values
+            plot_values = self.yvalues
 
         if self.plot_options.smooth:
             indexes = range(len(plot_values))
@@ -160,16 +167,11 @@ class LinePlot(LogSource):
 
         self.hide()
 
-        # Make sure x-scale is correct length
-        t_scale = range(len(line_values))
-        scale_length = min(len(line_values), len(self.plot_options.t_scale))
-        t_scale[:scale_length] = self.plot_options.t_scale[:scale_length]
-
         # Plot line and points separately as line may be smoothed
-        line = self.plot.plot(t_scale, line_values, 
+        line = self.plot.plot(self.xvalues, line_values, 
                               pen=pg.mkPen(color=self.line_col, width=self.line_width))
 
-        pts = self.plot.plot(t_scale, plot_values, 
+        pts = self.plot.plot(self.xvalues, plot_values, 
                              pen=None, 
                              symbolBrush=self.point_brush, 
                              symbolPen=self.point_col,
@@ -189,16 +191,16 @@ class LinePlot(LogSource):
 
 class Plot(QtGui.QWidget):
     """
-    A line plot
+    Widget for plotting graphs
     """
-    def __init__(self, qpo=None, parent=None, title=""):
+    def __init__(self, parent=None, title="", **kwargs):
         """
         Create a plot widget
 
         :param qpo: Global options
         """
         QtGui.QWidget.__init__(self, parent)
-        self.options = PlotOptions(qpo, parent)
+        self.options = PlotOptions(parent, **kwargs)
         self.items = []
 
         vbox = QtGui.QVBoxLayout()
@@ -218,8 +220,20 @@ class Plot(QtGui.QWidget):
         self.plot = self.graphics_layout.addPlot()
         self.plot.setTitle(title)
         self._regenerate_legend()
-        
-    def add_line(self, name, values, **kwargs):
+
+    def set_xlabel(self, name):
+        """
+        Set the label for the X axis
+        """
+        self.plot.setLabel('bottom', name)
+
+    def set_ylabel(self, name):
+        """
+        Set the label for the Y axis
+        """
+        self.plot.setLabel('left', name)
+
+    def add_line(self, name, yvalues, xvalues=None, **kwargs):
         """
         Add a line to the plot
 
@@ -229,7 +243,10 @@ class Plot(QtGui.QWidget):
         if "line_col" not in kwargs:
             kwargs["line_col"] = get_kelly_col(len(self.items))
 
-        line = LinePlot(name, self.plot, values, self.options, **kwargs)
+        if xvalues is None:
+            xvalues = range(len(yvalues))
+
+        line = LinePlot(name, self.plot, yvalues, xvalues, self.options, **kwargs)
         self.items.append(line)
         self._regenerate_legend()
         return line
