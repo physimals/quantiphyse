@@ -71,8 +71,8 @@ class NiftiData(QpData):
     QpData from a Nifti file
     """
     def __init__(self, fname):
-        self.nii = nib.load(fname)
-        shape = list(self.nii.shape)
+        nii = nib.load(fname)
+        shape = list(nii.shape)
         while len(shape) < 3:
             shape.append(1)
 
@@ -83,7 +83,7 @@ class NiftiData(QpData):
 
         self.rawdata = None
         self.voldata = None
-        self.nifti_header = self.nii.header
+        self.nifti_header = nii.header
         metadata = None
         for ext in self.nifti_header.extensions:
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
@@ -92,7 +92,7 @@ class NiftiData(QpData):
                 metadata = yaml.load(ext.get_content())
                 LOG.debug(metadata)
 
-        grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
+        grid = DataGrid(shape[:3], nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname, metadata=metadata)
 
     def raw(self):
@@ -100,8 +100,9 @@ class NiftiData(QpData):
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
+        nii = nib.load(self.fname)
         if self.rawdata is None:
-            self.rawdata = np.asarray(self.nii.get_data())
+            self.rawdata = np.asarray(nii.get_data())
             self.rawdata = self._correct_dims(self.rawdata)
 
         self.voldata = None
@@ -117,7 +118,8 @@ class NiftiData(QpData):
             if self.voldata is None:
                 self.voldata = [None,] * self.nvols
             if self.voldata[vol] is None:
-                self.voldata[vol] = self._correct_dims(self.nii.dataobj[..., vol])
+                nii = nib.load(self.fname)
+                self.voldata[vol] = self._correct_dims(nii.dataobj[..., vol])
 
         return self.voldata[vol]
 
