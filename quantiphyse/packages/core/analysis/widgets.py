@@ -15,7 +15,7 @@ from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
 from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, LogSource, sf
 
-from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess
+from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess
 
 class SECurveOptions(QtGui.QDialog):
     def __init__(self, parent):
@@ -347,7 +347,6 @@ class DataStatistics(QpWidget):
         """ Set up UI controls here so as not to delay startup"""
         self.process = DataStatisticsProcess(self.ivm)
         self.process_ss = DataStatisticsProcess(self.ivm)
-        self.process_rp = RadialProfileProcess(self.ivm)
         
         main_vbox = QtGui.QVBoxLayout()
 
@@ -430,37 +429,6 @@ class DataStatistics(QpWidget):
 
         main_vbox.addWidget(stats_box_ss)
 
-        # Radial profile widgets
-        rp_box = QtGui.QGroupBox()
-        rp_box.setTitle("Radial Profile")
-        vbox = QtGui.QVBoxLayout()
-        rp_box.setLayout(vbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.rp_btn = QtGui.QPushButton("Show")
-        self.rp_btn.clicked.connect(self.show_radial_profile)
-        hbox.addWidget(self.rp_btn)
-
-        hbox.addWidget(QtGui.QLabel("Number of distance bins"))
-        self.rp_nbins = QtGui.QSpinBox()
-        self.rp_nbins.setMaximum(100)
-        self.rp_nbins.setMinimum(5)
-        self.rp_nbins.setValue(30)
-        self.rp_nbins.valueChanged.connect(self.update_radial_profile)
-        hbox.addWidget(self.rp_nbins)
-       
-        hbox.addStretch()
-        vbox.addLayout(hbox)
-
-        self.rp_win = pg.GraphicsLayoutWidget()
-        self.rp_win.setVisible(False)
-        self.rp_plt = self.rp_win.addPlot(title="Radial Profile", labels={'left' : 'Mean data value', 'bottom' : 'Distance (mm)'})
-        self.rp_curve = pg.PlotCurveItem(pen=pg.mkPen(color=[192, 192, 192], width=2))
-        self.rp_plt.addItem(self.rp_curve)
-        vbox.addWidget(self.rp_win, stretch=2)
-
-        main_vbox.addWidget(rp_box)
-
         main_vbox.addStretch(1)
         self.setLayout(main_vbox)
 
@@ -482,18 +450,11 @@ class DataStatistics(QpWidget):
         self.update_all()
 
     def focus_changed(self, _):
-        if self.rp_win.isVisible():
-            self.update_radial_profile()
         if self.stats_table_ss.isVisible():
             self.update_stats_current_slice()
 
     def update_all(self):
         name = self.data_combo.currentText()
-        if name in self.ivm.data:
-            self.rp_plt.setLabel('left', name)
-
-        if self.rp_win.isVisible():
-            self.update_radial_profile()
         if self.stats_table.isVisible():
             self.update_stats()
         if self.stats_table_ss.isVisible():
@@ -530,28 +491,6 @@ class DataStatistics(QpWidget):
             self.sscombo.setVisible(True)
             self.copy_btn_ss.setVisible(True)
             self.butgenss.setText("Hide")
-
-    def show_radial_profile(self):
-        if self.rp_win.isVisible():
-            self.rp_win.setVisible(False)
-            self.rp_btn.setText("Show")
-        else:
-            self.update_radial_profile()
-            self.rp_win.setVisible(True)
-            self.rp_btn.setText("Hide")
-
-    def update_radial_profile(self):
-        name = self.data_combo.currentText()
-        if name in self.ivm.data:
-            options = {"data" : name,
-                       "no-extras" : True, 
-                       "bins" : self.rp_nbins.value(),
-                       "centre" : self.ivl.focus(grid=self.ivm.data[name].grid)}
-            roi = self.roi_combo.currentText()
-            if roi in self.ivm.data:
-                options["roi"] = roi
-            self.process_rp.run(options)
-            self.rp_curve.setData(x=self.process_rp.xvals, y=self.process_rp.rp[name])
 
     def update_stats(self):
         self.populate_stats_table(self.process, {})

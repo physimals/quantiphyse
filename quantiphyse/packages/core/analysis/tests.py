@@ -106,24 +106,6 @@ class DataStatisticsTest(WidgetTest):
         self.harmless_click(self.w.butgenss)
         self.assertFalse(self.w.stats_table_ss.isVisible())
      
-    def testHistogramShowHide(self):
-        self.harmless_click(self.w.hist_show_btn)
-        self.assertTrue(self.w.win1.isVisible())
-        self.assertTrue(self.w.regenBtn.isVisible())
-        self.assertEquals(self.w.hist_show_btn.text(), "Hide")
-        self.harmless_click(self.w.hist_show_btn)
-        self.assertFalse(self.w.win1.isVisible())
-        self.assertFalse(self.w.regenBtn.isVisible())
-        self.assertEquals(self.w.hist_show_btn.text(), "Show")
-     
-    def testRadialProfileShowHide(self):
-        self.harmless_click(self.w.rp_btn)
-        self.assertTrue(self.w.rp_win.isVisible())
-        self.assertEquals(self.w.rp_btn.text(), "Hide")
-        self.harmless_click(self.w.rp_btn)
-        self.assertFalse(self.w.rp_win.isVisible())
-        self.assertFalse(self.w.regenBtn.isVisible())
-
 class MultiVoxelAnalysisTest(WidgetTest):
 
     def widget_class(self):
