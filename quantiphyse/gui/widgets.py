@@ -10,8 +10,6 @@ import traceback
 
 from PySide import QtGui, QtCore
   
-import numpy as np
-
 from quantiphyse.processes import Process
 from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
 from quantiphyse.data import save
@@ -370,7 +368,7 @@ class NumericSlider(QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False, **kwargs):
+    def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, intonly=False, **kwargs):
         QtGui.QWidget.__init__(self)
         self.text = text
         self.minval = minval
@@ -990,6 +988,9 @@ class TitleWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         if title is None:
             title = widget.name
+        if subtitle is None:
+            subtitle = widget.description
+            
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox) 
         
@@ -1001,8 +1002,6 @@ class TitleWidget(QtGui.QWidget):
         if opts_btn: hbox.addWidget(OptionsButton(widget))
         vbox.addLayout(hbox)
 
-        if subtitle is None:
-            subtitle = widget.description
         vbox.addWidget(QtGui.QLabel(subtitle))     
 
 class RunBox(QtGui.QGroupBox, LogSource):
@@ -1146,6 +1145,43 @@ class RunBox(QtGui.QGroupBox, LogSource):
         outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
             self.save_folder_edit.setText(outputDir)
+
+class RunButton(QtGui.QPushButton, LogSource):
+    """
+    Simple button to run the processing associated with a QpWidget
+
+    Designed for use with QpWidget that implements the ``processes`` method. 
+    """
+
+    sig_postrun = QtCore.Signal()
+
+    def __init__(self, widget, label="Run"):
+        LogSource.__init__(self)
+        QtGui.QPushButton.__init__(self, label)
+
+        self.clicked.connect(self._start)
+        self.widget = widget
+        self.process = Script(widget.ivm, error_action=Script.FAIL, embed_log=True)
+        self.process.sig_finished.connect(self._finished)
+
+    def _start(self):
+        # FIXME spinner
+        processes = self.widget.processes()
+        if isinstance(processes, dict):
+            processes = [processes,]
+        self.process.execute({"parsed-yaml" : {"Processing" : processes}})
+
+    def _finished(self, status, log, exception):
+        try:
+            self.debug("RunButton: Finished: %i %i %s", status, len(log), exception)
+            if isinstance(exception, BaseException):
+                if get_debug(): 
+                    traceback.print_exc(exception)
+                raise exception
+            elif status != Process.SUCCEEDED:
+                raise QpException("Process finished with error status %i but no error was returned" % status)
+        finally:
+            self.sig_postrun.emit()
 
 class RunWidget(QtGui.QGroupBox, LogSource):
     """
