@@ -208,8 +208,11 @@ class DataOption(Option, QtGui.QComboBox):
     @property
     def value(self):
         """ Name of currently selected data """
-        return self.currentText()
-
+        ret = self.currentText()
+        if self.none_option and ret == "<none>":
+            ret = None
+        return ret
+        
     @value.setter
     def value(self, data_name):
         """ Set the selected data name""" 
