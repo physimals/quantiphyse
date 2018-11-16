@@ -88,7 +88,7 @@ class NiftiData(QpData):
         for ext in self.nifti_header.extensions:
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
-                LOG.debug("Found QP metadata: %s" % ext.get_content())
+                LOG.debug("Found QP metadata: %s", ext.get_content())
                 metadata = yaml.load(ext.get_content())
                 LOG.debug(metadata)
 
@@ -100,8 +100,9 @@ class NiftiData(QpData):
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
-        nii = nib.load(self.fname)
         if self.rawdata is None:
+            LOG.debug("loading raw")
+            nii = nib.load(self.fname)
             self.rawdata = np.asarray(nii.get_data())
             self.rawdata = self._correct_dims(self.rawdata)
 
@@ -118,6 +119,7 @@ class NiftiData(QpData):
             if self.voldata is None:
                 self.voldata = [None,] * self.nvols
             if self.voldata[vol] is None:
+                LOG.debug("loading volume")
                 nii = nib.load(self.fname)
                 self.voldata[vol] = self._correct_dims(nii.dataobj[..., vol])
 
