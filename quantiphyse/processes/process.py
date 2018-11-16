@@ -254,7 +254,7 @@ class Process(QtCore.QObject, LogSource):
                 raise QpException("Data not found: %s" % data_name)
         return data
 
-    def get_roi(self, options, grid=None):
+    def get_roi(self, options, grid=None, use_current=True):
         """
         Standard method to get the ROI the process is to operate on
 
@@ -263,17 +263,18 @@ class Process(QtCore.QObject, LogSource):
 
         :param options: Dictionary of options - ``roi`` will be consumed if present
         :param grid:    If specified, return ROI on this grid
+        :param use_current: If True, return current ROI if no ROI specified
         :return:        QpData instance. If no ROI can be found and ``grid`` is specified, will
                         return an ROI where all voxels are unmasked.
         """
         roi_name = options.pop("roi", None)
         if roi_name is None or roi_name.strip() == "":
-            if self.ivm.current_roi is not None:
+            if use_current and self.ivm.current_roi is not None:
                 roidata = self.ivm.current_roi
             elif grid is not None:
                 roidata = NumpyData(np.ones(grid.shape[:3]), grid=grid, name="dummy_roi")
             else:
-                raise QpException("No default ROI could be constructed")
+                return None
         else:
             if roi_name in self.ivm.rois:
                 roidata = self.ivm.rois[roi_name]
