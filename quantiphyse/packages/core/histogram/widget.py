@@ -1,0 +1,127 @@
+"""
+Quantiphyse - Histogram widget
+
+Copyright (c) 2013-2018 University of Oxford
+"""
+import csv
+
+import six
+
+from PySide import QtGui
+
+from quantiphyse.gui.widgets import QpWidget, TitleWidget
+from quantiphyse.gui.plot import Plot
+from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, BoolOption, ChoiceOption
+
+from .process import HistogramProcess
+    
+class HistogramWidget(QpWidget):
+    """
+    Widget which displays data histograms
+    """
+    def __init__(self, **kwargs):
+        super(HistogramWidget, self).__init__(name="Histogram", 
+                                              desc="Display histograms from data", group="Analysis", **kwargs)
+        self._updating = False
+
+    def init_ui(self):
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        title = TitleWidget(self)
+        vbox.addWidget(title)
+
+        self.options = OptionBox("Options")
+        self.options.add("Data", DataOption(self.ivm, all_option=True), key="data")
+        self.options.add("Within ROI", DataOption(self.ivm, data=False, rois=True, none_option=True), key="roi")
+        self.options.add("All volumes", BoolOption(default=False), key="allvols")
+        self.options.add("Y-axis scale", ChoiceOption(["Count", "Probability"]), key="yscale")
+        self.options.add("Number of bins", NumericOption(minval=5, maxval=500, default=100, intonly=True), key="bins")
+        self.options.add("Min value", NumericOption(minval=0, maxval=500, default=0), key="min")
+        self.options.add("Max value", NumericOption(minval=0, maxval=500, default=100), key="max")
+        self.options.option("yscale").sig_changed.connect(self._yscale_changed)
+        vbox.addWidget(self.options)
+
+        self.plot = Plot(qpo=None, parent=self, title="Data histogram", display_mode=False)
+        self.plot.set_xlabel("Data value")
+        self.plot.set_ylabel("Count")
+        vbox.addWidget(self.plot)
+
+        vbox.addStretch(1)
+
+    def activate(self):
+        self.ivm.sig_all_data.connect(self._data_changed)
+        self.options.option("data").sig_changed.connect(self._data_changed)
+        self.options.sig_changed.connect(self._update)
+        self._data_changed()
+
+    def deactivate(self):
+        self.ivm.sig_all_data.disconnect(self._data_changed)
+        self.options.option("data").sig_changed.disconnect(self._data_changed)
+        self.options.sig_changed.disconnect(self._update)
+
+    def processes(self):
+        opts = self.options.values()
+        if not opts.pop("allvols", False):
+            opts["vol"] = self.ivl.focus()[3]
+        if opts["data"] == "<all>":
+            opts.pop("data")
+
+        return {
+            "Histogram" : opts
+        }
+
+    def _yscale_changed(self):
+        self.plot.set_ylabel(self.options.option("yscale").value)
+
+    def _data_changed(self):
+        if self._updating: return
+        self._updating = True
+        try:
+            data_name = self.options.option("data").value
+            alldata = data_name == "<all>"
+            vol = None
+            if self.options.option("allvols").value:
+                vol = self.ivl.focus()[3]
+            dmin, dmax = None, None
+            if alldata:
+                for qpdata in self.ivm.data.values():
+                    _dmin, _dmax = qpdata.range(vol=vol)
+                    if dmin is None or dmin > _dmin:
+                        dmin = _dmin
+                    if dmax is None or dmax > dmax:
+                        dmax = _dmax
+
+            elif data_name in self.ivm.data:
+                dmin, dmax = self.ivm.data[data_name].range()
+            
+            if dmin is not None and dmax is not None:
+                self.options.option("min").value = dmin
+                self.options.option("min").setLimits(dmin, dmax)
+                self.options.option("max").value = dmax
+                self.options.option("max").setLimits(dmin, dmax)
+                
+            self.options.set_visible("allvols", data_name in self.ivm.data and self.ivm.data[data_name].nvols > 1)
+            self._update()
+        finally:
+            self._updating = False
+
+    def _update(self):
+        process = HistogramProcess(self.ivm)
+        process.execute(self.processes()["Histogram"])
+        self._update_plot()
+
+    def _update_plot(self):
+        self.plot.clear()
+        histogram = self.ivm.extras.get("histogram", None)
+        if histogram is not None:
+            stream = six.StringIO(histogram)
+            reader = csv.reader(stream, delimiter="\t", quotechar='"')
+            rows = [row for row in reader]
+            data_names = rows[0][3:]
+            values = [[float(v) for v in row[1:]] for row in rows[1:]]
+            xvals = [(row[0], row[1], (row[0]+row[1])/2) for row in values]
+            for idx, name in enumerate(data_names):
+                xvalues = [x[2] for x in xvals]
+                yvalues = [row[idx+2] for row in values]
+                self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvalues)

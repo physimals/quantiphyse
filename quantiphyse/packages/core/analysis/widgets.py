@@ -6,9 +6,6 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
-import sys
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
@@ -18,7 +15,7 @@ from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
 from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, LogSource, sf
 
-from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess, HistogramProcess
+from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess, RadialProfileProcess
 
 class SECurveOptions(QtGui.QDialog):
     def __init__(self, parent):
@@ -351,7 +348,6 @@ class DataStatistics(QpWidget):
         self.process = DataStatisticsProcess(self.ivm)
         self.process_ss = DataStatisticsProcess(self.ivm)
         self.process_rp = RadialProfileProcess(self.ivm)
-        self.process_hist = HistogramProcess(self.ivm)
         
         main_vbox = QtGui.QVBoxLayout()
 
@@ -434,61 +430,6 @@ class DataStatistics(QpWidget):
 
         main_vbox.addWidget(stats_box_ss)
 
-        # Histogram
-
-        hist_box = QtGui.QGroupBox()
-        hist_box.setTitle('Histogram')
-        vbox = QtGui.QVBoxLayout()
-        hist_box.setLayout(vbox)
-
-        hbox = QtGui.QHBoxLayout()
-
-        self.hist_show_btn = QtGui.QPushButton("Show")
-        self.hist_show_btn.setToolTip("Show a histogram of the data values in each ROI")
-        self.hist_show_btn.clicked.connect(self.show_histogram)
-        hbox.addWidget(self.hist_show_btn)
-
-        hbox.addWidget( QtGui.QLabel("Number of bins"))
-
-        self.nbinsSpin = QtGui.QSpinBox()
-        self.nbinsSpin.setMaximum(100)
-        self.nbinsSpin.setMinimum(5)
-        self.nbinsSpin.setValue(30)
-        hbox.addWidget(self.nbinsSpin)
-
-        hbox.addWidget(QtGui.QLabel("Min value"))
-
-        self.minSpin = QtGui.QDoubleSpinBox()
-        # Silly numbers for max and min because seems to be no way to have
-        # a spin box without a range
-        self.minSpin.setMaximum(100000000)
-        self.minSpin.setMinimum(-100000000)
-        hbox.addWidget(self.minSpin)
-
-        hbox.addWidget(QtGui.QLabel("Max value"))
-
-        self.maxSpin = QtGui.QDoubleSpinBox()
-        self.maxSpin.setMaximum(100000000)
-        self.maxSpin.setMinimum(-100000000)
-        hbox.addWidget(self.maxSpin)
-        vbox.addLayout(hbox)
-
-        self.win1 = pg.GraphicsLayoutWidget()
-        # Hide histogram for the meanwhile
-        self.win1.setVisible(False)
-        self.plt1 = self.win1.addPlot(title="Overlay histogram")
-        vbox.addWidget(self.win1, stretch=2)
-
-        hbox = QtGui.QHBoxLayout()
-        self.regenBtn = QtGui.QPushButton("Recalculate")
-        self.regenBtn.clicked.connect(self.update_histogram)
-        hbox.addWidget(self.regenBtn)
-        hbox.addStretch(1)
-        self.regenBtn.setVisible(False)
-        vbox.addLayout(hbox)
-
-        main_vbox.addWidget(hist_box)
-
         # Radial profile widgets
         rp_box = QtGui.QGroupBox()
         rp_box.setTitle("Radial Profile")
@@ -551,28 +492,12 @@ class DataStatistics(QpWidget):
         if name in self.ivm.data:
             self.rp_plt.setLabel('left', name)
 
-        self.update_histogram_spins()
-
         if self.rp_win.isVisible():
             self.update_radial_profile()
         if self.stats_table.isVisible():
             self.update_stats()
         if self.stats_table_ss.isVisible():
             self.update_stats_current_slice()
-        if self.win1.isVisible():
-            self.update_histogram()
-
-    def update_histogram_spins(self):
-        # Min and max set for data choice FIXME doesn't work for <all> option
-        name = self.data_combo.currentText()
-        if name in self.ivm.data:
-            ov = self.ivm.data[name]
-            self.minSpin.setValue(np.nanmin(ov.raw()))
-            self.maxSpin.setValue(np.nanmax(ov.raw()))
-            self.minSpin.setDecimals(ov.dps)
-            self.maxSpin.setDecimals(ov.dps)
-            self.minSpin.setSingleStep(10**(1-ov.dps))
-            self.maxSpin.setSingleStep(10**(1-ov.dps))
 
     def copy_stats(self):
         copy_table(self.process.model)
@@ -605,17 +530,6 @@ class DataStatistics(QpWidget):
             self.sscombo.setVisible(True)
             self.copy_btn_ss.setVisible(True)
             self.butgenss.setText("Hide")
-
-    def show_histogram(self):
-        if self.win1.isVisible():
-            self.win1.setVisible(False)
-            self.regenBtn.setVisible(False)
-            self.hist_show_btn.setText("Show")
-        else:
-            self.update_histogram()
-            self.win1.setVisible(True)
-            self.regenBtn.setVisible(True)
-            self.hist_show_btn.setText("Hide")
 
     def show_radial_profile(self):
         if self.rp_win.isVisible():
@@ -650,26 +564,6 @@ class DataStatistics(QpWidget):
                 "slice-pos" : self.ivl.focus(self.ivm.main.grid)[slice_dir],
             }
             self.populate_stats_table(self.process_ss, options)
-
-    def update_histogram(self):
-        name = self.data_combo.currentText()
-        if name in self.ivm.data:
-            options = {"data" : name, 
-                       "no-extras" : True, "bins" : self.nbinsSpin.value(),
-                       "min" : self.minSpin.value(), "max" : self.maxSpin.value()}
-            roi = self.roi_combo.currentText()
-            if roi in self.ivm.data:
-                options["roi"] = roi
-            self.process_hist.run(options)
-
-            self.win1.removeItem(self.plt1)
-            self.plt1 = self.win1.addPlot(title="")
-
-            for ov_name in self.process_hist.hist:
-                for region, yvals in self.process_hist.hist[ov_name].items():
-                    pencol = get_pencol(self.ivm.current_roi, region)
-                    curve = pg.PlotCurveItem(self.process_hist.edges, yvals, stepMode=True, pen=pg.mkPen(pencol, width=2))
-                self.plt1.addItem(curve)
 
     def populate_stats_table(self, process, options):
         if self.data_combo.currentText() != "<all>":
