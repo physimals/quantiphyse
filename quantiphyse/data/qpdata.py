@@ -60,6 +60,13 @@ def is_ortho_vector(vec, shape=1):
     return None, None
 
 def remove_nans(x, replace_val=0):
+    """
+    Remove NANs from a Numpy array
+
+    :param x: Numpy array
+    :param replace_val: NaN values will be replaced with this value (default 0)
+    :return: Copy of ``x`` with NaN values replaced
+    """
     x = x.copy()
     x[~np.isfinite(x)] = replace_val
     return x
@@ -396,7 +403,6 @@ class QpData(object):
         Sequence of distinct ROI region integers, not including zero
         """
         if not self.roi:
-            print(self.name)
             raise TypeError("Only ROIs have distinct regions")
         
         if self._regions is None:
@@ -434,7 +440,7 @@ class QpData(object):
 
     def range(self, vol=None):
         """
-        Return data max and min
+        Return data min and max
 
         Note that obtaining the range of a large 4D data set may be expensive!
 
