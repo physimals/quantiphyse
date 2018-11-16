@@ -88,9 +88,9 @@ class NiftiData(QpData):
         for ext in self.nifti_header.extensions:
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
-                self.debug("Found QP metadata: %s" % ext.get_content())
+                LOG.debug("Found QP metadata: %s" % ext.get_content())
                 metadata = yaml.load(ext.get_content())
-                self.debug(metadata)
+                LOG.debug(metadata)
 
         grid = DataGrid(shape[:3], self.nii.header.get_best_affine())
         QpData.__init__(self, fname, grid, nvols, fname=fname, metadata=metadata)
