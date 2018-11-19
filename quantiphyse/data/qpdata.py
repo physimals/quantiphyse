@@ -648,7 +648,6 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        from quantiphyse.data import NumpyData
         return NumpyData(data=data, grid=grid, name=self.name + "_resampled")
 
     def slice_data(self, plane, vol=0, interp_order=0):
@@ -786,3 +785,33 @@ class QpData(object):
             slices[dim] = slice(bb_start, bb_end+1)
 
         return slices
+
+class NumpyData(QpData):
+    """
+    QpData instance with in-memory Numpy data
+    """
+    def __init__(self, data, grid, name, **kwargs):
+        # Unlikely but possible that first data is added from the console
+        if grid is None:
+            grid = DataGrid(data.shape[:3], np.identity(4))
+
+        if data.dtype.kind in np.typecodes["AllFloat"]:
+            # Use float32 rather than default float64 to reduce storage
+            data = data.astype(np.float32)
+        self.rawdata = data
+        
+        if data.ndim > 3:
+            nvols = data.shape[3]
+            if nvols == 1:
+                self.rawdata = np.squeeze(self.rawdata, axis=-1)
+        else:
+            nvols = 1
+
+        QpData.__init__(self, name, grid, nvols, **kwargs)
+    
+    def raw(self):
+        if self._raw_2dt and self.rawdata.ndim == 3:
+            # Single-slice, interpret 3rd dimension as time
+            return np.expand_dims(self.rawdata, 2)
+        else:
+            return self.rawdata

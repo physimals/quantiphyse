@@ -325,6 +325,9 @@ class Script(Process):
 
     def _process_finished(self, status, log, exception):
         self.debug("Process finished: %s", self._current_process.proc_id)
+        self._current_process.sig_finished.disconnect(self._process_finished)
+        self._current_process.sig_progress.disconnect(self._process_progress)
+        self._current_process.sig_log.disconnect(self._process_log)
         if self.status != self.RUNNING:
             return
 
