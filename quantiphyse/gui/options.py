@@ -188,6 +188,13 @@ class Option(object):
 class DataOption(Option, QtGui.QComboBox):
     """
     A combo box which gives a choice of data
+
+    There is quite a lot of ugliness here because the box can be put into two modes - 
+    single and multi-select. In multi-select mode we subvert the QComboBox to provide
+    essentially a dropdown list of checkboxes. In single select mode things can be 
+    complicated by providing 'all' and 'none' option.
+
+    Probably this class should be split into two for each use case.
     """
     sig_changed = QtCore.Signal()
 
@@ -195,55 +202,88 @@ class DataOption(Option, QtGui.QComboBox):
         super(DataOption, self).__init__(parent)
         self.ivm = ivm
 
-        self.include_3d = kwargs.get("include_3d", True)
-        self.include_4d = kwargs.get("include_4d", True)
-        self.include_4d = not kwargs.get("static_only", not self.include_4d)
-        self.none_option = kwargs.get("none_option", False)
-        self.all_option = kwargs.get("all_option", False)
-        self.multi_option = kwargs.get("multi_option", False)
-        self.rois = kwargs.get("rois", False)
-        self.data = kwargs.get("data", True)
-        self.ivm.sig_all_data.connect(self._data_changed)
+        self._include_3d = kwargs.get("include_3d", True)
+        self._include_4d = kwargs.get("include_4d", not kwargs.get("static_only", False))
+        self._include_rois = kwargs.get("rois", False)
+        self._include_nonrois = kwargs.get("data", True)
+        
+        self._none_option = kwargs.get("none_option", False)
+        self._all_option = kwargs.get("all_option", False)
+        self._multi = kwargs.get("multi", False)
         self._data_changed()
-        self.currentIndexChanged.connect(self._changed)
+
+        self.currentIndexChanged.connect(self._index_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
+        if self._multi:
+            self.view().pressed.connect(self._item_pressed)
     
     @property
     def value(self):
         """ 
+        Get the names of the selected data item(s)
+        
         If neither all option nor multi options are specified, returns
-        name of currently selected data. Otherwise returns list of 
-        all specified data items
+        name of currently selected data item. Otherwise returns list of
+        all selected data items.
+        
+        Also returns None if the none option is active and selected.
         """
-        ret = self.currentText()
-        if self.none_option and ret == "<none>":
-            ret = None
-        if self.all_option and ret == "<all>":
-            ret = list(self.ivm.data.keys())
-        elif self.all_option or self.multi_option:
-            ret = [ret,]
+        if self._multi:
+            ret = []
+            for idx in range(1, self.count()):
+                item = self.model().item(idx, 0)
+                if item.checkState() == QtCore.Qt.Checked:
+                    ret.append(self.itemText(idx))
+        else:
+            current = self.currentText()        
+            if self._none_option and current == "<none>":
+                ret = None
+            elif self._all_option and ret == "<all>":
+                ret = list(self.ivm.data.keys())
+            elif self._all_option:
+                ret = [current,]
+            else:
+                ret = current
         return ret
         
     @value.setter
-    def value(self, data_name):
+    def value(self, val):
         """ 
-        Set the selected data name
-        """ 
-        if isinstance(data_name, six.string_types):
-            if data_name is None:
-                data_name = "<none>"
+        Set the selected data name(s)
 
-            idx = self.findText(data_name)
-            if idx >= 0:
-                self.setCurrentIndex(idx)
-            else:
-                raise ValueError("Data item %s is not a valid choice for this option")
-        elif not self.multi_option:
-            raise ValueError("Can't specify multiple data items")
+        In multi-select mode val should be a sequence of data item names.
+        In single-select mode val should be a data item name, or None
+        or '<all>' (valid if the none/all options are enabled)
+        """ 
+        if self._multi:
+            for name in val:
+                idx = self.findText(name)
+                item = self.model().item(idx, 0)
+                item.setCheckState(QtCore.Qt.Checked)
         else:
-            # FIXME handle multi data
-            pass
-    
-    def _changed(self):
+            if val is None:
+                val = "<none>"
+
+            if isinstance(val, six.string_types):
+                idx = self.findText(val)
+                if idx >= 0:
+                    self.setCurrentIndex(idx)
+                else:
+                    raise ValueError("Data item %s is not a valid choice for this option")
+            else:
+                raise ValueError("Can't specify multiple data items when DataOption is not in multi select mode")
+
+    def _item_pressed(self, idx):
+        item = self.model().itemFromIndex(idx)
+        if item.checkState() == QtCore.Qt.Checked:
+            item.setCheckState(QtCore.Qt.Unchecked)
+        else:
+            item.setCheckState(QtCore.Qt.Checked)
+        self.sig_changed.emit()
+
+    def _index_changed(self):
+        if self._multi:
+            self.setCurrentIndex(0)
         self.sig_changed.emit()
 
     def _data_changed(self):
@@ -251,22 +291,39 @@ class DataOption(Option, QtGui.QComboBox):
         try:
             data = []
             for name, qpd in self.ivm.data.items():
-                if self.data or (qpd.roi and self.rois):
+                if self._include_nonrois or (qpd.roi and self._include_rois):
                     data.append(name)
 
-            current = self.currentText()
+            current = self.value
             self.clear()
-            if self.none_option:
+            
+            if self._none_option and not self._multi:
                 self.addItem("<none>")
+            elif self._multi:
+                self.addItem("Select data items")
 
+            idx = 1
             for name in sorted(data):
                 data = self.ivm.data.get(name, None)
-                if data.nvols == 1 and self.include_3d:
+                if data.nvols == 1 and self._include_3d:
                     self.addItem(data.name)
-                elif data.nvols > 1 and self.include_4d:
+                    added = True
+                elif data.nvols > 1 and self._include_4d:
                     self.addItem(data.name)
+                    added = True
+                else:
+                    added = False
 
-            if self.all_option:
+                if added:
+                    if self._multi:
+                        item = self.model().item(idx, 0)
+                        if data.name in current:
+                            item.setCheckState(QtCore.Qt.Checked)
+                        else:
+                            item.setCheckState(QtCore.Qt.Unchecked)
+                    idx += 1
+
+            if self._all_option and not self._multi:
                 self.addItem("<all>")
 
             # Make sure names are visible even with drop down arrow
@@ -275,13 +332,16 @@ class DataOption(Option, QtGui.QComboBox):
         finally:
             self.blockSignals(False)
         
-        idx = self.findText(current)
-        if idx >= 0:
-            self.setCurrentIndex(idx)
-        else:
-            # Make sure signal is sent when first data arrives
-            self.setCurrentIndex(-1)
+        if self._multi:
             self.setCurrentIndex(0)
+        else:
+            idx = self.findText(current)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+            else:
+                # Make sure signal is sent when first data arrives
+                self.setCurrentIndex(-1)
+                self.setCurrentIndex(0)
 
 class ChoiceOption(Option, QtGui.QComboBox):
     """ 

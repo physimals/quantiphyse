@@ -33,7 +33,7 @@ class RadialProfileWidget(QpWidget):
         vbox.addWidget(title)
 
         self.options = OptionBox("Options")
-        self.options.add("Data", DataOption(self.ivm, all_option=True), key="data")
+        self.options.add("Data", DataOption(self.ivm, multi=True), key="data")
         self.options.add("Within ROI", DataOption(self.ivm, data=False, rois=True, none_option=True), key="roi")
         self.options.add("All volumes", BoolOption(default=False), key="allvols")
         self.options.add("Number of bins", NumericOption(minval=5, maxval=250, default=50, intonly=True), key="bins")
