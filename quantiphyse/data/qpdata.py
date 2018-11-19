@@ -333,26 +333,30 @@ class QpData(object):
     :ivar grid: :class:`DataGrid` instance the data is defined on
     :ivar fname: File name data came from if relevant
     :ivar metadata: General purpose metadata dictionary. Keys are strings and values are YAML
-                    convertible objects
+                    convertible objects limited to the basic YAML subset used in the batch system
+                    (i.e. strings, numbers and lists/dicts of these)
     """
 
     def __init__(self, name, grid, nvols, roi=None, fname=None, metadata=None):
         self.name = name
         self.grid = grid
-        self.fname = fname
 
         # Number of volumes (1=3D data)
         self._nvols = nvols
-        
+
         # DEPRECATED: Number of decimal places to display data to
         self.dps = 1
 
+        if metadata is not None:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
+
+        if fname:
+            self.metadata["fname"] = fname
+
         # Whether raw data is 2d + time incorrectly returned as 3D
         self._raw_2dt = False
-
-        # Lazily evaluated properties
-        self._regions = None
-        self._range = None
 
         # Is data set an ROI? If not specified, try making it one
         if roi is None:
@@ -362,11 +366,6 @@ class QpData(object):
                 self.roi = False
         else:
             self.roi = roi
-
-        if metadata is not None:
-            self.metadata = metadata
-        else:
-            self.metadata = {}
 
     @property
     def ndim(self):
@@ -384,7 +383,7 @@ class QpData(object):
     @property
     def roi(self):
         """ True if this data could be a region of interest data set"""
-        return self._is_roi
+        return self.metadata.get("roi", False)
 
     @roi.setter
     def roi(self, is_roi):
@@ -395,7 +394,7 @@ class QpData(object):
                 rawdata = self.raw()
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
-        self._is_roi = is_roi
+        self.metadata["roi"] = is_roi
 
     @property
     def regions(self):
@@ -405,12 +404,23 @@ class QpData(object):
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
         
-        if self._regions is None:
-            self._regions = np.unique(self.raw().astype(np.int))
-            self._regions = [int(r) for r in self._regions if r > 0]
+        if self.metadata.get("roi_regions", None) is None:
+            regions = np.unique(self.raw().astype(np.int))
+            self.metadata["roi_regions"] = [int(r) for r in regions if r > 0]
 
-        return self._regions
+        return self.metadata["roi_regions"]
 
+    @property 
+    def fname(self):
+        """
+        File name origin of data or None if not from a file
+        """
+        return self.metadata.get("fname", None)
+
+    @fname.setter
+    def fname(self, name):
+        self.metadata["fname"] = name
+        
     def set_2dt(self):
         """
         Force 3D static data into the form of 2D multi-volume
@@ -448,9 +458,9 @@ class QpData(object):
         :return: Tuple of min value, max value
         """
         if vol is None:
-            if self._range is None:
-                self._range = np.nanmin(self.raw()), np.nanmax(self.raw())
-            return self._range
+            if self.metadata.get("range", None) is None:
+                self.metadata["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
+            return self.metadata["range"]
         else:
             voldata = self.volume(vol)
             return np.nanmin(voldata), np.nanmax(voldata)

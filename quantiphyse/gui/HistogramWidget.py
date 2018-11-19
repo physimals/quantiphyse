@@ -53,14 +53,14 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     def _view_changed(self):
         try:
             self.updating = True
-            if self.view.opts["cmap"] != "custom":
+            if self.view.get("cmap") != "custom":
                 try:
-                    self.gradient.loadPreset(self.view.opts["cmap"])
+                    self.gradient.loadPreset(self.view.get("cmap"))
                 except KeyError:
-                    self._set_matplotlib_gradient(self.view.opts["cmap"])
+                    self._set_matplotlib_gradient(self.view.get(("cmap")))
             
-            if self.view.opts["cmap_range"] is not None:
-                self.region.setRegion(self.view.opts["cmap_range"])
+            if self.view.get("cmap_range") is not None:
+                self.region.setRegion(self.view.get(("cmap_range")))
 
             #self.lut = None
             for img in self.imgs:
@@ -94,7 +94,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
         lut = self.getLookupTable(img, alpha=True)
         if self.view is not None:
             for row in lut:
-                row[3] = self.view.opts["alpha"]
+                row[3] = self.view.get("alpha")
 
         #self.lut = lut
         return lut

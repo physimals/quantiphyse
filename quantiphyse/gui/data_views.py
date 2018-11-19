@@ -91,11 +91,15 @@ class DataView(QtCore.QObject):
         self.ivm = ivm
 
         self.default_options = {}
-        self.cached_options = {}
         self.redraw_options = []
         self.data = None
-        self.opts = dict(self.default_options)
         self.sig_view_changed.connect(self.update)
+
+    def get(self, opt):
+        if self.data is not None:
+            return self.data.metadata.get(opt, self.default_options.get(opt, None))
+        else:
+            return self.default_options.get(opt, None)
 
     def set(self, name, value):
         """
@@ -106,10 +110,11 @@ class DataView(QtCore.QObject):
         :param name: Option name
         :param value: Option value
         """
-        self.opts[name] = value
-        self.sig_view_changed.emit(self)
-        if name in self.redraw_options:
-            self.sig_redraw.emit(self)
+        if self.data is not None:
+            self.data.metadata[name] = value
+            self.sig_view_changed.emit(self)
+            if name in self.redraw_options:
+                self.sig_redraw.emit(self)
 
     def redraw(self, viewbox, slice_plane, slice_vol):
         """
@@ -144,7 +149,6 @@ class ImageDataView(DataView):
             "z_value" : -1,
             "interp_order" : 0,
         }
-        self.opts = dict(self.default_options)
         self.redraw_options += ["visible", "roi_only", "z_value", "interp_order"]
         self.imgs = {}
         self.histogram = None
@@ -154,12 +158,12 @@ class ImageDataView(DataView):
         img = self._get_img(viewbox)
         self.update()
         if img.isVisible():
-            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol, interp_order=self.opts["interp_order"])
+            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol, interp_order=self.get("interp_order"))
             img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
                                               offset[0], offset[1]))
             img.setImage(slicedata, autoLevels=False)
 
-            if self.mask is not None and self.opts["roi_only"]:
+            if self.mask is not None and self.get("roi_only"):
                 maskdata, _, _, _ = self.mask.slice_data(slice_plane)
                 img.mask = np.logical_and(maskdata, slicemask)
             else:
@@ -167,10 +171,10 @@ class ImageDataView(DataView):
        
     def update(self):
         for img in self.imgs.values():
-            img.setVisible(self.data is not None and self.opts["visible"])
-            img.setZValue(self.opts["z_value"])
-            img.setBoundaryMode(self.opts["boundary"])
-            img.setLevels(self.opts["cmap_range"])
+            img.setVisible(self.data is not None and self.get("visible"))
+            img.setZValue(self.get("z_value"))
+            img.setBoundaryMode(self.get("boundary"))
+            img.setLevels(self.get("cmap_range"))
 
     def _get_img(self, viewbox):
         if viewbox.name not in self.imgs:
@@ -180,31 +184,12 @@ class ImageDataView(DataView):
             if self.histogram is not None:
                 self.histogram.add_img(img)
         return self.imgs[viewbox.name]
- 
-    def _init_opts(self):
-        """
-        Retrieve view options from cache or use defaults
-        """
-        if self.data is not None:
-            if self.data.name not in self.cached_options:
-                self.cached_options[self.data.name] = dict(self.default_options)
-            self.opts = self.cached_options[self.data.name]
-        else:
-            self.opts = dict(self.default_options)
 
     def _init_cmap(self, percentile=100):
-        if self.data is not None and self.opts["cmap_range"] is None:
+        if self.data is not None and self.get("cmap_range") is None:
             # Initial colourmap range
             flat = self.data.volume(int(self.data.nvols/2)).flatten()
-            self.opts["cmap_range"] = _cmap_range(flat, percentile)
-
-    def _cleanup_cache(self, data_items):
-        """
-        Remove data items which no longer exist from the option cache
-        """
-        for key in self.cached_options.keys():
-            if key not in data_items:
-                del self.cached_options[key]
+            self.data.metadata["cmap_range"] = _cmap_range(flat, percentile)
 
 class MainDataView(ImageDataView):
     """
@@ -214,11 +199,9 @@ class MainDataView(ImageDataView):
     def __init__(self, ivm):
         super(MainDataView, self).__init__(ivm)
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.ivm.sig_all_data.connect(self._cleanup_cache)
 
     def _main_data_changed(self, data):
         self.data = data
-        self._init_opts()
         self._init_cmap(percentile=99)
         self.sig_view_changed.emit(self)
         self.sig_redraw.emit(self)
@@ -238,11 +221,9 @@ class OverlayView(ImageDataView):
             "cmap" : "jet",
             "z_value" : 0,
         })
-        self._init_opts()
 
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
         self.ivm.sig_current_data.connect(self._current_data_changed)
-        self.ivm.sig_all_data.connect(self._cleanup_cache)
 
     def _remask(self, roi):
         if roi is not None and self.data is not None:
@@ -257,7 +238,6 @@ class OverlayView(ImageDataView):
 
     def _current_data_changed(self, data):
         self.data = data
-        self._init_opts()
         self._init_cmap()
         self._remask(self.ivm.current_roi)
         self.sig_view_changed.emit(self)
@@ -280,12 +260,10 @@ class RoiView(ImageDataView):
             "outline_width" : 3.0,
             "z_value" : 1,
         })
-        self._init_opts()
         self.contours = {}
         self.redraw_options += ["shade", "contour", "z_value"]
 
         self.ivm.sig_current_roi.connect(self._current_roi_changed)
-        self.ivm.sig_all_data.connect(self._cleanup_cache)
 
     def redraw(self, viewbox, slice_plane, slice_vol):
         img = self._get_img(viewbox)
@@ -301,7 +279,7 @@ class RoiView(ImageDataView):
                 img.setImage(slicedata, autoLevels=False)
                 img.setTransform(transform)
 
-            if self.opts["contour"]:
+            if self.get("contour"):
                 # Update data and level for existing contour items, and create new ones if needed
                 for val in self.data.regions:
                     pencol = get_pencol(self.data, val)
@@ -314,7 +292,7 @@ class RoiView(ImageDataView):
                         contour.setTransform(transform)
                         contour.setData((slicedata == val).astype(np.int))
                         contour.setLevel(1)
-                        contour.setPen(pg.mkPen(pencol, width=self.opts["outline_width"]))
+                        contour.setPen(pg.mkPen(pencol, width=self.get("outline_width")))
                         n_contours += 1
 
         # Clear data from contours not required - FIXME delete them?
@@ -323,10 +301,10 @@ class RoiView(ImageDataView):
 
     def update(self):
         for img in self.imgs.values():
-            img.setVisible(self.data is not None and self.opts["shade"])
-            img.setZValue(self.opts["z_value"])
-            img.setBoundaryMode(self.opts["boundary"])
-            lut = get_lut(self.data, self.opts["alpha"])
+            img.setVisible(self.data is not None and self.get("shade"))
+            img.setZValue(self.get("z_value"))
+            img.setBoundaryMode(self.get("boundary"))
+            lut = get_lut(self.data, self.get("alpha"))
             img.setLookupTable(lut)
             img.setLevels([0, len(lut)-1], update=True)
             
@@ -337,7 +315,6 @@ class RoiView(ImageDataView):
 
     def _current_roi_changed(self, roi):
         self.data = roi
-        self._init_opts()
         self.sig_view_changed.emit(self)
         self.sig_redraw.emit(self)
            
@@ -384,15 +361,15 @@ class RoiViewWidget(QtGui.QGroupBox):
                 self.roi_alpha_sld.blockSignals(True)
                 self.roi_combo.blockSignals(True)
 
-                if view.opts["shade"] and view.opts["contour"]:
+                if view.get("shade") and view.get("contour"):
                     self.roi_view_combo.setCurrentIndex(2)
-                elif view.opts["shade"]:
+                elif view.get("shade"):
                     self.roi_view_combo.setCurrentIndex(0)
-                elif view.opts["contour"]:
+                elif view.get("contour"):
                     self.roi_view_combo.setCurrentIndex(1)
                 else:
                     self.roi_view_combo.setCurrentIndex(3)
-                self.roi_alpha_sld.setValue(view.opts["alpha"])
+                self.roi_alpha_sld.setValue(view.get("alpha"))
 
                 if view.data is not None:
                     idx = self.roi_combo.findText(view.data.name)
@@ -479,16 +456,16 @@ class OverlayViewWidget(QtGui.QGroupBox):
             for widget in widgets:
                 widget.blockSignals(True)
 
-            if not view.opts["visible"]:
+            if not view.get("visible"):
                 self.ov_view_combo.setCurrentIndex(2)
-            elif view.opts["roi_only"]:
+            elif view.get("roi_only"):
                 self.ov_view_combo.setCurrentIndex(1)
             else:
                 self.ov_view_combo.setCurrentIndex(0)
 
             # 'Custom' only appears as a flag to indicate the user has messed with the 
             # LUT using the histogram widget. Otherwise is is hidden
-            cmap = view.opts["cmap"]
+            cmap = view.get("cmap")
             if cmap == "custom":
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
@@ -501,10 +478,10 @@ class OverlayViewWidget(QtGui.QGroupBox):
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
                     self.ov_cmap_combo.removeItem(idx)
-                idx = self.ov_cmap_combo.findText(view.opts["cmap"])
+                idx = self.ov_cmap_combo.findText(view.get("cmap"))
                 self.ov_cmap_combo.setCurrentIndex(idx)
 
-            self.ov_alpha_sld.setValue(view.opts["alpha"])
+            self.ov_alpha_sld.setValue(view.get("alpha"))
 
             self.ov_levels_btn.setEnabled(view.data is not None)
             if view.data is not None:
@@ -581,7 +558,7 @@ class LevelsDialog(QtGui.QDialog):
         self.combo.addItem("Clamped to max/min colour")
         self.combo.addItem("Transparent at lower, clamped at upper")
         self.combo.addItem("Clamped at lower, transparent at upper")
-        self.combo.setCurrentIndex(self.view.opts["boundary"])
+        self.combo.setCurrentIndex(self.view.get("boundary"))
         self.combo.currentIndexChanged.connect(self._bound_changed)
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
@@ -597,14 +574,14 @@ class LevelsDialog(QtGui.QDialog):
         spin = QtGui.QDoubleSpinBox()
         spin.setMaximum(1e20)
         spin.setMinimum(-1e20)
-        spin.setValue(self.view.opts["cmap_range"][row])
+        spin.setValue(self.view.get("cmap_range")[row])
         spin.valueChanged.connect(self._val_changed(row))
         grid.addWidget(spin, row, 1)
         return spin
 
     def _val_changed(self, row):
         def _changed(val):
-            cmap_range = list(self.view.opts["cmap_range"])
+            cmap_range = list(self.view.get("cmap_range"))
             cmap_range[row] = val
             self.view.set("cmap_range", cmap_range)
         return _changed
