@@ -121,25 +121,26 @@ Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng
  - ASL tools first version (preprocess, model fit, calibration, multiphase)
  - Improved viewer (full resolution, aligned)
 
-#### v0.8 (Target September 2018)
+#### v0.8 (Target Jan 2019)
 
- - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)
- - Improved registration support (apply transform)
- - Improved manual data alignment tools
- - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)
- - Fabber T1 (integrate with existing T1 widget?)
- - Fabber DCE (integrate with existing DCE widget?)
+ - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      DONE?
+ - Improved registration support (apply transform)                      PART DONE
+ - Improved manual data alignment tools                                 PART DONE
+ - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       PART DONE
+ - Fabber T1 (integrate with existing T1 widget?)                       NOT DONE
+ - Fabber DCE (integrate with existing DCE widget?)                     NOT DONE
+ - DSC widget                                                           PART DONE
 
-#### v1.0 (Target October/November 2018)
+#### v1.0 (Target Feb/March 2019)
 
 No firm plans yet - selection from 'Vague plans' below
 
 #### Vague Plans for Future
 
- - Python 3 compatible (untested currently)
+ - Python 3 (untested currently but should be mostly OK)
  
  - MoCo/Registration
-   - Definitely want Bartek's MC method
+   - Bartek's MC method
    - Revise interface to allow for MC and registration to be treated separately (MCFLIRT/FLIRT) (or not)
    - Standard way to save the transformation (matrix or warp map)
    - Could add FNIRT based option
