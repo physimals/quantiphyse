@@ -332,11 +332,8 @@ class Script(Process):
             return
 
         end = time.time()
-
-        self._current_process.sig_finished.disconnect(self._process_finished)
-        self._current_process.sig_progress.disconnect(self._process_progress)
-        self._current_process.sig_log.disconnect(self._process_log)
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
+        
         if status == Process.SUCCEEDED:
             if len(self._pipeline) > 1:
                 self.log("\nDONE (%.1fs)\n" % (end - self._process_start))
