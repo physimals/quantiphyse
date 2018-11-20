@@ -133,12 +133,18 @@ Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng
 
 #### v1.0 (Target Feb/March 2019)
 
-No firm plans yet - selection from 'Vague plans' below
+ - Stable interface for QpWidget, QpData, Process
+ - Otherwise no firm plans yet - selection from 'Vague plans' below
 
 #### Vague Plans for Future
 
  - Python 3 (untested currently but should be mostly OK)
  
+ - Refactoring of view classes
+   - This is a mess at the moment. Need all view options to be stored as metadata
+     and cleaner separation between the ImageView widget and the individual OrthoView
+     widgets.
+
  - MoCo/Registration
    - Bartek's MC method
    - Revise interface to allow for MC and registration to be treated separately (MCFLIRT/FLIRT) (or not)
@@ -146,7 +152,8 @@ No firm plans yet - selection from 'Vague plans' below
    - Could add FNIRT based option
 
  - 3D view
-   - Probably not that useful but fun and may be easy(?) with vispy
+   - Probably not that useful but fun and may be easy(?) with vispy. Reliant on good refactoring of ImageView
+   - Application to surfaces (Tom K?)
 
  - Add Jola's texture analysis which sounds cool, whatever it is
 
@@ -171,7 +178,7 @@ No firm plans yet - selection from 'Vague plans' below
  - Improve /rethink generic maths/processing widget / console
    - Need to link data grids with data 
 
- - Add semiquantitative DCE-MRI measures
+ - Add semiquantitative measures
    - Area under the curve
    - Enhancing fraction
 
