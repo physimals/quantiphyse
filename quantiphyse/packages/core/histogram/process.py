@@ -5,12 +5,11 @@ Copyright (c) 2013-2018 University of Oxford
 """
 import six
 
-from quantiphyse.utils import QpException, table_to_str
+from quantiphyse.data.extras import MatrixExtra
+from quantiphyse.utils import QpException
 from quantiphyse.processes import Process
 
 import numpy as np
-
-from PySide import QtGui
 
 class HistogramProcess(Process):
     """
@@ -21,7 +20,6 @@ class HistogramProcess(Process):
     
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
-        self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
         data_items = options.pop('data', None)
@@ -44,11 +42,7 @@ class HistogramProcess(Process):
         prob = options.pop('yscale', 'count').lower().startswith("prob")
         output_name = options.pop('output-name', "histogram")
 
-        self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem("x0"))
-        self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem("x1"))  
-        self.xvals, self.edges, self.hist = None, None, {}
-        col = 2
-        
+        yvals, col_headers = {}, ["left", "right", "centre",]
         for data in data_items:
             if vol is not None:
                 rawdata = data.volume(vol)
@@ -69,27 +63,27 @@ class HistogramProcess(Process):
                 if sel_region is not None and region != sel_region:
                     self.debug("Ignoring region %i", region)
                     continue
-                region_data = rawdata[roi_fordata == region]
-                yvals, edges = np.histogram(region_data, bins=bins, range=hrange, density=prob)
 
-                if self.xvals is None:
-                    self.edges = edges
-                    self.xvals = [(edges[i] + edges[i+1])/2 for i in range(len(edges)-1)]
-                    for idx in range(len(edges)-1):
-                        self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(""))
-                        self.model.setItem(idx, 0, QtGui.QStandardItem(str(self.edges[idx])))
-                        self.model.setItem(idx, 1, QtGui.QStandardItem(str(self.edges[idx+1])))
+                region_data = rawdata[roi_fordata == region]
+                data_vals, edges = np.histogram(region_data, bins=bins, range=hrange, density=prob)
+                    
                 if len(regions) > 1:
                     name = "%s\nRegion %i" % (data.name, region)
                 else:
                     name = data.name
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem(name))
-                for idx, v in enumerate(yvals):
-                    self.model.setItem(idx, col, QtGui.QStandardItem(str(v)))
-                if data.name not in self.hist: self.hist[data.name] = {}
-                self.hist[data.name][region] = yvals
-                col += 1
 
-        if not options.pop('no-extras', False): 
+                col_headers.append(name)
+                yvals[name] = data_vals
+            
+        xvals = [[edges[idx], edges[idx+1], (edges[idx]+edges[idx+1])/2] for idx in range(len(edges)-1)]
+        rows = []
+        for idx, row in enumerate(xvals):
+            for name in col_headers[3:]:
+                row += [yvals[name][idx],]
+            rows.append(row)
+
+        if not options.pop('no-extras', False):
             self.debug("Adding %s" % output_name)
-            self.ivm.add_extra(output_name, table_to_str(self.model))
+            extra = MatrixExtra(output_name, rows, col_headers=col_headers)
+            self.debug(str(extra))
+            self.ivm.add_extra(output_name, extra)

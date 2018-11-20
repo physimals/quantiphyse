@@ -3,10 +3,6 @@ Quantiphyse - Histogram widget
 
 Copyright (c) 2013-2018 University of Oxford
 """
-import csv
-
-import six
-
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
@@ -110,13 +106,7 @@ class HistogramWidget(QpWidget):
         self.plot.clear()
         histogram = self.ivm.extras.get("histogram", None)
         if histogram is not None:
-            stream = six.StringIO(histogram)
-            reader = csv.reader(stream, delimiter="\t", quotechar='"')
-            rows = [row for row in reader]
-            data_names = rows[0][3:]
-            values = [[float(v) for v in row[1:]] for row in rows[1:]]
-            xvals = [(row[0], row[1], (row[0]+row[1])/2) for row in values]
-            for idx, name in enumerate(data_names):
-                xvalues = [x[2] for x in xvals]
-                yvalues = [row[idx+2] for row in values]
+            for idx, name in enumerate(histogram.col_headers[3:]):
+                xvalues = [row[2] for row in histogram.arr]
+                yvalues = [row[idx+3] for row in histogram.arr]
                 self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvalues)

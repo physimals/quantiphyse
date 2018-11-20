@@ -3,7 +3,10 @@ Quantiphyse - Basic classes for Extras
 
 Copyright (c) 2013-2018 University of Oxford
 """
-from quantiphyse.utils import matrix_to_str
+import csv
+import six
+
+import numpy as np
 
 class Extra(object):
     """
@@ -24,17 +27,30 @@ class MatrixExtra(Extra):
     """
     def __init__(self, name, arr, row_headers=(), col_headers=()):
         Extra.__init__(self, name)
-        if arr.ndim != 2:
-            raise ValueError("Matrix must be 2D")
-        if row_headers and len(row_headers) != arr.shape[0]:
+        if len(arr) == 0:
+            raise ValueError("No matrix data given")
+        if row_headers and len(row_headers) != len(arr):
             raise ValueError("Incorrect number of row headers given")
-        if col_headers and len(col_headers) != arr.shape[1]:
+        if col_headers and len(col_headers) != len(arr[0]):
             raise ValueError("Incorrect number of column headers given")
 
         self.arr = arr
-        self.row_headers = row_headers
-        self.col_headers = col_headers
+        self.row_headers = list(row_headers)
+        self.col_headers = list(col_headers)
 
     def __str__(self):
-        # FIXME row and column headers in TSV output
-        return matrix_to_str(self.arr)
+        stream = six.StringIO()
+        writer = csv.writer(stream, delimiter='\t', lineterminator='\n')
+        if self.col_headers:
+            if self.row_headers:
+                writer.writerow([" "] + self.col_headers)
+            else:
+                writer.writerow(self.col_headers)
+
+        for row in self.arr:
+            if self.row_headers:
+                writer.writerow([" "] + list(row))
+            else:
+                writer.writerow(list(row))
+
+        return stream.getvalue()
