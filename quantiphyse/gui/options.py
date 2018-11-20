@@ -862,7 +862,6 @@ class VectorOption(MatrixOption):
 
     def _load_file(self, filename):
         fvals, nrows, ncols = load_matrix(filename)
-        LOG.debug(fvals, nrows, ncols)
 
         if ncols <= 0:
             raise RuntimeError("No numeric data found in file")

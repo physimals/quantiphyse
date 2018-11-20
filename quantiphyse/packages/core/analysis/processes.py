@@ -5,7 +5,6 @@ Copyright (c) 2013-2018 University of Oxford
 """
 import sys
 
-import six
 import numpy as np
 import scipy
 
