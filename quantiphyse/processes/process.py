@@ -362,7 +362,7 @@ class Process(QtCore.QObject, LogSource):
         if self._multiproc:
             LOG.debug("Initializing multiprocessing")
             queue = multiprocessing.Manager().Queue()
-            pool_size = max(num_tasks, multiprocessing.cpu_count())
+            pool_size = min(num_tasks, multiprocessing.cpu_count())
             pool = multiprocessing.Pool(pool_size, initializer=_worker_initialize)
         else:
             LOG.debug("Not using multiprocessing")
