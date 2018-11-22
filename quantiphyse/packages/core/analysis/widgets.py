@@ -13,6 +13,7 @@ from PySide import QtCore, QtGui
 from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption
 from quantiphyse.utils import get_icon, copy_table, get_kelly_col, sf
 
 from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess
@@ -25,136 +26,120 @@ class MultiVoxelAnalysis(QpWidget):
     def __init__(self, **kwargs):
         super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
 
+        self.activated = False
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
-        self.activated = False
+        self.col = self.colors["red"]
+        self.plots = {}
+        self.mean_plots = {}
 
     def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
         vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
 
         title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False)
         vbox.addWidget(title)
 
-        # Plot window
         self.plot = Plot(clear_btn=True)
-        self.plot.clear_btn.clicked.connect(self.clear_all)
-        self.plot.options.sig_options_changed.connect(self.update_graph)
+        self.plot.clear_btn.clicked.connect(self._clear)
+        self.plot.options.sig_options_changed.connect(self._options_changed)
         vbox.addWidget(self.plot)
 
-        opts_box = QtGui.QGroupBox()
-        opts_box.setTitle('Point selection')
-        opts_vbox = QtGui.QVBoxLayout()
-        opts_box.setLayout(opts_vbox)
+        self.options = OptionBox("Options")
+        self.options.add("Data set", DataOption(self.ivm, include_3d=False), key="data")
+        col_names = [text for text in self.colors]
+        cols = [col for text, col in self.colors.items()]
+        self.options.add("Plot colour", ChoiceOption(col_names, cols, default="red"), key="col")
+        self.options.add("Show individual curves", BoolOption(default=True), key="indiv")
+        self.options.add("Show mean curve", BoolOption(), key="mean")
 
-        # Select plot color
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('Plot color'))
-        self.color_combo = QtGui.QComboBox(self)
-        for text, col in self.colors.items():
-            self.color_combo.addItem(text, col)
-        self.color_combo.currentIndexChanged.connect(self.plot_col_changed)
-        self.color_combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
-                                    "Allows visualisation of multiple enhancement curves of different colours")
-        hbox.addWidget(self.color_combo)
-        hbox.addStretch(1)
-        opts_vbox.addLayout(hbox)
-
-        # Show individual curves (can disable to just show mean)
-        self.indiv_cb = QtGui.QCheckBox('Show individual curves', self)
-        self.indiv_cb.toggle() # default ON
-        self.indiv_cb.stateChanged.connect(self._indiv_changed)
-        opts_vbox.addWidget(self.indiv_cb)
-
-        # Show mean
-        self.mean_cb = QtGui.QCheckBox('Show mean curve', self)
-        self.mean_cb.stateChanged.connect(self._mean_changed)
-        opts_vbox.addWidget(self.mean_cb)
+        self.options.option("data").sig_changed.connect(self._data_changed)
+        self.options.option("indiv").sig_changed.connect(self._indiv_changed)
+        self.options.option("mean").sig_changed.connect(self._mean_changed)
+        self.options.option("col").sig_changed.connect(self._col_changed)
 
         hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(opts_box)
+        hbox.addWidget(self.options)
         hbox.addStretch()
         vbox.addLayout(hbox)
 
-        vbox.addStretch(1)
-        self.setLayout(vbox)
-    
-        self.color_combo.setCurrentIndex(self.color_combo.findText("red"))
-        self.col = self.colors["red"]
-
-        self.plots = {}
-        self.mean_plots = {}
-        self.clear_all()
+        vbox.addStretch(1)    
+        self._options_changed()
 
     def activate(self):
-        self.ivm.sig_main_data.connect(self.update_graph)
-        self.ivl.sig_selection_changed.connect(self.sel_changed)
+        self.ivl.sig_selection_changed.connect(self._selection_changed)
         self.ivl.set_picker(PickMode.MULTIPLE)
         self.activated = True
-        self.update_graph()
 
     def deactivate(self):
-        self.ivm.sig_main_data.disconnect(self.update_graph)
-        self.ivl.sig_selection_changed.disconnect(self.sel_changed)
+        self.ivl.sig_selection_changed.disconnect(self._selection_changed)
         self.ivl.set_picker(PickMode.SINGLE)
 
-    def options_changed(self, _):
-        if self.activated:
-            self.update_graph()
+    def _options_changed(self):
+        if self.plot.options.sig_enh:
+            self.plot.set_ylabel("Signal enhancement")
+        else:
+            self.plot.set_ylabel("Signal")
 
-    def update_graph(self):
-        if self.ivm.main:
-            xlabel = self.ivm.main.metadata.get("vol_scale", "Volume")
-            xunits = self.ivm.main.metadata.get("vol_units", "")
-            if xunits:
-                xlabel = "%s (%s)" % (xlabel, xunits)
-            self.plot.set_xlabel(xlabel)
-
-            if self.plot.options.sig_enh:
-                self.plot.set_ylabel("Signal enhancement")
-            else:
-                self.plot.set_ylabel("Signal")
+    def _data_changed(self):
+        self._clear()
+        data_name = self.options.option("data").value
+        if data_name in self.ivm.data:
+            # FIXME not clear whether to use metadata
+            #data = self.ivm.data[data_name]
+            #xlabel = data.metadata.get("vol_scale", "Volume")
+            #xunits = data.metadata.get("vol_units", "")
+            #if xunits:
+            #    xlabel = "%s (%s)" % (xlabel, xunits)
+            self.plot.set_xlabel("Volume")
 
     def _indiv_changed(self):
+        show_indiv = self.options.option("indiv").value
         for plt in self.plots.values():
-            if self.indiv_cb.isChecked():
+            if show_indiv:
                 plt.show()
             else:
                 plt.hide()
 
     def _mean_changed(self):
-        if self.mean_cb.isChecked():
-            self.update_means()
+        show_mean = self.options.option("mean").value
+        if show_mean:
+            self._update_means()
             for plt in self.mean_plots.values():
                 plt.show()
         else:
             for plt in self.mean_plots.values():
                 plt.hide()
 
-    def clear_all(self):
+    def _clear(self):
         """
         Clear point data
         """
+        self.plot.clear()
         self.plots, self.mean_plots = {}, {}
         # Reset the list of picked points
         self.ivl.set_picker(PickMode.MULTIPLE)
         self.ivl.picker.col = self.col
 
-    def add_point(self, point, col):
+    def _add_point(self, point, col):
         """
         Add a selected point of the specified colour
         """
-        sig = self.ivm.main.timeseries(point, grid=self.ivl.grid)
-        if point in self.plots:
-            self.plot.remove(self.plots[point])
+        data_name = self.options.option("data").value
+        if data_name in self.ivm.data:
+            data = self.ivm.data[data_name]
+            sig = data.timeseries(point, grid=self.ivl.grid)
+            if point in self.plots:
+                self.plot.remove(self.plots[point])
 
-        self.plots[point] = self.plot.add_line(None, sig, line_col=col)
-        if not self.indiv_cb.isChecked():
-            self.plots[point].hide()
-        self.update_means()
+            self.plots[point] = self.plot.add_line(None, sig, line_col=col)
+            if not self.options.option("indiv").value:
+                self.plots[point].hide()
+            self._update_means()
 
-    def update_means(self):
+    def _update_means(self):
         for col in self.colors.values():
             if col in self.mean_plots:
                 self.plot.remove(self.mean_plots[col])
@@ -164,10 +149,10 @@ class MultiVoxelAnalysis(QpWidget):
                 mean_values = np.stack([plt.yvalues for plt in all_plts], axis=1)
                 mean_values = np.squeeze(np.mean(mean_values, axis=1))
                 self.mean_plots[col] = self.plot.add_line(None, mean_values, line_col=col, line_style=QtCore.Qt.DashLine, point_brush=col, point_col='k', point_size=10)
-                if not self.mean_cb.isChecked():
+                if not self.options.option("mean").value:
                     self.mean_plots[col].hide()
 
-    def sel_changed(self, picker):
+    def _selection_changed(self, picker):
         """
         Point selection changed
         """
@@ -178,7 +163,7 @@ class MultiVoxelAnalysis(QpWidget):
             allpoints += points
             for point in points:
                 if point not in self.plots or self.plots[point].line_col != col:
-                    self.add_point(point, col)
+                    self._add_point(point, col)
 
         # Remove plots for points no longer in the selection
         for point in self.plots:
@@ -186,8 +171,8 @@ class MultiVoxelAnalysis(QpWidget):
                 self.plots[point].hide()
                 del self.plots[point]
 
-    def plot_col_changed(self, idx):
-        self.col = tuple(self.color_combo.itemData(idx))
+    def _col_changed(self):
+        self.col = self.options.option("col").value
         self.ivl.picker.col = self.col
 
 class DataStatistics(QpWidget):
