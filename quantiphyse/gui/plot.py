@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.widgets import OptionsButton
-from quantiphyse.utils import LogSource, get_kelly_col
+from quantiphyse.utils import LogSource, get_kelly_col, get_icon, norecurse
 
 class PlotOptions(QtGui.QDialog):
     """
@@ -21,8 +21,9 @@ class PlotOptions(QtGui.QDialog):
 
     sig_options_changed = QtCore.Signal(object)
 
-    def __init__(self, parent=None, **kwargs):
-        QtGui.QDialog.__init__(self, parent)
+    def __init__(self, graph=None, **kwargs):
+        QtGui.QDialog.__init__(self, graph)
+        self.graph = graph
         self.sig_enh = False
         self.smooth = False
 
@@ -47,13 +48,13 @@ class PlotOptions(QtGui.QDialog):
             grid.addWidget(self.se_lbl, row, 0)
 
             hbox = QtGui.QHBoxLayout()
-            self.norm_frames = QtGui.QSpinBox()
-            self.norm_frames.setValue(3)
-            self.norm_frames.setMinimum(1)
-            self.norm_frames.setMaximum(100)
-            self.norm_frames.valueChanged.connect(parent.update)
-            self.norm_frames.setEnabled(False)
-            hbox.addWidget(self.norm_frames)
+            self._norm_frames_spin = QtGui.QSpinBox()
+            self._norm_frames_spin.setValue(3)
+            self._norm_frames_spin.setMinimum(1)
+            self._norm_frames_spin.setMaximum(100)
+            self._norm_frames_spin.valueChanged.connect(self._changed)
+            self._norm_frames_spin.setEnabled(False)
+            hbox.addWidget(self._norm_frames_spin)
             self.se_lbl2 = QtGui.QLabel('frames as baseline')
             self.se_lbl2.setEnabled(False)
             hbox.addWidget(self.se_lbl2)
@@ -64,10 +65,10 @@ class PlotOptions(QtGui.QDialog):
         # Y-axis scale
         if kwargs.get("y_scale", True):
             hbox = QtGui.QHBoxLayout()
-            auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
-            auto_y_cb.setChecked(True)
-            auto_y_cb.stateChanged.connect(self._auto_y_changed)
-            grid.addWidget(auto_y_cb, row, 0)
+            self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+            self.auto_y_cb.setChecked(True)
+            self.auto_y_cb.stateChanged.connect(self._auto_y_changed)
+            grid.addWidget(self.auto_y_cb, row, 0)
 
             self.min_lbl = QtGui.QLabel("Min")
             self.min_lbl.setEnabled(False)
@@ -101,10 +102,38 @@ class PlotOptions(QtGui.QDialog):
             grid.addWidget(smooth_cb, row, 0)
             row += 1
 
+    @property
+    def yrange(self):
+        return self.min_spin.value(), self.max_spin.value()
+
+    @yrange.setter
+    def yrange(self, yrange):
+        try:
+            self.min_spin.blockSignals(True)
+            self.max_spin.blockSignals(True)
+            self.min_spin.setValue(yrange[0])
+            self.max_spin.setValue(yrange[1])
+            self.sig_options_changed.emit(self)
+        finally:
+            self.min_spin.blockSignals(False)
+            self.max_spin.blockSignals(False)
+
+    @property
+    def autorange(self):
+        return self.auto_y_cb.isChecked()
+
+    @autorange.setter
+    def autorange(self, autorange):
+        self.auto_y_cb.setChecked(autorange)
+
+    @property
+    def norm_frames(self):
+        return self._norm_frames_spin.value()
+
     def _mode_changed(self, idx):
         self.sig_enh = (idx == 1)
         self.se_lbl.setEnabled(self.sig_enh)
-        self.norm_frames.setEnabled(self.sig_enh)
+        self._norm_frames_spin.setEnabled(self.sig_enh)
         self.se_lbl2.setEnabled(self.sig_enh)
         self.sig_options_changed.emit(self)
 
@@ -126,17 +155,18 @@ class LinePlot(LogSource):
     """
     A 1-D array of data to be plotted as a line
     """
-    def __init__(self, name, plot, yvalues, xvalues, options, **kwargs):
+    def __init__(self, name, graph, yvalues, xvalues, **kwargs):
         LogSource.__init__(self)
         self.name = name
-        self.plot = plot
-        self.plot_options = options
-        self.plot_options.sig_options_changed.connect(self.show)
+        self.graph = graph
+        self.plot = self.graph.plot
+        self.graph.options.sig_options_changed.connect(self._options_changed)
 
         self.yvalues = np.copy(np.array(yvalues, dtype=np.double))
         self.xvalues = np.copy(np.array(xvalues, dtype=np.double))
         self.line_col = kwargs.get("line_col", (255, 255, 255))
         self.line_width = kwargs.get("line_width", 1.0)
+        self.line_style = kwargs.get("line_style", QtCore.Qt.SolidLine)
         self.point_col = kwargs.get("point_col", "k")
         self.point_size = kwargs.get("point_size", 5.0)
         self.point_brush = kwargs.get("point_brush", (200, 200, 200))
@@ -149,14 +179,14 @@ class LinePlot(LogSource):
         """
         Draw the line on to the plot
         """
-        if self.plot_options.sig_enh:
-            norm_frames = min(len(self.yvalues), self.plot_options.norm_frames.value())
+        if self.graph.options.sig_enh:
+            norm_frames = min(len(self.yvalues), self.graph.options.norm_frames)
             mean = np.mean(self.yvalues[:norm_frames])
             plot_values = self.yvalues / mean - 1
         else:
             plot_values = self.yvalues
 
-        if self.plot_options.smooth:
+        if self.graph.options.smooth:
             indexes = range(len(plot_values))
             # Tolerance does not scale by data value to scale input
             spline = UnivariateSpline(indexes, plot_values/plot_values.max(), s=0.1, k=4)
@@ -166,10 +196,9 @@ class LinePlot(LogSource):
             line_values = plot_values
 
         self.hide()
-
         # Plot line and points separately as line may be smoothed
         line = self.plot.plot(self.xvalues, line_values, 
-                              pen=pg.mkPen(color=self.line_col, width=self.line_width))
+                              pen=pg.mkPen(color=self.line_col, width=self.line_width, style=self.line_style))
 
         pts = self.plot.plot(self.xvalues, plot_values, 
                              pen=None, 
@@ -184,10 +213,16 @@ class LinePlot(LogSource):
         """
         Remove the line from the plot
         """
-        for item in self.graphics_items:
-            self.plot.removeItem(item)
+        items = self.graphics_items
         self.graphics_items = ()
         self.legend_item = None
+
+        for item in items:
+            self.plot.removeItem(item)
+
+    def _options_changed(self):
+        if self.graphics_items:
+            self.show()
 
 class Plot(QtGui.QWidget):
     """
@@ -200,17 +235,30 @@ class Plot(QtGui.QWidget):
         :param qpo: Global options
         """
         QtGui.QWidget.__init__(self, parent)
-        self.options = PlotOptions(parent, **kwargs)
         self.items = []
+        self.updating = False
 
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
         hbox = QtGui.QHBoxLayout()
         hbox.addStretch(1)
-        opts_btn = OptionsButton()
-        opts_btn.clicked.connect(self._show_options)
-        hbox.addWidget(opts_btn)
+
+        if kwargs.get("opts_btn", True):
+            self.opts_btn = OptionsButton()
+            self.opts_btn.clicked.connect(self._show_options)
+            hbox.addWidget(self.opts_btn)
+
+
+        if kwargs.get("clear_btn", False):
+            clear_icon = QtGui.QIcon(get_icon("clear"))
+            self.clear_btn = QtGui.QPushButton(self)
+            self.clear_btn.setIcon(clear_icon)
+            self.clear_btn.setIconSize(QtCore.QSize(14, 14))
+            self.clear_btn.setToolTip("Clear curves")
+            self.clear_btn.clicked.connect(self.clear)
+            hbox.addWidget(self.clear_btn)
+
         vbox.addLayout(hbox)
 
         self.graphics_layout = pg.GraphicsLayoutWidget()
@@ -219,6 +267,22 @@ class Plot(QtGui.QWidget):
 
         self.plot = self.graphics_layout.addPlot()
         self.plot.setTitle(title)
+        self.plot.sigRangeChanged.connect(self._range_changed)
+        self.plot.vb.sigRangeChangedManually.connect(self._range_changed_manually)
+
+        if kwargs.get("rightaxis", False):
+            # For a second y-axis, create a new ViewBox, link the right axis to its coordinate system
+            self.rightaxis = pg.ViewBox()
+            self.plot.scene().addItem(self.rightaxis)
+            self.plot.getAxis('right').linkToView(self.rightaxis)
+            self.rightaxis.setXLink(self.plot)
+            self.plot.vb.sigResized.connect(self._update_plot_viewbox)
+        else:
+            self.rightaxis = None
+
+        self.options = PlotOptions(self, **kwargs)
+        self._options_changed()
+        self.options.sig_options_changed.connect(self._options_changed)
         self._regenerate_legend()
 
     def set_xlabel(self, name):
@@ -246,10 +310,18 @@ class Plot(QtGui.QWidget):
         if xvalues is None:
             xvalues = range(len(yvalues))
 
-        line = LinePlot(name, self.plot, yvalues, xvalues, self.options, **kwargs)
+        line = LinePlot(name, self, yvalues, xvalues, **kwargs)
         self.items.append(line)
-        self._regenerate_legend()
+        self._contents_changed()
         return line
+
+    def remove(self, item):
+        """
+        Remove an item from the plot
+        """
+        item.hide()
+        self.items.remove(item)
+        self._contents_changed()
 
     def clear(self):
         """
@@ -258,7 +330,7 @@ class Plot(QtGui.QWidget):
         for item in self.items:
             item.hide()
         self.items = []
-        self._regenerate_legend()
+        self._contents_changed()
 
     def _show_options(self):
         """
@@ -266,6 +338,35 @@ class Plot(QtGui.QWidget):
         """
         self.options.show()
         self.options.raise_()
+
+    def _update_plot_viewbox(self):
+        # Required to keep the right and left axis plots in sync with each other
+        self.rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
+        
+        # Need to re-update linked axes since this was called
+        # incorrectly while views had different shapes.
+        # (probably this should be handled in ViewBox.resizeEvent)
+        self.rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
+
+    @norecurse
+    def _range_changed(self, *args):
+        self.options.yrange = self.plot.viewRange()[1]
+
+    @norecurse
+    def _range_changed_manually(self, *args):
+        self.options.yrange = self.plot.viewRange()[1]
+        self.options.autorange = False
+
+    def _contents_changed(self):
+        self._regenerate_legend()
+
+    @norecurse
+    def _options_changed(self, *args):
+        if self.options.autorange:
+            self.plot.enableAutoRange()
+        else: 
+            self.plot.disableAutoRange()
+            self.plot.setYRange(*self.options.yrange)
 
     def _regenerate_legend(self):
         # Replaces any existing legend but keep position the same in case user moved it
@@ -276,6 +377,8 @@ class Plot(QtGui.QWidget):
             legend_pos = self.plot.legend.pos()
             self.plot.legend.scene().removeItem(self.plot.legend)
 
-        self.plot.addLegend(offset=legend_pos)
         for item in self.items:
-            self.plot.legend.addItem(item.legend_item, item.name)
+            if item.name:
+                if not self.plot.legend:
+                    self.plot.addLegend(offset=legend_pos)
+                self.plot.legend.addItem(item.legend_item, item.name)
