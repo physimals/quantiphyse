@@ -25,6 +25,20 @@ __all__ = ["QpException", "LogSource", "get_plugins", "get_local_file", "get_loc
 DEFAULT_SIG_FIG = 4
 LOG = logging.getLogger(__name__)
 
+def norecurse(fn):
+    """
+    Decorator which prevents recursive calling of an object method
+    """
+    def _wrapper(*args):
+        self = args[0]
+        if not self.updating:
+            try:
+                self.updating = True
+                return fn(*args)
+            finally:
+                self.updating = False
+    return _wrapper
+
 def ifnone(obj, alt):
     """
     Convenience function to return an alternative if an object is None
