@@ -9,157 +9,21 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 import numpy as np
 import pyqtgraph as pg
 from PySide import QtCore, QtGui
-from scipy.interpolate import UnivariateSpline
 
+from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
-from quantiphyse.utils import get_icon, copy_table, get_pencol, get_kelly_col, LogSource, sf
+from quantiphyse.utils import get_icon, copy_table, get_kelly_col, sf
 
 from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess
 
-class SECurveOptions(QtGui.QDialog):
-    def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
-        self.parent = parent
-        self.se = False
-        self.smooth = False
-
-        self.setWindowTitle('Plot options')
-        grid = QtGui.QGridLayout()
-        self.setLayout(grid)
-
-        # Display mode
-        self.mode = 0
-        grid.addWidget(QtGui.QLabel("Display mode"), 0, 0)
-        self.mode_combo = QtGui.QComboBox()
-        self.mode_combo.addItem("Signal")
-        self.mode_combo.addItem("Signal Enhancement")
-        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
-        grid.addWidget(self.mode_combo, 0, 1)
-
-        # Y-axis scale
-        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
-        self.auto_y_cb.setChecked(True)
-        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
-
-        hbox = QtGui.QHBoxLayout()
-        grid.addWidget(self.auto_y_cb, 1, 0)
-        self.min_lbl = QtGui.QLabel("Min")
-        self.min_lbl.setEnabled(False)
-        hbox.addWidget(self.min_lbl)
-        self.min_spin = QtGui.QDoubleSpinBox()
-        self.min_spin.setMinimum(-1e20)
-        self.min_spin.setMaximum(1e20)
-        self.min_spin.valueChanged.connect(parent.update)
-        self.min_spin.setEnabled(False)
-        hbox.addWidget(self.min_spin)
-        self.max_lbl = QtGui.QLabel("Max")
-        self.max_lbl.setEnabled(False)
-        hbox.addWidget(self.max_lbl)
-        self.max_spin = QtGui.QDoubleSpinBox()
-        self.max_spin.setMinimum(-1e20)
-        self.max_spin.setMaximum(1e20)
-        self.max_spin.valueChanged.connect(parent.update)
-        self.max_spin.setEnabled(False)
-        hbox.addWidget(self.max_spin)
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 1, 1)
-
-        # Signal enhancement baseline
-        self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
-        self.se_lbl.setEnabled(False)
-        grid.addWidget(self.se_lbl, 2, 0)
-
-        hbox = QtGui.QHBoxLayout()
-        self.norm_frames = QtGui.QSpinBox()
-        self.norm_frames.setValue(3)
-        self.norm_frames.setMinimum(1)
-        self.norm_frames.setMaximum(100)
-        self.norm_frames.valueChanged.connect(parent.update)
-        self.norm_frames.setEnabled(False)
-        hbox.addWidget(self.norm_frames)
-        self.se_lbl2 = QtGui.QLabel('frames as baseline')
-        self.se_lbl2.setEnabled(False)
-        hbox.addWidget(self.se_lbl2)
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 2, 1)
-
-        # Smoothing
-        self.smooth_cb = QtGui.QCheckBox('Smooth curves', self)
-        self.smooth_cb.setChecked(self.smooth)
-        grid.addWidget(self.smooth_cb, 3, 0)
-
-    def mode_changed(self, idx):
-        self.mode = idx
-        self.se = (self.mode == 1)
-        self.se_lbl.setEnabled(self.se)
-        self.norm_frames.setEnabled(self.se)
-        self.se_lbl2.setEnabled(self.se)
-        self.parent.update()
-
-    def auto_y_changed(self, ch):
-        self.min_lbl.setEnabled(not ch)
-        self.min_spin.setEnabled(not ch)
-        self.max_lbl.setEnabled(not ch)
-        self.max_spin.setEnabled(not ch)
-        self.parent.update()
-        
-class SEPlot(LogSource):
-    def __init__(self, plotwin, sig, **kwargs):
-        LogSource.__init__(self)
-        self.plotwin = plotwin
-        self.sig = np.copy(np.array(sig, dtype=np.double))
-        self.pen = kwargs.get("pen", (255, 255, 255))
-        self.symbolBrush = kwargs.get("symbolBrush", (200, 200, 200))
-        self.symbolPen = kwargs.get("symbolPen", "k")
-        self.symbolSize = kwargs.get("symbolSize", 5.0)
-
-        self.line = None
-        self.pts = None
-
-    def draw(self, plot_opts, global_opts):
-        if plot_opts.se:
-            m = np.mean(self.sig[:plot_opts.norm_frames.value()])
-            pt_values = self.sig / m - 1
-        else:
-            pt_values = self.sig
-
-        if plot_opts.smooth_cb.isChecked():
-            r1 = range(len(pt_values))
-            # Tolerance does not scale by data value to scale input
-            s = UnivariateSpline(r1, pt_values/pt_values.max(), s=0.1, k=4)
-            knots1 = s.get_knots()
-            self.debug("Number of knots in B-spline smoothing: ", len(knots1))
-            line_values = s(r1)*pt_values.max()
-        else:
-            line_values = pt_values
-
-        if self.line is not None:
-            self.remove()
-
-        # Make sure x-scale is correct length
-        t_scale = [0, ] * len(line_values)
-        n = min(len(line_values), len(global_opts.t_scale))
-        t_scale[:n] = global_opts.t_scale[:n]
-        self.line = self.plotwin.plot(t_scale, line_values, pen=self.pen, width=4.0)
-        self.pts = self.plotwin.plot(t_scale, pt_values, pen=None, symbolBrush=self.symbolBrush, symbolPen=self.symbolPen,
-                                symbolSize=self.symbolSize)
-
-    def remove(self):
-        if self.line is not None:
-            self.plotwin.removeItem(self.line)
-            self.plotwin.removeItem(self.pts)
-            self.line, self.pts = None, None
-
-class SECurve(QpWidget):
+class MultiVoxelAnalysis(QpWidget):
     """
-    Plots SE curve for current main data
+    Plots timeseries for multiple selected points
     """
-    sig_add_pnt = QtCore.Signal(tuple)
-    sig_clear_pnt = QtCore.Signal(bool)
-
+    
     def __init__(self, **kwargs):
-        super(SECurve, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
+        super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
 
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
                        'orange':(255, 140, 0), 'cyan':(0, 255, 255), 'brown':(139, 69, 19)}
@@ -170,27 +34,14 @@ class SECurve(QpWidget):
 
         vbox = QtGui.QVBoxLayout()
 
-        title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False, opts_btn=True)
+        title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False)
         vbox.addWidget(title)
 
-        #Clear curves button
-        hbox = QtGui.QHBoxLayout()
-        clear_icon = QtGui.QIcon(get_icon("clear"))
-        btn = QtGui.QPushButton(self)
-        btn.setIcon(clear_icon)
-        btn.setIconSize(QtCore.QSize(14, 14))
-        btn.setToolTip("Clear curves")
-        btn.clicked.connect(self.clear_all)
-        hbox.addStretch(1)
-        hbox.addWidget(btn)
-        vbox.addLayout(hbox)
-
         # Plot window
-        self.plotwin = pg.GraphicsLayoutWidget()
-        self.plotwin.setBackground(background=None)
-        self.p1 = self.plotwin.addPlot()
-        vbox.addWidget(self.plotwin)
-        vbox.addWidget(QtGui.QLabel())
+        self.plot = Plot(clear_btn=True)
+        self.plot.clear_btn.clicked.connect(self.clear_all)
+        self.plot.options.sig_options_changed.connect(self.update_graph)
+        vbox.addWidget(self.plot)
 
         opts_box = QtGui.QGroupBox()
         opts_box.setTitle('Point selection')
@@ -205,7 +56,7 @@ class SECurve(QpWidget):
             self.color_combo.addItem(text, col)
         self.color_combo.currentIndexChanged.connect(self.plot_col_changed)
         self.color_combo.setToolTip("Set the color of the enhancement curve when a point is clicked on the image. "
-                                   "Allows visualisation of multiple enhancement curves of different colours")
+                                    "Allows visualisation of multiple enhancement curves of different colours")
         hbox.addWidget(self.color_combo)
         hbox.addStretch(1)
         opts_vbox.addLayout(hbox)
@@ -213,12 +64,12 @@ class SECurve(QpWidget):
         # Show individual curves (can disable to just show mean)
         self.indiv_cb = QtGui.QCheckBox('Show individual curves', self)
         self.indiv_cb.toggle() # default ON
-        self.indiv_cb.stateChanged.connect(self.replot_graph)
+        self.indiv_cb.stateChanged.connect(self._indiv_changed)
         opts_vbox.addWidget(self.indiv_cb)
 
         # Show mean
         self.mean_cb = QtGui.QCheckBox('Show mean curve', self)
-        self.mean_cb.stateChanged.connect(self.replot_graph)
+        self.mean_cb.stateChanged.connect(self._mean_changed)
         opts_vbox.addWidget(self.mean_cb)
 
         hbox = QtGui.QHBoxLayout()
@@ -228,68 +79,63 @@ class SECurve(QpWidget):
 
         vbox.addStretch(1)
         self.setLayout(vbox)
-
-        self.plot_opts = SECurveOptions(self)
     
-        self.color_combo.setCurrentIndex(self.color_combo.findText("grey"))
+        self.color_combo.setCurrentIndex(self.color_combo.findText("red"))
+        self.col = self.colors["red"]
+
         self.plots = {}
         self.mean_plots = {}
         self.clear_all()
 
     def activate(self):
-        self.ivm.sig_main_data.connect(self.replot_graph)
+        self.ivm.sig_main_data.connect(self.update_graph)
         self.ivl.sig_selection_changed.connect(self.sel_changed)
         self.ivl.set_picker(PickMode.MULTIPLE)
         self.activated = True
-        self.replot_graph()
+        self.update_graph()
 
     def deactivate(self):
-        self.ivm.sig_main_data.disconnect(self.replot_graph)
+        self.ivm.sig_main_data.disconnect(self.update_graph)
         self.ivl.sig_selection_changed.disconnect(self.sel_changed)
         self.ivl.set_picker(PickMode.SINGLE)
 
-    def show_options(self):
-        self.plot_opts.show()
-        self.plot_opts.raise_()
-
-    def get_plots_by_color(self, col):
-        return [plt for plt in self.plots.values() if plt.pen == col]
-
-    def remove_plots(self):
-        """
-        Clear the graph but don't delete data
-        """
-        for plt in self.plots.values(): plt.remove()
-        for plt in self.mean_plots.values(): plt.remove()
-        
     def options_changed(self, _):
         if self.activated:
-            self.replot_graph()
+            self.update_graph()
 
-    def replot_graph(self):
-        self.remove_plots()
-        self.p1.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-        if self.plot_opts.se:
-            self.p1.setTitle("Signal enhancement curve")
-        else:
-            self.p1.setTitle("Signal curve")
+    def update_graph(self):
+        if self.ivm.main:
+            xlabel = self.ivm.main.metadata.get("vol_scale", "Volume")
+            xunits = self.ivm.main.metadata.get("vol_units", "")
+            if xunits:
+                xlabel = "%s (%s)" % (xlabel, xunits)
+            self.plot.set_xlabel(xlabel)
 
-        if self.ivm.main is not None:
-            self.p1.setLabel('left', self.ivm.main.name)
+            if self.plot.options.sig_enh:
+                self.plot.set_ylabel("Signal enhancement")
+            else:
+                self.plot.set_ylabel("Signal")
 
-        if self.indiv_cb.isChecked():
-            for plt in self.plots.values():
-                plt.draw(self.plot_opts, self.opts)
+    def _indiv_changed(self):
+        for plt in self.plots.values():
+            if self.indiv_cb.isChecked():
+                plt.show()
+            else:
+                plt.hide()
+
+    def _mean_changed(self):
         if self.mean_cb.isChecked():
             self.update_means()
             for plt in self.mean_plots.values():
-                plt.draw(self.plot_opts, self.opts)
+                plt.show()
+        else:
+            for plt in self.mean_plots.values():
+                plt.hide()
 
     def clear_all(self):
         """
-        Clear the graph and all data
+        Clear point data
         """
-        self.remove_plots()
         self.plots, self.mean_plots = {}, {}
         # Reset the list of picked points
         self.ivl.set_picker(PickMode.MULTIPLE)
@@ -300,39 +146,45 @@ class SECurve(QpWidget):
         Add a selected point of the specified colour
         """
         sig = self.ivm.main.timeseries(point, grid=self.ivl.grid)
-        self.plots[point] = SEPlot(self.p1, sig, pen=col)
+        if point in self.plots:
+            self.plot.remove(self.plots[point])
+
+        self.plots[point] = self.plot.add_line(None, sig, line_col=col)
+        if not self.indiv_cb.isChecked():
+            self.plots[point].hide()
+        self.update_means()
 
     def update_means(self):
         for col in self.colors.values():
-            all_plts = self.get_plots_by_color(col)
-            if len(all_plts) > 0:
-                mean_values = np.stack([plt.sig for plt in all_plts], axis=1)
-                mean_values = np.squeeze(np.mean(mean_values, axis=1))
-                self.mean_plots[col] = SEPlot(self.p1, mean_values, pen=pg.mkPen(col, style=QtCore.Qt.DashLine), 
-                                              symbolBrush=col, symbolPen='k', symbolSize=10.0)
-            elif col in self.mean_plots:
-                self.mean_plots[col].remove()
+            if col in self.mean_plots:
+                self.plot.remove(self.mean_plots[col])
                 del self.mean_plots[col]
+            all_plts = [plt for plt in self.plots.values() if plt.line_col == col]
+            if all_plts:
+                mean_values = np.stack([plt.yvalues for plt in all_plts], axis=1)
+                mean_values = np.squeeze(np.mean(mean_values, axis=1))
+                self.mean_plots[col] = self.plot.add_line(None, mean_values, line_col=col, line_style=QtCore.Qt.DashLine, point_brush=col, point_col='k', point_size=10)
+                if not self.mean_cb.isChecked():
+                    self.mean_plots[col].hide()
 
     def sel_changed(self, picker):
         """
-        Point selection changed - add new points, or points which have changed color and update
-        the mean curves
+        Point selection changed
         """
+        # Add plots for points in the selection which we haven't plotted (or which have changed colour)
         allpoints = []
         for col, points in picker.selection().items():
             points = [tuple([int(p+0.5) for p in pos]) for pos in points]
             allpoints += points
             for point in points:
-                if point not in self.plots or self.plots[point].pen != col:
+                if point not in self.plots or self.plots[point].line_col != col:
                     self.add_point(point, col)
 
-        for point in self.plots.keys():
+        # Remove plots for points no longer in the selection
+        for point in self.plots:
             if point not in allpoints:
-                self.plots[point].remove()
+                self.plots[point].hide()
                 del self.plots[point]
-
-        self.replot_graph()
 
     def plot_col_changed(self, idx):
         self.col = tuple(self.color_combo.itemData(idx))
@@ -454,7 +306,6 @@ class DataStatistics(QpWidget):
             self.update_stats_current_slice()
 
     def update_all(self):
-        name = self.data_combo.currentText()
         if self.stats_table.isVisible():
             self.update_stats()
         if self.stats_table_ss.isVisible():
@@ -722,13 +573,13 @@ class ModelCurvesOptions(QtGui.QDialog):
         self.max_spin.setEnabled(not ch)
         self.parent.update()
 
-class ModelCurves(QpWidget):
+class VoxelAnalysis(QpWidget):
     """
     View original data and generated signal curves side by side
     """
 
     def __init__(self, **kwargs):
-        super(ModelCurves, self).__init__(name="Voxel analysis", desc="Display data at a voxel", 
+        super(VoxelAnalysis, self).__init__(name="Voxel analysis", desc="Display data at a voxel", 
                                           icon="curve_view", group="Analysis", **kwargs)
         self.data_enabled = {}
         self.updating = False
@@ -743,7 +594,7 @@ class ModelCurves(QpWidget):
 
         win = pg.GraphicsLayoutWidget()
         win.setBackground(background=None)
-        self.plot = win.addPlot()
+        self.plot = Plot()
 
         ## For second y-axis, create a new ViewBox, link the right axis to its coordinate system
         self.plot_rightaxis = pg.ViewBox()

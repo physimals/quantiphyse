@@ -98,15 +98,13 @@ class HistogramWidget(QpWidget):
             self._updating = False
 
     def _update(self):
-        process = HistogramProcess(self.ivm)
-        process.execute(self.processes()["Histogram"])
-        self._update_plot()
-
-    def _update_plot(self):
-        self.plot.clear()
-        histogram = self.ivm.extras.get("histogram", None)
-        if histogram is not None:
-            for idx, name in enumerate(histogram.col_headers[3:]):
-                xvalues = [row[2] for row in histogram.arr]
-                yvalues = [row[idx+3] for row in histogram.arr]
-                self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvalues)
+        opts = self.processes()["Histogram"]
+        if opts["data"]:
+            HistogramProcess(self.ivm).run(opts)
+            self.plot.clear()
+            histogram = self.ivm.extras.get("histogram", None)
+            if histogram is not None:
+                for idx, name in enumerate(histogram.col_headers[3:]):
+                    xvalues = [row[2] for row in histogram.arr]
+                    yvalues = [row[idx+3] for row in histogram.arr]
+                    self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvalues)
