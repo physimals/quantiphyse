@@ -6,8 +6,6 @@ Copyright (c) 2013-2018 University of Oxford
 import csv
 import six
 
-import numpy as np
-
 class Extra(object):
     """
     Base class for things which can be stored in the IVM apart from data sets.
@@ -26,6 +24,12 @@ class MatrixExtra(Extra):
     Extra which represents a 2D matrix with optional row and column headers
     """
     def __init__(self, name, arr, row_headers=(), col_headers=()):
+        """
+        :param name: Extra name
+        :param arr: List-of-lists or 2D Numpy array containing matrix data
+        :param row_headers: Optional sequence of row headers
+        :param col_headers: Optional sequence of column headers
+        """
         Extra.__init__(self, name)
         if len(arr) == 0:
             raise ValueError("No matrix data given")
@@ -39,6 +43,9 @@ class MatrixExtra(Extra):
         self.col_headers = list(col_headers)
 
     def __str__(self):
+        """
+        Convert matrix to a string in TSV format
+        """
         stream = six.StringIO()
         writer = csv.writer(stream, delimiter='\t', lineterminator='\n')
         if self.col_headers:
