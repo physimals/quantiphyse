@@ -11,8 +11,7 @@ import logging
 import nibabel as nib
 import numpy as np
 
-from quantiphyse.utils import QpException
-from .qpdata import DataGrid, QpData, NumpyData
+from .qpdata import DataGrid, QpData
 
 LOG = logging.getLogger(__name__)
 
@@ -40,12 +39,24 @@ class NiftiData(QpData):
         for ext in self.nifti_header.extensions:
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
-                LOG.debug("Found QP metadata: %s" % ext.get_content())
+                LOG.debug("Found QP metadata: %s", ext.get_content())
                 metadata = yaml.load(ext.get_content())
                 LOG.debug(metadata)
 
-        grid = DataGrid(shape[:3], nii.header.get_best_affine())
-        QpData.__init__(self, fname, grid, nvols, fname=fname, metadata=metadata)
+        xyz_units, vol_units = "mm", None
+        units = nii.header.get_xyzt_units()
+        if units:
+            xyz_units = units[0]
+            if len(units) > 1:
+                vol_units = units[1]
+
+        vol_scale = 1.0
+        zooms = nii.header.get_zooms()
+        if zooms and len(zooms) > 3:
+            vol_scale = zooms[3]
+
+        grid = DataGrid(shape[:3], nii.header.get_best_affine(), units=xyz_units[0])
+        QpData.__init__(self, fname, grid, nvols, vol_unit=vol_units, vol_scale=vol_scale, fname=fname, metadata=metadata)
 
     def raw(self):
         # NB: np.asarray convert data to an in-memory array instead of a numpy file memmap.
@@ -79,7 +90,7 @@ class NiftiData(QpData):
         while arr.ndim < 3:
             arr = np.expand_dims(arr, -1)
 
-        if self._raw_2dt and arr.ndim == 3:
+        if self.metadata.get("raw_2dt", False) and arr.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             arr = np.expand_dims(arr, 2)
 

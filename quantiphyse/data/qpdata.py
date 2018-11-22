@@ -76,7 +76,7 @@ class DataGrid(object):
     Defines a regular 3D grid in some 'world' space
     """
 
-    def __init__(self, shape, affine):
+    def __init__(self, shape, affine, units="mm"):
         """
         Create a DataGrid object
 
@@ -95,7 +95,13 @@ class DataGrid(object):
         self._affine = np.copy(affine)
         self._shape = list(shape)[:]
         self._affine_orig = np.copy(affine)
+        self._units = units
         
+    @property
+    def units(self):
+        """ Units of world grid. Typically mm. Currently no support for different units in different directions """
+        return self._units
+
     @property
     def affine(self):
         """ 4D affine matrix which describes the transformation from grid co-ordinates to world space co-ordinates"""
@@ -132,7 +138,7 @@ class DataGrid(object):
 
     @property
     def spacing(self):
-        """ Sequence of length 3 giving spacing between voxels in mm"""
+        """ Sequence of length 3 giving spacing between voxels in grid units"""
         return [np.linalg.norm(self._affine[:, i]) for i in range(3)]
 
     @property
@@ -144,9 +150,7 @@ class DataGrid(object):
         return nvoxels
 
     def reset(self):
-        """
-        Reset to original orientation
-        """
+        """ Reset to original orientation """
         self.affine = self._affine_orig
 
     def grid_to_grid(self, coord, from_grid=None, to_grid=None, direction=False):
@@ -236,7 +240,7 @@ class DataGrid(object):
         :param grid: DataGrid instance
         :return: True if ``grid`` is identical to this grid
         """
-        return np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
+        return self.units == grid.units and np.array_equal(self.affine, grid.affine) and  np.array_equal(self.shape, grid.shape)
 
     def simplify_transforms(self, mat):
         """
@@ -337,26 +341,19 @@ class QpData(object):
                     (i.e. strings, numbers and lists/dicts of these)
     """
 
-    def __init__(self, name, grid, nvols, roi=None, fname=None, metadata=None):
+    def __init__(self, name, grid, nvols, roi=None, metadata=None, **kwargs):
         self.name = name
         self.grid = grid
 
         # Number of volumes (1=3D data)
         self._nvols = nvols
 
-        # DEPRECATED: Number of decimal places to display data to
-        self.dps = 1
-
         if metadata is not None:
             self.metadata = metadata
         else:
             self.metadata = {}
 
-        if fname:
-            self.metadata["fname"] = fname
-
-        # Whether raw data is 2d + time incorrectly returned as 3D
-        self._raw_2dt = False
+        self.metadata["fname"] = kwargs.get("fname", None)
 
         # Is data set an ROI? If not specified, try making it one
         if roi is None:
@@ -366,6 +363,9 @@ class QpData(object):
                 self.roi = False
         else:
             self.roi = roi
+
+        self.metadata["vol_scale"] = kwargs.get("vol_scale", 1.0)
+        self.metadata["vol_units"] = kwargs.get("vol_units", None)
 
     @property
     def ndim(self):
@@ -432,7 +432,7 @@ class QpData(object):
         if self.nvols != 1 or self.grid.shape[2] == 1:
             raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
 
-        self._raw_2dt = True
+        self.metadata["raw_2dt"] = True
         self._nvols = self.grid.shape[2]
 
         # The grid transform can't be properly interpreted because basically the file is broken,
@@ -443,34 +443,17 @@ class QpData(object):
         """
         Return the raw data as a Numpy array
 
-        Instances should implement this method to get the data from file
+        Concrete subclasses must implement this method to get the data from file
         or internal storage
         """
         raise NotImplementedError("Internal Error: raw() has not been implemented.")
-
-    def range(self, vol=None):
-        """
-        Return data min and max
-
-        Note that obtaining the range of a large 4D data set may be expensive!
-
-        :param vol: Index of volume to use, if not specified use whole data set
-        :return: Tuple of min value, max value
-        """
-        if vol is None:
-            if self.metadata.get("range", None) is None:
-                self.metadata["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
-            return self.metadata["range"]
-        else:
-            voldata = self.volume(vol)
-            return np.nanmin(voldata), np.nanmax(voldata)
 
     def volume(self, vol):
         """
         Get the specified volume from a multi-volume data set
 
-        The default implementation calls raw() to return all data. Implementations may override
-        e.g. to only load the required volume.
+        The default implementation calls raw() to return all data. Subclasses may override
+        this method, e.g. to only load the required volume.
 
         If the specified volume is out of range for this data, returns the last volume
 
@@ -536,6 +519,36 @@ class QpData(object):
                 return list(rawdata[data_pos[0], data_pos[1], data_pos[2], :])
             except IndexError:
                 return []
+
+    def uncache(self):
+        """
+        Remove large stored data arrays from memory
+        
+        Subclasses may implement this method to clear any caches they keep of data
+        read from disk. The method will be called when the data is not active (although
+        of course the data might be needed at any point). Subclasses which do not read
+        data from a file might implement the method to write the data out to a temporary
+        file which is then re-read on the next call to ``raw()`` or ``volume()``
+        
+        This method is optional and does not have to be implemented"""
+        pass
+
+    def range(self, vol=None):
+        """
+        Return data min and max
+
+        Note that obtaining the range of a large 4D data set may be expensive!
+
+        :param vol: Index of volume to use, if not specified use whole data set
+        :return: Tuple of min value, max value
+        """
+        if vol is None:
+            if self.metadata.get("range", None) is None:
+                self.metadata["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
+            return self.metadata["range"]
+        else:
+            voldata = self.volume(vol)
+            return np.nanmin(voldata), np.nanmax(voldata)
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
@@ -791,7 +804,8 @@ class NumpyData(QpData):
     QpData instance with in-memory Numpy data
     """
     def __init__(self, data, grid, name, **kwargs):
-        # Unlikely but possible that first data is added from the console
+        # Unlikely but possible that first data is added from the console. In this
+        # case no grid will exist
         if grid is None:
             grid = DataGrid(data.shape[:3], np.identity(4))
 
@@ -810,7 +824,7 @@ class NumpyData(QpData):
         QpData.__init__(self, name, grid, nvols, **kwargs)
     
     def raw(self):
-        if self._raw_2dt and self.rawdata.ndim == 3:
+        if self.metadata.get("raw_2dt", False) and self.rawdata.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             return np.expand_dims(self.rawdata, 2)
         else:
