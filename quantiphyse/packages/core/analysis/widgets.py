@@ -477,87 +477,6 @@ class SimpleMathsWidget(QpWidget):
         options = self.batch_options()[1]
         self.process.run(options)
 
-class ModelCurvesOptions(QtGui.QDialog):
-    def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
-        self.parent = parent
-
-        self.setWindowTitle('Plot options')
-        grid = QtGui.QGridLayout()
-        self.setLayout(grid)
-
-        # Display mode
-        self.mode = 0
-        grid.addWidget(QtGui.QLabel("Display mode"), 0, 0)
-        self.mode_combo = QtGui.QComboBox()
-        self.mode_combo.addItem("Signal")
-        self.mode_combo.addItem("Signal Enhancement")
-        self.mode_combo.addItem("Signal and Residuals")
-        self.mode_combo.currentIndexChanged.connect(self.mode_changed)
-        grid.addWidget(self.mode_combo, 0, 1)
-
-        # Y-axis scale
-        self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
-        self.auto_y_cb.setChecked(True)
-        self.auto_y_cb.stateChanged.connect(self.auto_y_changed)
-
-        hbox = QtGui.QHBoxLayout()
-        grid.addWidget(self.auto_y_cb, 1, 0)
-        self.min_lbl = QtGui.QLabel("Min")
-        self.min_lbl.setEnabled(False)
-        hbox.addWidget(self.min_lbl)
-        self.min_spin = QtGui.QDoubleSpinBox()
-        self.min_spin.setMinimum(-1e20)
-        self.min_spin.setMaximum(1e20)
-        self.min_spin.valueChanged.connect(parent.update)
-        self.min_spin.setEnabled(False)
-        hbox.addWidget(self.min_spin)
-        self.max_lbl = QtGui.QLabel("Max")
-        self.max_lbl.setEnabled(False)
-        hbox.addWidget(self.max_lbl)
-        self.max_spin = QtGui.QDoubleSpinBox()
-        self.max_spin.setMinimum(-1e20)
-        self.max_spin.setMaximum(1e20)
-        self.max_spin.valueChanged.connect(parent.update)
-        self.max_spin.setEnabled(False)
-        hbox.addWidget(self.max_spin)
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 1, 1)
-
-        # Signal enhancement baseline
-        self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
-        self.se_lbl.setEnabled(False)
-        grid.addWidget(self.se_lbl, 2, 0)
-
-        hbox = QtGui.QHBoxLayout()
-        self.norm_frames = QtGui.QSpinBox()
-        self.norm_frames.setValue(3)
-        self.norm_frames.setMinimum(1)
-        self.norm_frames.setMaximum(100)
-        self.norm_frames.valueChanged.connect(parent.update)
-        self.norm_frames.setEnabled(False)
-        hbox.addWidget(self.norm_frames)
-        self.se_lbl2 = QtGui.QLabel('frames as baseline')
-        self.se_lbl2.setEnabled(False)
-        hbox.addWidget(self.se_lbl2)
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 2, 1)
-
-    def mode_changed(self, idx):
-        self.mode = idx
-        se = (self.mode == 1)
-        self.se_lbl.setEnabled(se)
-        self.norm_frames.setEnabled(se)
-        self.se_lbl2.setEnabled(se)
-        self.parent.update()
-
-    def auto_y_changed(self, ch):
-        self.min_lbl.setEnabled(not ch)
-        self.min_spin.setEnabled(not ch)
-        self.max_lbl.setEnabled(not ch)
-        self.max_spin.setEnabled(not ch)
-        self.parent.update()
-
 class VoxelAnalysis(QpWidget):
     """
     View original data and generated signal curves side by side
@@ -565,30 +484,19 @@ class VoxelAnalysis(QpWidget):
 
     def __init__(self, **kwargs):
         super(VoxelAnalysis, self).__init__(name="Voxel analysis", desc="Display data at a voxel", 
-                                          icon="curve_view", group="Analysis", **kwargs)
+                                            icon="curve_view", group="Analysis", **kwargs)
         self.data_enabled = {}
         self.updating = False
 
     def init_ui(self):
         main_vbox = QtGui.QVBoxLayout()
         self.setLayout(main_vbox)
-        self.setStatusTip("Click points on the 4D volume to see actual and predicted curve")
 
-        title = TitleWidget(self, title="Voxel analysis", help="modelfit", batch_btn=False, opts_btn=True)
+        title = TitleWidget(self, title="Voxel analysis", help="modelfit", batch_btn=False)
         main_vbox.addWidget(title)
 
-        win = pg.GraphicsLayoutWidget()
-        win.setBackground(background=None)
-        self.plot = Plot()
-
-        ## For second y-axis, create a new ViewBox, link the right axis to its coordinate system
-        self.plot_rightaxis = pg.ViewBox()
-        self.plot.scene().addItem(self.plot_rightaxis)
-        self.plot.getAxis('right').linkToView(self.plot_rightaxis)
-        self.plot_rightaxis.setXLink(self.plot)
-        self.plot.vb.sigResized.connect(self._update_plot_viewbox)
-
-        main_vbox.addWidget(win)
+        self.plot = Plot(twoaxis=True)
+        main_vbox.addWidget(self.plot)
 
         hbox = QtGui.QHBoxLayout()
 
@@ -597,7 +505,7 @@ class VoxelAnalysis(QpWidget):
         rms_box.setTitle('Timeseries data')
         vbox = QtGui.QVBoxLayout()
         self.rms_table = QtGui.QStandardItemModel()
-        self.rms_table.itemChanged.connect(self.data_table_changed)
+        self.rms_table.itemChanged.connect(self._data_table_changed)
         tview = QtGui.QTableView()
         tview.resizeColumnsToContents()
         tview.setModel(self.rms_table)
@@ -618,48 +526,17 @@ class VoxelAnalysis(QpWidget):
         hbox.addWidget(params_box)
 
         main_vbox.addLayout(hbox)
-
-        self.plot_opts = ModelCurvesOptions(self)
     
-    def _update_plot_viewbox(self):
-        """ Required to keep the right and left axis plots in sync with each other """
-        self.plot_rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
-        
-        ## need to re-update linked axes since this was called
-        ## incorrectly while views had different shapes.
-        ## (probably this should be handled in ViewBox.resizeEvent)
-        self.plot_rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
-
-    def show_options(self):
-        self.update_minmax(self.ivm.data)
-        self.plot_opts.show()
-        self.plot_opts.raise_()
-
     def activate(self):
-        self.ivm.sig_all_data.connect(self.update)
-        self.ivl.sig_focus_changed.connect(self.update)
-        self.update()
+        self.ivm.sig_all_data.connect(self._update)
+        self.ivl.sig_focus_changed.connect(self._update)
+        self._update()
 
     def deactivate(self):
-        self.ivm.sig_all_data.disconnect(self.update)
-        self.ivl.sig_focus_changed.disconnect(self.update)
+        self.ivm.sig_all_data.disconnect(self._update)
+        self.ivl.sig_focus_changed.disconnect(self._update)
 
-    def options_changed(self, opts):
-        if hasattr(self, "plot"):
-            # Have we been initialized?
-            self.update()
-
-    def update_minmax(self, data_items):
-        dmin, dmax, first = 0, 100, True
-        for name in data_items:
-            data_range = self.ivm.data[name].range()
-            if first or data_range[0] < dmin: dmin = data_range[0]
-            if first or data_range[1] > dmax: dmax = data_range[1]
-            first = False
-        self.plot_opts.min_spin.setValue(dmin)
-        self.plot_opts.max_spin.setValue(dmax)
-
-    def update(self, pos=None):
+    def _update(self, pos=None):
         self._update_table()
         self._update_rms_table()
         self._plot()
@@ -717,7 +594,7 @@ class VoxelAnalysis(QpWidget):
         finally:
             self.updating = False
 
-    def data_table_changed(self, item):
+    def _data_table_changed(self, item):
         if not self.updating:
             # A checkbox has been toggled
             self.data_enabled[item.text()] = item.checkState()
@@ -725,81 +602,41 @@ class VoxelAnalysis(QpWidget):
 
     def _plot(self):
         """
-        Plot the curve / curves
+        Regenerate the plot
         """
         self.plot.clear() 
-        self.plot_rightaxis.clear()
 
-        # Get all timeseries signals and determine max number of timepoints
+        # Get all timeseries signals
         pos = self.ivl.focus()
         sigs = self.ivm.timeseries(pos, self.ivl.grid)
-        max_length = max([0, ] + [len(sig) for name, sig in sigs.items() if self.data_enabled[name] == QtCore.Qt.Checked])
-        
-        if max_length == 0:
+        if not sigs:
             return
-        
-        # FIXME custom range for residuals axis?
-        self.plot_rightaxis.enableAutoRange()
-        if self.plot_opts.auto_y_cb.isChecked():
-            self.plot.enableAutoRange()
-        else: 
-            self.plot.disableAutoRange()
-            self.plot.setYRange(self.plot_opts.min_spin.value(), self.plot_opts.max_spin.value())
             
-        # Replaces any existing legend but keep position the same in case user moved it
-        legend_pos = (30, 30)
-        if self.plot.legend: 
-            legend_pos = self.plot.legend.pos()
-            self.plot.legend.scene().removeItem(self.plot.legend)
-        legend = self.plot.addLegend(offset=legend_pos)
-
         # Get x scale
-        xx = self.opts.t_scale
-        if len(xx) > 1:
-            unit = xx[-1] - xx[-2]
-        else:
-            unit = 1
-        xx.extend([xx[-1] + unit*(idx+1) for idx in range(max_length)])
-        xx = xx[:max_length]
-        frames1 = self.plot_opts.norm_frames.value()
-        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
-
+        self.plot.set_xlabel("Volume")
+        
         # Set y labels
-        axis_labels = {0 : "Signal", 1 : "Signal enhancement", 2 : "Signal"}
-        self.plot.setLabel('left', axis_labels[self.plot_opts.mode])
-        if self.plot_opts.mode == 2:
-            self.plot.showAxis('right')
-            self.plot.getAxis('right').setLabel('Residual')
-        else:
-            self.plot.hideAxis('right')
+        #axis_labels = {0 : "Signal", 1 : "Signal enhancement", 2 : "Signal"}
+        #self.plot.setLabel('left', axis_labels[self.plot_opts.mode])
+        #if self.plot_opts.mode == 2:
+        #    self.plot.showAxis('right')
+        #    self.plot.getAxis('right').setLabel('Residual')
+        #else:
+        #    self.plot.hideAxis('right')
 
-        if not self.ivm.main:
-            return
-
-        main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
-        main_curve.extend([0] * max_length)
-        main_curve = main_curve[:max_length]
+        #if not self.ivm.main:
+        #    return
+        #main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
 
         idx, _ = 0, len(sigs)
         for ovl, sig_values in sigs.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
-                sig_values.extend([0] * max_length)
-                sig_values = sig_values[:max_length]
+                col = get_kelly_col(idx)
 
-                pen = get_kelly_col(idx)
-
-                if self.plot_opts.mode == 1:
-                    # Show signal enhancement rather than raw values
-                    m1 = np.mean(sig_values[:frames1])
-                    if m1 != 0: sig_values = sig_values / m1 - 1
-                
-                if self.plot_opts.mode == 2 and ovl != self.ivm.main.name:
-                    # Show residuals on the right hand axis
-                    resid_values = [v1 - v2 for v1, v2 in zip(sig_values, main_curve)]
-                    self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
+                #if self.plot_opts.mode == 2 and ovl != self.ivm.main.name:
+                #    # Show residuals on the right hand axis
+                #    resid_values = [v1 - v2 for v1, v2 in zip(sig_values, main_curve)]
+                #    self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
                     
-                # Plot signal or signal enhancement
-                self.plot.plot(xx, sig_values, pen=None, symbolBrush=(200, 200, 200), symbolPen='k', symbolSize=5.0)
-                line = self.plot.plot(xx, sig_values, pen=pen, width=4.0)
-                legend.addItem(line, ovl)
+                self.plot.add_line(ovl, sig_values, line_col=col, point_brush=(200, 200, 200), point_col='k', point_size=5.0)
                 idx += 1
