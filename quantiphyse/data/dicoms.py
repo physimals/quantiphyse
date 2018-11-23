@@ -1,5 +1,5 @@
 """
-Quantiphyse - Subclass of QpData for handling Nifti data
+Quantiphyse - Subclasses of QpData for handling Dicom data
 
 Copyright (c) 2013-2018 University of Oxford
 """

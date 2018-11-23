@@ -1,13 +1,5 @@
 """
-Quantiphyse - Subclasses of QpData for handling different data sources
-
-A subclass of QpData must implement the raw() method to return the actual
-data on its original grid. This may be stored internally or retrieved on-demand.
-We use the latter for NIFTI files since it avoids keeping the data in memory
-when we use the standard grid data for viewing and analysis
-
-NumpyData is used for data generated internally on the current grid and stored
-as a Numpy array
+Quantiphyse - Subclasses of QpData for loading and saving data in different formats
 
 Copyright (c) 2013-2018 University of Oxford
 """
