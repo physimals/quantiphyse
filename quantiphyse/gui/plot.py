@@ -155,11 +155,17 @@ class LinePlot(LogSource):
     """
     A 1-D array of data to be plotted as a line
     """
-    def __init__(self, name, graph, yvalues, xvalues, **kwargs):
+    def __init__(self, graph, yvalues, xvalues=None, axes=None, name=None, **kwargs):
         LogSource.__init__(self)
+        if axes is None:
+            self.axes = graph.axes
+        if xvalues is None:
+            xvalues = range(len(yvalues))
+
         self.name = name
         self.graph = graph
-        self.plot = self.graph.plot
+        self.axes = axes
+        
         self.graph.options.sig_options_changed.connect(self._options_changed)
 
         self.yvalues = np.copy(np.array(yvalues, dtype=np.double))
@@ -197,10 +203,10 @@ class LinePlot(LogSource):
 
         self.hide()
         # Plot line and points separately as line may be smoothed
-        line = self.plot.plot(self.xvalues, line_values, 
+        line = self.axes.plot(self.xvalues, line_values, 
                               pen=pg.mkPen(color=self.line_col, width=self.line_width, style=self.line_style))
 
-        pts = self.plot.plot(self.xvalues, plot_values, 
+        pts = self.axes.plot(self.xvalues, plot_values, 
                              pen=None, 
                              symbolBrush=self.point_brush, 
                              symbolPen=self.point_col,
@@ -218,7 +224,7 @@ class LinePlot(LogSource):
         self.legend_item = None
 
         for item in items:
-            self.plot.removeItem(item)
+            self.axes.removeItem(item)
 
     def _options_changed(self):
         if self.graphics_items:
@@ -237,6 +243,7 @@ class Plot(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.items = []
         self.updating = False
+        self.legend_pos = (30, 30)
 
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
@@ -265,20 +272,20 @@ class Plot(QtGui.QWidget):
         self.graphics_layout.setBackground(background=None)
         vbox.addWidget(self.graphics_layout, 10)
 
-        self.plot = self.graphics_layout.addPlot()
-        self.plot.setTitle(title)
-        self.plot.sigRangeChanged.connect(self._range_changed)
-        self.plot.vb.sigRangeChangedManually.connect(self._range_changed_manually)
+        self.axes = self.graphics_layout.addPlot()
+        self.axes.setTitle(title)
+        self.axes.sigRangeChanged.connect(self._range_changed)
+        self.axes.vb.sigRangeChangedManually.connect(self._range_changed_manually)
 
-        if kwargs.get("rightaxis", False):
+        if kwargs.get("twoaxis", False):
             # For a second y-axis, create a new ViewBox, link the right axis to its coordinate system
-            self.rightaxis = pg.ViewBox()
-            self.plot.scene().addItem(self.rightaxis)
-            self.plot.getAxis('right').linkToView(self.rightaxis)
-            self.rightaxis.setXLink(self.plot)
-            self.plot.vb.sigResized.connect(self._update_plot_viewbox)
+            self.axes_alt = pg.ViewBox()
+            self.axes.scene().addItem(self.axes_alt)
+            self.axes.getAxis('right').linkToView(self.axes_alt)
+            self.axes_alt.setXLink(self.axes)
+            self.axes.vb.sigResized.connect(self._update_plot_viewbox)
         else:
-            self.rightaxis = None
+            self.axes_alt = None
 
         self.options = PlotOptions(self, **kwargs)
         self._options_changed()
@@ -289,13 +296,13 @@ class Plot(QtGui.QWidget):
         """
         Set the label for the X axis
         """
-        self.plot.setLabel('bottom', name)
+        self.axes.setLabel('bottom', name)
 
     def set_ylabel(self, name):
         """
         Set the label for the Y axis
         """
-        self.plot.setLabel('left', name)
+        self.axes.setLabel('left', name)
 
     def add_line(self, name, yvalues, xvalues=None, **kwargs):
         """
@@ -303,14 +310,18 @@ class Plot(QtGui.QWidget):
 
         :param values: 1-D Array of data values
         """
-
         if "line_col" not in kwargs:
             kwargs["line_col"] = get_kelly_col(len(self.items))
 
-        if xvalues is None:
-            xvalues = range(len(yvalues))
+        axes = kwargs.get("axes", "main") 
+        if axes.lower() == "main":
+            axes = self.axes
+        elif axes.lower() == "alt":
+            axes = self.axes_alt
+        else:
+            raise ValueError("Unknown axes: %s" % axes)
 
-        line = LinePlot(name, self, yvalues, xvalues, **kwargs)
+        line = LinePlot(self, yvalues, xvalues=xvalues, name=name, axes=axes, **kwargs)
         self.items.append(line)
         self._contents_changed()
         return line
@@ -341,20 +352,20 @@ class Plot(QtGui.QWidget):
 
     def _update_plot_viewbox(self):
         # Required to keep the right and left axis plots in sync with each other
-        self.rightaxis.setGeometry(self.plot.vb.sceneBoundingRect())
+        self.axes_alt.setGeometry(self.axes.vb.sceneBoundingRect())
         
         # Need to re-update linked axes since this was called
         # incorrectly while views had different shapes.
         # (probably this should be handled in ViewBox.resizeEvent)
-        self.rightaxis.linkedViewChanged(self.plot.vb, self.plot_rightaxis.XAxis)
+        self.axes_alt.linkedViewChanged(self.axes.vb, self.axes_alt.XAxis)
 
     @norecurse
     def _range_changed(self, *args):
-        self.options.yrange = self.plot.viewRange()[1]
+        self.options.yrange = self.axes.viewRange()[1]
 
     @norecurse
     def _range_changed_manually(self, *args):
-        self.options.yrange = self.plot.viewRange()[1]
+        self.options.yrange = self.axes.viewRange()[1]
         self.options.autorange = False
 
     def _contents_changed(self):
@@ -362,23 +373,25 @@ class Plot(QtGui.QWidget):
 
     @norecurse
     def _options_changed(self, *args):
+        self.axes_alt.enableAutoRange() # FIXME
         if self.options.autorange:
-            self.plot.enableAutoRange()
+            self.axes.enableAutoRange()
         else: 
-            self.plot.disableAutoRange()
-            self.plot.setYRange(*self.options.yrange)
+            self.axes.disableAutoRange()
+            self.axes.setYRange(*self.options.yrange)
 
     def _regenerate_legend(self):
         # Replaces any existing legend but keep position the same in case user moved it
         # This is necessary because of what seems to be a bug in pyqtgraph which prevents
         # legend items from being removed
-        legend_pos = (30, 30)
-        if self.plot.legend: 
-            legend_pos = self.plot.legend.pos()
-            self.plot.legend.scene().removeItem(self.plot.legend)
-
+        if self.axes.legend:
+            self.legend_pos = self.axes.legend.pos()
+            if self.axes.legend.scene(): 
+                self.axes.legend.scene().removeItem(self.axes.legend)
+            self.axes.legend = None
+    
         for item in self.items:
             if item.name:
-                if not self.plot.legend:
-                    self.plot.addLegend(offset=legend_pos)
-                self.plot.legend.addItem(item.legend_item, item.name)
+                if not self.axes.legend:
+                    self.axes.addLegend(offset=self.legend_pos)
+                self.axes.legend.addItem(item.legend_item, item.name)
