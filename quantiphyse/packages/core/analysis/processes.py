@@ -5,6 +5,7 @@ Copyright (c) 2013-2018 University of Oxford
 """
 import sys
 
+import six
 import numpy as np
 import scipy
 
@@ -66,13 +67,16 @@ class DataStatisticsProcess(Process):
 
     def run(self, options):
         data_name = options.pop('data', None)
+        output_name = options.pop('output-name', "stats")
         if data_name is None:
-            data_items = self.ivm.data.values()
-            output_name = options.pop('output-name', "stats")
-        else:
-            data_items = [self.ivm.data[data_name]]
+            data_items = self.ivm.data.keys()
+        elif isinstance(data_name, six.string_types):
+            data_items = [data_name,]
             output_name = options.pop('output-name', "%s_stats" % data_name)
-            
+        else:
+            data_items = data_name
+        data_items = [self.ivm.data[name] for name in data_items]
+
         roi_name = options.pop('roi', None)
         roi = None
         if roi_name is not None:
