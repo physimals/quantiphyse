@@ -238,7 +238,7 @@ class DataOption(Option, QtGui.QComboBox):
             current = self.currentText()        
             if self._none_option and current == "<none>":
                 ret = None
-            elif self._all_option and ret == "<all>":
+            elif self._all_option and current == "<all>":
                 ret = list(self.ivm.data.keys())
             elif self._all_option:
                 ret = [current,]
@@ -334,7 +334,7 @@ class DataOption(Option, QtGui.QComboBox):
         
         if self._multi:
             self.setCurrentIndex(0)
-        else:
+        elif isinstance(current, six.string_types):
             idx = self.findText(current)
             if idx >= 0:
                 self.setCurrentIndex(idx)
@@ -342,6 +342,9 @@ class DataOption(Option, QtGui.QComboBox):
                 # Make sure signal is sent when first data arrives
                 self.setCurrentIndex(-1)
                 self.setCurrentIndex(0)
+        else:
+            # Must be <all> option
+            self.setCurrentIndex(0)
 
 class ChoiceOption(Option, QtGui.QComboBox):
     """ 
