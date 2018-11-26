@@ -134,7 +134,7 @@ class MultiVoxelAnalysis(QpWidget):
             if point in self.plots:
                 self.plot.remove(self.plots[point])
 
-            self.plots[point] = self.plot.add_line(None, sig, line_col=col)
+            self.plots[point] = self.plot.add_line(sig, line_col=col)
             if not self.options.option("indiv").value:
                 self.plots[point].hide()
             self._update_means()
@@ -148,7 +148,7 @@ class MultiVoxelAnalysis(QpWidget):
             if all_plts:
                 mean_values = np.stack([plt.yvalues for plt in all_plts], axis=1)
                 mean_values = np.squeeze(np.mean(mean_values, axis=1))
-                self.mean_plots[col] = self.plot.add_line(None, mean_values, line_col=col, line_style=QtCore.Qt.DashLine, point_brush=col, point_col='k', point_size=10)
+                self.mean_plots[col] = self.plot.add_line(mean_values, line_col=col, line_style=QtCore.Qt.DashLine, point_brush=col, point_col='k', point_size=10)
                 if not self.options.option("mean").value:
                     self.mean_plots[col].hide()
 
@@ -635,5 +635,5 @@ class VoxelAnalysis(QpWidget):
                 #    resid_values = [v1 - v2 for v1, v2 in zip(sig_values, main_curve)]
                 #    self.plot_rightaxis.addItem(pg.PlotCurveItem(resid_values, pen=pg.mkPen(pen, style=QtCore.Qt.DashLine)))
                     
-                self.plot.add_line(ovl, sig_values, line_col=col, point_brush=(200, 200, 200), point_col='k', point_size=5.0)
+                self.plot.add_line(sig_values, name=ovl, line_col=col, point_brush=(200, 200, 200), point_col='k', point_size=5.0)
                 idx += 1

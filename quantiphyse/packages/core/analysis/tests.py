@@ -17,8 +17,6 @@ class DataStatisticsTest(WidgetTest):
         """ User clicks the show buttons with no data"""
         self.harmless_click(self.w.butgen)
         self.harmless_click(self.w.butgenss)
-        self.harmless_click(self.w.hist_show_btn)
-        self.harmless_click(self.w.rp_btn)
 
     def test3dData(self):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
@@ -119,10 +117,9 @@ class MultiVoxelAnalysisTest(WidgetTest):
         sig = self.data_4d[2,2,2,:]
         self.assertTrue(pt in self.w.plots)
         plot = self.w.plots[pt]
-        for v1, v2 in zip(sig, plot.sig):
+        for v1, v2 in zip(sig, plot.yvalues):
             self.assertAlmostEquals(v1, v2)
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
     def testMultiClick(self):
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
@@ -137,21 +134,19 @@ class MultiVoxelAnalysisTest(WidgetTest):
 
         self.assertTrue(pt1 in self.w.plots)
         plot = self.w.plots[pt1]
-        for v1, v2 in zip(sig1, plot.sig):
+        for v1, v2 in zip(sig1, plot.yvalues):
             self.assertAlmostEquals(v1, v2)
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
         self.assertTrue(pt2 in self.w.plots)
         plot = self.w.plots[pt2]
-        for v1, v2 in zip(sig2, plot.sig):
+        for v1, v2 in zip(sig2, plot.yvalues):
             self.assertAlmostEquals(v1, v2)
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
     def testMultiClickChangeColor(self):
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
-        self.w.color_combo.setCurrentIndex(6)
+        self.w.options.option("col").value = "red"
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
@@ -160,9 +155,9 @@ class MultiVoxelAnalysisTest(WidgetTest):
 
         self.assertTrue(pt1 in self.w.plots)
         plot = self.w.plots[pt1]
-        self.assertEquals(plot.pen, self.w.colors['red'])
+        self.assertEquals(plot.line_col, self.w.colors['red'])
 
-        self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("blue"))
+        self.w.options.option("col").value = "blue"
         self.processEvents()
 
         pt2 = (3, 3, 3, 0)
@@ -171,16 +166,16 @@ class MultiVoxelAnalysisTest(WidgetTest):
 
         self.assertTrue(pt2 in self.w.plots)
         plot = self.w.plots[pt2]
-        self.assertEquals(plot.pen, self.w.colors['blue'])
+        self.assertEquals(plot.line_col, self.w.colors['blue'])
 
     def testShowMeanCurves(self):
         """
         Select two points, show mean curves=On.
         """
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
-        self.w.color_combo.setCurrentIndex(self.w.color_combo.findText("red"))
+        self.w.options.option("col").value = "red"
         self.processEvents()
-        self.w.mean_cb.setChecked(True)
+        self.w.options.option("mean").value = True
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
@@ -195,18 +190,15 @@ class MultiVoxelAnalysisTest(WidgetTest):
         self.processEvents()
 
         plot = self.w.mean_plots[self.w.colors["red"]]
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
-        self.w.mean_cb.setChecked(False)
+        self.w.options.option("mean").value = False
         self.processEvents()
-        
-        self.assertFalse(plot.line in self.w.p1.items)
-        self.assertFalse(plot.pts in self.w.p1.items)
+        self.assertEqual(len(plot.graphics_items), 0)
 
     def testShowIndividualCurves(self):
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
-        self.w.indiv_cb.setChecked(False)
+        self.w.options.option("indiv").value = False
         self.processEvents()
 
         pt1 = (2, 2, 2, 0)
@@ -219,24 +211,20 @@ class MultiVoxelAnalysisTest(WidgetTest):
 
         self.assertTrue(pt1 in self.w.plots)
         plot = self.w.plots[pt1]
-        self.assertFalse(plot.line in self.w.p1.items)
-        self.assertFalse(plot.pts in self.w.p1.items)
+        self.assertEqual(len(plot.graphics_items), 0)
 
         self.assertTrue(pt2 in self.w.plots)
         plot = self.w.plots[pt2]
-        self.assertFalse(plot.line in self.w.p1.items)
-        self.assertFalse(plot.pts in self.w.p1.items)
+        self.assertEqual(len(plot.graphics_items), 0)
 
-        self.w.indiv_cb.setChecked(True)
+        self.w.options.option("indiv").value = True
         self.processEvents()
 
         plot = self.w.plots[pt1]
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
         plot = self.w.plots[pt2]
-        self.assertTrue(plot.line in self.w.p1.items)
-        self.assertTrue(plot.pts in self.w.p1.items)
+        self.assertTrue(plot in self.w.plot.items)
 
 class VoxelAnalysisTest(WidgetTest):
 
