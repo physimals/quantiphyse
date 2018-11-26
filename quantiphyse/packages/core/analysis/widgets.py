@@ -192,13 +192,13 @@ class DataStatistics(QpWidget):
 
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(QtGui.QLabel("Data selection"))
-        self.data_combo = OverlayCombo(self.ivm, all_option=True)
-        self.data_combo.currentIndexChanged.connect(self.update_all)
-        hbox.addWidget(self.data_combo)
+        self.data = DataOption(self.ivm, multi=True)
+        self.data.sig_changed.connect(self.update_all)
+        hbox.addWidget(self.data)
         hbox.addWidget(QtGui.QLabel("ROI"))
-        self.roi_combo = RoiCombo(self.ivm, none_option=True)
-        self.roi_combo.currentIndexChanged.connect(self.update_all)
-        hbox.addWidget(self.roi_combo)
+        self.roi = DataOption(self.ivm, data=False, rois=True, none_option=True)
+        self.roi.sig_changed.connect(self.update_all)
+        hbox.addWidget(self.roi)
         hbox.addStretch(1)
         main_vbox.addLayout(hbox)
 
@@ -341,11 +341,8 @@ class DataStatistics(QpWidget):
             self.populate_stats_table(self.process_ss, options)
 
     def populate_stats_table(self, process, options):
-        if self.data_combo.currentText() != "<all>":
-            options["data"] = self.data_combo.currentText()
-        roi = self.roi_combo.currentText()
-        if roi in self.ivm.data:
-            options["roi"] = roi
+        options["data"] = self.data.value
+        options["roi"] = self.roi.value
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):
