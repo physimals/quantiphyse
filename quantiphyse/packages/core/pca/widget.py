@@ -99,8 +99,8 @@ class PcaWidget(QpWidget):
     def _update_plot(self, process):
         self.plot.clear()
         for idx, mode in enumerate(process.pca_modes):
-            self.plot.add_line(name="Mode %i" % (idx+1), values=mode)
-        self.plot.add_line(name="Mean", values=process.mean, line_col=(255, 0, 0), line_width=3.0)
+            self.plot.add_line(mode, name="Mode %i" % (idx+1))
+        self.plot.add_line(process.mean, name="Mean", line_col=(255, 0, 0), line_width=3.0)
 
     def _update_table(self, process):
         self.variance_model.clear()

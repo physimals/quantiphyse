@@ -107,4 +107,4 @@ class HistogramWidget(QpWidget):
                 for idx, name in enumerate(histogram.col_headers[3:]):
                     xvalues = [row[2] for row in histogram.arr]
                     yvalues = [row[idx+3] for row in histogram.arr]
-                    self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvalues)
+                    self.plot.add_line(yvalues, name=name, xvalues=xvalues)

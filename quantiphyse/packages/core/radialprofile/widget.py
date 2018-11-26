@@ -99,4 +99,4 @@ class RadialProfileWidget(QpWidget):
             xvals = [row[0] for row in values]
             for idx, name in enumerate(data_names):
                 yvalues = [row[idx+1] for row in values]
-                self.plot.add_line(name=name, yvalues=yvalues, xvalues=xvals)
+                self.plot.add_line(yvalues, name=name, xvalues=xvals)
