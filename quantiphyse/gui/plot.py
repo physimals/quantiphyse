@@ -304,7 +304,7 @@ class Plot(QtGui.QWidget):
         """
         self.axes.setLabel('left', name)
 
-    def add_line(self, name, yvalues, xvalues=None, **kwargs):
+    def add_line(self, yvalues, name=None, xvalues=None, **kwargs):
         """
         Add a line to the plot
 
@@ -373,7 +373,8 @@ class Plot(QtGui.QWidget):
 
     @norecurse
     def _options_changed(self, *args):
-        self.axes_alt.enableAutoRange() # FIXME
+        if self.axes_alt is not None:
+            self.axes_alt.enableAutoRange() # FIXME
         if self.options.autorange:
             self.axes.enableAutoRange()
         else: 
