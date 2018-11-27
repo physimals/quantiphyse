@@ -16,7 +16,7 @@ class HistogramWidget(QpWidget):
     Widget which displays data histograms
     """
     def __init__(self, **kwargs):
-        super(HistogramWidget, self).__init__(name="Histogram", 
+        super(HistogramWidget, self).__init__(name="Histogram", icon="hist",
                                               desc="Display histograms from data", group="Analysis", **kwargs)
         self._updating = False
 
