@@ -518,9 +518,10 @@ class Process(QtCore.QObject, LogSource):
             self.debug("Ignoring worker, process already failed or cancelled")
             return
         elif success:
-            self._worker_output[worker_id] = output
-            if None not in self._worker_output:
-                self.status = Process.SUCCEEDED
+            if worker_id < len(self._worker_output):
+                self._worker_output[worker_id] = output
+                if None not in self._worker_output:
+                    self.status = Process.SUCCEEDED
         else:
             # If one process fails, they all fail. Output is just the first exception to be caught
             # FIXME cancel other workers?
