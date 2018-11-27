@@ -21,6 +21,7 @@ import os
 import os.path
 import traceback
 import time
+import collections
 
 import six
 import yaml
@@ -85,7 +86,7 @@ def to_yaml(processes, indent=""):
                 stream.write("%s\n" % str(value))
             elif isinstance(value, np.ndarray):
                 stream.write("%s\n" % str(value.tolist()))
-            elif isinstance(value, dict):
+            elif isinstance(value, collections.Mapping):
                 stream.write("\n")
                 _dict_to_yaml(stream, value, indent + "  ")
             else:
