@@ -17,6 +17,7 @@ which is emitted whenever this value changes
 Copyright (c) 2013-2018 University of Oxford
 """
 import logging
+import collections
 
 import six
 import numpy as np
@@ -148,7 +149,7 @@ class OptionBox(QtGui.QGroupBox):
 
         :return: dict of key:option value for all options
         """
-        ret = {}
+        ret = collections.OrderedDict()
         for key, option in self._options.items():
             if option.isEnabled() and option.value is not None:
                 ret[key] = option.value
@@ -894,6 +895,34 @@ class VectorOption(MatrixOption):
                     # Column select
                     return None, r.leftColumn()
         return None, None    
+  
+class NumberListOption(Option, QtGui.QLineEdit):
+    """ 
+    A list of numbers which may be entered space or comma separated
+    """
+    def __init__(self):
+        QtGui.QLineEdit.__init__(self)
+        self.editingFinished.connect(self._edit_changed)
+
+    @property
+    def value(self):
+        """ List of numbers or empty list if invalid data entered """
+        try:
+            text = self.text().replace(",", " ")
+            return [float(v) for v in text.split()] 
+        except ValueError:
+            return []
+
+    def _edit_changed(self):
+        try:
+            text = self.text().replace(",", " ")
+            numbers = [float(v) for v in text.split()]
+            self.setText(" ".join([str(v) for v in numbers]))
+            self.setStyleSheet("")
+        except ValueError:
+            # Colour edit red but don't change anything
+            self.setStyleSheet("QLineEdit {background-color: red}")
+        self.sig_changed.emit(self)
 
 class PickPointOption(Option, QtGui.QWidget):
     """ 
