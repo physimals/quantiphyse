@@ -381,6 +381,11 @@ class QpData(object):
         return self._nvols
 
     @property
+    def shape(self):
+        """ Overall data shape"""
+        return list(self.grid.shape) + [self._nvols,]
+
+    @property
     def roi(self):
         """ True if this data could be a region of interest data set"""
         return self.metadata.get("roi", False)
