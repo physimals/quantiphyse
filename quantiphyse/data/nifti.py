@@ -55,7 +55,7 @@ class NiftiData(QpData):
         if zooms and len(zooms) > 3:
             vol_scale = zooms[3]
 
-        grid = DataGrid(shape[:3], nii.header.get_best_affine(), units=xyz_units[0])
+        grid = DataGrid(shape[:3], nii.header.get_best_affine(), units=xyz_units)
         QpData.__init__(self, fname, grid, nvols, vol_unit=vol_units, vol_scale=vol_scale, fname=fname, metadata=metadata)
 
     def raw(self):
