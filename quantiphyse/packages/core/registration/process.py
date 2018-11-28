@@ -34,7 +34,7 @@ def get_reg_method(method_name):
     Get a named registration method (case insensitive)
     """
     methods = get_plugins("reg-methods")
-    LOG.debug("Known methods: %s", methods)
+    LOG.debug("Known methods: %s", str(methods))
     for method_class in methods:
         method = method_class()
         if method.name.lower() == method_name.lower():
@@ -100,6 +100,7 @@ class RegProcess(Process):
         self.output_names = {}
 
     def run(self, options):
+        self.debug("Run")
         method_name = options.pop("method")
         mode = options.pop("mode", "reg")
 
