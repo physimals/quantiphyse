@@ -606,7 +606,7 @@ class QpData(object):
         else:
             return ret[0]
 
-    def resample(self, grid, order=0):
+    def resample(self, grid, order=0, suffix="_resampled"):
         """
         Resample the data onto a new grid
 
@@ -666,7 +666,7 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + "_resampled")
+        return NumpyData(data=data, grid=grid, name=self.name + suffix)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
