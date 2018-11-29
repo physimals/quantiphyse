@@ -21,6 +21,7 @@ import sys
 import logging
 import traceback
 
+import six
 import numpy as np
 
 from quantiphyse.data import NumpyData
@@ -41,6 +42,62 @@ def get_reg_method(method_name):
             return method
     return None
 
+def _normalize_output(reg_data, output_data, output_suffix):
+    if reg_data.roi:
+        # This is not correct for multi-level ROIs - this would basically require support
+        # from within the registration algorithm for roi (integer only) data
+        data = np.rint(output_data.raw()).astype(np.int)
+        output_data = NumpyData(data, grid=output_data.grid, name=output_data.name, roi=True)
+    output_data.name = reg_data.name + output_suffix
+    return output_data
+
+def _reg_3d(worker_id, method, reg_data, ref_data, options, queue):
+    """
+    Register single volume data, may be more than one registration target
+    """
+    out_data = []
+    log = "Running 3D registration\n\n"
+    output_suffix = options.pop("output-suffix", "_reg")
+    registered, transform, reg_log = method.reg_3d(reg_data[0], ref_data, dict(options), queue)
+    registered = _normalize_output(reg_data[0], registered, output_suffix)
+    log += reg_log
+    out_data.append(registered)
+    for idx, add_data in enumerate(reg_data[1:]):
+        log += "\nApplying transformation to additional data %i\n\n" % (idx+1)
+        registered, apply_log = method.apply_transform(add_data, transform, dict(options), queue)
+        registered = _normalize_output(add_data, registered, output_suffix)
+        log += apply_log
+        out_data.append(registered)
+    return worker_id, True, (out_data, transform, log)
+
+def _reg_4d(worker_id, method, reg_data, ref_data, options, queue):
+    """
+    Register multi-volume data, can only be one registration target
+    """
+    if len(reg_data) > 1:
+        raise QpException("Cannot have additional registration targets with 4D registration data")
+    
+    log = "Running 4D registration\n\n"
+    output_suffix = options.pop("output-suffix", "_reg")
+    out_data, transforms, reg_log = method.reg_4d(reg_data[0], ref_data, dict(options), queue)
+    out_data = _normalize_output(reg_data, out_data, output_suffix)
+    log += reg_log
+    return worker_id, True, ([out_data], transforms, log)
+
+def _reg_moco(worker_id, method, reg_data, ref_data, options, queue):
+    """
+    Motion correction mode
+    """
+    if len(reg_data) > 1:
+        raise QpException("Cannot have additional registration targets with motion correction")
+    
+    log = "Running motion correction\n\n"
+    output_suffix = options.pop("output-suffix", "_moco")
+    out_data, transforms, moco_log = method.moco(reg_data[0], ref_data, dict(options), queue)
+    out_data = _normalize_output(reg_data, out_data, output_suffix)
+    log += moco_log
+    return worker_id, True, ([out_data], transforms, log)
+
 def _run_reg(worker_id, queue, method_name, mode, reg_data, ref_data, options):
     """
     Generic registration function for asynchronous process
@@ -54,36 +111,11 @@ def _run_reg(worker_id, queue, method_name, mode, reg_data, ref_data, options):
         if not reg_data:
             raise QpException("No registration data")
         elif mode == "moco":
-            # Motion correction mode
-            if len(reg_data) > 1:
-                raise QpException("Cannot have additional registration targets with motion correction")
-            
-            log = "Running motion correction\n\n"
-            out_data, transforms, moco_log = method.moco(reg_data[0], ref_data, options, queue)
-            log += moco_log
-            return worker_id, True, ([out_data], transforms, log)
-        elif reg_data[0].ndim == 3: 
-            # Register single volume data, may be more than one registration target
-            out_data = []
-            log = "Running 3D registration\n\n"
-            registered, transform, reg_log = method.reg_3d(reg_data[0], ref_data, options, queue)
-            log += reg_log
-            out_data.append(registered)
-            for idx, add_data in enumerate(reg_data[1:]):
-                log += "\nApplying transformation to additional data %i\n\n" % (idx+1)
-                registered, apply_log = method.apply_transform(add_data, ref_data, transform, queue)
-                log += apply_log
-                out_data.append(registered)
-            return worker_id, True, (out_data, transform, log)
+            return _reg_moco(worker_id, method, reg_data, ref_data, options, queue)
+        elif reg_data[0].ndim == 3:
+            return _reg_3d(worker_id, method, reg_data, ref_data, options, queue)
         else:
-            # Register multi-volume data, can only be one registration target
-            if len(reg_data) > 1:
-                raise QpException("Cannot have additional registration targets with 4D registration data")
-            
-            log = "Running 4D registration\n\n"
-            out_data, transforms, reg_log = method.reg_4d(reg_data[0], ref_data, options, queue)
-            log += reg_log
-            return worker_id, True, ([out_data], transforms, log)
+            return _reg_4d(worker_id, method, reg_data, ref_data, options, queue)
     except:
         traceback.print_exc()
         return worker_id, False, sys.exc_info()[1]
@@ -97,7 +129,6 @@ class RegProcess(Process):
 
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, worker_fn=_run_reg, **kwargs)
-        self.output_names = {}
 
     def run(self, options):
         self.debug("Run")
@@ -114,12 +145,6 @@ class RegProcess(Process):
         regdata = self.ivm.data[regdata_name]
         reg_grid = regdata.grid
         reg_data = [regdata, ]
-
-        # Names of input / output data
-        if options.pop("replace-vol", False):
-            self.output_names[regdata_name] = regdata_name
-        else:
-            self.output_names[regdata_name] = options.pop("output-name", "reg_%s" % regdata_name)
 
         # Reference data. Defaults to same as reg data so MoCo can be
         # supported as self-registration
@@ -139,22 +164,18 @@ class RegProcess(Process):
         # in the same way as the main registration data. 
         # 
         # Useful for masks defined on an unregistered volume.
-        add_reg = dict(options.pop("add-reg", options.pop("warp-rois", {})))
-        
-        # Deprecated
-        warp_roi_name = options.pop("warp-roi", None)
-        if warp_roi_name:  
-            add_reg[warp_roi_name] = warp_roi_name + "_reg"
+        add_reg = options.pop("add-reg", options.pop("warp-rois", options.pop("warp-roi", ())))
 
-        for name, output_name in add_reg.items():
-            qpdata = self.ivm.data.get(name, self.ivm.rois.get(name, None))
+        # Handle case where additional registation targets are given as a string
+        if isinstance(add_reg, six.string_types):
+            add_reg = (add_reg,)
+
+        for name in add_reg:
+            qpdata = self.ivm.data.get(name, None)
             if not qpdata:
                 self.warn("Removing non-existant data set from additional registration list: %s" % name)
             else:
-                if not output_name:
-                    output_name = name + "_reg"
-                reg_data.append(qpdata.resample(reg_grid))
-                self.output_names[name] = output_name
+                reg_data.append(qpdata.resample(reg_grid, suffix=""))
         
         self.debug("Have %i registration targets" % len(reg_data))
 
@@ -175,13 +196,9 @@ class RegProcess(Process):
 
             first_roi, first_data = True, True
             for data in registered_data:
-                output_name = self.output_names[data.name]
                 if data.roi:
-                    # This is not correct for multi-level ROIs - this would basically require support
-                    # from within the registration algorithm for roi (integer only) data
-                    data = NumpyData((data.raw() > 0.5).astype(np.int), grid=data.grid, name=data.name)
-                    self.ivm.add(data, name=output_name, make_current=first_roi)
+                    self.ivm.add(data, make_current=first_roi)
                     first_roi = False
                 else:
-                    self.ivm.add(data, name=output_name, make_current=first_data)
+                    self.ivm.add(data, make_current=first_data)
                     first_data = False

@@ -6,7 +6,7 @@ Copyright (c) 2013-2018 University of Oxford
 from PySide import QtGui
 
 from quantiphyse.gui.widgets import QpWidget, RunWidget, TitleWidget
-from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption, NumericOption, OutputNameOption, TextOption
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, NumericOption, TextOption
 from quantiphyse.utils import get_plugins
 
 class RegWidget(QpWidget):
@@ -40,8 +40,6 @@ class RegWidget(QpWidget):
         self.options.add("Reference volume index", NumericOption(intonly=True), key="ref-idx")
         self.options.add("Output space", ChoiceOption(["Reference", "Registration", "Transformed"], ["ref", "reg", "trans"]), key="output-space")
         self.options.add("Also apply transform to", DataOption(self.ivm, multi=True), key="add-reg")
-        self.options.add("Replace data", BoolOption(), key="replace")
-        self.options.add("New data name", OutputNameOption(src_data=self.options.option("reg")), key="output-name")
         self.options.add("Save transformation", TextOption(), key="save-transform", checked=True, default=False)
         
         self.options.option("mode").sig_changed.connect(self._update_option_visibility)
@@ -57,7 +55,10 @@ class RegWidget(QpWidget):
             hbox = QtGui.QHBoxLayout()
             opt_box = QtGui.QGroupBox()
             opt_box.setTitle(method.name.upper())
-            opt_box.setLayout(method.interface())
+            vbox = QtGui.QVBoxLayout()
+            opt_box.setLayout(vbox)
+            print(method.name)
+            vbox.addWidget(method.interface())
             hbox.addWidget(opt_box)
             opt_box.setVisible(False)
             layout.addLayout(hbox)
@@ -72,7 +73,6 @@ class RegWidget(QpWidget):
         regdata = self.ivm.data.get(self.options.option("reg").value, None)
         refdata = self.ivm.data.get(self.options.option("ref").value, None)
         refvol = self.options.option("ref-vol").value
-        replace = self.options.option("replace").value
 
         nvols = 1
         if mode == "reg" and refdata is not None:
@@ -83,7 +83,6 @@ class RegWidget(QpWidget):
         self.options.set_visible("ref", mode == "reg")
         self.options.set_visible("ref-vol", nvols > 1)
         self.options.set_visible("ref-idx", nvols > 1 and refvol == "idx")
-        self.options.set_visible("output-name", not replace)
         self.options.set_visible("output-space", mode == "reg")
         
         if nvols > 1:
@@ -99,9 +98,6 @@ class RegWidget(QpWidget):
         if options.get("ref-vol", None) == "idx":
             options["ref-vol"] = options.pop("ref-idx")
         
-        if options.pop("replace"):
-            options["output-name"] = options["reg"]
-
         method = options.pop("method")
         options["method"] = method.name
         options.update(method.options())
