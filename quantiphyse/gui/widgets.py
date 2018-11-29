@@ -40,6 +40,7 @@ class QpWidget(QtGui.QWidget, LogSource):
         self.group = kwargs.get("group", "")
         self.position = kwargs.get("position", 999)
         self.description = kwargs.get("desc", self.name)
+        self.version = kwargs.get("version", "")
         self.visible = False
         self.inited = False
 
@@ -1002,7 +1003,11 @@ class TitleWidget(QtGui.QWidget):
         if opts_btn: hbox.addWidget(OptionsButton(widget))
         vbox.addLayout(hbox)
 
-        vbox.addWidget(QtGui.QLabel(subtitle))     
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel(subtitle))      
+        hbox.addStretch(1)
+        hbox.addWidget(QtGui.QLabel(widget.version))
+        vbox.addLayout(hbox)
 
 class RunBox(QtGui.QGroupBox, LogSource):
 
