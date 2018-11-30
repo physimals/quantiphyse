@@ -181,8 +181,10 @@ class MainWindow(QtGui.QMainWindow):
         self.setAcceptDrops(True)
         self.show()
 
-        # autoload any files that have been passed from the command line
-        if load_data is not None: self.load_data(fname=load_data)
+        # Load any files from the command line
+        if load_data:
+            for fname in load_data:
+                self.load_data(fname=fname)
 
     def _init_tabs(self):
         self.tab_widget = FingerTabWidget(self)
@@ -224,7 +226,7 @@ class MainWindow(QtGui.QMainWindow):
         load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d image or ROI')
-        load_action.triggered.connect(self.load_data)
+        load_action.triggered.connect(self.load_data_interactive)
 
         # File --> Save Data
         save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
@@ -337,7 +339,7 @@ class MainWindow(QtGui.QMainWindow):
             self.raise_()
             self.activateWindow()
             for fname in fnames:
-                self.load_data(fname)
+                self.load_data_interactive(fname)
         else:
             drag_data.ignore()
 
@@ -392,7 +394,7 @@ class MainWindow(QtGui.QMainWindow):
         console.setGeometry(QtCore.QRect(100, 100, 600, 600))
         console.show()
 
-    def load_data(self, fname=None, name=None):
+    def load_data_interactive(self, fname=None, name=None):
         """
         Load data into the IVM from a file (which may already be known)
         """
@@ -427,6 +429,17 @@ class MainWindow(QtGui.QMainWindow):
             data.set_2dt()
         
         self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
+
+    def load_data(self, fname):
+        """
+        Load data non-interactively. The data will not be flagged as an ROI but the user
+        can change that later if they want. Any finer control and you need to use interactive
+        loading.
+        """
+        qpdata = load(fname)
+        name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
+        qpdata.name = name
+        self.ivm.add(qpdata)
 
     def save_data(self):
         """
