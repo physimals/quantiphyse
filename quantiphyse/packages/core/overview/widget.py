@@ -74,6 +74,9 @@ class OverviewWidget(QpWidget):
         btn = QtGui.QPushButton("Set as main data")
         btn.clicked.connect(self._set_main)
         hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Toggle ROI")
+        btn.clicked.connect(self._toggle_roi)
+        hbox.addWidget(btn)
         layout.addLayout(hbox)
 
         self.setLayout(layout)
@@ -104,6 +107,11 @@ class OverviewWidget(QpWidget):
     def _set_main(self):
         if self.data_list.selected is not None:
             self.ivm.set_main_data(self.data_list.selected.name)
+            
+    def _toggle_roi(self):
+        if self.data_list.selected is not None:
+            self.data_list.selected.roi = not self.data_list.selected.roi
+            self.ivm.sig_all_data.emit(self.ivm.data.keys())
             
 class DataListWidget(QtGui.QTableView):
     """
