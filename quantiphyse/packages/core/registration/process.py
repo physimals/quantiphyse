@@ -80,7 +80,7 @@ def _reg_4d(worker_id, method, reg_data, ref_data, options, queue):
     log = "Running 4D registration\n\n"
     output_suffix = options.pop("output-suffix", "_reg")
     out_data, transforms, reg_log = method.reg_4d(reg_data[0], ref_data, dict(options), queue)
-    out_data = _normalize_output(reg_data, out_data, output_suffix)
+    out_data = _normalize_output(reg_data[0], out_data, output_suffix)
     log += reg_log
     return worker_id, True, ([out_data], transforms, log)
 
@@ -94,7 +94,7 @@ def _reg_moco(worker_id, method, reg_data, ref_data, options, queue):
     log = "Running motion correction\n\n"
     output_suffix = options.pop("output-suffix", "_moco")
     out_data, transforms, moco_log = method.moco(reg_data[0], ref_data, dict(options), queue)
-    out_data = _normalize_output(reg_data, out_data, output_suffix)
+    out_data = _normalize_output(reg_data[0], out_data, output_suffix)
     log += moco_log
     return worker_id, True, ([out_data], transforms, log)
 
