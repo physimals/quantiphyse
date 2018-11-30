@@ -18,9 +18,13 @@ class RegMethod(LogSource):
     Methods which take options should implement ``interface`` and ``options``
     Methods may implement ``moco`` if motion correction is handled differently
     """
-    def __init__(self, name):
+    def __init__(self, name, display_name=None):
         LogSource.__init__(self)
         self.name = name
+        if display_name is not None:
+            self.display_name = display_name
+        else:
+            self.display_name = name
 
     @classmethod
     def apply_transform(cls, reg_data, transform, options, queue):
@@ -169,21 +173,10 @@ class RegMethod(LogSource):
         """
         Return a QtGui.QWidget() to allow options to be controlled
         """
-        return QtGui.QVBoxLayout()
+        return QtGui.QWidget()
         
     def options(self):
         """
         :return: Dictionary of options currently selected
         """ 
         return {}
-
-    def transform_type(self):
-        """
-        :return: The class of object which is used to store transformations for
-                 this registration method. If the transformation object type is
-                 QpData, the metadata attribute ``QpRegMethod`` is assumed to
-                 contain the registration method name for all transformations 
-                 returned by this method. If None is returned, this method is
-                 assumed not to support the return of the transformation.
-        """
-        return None

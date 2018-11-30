@@ -33,7 +33,7 @@ class RegWidget(QpWidget):
 
         self.options = OptionBox("General Options")
         self.options.add("Mode", ChoiceOption(["Registration", "Motion Correction"], ["reg", "moco"]), key="mode")
-        self.options.add("Method", ChoiceOption([method.name for method in self.reg_methods], self.reg_methods), key="method")
+        self.options.add("Method", ChoiceOption([method.display_name for method in self.reg_methods], self.reg_methods), key="method")
         self.options.add("Registration data", DataOption(self.ivm), key="reg")
         self.options.add("Reference data", DataOption(self.ivm), key="ref")
         self.options.add("Reference volume", ChoiceOption(["Middle volume", "Mean volume", "Specified volume"], ["median", "mean", "idx"]), key="ref-vol")
@@ -54,10 +54,9 @@ class RegWidget(QpWidget):
         for method in self.reg_methods:
             hbox = QtGui.QHBoxLayout()
             opt_box = QtGui.QGroupBox()
-            opt_box.setTitle(method.name.upper())
+            opt_box.setTitle(method.display_name)
             vbox = QtGui.QVBoxLayout()
             opt_box.setLayout(vbox)
-            print(method.name)
             vbox.addWidget(method.interface())
             hbox.addWidget(opt_box)
             opt_box.setVisible(False)
@@ -83,6 +82,7 @@ class RegWidget(QpWidget):
         self.options.set_visible("ref", mode == "reg")
         self.options.set_visible("ref-vol", nvols > 1)
         self.options.set_visible("ref-idx", nvols > 1 and refvol == "idx")
+        self.options.set_visible("add-reg", nvols == 1 and mode == "reg")
         self.options.set_visible("output-space", mode == "reg")
         
         if nvols > 1:
