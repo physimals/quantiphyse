@@ -12,9 +12,15 @@ class Extra(object):
 
     Essentially the only thing an Extra needs to be able to do is be written
     out as a string. We force subclasses to override this. 
+
+    We also provide a metadata dictionary - ideally extras should write their
+    metadata in __str__ but in practice this may not be possible when we want
+    the output to be compatible with external programs (e.g. writing out a 
+    matrix as TSV)
     """
     def __init__(self, name):
         self.name = name
+        self.metadata = {}
 
     def __str__(self):
         raise NotImplementedError("Subclasses of Extra must implement __str__")
