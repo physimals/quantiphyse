@@ -198,7 +198,10 @@ class DataStatistics(QpWidget):
         self.roi = DataOption(self.ivm, data=False, rois=True, none_option=True)
         self.roi.sig_changed.connect(self.update_all)
         hbox.addWidget(self.roi)
-        hbox.addStretch(1)
+        hbox.setStretch(1, 1)
+        hbox.setStretch(3, 1)
+
+        #hbox.addStretch(1)
         main_vbox.addLayout(hbox)
 
         # Summary stats
