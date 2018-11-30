@@ -7,16 +7,15 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 import numpy as np
-import pyqtgraph as pg
 from PySide import QtCore, QtGui
 
 from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.pickers import PickMode
-from quantiphyse.gui.widgets import QpWidget, RoiCombo, HelpButton, BatchButton, TitleWidget, OverlayCombo
-from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption
-from quantiphyse.utils import get_icon, copy_table, get_kelly_col, sf
+from quantiphyse.gui.widgets import QpWidget, RoiCombo, TitleWidget, RunButton
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption, TextOption, OutputNameOption
+from quantiphyse.utils import copy_table, get_kelly_col, sf
 
-from .processes import CalcVolumesProcess, ExecProcess, DataStatisticsProcess
+from .processes import CalcVolumesProcess, DataStatisticsProcess
 
 class MultiVoxelAnalysis(QpWidget):
     """
@@ -417,11 +416,17 @@ For example, if you have loaded data called 'mydata' and run modelling
 to produce a model prediction 'modelfit', you could calculate the residuals
 using:</i>
 <br><br>
-resids = mydata - modelfit
-<br>
+mydata - modelfit
+<br><br>
+<i>The output will be interpreted as being defined in the same data space as the
+'data space' option - if this is incorrect the output will probably be 
+misaligned!</i>
 """
 
 class SimpleMathsWidget(QpWidget):
+    """
+    Widget which lets you run arbitrary Python/Numpy code on the data in the IVM
+    """
     def __init__(self, **kwargs):
         super(SimpleMathsWidget, self).__init__(name="Simple Maths", icon="maths", 
                                                 desc="Simple mathematical operations on data", 
@@ -434,45 +439,31 @@ class SimpleMathsWidget(QpWidget):
         title = TitleWidget(self, help="simple_maths")
         layout.addWidget(title)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Simple Maths</font>'))
-        hbox.addStretch(1)
-        hbox.addWidget(BatchButton(self))
-        hbox.addWidget(HelpButton(self))
-        layout.addLayout(hbox)
-        
         info = QtGui.QLabel(MATHS_INFO)
         info.setWordWrap(True)
         layout.addWidget(info)
 
-        self.process = ExecProcess(self.ivm)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("Set"))
-        self.output_name_edit = QtGui.QLineEdit("newdata")
-        self.output_name_edit.setFixedWidth(100)
-        hbox.addWidget(self.output_name_edit)
-        hbox.addWidget(QtGui.QLabel("="))
-        self.proc_edit = QtGui.QLineEdit()
-        hbox.addWidget(self.proc_edit)
-        layout.addLayout(hbox)
+        self.optbox = OptionBox()
+        self.optbox.add("Data space from", DataOption(self.ivm), key="grid")
+        self.optbox.add("Command", TextOption(), key="cmd")
+        self.optbox.add("Output name", OutputNameOption(src_data=self.optbox.option("grid")), key="output-name")
+        layout.addWidget(self.optbox)
         
         hbox = QtGui.QHBoxLayout()
-        self.go_btn = QtGui.QPushButton("Go")
-        self.go_btn.setFixedWidth(50)
-        self.go_btn.clicked.connect(self.go)
+        self.go_btn = RunButton(self)
         hbox.addWidget(self.go_btn)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
         layout.addStretch(1)
 
-    def batch_options(self):
-        return "SimpleMaths", {self.output_name_edit.text() : self.proc_edit.text()}
-
-    def go(self):
-        options = self.batch_options()[1]
-        self.process.run(options)
+    def processes(self):
+        return {
+            "Exec" : {
+                "grid" : self.optbox.option("grid").value,
+                self.optbox.option("output-name").value : self.optbox.option("cmd").value,
+            }
+        }
 
 class VoxelAnalysis(QpWidget):
     """

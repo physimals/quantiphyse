@@ -183,16 +183,18 @@ class ExecProcess(Process):
         # results back into. This is specified by the 'grid' option.
         # Note that all data is combined using their raw grids so these
         # must all match if the result is to work - that is the user's job!
-        self.grid = self.ivm.main.grid
+        gridfrom = options.pop("grid", None)
+        if gridfrom is None:
+            grid = self.ivm.main.grid
+        else:
+            grid = self.ivm.data[gridfrom].grid
 
         for name, data in self.ivm.data.items():
             exec_globals[name] = data.raw()
 
         for name in options.keys():
             proc = options.pop(name)
-            if name == "grid":
-                self.grid = self.ivm.data[options[name]].grid
-            if name == "exec":
+            if name in ("exec", "_"):
                 for code in proc:
                     try:
                         exec(code, exec_globals)
@@ -201,6 +203,6 @@ class ExecProcess(Process):
             else:
                 try:
                     result = eval(proc, exec_globals)
-                    self.ivm.add(result, grid=self.grid, name=name)
+                    self.ivm.add(result, grid=grid, name=name)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))
