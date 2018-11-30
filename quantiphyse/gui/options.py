@@ -90,6 +90,7 @@ class OptionBox(QtGui.QGroupBox):
             self.grid.addWidget(option, self._current_row, idx+1)
             if checked:
                 option.setEnabled(enabled)
+                label.setChecked(enabled)
                 label.stateChanged.connect(self._cb_toggled(option))
             self._options[key] = option
             option.sig_changed.connect(self.sig_changed.emit)
@@ -280,7 +281,14 @@ class DataOption(Option, QtGui.QComboBox):
             item.setCheckState(QtCore.Qt.Unchecked)
         else:
             item.setCheckState(QtCore.Qt.Checked)
+        self.setItemText(0, self._visible_text(self.value))
         self.sig_changed.emit()
+
+    def _visible_text(self, selected_items):
+        if selected_items:
+            return ", ".join(selected_items)
+        else:
+            return "<Select data items>"
 
     def _index_changed(self):
         if self._multi:
@@ -301,7 +309,7 @@ class DataOption(Option, QtGui.QComboBox):
             if self._none_option and not self._multi:
                 self.addItem("<none>")
             elif self._multi:
-                self.addItem("Select data items")
+                self.addItem(self._visible_text(current))
 
             idx = 1
             for name in sorted(data):
@@ -377,13 +385,13 @@ class ChoiceOption(Option, QtGui.QComboBox):
 
         if len(return_values) != len(choices):
             raise QpException("Number of return values must match number of choices")
-        self.choice_map = dict(zip(choices, return_values))
+        self.choice_map = dict(zip([str(choice) for choice in choices], return_values))
         
         try:
             self.blockSignals(True)
             self.clear()
             for choice in choices:
-                self.addItem(choice)
+                self.addItem(str(choice))
             self.setCurrentIndex(0)
         finally:
             self.blockSignals(False)
@@ -401,12 +409,18 @@ class ChoiceOption(Option, QtGui.QComboBox):
     
     @value.setter
     def value(self, choice):
-        idx = self.findText(choice)
+        idx = self.findText(str(choice))
+        if idx < 0:
+            for ret_idx, ret in enumerate(self.choice_map.values()):
+                if ret == choice:
+                    idx = ret_idx
+                    break
+            
         if idx >= 0:
             self.setCurrentIndex(idx)
         else:
             raise ValueError("Value %s is not a valid choice for this option" % choice)
-            
+
     def _changed(self):
         self.sig_changed.emit()
 
