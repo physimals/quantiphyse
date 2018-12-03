@@ -49,7 +49,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test3dDataMask(self):
-        self.ivm.add(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, name="mask", roi=True)
         self.w.ovl.setCurrentIndex(0)
         self.test3dData()
         self.assertEquals(len(self.ivm.rois[NAME].regions), NUM_SV)
@@ -82,7 +82,7 @@ class PerfSlicWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def test4dDataMask(self):
-        self.ivm.add(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, name="mask", roi=True)
         self.w.ovl.setCurrentIndex(0)
         self.w.roi.setCurrentIndex(0)
         self.test4dData()

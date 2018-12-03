@@ -332,7 +332,7 @@ PCA reduction is used on 4D data to extract representative curves
             roi_data[roi_data == m1] = m2
 
             # signal the change
-            self.ivm.add(NumpyData(roi_data, grid=roi.grid, name=self.output_name.text()), make_current=True)
+            self.ivm.add(NumpyData(roi_data, grid=roi.grid, name=self.output_name.text(), roi=True), make_current=True)
 
             # replot
             self.update_plot()

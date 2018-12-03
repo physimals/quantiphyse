@@ -31,7 +31,7 @@ class NumpyDataTest(unittest.TestCase):
         self.assertFalse(qpd.roi)
         
     def test3dints(self):
-        qpd = NumpyData(self.ints, grid=self.grid, name="test")
+        qpd = NumpyData(self.ints, grid=self.grid, name="test", roi=True)
         self.assertEqual(qpd.name, "test")
         self.assertEqual(qpd.nvols, 1)
         self.assertEqual(qpd.ndim, 3)
@@ -51,12 +51,12 @@ class NumpyDataTest(unittest.TestCase):
         
     def testRoiFloats(self):
         """ Check that ROIs can contain float data so long as the numbers are really integers """
-        qpd = NumpyData(self.ints.astype(np.float), grid=self.grid, name="test")
+        qpd = NumpyData(self.ints.astype(np.float), grid=self.grid, name="test", roi=True)
         self.assertTrue(issubclass(qpd.raw().dtype.type, np.floating))
         self.assertTrue(qpd.roi)
         
     def testRoiRegions(self):
-        qpd = NumpyData(self.ints, grid=self.grid, name="test")
+        qpd = NumpyData(self.ints, grid=self.grid, name="test", roi=True)
         self.assertTrue(qpd.roi)
         regions = [v for v in np.unique(self.ints) if v != 0]
         self.assertEqual(regions, qpd.regions)

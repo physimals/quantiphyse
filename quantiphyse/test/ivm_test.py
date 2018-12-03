@@ -38,7 +38,7 @@ class IVMTest(unittest.TestCase):
     def testAddRoi(self):
         shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]
         grid = DataGrid(shape, np.identity(4))
-        qpd = NumpyData(np.random.randint(0, 10, size=shape), name="test", grid=grid)
+        qpd = NumpyData(np.random.randint(0, 10, size=shape), name="test", grid=grid, roi=True)
         self.assertTrue(qpd.roi)
         self.ivm.add(qpd)
         self.assertEqual(len(self.ivm.data), 1)
@@ -66,8 +66,8 @@ class IVMTest(unittest.TestCase):
     def testAddTwoRois(self):
         shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]
         grid = DataGrid(shape, np.identity(4))
-        qpd = NumpyData(np.random.randint(0, 10, size=shape), name="test", grid=grid)
-        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid)
+        qpd = NumpyData(np.random.randint(0, 10, size=shape), name="test", grid=grid, roi=True)
+        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid, roi=True)
         self.assertTrue(qpd.roi)
         self.assertTrue(qpd2.roi)
         self.ivm.add(qpd)
@@ -86,7 +86,7 @@ class IVMTest(unittest.TestCase):
         shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]
         grid = DataGrid(shape, np.identity(4))
         qpd = NumpyData(np.random.rand(*shape), name="test", grid=grid)
-        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid)
+        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid, roi=True)
         self.assertFalse(qpd.roi)
         self.assertTrue(qpd2.roi)
         self.ivm.add(qpd)
@@ -104,7 +104,7 @@ class IVMTest(unittest.TestCase):
         shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]
         grid = DataGrid(shape, np.identity(4))
         qpd = NumpyData(np.random.rand(*shape), name="test", grid=grid)
-        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid)
+        qpd2 = NumpyData(np.random.randint(0, 10, size=shape), name="test2", grid=grid, roi=True)
         self.assertFalse(qpd.roi)
         self.assertTrue(qpd2.roi)
         self.ivm.add(qpd2)
@@ -123,7 +123,7 @@ class IVMTest(unittest.TestCase):
         grid = DataGrid(shape, np.identity(4))
         qpd = NumpyData(np.random.rand(*shape), name="test", grid=grid)
         qpd2 = NumpyData(np.random.rand(*shape), name="test2", grid=grid)
-        qpd3 = NumpyData(np.random.randint(0, 10, size=shape), name="test3", grid=grid)
+        qpd3 = NumpyData(np.random.randint(0, 10, size=shape), name="test3", grid=grid, roi=True)
         self.assertFalse(qpd.roi)
         self.assertFalse(qpd2.roi)
         self.assertTrue(qpd3.roi)

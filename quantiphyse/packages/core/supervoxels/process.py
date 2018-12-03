@@ -66,7 +66,7 @@ class SupervoxelsProcess(Process):
                            mask=mask, recompute_seeds=recompute_seeds, n_random_seeds=n_supervoxels)
         newroi = np.zeros(data.grid.shape)
         newroi[slices] = np.array(labels, dtype=np.int) + 1
-        self.ivm.add(newroi, grid=data.grid, name=output_name, make_current=True)
+        self.ivm.add(newroi, grid=data.grid, name=output_name, roi=True, make_current=True)
 
 class MeanValuesProcess(Process):
     """

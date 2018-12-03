@@ -67,15 +67,18 @@ class DataStatisticsProcess(Process):
 
     def run(self, options):
         data_name = options.pop('data', None)
-        output_name = options.pop('output-name', "stats")
+        output_name = options.pop('output-name', None)
         if data_name is None:
             data_items = self.ivm.data.keys()
         elif isinstance(data_name, six.string_types):
             data_items = [data_name,]
-            output_name = options.pop('output-name', "%s_stats" % data_name)
+            if output_name is None:
+                output_name = "%s_stats" % data_name
         else:
             data_items = data_name
         data_items = [self.ivm.data[name] for name in data_items]
+        if output_name is None:
+            output_name = "stats"
 
         roi_name = options.pop('roi', None)
         roi = None
@@ -127,7 +130,7 @@ class DataStatisticsProcess(Process):
         if roi is not None:
             roi = roi.resample(data.grid) 
         else:
-            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp")
+            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
 
         if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}

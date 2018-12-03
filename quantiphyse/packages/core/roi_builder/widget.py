@@ -176,7 +176,7 @@ class RoiBuilderWidget(QpWidget):
         
         roi_orig[slices] = data_orig
 
-        self.ivm.add(NumpyData(roi_orig, grid=self.grid, name=self.roi_name), make_current=True)
+        self.ivm.add(NumpyData(roi_orig, grid=self.grid, name=self.roi_name, roi=True), make_current=True)
         self.undo_btn.setEnabled(True)
 
     def undo(self):
@@ -190,7 +190,7 @@ class RoiBuilderWidget(QpWidget):
         data_prev, slices = self._history.pop()
         roidata = self._get_roidata()
         roidata[slices] = data_prev
-        self.ivm.add(NumpyData(roidata, grid=self.grid, name=self.roi_name), make_current=True)
+        self.ivm.add(NumpyData(roidata, grid=self.grid, name=self.roi_name, roi=True), make_current=True)
         self.undo_btn.setEnabled(len(self._history) > 0)
       
     def _label_changed(self, label):

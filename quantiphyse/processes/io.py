@@ -31,6 +31,7 @@ class LoadProcess(Process):
             if qpdata is not None: 
                 if force_mv and qpdata.nvols == 1 and qpdata.grid.shape[2] > 1: 
                     qpdata.set_2dt()
+                qpdata.roi = fname in rois
                 self.ivm.add(qpdata, make_current=True)
 
     def _load_file(self, fname, name):

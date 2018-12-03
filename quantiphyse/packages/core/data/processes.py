@@ -17,7 +17,11 @@ class ResampleProcess(Process):
     
     def run(self, options):
         data = self.get_data(options)
-        order = options.pop("order", 1)
+        if data.roi: 
+            default_order=0
+        else:
+            default_order=1
+        order = options.pop("order", default_order)
         output_name = options.pop("output-name", "%s_res" % data.name)
         grid_data = options.pop("grid", None)
 
@@ -29,4 +33,4 @@ class ResampleProcess(Process):
         grid = self.ivm.data[grid_data].grid
         output_data = data.resample(grid, order=order)
         output_data.name = output_name
-        self.ivm.add(output_data, make_current=True)
+        self.ivm.add(output_data, make_current=True, roi=data.roi and order == 0)
