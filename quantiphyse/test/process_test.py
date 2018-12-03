@@ -94,7 +94,8 @@ Cases:
         during the process of a test
         """
         from . import create_test_data
-        create_test_data(self)
+        testshape = getattr(self, "testshape", (10, 10, 10))
+        create_test_data(self, shape=testshape)
 
         nii_3d = nib.Nifti1Image(self.data_3d, np.identity(4))
         nii_3d.to_filename(os.path.join(self.input_dir, "data_3d.nii.gz"))
