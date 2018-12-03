@@ -341,7 +341,7 @@ class QpData(object):
                     (i.e. strings, numbers and lists/dicts of these)
     """
 
-    def __init__(self, name, grid, nvols, roi=None, metadata=None, **kwargs):
+    def __init__(self, name, grid, nvols, roi=False, metadata=None, **kwargs):
         self.name = name
         self.grid = grid
 
@@ -666,7 +666,7 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + suffix)
+        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
