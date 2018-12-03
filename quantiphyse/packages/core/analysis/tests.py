@@ -20,7 +20,7 @@ class DataStatisticsTest(WidgetTest):
 
     def test3dData(self):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
-        self.w.data_combo.setCurrentIndex(0)
+        self.w.data.value = ["data_3d",]
         self.harmless_click(self.w.butgen)
         self.assertTrue(self.w.stats_table.isVisible())
         model = self.w.stats_table.model()
@@ -36,7 +36,7 @@ class DataStatisticsTest(WidgetTest):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         # Select 'all data'
-        self.w.data_combo.setCurrentIndex(2)
+        self.w.data.value = ["data_3d", "data_4d"]
         self.harmless_click(self.w.butgen)
         self.assertTrue(self.w.stats_table.isVisible())
         self.assertEquals(self.w.stats_table.model().rowCount(), 5)
@@ -50,7 +50,7 @@ class DataStatisticsTest(WidgetTest):
      
     def testCopy(self):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
-        self.w.data_combo.setCurrentIndex(0)
+        self.w.data.value = ["data_3d",]
         self.harmless_click(self.w.butgen)
         self.harmless_click(self.w.copy_btn)
         cb = QtGui.QApplication.clipboard()
@@ -62,7 +62,7 @@ class DataStatisticsTest(WidgetTest):
         
     def testSliceStats(self):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
-        self.w.data_combo.setCurrentIndex(0)
+        self.w.data.value = ["data_3d",]
         self.harmless_click(self.w.butgenss)
         self.ivl.set_focus([0, 0, 2, 0])
         model = self.w.stats_table_ss.model()

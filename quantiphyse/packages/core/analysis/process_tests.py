@@ -1,13 +1,13 @@
+"""
+Quantiphyse - Analysis process tests
+
+Copyright (c) 2013-2018 University of Oxford
+"""
 import os
 import unittest
-import traceback
-
-import numpy as np
 
 from quantiphyse.processes import Process
 from quantiphyse.test import ProcessTest
-
-from .processes import CalcVolumesProcess
 
 class AnalysisProcessTest(ProcessTest):
     
@@ -69,6 +69,33 @@ class AnalysisProcessTest(ProcessTest):
         self.assertEqual(self.status, Process.SUCCEEDED)
         self.assertTrue("testdata_hist" in self.ivm.extras)
         self.assertTrue(os.path.exists(os.path.join(self.output_dir, "case", "testdata_hist.tsv")))
+
+    def testExecMultiply(self):
+        yaml = """
+  - Exec:
+      test1: data_3d * 3.14159265  
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("test1" in self.ivm.data)
+
+    def testExecDemean(self):
+        yaml = """
+  - Exec:
+      test1: data_3d - np.mean(data_3d)
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("test1" in self.ivm.data)
+
+    def testExecSubtractVolume(self):
+        yaml = """
+  - Exec:
+      test1: data_3d - data_4d[..., 0]
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("test1" in self.ivm.data)
 
 if __name__ == '__main__':
     unittest.main()
