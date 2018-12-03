@@ -51,6 +51,9 @@ class ImageVolumeManagement(QtCore.QObject):
     # Change to current ROI
     sig_current_roi = QtCore.Signal(object)
 
+    # Change to set of extras (e.g. new one added)
+    sig_extras = QtCore.Signal(list)
+
     def __init__(self):
         super(ImageVolumeManagement, self).__init__()
         self.reset()
@@ -112,7 +115,7 @@ class ImageVolumeManagement(QtCore.QObject):
         self.main = self.data[name]
         self.sig_main_data.emit(self.main)
 
-    def add(self, data, name=None, grid=None, make_current=None, make_main=None):
+    def add(self, data, name=None, grid=None, make_current=None, make_main=None, roi=None):
         """
         Add data item to IVM
 
@@ -126,11 +129,12 @@ class ImageVolumeManagement(QtCore.QObject):
         :param grid: If data is a Numpy array, a DataGrid instance defining the orientation
         :param make_current: If True, make this the current data item
         :param make_main: If True, make this the main data.
+        :param roi: If providing Numpy array, optionally specifies whether the data is an ROI or not
         """
         if isinstance(data, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add: Numpy data must have a name and a grid")
-            data = NumpyData(data, grid, name)       
+            data = NumpyData(data, grid, name, roi=roi)       
         elif not isinstance(data, QpData):
             raise QpException("add: data must be Numpy array or QpData")
 
@@ -276,6 +280,7 @@ class ImageVolumeManagement(QtCore.QObject):
         :param obj: Object which should support str() conversion
         """
         self.extras[name] = obj
+        self.sig_extras.emit(self.extras.values())
 
     def values(self, pos, grid=None):
         """
