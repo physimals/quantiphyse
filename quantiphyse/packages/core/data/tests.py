@@ -4,6 +4,8 @@ import numpy as np
 
 from quantiphyse.data import DataGrid
 from quantiphyse.test.widget_test import WidgetTest
+from quantiphyse.processes import Process
+from quantiphyse.test import ProcessTest
 
 from .widgets import ResampleDataWidget
 
@@ -132,6 +134,32 @@ class ResampleDataWidgetTest(WidgetTest):
                     from scipy.interpolate import interpn
                     d = interpn((X, Y, Z), self.data_3d, (gx, gy, gz), method="linear", bounds_error=False, fill_value=0)
                     self.assertAlmostEqual(data_res[x, y, z], d)
-                        
+
+class ResampleProcessTest(ProcessTest):
+    
+    def testResample3d(self):
+        yaml = """       
+  - Resample:
+      data: data_3d
+      order: 1 # Linear interpolation
+      grid: data_3d
+      output-name: testdata_resampled
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("testdata_resampled" in self.ivm.data)
+
+    def testResample4d(self):
+        yaml = """
+  - Resample:
+      data: data_4d
+      order: 3 # Cubic interpolation
+      grid: data_4d
+      output-name: testdata_resampled
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("testdata_resampled" in self.ivm.data)
+   
 if __name__ == '__main__':
     unittest.main()
