@@ -52,7 +52,7 @@ def main():
 
     # Parse input arguments to pass info to GUI
     parser = argparse.ArgumentParser()
-    parser.add_argument('data', help='Load data files', nargs="+", type=str)
+    parser.add_argument('data', help='Load data files', nargs="*", type=str)
     parser.add_argument('--batch', help='Run batch file', default=None, type=str)
     parser.add_argument('--debug', help='Activate debug mode', action="store_true")
     parser.add_argument('--test-all', help='Run all tests', action="store_true")
