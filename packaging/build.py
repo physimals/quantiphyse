@@ -63,7 +63,6 @@ if "--maxi" in sys.argv:
         "qp-basil" : "basil", 
         "qp-fsl" : "fslqp",
         "qp-fabber-t1" : "fabber_t1", 
-        "veaslc/quantiphyse" : "veasl",
         "qp-dsc" : "dsc", 
     }
     
