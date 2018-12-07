@@ -30,23 +30,6 @@ def get_debug():
     .. deprecated:: 0.8
     """
     return BASE_LOG.getEffectiveLevel() <= logging.DEBUG
-    
-def debug(*msgs):
-    """
-    Generic debug message
-
-    .. deprecated:: 0.8
-    """
-    msg = " ".join([str(msg) for msg in msgs]) + " *DEPRECATED LOG MESSAGE*"
-    BASE_LOG.debug(msg)
-
-def warn(msg):
-    """
-    Generic warning message
-
-    .. deprecated:: 0.8
-    """
-    BASE_LOG.warn(str(msg) + " *DEPRECATED LOG MESSAGE*")
 
 class LogSource(object):
     """

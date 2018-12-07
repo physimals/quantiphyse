@@ -20,7 +20,7 @@ from .logger import LogSource, get_debug, set_debug
 from .plugins import get_plugins
 from .local import get_local_file, get_local_shlib, get_icon, set_local_file_path, local_file_from_drop_url
 
-__all__ = ["QpException", "LogSource", "get_plugins", "get_local_file", "get_local_shlib", "get_icon", "set_local_file_path", "local_file_from_drop_url",]
+__all__ = ["QpException", "LogSource", "set_debug", "get_plugins", "get_local_file", "get_local_shlib", "get_icon", "set_local_file_path", "local_file_from_drop_url",]
 
 DEFAULT_SIG_FIG = 4
 LOG = logging.getLogger(__name__)

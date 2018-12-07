@@ -321,7 +321,6 @@ class Script(Process):
             # Could not create process - treat as process failure
             self._process_finished(Process.FAILED, "Process failed to start: " + str(exc), exc)
         finally:
-            #set_debug(debug_orig)
             pass
 
     def _process_finished(self, status, log, exception):
