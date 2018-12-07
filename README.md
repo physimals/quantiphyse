@@ -123,13 +123,14 @@ Current issues can be viewed on the GitLab issue tracker(https://ibme-gitcvs.eng
 
 #### v0.8 (Target Jan 2019)
 
- - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      DONE?
- - Improved registration support (apply transform)                      PART DONE
+ - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      DONE
+ - Improved registration support (apply transform)                      DONE - needs more testing
  - Improved manual data alignment tools                                 PART DONE
  - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       PART DONE
- - Fabber T1 (integrate with existing T1 widget?)                       NOT DONE
- - Fabber DCE (integrate with existing DCE widget?)                     NOT DONE
+ - Fabber T1 (integrate with existing T1 widget?)                       PART DONE
+ - Fabber DCE (integrate with existing DCE widget?)                     PART DONE
  - DSC widget                                                           PART DONE
+ - Improvements to ROI builder - working 'paint' tool                   NOT DONE 
 
 #### v1.0 (Target Feb/March 2019)
 
