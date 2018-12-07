@@ -453,7 +453,7 @@ class QpData(object):
         """
         raise NotImplementedError("Internal Error: raw() has not been implemented.")
 
-    def volume(self, vol):
+    def volume(self, vol, qpdata=False):
         """
         Get the specified volume from a multi-volume data set
 
@@ -467,7 +467,11 @@ class QpData(object):
         rawdata = self.raw()
         if self.ndim == 4:
             rawdata = rawdata[:, :, :, min(vol, self.nvols-1)]
-        return rawdata
+
+        if qpdata:
+            return NumpyData(rawdata, grid=self.grid, name="%s_vol_%i" % (self.name, vol))
+        else:
+            return rawdata
 
     def value(self, pos, grid=None, as_str=False):
         """
