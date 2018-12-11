@@ -71,7 +71,8 @@ class OptionBox(QtGui.QGroupBox):
 
         if not real_options:
             # Allow no options for just a label
-            real_options = [None]
+            real_options = []
+            keys = []
 
         if len(keys) != len(real_options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
@@ -203,6 +204,7 @@ class DataOption(Option, QtGui.QComboBox):
     def __init__(self, ivm, parent=None, **kwargs):
         super(DataOption, self).__init__(parent)
         self.ivm = ivm
+        self._changed = False
 
         self._include_3d = kwargs.get("include_3d", True)
         self._include_4d = kwargs.get("include_4d", not kwargs.get("static_only", False))
@@ -283,6 +285,12 @@ class DataOption(Option, QtGui.QComboBox):
             item.setCheckState(QtCore.Qt.Checked)
         self.setItemText(0, self._visible_text(self.value))
         self.sig_changed.emit()
+        self._changed = True
+
+    def hidePopup(self):
+        if not self._changed:
+            QtGui.QComboBox.hidePopup(self)
+        self._changed = False
 
     def _visible_text(self, selected_items):
         if selected_items:
