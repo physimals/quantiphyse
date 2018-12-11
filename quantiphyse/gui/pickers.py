@@ -79,6 +79,8 @@ class Picker(LogSource):
         LogSource.__init__(self)
         self.ivl = iv
         self.use_drag = False
+        self.view = None
+        self.win = None
 
     def reset(self):
         """
@@ -160,15 +162,14 @@ class PaintPicker(Picker):
         self.use_drag = True
 
     def reset(self):
-        print("paint picker reset")
         self._points = []
 
     def pick(self, win, pos):
-        print("paint picker pick", pos)
+        self.win = win
+        self.view = self.ivl.ortho_views[self.win]
         self._points = [pos,]
 
     def drag(self, win, pos):
-        print("paint picker drag", pos)
         self._points.append(pos)
 
     def selection(self, grid=None, **kwargs):
@@ -216,7 +217,6 @@ class SliceMultiPicker(MultiPicker):
     """
     def __init__(self, iv, col=(255, 0, 0)):
         MultiPicker.__init__(self, iv, col)
-        self.win = None
         self.zaxis = None
         self.zpos = None
 
@@ -238,8 +238,6 @@ class PolygonPicker(Picker):
         Picker.__init__(self, iv)
         self.roisel = None
         self._points = []
-        self.view = None
-        self.win = None
 
     def pick(self, win, pos):
         if self.win is None:
