@@ -628,6 +628,16 @@ class ImageView(QtGui.QSplitter, LogSource):
         exporter.parameters()['width'] = 2000
         exporter.export(str(outputfile))
 
+    def redraw(self):
+        """
+        Redraw the view, e.g. on data change
+
+        This is a hack
+        """
+        for view in self.ortho_views.values():
+            view.force_redraw = True
+        self.sig_focus_changed.emit(self._pos)
+
     def _pick(self, win, pos):
         """
         Called when a point is picked in one of the viewing windows
