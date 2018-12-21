@@ -120,13 +120,14 @@ class EllipseTool(PickedRegionTool):
     """ Tool which selects an elliptical region """
     def __init__(self):
         PickedRegionTool.__init__(self, "Ellipse", "Click and drag to select elliptical region", PickMode.ELLIPSE)
-        
-class EraserTool(Tool):
+       
+class PainterTool(Tool):
     """
-    Tool which erases voxels when clicked
+    Tool which paints voxels when clicked
     """
-    def __init__(self):
-        Tool.__init__(self, "Eraser", "Remove voxels from the ROI")
+    def __init__(self, name="Painter", desc="Paint voxels on the ROI"):
+        Tool.__init__(self, name, desc)
+        self._paint_mode = 1 # FIXME
 
     def selected(self):
         self.ivl.set_picker(PickMode.PAINT)
@@ -136,18 +137,42 @@ class EraserTool(Tool):
         self.ivl.sig_selection_changed.disconnect(self._point_picked)
         Tool.deselected(self)
 
+    def interface(self):
+        grid = Tool.interface(self)
+        self.size = NumericOption("Brush size", grid, 1, 0, intonly=True, maxval=10, default=1, minval=1, step=2)
+        return grid
+
     def _point_picked(self, picker):
-        print("eraser - point picked")
+        self.debug("Point picked")
+        size = self.size.spin.value()
         points = picker.selection(grid=self.builder.grid)
-        print(points)
+
+        grid_axes = self.builder.grid.get_ras_axes()
+        gridx = grid_axes[picker.view.xaxis]
+        gridy = grid_axes[picker.view.yaxis]
+        gridz = grid_axes[picker.view.zaxis]
+        self.debug("Grid axes: %i, %i, %i", gridx, gridy, gridz)
+        self.debug(str(points))
         grid_points = []
         for point in points:
-            grid_point = [int(v + 0.5) for v in point]
-            if not grid_points or grid_point != grid_points[-1]:
-                grid_points.append(grid_point)
-        print(grid_points)
-        self.builder.modify(points=grid_points, mode=self.builder.ERASE)
+            for xd in range(-int((size-1)/2), int((size-1)/2)+1, 1):
+                for yd in range(-int((size-1)/2), int((size-1)/2)+1, 1):
+                    grid_point = [int(v + 0.5) for v in point]
+                    grid_point[gridx] = grid_point[gridx] + xd
+                    grid_point[gridy] = grid_point[gridy] + yd
+                    if not grid_points or grid_point != grid_points[-1]:
+                        grid_points.append(grid_point)
+        self.debug(str(grid_points))
+        self.builder.modify(points=grid_points, mode=self._paint_mode)
         picker.reset()
+      
+class EraserTool(PainterTool):
+    """
+    Tool which erases voxels when clicked
+    """
+    def __init__(self):
+        PainterTool.__init__(self, "Eraser", "Remove voxels from the ROI")
+        self._paint_mode = 2 # FIXME
 
 class PickTool(Tool):
     """
@@ -200,8 +225,8 @@ class PickTool(Tool):
         self._show_builder_roi()
 
     def _show_builder_roi(self):
-        if self.builder.roi_name in self.ivm.rois:
-            self.ivm.set_current_roi(self.builder.roi_name)
+        if self.builder.roiname in self.ivm.rois:
+            self.ivm.set_current_roi(self.builder.roiname)
 
     def _show_existing_roi(self):
         if self.roi_name in self.ivm.rois:
@@ -294,7 +319,7 @@ class WalkerTool(Tool):
             self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
             
         self.labels = np.zeros(self.builder.grid.shape, dtype=np.int)
-        self.pickmode_changed(self.pickmode)
+        self._pick_mode_changed(self.pickmode)
 
     def selected(self):
         self.ivl.sig_selection_changed.connect(self._points_changed)
@@ -313,7 +338,6 @@ class WalkerTool(Tool):
 
             for pos in points:
                 pos = [int(p+0.5) for p in pos]
-                print(pos, label)
                 self.labels[pos[0], pos[1], pos[2]] = label
 
     def _segment(self):
@@ -341,15 +365,15 @@ class WalkerTool(Tool):
             # Segment using 2D slice only
             zaxis = self.ivl.picker.zaxis
             zpos = int(self.ivl.picker.zpos + 0.5)
-            print(zaxis, zpos)
+            #print(zaxis, zpos)
             sl = [slice(None)] * 3
             sl[zaxis] = zpos
             arr = arr[sl]
             labels = self.labels[sl]
             del spacing[zaxis] 
-            print(labels)
-            print(np.count_nonzero(labels))
-            print(np.count_nonzero(arr))
+            #print(labels)
+            #print(np.count_nonzero(labels))
+            #print(np.count_nonzero(arr))
 
         seg = skimage.segmentation.random_walker(arr, labels, beta=self.beta.spin.value(), 
                                                  mode='cg_mg', spacing=spacing, **kwargs)
@@ -364,7 +388,7 @@ class WalkerTool(Tool):
         seg[seg == 2] = 0
         
         self.builder.modify(vol=seg, mode=self.builder.ADD)
-        self.init()
+        self._init()
              
 class BucketTool(Tool):
     """
@@ -476,15 +500,15 @@ class BucketTool(Tool):
 
     def _add(self):
         self.builder.modify(vol=self.roi, mode=self.builder.ADD)
-        self.init()
+        self._init()
 
     def _erase(self):
         self.builder.modify(vol=self.roi, mode=self.builder.ERASE)
-        self.init()
+        self._init()
 
     def _mask(self):
         self.builder.modify(vol=self.roi, mode=self.builder.MASK)
-        self.init()
+        self._init()
 
     def _dims_changed(self):
         pass
