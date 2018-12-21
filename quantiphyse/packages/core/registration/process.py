@@ -20,11 +20,13 @@ Copyright (c) 2013-2018 University of Oxford
 import sys
 import logging
 import traceback
+import multiprocessing
 
 import six
 import numpy as np
 
-from quantiphyse.data import NumpyData
+from quantiphyse.data import NumpyData, QpData
+from quantiphyse.data.extras import Extra
 from quantiphyse.utils import get_plugins, set_local_file_path, QpException
 from quantiphyse.processes import Process
 
@@ -37,7 +39,7 @@ def get_reg_method(method_name):
     methods = get_plugins("reg-methods")
     LOG.debug("Known methods: %s", str(methods))
     for method_class in methods:
-        method = method_class()
+        method = method_class(None)
         if method.name.lower() == method_name.lower():
             return method
     return None
@@ -134,6 +136,7 @@ class RegProcess(Process):
         self.debug("Run")
         method_name = options.pop("method")
         mode = options.pop("mode", "reg")
+        self._save_transform = options.pop("save-transform", None)
 
         # Registration data. Need to know the reg data grid and number of volumes so progress
         # and output data can be interpreted correctly
@@ -145,6 +148,7 @@ class RegProcess(Process):
         regdata = self.ivm.data[regdata_name]
         reg_grid = regdata.grid
         reg_data = [regdata, ]
+        self._output_name = options.pop("output-name", regdata.name + options.get("output-suffix", "_reg"))
 
         # Reference data. Defaults to same as reg data so MoCo can be
         # supported as self-registration
@@ -191,7 +195,9 @@ class RegProcess(Process):
     def finished(self, worker_output):
         """ Add output data to the IVM and set the log """
         if self.status == Process.SUCCEEDED:
-            registered_data, _, log = worker_output[0]
+            registered_data, transform, log = worker_output[0]
+            # Output name applies to the registration input data
+            registered_data[0].name = self._output_name
             self.log(log)
 
             first_roi, first_data = True, True
@@ -202,3 +208,47 @@ class RegProcess(Process):
                 else:
                     self.ivm.add(data, make_current=first_data)
                     first_data = False
+
+            if self._save_transform:
+                if isinstance(transform, QpData):
+                    self.ivm.add(transform, name=self._save_transform)
+                elif isinstance(transform, Extra):
+                    transform.name = self._save_transform
+                    self.ivm.add_extra(self._save_transform, transform)
+                else:
+                    # FIXME what to do about moco - sequence of transforms?
+                    pass
+
+class ApplyTransformProcess(Process):
+    """
+    Asynchronous background process to run registration / motion correction
+    """
+
+    PROCESS_NAME = "ApplyTransform"
+
+    def run(self, options):
+        self.debug("Run")
+        data = self.get_data(options)
+        trans_name = options.pop("transform")
+        output_name = options.pop("output-name", data.name + "_reg")
+
+        transform = self.ivm.data.get(trans_name, None)
+        if transform is None or "QpReg" not in transform.metadata:
+            transform = self.ivm.extras.get(trans_name, None)
+
+        if transform is None or "QpReg" not in transform.metadata:
+            raise QpException("Transform not found: %s" % trans_name)
+
+        method = get_reg_method(transform.metadata["QpReg"])
+        if method is None:
+            raise QpException("Registration method not found: %s" % transform.metadata["QpReg"])
+
+        # Fake queue - we ignore progress reports as this process is not asynchronous
+        queue = multiprocessing.Queue()
+
+        self.log("Applying transformation to data: %s" % data.name)
+        registered, apply_log = method.apply_transform(data, transform, dict(options), queue)
+        registered = _normalize_output(data, registered, "_reg")
+        self.log(apply_log)
+        self.ivm.add(registered, name=output_name, make_current=True)
+        

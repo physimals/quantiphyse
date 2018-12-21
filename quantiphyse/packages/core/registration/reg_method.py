@@ -18,9 +18,10 @@ class RegMethod(LogSource):
     Methods which take options should implement ``interface`` and ``options``
     Methods may implement ``moco`` if motion correction is handled differently
     """
-    def __init__(self, name, display_name=None):
+    def __init__(self, name, ivm, display_name=None):
         LogSource.__init__(self)
         self.name = name
+        self.ivm = ivm
         if display_name is not None:
             self.display_name = display_name
         else:
@@ -39,6 +40,14 @@ class RegMethod(LogSource):
         :param queue: Queue object which method may put progress information on to. Progress 
                       should be given as a number between 0 and 1.
         :return Tuple of QpData containing transformed data and log output as a string
+
+        Standard options:
+
+        :param output-space: `ref` to output in the same space as the transformation reference space,
+                             `reg` to output in the same space as the input data,
+                             `transform` to apply the transformation to the data space rather than
+                             resampling the data (only possible for affine transformations)
+        :param interp-order: Interpolation order (0=nearest neighbour, 1=linear, 2=quadratic, 3=cubic)
         """
         raise NotImplementedError("Registration method has not implemented 'apply_transform'")
 
@@ -122,11 +131,7 @@ class RegMethod(LogSource):
                 log += vol_log
             queue.put(float(vol)/reg_data.shape[-1])
 
-        # If we are not saving transforms, the list will just be a list of None objects
-        if not options.get("save-transforms", False):
-            transforms = None
-
-        return out_data, transforms, log
+        return NumpyData(out_data, grid=output_space.grid, name=reg_data.name), transforms, log
 
     @classmethod
     def moco(cls, moco_data, ref, options, queue):
@@ -169,9 +174,12 @@ class RegMethod(LogSource):
         log += moco_log
         return out_data, transforms, log
 
-    def interface(self):
+    def interface(self, generic_options):
         """
-        Return a QtGui.QWidget() to allow options to be controlled
+        :param generic_options: Dictionary of generic registration options - this is provided so
+               the method can customize the options offered depending on the registration mode.
+
+        :return: QtGui.QWidget() to allow options to be controlled
         """
         return QtGui.QWidget()
         
