@@ -247,12 +247,14 @@ PCA reduction is used on 4D data to extract representative curves
 
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None:
-            for cc, ii in enumerate(roi.regions):
-                self.count_table.setHorizontalHeaderItem(cc, QtGui.QStandardItem("Region " + str(ii)))
+            col_idx = 0
+            for region, name in roi.regions.items():
+                self.count_table.setHorizontalHeaderItem(col_idx, QtGui.QStandardItem(name))
 
                 # Volume count
-                voxel_count = np.sum(roi.raw() == ii)
-                self.count_table.setItem(0, cc, QtGui.QStandardItem(str(np.around(voxel_count))))
+                voxel_count = np.sum(roi.raw() == region)
+                self.count_table.setItem(0, col_idx, QtGui.QStandardItem(str(np.around(voxel_count))))
+                col_idx += 1
         
     def reset_graph(self):
         """
@@ -279,13 +281,12 @@ PCA reduction is used on 4D data to extract representative curves
             self.plot.addLegend()
 
             # Plotting using single or multiple plots
-            for region in roi.regions:
+            for region, name in roi.regions.items():
                 if np.sum(self.curves[region]) == 0:
                     continue
 
                 pencol = get_pencol(roi, region)
-                name1 = "Region " + str(region)
-                curve = self.plot.plot(pen=pencol, width=8.0, name=name1)
+                curve = self.plot.plot(pen=pencol, width=8.0, name=name)
                 xx = np.arange(len(self.curves[region]))
                 curve.setData(xx, self.curves[region])
 
@@ -317,10 +318,8 @@ PCA reduction is used on 4D data to extract representative curves
         Generate the mean curves for each cluster
         Returns:
         """
-        regions = roi.regions
-
         self.curves = {}
-        for region in regions:
+        for region in roi.regions:
             roi_data = data.mask(roi, region=region, output_flat=True)
             mean = np.median(roi_data, axis=0)
             self.curves[region] = mean

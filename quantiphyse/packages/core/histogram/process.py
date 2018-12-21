@@ -54,12 +54,12 @@ class HistogramProcess(Process):
 
             if roi is None:
                 roi_fordata = np.ones(data.grid.shape)
-                regions = [1,]
+                regions = {1 : ""}
             else:
                 roi_fordata = roi.resample(data.grid).raw()
                 regions = roi.regions
 
-            for region in regions:
+            for region, region_name in regions.items():
                 if sel_region is not None and region != sel_region:
                     self.debug("Ignoring region %i", region)
                     continue
@@ -67,8 +67,8 @@ class HistogramProcess(Process):
                 region_data = rawdata[roi_fordata == region]
                 data_vals, edges = np.histogram(region_data, bins=bins, range=hrange, density=prob)
                     
-                if len(regions) > 1:
-                    name = "%s\nRegion %i" % (data.name, region)
+                if region_name:
+                    name = "%s\n%s" % (data.name, region_name)
                 else:
                     name = data.name
 
