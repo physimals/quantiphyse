@@ -349,7 +349,7 @@ class QpData(object):
         self._nvols = nvols
 
         if metadata is not None:
-            self.metadata = metadata
+            self.metadata = dict(metadata)
         else:
             self.metadata = {}
 
@@ -404,15 +404,22 @@ class QpData(object):
     @property
     def regions(self):
         """
-        Sequence of distinct ROI region integers, not including zero
+        Dictionary of value : name for distinct ROI region integers, not including zero
         """
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
         
         if self.metadata.get("roi_regions", None) is None:
             regions = np.unique(self.raw().astype(np.int))
-            self.metadata["roi_regions"] = [int(r) for r in regions if r > 0]
-
+            regions = np.delete(regions, np.where(regions == 0))
+            if len(regions) == 1:
+                # If there is only one region, don't give it a name
+                self.metadata["roi_regions"] = {regions[0] : ""}
+            else:
+                roi_regions = {}
+                for region in regions:
+                    roi_regions[region] = "Region %i" % region
+                self.metadata["roi_regions"] = roi_regions
         return self.metadata["roi_regions"]
 
     @property 
@@ -460,7 +467,8 @@ class QpData(object):
         The default implementation calls raw() to return all data. Subclasses may override
         this method, e.g. to only load the required volume.
 
-        If the specified volume is out of range for this data, returns the last volume
+        If the specified volume is out of range for this data, returns the last volume. Note
+        that we do not copy metadata as it may be related to the whole 4D data set.
 
         :param vol: Volume number (0=first)
         """
@@ -670,7 +678,7 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi)
+        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, metadata=self.metadata)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
