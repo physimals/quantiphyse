@@ -28,6 +28,9 @@ from quantiphyse.utils import sf, QpException
 # Private copy of pyqtgraph functions for bug fixes
 from . import functions as pg
 
+# FIXME hack to ensure extras is frozen!
+from . import extras
+
 #: Tolerance for treating values as equal
 #: Used to determine if matrices are diagonal or identity
 EQ_TOL = 1e-3
