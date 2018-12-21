@@ -59,7 +59,7 @@ class NumpyDataTest(unittest.TestCase):
         qpd = NumpyData(self.ints, grid=self.grid, name="test", roi=True)
         self.assertTrue(qpd.roi)
         regions = [v for v in np.unique(self.ints) if v != 0]
-        self.assertEqual(regions, qpd.regions)
+        self.assertEqual(regions, qpd.regions.keys())
 
     def testRange(self):
         qpd = NumpyData(self.floats, grid=self.grid, name="test")
