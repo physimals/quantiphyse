@@ -149,6 +149,7 @@ class Process(QtCore.QObject, LogSource):
             
         self._log = ""
         self.status = Process.NOTSTARTED
+        self._completed = False
         # We seem to get a segfault when emitting a signal with a None object
         self.exception = object()
 
@@ -190,6 +191,7 @@ class Process(QtCore.QObject, LogSource):
         self.debug("Executing %s", self.proc_id)
         self.status = self.NOTSTARTED
         self._log = ""
+        self._completed = False
         try:
             self.run(options)
             if self.status == self.NOTSTARTED:
@@ -200,8 +202,9 @@ class Process(QtCore.QObject, LogSource):
             if get_debug():
                 traceback.print_exc()
 
-        if self.status != self.RUNNING:
-            # Synchronous process already finished
+        if self.status != self.RUNNING and not self._completed:
+            # Synchronous process already finished. Note that it might
+            # call _complete itself in some cases (e.g. batch script)
             self.debug("Sync process done - completing")
             self._complete()
         else:
@@ -478,6 +481,7 @@ class Process(QtCore.QObject, LogSource):
         emit finished signal regardless. 
         """
         self.debug("Process completing, status=%i", self.status)
+        self._completed = True
         if self.status == self.SUCCEEDED:
             try:
                 self.timeout(self._queue)
@@ -497,6 +501,7 @@ class Process(QtCore.QObject, LogSource):
         self._worker_output = []
         self.debug("Emitting sig_finished")
         self.sig_finished.emit(self.status, self._log, self.exception)
+        self._completed = True
 
     def _restart_timer(self):
         self._timer = threading.Timer(1, self._timer_cb)
