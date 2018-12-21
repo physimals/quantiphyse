@@ -6,6 +6,8 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
+import math
+
 import numpy as np
 from PySide import QtCore, QtGui
 
@@ -165,7 +167,7 @@ class MultiVoxelAnalysis(QpWidget):
                     self._add_point(point, col)
 
         # Remove plots for points no longer in the selection
-        for point in self.plots:
+        for point in list(self.plots.keys()):
             if point not in allpoints:
                 self.plots[point].hide()
                 del self.plots[point]
@@ -631,3 +633,101 @@ class VoxelAnalysis(QpWidget):
                     
                 self.plot.add_line(sig_values, name=ovl, line_col=col, point_brush=(200, 200, 200), point_col='k', point_size=5.0)
                 idx += 1
+
+class MeasureWidget(QpWidget):
+    """
+    Widget which lets you measure physical distances and angles
+    """
+    ANGLE = "angle"
+    DISTANCE = "distance"
+
+    def __init__(self, **kwargs):
+        super(MeasureWidget, self).__init__(name="Measurements", icon="", 
+                                                desc="Measure distances and angles", 
+                                                group="Analysis", **kwargs)
+        self._points = None
+        self._mode = None
+
+    def init_ui(self):
+        layout = QtGui.QVBoxLayout()
+        self.setLayout(layout)
+
+        title = TitleWidget(self)
+        layout.addWidget(title)
+
+        box = QtGui.QGroupBox("Measurements")
+        vbox = QtGui.QVBoxLayout()
+        box.setLayout(vbox)
+        
+        dist_btn = QtGui.QPushButton("Measure distance")
+        dist_btn.clicked.connect(self._measure_dist)
+        vbox.addWidget(dist_btn)
+
+        angle_btn = QtGui.QPushButton("Measure angle")
+        angle_btn.clicked.connect(self._measure_angle)
+        vbox.addWidget(angle_btn)
+
+        self._label = QtGui.QLabel()
+        vbox.addWidget(self._label)
+
+        layout.addWidget(box)
+        layout.addStretch(1)
+
+    def activate(self):
+        self.ivl.set_picker(PickMode.SINGLE)
+        self.ivl.sig_selection_changed.connect(self._sel_changed)
+
+    def deactivate(self):
+        self.ivl.set_picker(PickMode.SINGLE)
+        self.ivl.sig_selection_changed.disconnect(self._sel_changed)
+
+    def _sel_changed(self):
+        if self._mode is None:
+            return
+
+        selection = self.ivl.picker.selection()
+        if len(selection) != 1:
+            raise ValueError("Expected single colour")
+
+        points = selection.values()[0]
+        if len(points) == 1:
+            self._label.setText("Select the second point")
+        elif self._mode == self.DISTANCE and len(points) == 2:
+            self._calc_distance(points)
+        elif self._mode == self.ANGLE and len(points) == 2:
+            self._label.setText("Select the final point")
+        elif self._mode == self.ANGLE and len(points) == 3:
+            self._calc_angle(points)
+        else:
+            raise ValueError("Incorrect number of points: %i (%s)" % (len(points), self._mode))
+
+    def _calc_distance(self, points):
+        v = [p1 - p2 for p1, p2 in zip(points[0], points[1])]
+        v_world = self.ivl.grid.grid_to_world(v, direction=True)
+        distance = np.linalg.norm(v_world)
+        self._label.setText("Distance: %.3g %s" % (distance, self.ivl.grid.units))
+        self.ivl.set_picker(PickMode.SINGLE)
+        self._mode = None
+
+    def _calc_angle(self, points):
+        u = [p1 - p2 for p1, p2 in zip(points[0], points[1])]
+        v = [p1 - p2 for p1, p2 in zip(points[2], points[1])]
+        u_world = self.ivl.grid.grid_to_world(u, direction=True)
+        v_world = self.ivl.grid.grid_to_world(v, direction=True)
+        cos = np.dot(u_world, v_world) / np.linalg.norm(u_world) / np.linalg.norm(v_world)
+        angle = math.degrees(math.acos(cos))
+        self._label.setText("Angle: %.3g \N{DEGREE SIGN}" % angle)
+        self.ivl.set_picker(PickMode.SINGLE)
+        self._mode = None
+
+    def _measure_dist(self):
+        self._mode = self.DISTANCE
+        self.ivl.set_picker(PickMode.MULTIPLE)
+        self._label.setText("Select the first point")
+        self._points = []
+
+    def _measure_angle(self):
+        self._mode = self.ANGLE
+        self.ivl.set_picker(PickMode.MULTIPLE)
+        self._label.setText("Select the first point")
+        self._points = []

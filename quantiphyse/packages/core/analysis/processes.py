@@ -42,13 +42,15 @@ class CalcVolumesProcess(Process):
         if roi is not None:
             sizes = roi.grid.spacing
             counts = np.bincount(roi.raw().flatten().astype(np.int))
-            for idx, region in enumerate(roi.regions):
+            col_idx = 0
+            for region, name in roi.regions.items():
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region]
                     vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
-                    self.model.setHorizontalHeaderItem(idx, QtGui.QStandardItem("Region %i" % region))
-                    self.model.setItem(0, idx, QtGui.QStandardItem(str(nvoxels)))
-                    self.model.setItem(1, idx, QtGui.QStandardItem(str(vol)))
+                    self.model.setHorizontalHeaderItem(col_idx, QtGui.QStandardItem(name))
+                    self.model.setItem(0, col_idx, QtGui.QStandardItem(str(nvoxels)))
+                    self.model.setItem(1, col_idx, QtGui.QStandardItem(str(vol)))
+                    col_idx += 1
 
         if not options.pop('no-extras', False):
             output_name = options.pop('output-name', "roi-vols")
@@ -106,7 +108,7 @@ class DataStatisticsProcess(Process):
         for data in data_items:
             stats1, roi_labels, _, _ = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice_loc=sl)
             for ii in range(len(stats1['mean'])):
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\nRegion %i" % (data.name, roi_labels[ii])))
+                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
                 self.model.setItem(1, col, QtGui.QStandardItem(sf(stats1['median'][ii])))
                 self.model.setItem(2, col, QtGui.QStandardItem(sf(stats1['std'][ii])))
@@ -128,13 +130,13 @@ class DataStatisticsProcess(Process):
         """
         # Checks if either ROI or data is None
         if roi is not None:
-            roi = roi.resample(data.grid) 
+            roi = roi.resample(data.grid)
         else:
             roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
 
         if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, roi.regions, np.array([0, 0]), np.array([0, 1])
+            return stat1, roi.regions.keys(), np.array([0, 0]), np.array([0, 1])
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
         hist1 = []
@@ -147,7 +149,8 @@ class DataStatisticsProcess(Process):
             data_arr, _, _, _ = data.slice_data(slice_loc)
             roi_arr, _, _, _ = roi.slice_data(slice_loc)
 
-        for region in roi.regions:
+        regions = []
+        for region, name in roi.regions.items():
             # get data for a single label of the roi
             in_roi = data_arr[roi_arr == region]
             if in_roi.size > 0:
@@ -161,12 +164,13 @@ class DataStatisticsProcess(Process):
             stat1['std'].append(std)
             stat1['max'].append(mx)
             stat1['min'].append(mn)
+            regions.append(name)
 
             y, x = np.histogram(in_roi, bins=hist_bins, range=hist_range)
             hist1.append(y)
             hist1x.append(x)
 
-        return stat1, roi.regions, hist1, hist1x
+        return stat1, regions, hist1, hist1x
 
 class ExecProcess(Process):
     """

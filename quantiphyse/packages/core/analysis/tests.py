@@ -56,7 +56,7 @@ class DataStatisticsTest(WidgetTest):
         cb = QtGui.QApplication.clipboard()
         rows = [row.split("\t") for row in cb.text().split("\n")]
         self.assertEquals(rows[0][0], "")
-        self.assertEquals(rows[0][1], "data_3d Region 1")
+        self.assertEquals(rows[0][1].strip(), "data_3d")
         numbers = [float(row[1]) for row in rows[1:] if len(row) > 1]
         self.assertTrue(len(numbers) == 5)
         
