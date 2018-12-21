@@ -14,7 +14,7 @@
    width="100%"
    height="100%"
    sodipodi:docname="pen.svg"
-   inkscape:export-filename="/home/martinc/dev/quantiphyse/quantiphyse/icons/pen.png"
+   inkscape:export-filename="/home/ibmeuser/build/build_scripts/build/quantiphyse/quantiphyse/icons/pen.png"
    inkscape:export-xdpi="1.6976385"
    inkscape:export-ydpi="1.6976385">
   <metadata
@@ -25,7 +25,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -40,34 +40,36 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1855"
-     inkscape:window-height="1176"
+     inkscape:window-width="1920"
+     inkscape:window-height="1151"
      id="namedview3031"
      showgrid="false"
      inkscape:zoom="0.13169643"
      inkscape:cx="-2904.4068"
      inkscape:cy="896.00004"
-     inkscape:window-x="65"
-     inkscape:window-y="24"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg3025" />
   <path
-     style="fill:none;fill-rule:evenodd;stroke:#e84444;stroke-width:150;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-     d="m 113.89831,32.54237 c 0,0 531.52542,129.08475 539.11864,296.1356 7.59322,167.05084 -554.305086,379.66101 -531.52542,630.23733 22.77966,250.5762 615.05084,432.8135 615.05084,432.8135"
+     style="fill:none;fill-rule:evenodd;stroke:#e84444;stroke-width:139.175354;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 1615.1229,1171.4338 C 1634.3734,957.77857 1012.5872,950.73665 697.34315,937.79805 399.67137,925.58068 87.288804,944.79728 116.08267,1158.4542 c 70.9557,526.5071 1545.81583,228.8158 1506.68833,-6.49"
      id="path4249"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cssc" />
   <rect
-     style="opacity:1;fill:#e54444;fill-opacity:1;stroke:#e5e5e5;stroke-width:97.09477234;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#e5e5e5;stroke-width:97.09477234;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect4135"
-     width="443.21268"
-     height="1251.9072"
-     x="1071.8137"
-     y="-723.92932"
+     width="254.24184"
+     height="811.8504"
+     x="1249.1305"
+     y="-793.39136"
      ry="2.1499553"
      transform="matrix(0.8990527,0.43784042,-0.43784042,0.8990527,0,0)" />
   <path
      style="fill:#e5e5e5;fill-opacity:1;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:97.78456116;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 735.74579,937.98144 35.16538,459.57666 369.54413,-262.4823"
+     d="M 1125,527.9475 1091.8264,911.592 1362.6587,649.1097"
      id="path4139"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccc" />
 </svg>
