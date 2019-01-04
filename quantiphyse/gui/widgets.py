@@ -1469,3 +1469,71 @@ class MultiExpander(QtGui.QWidget):
                     self.toggle_btns[wname].setIcon(self.arrow_right)
                     w.setVisible(False)
         return _cb
+
+class FslDirWidget(QtGui.QWidget):
+    """
+    Widget which reports current FSLDIR and allows it to be changed
+    """
+    sig_changed = QtCore.Signal(str)
+
+    def __init__(self, **kwargs):
+        QtGui.QWidget.__init__(self, **kwargs)
+        self._settings = QtCore.QSettings()
+        self._settings.remove("fslqp/fsldir")
+
+        hbox = QtGui.QHBoxLayout()
+        self.setLayout(hbox)
+        if self.fsldir:
+            self.label = QtGui.QLabel("Using FSL in %s" % self.fsldir)
+        else:
+            self.label = QtGui.QLabel("FSLDIR not found - select manually")
+        hbox.addWidget(self.label)
+        hbox.addStretch()
+        btn = QtGui.QPushButton("Change")
+        btn.clicked.connect(self._change_fsldir)
+        hbox.addWidget(btn)
+
+    @property
+    def fsldir(self):
+        """
+        :return: Location of FSL installation
+
+        This looks for a previously configured location from Quantiphyse, or alternatively
+        for the FSLDIR/FSLDEVDIR environment variables, and lastly will check a few common
+        locations.
+
+        If a location is found which is not stored in the FSLDIR environment variable then
+        this variable will be updated. FSLDEVDIR is never updated to allow users to have
+        separate base and development code used by Quantiphyse.
+        """
+        if not self._settings.contains("fslqp/fsldir"):
+            self._settings.setValue("fslqp/fsldir", "")
+            fsldir = os.environ.get("FSLDEVDIR", os.environ.get("FSLDIR", None))
+            if fsldir: 
+                self._settings.setValue("fslqp/fsldir", fsldir)
+            else:
+                places_to_try = [
+                    "/usr/local/fsl",
+                    "/opt/fsl",
+                ]
+                for place in places_to_try:
+                    if self._possible_fsldir(place):
+                        self._settings.setValue("fslqp/fsldir", place)
+                        os.environ["FSLDIR"] = place
+                        break
+        return self._settings.value("fslqp/fsldir")
+
+    def _change_fsldir(self):
+        fsldir = QtGui.QFileDialog.getExistingDirectory(caption="Choose the root directory containing FSL")
+        if not fsldir:
+            # Cancel - no change
+            return
+        elif self._possible_fsldir(fsldir):
+            self._settings.setValue("fslqp/fsldir", fsldir)
+            self.label.setText("Using FSL in %s" % fsldir)
+            self.sig_changed.emit(fsldir)
+        else:
+            raise QpException("Selected directory does not appear to contain FSL")
+
+    def _possible_fsldir(self, folder):
+        return os.path.exists(os.path.join(folder, "bin", "flirt"))
