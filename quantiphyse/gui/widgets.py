@@ -1479,7 +1479,6 @@ class FslDirWidget(QtGui.QWidget):
     def __init__(self, **kwargs):
         QtGui.QWidget.__init__(self, **kwargs)
         self._settings = QtCore.QSettings()
-        self._settings.remove("fslqp/fsldir")
 
         hbox = QtGui.QHBoxLayout()
         self.setLayout(hbox)
@@ -1521,6 +1520,8 @@ class FslDirWidget(QtGui.QWidget):
                         self._settings.setValue("fslqp/fsldir", place)
                         os.environ["FSLDIR"] = place
                         break
+        else:
+            os.environ["FSLDIR"] = self._settings.value("fslqp/fsldir")
         return self._settings.value("fslqp/fsldir")
 
     def _change_fsldir(self):
@@ -1530,8 +1531,8 @@ class FslDirWidget(QtGui.QWidget):
             return
         elif self._possible_fsldir(fsldir):
             self._settings.setValue("fslqp/fsldir", fsldir)
-            self.label.setText("Using FSL in %s" % fsldir)
-            self.sig_changed.emit(fsldir)
+            self.label.setText("Using FSL in %s" % self.fsldir)
+            self.sig_changed.emit(self.fsldir)
         else:
             raise QpException("Selected directory does not appear to contain FSL")
 
