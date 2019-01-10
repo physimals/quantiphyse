@@ -18,7 +18,7 @@ import threading
 import traceback
 import logging
 import re
-import Queue
+from six.moves import queue
 
 import numpy as np
 from PySide import QtCore, QtGui
@@ -369,7 +369,7 @@ class Process(QtCore.QObject, LogSource):
             pool = multiprocessing.Pool(pool_size, initializer=_worker_initialize)
         else:
             LOG.debug("Not using multiprocessing")
-            queue = Queue.Queue()
+            queue = queue.Queue()
             pool = None
         return pool, queue
 
@@ -435,7 +435,7 @@ class Process(QtCore.QObject, LogSource):
         :param n_workers: Number of parallel worker processes to use
         """
         # First argument is worker ID, second is queue
-        split_args = [range(n_workers), [self._queue,] * n_workers]
+        split_args = [list(range(n_workers)), [self._queue,] * n_workers]
 
         for arg in args:
             if isinstance(arg, (np.ndarray, np.generic)):
@@ -444,7 +444,7 @@ class Process(QtCore.QObject, LogSource):
                 split_args.append([arg,] * n_workers)
 
         # Transpose list of lists so first element is all the arguments for process 0, etc
-        return map(list, zip(*split_args))
+        return list(map(list, zip(*split_args)))
 
     def recombine_data(self, data_list):
         """

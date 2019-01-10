@@ -700,7 +700,7 @@ class QpData(object):
         data_scaled_normal = np.array([data_normal[idx] * self.grid.spacing[idx] * self.grid.spacing[idx] for idx in range(3)])
         data_naxis = np.argmax(np.absolute(data_scaled_normal))
 
-        data_axes = range(3)
+        data_axes = list(range(3))
         del data_axes[data_naxis]
         slice_basis, slice_shape = [], []
         for axis in data_axes:
