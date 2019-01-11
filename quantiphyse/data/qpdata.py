@@ -23,6 +23,8 @@ import math
 import numpy as np
 import scipy
 
+from PySide import QtCore
+
 from quantiphyse.utils import sf, QpException
 
 # Private copy of pyqtgraph functions for bug fixes
@@ -329,6 +331,31 @@ class OrthoSlice(DataGrid):
         """ 3D normal vector to the plane in world co-ordinates"""
         return self._normal
 
+class MetaSignaller(QtCore.QObject):
+    """
+    This is required because you can't multiply inherit 
+    from a a QObject and a dict
+    """
+    sig_changed = QtCore.Signal(str)
+
+class Metadata(dict):
+    """
+    Metadata dictionary.
+
+    Emits a QT signal when keys are changed
+    """
+    def __init__(self, *args):
+        dict.__init__(self, *args)
+        #self._signaller = MetaSignaller()
+        
+    #@property
+    #def sig_changed(self):
+    #    return self._signaller.sig_changed
+
+    def __setitem__(self, key, value):
+        #self.sig_changed.emit(key)
+        dict.__setitem__(self, key, value)
+
 class QpData(object):
     """
     3D or 4D data
@@ -351,12 +378,11 @@ class QpData(object):
         # Number of volumes (1=3D data)
         self._nvols = nvols
 
+        self._meta = Metadata()
         if metadata is not None:
-            self.metadata = dict(metadata)
-        else:
-            self.metadata = {}
+            self._meta.update(metadata)
 
-        self.metadata["fname"] = kwargs.get("fname", None)
+        self._meta["fname"] = kwargs.get("fname", None)
 
         # Is data set an ROI? If not specified, try making it one
         if roi is None:
@@ -367,8 +393,12 @@ class QpData(object):
         else:
             self.roi = roi
 
-        self.metadata["vol_scale"] = kwargs.get("vol_scale", 1.0)
-        self.metadata["vol_units"] = kwargs.get("vol_units", None)
+        self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
+        self._meta["vol_units"] = kwargs.get("vol_units", None)
+
+    @property
+    def metadata(self):
+        return self._meta
 
     @property
     def ndim(self):
@@ -391,7 +421,7 @@ class QpData(object):
     @property
     def roi(self):
         """ True if this data could be a region of interest data set"""
-        return self.metadata.get("roi", False)
+        return self._meta.get("roi", False)
 
     @roi.setter
     def roi(self, is_roi):
@@ -402,7 +432,7 @@ class QpData(object):
                 rawdata = self.raw()
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
-        self.metadata["roi"] = is_roi
+        self._meta["roi"] = is_roi
 
     @property
     def regions(self):
@@ -412,29 +442,29 @@ class QpData(object):
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
         
-        if self.metadata.get("roi_regions", None) is None:
+        if self._meta.get("roi_regions", None) is None:
             regions = np.unique(self.raw().astype(np.int))
             regions = np.delete(regions, np.where(regions == 0))
             if len(regions) == 1:
                 # If there is only one region, don't give it a name
-                self.metadata["roi_regions"] = {regions[0] : ""}
+                self._meta["roi_regions"] = {regions[0] : ""}
             else:
                 roi_regions = {}
                 for region in regions:
                     roi_regions[region] = "Region %i" % region
-                self.metadata["roi_regions"] = roi_regions
-        return self.metadata["roi_regions"]
+                self._meta["roi_regions"] = roi_regions
+        return self._meta["roi_regions"]
 
     @property 
     def fname(self):
         """
         File name origin of data or None if not from a file
         """
-        return self.metadata.get("fname", None)
+        return self._meta.get("fname", None)
 
     @fname.setter
     def fname(self, name):
-        self.metadata["fname"] = name
+        self._meta["fname"] = name
         
     def set_2dt(self):
         """
@@ -447,7 +477,7 @@ class QpData(object):
         if self.nvols != 1 or self.grid.shape[2] == 1:
             raise RuntimeError("Can only force to 2D timeseries if data was originally 3D static")
 
-        self.metadata["raw_2dt"] = True
+        self._meta["raw_2dt"] = True
         self._nvols = self.grid.shape[2]
 
         # The grid transform can't be properly interpreted because basically the file is broken,
@@ -563,9 +593,9 @@ class QpData(object):
         :return: Tuple of min value, max value
         """
         if vol is None:
-            if self.metadata.get("range", None) is None:
-                self.metadata["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
-            return self.metadata["range"]
+            if self._meta.get("range", None) is None:
+                self._meta["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
+            return self._meta["range"]
         else:
             voldata = self.volume(vol)
             return np.nanmin(voldata), np.nanmax(voldata)
@@ -681,7 +711,7 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, metadata=self.metadata)
+        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, metadata=self._meta)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
@@ -844,7 +874,7 @@ class NumpyData(QpData):
         QpData.__init__(self, name, grid, nvols, **kwargs)
     
     def raw(self):
-        if self.metadata.get("raw_2dt", False) and self.rawdata.ndim == 3:
+        if self._meta.get("raw_2dt", False) and self.rawdata.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
             return np.expand_dims(self.rawdata, 2)
         else:
