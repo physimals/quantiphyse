@@ -184,7 +184,9 @@ class RegProcess(Process):
         self.debug("Have %i registration targets" % len(reg_data))
 
         # Function input data must be passed as list of arguments for multiprocessingmethod = get_reg_method(method_name)
-        self.start_bg([method_name, mode, reg_data, ref_data, options])
+        options_pass = dict(options)
+        options.clear()
+        self.start_bg([method_name, mode, reg_data, ref_data, options_pass])
 
     def timeout(self, queue):
         if queue.empty(): return
