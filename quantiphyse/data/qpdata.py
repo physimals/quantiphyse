@@ -346,14 +346,14 @@ class Metadata(dict):
     """
     def __init__(self, *args):
         dict.__init__(self, *args)
-        self._signaller = MetaSignaller()
+        #self._signaller = MetaSignaller()
         
-    @property
-    def sig_changed(self):
-        return self._signaller.sig_changed
+    #@property
+    #def sig_changed(self):
+    #    return self._signaller.sig_changed
 
     def __setitem__(self, key, value):
-        self.sig_changed.emit(key)
+        #self.sig_changed.emit(key)
         dict.__setitem__(self, key, value)
 
 class QpData(object):
