@@ -39,8 +39,9 @@ from .exceptions import QpException
 
 # Default basic processes - all others are imported from packages
 BASIC_PROCESSES = {
-    "RenameData"   : RenameDataProcess,
-    "RenameRoi"   : RenameRoiProcess,
+    "RenameData"   : RenameProcess,
+    "RenameRoi"   : RenameProcess,
+    "Rename"   : RenameProcess,
     "Delete"   : DeleteProcess,
     "RoiCleanup" : RoiCleanupProcess,
     "Load" : LoadProcess,
