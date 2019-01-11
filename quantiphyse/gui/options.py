@@ -922,8 +922,11 @@ class NumberListOption(Option, QtGui.QLineEdit):
     """ 
     A list of numbers which may be entered space or comma separated
     """
-    def __init__(self):
+    sig_changed = QtCore.Signal()
+
+    def __init__(self, initial=()):
         QtGui.QLineEdit.__init__(self)
+        self.value = initial
         self.editingFinished.connect(self._edit_changed)
 
     @property
@@ -935,6 +938,11 @@ class NumberListOption(Option, QtGui.QLineEdit):
         except ValueError:
             return []
 
+    @value.setter
+    def value(self, vals):
+        self.setText(" ".join([str(v) for v in vals]))
+        self._edit_changed()
+
     def _edit_changed(self):
         try:
             text = self.text().replace(",", " ")
@@ -944,7 +952,7 @@ class NumberListOption(Option, QtGui.QLineEdit):
         except ValueError:
             # Colour edit red but don't change anything
             self.setStyleSheet("QLineEdit {background-color: red}")
-        self.sig_changed.emit(self)
+        self.sig_changed.emit()
 
 class PickPointOption(Option, QtGui.QWidget):
     """ 
