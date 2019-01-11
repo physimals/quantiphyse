@@ -11,27 +11,17 @@ from quantiphyse.data import NumpyData
 
 from .process import Process
 
-class RenameDataProcess(Process):
+class RenameProcess(Process):
     """ 
     Rename data  
     """
     
-    PROCESS_NAME = "RenameData"
+    PROCESS_NAME = "Rename"
 
     def run(self, options):
         for name in options.keys():
             newname = options.pop(name)
-            self.ivm.rename_data(name, newname)
-
-class RenameRoiProcess(Process):
-    """ Rename ROI  """
-    
-    PROCESS_NAME = "RenameRoi"
-
-    def run(self, options):
-        for name in options.keys():
-            newname = options.pop(name)
-            self.ivm.rename_roi(name, newname)
+            self.ivm.rename(name, newname)
 
 class DeleteProcess(Process):
     """
