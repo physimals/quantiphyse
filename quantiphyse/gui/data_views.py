@@ -21,13 +21,12 @@ LOG = logging.getLogger(__name__)
 
 class MaskableImage(pg.ImageItem):
     """
-    Minor addition to ImageItem to allow it to be masked by an RoiView
+    Minor addition to ImageItem to allow it to be masked by an ROI
     """
     def __init__(self, image=None, **kwargs):
         pg.ImageItem.__init__(self, image, **kwargs)
         self.mask = None
         self.boundary = DataView.BOUNDARY_TRANS
-        self.border = None
 
     def setBoundaryMode(self, mode):
         """
@@ -178,7 +177,7 @@ class ImageDataView(DataView):
 
     def _get_img(self, viewbox):
         if viewbox.name not in self.imgs:
-            img = MaskableImage(border='k')
+            img = MaskableImage()
             viewbox.addItem(img)
             self.imgs[viewbox.name] = img
             if self.histogram is not None:
@@ -601,7 +600,9 @@ class LevelsDialog(QtGui.QDialog):
         self.view.set("cmap_range", [cmin, cmax])
 
 def _cmap_range(data, percentile=100):
-    cmin, cmax = np.nanmin(data), np.nanmax(data)
+    # This ignores infinite values too unlike np.nanmin/np.nanmax
+    nonans = np.isfinite(data)
+    cmin, cmax = np.min(data[nonans]), np.max(data[nonans])
     # Issue #101: if min is exactly zero, make it slightly more
     # as a heuristic for data sets where zero=background
     if cmin == 0:
@@ -611,5 +612,5 @@ def _cmap_range(data, percentile=100):
         perc_max = np.nanpercentile(data, percentile)
         if perc_max > cmin:
             cmax = perc_max
-    
+
     return cmin, cmax

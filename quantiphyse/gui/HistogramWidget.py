@@ -11,6 +11,8 @@ import numpy as np
 
 import pyqtgraph as pg
 
+from quantiphyse.data.qpdata import remove_nans
+
 class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     """
     A histogram widget which has one array of 'source' data
@@ -83,7 +85,7 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     
     def _update_histogram(self):
         if self.view.data is not None:
-            arr = self.view.data.volume(self.vol)
+            arr = remove_nans(self.view.data.volume(self.vol))
             flat = arr.reshape(-1)
             img = pg.ImageItem(flat.reshape([1, -1]))
             hist = img.getHistogram()
