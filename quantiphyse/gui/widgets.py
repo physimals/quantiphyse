@@ -1498,43 +1498,70 @@ class FslDirWidget(QtGui.QWidget):
         :return: Location of FSL installation
 
         This looks for a previously configured location from Quantiphyse, or alternatively
-        for the FSLDIR/FSLDEVDIR environment variables, and lastly will check a few common
+        for the FSLDIR environment variable, and lastly will check a few common
         locations.
 
         If a location is found which is not stored in the FSLDIR environment variable then
-        this variable will be updated. FSLDEVDIR is never updated to allow users to have
-        separate base and development code used by Quantiphyse.
+        this variable will be updated.
         """
-        if not self._settings.contains("fslqp/fsldir"):
-            self._settings.setValue("fslqp/fsldir", "")
-            fsldir = os.environ.get("FSLDEVDIR", os.environ.get("FSLDIR", None))
-            if fsldir: 
-                self._settings.setValue("fslqp/fsldir", fsldir)
-            else:
-                places_to_try = [
-                    "/usr/local/fsl",
-                    "/opt/fsl",
-                ]
-                for place in places_to_try:
-                    if self._possible_fsldir(place):
-                        self._settings.setValue("fslqp/fsldir", place)
-                        os.environ["FSLDIR"] = place
-                        break
-        else:
+        fsldir, _ = self._get_fsl_dirs()
+        return fsldir
+
+    @property
+    def fsldevdir(self):
+        """
+        :return: Location of updated FSL code
+
+        This looks for a previously configured location from Quantiphyse, or alternatively
+        for the FSLDEVDIR environment variable.
+
+        If a location is found which is not stored in the FSLDEVDIR environment variable then
+        this variable will be updated.
+        """
+        _, fsldevdir = self._get_fsl_dirs()
+        return fsldevdir
+
+    def _get_fsl_dirs(self):
+        fsldir, fsldevdir = None, None
+        if self._settings.contains("fslqp/fsldir"):
             os.environ["FSLDIR"] = self._settings.value("fslqp/fsldir")
-        return self._settings.value("fslqp/fsldir")
+        elif "FSLDIR" not in os.environ:
+            places_to_try = [
+                "/usr/local/fsl",
+                "/opt/fsl",
+            ]
+            for place in places_to_try:
+                if self._possible_fsldir(place):
+                    os.environ["FSLDIR"] = place
+                    break
+
+        if self._settings.contains("fslqp/fsldevdir"):
+            os.environ["FSLDEVDIR"] = self._settings.value("fslqp/fsldevdir")
+
+        return os.environ["FSLDIR"], os.environ["FSLDEVDIR"]
 
     def _change_fsldir(self):
+        changed = False
         fsldir = QtGui.QFileDialog.getExistingDirectory(caption="Choose the root directory containing FSL")
-        if not fsldir:
-            # Cancel - no change
-            return
-        elif self._possible_fsldir(fsldir):
-            self._settings.setValue("fslqp/fsldir", fsldir)
-            self.label.setText("Using FSL in %s" % self.fsldir)
-            self.sig_changed.emit(self.fsldir)
-        else:
-            raise QpException("Selected directory does not appear to contain FSL")
+        if fsldir:
+            if self._possible_fsldir(fsldir):
+                self._settings.setValue("fslqp/fsldir", fsldir)
+                changed = True
+            else:
+                raise QpException("Selected directory does not appear to contain FSL")
 
+        response = QtGui.QMessageBox.question(self, "Set FSLDEVDIR",
+                                              "Do you want to set an additional location for update FSL code?",
+                                              QtGui.QMessageBox.StandardButton.Yes | QtGui.QMessageBox.StandardButton.No)
+        if response == QtGui.QMessageBox.Yes:
+            fsldevdir = QtGui.QFileDialog.getExistingDirectory(caption="Choose the directory containing updated FSL code")
+            if fsldevdir:
+                self._settings.setValue("fslqp/fsldevdir", fsldevdir)
+                changed = True
+           
+        if changed:
+            self.label.setText("Using FSL in %s / %s" % (fsldir, fsldevdir))
+            self.sig_changed.emit(fsldir)
+            
     def _possible_fsldir(self, folder):
         return os.path.exists(os.path.join(folder, "bin", "flirt"))
