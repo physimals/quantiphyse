@@ -66,6 +66,13 @@ def _load_plugins_from_dir(dirname, pkgname, manifest):
     finally:
         sys.path = pythonpath
 
+def _load_plugins_from_entry_points(manifest, key="quantiphyse_plugins"):
+    import pkg_resources
+    for ep in pkg_resources.iter_entry_points(key):
+        for key, val in ep.load().items():
+            LOG.debug("entry points: found: %s %s", key, val)
+            manifest[key] = manifest.get(key, []) + val
+
 def get_plugins(key=None, class_name=None):
     """
     Beginning of plugin system - load widgets dynamically from specified plugins directory
@@ -80,6 +87,8 @@ def get_plugins(key=None, class_name=None):
         ]
         for plugin_dir in plugin_dirs:
             _load_plugins_from_dir(plugin_dir, "quantiphyse." + plugin_dir.replace("/", "."), PLUGIN_MANIFEST)
+
+        _load_plugins_from_entry_points(PLUGIN_MANIFEST)
     
     if key is not None:
         plugins = PLUGIN_MANIFEST.get(key, [])
