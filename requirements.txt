@@ -4,7 +4,6 @@ matplotlib
 nibabel
 numpy
 Pillow
-pynrrd
 pyqtgraph
 PySide
 PyYAML
@@ -14,4 +13,4 @@ scikit-learn
 scikit-image
 setuptools
 six
-
+deprecation
