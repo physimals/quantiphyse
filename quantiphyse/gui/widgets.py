@@ -1538,7 +1538,7 @@ class FslDirWidget(QtGui.QWidget):
         if self._settings.contains("fslqp/fsldevdir"):
             os.environ["FSLDEVDIR"] = self._settings.value("fslqp/fsldevdir")
 
-        return os.environ["FSLDIR"], os.environ["FSLDEVDIR"]
+        return os.environ.get("FSLDIR", None), os.environ.get("FSLDEVDIR", None)
 
     def _change_fsldir(self):
         changed = False
