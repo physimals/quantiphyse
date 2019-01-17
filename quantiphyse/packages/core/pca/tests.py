@@ -15,37 +15,27 @@ class PcaWidgetTest(WidgetTest):
         return PcaWidget
 
     def testNoData(self):
-        if self.w.run_btn.isEnabled():
-            self.w.run_btn.clicked.emit()
+        if self.w._run.runBtn.isEnabled():
+            self.w._run.runBtn.clicked.emit()
         self.assertFalse(self.error)
 
     def test3dData(self):
-        """ 4D data required but error should be produced to inform user of reason """
-        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
-        self.w.data_combo.setCurrentIndex(0)
-        self.processEvents()            
-        self.assertTrue(self.w.run_btn.isEnabled())
-        self.assertEquals(self.w.output_name.text(), "data_3d_pca")
-        
-        self.w.n_comp.spin.setValue(NUM_PCA)
-        self.w.output_name.setText(NAME)
-        self.w.run_btn.clicked.emit()
-        self.processEvents()
-        
-        self.assertFalse(self.error)
-        self.assertTrue(self.qpe)
+        """ 4D data required """
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d") 
+        self.assertFalse(bool(self.w._options.option("data").value))
         
     def test4dData(self):
         """ 4d clustering """
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
-        self.w.data_combo.setCurrentIndex(0)
         self.processEvents()            
-        self.assertTrue(self.w.run_btn.isEnabled())
-        self.assertEquals(self.w.output_name.text(), "data_4d_pca")
+        self.w._options.option("data").value = "data_4d"
+        self.processEvents()            
+        self.assertTrue(self.w._run.runBtn.isEnabled())
+        self.assertEquals(self.w._options.option("output-name").value, "data_4d_pca")
         
-        self.w.n_comp.spin.setValue(NUM_PCA)
-        self.w.output_name.setText(NAME)
-        self.w.run_btn.clicked.emit()
+        self.w._options.option("n-components").value = NUM_PCA
+        self.w._options.option("output-name").value = NAME
+        self.w._run.runBtn.clicked.emit()
         self.processEvents()
         
         for mode in range(NUM_PCA):
@@ -59,15 +49,15 @@ class PcaWidgetTest(WidgetTest):
         """ 4d clustering within an ROI"""
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
         self.ivm.add(self.mask, grid=self.grid, name="mask")
-        self.w.data_combo.setCurrentIndex(0)
-        self.w.roi_combo.setCurrentIndex(1)
-
-        self.assertTrue(self.w.run_btn.isEnabled())
-        self.assertEquals(self.w.output_name.text(), "data_4d_pca")
+        self.w._options.option("data").value = "data_4d"
+        self.w._options.option("roi").value = "mask"
         
-        self.w.n_comp.spin.setValue(NUM_PCA)
-        self.w.output_name.setText(NAME)
-        self.w.run_btn.clicked.emit()
+        self.assertTrue(self.w._run.runBtn.isEnabled())
+        self.assertEquals(self.w._options.option("output-name").value, "data_4d_pca")
+        
+        self.w._options.option("n-components").value = NUM_PCA
+        self.w._options.option("output-name").value = NAME
+        self.w._run.runBtn.clicked.emit()
         self.processEvents()
         
         for mode in range(NUM_PCA):

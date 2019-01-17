@@ -3,21 +3,20 @@ Quantiphyse - Widgets for PCA reduction
 
 Copyright (c) 2013-2018 University of Oxford
 """
-
+import numpy as np
 from PySide import QtGui
 
-from quantiphyse.gui.widgets import QpWidget, TitleWidget, OverlayCombo, RoiCombo, NumericOption
+from quantiphyse.gui.widgets import QpWidget, TitleWidget, RunWidget
+from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, OutputNameOption
 from quantiphyse.gui.plot import Plot
 from quantiphyse.utils import sf
 
-from .process import PcaProcess
-    
 class PcaWidget(QpWidget):
     """
     PCA widget
     """
     def __init__(self, **kwargs):
-        super(PcaWidget, self).__init__(name="PCA", 
+        super(PcaWidget, self).__init__(name="PCA", icon="pca",
                                         desc="PCA reduction", group="Processing", **kwargs)
         
     def init_ui(self):
@@ -27,38 +26,17 @@ class PcaWidget(QpWidget):
         title = TitleWidget(self, title="PCA reduction", subtitle="Principal Component Analysis for 4D data")
         vbox.addWidget(title)
 
-        hbox = QtGui.QHBoxLayout()
-        gbox = QtGui.QGroupBox()
-        gbox.setTitle("Options")
-        grid = QtGui.QGridLayout()
-        gbox.setLayout(grid)
+        self._options = OptionBox("Options")
+        self._options.add("Data", DataOption(self.ivm, include_3d=False), key="data")
+        self._options.add("ROI", DataOption(self.ivm, data=False, rois=True), key="roi")
+        self._options.add("Number of components", NumericOption(minval=1, intonly=True, default=4), key="n-components")
+        self._options.add("Output name", OutputNameOption(src_data=self._options.option("data"), suffix="_pca"), key="output-name")
+        self._options.option("data").sig_changed.connect(self._data_changed)
+        vbox.addWidget(self._options)
 
-        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
-        self.data_combo = OverlayCombo(self.ivm)
-        self.data_combo.currentIndexChanged.connect(self._data_changed)
-        grid.addWidget(self.data_combo, 0, 1)
-
-        grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
-        self.roi_combo = RoiCombo(self.ivm, none_option=True)
-        grid.addWidget(self.roi_combo, 1, 1)
-
-        self.n_comp = NumericOption("Number of components", grid, ypos=2, 
-                                    minval=1, intonly=True, default=4)
-
-        grid.addWidget(QtGui.QLabel("Output name"), 3, 0)
-        self.output_name = QtGui.QLineEdit()
-        grid.addWidget(self.output_name, 3, 1)
-
-        hbox.addWidget(gbox)
-        hbox.addStretch(1)
-        vbox.addLayout(hbox)
-
-        hbox = QtGui.QHBoxLayout()
-        self.run_btn = QtGui.QPushButton("Run")
-        self.run_btn.clicked.connect(self.run)
-        hbox.addWidget(self.run_btn)
-        hbox.addStretch(1)
-        vbox.addLayout(hbox)
+        self._run = RunWidget(self)
+        self._run.sig_postrun.connect(self._postrun)
+        vbox.addWidget(self._run)
 
         self.plot = Plot(qpo=None, parent=self, title="PCA modes")
 
@@ -74,43 +52,36 @@ class PcaWidget(QpWidget):
         vbox.addWidget(tabs)
 
         vbox.addStretch(1)
-
         self._data_changed()  
     
-    def _data_changed(self):
-        self.output_name.setText("%s_pca" % self.data_combo.currentText())
-        self.run_btn.setEnabled(self.data_combo.currentText() in self.ivm.data)
-
-    def batch_options(self):
-        roi = self.roi_combo.currentText()
-        if roi == "<none>": 
-            roi = None
-        return "PCA", {"data" : self.data_combo.currentText(),
-                       "roi" : roi,
-                       "n-components" : self.n_comp.value(),
-                       "output-name" : self.output_name.text()}
-
-    def run(self):
-        process = PcaProcess(self.ivm)
-        process.run(self.batch_options()[1])
-        self._update_plot(process)
-        self._update_table(process)
-
-    def _update_plot(self, process):
-        self.plot.clear()
-        for idx, mode in enumerate(process.pca_modes):
-            self.plot.add_line(mode, name="Mode %i" % (idx+1))
-        self.plot.add_line(process.mean, name="Mean", line_col=(255, 0, 0), line_width=3.0)
-
-    def _update_table(self, process):
-        self.variance_model.clear()
-        self.variance_model.setHorizontalHeaderItem(0, QtGui.QStandardItem("PCA mode"))
-        self.variance_model.setHorizontalHeaderItem(1, QtGui.QStandardItem("Variance explained"))
-        self.variance_model.setHorizontalHeaderItem(2, QtGui.QStandardItem("Cumulative"))
+    def processes(self):
+        return {"PCA" : self._options.values()}
         
-        cumulative = 0
-        for idx, variance in enumerate(process.explained_variance):
-            cumulative += variance
-            self.variance_model.setItem(idx, 0, QtGui.QStandardItem("Mode %i" % (idx+1)))
-            self.variance_model.setItem(idx, 1, QtGui.QStandardItem(sf(variance)))
-            self.variance_model.setItem(idx, 2, QtGui.QStandardItem(sf(cumulative)))
+    def _data_changed(self):
+        self._run.setEnabled(self._options.option("data").value in self.ivm.data)
+
+    def _postrun(self):
+        self._update_plot()
+        self._update_table()
+
+    def _update_plot(self):
+        self.plot.clear()
+        extra = self.ivm.extras.get(self._options.option("output-name").value + "_modes", None)
+        if extra is not None:
+            arr = np.array(extra.arr)
+            for idx in range(arr.shape[1]-1):
+                self.plot.add_line(arr[:, idx], name="Mode %i" % idx)
+            self.plot.add_line(arr[:, -1], name="Mean", line_col=(255, 0, 0), line_width=3.0)
+
+    def _update_table(self):
+        self.variance_model.clear()
+        extra = self.ivm.extras.get(self._options.option("output-name").value + "_variance", None)
+        if extra is not None:
+            self.debug(str(extra))
+            for idx, header in enumerate(extra.col_headers):
+                self.variance_model.setHorizontalHeaderItem(idx, QtGui.QStandardItem(header))
+           
+            for idx, variance in enumerate(extra.arr):
+                self.variance_model.setItem(idx, 0, QtGui.QStandardItem(str(variance[0])))
+                self.variance_model.setItem(idx, 1, QtGui.QStandardItem(sf(variance[1])))
+                self.variance_model.setItem(idx, 2, QtGui.QStandardItem(sf(variance[2])))
