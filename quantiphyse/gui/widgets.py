@@ -1111,16 +1111,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
                 self.progress.setValue(100)
                 self.step_label.setVisible(False)
                 if self.save_option and self.save_cb.isChecked():
-                    save_folder = self.save_folder_edit.text()   
-                    data_to_save = self.process.output_data_items()
-                    self.debug("Data to save: %s", data_to_save)    
-                    for d in data_to_save:
-                        qpdata = self.process.ivm.data.get(d, self.process.ivm.rois.get(d, None))
-                        if qpdata:
-                            save(qpdata, os.path.join(save_folder, d + ".nii"))
-                    logfile = open(os.path.join(save_folder, "logfile"), "w")
-                    logfile.write(log)
-                    logfile.close()
+                    self.process.save_output(self.save_folder_edit.text())
             elif status == Process.CANCELLED:
                 self.progress.setValue(0)
                 self.step_label.setVisible(False)
@@ -1283,16 +1274,7 @@ class RunWidget(QtGui.QGroupBox, LogSource):
                 self.progress.setValue(100)
                 self.step_label.setVisible(False)
                 if self.save_option and self.save_cb.isChecked():
-                    save_folder = self.save_folder_edit.text()   
-                    data_to_save = self.process.output_data_items()
-                    self.debug("Data to save: %s", data_to_save)    
-                    for d in data_to_save:
-                        qpdata = self.process.ivm.data.get(d, self.process.ivm.rois.get(d, None))
-                        if qpdata:
-                            save(qpdata, os.path.join(save_folder, d + ".nii"))
-                    logfile = open(os.path.join(save_folder, "logfile"), "w")
-                    logfile.write(log)
-                    logfile.close()
+                    self.process.save_output(self.save_folder_edit.text())
             elif status == Process.CANCELLED:
                 self.progress.setValue(0)
                 self.step_label.setVisible(False)

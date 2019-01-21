@@ -12,18 +12,19 @@ QpWidget.
 Copyright (c) 2013-2018 University of Oxford
 """
 
+import os
 import multiprocessing
 import multiprocessing.pool
 import threading
 import traceback
 import logging
 import re
-from six.moves import queue
+from six.moves import queue as singleproc_queue
 
 import numpy as np
 from PySide import QtCore, QtGui
 
-from quantiphyse.data import NumpyData
+from quantiphyse.data import NumpyData, save
 from quantiphyse.utils import LogSource, get_debug, QpException, get_plugins, set_local_file_path
 
 #: Axis to split along when splitting up data sets for multiprocessing
@@ -84,7 +85,7 @@ class Process(QtCore.QObject, LogSource):
     asynchronously. ``sig_progress`` is always emitted with a value of 1 when a process completes 
     successfully.
 
-    ``sig_log`` is emitted when a message is added to the log using the ``logmsg`` method. It
+    ``sig_log`` is emitted when a message is added to the log using the ``log`` method. It
     can be used to show an updating log from the process.
     
     Attributes:
@@ -95,9 +96,6 @@ class Process(QtCore.QObject, LogSource):
       exception - If the process failed, this attribute contains the exception object. Subclasses
                   should *not* set this attribute themselves, they should simply raise the exception.
                   or pass it back from a worker.
-      log - Log information from the process. Subclasses should add any useful logging information to this
-            attribute. The best way to do this is to use the ``logmsg`` method which also emits ``sig_log``.
-            In the future, direct access to the log attribute may be deprecated and possibly removed.
     """
 
     #: Signal which may be emitted to track progress 
@@ -300,7 +298,7 @@ class Process(QtCore.QObject, LogSource):
         """
         Add text to the log and emit sig_log
         """
-        def apply_backspaces(s):
+        def _apply_backspaces(s):
             while True:
                 # if you find a character followed by a backspace, remove both
                 t = re.sub('.\b', '', s, count=1)
@@ -309,10 +307,13 @@ class Process(QtCore.QObject, LogSource):
                     return re.sub('\b+', '', t)
                 s = t
 
-        self._log = apply_backspaces(self._log + msg)
+        self._log = _apply_backspaces(self._log + msg)
         self.sig_log.emit(msg)
 
     def get_log(self):
+        """
+        Get the process log string
+        """
         return self._log
 
     def output_data_items(self):
@@ -369,7 +370,7 @@ class Process(QtCore.QObject, LogSource):
             pool = multiprocessing.Pool(pool_size, initializer=_worker_initialize)
         else:
             LOG.debug("Not using multiprocessing")
-            queue = queue.Queue()
+            queue = singleproc_queue.Queue()
             pool = None
         return pool, queue
 
@@ -471,6 +472,25 @@ class Process(QtCore.QObject, LogSource):
                 real_data.append(data_item)
         
         return np.concatenate(real_data, SPLIT_AXIS)
+
+    def save_output(self, save_folder):
+        """
+        Save process output to a folder
+
+        In practice this is very process dependent and this method may well need to be
+        overridden. The default implementation uses the ``output_data_items()`` to
+        get the names of the data items the process has created and writes these
+        plus the logfile to the output folder
+        """
+        data_to_save = self.output_data_items()
+        self.debug("Data to save: %s", data_to_save)    
+        for d in data_to_save:
+            qpdata = self.ivm.data.get(d, None)
+            if qpdata is not None:
+                save(qpdata, os.path.join(save_folder, d + ".nii"))
+        logfile = open(os.path.join(save_folder, "logfile"), "w")
+        logfile.write(self._log)
+        logfile.close()
 
     @QtCore.Slot()
     def _complete(self):
