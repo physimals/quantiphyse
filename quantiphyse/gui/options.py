@@ -214,6 +214,7 @@ class DataOption(Option, QtGui.QComboBox):
         self._none_option = kwargs.get("none_option", False)
         self._all_option = kwargs.get("all_option", False)
         self._multi = kwargs.get("multi", False)
+        self._explicit = kwargs.get("explicit", False)
         self._data_changed()
 
         self.currentIndexChanged.connect(self._index_changed)
@@ -242,6 +243,8 @@ class DataOption(Option, QtGui.QComboBox):
             current = self.currentText()        
             if self._none_option and current == "<none>":
                 ret = None
+            elif self._explicit and current == "":
+                ret = None
             elif self._all_option and current == "<all>":
                 ret = list(self.ivm.data.keys())
             elif self._all_option:
@@ -265,10 +268,12 @@ class DataOption(Option, QtGui.QComboBox):
                 item = self.model().item(idx, 0)
                 item.setCheckState(QtCore.Qt.Checked)
         else:
-            if val is None:
+            if val is None and self._none_option:
                 val = "<none>"
-
-            if isinstance(val, six.string_types):
+                
+            if self._explicit and val is None:
+                self.setCurrentIndex(-1)
+            elif isinstance(val, six.string_types):
                 idx = self.findText(val)
                 if idx >= 0:
                     self.setCurrentIndex(idx)
@@ -355,13 +360,27 @@ class DataOption(Option, QtGui.QComboBox):
             idx = self.findText(current)
             if idx >= 0:
                 self.setCurrentIndex(idx)
-            else:
-                # Make sure signal is sent when first data arrives
+            elif not self._explicit:
+                # Default to first item, but do a quick switch to 
+                # make sure signal is sent when first data arrives
                 self.setCurrentIndex(-1)
                 self.setCurrentIndex(0)
+            else:
+                self.setCurrentIndex(-1)
+        elif self._explicit:
+            self.setCurrentIndex(-1)
         else:
             # Must be <all> option
             self.setCurrentIndex(0)
+
+        if self._explicit and self.isEnabled() and self.currentIndex() == -1:
+            self.setStyleSheet("QComboBox {background-color: #d05050}")
+        else:
+            self.setStyleSheet("")
+
+    def setEnabled(self, enable):
+        QtGui.QWidget.setEnabled(self, enable)
+        self._data_changed()
 
 class ChoiceOption(Option, QtGui.QComboBox):
     """ 
@@ -538,7 +557,7 @@ class NumericOption(Option, QtGui.QWidget):
                 self.slider.blockSignals(False)
 
         except ValueError:
-            self.val_edit.setStyleSheet("QLineEdit {background-color: red}")
+            self.val_edit.setStyleSheet("QLineEdit {background-color: #d05050}")
             self.valid = False
 
         self._changed()
@@ -765,7 +784,7 @@ class MatrixOption(Option, QtGui.QTableView):
                 item.setBackground(self.default_bg)
             except ValueError:
                 if item.text() != "": 
-                    item.setBackground(QtGui.QColor('red'))
+                    item.setBackground(QtGui.QColor('#d05050'))
 
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
@@ -951,7 +970,7 @@ class NumberListOption(Option, QtGui.QLineEdit):
             self.setStyleSheet("")
         except ValueError:
             # Colour edit red but don't change anything
-            self.setStyleSheet("QLineEdit {background-color: red}")
+            self.setStyleSheet("QLineEdit {background-color: #d05050}")
         self.sig_changed.emit()
 
 class PickPointOption(Option, QtGui.QWidget):
