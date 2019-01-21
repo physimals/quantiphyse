@@ -306,6 +306,7 @@ class DataOption(Option, QtGui.QComboBox):
     def _index_changed(self):
         if self._multi:
             self.setCurrentIndex(0)
+        self._update_highlight()
         self.sig_changed.emit()
 
     def _data_changed(self):
@@ -372,15 +373,17 @@ class DataOption(Option, QtGui.QComboBox):
         else:
             # Must be <all> option
             self.setCurrentIndex(0)
+        self._update_highlight()
 
+    def setEnabled(self, enable):
+        QtGui.QWidget.setEnabled(self, enable)
+        self._update_highlight()
+
+    def _update_highlight(self):
         if self._explicit and self.isEnabled() and self.currentIndex() == -1:
             self.setStyleSheet("QComboBox {background-color: #d05050}")
         else:
             self.setStyleSheet("")
-
-    def setEnabled(self, enable):
-        QtGui.QWidget.setEnabled(self, enable)
-        self._data_changed()
 
 class ChoiceOption(Option, QtGui.QComboBox):
     """ 
