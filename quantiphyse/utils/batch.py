@@ -147,6 +147,7 @@ class Script(Process):
         self._generic_params = {}
         self._error_action = kwargs.get("error_action", Script.IGNORE)
         self._embed_log = kwargs.get("embed_log", False)
+        self._output_items = []
 
         # Find all the process implementations
         self.known_processes = dict(BASIC_PROCESSES)
@@ -188,6 +189,7 @@ class Script(Process):
         # Can set mode=check to just validate the YAML
         self._load_yaml(root)
         self.debug(self._pipeline)
+        self._output_items = []
         mode = options.pop("mode", "run")
         if mode == "run":
             self.status = Process.RUNNING
@@ -338,6 +340,7 @@ class Script(Process):
         if status == Process.SUCCEEDED:
             if len(self._pipeline) > 1:
                 self.log("\nDONE (%.1fs)\n" % (end - self._process_start))
+            self._output_items.extend(self._current_process.output_data_items())
             self._next_process()
         else:
             self.log("\nFAILED: %i\n" % status)
@@ -366,6 +369,9 @@ class Script(Process):
     def _process_log(self, msg):
         self.log(msg)
         
+    def output_data_items(self):
+        return self._output_items
+
 class Case(object):
     """
     An individual case (e.g. patient scan) which a processing pipeline is applied to
