@@ -18,6 +18,7 @@ bin_files = [
 
 # Hidden imports are used by plugins but not reference in main code
 hidden_imports = [
+    'sphinx',
     'skimage.segmentation', 
     'sklearn.metrics',
     'scipy._lib.messagestream',
