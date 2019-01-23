@@ -1374,15 +1374,16 @@ class OrderListButtons(QtGui.QVBoxLayout):
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
 
-class WarningBox(QtGui.QWidget):
+class WarningBox(QtGui.QFrame):
     """
     Widget which just displays a warning, e.g. when a QpWidget can't be used for some reason
     """
 
     def __init__(self, text=""):
-        QtGui.QWidget.__init__(self)
+        QtGui.QFrame.__init__(self)
         hbox = QtGui.QHBoxLayout()
         hbox.setSpacing(0)
+        hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
 
         #self.warn_icon = QtGui.QIcon.fromTheme("dialog-error")
