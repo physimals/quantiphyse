@@ -415,6 +415,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
 
         if len(return_values) != len(choices):
             raise QpException("Number of return values must match number of choices")
+        self.return_values = return_values
         self.choice_map = dict(zip([str(choice) for choice in choices], return_values))
         
         try:
@@ -441,7 +442,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
     def value(self, choice):
         idx = self.findText(str(choice))
         if idx < 0:
-            for ret_idx, ret in enumerate(self.choice_map.values()):
+            for ret_idx, ret in enumerate(self.return_values):
                 if ret == choice:
                     idx = ret_idx
                     break
