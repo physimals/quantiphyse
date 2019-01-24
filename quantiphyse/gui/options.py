@@ -77,27 +77,27 @@ class OptionBox(QtGui.QGroupBox):
         if len(keys) != len(real_options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
 
+        self.grid.addWidget(QtGui.QLabel(label), self._current_row, 0, 1, 1 if real_options else 3)
+        opt_col = 1
         if checked:
-            label = QtGui.QCheckBox(label)
-            self.grid.addWidget(label, self._current_row, 0)
-        else:
-            label = QtGui.QLabel(label)
-        self.grid.addWidget(label, self._current_row, 0)
-            
+            cb = QtGui.QCheckBox()
+            cb.setChecked(enabled)
+            self.grid.addWidget(cb, self._current_row, 1)
+            opt_col += 1
+
         for idx, keyopt in enumerate(zip(keys, real_options)):
             key, option = keyopt
             if option is None: continue
             LOG.debug("Adding option: %s (key=%s)", option, key)
-            self.grid.addWidget(option, self._current_row, idx+1)
+            self.grid.addWidget(option, self._current_row, idx+opt_col, 1, 1 if checked else 2)
             if checked:
                 option.setEnabled(enabled)
-                label.setChecked(enabled)
-                label.stateChanged.connect(self._cb_toggled(option))
+                cb.stateChanged.connect(self._cb_toggled(option))
             self._options[key] = option
             option.sig_changed.connect(self.sig_changed.emit)
 
         for extra_idx, widget in enumerate(extra_widgets):
-            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+1)
+            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+opt_col)
 
         self._rows[key] = self._current_row
         self._current_row += 1
@@ -121,12 +121,23 @@ class OptionBox(QtGui.QGroupBox):
             if item is None:
                 break
             item.widget().setVisible(visible)
-            if col == 0 and isinstance(item.widget(), QtGui.QCheckBox):
+            if col == 1 and isinstance(item.widget(), QtGui.QCheckBox) and not isinstance(item.widget(), Option):
                 checked = item.widget().isChecked()
                 item.widget().setEnabled(visible)
             else:
                 item.widget().setEnabled(visible and checked)
             col += 1
+
+    def set_checked(self, key, checked):
+        """
+        Set whether an option with a checkbox is checked or not
+        """
+        row = self._rows[key]
+        cb = self.grid.itemAtPosition(row, 1)
+        if isinstance(cb.widget(), QtGui.QCheckBox) and not isinstance(cb.widget(), Option):
+            cb.widget().setChecked(checked)
+        else:
+            raise ValueError("set_checked called on option '%s' which is not a checked option" % key)
 
     def clear(self):
         """
