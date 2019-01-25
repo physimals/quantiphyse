@@ -22,7 +22,7 @@ from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, set_local_file_path
 from quantiphyse.utils.batch import BatchScript
 from quantiphyse.utils.logger import set_base_log_level
-from quantiphyse.gui import MainWindow
+from quantiphyse.gui import MainWindow, Register
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.
@@ -61,26 +61,32 @@ def main():
     parser.add_argument('--test', help='Specify test suite to be run (default=run all)', default=None)
     parser.add_argument('--test-fast', help='Run only fast tests', action="store_true")
     parser.add_argument('--qv', help='Activate quick-view mode', action="store_true")
+    parser.add_argument('--register', help='Force display of registration dialog', action="store_true")
     args = parser.parse_args()
-
-    if args.debug:
-        set_base_log_level(logging.DEBUG)
-        pg.systemInfo()
-    else:
-        set_base_log_level(logging.WARN)
-
-    # Set the local file path, used for finding icons, plugins, etc
-    set_local_file_path()
-
-    # OS specific changes
-    if sys.platform.startswith("darwin"):
-        QtGui.QApplication.setGraphicsSystem('native')
 
     app = QtGui.QApplication(sys.argv)
     app.setStyle('plastique')
     QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
     QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
     QtCore.QCoreApplication.setApplicationName("Quantiphyse")
+
+    # OS specific changes
+    if sys.platform.startswith("darwin"):
+        QtGui.QApplication.setGraphicsSystem('native')
+    
+    # Apply global options
+    set_debug(args.debug)
+    if args.debug:
+        set_base_log_level(logging.DEBUG)
+        pg.systemInfo()
+    else:
+        set_base_log_level(logging.WARN)
+
+    if args.register:
+        QtCore.QSettings().setValue("license_accepted", False)
+
+    # Set the local file path, used for finding icons, plugins, etc
+    set_local_file_path()
 
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -99,5 +105,6 @@ def main():
         win = MainWindow(load_data=args.data, widgets=not args.qv)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
+        Register.check_register()
 
     sys.exit(app.exec_())
