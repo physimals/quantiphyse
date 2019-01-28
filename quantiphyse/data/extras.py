@@ -67,3 +67,22 @@ class MatrixExtra(Extra):
                 writer.writerow(list(row))
 
         return stream.getvalue()
+
+class DataFrameExtra(Extra):
+    """
+    Extra which represents a Pandas data frame
+    """
+    def __init__(self, name, df):
+        """
+        :param name: Extra name
+        :param arr: List-of-lists or 2D Numpy array containing matrix data
+        :param row_headers: Optional sequence of row headers
+        :param col_headers: Optional sequence of column headers
+        """
+        Extra.__init__(self, name)
+        self._df = df
+
+    def __str__(self):
+        stream = six.StringIO()
+        self._df.to_csv(stream)
+        return stream.getvalue()
