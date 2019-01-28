@@ -405,6 +405,8 @@ class ChoiceOption(Option, QtGui.QComboBox):
     def __init__(self, choices=(), return_values=None, default=None):
         QtGui.QComboBox.__init__(self)
         self.setChoices(choices, return_values)
+        # Bizarre hack to make the dropdown height adjust to the items added
+        self.setView(QtGui.QListView())
         if default:
             if default in self.choice_map:
                 self.value = default

@@ -513,6 +513,8 @@ class ChoiceOption(QtGui.QWidget):
         for c in choices:
             self.combo.addItem(c)
         self.combo.currentIndexChanged.connect(self._changed)
+        # Bizarre hack to make the dropdown height adjust to the items added
+        self.combo.setView(QtGui.QListView())
         grid.addWidget(self.combo, ypos, xpos+1)
 
     def _changed(self):
