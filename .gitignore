@@ -29,3 +29,4 @@ packaging/images/qp.iconset
 test/data_autogen
 test/examples_output
 qp.icns
+.pytest_cache
