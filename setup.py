@@ -121,6 +121,15 @@ def get_extensions():
                                 language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
     return extensions
 
+def get_package_data(rootdir):
+    """
+    Get extra data files to install into the package, e.g. icons
+    """
+    return {
+        'quantiphyse/icons' : glob.glob('quantiphyse/icons/*.svg') + glob.glob('quantiphyse/icons/*.png'),
+        'quantiphyse/resources' : ['quantiphyse/resources/darkorange.stylesheet'],
+    }
+
 module_dir = os.path.abspath(os.path.dirname(__file__))
 
 kwargs = {
@@ -150,11 +159,8 @@ kwargs = {
     'cmdclass' : {
         'build_ext': build_ext
     },
+    'package_data' : get_package_data(module_dir),
     'include_package_data' : True,
-    'data_files' : [
-        ('quantiphyse/icons', glob.glob('quantiphyse/icons/*.svg') + glob.glob('quantiphyse/icons/*.png')),
-        ('quantiphyse/resources', ['quantiphyse/resources/darkorange.stylesheet'])
-    ],
     'setup_requires' : ['Cython'],
     'ext_modules' : cythonize(get_extensions()),
 }
