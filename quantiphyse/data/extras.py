@@ -80,9 +80,9 @@ class DataFrameExtra(Extra):
         :param col_headers: Optional sequence of column headers
         """
         Extra.__init__(self, name)
-        self._df = df
+        self.df = df
 
     def __str__(self):
         stream = six.StringIO()
-        self._df.to_csv(stream)
+        self.df.to_csv(stream)
         return stream.getvalue()
