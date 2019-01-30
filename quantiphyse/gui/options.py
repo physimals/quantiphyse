@@ -16,6 +16,7 @@ which is emitted whenever this value changes
 
 Copyright (c) 2013-2018 University of Oxford
 """
+import os
 import logging
 import collections
 
@@ -1071,7 +1072,7 @@ class FileOption(Option, QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, dirs=False):
+    def __init__(self, dirs=False, initial=""):
         """
         :param dirs: If True, allow only directories to be selected
         """
@@ -1080,7 +1081,7 @@ class FileOption(Option, QtGui.QWidget):
         
         hbox = QtGui.QHBoxLayout()
         self.setLayout(hbox)
-        self._edit = QtGui.QLineEdit()
+        self._edit = QtGui.QLineEdit(initial)
         hbox.addWidget(self._edit)
         self._btn = QtGui.QPushButton("Choose")
         self._btn.clicked.connect(self._clicked)
@@ -1093,9 +1094,9 @@ class FileOption(Option, QtGui.QWidget):
 
     def _clicked(self):
         if self._dirs:
-            path = QtGui.QFileDialog.getExistingDirectory()
+            path = QtGui.QFileDialog.getExistingDirectory(dir=self.value)
         else:
-            path = QtGui.QFileDialog.getOpenFileName()
+            path = QtGui.QFileDialog.getOpenFileName(dir=os.path.dirname(self.value))
         self._edit.setText(path)
         self.sig_changed.emit()
 
