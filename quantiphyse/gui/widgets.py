@@ -12,10 +12,10 @@ from PySide import QtGui, QtCore
   
 from quantiphyse.processes import Process
 from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
-from quantiphyse.data import save
 from quantiphyse.utils.batch import Script, to_yaml
-
-from .dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
+from quantiphyse.gui.options import OptionBox, FileOption 
+from quantiphyse.gui.dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
+import quantiphyse.gui.dialogs
 
 class QpWidget(QtGui.QWidget, LogSource):
     """
@@ -224,7 +224,7 @@ class BatchButton(QtGui.QPushButton):
                     text += "\n"
                     support_files.insert(0, ("Batch code", text))
                     MultiTextViewerDialog(self.widget, title="Batch options for %s" % self.widget.name, 
-                                        pages=support_files).show()     
+                                          pages=support_files).show()     
             else:
                 error_dialog("This widget does not provide a list of batch options")
 
@@ -1455,27 +1455,30 @@ class MultiExpander(QtGui.QWidget):
                     w.setVisible(False)
         return _cb
 
-class FslDirWidget(QtGui.QWidget):
+class FslDirWidget(QtGui.QFrame):
     """
     Widget which reports current FSLDIR and allows it to be changed
     """
     sig_changed = QtCore.Signal(str)
 
     def __init__(self, **kwargs):
-        QtGui.QWidget.__init__(self, **kwargs)
+        QtGui.QFrame.__init__(self, **kwargs)
+        self.setStyleSheet("QWidget { background-color: #609050; color: black; border-radius: 5;}")
         self._settings = QtCore.QSettings()
 
         hbox = QtGui.QHBoxLayout()
         self.setLayout(hbox)
-        if self.fsldir:
-            self.label = QtGui.QLabel("Using FSL in %s" % self.fsldir)
-        else:
-            self.label = QtGui.QLabel("FSLDIR not found - select manually")
+        icon = QtGui.QLabel()
+        info_icon = icon.style().standardIcon(QtGui.QStyle.SP_MessageBoxInformation)
+        icon.setPixmap(info_icon.pixmap(32, 32))
+        hbox.addWidget(icon)
+        hbox.addWidget(QtGui.QLabel("Using FSL in"))
+        self.label = ElidedLabel()
         hbox.addWidget(self.label)
-        hbox.addStretch()
         btn = QtGui.QPushButton("Change")
         btn.clicked.connect(self._change_fsldir)
         hbox.addWidget(btn)
+        self._update_label()
 
     @property
     def fsldir(self):
@@ -1507,7 +1510,6 @@ class FslDirWidget(QtGui.QWidget):
         return fsldevdir
 
     def _get_fsl_dirs(self):
-        fsldir, fsldevdir = None, None
         if self._settings.contains("fslqp/fsldir"):
             os.environ["FSLDIR"] = self._settings.value("fslqp/fsldir")
         elif "FSLDIR" not in os.environ:
@@ -1527,26 +1529,118 @@ class FslDirWidget(QtGui.QWidget):
 
     def _change_fsldir(self):
         changed = False
-        fsldir = QtGui.QFileDialog.getExistingDirectory(caption="Choose the root directory containing FSL")
-        if fsldir:
-            if self._possible_fsldir(fsldir):
-                self._settings.setValue("fslqp/fsldir", fsldir)
-                changed = True
+        dialog = FslDirDialog(self.fsldir, self.fsldevdir)
+        response = dialog.exec_()
+        if response:
+            if self._possible_fsldir(dialog.fsldir):
+                self._settings.setValue("fslqp/fsldir", dialog.fsldir)
             else:
                 raise QpException("Selected directory does not appear to contain FSL")
 
-        response = QtGui.QMessageBox.question(self, "Set FSLDEVDIR",
-                                              "Do you want to set an additional location for update FSL code?",
-                                              QtGui.QMessageBox.StandardButton.Yes | QtGui.QMessageBox.StandardButton.No)
-        if response == QtGui.QMessageBox.Yes:
-            fsldevdir = QtGui.QFileDialog.getExistingDirectory(caption="Choose the directory containing updated FSL code")
-            if fsldevdir:
-                self._settings.setValue("fslqp/fsldevdir", fsldevdir)
-                changed = True
+            if dialog.fsldevdir:
+                self._settings.setValue("fslqp/fsldevdir", dialog.fsldevdir)
+            else:
+                self._settings.setValue("fslqp/fsldevdir", "")
+            
+            changed = True
            
         if changed:
-            self.label.setText("Using FSL in %s / %s" % (fsldir, fsldevdir))
-            self.sig_changed.emit(fsldir)
+            self._update_label()
+            self.sig_changed.emit(self.fsldir)
             
+    def _update_label(self):
+        text = self.fsldir
+        if self.fsldevdir:
+            text += "\n%s" % self.fsldevdir
+        if text:
+            self.label.setText(text)
+            self.label.setToolTip(text)
+        else:
+            self.label.setText("FSLDIR not set - click button to set")
+            self.label.setToolTip("")
+
     def _possible_fsldir(self, folder):
         return os.path.exists(os.path.join(folder, "bin", "flirt"))
+
+class FslDirDialog(QtGui.QDialog):
+    """
+    Dialog box to choose FSLDIR
+    """
+
+    def __init__(self, fsldir, fsldevdir):
+        super(FslDirDialog, self).__init__(quantiphyse.gui.dialogs.MAINWIN)
+        self.setWindowTitle("Choose location of FSL installation")
+        vbox = QtGui.QVBoxLayout()
+
+        self.optbox = OptionBox()
+        self.optbox.add("FSL installation", FileOption(dirs=True, initial=fsldir), key="fsldir")
+        self.optbox.add("FSL development code", FileOption(dirs=True, initial=fsldevdir), checked=True, enabled=bool(fsldevdir), key="fsldevdir")
+        vbox.addWidget(self.optbox)
+        
+        hbox = QtGui.QHBoxLayout()
+        hbox.addStretch(1)
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        hbox.addWidget(self.button_box)
+        vbox.addLayout(hbox)
+        self.setLayout(vbox)
+
+    @property
+    def fsldir(self):
+        return self.optbox.values()["fsldir"]
+        
+    @property
+    def fsldevdir(self):
+        return self.optbox.values().get("fsldevdir", None)
+
+class ElidedLabel(QtGui.QFrame):
+    """
+    Equivalent to a QLabel but uses ellipsis to clip long text and prevents the
+    label from growing beyond it's natural size
+    
+    Converted to Python from C++ example code::
+    
+        https://stackoverflow.com/questions/7381100/text-overflow-for-a-qlabel-s-text-rendering-in-qt
+    """
+    def __init__(self, text="", parent=None):
+        QtGui.QFrame.__init__(self, parent)
+        self._content = text
+        self._elided = False
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+
+    def setText(self, text):
+        self._content = text
+        self.update()
+    
+    def paintEvent(self, event):
+        QtGui.QFrame.paintEvent(self, event)
+        painter = QtGui.QPainter(self)
+        metrics = painter.fontMetrics()
+        line_spacing = metrics.lineSpacing()
+        y = 0
+        elided = False
+
+        text_layout = QtGui.QTextLayout(self._content, painter.font())
+        text_layout.beginLayout()
+        while 1:
+            line = text_layout.createLine()
+
+            if not line.isValid():
+                break
+
+            line.setLineWidth(self.width())
+            nextLineY = y + line_spacing
+
+            if self.height() >= nextLineY + line_spacing:
+                line.draw(painter, QtCore.QPoint(0, y))
+                y = nextLineY
+            else:
+                lastLine = self._content[line.textStart():]
+                elidedLastLine = metrics.elidedText(lastLine, QtCore.Qt.ElideRight, self.width())
+                painter.drawText(QtCore.QPoint(0, y + metrics.ascent()), elidedLastLine)
+                line = text_layout.createLine()
+                elided = line.isValid()
+                break
+        text_layout.endLayout()
+        self._elided = elided
