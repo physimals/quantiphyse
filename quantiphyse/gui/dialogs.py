@@ -76,10 +76,14 @@ class MultiTextViewerDialog(QtGui.QDialog):
         if heading not in self._browsers:
             raise ValueError("Tab not found: %s" % heading)
         scrollbar = self._browsers[heading].verticalScrollBar()
-        was_at_end = scrollbar.value() == scrollbar.maximum()
+        original_pos = scrollbar.value()
+        was_at_end = original_pos == scrollbar.maximum()
+        if was_at_end:
         self._browsers[heading].setText(content)
         if was_at_end:
             scrollbar.setValue(scrollbar.maximum())
+        else:
+            scrollbar.setValue(original_pos)
 
     def _text_browser(self, content):
         browser = QtGui.QTextBrowser()
