@@ -279,20 +279,21 @@ class DataSummary(QtGui.QWidget):
         hbox.addWidget(self.vol_name)
         hbox.setStretchFactor(self.vol_name, 1)
         self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(65)
+        self.vol_data.setFixedWidth(70)
         hbox.addWidget(self.vol_data)
         self.roi_region = QtGui.QLineEdit()
-        self.roi_region.setFixedWidth(30)
+        self.roi_region.setFixedWidth(70)
         hbox.addWidget(self.roi_region)
         self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(65)
+        self.ov_data.setFixedWidth(70)
         hbox.addWidget(self.ov_data)
         self.view_options_btn = OptionsButton(self)
         hbox.addWidget(self.view_options_btn)
         self.setLayout(hbox)
 
         ivl.ivm.sig_main_data.connect(self._main_changed)
-        ivl.sig_focus_changed.connect(self._focus_changed)
+        ivl.sig_focus_changed.connect(self._update)
+        ivl.ivm.sig_current_data.connect(self._update)
 
     def show_options(self):
         """
@@ -309,14 +310,20 @@ class DataSummary(QtGui.QWidget):
             else:
                 name = data.name
         self.vol_name.setText(name)
+        self._update()
 
-    def _focus_changed(self, pos):
-        if self.ivl.ivm.main is not None:
-            self.vol_data.setText(self.ivl.ivm.main.value(pos, self.ivl.grid, as_str=True))
-        if self.ivl.ivm.current_roi is not None:
-            self.roi_region.setText(self.ivl.ivm.current_roi.value(pos, self.ivl.grid, as_str=True))
-        if self.ivl.ivm.current_data is not None:
-            self.ov_data.setText(self.ivl.ivm.current_data.value(pos, self.ivl.grid, as_str=True))
+    def _update(self):
+        pos, grid = self.ivl.focus(), self.ivl.grid
+        main, roi, data = self.ivl.ivm.main, self.ivl.ivm.current_roi, self.ivl.ivm.current_data
+        if main is not None:
+            self.vol_data.setText(main.value(pos, grid, as_str=True))
+        if roi is not None:
+            roi_value = roi.regions.get(int(roi.value(pos, grid)), "")
+            if roi_value == "":
+                roi_value = "1"
+            self.roi_region.setText(roi_value)
+        if data is not None:
+            self.ov_data.setText(data.value(pos, grid, as_str=True))
 
 class Navigator(LogSource):
     """
