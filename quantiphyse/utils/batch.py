@@ -76,11 +76,12 @@ def to_yaml(processes, indent=""):
     This does not affect the parsing of YAML code which uses PyYAML and can use
     any supported YAML code.
     """
-    def _dict_to_yaml(stream, valdict, indent=""):
+    def _dict_to_yaml(stream, valdict, indent="", prefix=""):
         for key, value in valdict.items():
             if not isinstance(key, six.string_types):
                 raise ValueError("Keys must be strings")
-            stream.write("%s%s: " % (indent, key))
+
+            stream.write("%s%s: " % (prefix, key))
             if isinstance(value, six.string_types):
                 stream.write("%s\n" % value)
             elif isinstance(value, (int, float, list)):
@@ -89,7 +90,8 @@ def to_yaml(processes, indent=""):
                 stream.write("%s\n" % str(value.tolist()))
             elif isinstance(value, collections.Mapping):
                 stream.write("\n")
-                _dict_to_yaml(stream, value, indent + "  ")
+                indent += "  "
+                _dict_to_yaml(stream, value, indent, prefix=indent)
             else:
                 raise ValueError("Unsupported option value type: %s" % type(value))            
 
@@ -98,7 +100,7 @@ def to_yaml(processes, indent=""):
 
     yaml_str = six.StringIO()
     for process in processes:
-        _dict_to_yaml(yaml_str, process, indent)
+        _dict_to_yaml(yaml_str, process, indent=indent + "    ", prefix="  - ")
         yaml_str.write("\n")
     return yaml_str.getvalue()
 
