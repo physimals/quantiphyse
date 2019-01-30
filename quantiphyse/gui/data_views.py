@@ -373,6 +373,8 @@ class RoiViewWidget(QtGui.QGroupBox):
                 if view.data is not None:
                     idx = self.roi_combo.findText(view.data.name)
                     self.roi_combo.setCurrentIndex(idx)
+                else:
+                    self.roi_combo.setCurrentIndex(-1)
 
             finally:
                 self.roi_view_combo.blockSignals(False)
