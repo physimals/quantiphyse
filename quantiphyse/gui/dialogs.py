@@ -79,7 +79,7 @@ class MultiTextViewerDialog(QtGui.QDialog):
         original_pos = scrollbar.value()
         was_at_end = original_pos == scrollbar.maximum()
         if was_at_end:
-        self._browsers[heading].setText(content)
+            self._browsers[heading].setText(content)
         if was_at_end:
             scrollbar.setValue(scrollbar.maximum())
         else:
