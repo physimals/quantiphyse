@@ -6,19 +6,14 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import print_function, division, absolute_import
 
-from PySide import QtGui
+from PySide import QtGui, QtCore
+
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.utils import get_icon, get_local_file
 from quantiphyse import __contrib__, __acknowledge__
 
-SUMMARY = """
-The GUI enables analysis of an MRI volume, and multiple ROIs and data 
-with pharmacokinetic modelling, subregion analysis and statistics included. 
-Please use help (?) buttons for more online information on each widget and the entire GUI.
-
-""" + \
-"Creators: " + ", ".join([author for author in __contrib__]) + \
-"\nAcknowlegements: " + ", ".join([ack for ack in __acknowledge__])
+SUMMARY = "\nCreators: " + ", ".join([author for author in __contrib__]) \
+          + "\nAcknowlegements: " + ", ".join([ack for ack in __acknowledge__])
 
 class OverviewWidget(QpWidget):
     """
@@ -121,6 +116,11 @@ class DataListWidget(QtGui.QTableView):
         super(DataListWidget, self).__init__(parent)
         self.ivm = parent.ivm
         self._selected = None
+        self._roi_icon = QtGui.QIcon(get_icon("roi_data.png"))
+        self._data_icon = QtGui.QIcon(get_icon("data.png"))
+        self._main_icon = QtGui.QIcon(get_icon("main_data.png"))
+        self._vis_icon = QtGui.QIcon(get_icon("visible.png"))
+        self._main_vis_icon = QtGui.QIcon(get_icon("main_ovl.png"))
 
         self.model = QtGui.QStandardItemModel()
         self.setModel(self.model)
@@ -129,12 +129,14 @@ class DataListWidget(QtGui.QTableView):
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.clicked.connect(self._clicked)
+        self.verticalHeader().setVisible(False)
+        self.horizontalHeader().setVisible(False)
 
+        self.clicked.connect(self._clicked)
         self.ivm.sig_main_data.connect(self._update_list)
-        self.ivm.sig_current_data.connect(self._update_selection)
+        self.ivm.sig_current_data.connect(self._update_list)
         self.ivm.sig_all_data.connect(self._update_list)
-        self.ivm.sig_current_roi.connect(self._update_selection)
+        self.ivm.sig_current_roi.connect(self._update_list)
 
     @property
     def selected(self):
@@ -147,8 +149,8 @@ class DataListWidget(QtGui.QTableView):
             fname = data.fname
 
         items = [
+            QtGui.QStandardItem(""),
             QtGui.QStandardItem(data.name),
-            QtGui.QStandardItem(str(data.roi)),
             QtGui.QStandardItem(fname)
         ]
         
@@ -156,7 +158,7 @@ class DataListWidget(QtGui.QTableView):
             tooltip = fname
         else:
             tooltip = "Not saved to file"
-        items[0].setToolTip(tooltip)
+        items[1].setToolTip(tooltip)
         return items
 
     def _update_list(self):
@@ -164,19 +166,46 @@ class DataListWidget(QtGui.QTableView):
             self.blockSignals(True)
             self.model.clear()
             self.model.setColumnCount(3)
-            self.model.setHorizontalHeaderLabels(["Name", "ROI?", "File"])
-            self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
-            for name in sorted(self.ivm.data.keys()):
+            self.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setResizeMode(3, QtGui.QHeaderView.Stretch)
+            for row, name in enumerate(sorted(self.ivm.data.keys())):
                 data = self.ivm.data.get(name)
                 self.model.appendRow(self._get_table_items(data))
+
+                index = self.model.index(row, 1)
+                self.model.setData(index, self._roi_icon if data.roi else self._data_icon, QtCore.Qt.DecorationRole)
+
+                is_main = data == self.ivm.main
+                is_cur = (data == self.ivm.current_data or data == self.ivm.current_roi)
+                if is_main and is_cur:
+                    icon = self._main_vis_icon
+                elif is_main:
+                    icon = self._main_icon
+                elif is_cur:
+                    icon = self._vis_icon
+                else:
+                    icon = None
+                index = self.model.index(row, 0)
+                self.model.setData(index, icon, QtCore.Qt.DecorationRole)
         finally:
             self.blockSignals(False)
 
-    def _update_selection(self):
-        pass
+    def _selection(self, index):
+        row, col = index.row(), index.column()
+        name = self.model.item(row, 1).text()
+        return row, col, name, self.ivm.data.get(name, None)
 
-    def _clicked(self, idx):
-        row = idx.row()
-        name = self.model.item(row, 0).text()
-        self._selected = self.ivm.data[name]
-        self.ivm.set_current(name)
+    def _clicked(self, index):
+        row, col, name, data = self._selection(index)
+        self._selected = data
+        if col == 0:
+            if data.roi:
+                self.ivm.set_current_roi(data.name if data != self.ivm.current_roi else None)
+            else:
+                self.ivm.set_current_data(data.name if data != self.ivm.current_data else None)
+            self.ivm.sig_all_data.emit(self.ivm.data.keys())
+        #elif col == 1:
+        #    data.roi = not data.roi
+        #    self.ivm.sig_all_data.emit(self.ivm.data.keys())
