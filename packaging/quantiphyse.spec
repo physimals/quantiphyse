@@ -36,7 +36,6 @@ added_files = [
     (os.path.join(qpdir, 'src'), 'src'),
     (os.path.join(qpdir, 'quantiphyse/packages/core'), 'packages/core'),
     (os.path.join(qpdir, 'packaging/plugins-empty'), 'packages/plugins'),
-    (os.path.join(qpdir, 'licence.md'), '.'),
 ]
 
 runtime_hooks=[

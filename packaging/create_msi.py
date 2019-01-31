@@ -185,7 +185,7 @@ def create_msi(distdir, pkgdir, version_str, sysname, version_str_display=None):
         version_str_display = version_str
 
     qpdir = os.path.join(distdir, os.pardir)
-    convert_licence(os.path.join(qpdir, "licence.md"), os.path.join(pkgdir, "licence.rtf"))
+    convert_licence(os.path.join(qpdir, "LICENSE"), os.path.join(pkgdir, "licence.rtf"))
 
     msidir = os.path.join(pkgdir, MSI_SUBDIR)
     shutil.rmtree(msidir, ignore_errors=True)
