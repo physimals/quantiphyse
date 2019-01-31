@@ -255,7 +255,7 @@ class Process(QtCore.QObject, LogSource):
                 raise QpException("Data not found: %s" % data_name)
         return data
 
-    def get_roi(self, options, grid=None, use_current=True):
+    def get_roi(self, options, grid=None, use_current=False):
         """
         Standard method to get the ROI the process is to operate on
 
