@@ -1,3 +1,3 @@
 # Needed for readthedocs only
-from distutils import setup
+from setuptools import setup
 setup()
