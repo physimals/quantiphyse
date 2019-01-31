@@ -75,7 +75,6 @@ def main():
         QtGui.QApplication.setGraphicsSystem('native')
     
     # Apply global options
-    set_debug(args.debug)
     if args.debug:
         set_base_log_level(logging.DEBUG)
         pg.systemInfo()
@@ -83,7 +82,7 @@ def main():
         set_base_log_level(logging.WARN)
 
     if args.register:
-        QtCore.QSettings().setValue("license_accepted", False)
+        QtCore.QSettings().setValue("license_accepted", 0)
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
