@@ -25,22 +25,22 @@ def check_register():
     license/registration dialog
     """
     settings = QtCore.QSettings()
-    if not settings.contains(LICENSE_ACCEPTED_KEY) or not settings.value(LICENSE_ACCEPTED_KEY):
-        dialog = RegisterDialog(quantiphyse.gui.dialogs.MAINWIN)
-        accepted = dialog.exec_()
-        settings.setValue(LICENSE_ACCEPTED_KEY, accepted)
+    if not settings.contains(LICENSE_ACCEPTED_KEY) or not int(settings.value(LICENSE_ACCEPTED_KEY)):
+        accepted = LicenseDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
+        settings.setValue(LICENSE_ACCEPTED_KEY, int(accepted))
         if accepted:
-            dialog.send_register_email()
-    if not settings.value(LICENSE_ACCEPTED_KEY):
+            RegisterDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
+
+    if not int(settings.value(LICENSE_ACCEPTED_KEY)):
         sys.exit(-1)
 
-class RegisterDialog(QtGui.QDialog):
+class LicenseDialog(QtGui.QDialog):
     """
-    Dialog box which asks a first-time user to accept the license and optionally 
-    send a registration email
+    Dialog box which asks a first-time user to accept the license
     """
     def __init__(self, parent=None):
         QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle("License Agreement")
         
         layout = QtGui.QVBoxLayout()
 
@@ -66,32 +66,7 @@ class RegisterDialog(QtGui.QDialog):
         label.setWordWrap(True)
         layout.addWidget(label)
 
-        # Registration section
-        box = QtGui.QGroupBox("Registration (optional - can leave blank)")
-        vbox = QtGui.QVBoxLayout()
-        box.setLayout(vbox)
-        label = QtGui.QLabel("<font size=3>We will not send any unsolicited communications,"
-                             "this is just to help us know where the software is being used")
-        label.setWordWrap(True)
-        vbox.addWidget(label)
-
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("<font size=2>Name"), 0, 0)
-        self.name_edit = QtGui.QLineEdit()
-        grid.addWidget(self.name_edit, 0, 1)
-        grid.addWidget(QtGui.QLabel("<font size=2>Institution"), 0, 2)
-        self.inst_edit = QtGui.QLineEdit()
-        grid.addWidget(self.inst_edit, 0, 3)
-        grid.addWidget(QtGui.QLabel("<font size=2>Email"), 1, 0)
-        self.email_edit = QtGui.QLineEdit()
-        grid.addWidget(self.email_edit, 1, 1, 1, 3)
-        vbox.addLayout(grid)
-        layout.addWidget(box)
-
         # License agreement
-        box = QtGui.QGroupBox("License agreement")
-        vbox = QtGui.QVBoxLayout()
-        box.setLayout(vbox)
         edit = QtGui.QTextEdit()
         # FIXME
         lic_file = open(get_local_file("../licence.md"), "r")
@@ -104,8 +79,7 @@ class RegisterDialog(QtGui.QDialog):
             lic_file.close()
         edit.moveCursor(QtGui.QTextCursor.Start)
         edit.ensureCursorVisible()
-        vbox.addWidget(edit)
-        layout.addWidget(box)
+        layout.addWidget(edit)
         
         # Acceptance section
         self.agree_cb = QtGui.QCheckBox("I agree to abide by the terms of the Quantiphyse license")
@@ -124,6 +98,58 @@ class RegisterDialog(QtGui.QDialog):
 
     def _agree_changed(self, state):
         self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(state)
+
+class RegisterDialog(QtGui.QDialog):
+    """
+    Dialog box which asks a first-time user to  optionally send a registration email
+    """
+    def __init__(self, parent=None):
+        QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle("Optional Registration")
+        
+        layout = QtGui.QVBoxLayout()
+
+        hbox = QtGui.QHBoxLayout()
+        pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
+        lpic = QtGui.QLabel(self)
+        lpic.setPixmap(pixmap)
+        hbox.addWidget(lpic)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
+
+        layout.addWidget(QtGui.QLabel(""))
+
+        # Welcome
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("<font size=5>Optional Registration</font>"))
+        layout.addLayout(hbox)
+
+        # Registration section
+        label = QtGui.QLabel("If you like you can register as a user. This is to "
+                             "help us know where the software is being used.")
+        label.setWordWrap(True)
+        layout.addWidget(label)
+
+        grid = QtGui.QGridLayout()
+        grid.addWidget(QtGui.QLabel("<font size=2>Name"), 0, 0)
+        self.name_edit = QtGui.QLineEdit()
+        grid.addWidget(self.name_edit, 0, 1)
+        grid.addWidget(QtGui.QLabel("<font size=2>Institution"), 0, 2)
+        self.inst_edit = QtGui.QLineEdit()
+        grid.addWidget(self.inst_edit, 0, 3)
+        grid.addWidget(QtGui.QLabel("<font size=2>Email"), 1, 0)
+        self.email_edit = QtGui.QLineEdit()
+        grid.addWidget(self.email_edit, 1, 1, 1, 3)
+        layout.addLayout(grid)
+
+        # Buttons
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.send_register_email)
+        self.button_box.rejected.connect(self.accept)
+        layout.addWidget(self.button_box)
+
+        self.setLayout(layout)
+        self.setFixedWidth(700)
 
     def send_register_email(self):
         """
@@ -148,3 +174,4 @@ class RegisterDialog(QtGui.QDialog):
             except:
                 traceback.print_exc()
                 warnings.warn("Failed to send registration email")
+        self.accept()
