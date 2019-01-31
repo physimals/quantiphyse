@@ -98,7 +98,7 @@ class OptionBox(QtGui.QGroupBox):
             option.sig_changed.connect(self.sig_changed.emit)
 
         for extra_idx, widget in enumerate(extra_widgets):
-            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+opt_col)
+            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+2)
 
         self._rows[key] = self._current_row
         self._current_row += 1
@@ -475,8 +475,8 @@ class TextOption(Option, QtGui.QLineEdit):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self):
-        QtGui.QLineEdit.__init__(self)
+    def __init__(self, initial=""):
+        QtGui.QLineEdit.__init__(self, initial)
         self.editingFinished.connect(self._changed)
 
     @property
