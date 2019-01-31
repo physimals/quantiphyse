@@ -56,6 +56,10 @@ class Tool(LogSource):
         grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0, 1, 2)
         return grid
 
+    def _show_builder_roi(self):
+        if self.builder.roiname in self.ivm.rois:
+            self.ivm.set_current_roi(self.builder.roiname)
+
 class CrosshairsTool(Tool):
     """
     'Tool' which does nothing but allow the user to navigate the views without
@@ -223,10 +227,6 @@ class PickTool(Tool):
         self.done_btn.setEnabled(True)
         self.roi_combo.setEnabled(True)
         self._show_builder_roi()
-
-    def _show_builder_roi(self):
-        if self.builder.roiname in self.ivm.rois:
-            self.ivm.set_current_roi(self.builder.roiname)
 
     def _show_existing_roi(self):
         if self.roi_name in self.ivm.rois:
@@ -436,10 +436,12 @@ class BucketTool(Tool):
         self._point = None
         if "_temp_bucket" in self.ivm.rois:
             self.ivm.delete("_temp_bucket")
+        self._show_builder_roi()
 
     def selected(self):
         self.ivl.sig_selection_changed.connect(self._sel_changed)
         self._init()
+        self._sel_changed()
         
     def deselected(self):
         self.ivl.sig_selection_changed.disconnect(self._sel_changed)

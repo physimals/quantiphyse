@@ -138,7 +138,7 @@ class PointPicker(Picker):
     """
     def __init__(self, ivl):
         Picker.__init__(self, ivl)
-        self._point = None
+        self._point = self.ivl.focus()
 
     def pick(self, win, pos):
         self._point = pos

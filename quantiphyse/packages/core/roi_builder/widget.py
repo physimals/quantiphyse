@@ -260,13 +260,13 @@ class RoiBuilderWidget(QpWidget):
             
             self._tool = tool
             self._tool.btn.setStyleSheet("border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);")
-            self._tool.selected()
             # Replace the old tool options with the new one. Need to reparent the
             # existing layout to a temporary widget which will then get deleted 
             QtGui.QWidget().setLayout(self._tool_options.layout())
             self._tool_options.setLayout(self._tool.interface())
             self._tool_options.setTitle(tool.name)
             self._tool_options.setVisible(True)
+            self._tool.selected()
 
         return _select
     
