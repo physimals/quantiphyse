@@ -22,6 +22,7 @@ import os.path
 import traceback
 import time
 import collections
+import logging
 
 import six
 import yaml
@@ -31,10 +32,10 @@ from PySide import QtCore
 from quantiphyse.processes import Process
 from quantiphyse.processes.io import *
 from quantiphyse.processes.misc import *
-
+from quantiphyse.utils.logger import set_base_log_level
 from quantiphyse.data import ImageVolumeManagement, load, save
 
-from . import set_debug, get_plugins, ifnone
+from . import get_plugins, ifnone
 from .exceptions import QpException
 
 # Default basic processes - all others are imported from packages
@@ -293,10 +294,13 @@ class Script(Process):
             if "OutputId" not in generic_params:
                 generic_params["OutputId"] = self._current_case.case_id
 
-        #debug_orig = get_debug() FIXME
+        # Set debug level for this individual process based on whether logging
+        # was enabled generically, for this case, and for this process
+        if proc_params.get("Debug", generic_params.get("Debug", False)):
+            set_base_log_level(logging.DEBUG)
+        else:
+            set_base_log_level(logging.WARN)
 
-        # Do not 'turn off' debugging if it has been enabled at higher level
-        if generic_params.get("Debug", False): set_debug(True)
         try:
             outdir = os.path.abspath(os.path.join(ifnone(generic_params.get("OutputFolder", ""), ""), 
                                                   ifnone(generic_params.get("OutputId", ""), ""),
@@ -307,6 +311,7 @@ class Script(Process):
             
             proc_id = proc_params.pop("id")
             process = proc_params.pop("__impl")(self._current_ivm, indir=indir, outdir=outdir, proc_id=proc_id)
+            
             self._current_process = process
             self._current_params = proc_params
             process.sig_finished.connect(self._process_finished)

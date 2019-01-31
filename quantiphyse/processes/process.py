@@ -25,7 +25,7 @@ import numpy as np
 from PySide import QtCore, QtGui
 
 from quantiphyse.data import NumpyData, save
-from quantiphyse.utils import LogSource, get_debug, QpException, get_plugins, set_local_file_path
+from quantiphyse.utils import LogSource, QpException, get_plugins, set_local_file_path
 
 #: Axis to split along when splitting up data sets for multiprocessing
 #: Could be 0, 1 or 2, but 0 is probably optimal for Numpy arrays which are column-major by default
@@ -197,7 +197,7 @@ class Process(QtCore.QObject, LogSource):
         except Exception as exc:
             self.status = self.FAILED
             self.exception = exc
-            if get_debug():
+            if self.debug_enabled():
                 traceback.print_exc()
 
         if self.status != self.RUNNING and not self._completed:

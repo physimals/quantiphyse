@@ -13,13 +13,15 @@ import argparse
 import multiprocessing
 import signal
 import traceback
+import logging
 
 from PySide import QtCore, QtGui
 import pyqtgraph as pg
 
 from quantiphyse.test import run_tests
-from quantiphyse.utils import QpException, set_local_file_path, set_debug
+from quantiphyse.utils import QpException, set_local_file_path
 from quantiphyse.utils.batch import BatchScript
+from quantiphyse.utils.logger import set_base_log_level
 from quantiphyse.gui import MainWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
@@ -61,9 +63,11 @@ def main():
     parser.add_argument('--qv', help='Activate quick-view mode', action="store_true")
     args = parser.parse_args()
 
-    set_debug(args.debug)
     if args.debug:
+        set_base_log_level(logging.DEBUG)
         pg.systemInfo()
+    else:
+        set_base_log_level(logging.WARN)
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
