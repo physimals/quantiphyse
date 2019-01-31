@@ -7,29 +7,11 @@ Copyright (c) 2013-2018 University of Oxford
 import logging
 logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%H:%M:%S')
 
-# This is a generic logger for the application. Intention is to move to
-# per-widget loggers but in the interim this is what we use for calls to debug() etc
-BASE_LOG = logging.getLogger("quantiphyse")
-DEBUG = False
-
-def set_debug(enable_debug):
+def set_base_log_level(level):
     """
-    Set the generic debug level
-
-    .. deprecated:: 0.8
+    Set the base logging level
     """
-    if enable_debug:
-        BASE_LOG.setLevel(logging.DEBUG)
-    else:
-        BASE_LOG.setLevel(logging.WARN)
-
-def get_debug():
-    """
-    Get the generic debug level
-
-    .. deprecated:: 0.8
-    """
-    return BASE_LOG.getEffectiveLevel() <= logging.DEBUG
+    logging.getLogger("quantiphyse").setLevel(level)
 
 class LogSource(object):
     """
@@ -54,4 +36,6 @@ class LogSource(object):
         Log a warning
         """
         self.logger.warn(*args, **kwargs)
-        
+    
+    def debug_enabled(self):
+        return self.logger.getEffectiveLevel() <= logging.DEBUG

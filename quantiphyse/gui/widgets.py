@@ -11,7 +11,7 @@ import traceback
 from PySide import QtGui, QtCore
   
 from quantiphyse.processes import Process
-from quantiphyse.utils import get_debug, get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
+from quantiphyse.utils import get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource
 from quantiphyse.utils.batch import Script, to_yaml
 from quantiphyse.gui.options import OptionBox, FileOption 
 from quantiphyse.gui.dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
@@ -1118,7 +1118,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
                 self.progress.setValue(0)
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
-                if get_debug(): 
+                if self.debug_enabled(): 
                     traceback.print_exc(exception)
                 raise exception
             else:
@@ -1173,7 +1173,7 @@ class RunButton(QtGui.QPushButton, LogSource):
         try:
             self.debug("RunButton: Finished: %i %i %s", status, len(log), exception)
             if isinstance(exception, BaseException):
-                if get_debug(): 
+                if self.debug_enabled(): 
                     traceback.print_exc(exception)
                 raise exception
             elif status != Process.SUCCEEDED:
@@ -1281,7 +1281,7 @@ class RunWidget(QtGui.QGroupBox, LogSource):
                 self.progress.setValue(0)
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
-                if get_debug(): 
+                if self.debug_enabled(): 
                     traceback.print_exc(exception)
                 raise exception
             else:
@@ -1600,7 +1600,7 @@ class ElidedLabel(QtGui.QFrame):
     label from growing beyond it's natural size
     
     Converted to Python from C++ example code::
-    
+
         https://stackoverflow.com/questions/7381100/text-overflow-for-a-qlabel-s-text-rendering-in-qt
     """
     def __init__(self, text="", parent=None):
