@@ -1,25 +1,24 @@
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
   - Load:
       data:
-        test_data.nii: data
-        MNI152lin_T1_1mm_brain.nii.gz: mni
+        testdata_4d.nii.gz:
+        testdata_3d.nii.gz:
 
   - Resample:
-      data: mni
+      data: testdata_4d
       order: 1 # Linear interpolation
-      grid: data
-      output-name: mni_resampled
+      grid: testdata_3d
+      output-name: testdata_4d_resampled
       
   - Save:
-      mni_resampled:
-      data:
-      mni:
+      testdata_4d_resampled:
 
 Cases:
   Resample:
-      InputFolder: /home/ibmeuser/data
+      InputFolder:   data_autogen
+
 
 

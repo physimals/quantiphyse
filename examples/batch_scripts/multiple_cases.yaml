@@ -1,8 +1,8 @@
 # Example config file which runs fabber model fitting
 # on three cases, each with different polynomial degree
 
-OutputFolder: test/examples_output
-InputFolder: test/data_autogen
+OutputFolder: output
+InputFolder: data_autogen
 Debug: False
 
 Processing:
@@ -20,9 +20,7 @@ Processing:
         save-mean:
 
   - Save:
-        mean_c0 :
-        mean_c1:
-        mean_c2:
+        mean_c0:
         mask:
 
 Cases:
@@ -32,7 +30,12 @@ Cases:
     - MultiCase2:
         Fabber:
           degree: 2
+        Save:
+          mean_c1:
     - MultiCase3:
         Fabber:
           degree: 3
+        Save:
+          mean_c1:
+          mean_c2:
         

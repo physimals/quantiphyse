@@ -1,6 +1,6 @@
 # Example config file for replacing ROI region with the mean data value
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -20,6 +20,6 @@ Processing:
 
 Cases:
     MeanValues:
-        InputFolder:   test/data_autogen
+        InputFolder:   data_autogen
 
 

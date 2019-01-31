@@ -1,6 +1,6 @@
 # Example config file for running Fabber model fitting
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -36,7 +36,7 @@ Processing:
 
 Cases:
     CEST_JL586:
-        #Folder: C:\Users\ctsu0221\build\data\For_Martin_ENU_JL586
-        Folder: /home/ibmeuser/data/cest/paula/
+        #InputFolder: C:\Users\ctsu0221\build\data\For_Martin_ENU_JL586
+        InputFolder: /home/ibmeuser/data/cest/paula/
         
         

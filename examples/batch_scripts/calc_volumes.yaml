@@ -1,6 +1,6 @@
 # Example config file for volume calculation process
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -14,7 +14,7 @@ Processing:
 
 Cases:
     CalcVolumes:
-        Folder:   test/data_autogen
+        Folder:   data_autogen
         Load:  
           data:
             testdata_4d.nii.gz:

@@ -1,4 +1,4 @@
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:

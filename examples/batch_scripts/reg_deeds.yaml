@@ -1,6 +1,6 @@
 # Example config file for motion correction using DEEDS
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -11,11 +11,11 @@ Processing:
     
     - Reg:
         method: deeds
+        output-suffix: _reg_deeds
         reg: data
         ref: data
-        output-name: data_reg_deeds 
         add-reg:
-            mask: mask_reg_deeds
+            - mask
 
     - Save:
         data:
@@ -25,4 +25,4 @@ Processing:
 
 Cases:
     DeedsReg:
-        InputFolder:   test/data_autogen/   
+        InputFolder:   data_autogen/   

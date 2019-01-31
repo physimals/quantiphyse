@@ -8,7 +8,7 @@
 #  Model 3: Weinmann with offset (Pre-clinical) - Recommended model for preclinical
 #  Model 4: Weinmann with offset and vp (Pre-clinical)
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:

@@ -1,6 +1,6 @@
 ### Example config file for preclinical T10 modelling with B0 correction
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:

@@ -1,7 +1,7 @@
 ### Illustration of proposed YAML-based batch file format
 
 # Global output folder - each case is output in a separate subfolder
-OutputFolder: test/examples_output
+OutputFolder: output
 
 # Setting to True will create LOTS of debugging output
 Debug: False
@@ -16,7 +16,7 @@ Processing:
 
   # Run some processing steps - in this case motion correction followed by model fitting
   - Moco:
-      method: mcflirt
+      method: flirt
       replace-vol: True
       cost: normcorr
 
@@ -30,7 +30,7 @@ Processing:
   # Output data
   # Note that the output folder is used to form the filename
   - Save:
-      mean_c0 :
+      mean_c0:
       mean_c1:
       mean_c2:
       mask: seg.nii
@@ -39,18 +39,17 @@ Processing:
 Cases:
     Pipeline:
         # Note that the folder is used to form input filenames
-        #InputFolder: c:\Users\ctsu0221\build\data\
-        InputFolder: /home/ibmeuser/data
+        InputFolder:   data_autogen
 
         # Data to load for this case
         Load:
           data:
-            test_data.nii:
+            testdata_4d.nii.gz:
           rois:
-            test_mask.nii: mask
-
+            testdata_mask.nii.gz: mask
+          
         # Can override processing defaults here
-        MCFlirt:
+        Moco:
           refvol: 10 
 
 
