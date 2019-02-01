@@ -26,7 +26,7 @@ DESC = """
 Widget for creating test ROIs and basic manual segmentation
 """
 
-TOOLS = [CrosshairsTool(), PenTool(), WalkerTool(), PainterTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool(), BucketTool()]
+TOOLS = [CrosshairsTool(), PenTool(), PainterTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool(), WalkerTool(), BucketTool()]
 
 class RoiBuilderWidget(QpWidget):
     """
@@ -117,19 +117,24 @@ class RoiBuilderWidget(QpWidget):
         Make a change to the ROI we are building
 
         :param roi_new: Numpy array containing the updated ROI data on the current base grid
-        :param vol: 3D Numpy array containing updated ROI data on the current base grid
-        :param slice2d: Tuple of (2D Numpy array, axis index, position) for 2D slice based ROI data 
-        :param axis: If specified, roi_new contains a slice normal to this axis
-        :param pos: If specified, roi_new contains a slice in this position
-        :param erase: If True, the specified data will be used to erase ROI regions rather 
-                      than add to them
+        :param vol: 3D 3D selection specified as binary Numpy array same shape as ROI
+        :param slice2d: 2D slice selection specified as tuple of (2D binary Numpy array, axis index, position)
+        :param points: Selection specified as list of 3D co-ordinates
+        :param mode: ``ADD`` to add selection to the ROI (using current label), ``ERASE`` to erase
+                     selection from the ROI (set to 0), ``MASK`` to preserve ROI labels in
+                     selection but zero everything outside selection
         """
         label = self.options.option("label").value
         self.debug("label=%i", label)
-        selection = None
+
+        # For undo functionality: selection is an object specifying which
+        # points or ROI region were selected, data_orig is a corresponding
+        # object which contains the data before the operation occurred.
+        selection, data_orig = None, None
+
         if points is not None:
-            data_orig = [self.roidata[point[0], point[1], point[2]] for point in points]
             selection = points
+            data_orig = [self.roidata[point[0], point[1], point[2]] for point in points]
             for point in points:
                 if mode == self.ADD:
                     self.roidata[point[0], point[1], point[2]] = label
@@ -138,39 +143,44 @@ class RoiBuilderWidget(QpWidget):
                 else:
                     raise ValueError("Invalid mode: %i" % mode)
         else:
-            change_subset = self.roidata
+            # change_subset is a Numpy selection of the points to be
+            # affected, data_new is a corresponding binary array identifying
+            # the selected points in this subset to modify.
             if vol is not None:
-                data_orig = np.copy(self.roidata)
-                data_new = vol
+                # Selection left as None to indicate whole volume
+                selected_points = vol
+                change_subset = self.roidata
             elif slice2d is not None:
-                # Update the slices to identify the part of the ROI we are affecting
-                data_new, axis, pos = slice2d
+                selected_points, axis, pos = slice2d
                 slices = [slice(None)] * 3
                 slices[axis] = pos
-                data_orig = np.copy(self.roidata[slices])
                 change_subset = self.roidata[slices]
-                selection = slices
+                # Selection is the axis index and position
+                selection = (axis, pos)
             else:
                 raise ValueError("Neither volume nor slice nor points provided")
 
+            data_orig = np.copy(change_subset)
             if mode == self.ADD:
-                self.debug("Adding: %i", np.count_nonzero(data_new))
-                change_subset[data_new > 0] = label
+                self.debug("Adding: %i", np.count_nonzero(selected_points))
+                change_subset[selected_points > 0] = label
             elif mode == self.ERASE:
-                self.debug("Erasing: %i", np.count_nonzero(data_new))
-                change_subset[data_new > 0] = 0
+                self.debug("Erasing: %i", np.count_nonzero(selected_points))
+                change_subset[selected_points > 0] = 0
             elif mode == self.MASK:
-                self.debug("Masking: %i", np.count_nonzero(data_new))
-                change_subset[data_new == 0] = 0
+                self.debug("Masking: %i", np.count_nonzero(selected_points))
+                change_subset[selected_points == 0] = 0
             else:
                 raise ValueError("Invalid mode: %i" % mode)
         
         # Save the previous state of the data in the history list
-        #self._history.append((data_orig, selection))
-        #self.ivm.add(NumpyData(self.roidata, grid=self.grid, roi=True, name=self.roiname), make_current=True)
+        self._history.append((selection, data_orig))
+        self._undo_btn.setEnabled(True)
+        
+        # Update the ROI - note that the regions may have been affected so make
+        # sure they are regenerated
         self.ivm.data[self.roiname].metadata.pop("roi_regions", None)
         self.ivl.redraw()
-        #self._undo_btn.setEnabled(True)
         self.debug("Now have %i nonzero", np.count_nonzero(self.roidata))
 
     def undo(self):
@@ -181,10 +191,24 @@ class RoiBuilderWidget(QpWidget):
         if not self._history: 
             return
 
-        data_prev, slices = self._history.pop()
-        roidata = self._get_roidata()
-        roidata[slices] = data_prev
-        self.ivm.add(NumpyData(roidata, grid=self.grid, name=self.roi_name, roi=True), make_current=True)
+        selection, data_orig = self._history.pop()
+
+        # For selection, None indicates whole volume, tuple indicates
+        # an (axis, pos) slice, otherwise we have a sequence of points
+        if selection is None:
+            self.roidata[:] = data_orig
+        elif isinstance(selection, tuple):
+            axis, pos = selection
+            slices = [slice(None)] * 3
+            slices[axis] = pos
+            self.roidata[slices] = data_orig
+        else:
+            for point, orig_value in zip(selection, data_orig):
+                self.roidata[point[0], point[1], point[2]] = orig_value
+
+        self.ivm.data[self.roiname].metadata.pop("roi_regions", None)
+        self.ivl.redraw()
+        self.debug("Now have %i nonzero", np.count_nonzero(self.roidata))
         self._undo_btn.setEnabled(len(self._history) > 0)
       
     def _label_changed(self):
