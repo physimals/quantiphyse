@@ -81,10 +81,7 @@ def get_icon(name, icon_dir=None):
     """
     name, extension = os.path.splitext(name)
     if extension == "":
-        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            extension = ".png"
-        else:
-            extension = ".svg"
+        extension = ".png"
     tries = []
     if icon_dir is not None: 
         tries.append(os.path.join(icon_dir, "%s%s" % (name, extension)))
