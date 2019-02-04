@@ -84,5 +84,5 @@ class DataFrameExtra(Extra):
 
     def __str__(self):
         stream = six.StringIO()
-        self.df.to_csv(stream)
+        self.df.to_csv(stream, sep='\t')
         return stream.getvalue()

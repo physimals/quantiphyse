@@ -136,15 +136,15 @@ def table_to_extra(tabmod, name):
     Turn a QT table model into a DataFrameExtra
     """
     cols = range(tabmod.columnCount())
-    columns = ["",] + [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
+    rows = range(tabmod.rowCount())
+    columns = [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
+    index = [tabmod.verticalHeaderItem(row).text() for row in rows] 
 
-    rows = []
-    for row in range(tabmod.rowCount()):
-        rowdata = [tabmod.verticalHeaderItem(row).text(),] 
-        rowdata += [tabmod.item(row, col).text() for col in cols]
-        rows.append(rowdata)
+    rowdata = []
+    for row in rows:
+        rowdata.append([tabmod.item(row, col).text() for col in cols])
 
-    df = pd.DataFrame(rows, columns=columns)
+    df = pd.DataFrame(rowdata, index=index, columns=columns)
     return DataFrameExtra(name, df)
 
 def copy_table(tabmod):
