@@ -1,0 +1,46 @@
+
+OutputFolder: xinfeng_output
+Debug: False
+
+Processing:
+  - Load:
+        data:
+            data.nii.gz:
+        rois:
+            mask.nii.gz: mask
+
+  - Fabber: 
+        data: data
+        mask: mask
+        disp: False
+        model: dsc
+        save-mean: True
+        noise: white
+        save-model-extras: True
+        inferlambda: True
+        inferart: False
+        aifconc: 
+        save-model-fit: True
+        infermtt: True
+        aif: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 14.8904, 77.6567, 164.047, 211.202, 198.792, 150.74, 97.5769, 55.9743, 29.1901, 14.0927, 6.38404, 2.74143, 1.12482, 0.443756, 0.169185, 0.0625947, 0.0225508, 0.00793391, 0.00273255, 0.000923228, 0.000306538, 0.000100177, 3.23e-05, 1.03e-05, 3.22e-06, 9.99e-07, 3.07e-07, 9.34e-08, 2.81e-08, 8.41e-09, 2.49e-09, 7.33e-10, 2.14e-10, 6.22e-11, 1.79e-11, 5.14e-12, 1.47e-12, 4.16e-13, 1.17e-13, 3.3e-14, 9.21e-15, 2.56e-15, 7.11e-16, 1.96e-16, 5.4e-17, 1.48e-17, 4.04e-18, 1.1e-18, 2.98e-19, 8.07e-20, 2.18e-20]
+        param-spatial-priors: N+M
+        delt: 1.7
+        inferdelay: True
+        te: 0.03
+        model-group: dsc
+        output-rename: 
+          mean_lambda: lam
+          mean_transitm: MTT
+          mean_cbf: rCBF
+        max-iterations: 20
+        method: spatialvb
+
+  - Save:
+        lam :
+        MTT:
+        rCBF:
+
+Cases:
+    DSC:
+        InputFolder:   /mnt/hgfs/u/data/dsc/xinfeng
+        

@@ -1,6 +1,6 @@
 ### Example config file for supervoxel generation
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -32,4 +32,4 @@ Processing:
 
 Cases:
     Supervoxels:
-        Folder: test/data_autogen/
+        Folder: data_autogen/

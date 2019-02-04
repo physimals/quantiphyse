@@ -1,6 +1,6 @@
 # Example config file for calculating various data statistics
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -33,5 +33,5 @@ Processing:
 
 Cases:
     SummaryStats:
-        Folder:   test/data_autogen
+        Folder:   data_autogen
 

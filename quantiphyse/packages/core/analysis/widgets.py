@@ -477,7 +477,7 @@ class VoxelAnalysis(QpWidget):
 
     def __init__(self, **kwargs):
         super(VoxelAnalysis, self).__init__(name="Voxel analysis", desc="Display data at a voxel", 
-                                            icon="curve_view", group="Analysis", **kwargs)
+                                            icon="curve_view", group="DEFAULT", **kwargs)
         self.data_enabled = {}
         self.updating = False
 

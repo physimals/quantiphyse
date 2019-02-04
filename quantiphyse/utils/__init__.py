@@ -12,9 +12,11 @@ import logging
 
 from matplotlib import cm
 import numpy as np
+import pandas as pd
 
 from PySide import QtCore, QtGui
 
+from quantiphyse.data.extras import DataFrameExtra
 from .exceptions import QpException
 from .logger import LogSource
 from .plugins import get_plugins
@@ -129,27 +131,26 @@ def get_version():
         LOG.warn(sys.exc_info()[1])
         return "<version not found>"
 
-def table_to_str(tabmod):
+def table_to_extra(tabmod, name):
     """ 
-    Turn a QT table model into a TSV string
+    Turn a QT table model into a DataFrameExtra
     """
-    tsv = ""
-    rows = range(tabmod.rowCount())
     cols = range(tabmod.columnCount())
-    colheaders = ["",] + [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
-    tsv += "\t".join(colheaders) + "\n"
+    rows = range(tabmod.rowCount())
+    columns = [tabmod.horizontalHeaderItem(col).text().replace("\n", " ") for col in cols]
+    index = [tabmod.verticalHeaderItem(row).text() for row in rows] 
 
+    rowdata = []
     for row in rows:
-        rowdata = [tabmod.verticalHeaderItem(row).text(),] 
-        rowdata += [tabmod.item(row, col).text() for col in cols]
-        tsv += "\t".join(rowdata) + "\n"
-    LOG.debug(tsv)
-    return tsv
+        rowdata.append([tabmod.item(row, col).text() for col in cols])
+
+    df = pd.DataFrame(rowdata, index=index, columns=columns)
+    return DataFrameExtra(name, df)
 
 def copy_table(tabmod):
     """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
     clipboard = QtGui.QApplication.clipboard()
-    tsv = table_to_str(tabmod)
+    tsv = str(table_to_extra(tabmod, ""))
     clipboard.setText(tsv)
 
 def sf(num, sig_fig=None):

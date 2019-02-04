@@ -16,7 +16,7 @@ from PySide import QtCore
 
 from quantiphyse.data import DataGrid, ImageVolumeManagement
 from quantiphyse.gui import ViewOptions, ImageView
-from quantiphyse.utils import QpException
+from quantiphyse.utils import QpException, get_plugins
 
 class WidgetTest(unittest.TestCase):
     """
@@ -42,6 +42,7 @@ class WidgetTest(unittest.TestCase):
         self.opts = ViewOptions(None, self.ivm)
         self.ivl = ImageView(self.ivm, self.opts)
 
+        get_plugins()
         wclass = self.widget_class()
         if wclass is not None:
             self.w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.opts)

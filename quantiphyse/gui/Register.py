@@ -16,6 +16,7 @@ from PySide import QtGui, QtCore
 
 import quantiphyse.gui.dialogs
 from quantiphyse.utils import get_icon, get_version, get_local_file
+from quantiphyse._version import __license__
 
 LICENSE_ACCEPTED_KEY = "license_accepted"
 
@@ -68,15 +69,9 @@ class LicenseDialog(QtGui.QDialog):
 
         # License agreement
         edit = QtGui.QTextEdit()
-        # FIXME
-        lic_file = open(get_local_file("../licence.md"), "r")
-        try:
-            edit.setCurrentFont(QtGui.QFont("Monospace", 8))
-            for line in lic_file:
-                edit.append(line.rstrip())
-            edit.append("</pre>")
-        finally:
-            lic_file.close()
+        edit.setCurrentFont(QtGui.QFont("Monospace", 8))
+        edit.append(__license__)
+        edit.append("</pre>")
         edit.moveCursor(QtGui.QTextCursor.Start)
         edit.ensureCursorVisible()
         layout.addWidget(edit)

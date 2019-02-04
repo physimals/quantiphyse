@@ -1,6 +1,6 @@
 # Example config file for running simple custom code
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -22,7 +22,7 @@ Processing:
 
 Cases:
     SimpleMaths:
-        Folder:   test/data_autogen
+        Folder:   data_autogen
         LoadData:   
           testdata_3d.nii.gz:
           

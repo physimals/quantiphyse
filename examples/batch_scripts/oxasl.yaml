@@ -1,0 +1,45 @@
+OutputFolder: test/oxasl
+Debug: False
+
+Processing:
+  - Load:
+      data:
+        mpld_asltc.nii.gz: asldata
+        aslcalib.nii.gz:
+        aslcalib_PA.nii.gz:
+      rois:
+        csfmask.nii.gz:
+
+  - Oxasl: 
+      data: asldata
+      casl: True
+      iaf: tc
+      ibf: tis
+      plds: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
+      taus: [1.8]
+      slicedt: 0.0452
+      mc: True
+      cblip: aslcalib_PA
+      echospacing: 0.06
+      pedir: y
+      fslanat: /home/ibmeuser/data/asl/fsl_course/ASL/T1.anat
+      calib: aslcalib
+      calib_method: single
+      tr: 4.8
+      refmask: csfmask
+      inferbat: True
+      inferart: True
+      pvcorr: False
+      output_native: True
+      spatial: True
+
+  - Save:
+      perfusion_calib_native:
+      aCBV_calib_native:
+      arrival_native:
+
+Cases:
+  Oxasl:
+      InputFolder: /home/ibmeuser/data/asl/fsl_course/ASL/
+
+

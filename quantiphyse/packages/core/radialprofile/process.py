@@ -9,7 +9,7 @@ import numpy as np
 
 from PySide import QtGui
 
-from quantiphyse.utils import QpException, table_to_str
+from quantiphyse.utils import QpException, table_to_extra
 from quantiphyse.processes import Process
 
 class RadialProfileProcess(Process):
@@ -87,4 +87,4 @@ class RadialProfileProcess(Process):
                 self.model.setItem(idx, col, QtGui.QStandardItem(str(v)))
             self.rp[data.name] = rp
 
-        self.ivm.add_extra(output_name, table_to_str(self.model))
+        self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))

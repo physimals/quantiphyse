@@ -1,6 +1,6 @@
 # Example config file for running Fabber model fitting
 
-OutputFolder: test/examples_output
+OutputFolder: output
 Debug: False
 
 Processing:
@@ -26,5 +26,5 @@ Processing:
 
 Cases:
     Fabber:
-        InputFolder:   test/data_autogen
+        InputFolder:   data_autogen
         

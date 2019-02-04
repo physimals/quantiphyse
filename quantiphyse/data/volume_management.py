@@ -18,6 +18,7 @@ from quantiphyse.utils import QpException
 
 from .qpdata import QpData
 from .load_save import NumpyData
+from .extras import Extra
 
 LOG = logging.getLogger(__name__)
 
@@ -272,13 +273,15 @@ class ImageVolumeManagement(QtCore.QObject):
         Add an 'extra', which can be any result of a process which
         is not voxel data, e.g. a number, table, etc.
 
-        Extras are only required to support str() conversion so they
+        Extras are required to support str() conversion so they
         can be written to a file
 
         :param name: Name to give the extra. If an extra already exists with this name
                      it will be overwritten
-        :param obj: Object which should support str() conversion
+        :param obj: instance of Extra which should support str() conversion
         """
+        if not isinstance(obj, Extra):
+            raise ValueError("extra object must be subclasses of Extra")
         self.extras[name] = obj
         self.sig_extras.emit(self.extras.values())
 

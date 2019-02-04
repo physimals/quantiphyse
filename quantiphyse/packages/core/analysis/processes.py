@@ -12,7 +12,7 @@ import scipy
 from PySide import QtGui
 
 from quantiphyse.data import NumpyData, OrthoSlice
-from quantiphyse.utils import QpException, table_to_str, sf
+from quantiphyse.utils import QpException, table_to_extra, sf
 from quantiphyse.processes import Process
 
 class CalcVolumesProcess(Process):
@@ -54,7 +54,7 @@ class CalcVolumesProcess(Process):
 
         if not options.pop('no-extras', False):
             output_name = options.pop('output-name', "roi-vols")
-            self.ivm.add_extra(output_name, table_to_str(self.model))
+            self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
 class DataStatisticsProcess(Process):
     """
@@ -117,7 +117,7 @@ class DataStatisticsProcess(Process):
                 col += 1
 
         if not no_extra: 
-            self.ivm.add_extra(output_name, table_to_str(self.model))
+            self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
     def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice_loc=None):
         """

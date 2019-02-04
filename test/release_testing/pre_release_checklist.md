@@ -6,7 +6,7 @@ bugs go out to release.
 
 Release procedure is to copy this file into a directory for each release
 e.g. 0.6. Each check should be done on each release build (Windows, OSX, 
-Linux). Then fill in the checkboxes like `[x]` for each item 
+Linux). Then fill in the checkboxes like `[ ]` for each item 
 checked *if the behaviour is acceptable!*.
 
 In general failure on one platform is not acceptable, however minor 
@@ -39,20 +39,20 @@ not found any problems.
 
 ## Basic volume viewing
 
-- [x] Load volume, ROI and overlay
-  - [x] From menu
-  - [x] From drag/drop
-  - [x] From command line
-- [x] Verify view against previous release.
-- [x] different resolution data (e.g. asl vs struc)
-- [x] Check crosshair position on click in all windows
-- [x] Check pan/zoom in normal and maximised mode
-- [x] Check double click to maximise and then minimise, windows in consistent grid
-- [x] Check space and time sliders consistent with previous version
-- [x] Load second overlay, check switching
-- [x] Load second ROI, check switching
-- [x] Clear all data, load replacement data set check range handled correctly
-- [x] Load large volume / overlay / roi to check large file handling on 64 bit system
+- [ ] Load volume, ROI and overlay
+  - [ ] From menu
+  - [ ] From drag/drop
+  - [ ] From command line
+- [ ] Verify view against previous release.
+- [ ] different resolution data (e.g. asl vs struc)
+- [ ] Check crosshair position on click in all windows
+- [ ] Check pan/zoom in normal and maximised mode
+- [ ] Check double click to maximise and then minimise, windows in consistent grid
+- [ ] Check space and time sliders consistent with previous version
+- [ ] Load second overlay, check switching
+- [ ] Load second ROI, check switching
+- [ ] Clear all data, load replacement data set check range handled correctly
+- [ ] Load large volume / overlay / roi to check large file handling on 64 bit system
 
 ### Notes
 
@@ -61,48 +61,48 @@ Issue #69: Crosshairs sometimes ugly and some artifacts on OSX at high zoom leve
 
 ## Colour Histogram
 
-- [x] Check histogram modifies view for overlay and volume
+- [ ] Check histogram modifies view for overlay and volume
 
 ## Value at voxel 
 
-- [x] Value of main data, ROI and overlay updates on click, respects voxel boundaries
+- [ ] Value of main data, ROI and overlay updates on click, respects voxel boundaries
 
 ## View options
 
-- [x] Relative position of overlay/ROI
+- [ ] Relative position of overlay/ROI
 
 ## Overlay view options
 
-- [x] Change levels, updates view and histogram
-- [x] Automatic levels as percentile, check 100%, 90% within/without ROI
-- [x] Check handling of out of range values above/below 
-- [x] Colourmap selector updates histogram and view
+- [ ] Change levels, updates view and histogram
+- [ ] Automatic levels as percentile, check 100%, 90% within/without ROI
+- [ ] Check handling of out of range values above/below 
+- [ ] Colourmap selector updates histogram and view
 
 Issue #104: Automatic levels within ROI does not seem to make difference
 
 ## ROI view options
 
-- [x] Shaded, contour, both and None working
-- [x] Alpha slider fast and working
+- [ ] Shaded, contour, both and None working
+- [ ] Alpha slider fast and working
 
 ## Data statistics widget
 
-- [x] Check show/hide/recalculate without ROI, without overlay
-- [x] Check overlay with single region ROI
-- [x] Check histogram range and bins
-- [x] Change to multi-region ROI, check recalculate
+- [ ] Check show/hide/recalculate without ROI, without overlay
+- [ ] Check overlay with single region ROI
+- [ ] Check histogram range and bins
+- [ ] Change to multi-region ROI, check recalculate
 
 Issue #69: Histogram and radial profile not working on OSX - not blocker
 
 ## Voxel analysis widget
 
-- [x] Without 4D data - no curves
-- [x] With 4D data - check curves consistent colours
-- [x] Turn on/off curves 
-- [x] 3D Data values correct and update on click
-- [x] RMS comparison 
-- [x] Normalise frames changes plot (hard to validate actual effect!)
-- [x] Temporal resolution changes when volumes scale is changed
+- [ ] Without 4D data - no curves
+- [ ] With 4D data - check curves consistent colours
+- [ ] Turn on/off curves 
+- [ ] 3D Data values correct and update on click
+- [ ] RMS comparison 
+- [ ] Normalise frames changes plot (hard to validate actual effect!)
+- [ ] Temporal resolution changes when volumes scale is changed
 - [ ] Residuals display correct (base data not displayed)
 
 Legend remains after remove all data
@@ -110,38 +110,38 @@ Issue #106 Data and Residuals not working, produces error
 
 ## Multi-voxel analysis
 
-- [x] Signal enhancement
-- [x] Check colour changing
-- [x] Check scroll through volume with arrows
-- [x] Check arrows in all 3 windows
-- [x] Enable mean value, check consistent including colours
-- [x] Remove individual curves
-- [x] Check replot on temporal resolution change
-- [x] Check clear graph clears arrows and removes arrows
+- [ ] Signal enhancement
+- [ ] Check colour changing
+- [ ] Check scroll through volume with arrows
+- [ ] Check arrows in all 3 windows
+- [ ] Enable mean value, check consistent including colours
+- [ ] Remove individual curves
+- [ ] Check replot on temporal resolution change
+- [ ] Check clear graph clears arrows and removes arrows
 
 Colour defaults to red but menu says grey
 
 ## Compare data
 
-- [x] Compare self-self
-- [x] Compare 3D
+- [ ] Compare self-self
+- [ ] Compare 3D
 - [ ] Compare 3D-4D
 - [ ] Compare 4D
-- [x] Check sample size and warning if disable
-- [x] Check within ROI, 3D and 4D
+- [ ] Check sample size and warning if disable
+- [ ] Check within ROI, 3D and 4D
 
 ## Simple Maths
 
-- [x] Subtraction of data
-- [x] Multiplication of data by constant
+- [ ] Subtraction of data
+- [ ] Multiplication of data by constant
 
 Grid for simple math widget not well defined and can lead to errors
 
 ## Smoothing
 
-- [x] 3D and 4D data
-- [x] Effect of sigma
-- [x] Output name respected
+- [ ] 3D and 4D data
+- [ ] Effect of sigma
+- [ ] Output name respected
 
 ## Registration
 
@@ -152,29 +152,29 @@ Grid for simple math widget not well defined and can lead to errors
 
 ## PCA widget
 
-- [x] Test basic 4D data
-- [x] Number of components
+- [ ] Test basic 4D data
+- [ ] Number of components
 
 Needs more functionality and better test but only really a preview so far
 
 ## Clustering widget
 
-- [x] Check without overlay
-- [x] Check run defaults
-- [x] Check change number of clusters/modes and re-run
-- [x] Check voxel count
-- [x] Check merge regions, voxel counts consistent
-- [x] Check 4D overlay, use of PCA modes
+- [ ] Check without overlay
+- [ ] Check run defaults
+- [ ] Check change number of clusters/modes and re-run
+- [ ] Check voxel count
+- [ ] Check merge regions, voxel counts consistent
+- [ ] Check 4D overlay, use of PCA modes
 
 ## Supervoxels
 
-- [x] Run 3D
-- [x] Run 4D
-- [x] Change parameters and re-run
+- [ ] Run 3D
+- [ ] Run 4D
+- [ ] Change parameters and re-run
 
 ## ROI analysis
 
-- [x] Run on single-region ROI
+- [ ] Run on single-region ROI
 - [ ] Run on multi-region ROI
 
 Issue #107
@@ -196,47 +196,47 @@ Issues #108: Multiple errors
 
 ## Mean in ROI widget
 
-- [x] Check with supervoxels and other clustering Widgets
-- [x] Confirm zero variance/range in voxel analysis
+- [ ] Check with supervoxels and other clustering Widgets
+- [ ] Confirm zero variance/range in voxel analysis
 
 ## Data inspector
 
-- [x] View data orientation
-- [x] Move origin, check sensible outcome
-- [x] Tweak transform, check sensible outcome
+- [ ] View data orientation
+- [ ] Move origin, check sensible outcome
+- [ ] Tweak transform, check sensible outcome
 
 ## Batch builder
 
-- [x] Check empty data
-- [x] Load data, check updates until modified
-- [x] Check warning on TAB
-- [x] Check warning on invalid syntax
-- [x] Cut/paste Smoothing, run, check correct
-- [x] Check reset button
-- [x] Check save
+- [ ] Check empty data
+- [ ] Load data, check updates until modified
+- [ ] Check warning on TAB
+- [ ] Check warning on invalid syntax
+- [ ] Cut/paste Smoothing, run, check correct
+- [ ] Check reset button
+- [ ] Check save
 
 ## Resample
 
-- [x] Check to same grid
-- [x] Check lo-hi
-- [x] Check hi-lo
-- [x] Check 4d->3d and vice versa
-- [x] Check interpolation methods
+- [ ] Check to same grid
+- [ ] Check lo-hi
+- [ ] Check hi-lo
+- [ ] Check 4d->3d and vice versa
+- [ ] Check interpolation methods
 
 ## PK modelling
 
-- [x] Run defaults
-- [x] Change model and re-run
-- [x] Switch between generated overlays
-- [x] Change params and re-run (estimated injection time good to vary)
+- [ ] Run defaults
+- [ ] Change model and re-run
+- [ ] Switch between generated overlays
+- [ ] Change params and re-run (estimated injection time good to vary)
 
 ## T10 map Generation
 
-- [x] Check loading VFA as single 4d image
-- [x] Check loading VFA as multiple 3d images
-- [x] Check edit TR and run
-- [x] Check B0 correction enable/disable
-- [x] Load AFI as single 4d or multiple 3d images
+- [ ] Check loading VFA as single 4d image
+- [ ] Check loading VFA as multiple 3d images
+- [ ] Check edit TR and run
+- [ ] Check B0 correction enable/disable
+- [ ] Load AFI as single 4d or multiple 3d images
 - [ ] Check edit FA and run
 - [ ] Check clamping, output overlay within clamp limits
 

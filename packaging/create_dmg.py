@@ -153,7 +153,7 @@ def create_dmg(distdir, pkgdir, version_str, sysname, version_str_display=None):
     }
 
     os.system('hdiutil create -volname Quantiphyse -srcfolder %(bundle_dir)s -ov -quiet -format UDRW %(dmg_temp_path)s' % formatting_values)
-    license = os.path.join(distdir, os.pardir, "licence.md")
+    license = os.path.join(distdir, os.pardir, "LICENSE")
     add_apps_link(dmg_temp_path)
     add_license(dmg_temp_path, license)
     os.system('hdiutil convert %s -format ' % dmg_temp_path +

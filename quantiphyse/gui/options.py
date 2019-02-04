@@ -584,10 +584,7 @@ class NumericOption(Option, QtGui.QWidget):
         val = self.rtype(self.minval + (self.maxval - self.minval) * float(value) / 100)
         try:
             self.val_edit.blockSignals(True)
-            if self.rtype == int:
-                self.val_edit.setText(str(val))
-            else:
-                self.val_edit.setText(sf(val, sig_fig=self.decimals))
+            self._update_edit(val)
         finally:
             self.val_edit.blockSignals(False)
         self._changed()
@@ -602,8 +599,14 @@ class NumericOption(Option, QtGui.QWidget):
 
     @value.setter
     def value(self, value):
-        self.val_edit.setText(str(value))
+        self._update_edit(value)
         self._edit_changed()
+    
+    def _update_edit(self, value):
+        if self.rtype == int:
+            self.val_edit.setText(str(value))
+        else:
+            self.val_edit.setText(sf(value, sig_fig=self.decimals))
 
     def setLimits(self, minval=None, maxval=None):
         """

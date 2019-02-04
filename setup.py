@@ -53,8 +53,13 @@ def git_timestamp():
 def update_metadata(rootdir, version_str, timestamp_str):
     """ Update the version and timestamp metadata in the module _version.py file """
     with io.open(os.path.join(rootdir, MODULE, "_version.py"), "w", encoding='utf-8') as f:
-        f.write("__version__ = '%s'\n" % version_str)
-        f.write("__timestamp__ = '%s'\n" % timestamp_str)
+        f.write(u"# -*- coding: UTF-8 -*-\n")
+        f.write(u"__version__ = '%s'\n" % version_str)
+        f.write(u"__timestamp__ = '%s'\n" % timestamp_str)
+        f.write(u"__license__ = '''")
+        with io.open(os.path.join(rootdir, "LICENSE"), encoding="utf-8") as lf:
+            f.write(lf.read())
+        f.write(u"\n'''\n")
 
 def get_requirements(rootdir):
     """ Get a list of all entries in the requirements file """
