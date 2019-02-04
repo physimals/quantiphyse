@@ -30,11 +30,11 @@ def git_version():
         # Full version includes the Git commit hash
         full_version = subprocess.check_output('git describe --dirty', shell=True).decode("utf-8").strip(" \n")
 
-        # Python standardized version in form major.minor.patch.dev<build>
+        # Python standardized version in form major.minor.patch.post<build>
         version_regex = re.compile(r"v?(\d+\.\d+\.\d+(-\d+)?).*")
         match = version_regex.match(full_version)
         if match:
-            std_version = match.group(1).replace("-", ".dev")
+            std_version = match.group(1).replace("-", ".post")
         else:
             raise RuntimeError("Failed to parse version string %s" % full_version)
         return full_version, std_version
@@ -151,7 +151,6 @@ kwargs = {
     'packages' : find_packages(),
     'entry_points' : {
         'gui_scripts': ['quantiphyse = quantiphyse.qpmain:main'],
-        'console_scripts': ['quantiphyse = quantiphyse.qpmain:main']
     },
     'classifiers' : [
         'Development Status :: 3 - Alpha',
