@@ -20,7 +20,7 @@ In this example statistics for two data sets are presented within a single-regio
 
 .. image:: screenshots/data_stats_single_region.png
 
-The 'Copy' button for each table copies the data to the clipboard in a tab-separated form which should be
+The ``Copy`` button for each table copies the data to the clipboard in a tab-separated form which should be
 suitable for pasting into spreadsheets such as Excel.
 
 In this example we display statistics for a single data set in each region of a multi-region ROI

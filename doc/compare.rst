@@ -17,4 +17,7 @@ By default only a random sample of 1000 points is displayed. This is because the
 You can choose the number of points in the sample. If you want to use all values in comparison, turn off the sample, but be aware that
 the plot may take some time to generate for large or 4D data sets.
 
-An identity line can be shown in cases where you want to compare the data for equality.
+An identity line can be shown in cases where you want to compare the data for equality. In the example
+above while there is some degree of linear relationship between the data, it is not perfect and
+the trend does not match the identity line.
+
