@@ -90,21 +90,23 @@ class RegWidget(QpWidget):
         refdata = self.ivm.data.get(self.options.option("ref").value, None)
         refvol = self.options.option("ref-vol").value
 
-        nvols = 1
-        if mode == "reg" and refdata is not None:
-            nvols = refdata.nvols
-        elif regdata is not None:
-            nvols = regdata.nvols
+        nvols_reg, nvols_ref = 1, 1
+        if regdata is not None:
+            nvols_reg = regdata.nvols
+        if mode == "moco":
+            nvols_ref = regdata.nvols
+        elif mode == "reg" and refdata is not None:
+            nvols_ref = refdata.nvols
 
         self.options.set_visible("ref", mode == "reg")
-        self.options.set_visible("ref-vol", nvols > 1)
-        self.options.set_visible("ref-idx", nvols > 1 and refvol == "idx")
-        self.options.set_visible("add-reg", nvols == 1 and mode == "reg")
+        self.options.set_visible("ref-vol", nvols_ref > 1)
+        self.options.set_visible("ref-idx", nvols_ref > 1 and refvol == "idx")
+        self.options.set_visible("add-reg", nvols_reg == 1 and mode == "reg")
         self.options.set_visible("output-space", mode == "reg")
         
-        if nvols > 1:
-            self.options.option("ref-idx").setLimits(0, nvols-1)
-            self.options.option("ref-idx").value = int(nvols/2)
+        if nvols_ref > 1:
+            self.options.option("ref-idx").setLimits(0, nvols_ref-1)
+            self.options.option("ref-idx").value = int(nvols_ref/2)
 
     def processes(self):
         options = self.options.values()
@@ -198,6 +200,7 @@ class TransformDetails(QtGui.QGroupBox):
 
     @property
     def transform(self):
+        """ The transform object """
         return self._transform
 
     @transform.setter
