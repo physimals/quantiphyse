@@ -987,7 +987,7 @@ class OptionsButton(QtGui.QPushButton):
             self.clicked.connect(widget.show_options)
 
 class TitleWidget(QtGui.QWidget):
-    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False):
+    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False, icon=True):
         QtGui.QWidget.__init__(self)
         if title is None:
             title = widget.name
@@ -995,9 +995,12 @@ class TitleWidget(QtGui.QWidget):
             subtitle = widget.description
             
         vbox = QtGui.QVBoxLayout()
-        self.setLayout(vbox) 
-        
+        self.setLayout(vbox)         
         hbox = QtGui.QHBoxLayout()
+        if icon and hasattr(widget, "icon"):
+            icon = QtGui.QLabel()
+            icon.setPixmap(widget.icon.pixmap(32, 32))
+            hbox.addWidget(icon)
         hbox.addWidget(QtGui.QLabel('<font size="5">%s</font>' % title))   
         hbox.addStretch(1)
         if batch_btn: hbox.addWidget(BatchButton(widget))
