@@ -30,3 +30,5 @@ test/data_autogen
 test/examples_output
 qp.icns
 .pytest_cache
+doc/html
+

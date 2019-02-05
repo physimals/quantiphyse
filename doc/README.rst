@@ -29,15 +29,50 @@ Features include:
 
 This documentation is based on the latest development version
 
-Download
---------
-Quantiphyse is available via the `Oxford University Innovation Software 
-Store <https://process.innovation.ox.ac.uk/software>`_ 
-
 License
 -------
-Quantiphyse is available free under an academic (non-commercial) license. See the `OUI Software 
-Store <https://process.innovation.ox.ac.uk/software>`_ for more details
+© 2017-2019 University of Oxford
+
+Quantiphyse is **free for non commercial** use. The license details are displayed on first
+use and the ``LICENSE`` file is included in the distribution. For further information contact
+the `OUI Software Store <https://process.innovation.ox.ac.uk/software>`_. If you are 
+interested in commercial licensing you shold contact OUI in the first instance. 
+
+Download
+--------
+If you already have a Python installation, Quantiphyse is available on PyPi::
+
+    pip install quantiphyse
+
+Note that Cython and Numpy must already be installed in order to build the core extensions.
+We hope to be able to provide wheels for Windows and Mac soon to avoid this.
+
+Major releases of Quantiphyse are also available via the `Oxford University Innovation Software 
+Store <https://process.innovation.ox.ac.uk/software>`_. The packages held by OUI have no 
+external dependencies and can be installed on Windows, Mac and Linux. They may lag behind
+the current PyPi release in terms of functionality.
+
+Plugins
+-------
+
+Some of the functionality described in this documentation requires the installation of plugins.
+The following plugins are available:
+
+ - ``quantiphyse-dce`` - DCE modelling
+ - ``quantiphyse-fabber`` - Bayesian model fitting - required for various specialised tools
+ - ``quantiphyse-fsl`` - Interface to selected FSL tools (requires FSL installation)
+ - ``quantiphyse-cest`` - CEST-MRI modelling (requires ``quantiphyse-fabber``)
+ - ``quantiphyse-asl`` - ASL-MRI modelling (requires FSL installation and ``quantiphyse-fabber``)
+ - ``quantiphyse-dsc`` - DSC-MRI modellingg (requires ``quantiphyse-fabber``)
+ - ``quantiphyse-t1`` - T1 mapping (requires ``quantiphyse-fabber``)
+
+Plugins are installed from PyPi, e.g.::
+
+    pip install quantiphyse-dce
+
+They will be automatically detected and added to Quantiphyse next time you run it. The packages
+available on the OUI software store have all plugins included which were available at the 
+time of release.
 
 User Guide
 ----------
