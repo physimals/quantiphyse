@@ -1,11 +1,16 @@
 
-.. image:: screenshots/qp_logo.png 
+
+================
+|qp| Quantiphyse 
+================
+
+.. |qp| image:: screenshots/qp_logo.png 
     :height: 48px
+
+.. image:: screenshots/sample_image.png
+    :scale: 30%
     :align: right
 
-===========
-Quantiphyse 
-===========
 
 Quantiphyse is a viewing and analysis tool for 3D and 4D biomedical data. It is particularly suited 
 for physiological or functional imaging data comprised of multi volumes in a 4D (time-) series 
@@ -15,9 +20,12 @@ model-based or model-free methods, in a large part exploiting Bayesian inference
 Quantiphyse can analyse data both voxelwise or within regions of interest that may be manually or 
 automatically created, e.g. supervoxel or clustering methods. 
 
-.. image:: screenshots/sample_image.png
+.. image:: screenshots/collage.png
+    :scale: 50%
+    :align: left
 
-Features include:
+Features
+--------
 
  - 2D orthographic viewing and navigation of data, regions of interest (ROIs) and overlays
  - Universal analysis tools including clustering, supervoxel generation and curve comparison
@@ -26,8 +34,6 @@ Features include:
  - ROI generation
  - Registration and motion correction
  - Extensible via plugins
-
-This documentation is based on the latest development version
 
 License
 -------
@@ -107,8 +113,8 @@ Generic analysis and processing tools
    hist
    rp
    
-Current included plugins
-===============
+Tools from plugins
+==================
 
 .. toctree::
    :maxdepth: 1
