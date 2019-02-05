@@ -14,3 +14,4 @@ scikit-image
 setuptools
 six
 deprecation
+pandas
