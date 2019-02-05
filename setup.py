@@ -131,7 +131,7 @@ def get_package_data(rootdir):
     Get extra data files to install into the package, e.g. icons
     """
     return {
-        'quantiphyse/icons' : glob.glob('quantiphyse/icons/*.svg') + glob.glob('quantiphyse/icons/*.png'),
+        'quantiphyse/icons' : glob.glob('quantiphyse/icons/*.svg') + glob.glob('quantiphyse/icons/*.png') + glob.glob('quantiphyse/packages/core/*/*.png') + glob.glob('quantiphyse/packages/core/*/*.svg'),
         'quantiphyse/resources' : ['quantiphyse/resources/darkorange.stylesheet'],
     }
 

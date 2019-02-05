@@ -1,2 +1,3 @@
 recursive-include quantiphyse *.pyx
+recursive-include quantiphyse *.png *.svg
 include requirements.txt LICENSE
