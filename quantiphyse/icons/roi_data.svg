@@ -17,9 +17,9 @@
    id="svg2"
    inkscape:version="0.91 r13725"
    sodipodi:docname="roi_data.svg"
-   inkscape:export-filename="/home/martinc/dev/quantiphyse/quantiphyse/icons/roi.png"
-   inkscape:export-xdpi="89.739998"
-   inkscape:export-ydpi="89.739998">
+   inkscape:export-filename="/home/ibmeuser/build/build_scripts/build/quantiphyse/quantiphyse/icons/roi_data.png"
+   inkscape:export-xdpi="50.950001"
+   inkscape:export-ydpi="50.950001">
   <metadata
      id="metadata10">
     <rdf:RDF>
@@ -65,16 +65,16 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1151"
+     inkscape:window-width="869"
+     inkscape:window-height="445"
      id="namedview6"
      showgrid="false"
      inkscape:zoom="10.429825"
      inkscape:cx="-49.499574"
      inkscape:cy="20.158344"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
-     inkscape:window-maximized="1"
+     inkscape:window-x="529"
+     inkscape:window-y="90"
+     inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <path
      style="fill:url(#linearGradient4141);fill-opacity:1;fill-rule:evenodd;stroke:#e5e5e5;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
