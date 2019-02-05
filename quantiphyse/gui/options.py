@@ -305,6 +305,15 @@ class DataOption(Option, QtGui.QComboBox):
         self._changed = True
 
     def hidePopup(self):
+        """
+        Overridden from QtGui.QComboBox
+
+        To allow multi-select, don't hide the popup when it's clicked on to
+        select/deselect data sets, so we can check and uncheck
+        them in one go. However if nothing has changed as
+        a result of the click (e.g. we click outside the popup
+        window), this will close the popup
+        """
         if not self._changed:
             QtGui.QComboBox.hidePopup(self)
         self._changed = False
@@ -388,6 +397,11 @@ class DataOption(Option, QtGui.QComboBox):
         self._update_highlight()
 
     def setEnabled(self, enable):
+        """
+        Overridden from QtGui.QWidget
+
+        Only highlight selector in red when widget is enabled
+        """
         QtGui.QWidget.setEnabled(self, enable)
         self._update_highlight()
 
