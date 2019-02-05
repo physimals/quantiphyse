@@ -27,7 +27,7 @@ If you already have a Python installation, Quantiphyse is available on PyPi::
 Note that Cython and Numpy must already be installed in order to build the core extensions.
 We hope to be able to provide wheels for Windows and Mac soon to avoid this.
 
-Major releases of Quantiphyse are available via the `Oxford University Innovation Software 
+Major releases of Quantiphyse are available via the Oxford University Innovation Software 
 Store (https://process.innovation.ox.ac.uk/software). If you are interested in commercial licensing
 you shold contact OUI in the first instance. The packages held by OUI have no external dependencies
 and can be installed on Windows, Mac and Linux.
