@@ -19,7 +19,7 @@ class LogSource(object):
     """
     def __init__(self):
         logname = "%s.%s" % (self.__module__, self.__class__.__name__)
-        if not logname.startswith("quantiphyse"):
+        if not logname.startswith("quantiphyse."):
             # Plugins do not come under the quantiphyse namespace but we want them
             # to be ancestors of the generic logger
             logname = "quantiphyse." + logname
