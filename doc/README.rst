@@ -133,6 +133,7 @@ Advanced Tools
    batch
    console
    nifti_extension
+   faq
    
 Bugs/Issues
 -----------

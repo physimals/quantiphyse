@@ -11,6 +11,7 @@ and because YAML is already used as the basis for the batch format.
 
 There has been suggestion that ``nibabel`` may add its own metadata as a NIFTI extension. This might
 enable some of the Quantiphyse metadata to be deprecated, however this is not available at present.
+It may also be possible to align this metadata with the BIDS standard in the future.
  
 The following set of metadata is an initial proposal, however any widget can save its own metadata by adding
 a YAML-serializable object to the data sets ``metadata`` dictionary attribute. Hence this list is not
