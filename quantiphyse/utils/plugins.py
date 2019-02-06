@@ -17,7 +17,7 @@ PLUGIN_MANIFEST = None
 LOG = logging.getLogger(__name__)
 
 def _possible_module(mod_file):
-    if mod_file.endswith("__init__.py"): 
+    if os.path.basename(mod_file).startswith("_"):
         return None
     elif os.path.isdir(mod_file): 
         return os.path.basename(mod_file)
@@ -81,12 +81,14 @@ def get_plugins(key=None, class_name=None):
     if PLUGIN_MANIFEST is None:
         PLUGIN_MANIFEST = {}
 
-        plugin_dirs = [
-            get_local_file("packages/core"), 
-            get_local_file("packages/plugins"),
-        ]
-        for plugin_dir in plugin_dirs:
-            _load_plugins_from_dir(plugin_dir, "quantiphyse." + plugin_dir.replace("/", "."), PLUGIN_MANIFEST)
+        plugin_dirs = {
+            "quantiphyse.packages" : get_local_file("packages/core"), 
+            "quantiphyse.plugins" : get_local_file("packages/plugins"),
+        }
+        for pkg, plugin_dir in plugin_dirs.items():
+            if os.path.exists(plugin_dir):
+                __import__(pkg)
+            _load_plugins_from_dir(plugin_dir, pkg, PLUGIN_MANIFEST)
 
         _load_plugins_from_entry_points(PLUGIN_MANIFEST)
     
