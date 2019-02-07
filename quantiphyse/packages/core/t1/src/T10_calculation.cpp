@@ -12,6 +12,11 @@
 #include <iostream>
 #include <complex>
 
+// Even with above, sometimes M_PI is not there...
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 using namespace std;
 
 // Complex inverse cosine is part of C++11 so for Python 2.7 we need
