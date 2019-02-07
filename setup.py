@@ -92,8 +92,6 @@ def get_extensions():
 
     if sys.platform.startswith('win'):
         compile_args.append('/EHsc')
-    elif sys.platform.startswith('darwin'):
-        link_args.append("-stdlib=libc++")
 
     # T1 map generation extension
 

@@ -64,16 +64,16 @@ def main():
     parser.add_argument('--register', help='Force display of registration dialog', action="store_true")
     args = parser.parse_args()
 
+    # OS specific changes
+    if sys.platform.startswith("darwin"):
+        QtGui.QApplication.setGraphicsSystem('native')
+    
     app = QtGui.QApplication(sys.argv)
     app.setStyle('plastique')
     QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
     QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
     QtCore.QCoreApplication.setApplicationName("Quantiphyse")
 
-    # OS specific changes
-    if sys.platform.startswith("darwin"):
-        QtGui.QApplication.setGraphicsSystem('native')
-    
     # Apply global options
     if args.debug:
         set_base_log_level(logging.DEBUG)
