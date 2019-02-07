@@ -158,7 +158,7 @@ class ImageVolumeManagement(QtCore.QObject):
             self.set_main_data(data.name)
 
         # Emit the 'data changed' signal
-        self.sig_all_data.emit(self.data.keys())
+        self.sig_all_data.emit(list(self.data.keys()))
 
         # Make current if requested, or if not specified and it is the first non-main data/ROI
         if make_current is None:
@@ -237,7 +237,7 @@ class ImageVolumeManagement(QtCore.QObject):
         qpd.name = newname
         self.data[newname] = qpd
         del self.data[name]
-        self.sig_all_data.emit(self.data.keys())
+        self.sig_all_data.emit(list(self.data.keys()))
 
     def delete(self, name):
         """
@@ -253,7 +253,7 @@ class ImageVolumeManagement(QtCore.QObject):
         if self.main is not None and self.main.name == name:
             self.main = None
             self.sig_main_data.emit(None)
-        self.sig_all_data.emit(self.data.keys())
+        self.sig_all_data.emit(list(self.data.keys()))
 
     def set_current_roi(self, name):
         """

@@ -61,7 +61,7 @@ class LoadDataProcess(LoadProcess):
     """
     def run(self, options):
         LoadProcess.run(self, {'data' : options})
-        for key in options.keys(): options.pop(key)
+        for key in list(options.keys()): options.pop(key)
 
 class LoadRoisProcess(LoadProcess):
     """
@@ -71,7 +71,7 @@ class LoadRoisProcess(LoadProcess):
     """
     def run(self, options):
         LoadProcess.run(self, {'rois' : options})
-        for key in options.keys(): options.pop(key)
+        for key in list(options.keys()): options.pop(key)
 
 class SaveProcess(Process):
     """
@@ -91,7 +91,7 @@ class SaveProcess(Process):
             else:
                 output_grid = output_grid_data.grid
 
-        for name in options.keys():
+        for name in list(options.keys()):
             try:
                 fname = options.pop(name, name)
                 qpdata = self.ivm.data.get(name, None)
@@ -110,8 +110,8 @@ class SaveAllExceptProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        exceptions = [k for k in options.keys()]
-        for k in options.keys(): options.pop(k)
+        exceptions = list(options.keys())
+        for k in exceptions.keys(): options.pop(k)
 
         for name, qpdata in self.ivm.data.items():
             if name in exceptions: 
@@ -143,7 +143,7 @@ class SaveArtifactsProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        for name in options.keys():
+        for name in list(options.keys()):
             fname = options.pop(name)
             if not fname: fname = name
             if name in self.ivm.extras: 

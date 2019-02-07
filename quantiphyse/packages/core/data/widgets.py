@@ -108,7 +108,7 @@ class OrientDataWidget(QpWidget):
         self._data_changed()
 
     def _all_data_changed(self, data):
-        for name in self._transform_cache.keys():
+        for name in list(self._transform_cache.keys()):
             if name not in data:
                 del self._transform_cache[name]
 

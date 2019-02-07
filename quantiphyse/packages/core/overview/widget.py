@@ -106,7 +106,7 @@ class OverviewWidget(QpWidget):
     def _toggle_roi(self):
         if self.data_list.selected is not None:
             self.data_list.selected.roi = not self.data_list.selected.roi
-            self.ivm.sig_all_data.emit(self.ivm.data.keys())
+            self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
             
 class DataListWidget(QtGui.QTableView):
     """
@@ -205,7 +205,7 @@ class DataListWidget(QtGui.QTableView):
                 self.ivm.set_current_roi(data.name if data != self.ivm.current_roi else None)
             else:
                 self.ivm.set_current_data(data.name if data != self.ivm.current_data else None)
-            self.ivm.sig_all_data.emit(self.ivm.data.keys())
+            self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
         #elif col == 1:
         #    data.roi = not data.roi
-        #    self.ivm.sig_all_data.emit(self.ivm.data.keys())
+        #    self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))

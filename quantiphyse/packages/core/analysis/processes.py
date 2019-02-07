@@ -136,7 +136,7 @@ class DataStatisticsProcess(Process):
 
         if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, roi.regions.keys(), np.array([0, 0]), np.array([0, 1])
+            return stat1, list(roi.regions.keys()), np.array([0, 0]), np.array([0, 1])
 
         stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
         hist1 = []
@@ -199,7 +199,7 @@ class ExecProcess(Process):
         for name, data in self.ivm.data.items():
             exec_globals[name] = data.raw()
 
-        for name in options.keys():
+        for name in list(options.keys()):
             proc = options.pop(name)
             if name in ("exec", "_"):
                 for code in proc:

@@ -19,7 +19,7 @@ class RenameProcess(Process):
     PROCESS_NAME = "Rename"
 
     def run(self, options):
-        for name in options.keys():
+        for name in list(options.keys()):
             newname = options.pop(name)
             self.ivm.rename(name, newname)
 
@@ -34,7 +34,7 @@ class DeleteProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
-        for name in options.copy().keys():
+        for name in list(options.keys()):
             options.pop(name, None)
             if name in self.ivm.data: 
                 self.ivm.delete(name)

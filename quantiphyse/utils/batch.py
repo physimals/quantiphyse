@@ -211,7 +211,7 @@ class Script(Process):
         """
         self._pipeline = []
         for process in root.pop("Processing", []):
-            name = process.keys()[0]
+            name = list(process.keys())[0]
             proc = self.known_processes.get(name, None)
             params = process[name]
             if params is None: params = {}
@@ -231,7 +231,7 @@ class Script(Process):
                 self._cases.append(Case(case_id, yaml_cases[case_id]))
         else:
             for case in yaml_cases:
-                case_id = case.keys()[0]
+                case_id = list(case.keys())[0]
                 self._cases.append(Case(case_id, case.get(case_id, {})))
         
         # Create default case if we have not been specified any
