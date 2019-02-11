@@ -44,6 +44,12 @@ use and the ``LICENSE`` file is included in the distribution. For further inform
 the `OUI Software Store <https://process.innovation.ox.ac.uk/software>`_. If you are 
 interested in commercial licensing you shold contact OUI in the first instance. 
 
+Tutorials
+---------
+
+ - `ASL-MRI tutorial <asl_tutorial.html>`_
+ - `CEST-MRI tutorial <cest_tutorial.html>`_
+
 Download
 --------
 If you already have a Python installation, Quantiphyse is available on PyPi::
