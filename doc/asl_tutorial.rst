@@ -29,6 +29,54 @@ http://www.neuroimagingprimers.org/examples/introduction-primer-example-boxes/
 .. contents:: Contents
     :local:
 
+Basic Orientation
+-----------------
+
+This is a quick orientation guide to Quantiphyse if you've not used it before. Start the
+program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
+icon |qp| in the menu or dock.
+
+.. |qp| image:: screenshots/qp_logo.png 
+    :scale: 40%
+
+.. image:: screenshots/main_window_basic.png
+
+Image view
+^^^^^^^^^^
+
+The left part of the window contains three orthogonal views of your data. We will describe
+how to load data in the main tutorial.
+
+ - Left mouse click to select a point of focus using the crosshairs
+ - Left mouse click and drag to pan the view
+ - Right mouse click and drag to zoom
+ - Mouse wheel to move through the slices
+ - Double click to 'maximise' a view, or to return to the triple view from the maximised view.
+
+View and navigation controls
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Just below the viewer these controls allow you to move the point of focus and also change 
+the view parameters for the current ROI and overlay.
+
+Widgets
+^^^^^^^
+
+The right hand side of the window contains 'widgets' - tools for analysing and processing data.
+Three are visible at startup:
+
+ - ``Volumes`` provides an overview of the data sets you have loaded
+ - ``Data statistics`` displays summary statistics for data set
+ - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
+
+Select a widget by clicking on its tab, just to the left of the image viewer. 
+
+More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
+will tell you when you need to open a new widget.
+
+For a slightly more detailed introduction, see the :ref:`getting_started` section of the
+User Guide.
+
 Perfusion quantification using Single PLD pcASL
 -----------------------------------------------
 

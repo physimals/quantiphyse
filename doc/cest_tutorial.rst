@@ -9,8 +9,56 @@ available as part of Quantiphyse [3]_. Here, we work with a preclinical ischaemi
 wave CEST [4]_, however the following analysis pipeline should be applicable to both pulsed and continuous wave 
 sequences acquired over a full Z-spectrum.  
 
-Loading Data
-------------
+Basic Orientation
+-----------------
+
+This is a quick orientation guide to Quantiphyse if you've not used it before. Start the
+program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
+icon |qp| in the menu or dock.
+
+.. |qp| image:: screenshots/qp_logo.png 
+    :scale: 40%
+
+.. image:: screenshots/main_window_basic.png
+
+Image view
+~~~~~~~~~~
+
+The left part of the window contains three orthogonal views of your data. We will describe
+how to load data in the main tutorial.
+
+ - Left mouse click to select a point of focus using the crosshairs
+ - Left mouse click and drag to pan the view
+ - Right mouse click and drag to zoom
+ - Mouse wheel to move through the slices
+ - Double click to 'maximise' a view, or to return to the triple view from the maximised view.
+
+View and navigation controls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Just below the viewer these controls allow you to move the point of focus and also change 
+the view parameters for the current ROI and overlay.
+
+Widgets
+~~~~~~~
+
+The right hand side of the window contains 'widgets' - tools for analysing and processing data.
+Three are visible at startup:
+
+ - ``Volumes`` provides an overview of the data sets you have loaded
+ - ``Data statistics`` displays summary statistics for data set
+ - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
+
+Select a widget by clicking on its tab, just to the left of the image viewer. 
+
+More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
+will tell you when you need to open a new widget.
+
+For a slightly more detailed introduction, see the :ref:`getting_started` section of the
+User Guide.
+
+Loading the CEST Data
+---------------------
 
 If you are taking part in an organized practical workshop, the data required will be available in your home
 directory, in the ``fsl_course/CEST`` folder. If not, you should contact the authors as the data used is 
@@ -60,13 +108,16 @@ region. To do this, select ``Contour`` from the ``View`` options below the ROI s
 
 .. image:: screenshots/cest_tutorial_roi_contour.png
 
+.. note::
+    If you accidentally load an ROI data set as ``Data``, you can set it to be an ROI using the ``Volumes`` widget
+    (visible by default). Just click on the data set in the list and click the ``Toggle ROI`` button.
+
 Motion Correction
 ~~~~~~~~~~~~~~~~~
 
-.. warning::
-    MCFLIRT does not motion correct this data set very well. The instructions below are given as an illustration however
-    we recommend that you **do not do motion correction on this data for this tutorial**. Instead skip to ``Visualising Data``.
-    
+.. note::
+    If you prefer you can skip this step - motion correction does not improve this data significantly.
+
 Motion correction can be implemented using FSL's MCFLIRT tool within Quantiphyse, or beforehand using FSL. To run 
 within Quantiphyse, select ``Widgets`` ->  ``Registration`` -> ``Registration``. 
 
