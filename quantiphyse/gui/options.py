@@ -423,11 +423,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
         # Bizarre hack to make the dropdown height adjust to the items added
         self.setView(QtGui.QListView())
         if default:
-            if default in self.choice_map:
-                self.value = default
-            else:
-                # default is a key - Need reverse lookup as choice map maps real text to keys
-                self.value = key = [key for key, value in self.choice_map.items() if value == default][0]
+            self.value = default
         self.currentIndexChanged.connect(self._changed)
 
     def setChoices(self, choices, return_values=None):
