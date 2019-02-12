@@ -179,10 +179,21 @@ class RoiBuilderWidget(QpWidget):
         
         # Update the ROI - note that the regions may have been affected so make
         # sure they are regenerated
-        self.ivm.data[self.roiname].metadata.pop("roi_regions", None)
+        self._update_regions()
         self.ivl.redraw()
         self.debug("Now have %i nonzero", np.count_nonzero(self.roidata))
 
+    def _update_regions(self):
+        """
+        ROI regions may have been created or added so regenerate them but put 
+        back existing label names
+        """
+        current_regions = self.ivm.data[self.roiname].metadata.pop("roi_regions", {})
+        new_regions = self.ivm.data[self.roiname].regions
+        for label, desc in current_regions.items():
+            if label in new_regions:
+                new_regions[label] = desc
+        
     def undo(self):
         """
         Undo the last change
@@ -206,7 +217,7 @@ class RoiBuilderWidget(QpWidget):
             for point, orig_value in zip(selection, data_orig):
                 self.roidata[point[0], point[1], point[2]] = orig_value
 
-        self.ivm.data[self.roiname].metadata.pop("roi_regions", None)
+        self._update_regions()
         self.ivl.redraw()
         self.debug("Now have %i nonzero", np.count_nonzero(self.roidata))
         self._undo_btn.setEnabled(len(self._history) > 0)
