@@ -75,7 +75,7 @@ class RegWidget(QpWidget):
 
         layout.addWidget(RunWidget(self))
         layout.addStretch(1)
-        self._update_option_visibility()
+        self._method_changed()
 
     def _method_changed(self):
         method = self.options.option("method").value
