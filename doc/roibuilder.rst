@@ -83,8 +83,8 @@ slice separately.
 
 .. |eraser| image:: screenshots/roi_tools_eraser.png 
 
-With this tool, click on individual voxels to remove them from the ROI. The brush size can be 
-modified to erase larger regions. See the ``Paint`` tool for more information.
+This tool is very similar to the ``Paint`` tool, only voxels are erased rather than painted. The brush size can be 
+modified to erase larger regions - see the ``Paint`` tool for more information.
 
 |rectangle| Rectangle
 ~~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +116,9 @@ slice window are ignored.
 .. |region| image:: screenshots/roi_tools_region.png 
 
 This tool allows you to choose a region of an existing ROI - for example to isolate a particular cluster
-or supervoxel. Using the menu, select the existing ROI and then click on a point to choose the region
+or supervoxel. 
+
+Using the menu, select the existing ROI and then click on a point to choose the region
 it lies within. The region will be displayed in isolation and you can choose to 'Accept' or 'Cancel' the
 selection.
 
