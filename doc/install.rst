@@ -1,3 +1,5 @@
+.. _install:
+
 Installation of Quantiphyse
 ===========================
 
@@ -8,7 +10,7 @@ is as simple as::
 
 In practice it is often *not* as simple as this. There are a couple of reasons for this:
 
- - Quantiphyse required ``cython`` and ``numpy`` to build it's own extensions. On
+ - Quantiphyse requires ``cython`` and ``numpy`` to build it's own extensions. On
    Linux you may need to manually install these first (for Mac and Windows binary
    wheels are available which avoid this).
  - ``PySide`` (the library we use for the user interface) needs to be compiled against
@@ -18,38 +20,62 @@ In practice it is often *not* as simple as this. There are a couple of reasons f
 Below are a number of 'recipes' for different platforms which have been verified to 
 work. 
 
+.. contents:: Platforms
+    :local:
+
+Ubuntu 16.04
+------------
+
+From a terminal window::
+
+    sudo apt install libqt4-dev qt4-qmake cmake python-dev python-setuptools
+    sudo easy_install pip
+    pip install cython numpy --user
+    pip install quantiphyse --user
+
+The last step will take a while! The PySide GUI library is being built - the 
+terminal will show::
+
+    Running setup.py install for PySide ... |
+
+Go get a coffee and come back later.
+
+The recipe above just installs the main application. To install plugins use::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 --user
+    pip install deprecation==1.2 --user
+
+The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
+more information.
+
+Alternatively, you can use `Anaconda`_ in Ubuntu.
+
+Centos 7
+--------
+
+To be completed...
+
 Windows
 -------
 
 On Windows we strongly recommend using the Anaconda python distribution 
-to install Python - see instructions below.
+to install Python - see `Anaconda`_ below.
 
 Mac OSX
 -------
 
-On Mac we recommend either the Anaconda python distribution - see below -
-or Homebrew. The system python has difficulties installing ``PySide`` due to the old
-version of Qt that is required.
+On Mac we recommend either the Anaconda python distribution - see 
+`Anaconda`_ or `Homebrew`_. The system python has 
+difficulties installing ``PySide`` due to the old version of Qt that 
+is required.
 
-Linux
------
+Homebrew
+--------
 
-On Linux, Anaconda remains a good choice, however a few other possiblities exist.
+To be completed...
 
-
-Using a virtualenv
-~~~~~~~~~~~~~~~~~~
-
-This example is intended for Linux or Mac. It creates a virtual python environment
-and installs Quantiphyse from pip::
-
-    virtualenv $HOME/venvs/qp
-    pip install cython numpy
-    pip install quantiphyse
-
-
-Installation using Anaconda
----------------------------
+Anaconda
+--------
 
 Anaconda (`<https://www.anaconda.org>`_) is an easy to install distribuction of Python which
 also includes the ``conda`` tool for installing packages. We find ``conda`` generally better than 
@@ -60,17 +86,23 @@ You will need to install the Anaconda environment before using any of these reci
 When selecting a Python version, ``Python 2.7`` is the version on which Quantiphyse
 has been most tested, however you can also use ``python 3.x``. We intend to make
 Quantiphyse compatible with both version of Python for the foreseeable future
-although we intend to move to Python 3 as the main development platform.
+although we are currently moving to Python 3 as the main development platform.
 
 Once installed, use the following commands from a command prompt::
 
     conda create -n qp
     conda activate qp
-    conda install cython numpy
-    pip install quantiphyse
-    conda install PySide --force
-    pip install quantiphyse-cest
-    ... repeat for other plugins as required
+    conda install cython funcsigs matplotlib nibabel numpy pillow pyqtgraph pyside pyyaml requests scipy scikit-learn scikit-image setuptools six pandas
+    pip install quantiphyse --no-deps
+
+This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
+plugins::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1
+    pip install deprecation==1.2
+
+The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
+more information.
 
 In the future we hope to put Quantiphyse into conda itself so the whole
 process can consist of ``conda install quantiphyse``.  

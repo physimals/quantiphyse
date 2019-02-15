@@ -1,3 +1,5 @@
+.. _faq:
+
 Frequently Asked Questions
 ==========================
 
@@ -35,3 +37,18 @@ using ``conda`` instead of pip which we generally find is more reliable
 for packages which include native (i.e. non-Python) code. Instead of ``pip install``
 try ``conda install`` for the packages which are causing trouble, then
 try ``pip install quantiphyse`` afterwards.
+
+Error on startup after installing plugins
+-----------------------------------------
+
+One known issue can be identified by starting quantiphyse from the command line. If it fails
+with an error message that ends as follows::
+
+    pkg_resources.ContextualVersionConflict: (deprecation 2.0.6 (/usr/local/lib/python2.7/dist-packages), Requirement.parse('deprecation<=2.*,>=1.*'), set(['fslpy']))                          
+
+This can be fixed with::
+
+    pip install deprecation==1.2 --user
+
+The cause is an apparently invalid requirements specification in a dependency package.
+
