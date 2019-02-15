@@ -142,6 +142,11 @@ You could also have modified the colour map limits by dragging the colourmap ran
 this is located to the right of the image view. You can drag the upper and lower limits with the
 left button, while dragging with the right button changes the displayed scale. You can also 
 customize the colour map by clicking on the colour bar with the right button.
+
+.. warning::
+    Dragging the colourmap is a little fiddly due to a GUI bug. Before trying to adjust the levels, 
+    drag down with the **right** mouse button briefly on the colour bar. This unlocks the automatic
+    Y-axis and will make it easier to drag on the handles to adjust the colour map.
     
 .. figure:: screenshots/asl_tutorial_cmap_widget.png
     :align: right
@@ -300,14 +305,15 @@ setting up the next analysis.
 
 The output will not be very different, but if you switch between the old and new
 versions of the ``perfusion_calib_native`` data set you should be able to see slight stretching in
-the anterior portion of the brain which is the outcome of distortion correction. To do this
+the anterior portion of the brain which is the outcome of distortion correction. 
+
+To do this
 select the ``Volumes`` widget and in the data list click on the left hand box next to the data 
 item you want to see. An 'eye' icon will appear here |eye| indicating that this data set is 
 now visible. Switch between ``new_perfusion_calib_native`` and ``perfusion_calib_native`` to 
 see the different - it helps if you set the colour map range the same for both data sets.
 
 .. image:: screenshots/asl_tutorial_select_volume.png
-
 
 .. |eye| image:: screenshots/overlay_visible.png 
 
@@ -645,7 +651,7 @@ Below is an example of the information included in the report:
 
 The links are arranged in the order of the processing steps and each link leads to
 a page giving more detail on this part of the pipeline. For example here's it's 
-summary of the motion correction step:
+summary of the motion correction step for the single-PLD data:
 
 .. image:: screenshots/asl_tutorial_report_moco.png
 
