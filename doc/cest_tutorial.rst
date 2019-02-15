@@ -49,7 +49,7 @@ Three are visible at startup:
  - ``Data statistics`` displays summary statistics for data set
  - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
 
-Select a widget by clicking on its tab, just to the left of the image viewer. 
+Select a widget by clicking on its tab, just to the right of the image viewer. 
 
 More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
 will tell you when you need to open a new widget.

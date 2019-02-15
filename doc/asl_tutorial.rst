@@ -69,7 +69,7 @@ Three are visible at startup:
  - ``Data statistics`` displays summary statistics for data set
  - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
 
-Select a widget by clicking on its tab, just to the left of the image viewer. 
+Select a widget by clicking on its tab, just to the right of the image viewer. 
 
 More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
 will tell you when you need to open a new widget.
@@ -187,7 +187,7 @@ default:
 
 .. image:: screenshots/asl_tutorial_corr_none.png
 
-For this run we will skip the ``Structural data`` tab, and instad move on to ``Calibration``. 
+For this run we will skip the ``Structural data`` tab, and instead move on to ``Calibration``. 
 To use calibration we first need to load the calibration image data file from the same folder containing the ASL
 data - again we can use drag/drop or the ``File->Load Data`` menu option to load the following file:
 
@@ -325,9 +325,14 @@ You can either load
 a structural (T1 weighted) image into Quantiphyse and select ``Structural Image`` as the 
 source of structural data, or if you have already processed your structural data with ``FSL_ANAT``
 you can point the analysis at the output directory. We will use the second method as it enables
-the analysis to run faster (because the segmentation of the structural image has already been
-done). On the ``Structural Data`` tab, we select ``FSL_ANAT`` output and choose the location of the
-FSL_ANAT output directory (``T1.anat``):
+the analysis to run faster. On the ``Structural Data`` tab, we select ``FSL_ANAT`` output and chooses
+the location of the FSL_ANAT output directory (``T1.anat``):
+
+.. note::
+    If a simple structural image was provided instead of an ``FSL_ANAT`` output folder, 
+    the ``FAST`` segmentation tool is automatically run to obtain partial volume estimates.
+    This adds considerably to the run-time so it's generally recommended to run ``FSL_ANAT``
+    separately first.
 
 .. image:: screenshots/asl_tutorial_struc_spld.png
 
@@ -421,14 +426,8 @@ To run the analysis you would simply click ``Run`` again, however this will take
 If you'd prefer not to wait, you can find the results of this analysis already completed in the
 directory ``ASL/oxasl_spld_pvout``. 
 
-.. note::
-    If a simple structural image was provided instead of an ``FSL_ANAT`` output folder, 
-    the ``FAST`` segmentation tool is automatically run to obtain partial volume estimates.
-    This adds considerably to the run-time so it's generally recommended to run ``FSL_ANAT``
-    separately first.
-
 In this results directory you will still find an analysis performed without partial volume correction
-in oxasl/native_space as before. The results of partial volume correction can be found in oxasl/native_space/pvcorr. 
+in ``native_space`` as before. The results of partial volume correction can be found in ``native_space/pvcorr``. 
 In this directory the output perfusion data ``perfusion_calib.nii.gz`` is now an estimate of perfusion 
 **only in gray matter**. It has been joined by a new set of images for 
 the estimation of white matter perfusion, e.g., ``perfusion_wm_calib.nii.gz``. 
@@ -631,10 +630,14 @@ Generate HTML report
 ^^^^^^^^^^^^^^^^^^^^
 
 This option is available on the ``Output`` tab and will generate a summary report of the
-whole pipeline in the directory that you specify. Quantiphyse will attempt to open
-the report in your default web browser when the pipeline has completed, but if this
-does not happen you can navigate to the directory yourself and open the ``index.html``
-file.
+whole pipeline in the directory that you specify. To get this you will need to select
+the checkbox and enter or choose a directory to store the report in.
+
+.. image:: screenshots/asl_tutorial_report_dir.png
+
+Quantiphyse will attempt to open the report in your default web browser when the pipeline 
+has completed, but if this does not happen you can navigate to the directory yourself and 
+open the ``index.html`` file.
 
 Below is an example of the information included in the report:
 
