@@ -42,9 +42,7 @@ appropriate button when the load dialog appears. Load the following data file:
 
   - ``CEST.nii.gz``
 
-The data should appear in the viewing window. In this case the data is a 2D slice so Quantiphyse has maximised the
-relevant viewing window. If you double click on one of the views it returns to the standard of three orthogonal views
-- this can be used with 3D data to look at just one of the slice windows at a time.
+The data should appear in the viewing window. 
 
 .. image:: screenshots/cest_tutorial_1.png
 
@@ -55,7 +53,8 @@ relevant viewing window. If you double click on one of the views it returns to t
 Image view
 ~~~~~~~~~~
 
-The left part of the window contains three orthogonal views of your data.
+The left part of the window normally contains three orthogonal views of your data. In this case the data is a 2D slice so Quantiphyse has maximised the
+relevant viewing window. If you double click on the view it returns to the standard of three orthogonal views - this can be used with 3D data to look at just one of the slice windows at a time.
 
  - Left mouse click to select a point of focus using the crosshairs
  - Left mouse click and drag to pan the view
