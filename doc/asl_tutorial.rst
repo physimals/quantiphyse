@@ -88,7 +88,8 @@ The data
 
 If you are taking part in an organized practical, the data required will be available in your home
 directory, in the ``fsl_course/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
-https://fsl.fmrib.ox.ac.uk/fslcourse/ (see ``Data Files`` and choose the ASL data download).
+https://fsl.fmrib.ox.ac.uk/fslcourse/ (Scroll down to the section entitled ``Data Files`` and choose the ASL 
+data from the list of download links).
 
 Start by loading the ASL data into Quantiphyse - use ``File->Load Data`` or drag and drop to load
 the file ``spld_asltc.nii.gz``. In the ``Load Data`` dialog select ``Data``.
