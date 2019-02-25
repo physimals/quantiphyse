@@ -245,8 +245,8 @@ class Process(QtCore.QObject, LogSource):
                     rawdata = np.expand_dims(data_item.raw(), 3)
                 else:
                     rawdata = data_item.raw()
-                data[..., num_vols:num_vols+data.nvols] = rawdata
-                num_vols += data.nvols
+                data[..., num_vols:num_vols+data_item.nvols] = rawdata
+                num_vols += data_item.nvols
             data = NumpyData(data, grid=grid, name="multi_data")
         else:
             if data_name in self.ivm.data:
