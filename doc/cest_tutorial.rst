@@ -12,20 +12,50 @@ sequences acquired over a full Z-spectrum.
 Basic Orientation
 -----------------
 
-This is a quick orientation guide to Quantiphyse if you've not used it before. Start the
-program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
+Before we do any data modelling, this is a quick orientation guide to Quantiphyse if you've 
+not used it before. You can skip this section if you already know how the program works.
+
+Start the program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
 icon |qp| in the menu or dock.
 
 .. |qp| image:: screenshots/qp_logo.png 
     :scale: 40%
 
-.. image:: screenshots/main_window_basic.png
+.. image:: screenshots/main_window_empty.png
+
+Loading some CEST Data
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you are taking part in an organized practical workshop, the data required may be available in your home
+directory, in the ``fsl_course/CEST`` folder. If not, an encrypted zipfile containing the data can be 
+downloaded below - you will be given the password by the course organizers:
+
+  - `Self extracting Windows archive <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EVp6AQUJVTlLtGHS1tPlVtkB0JinWE1hdeK85BRBncnztw?e=HSkcv5>`_
+  - `Encrypted 7zip archive for Unix <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EUkP9jm0Y2ZFq6vc1jOvWf4B_uNcFOIBeEttxk03gQ--Cw?e=hXQTae>`_
+
+.. image:: screenshots/drag_drop_choice.png
+    :align: right
+
+Files can be loaded in NIFTI or DICOM format either by dragging and dropping in to the view pane, or by clicking 
+``File`` -> ``Load Data``. When loading a file you should indicate if it is data or an ROI by clicking the 
+appropriate button when the load dialog appears. Load the following data file:
+
+  - ``CEST.nii.gz``
+
+The data should appear in the viewing window. In this case the data is a 2D slice so Quantiphyse has maximised the
+relevant viewing window. If you double click on one of the views it returns to the standard of three orthogonal views
+- this can be used with 3D data to look at just one of the slice windows at a time.
+
+.. image:: screenshots/cest_tutorial_1.png
+
+.. note::
+    If your single slice CEST NIFTI file is in 3D format rather than 4D, you may need to select ``Advanced Options``
+    when loading data and ``Treat as 2D multi-volume``. 
 
 Image view
 ~~~~~~~~~~
 
-The left part of the window contains three orthogonal views of your data. We will describe
-how to load data in the main tutorial.
+The left part of the window contains three orthogonal views of your data.
 
  - Left mouse click to select a point of focus using the crosshairs
  - Left mouse click and drag to pan the view
@@ -56,35 +86,6 @@ will tell you when you need to open a new widget.
 
 For a slightly more detailed introduction, see the :ref:`getting_started` section of the
 User Guide.
-
-Loading the CEST Data
----------------------
-
-If you are taking part in an organized practical workshop, the data required may be available in your home
-directory, in the ``fsl_course/CEST`` folder. If not, an encrypted zipfile containing the data can be 
-downloaded below - you will be given the password by the course organizers:
-
-  - `Self extracting Windows archive <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EVp6AQUJVTlLtGHS1tPlVtkB0JinWE1hdeK85BRBncnztw?e=HSkcv5>`_
-  - `Encrypted 7zip archive for Unix <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EUkP9jm0Y2ZFq6vc1jOvWf4B_uNcFOIBeEttxk03gQ--Cw?e=hXQTae>`_
-
-.. image:: screenshots/drag_drop_choice.png
-    :align: right
-
-Files can be loaded in NIFTI or DICOM format either by dragging and dropping in to the view pane, or by clicking 
-``File`` -> ``Load Data``. When loading a file you should indicate if it is data or an ROI by clicking the 
-appropriate button when the load dialog appears. Load the following data file:
-
-  - ``CEST.nii.gz``
-
-The data should appear in the viewing window. In this case the data is a 2D slice so Quantiphyse has maximised the
-relevant viewing window. If you double click on one of the views it returns to the standard of three orthogonal views
-- this can be used with 3D data to look at just one of the slice windows at a time.
-
-.. image:: screenshots/cest_tutorial_1.png
-
-.. note::
-    If your single slice CEST NIFTI file is in 3D format rather than 4D, you may need to select ``Advanced Options``
-    when loading data and ``Treat as 2D multi-volume``. 
 
 Pre-processing
 --------------

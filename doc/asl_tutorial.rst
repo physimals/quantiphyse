@@ -64,8 +64,7 @@ The data should look as follows:
 Image view
 ^^^^^^^^^^
 
-The left part of the window contains three orthogonal views of your data. We will describe
-how to load data in the main tutorial.
+The left part of the window contains three orthogonal views of your data.
 
  - Left mouse click to select a point of focus using the crosshairs
  - Left mouse click and drag to pan the view
