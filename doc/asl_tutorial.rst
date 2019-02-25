@@ -69,7 +69,7 @@ Three are visible at startup:
  - ``Data statistics`` displays summary statistics for data set
  - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
 
-Select a widget by clicking on its tab, just to the left of the image viewer. 
+Select a widget by clicking on its tab, just to the right of the image viewer. 
 
 More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
 will tell you when you need to open a new widget.
@@ -88,7 +88,8 @@ The data
 
 If you are taking part in an organized practical, the data required will be available in your home
 directory, in the ``fsl_course/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
-https://fsl.fmrib.ox.ac.uk/fslcourse/ (see ``Data Files`` and choose the ASL data download).
+https://fsl.fmrib.ox.ac.uk/fslcourse/ (Scroll down to the section entitled ``Data Files`` and choose the ASL 
+data from the list of download links).
 
 Start by loading the ASL data into Quantiphyse - use ``File->Load Data`` or drag and drop to load
 the file ``spld_asltc.nii.gz``. In the ``Load Data`` dialog select ``Data``.
@@ -142,6 +143,11 @@ You could also have modified the colour map limits by dragging the colourmap ran
 this is located to the right of the image view. You can drag the upper and lower limits with the
 left button, while dragging with the right button changes the displayed scale. You can also 
 customize the colour map by clicking on the colour bar with the right button.
+
+.. warning::
+    Dragging the colourmap is a little fiddly due to a GUI bug. Before trying to adjust the levels, 
+    drag down with the **right** mouse button briefly on the colour bar. This unlocks the automatic
+    Y-axis and will make it easier to drag on the handles to adjust the colour map.
     
 .. figure:: screenshots/asl_tutorial_cmap_widget.png
     :align: right
@@ -187,7 +193,7 @@ default:
 
 .. image:: screenshots/asl_tutorial_corr_none.png
 
-For this run we will skip the ``Structural data`` tab, and instad move on to ``Calibration``. 
+For this run we will skip the ``Structural data`` tab, and instead move on to ``Calibration``. 
 To use calibration we first need to load the calibration image data file from the same folder containing the ASL
 data - again we can use drag/drop or the ``File->Load Data`` menu option to load the following file:
 
@@ -300,14 +306,15 @@ setting up the next analysis.
 
 The output will not be very different, but if you switch between the old and new
 versions of the ``perfusion_calib_native`` data set you should be able to see slight stretching in
-the anterior portion of the brain which is the outcome of distortion correction. To do this
+the anterior portion of the brain which is the outcome of distortion correction. 
+
+To do this
 select the ``Volumes`` widget and in the data list click on the left hand box next to the data 
 item you want to see. An 'eye' icon will appear here |eye| indicating that this data set is 
 now visible. Switch between ``new_perfusion_calib_native`` and ``perfusion_calib_native`` to 
 see the different - it helps if you set the colour map range the same for both data sets.
 
 .. image:: screenshots/asl_tutorial_select_volume.png
-
 
 .. |eye| image:: screenshots/overlay_visible.png 
 
@@ -325,9 +332,14 @@ You can either load
 a structural (T1 weighted) image into Quantiphyse and select ``Structural Image`` as the 
 source of structural data, or if you have already processed your structural data with ``FSL_ANAT``
 you can point the analysis at the output directory. We will use the second method as it enables
-the analysis to run faster (because the segmentation of the structural image has already been
-done). On the ``Structural Data`` tab, we select ``FSL_ANAT`` output and choose the location of the
-FSL_ANAT output directory (``T1.anat``):
+the analysis to run faster. On the ``Structural Data`` tab, we select ``FSL_ANAT`` output and chooses
+the location of the FSL_ANAT output directory (``T1.anat``):
+
+.. note::
+    If a simple structural image was provided instead of an ``FSL_ANAT`` output folder, 
+    the ``FAST`` segmentation tool is automatically run to obtain partial volume estimates.
+    This adds considerably to the run-time so it's generally recommended to run ``FSL_ANAT``
+    separately first.
 
 .. image:: screenshots/asl_tutorial_struc_spld.png
 
@@ -421,14 +433,8 @@ To run the analysis you would simply click ``Run`` again, however this will take
 If you'd prefer not to wait, you can find the results of this analysis already completed in the
 directory ``ASL/oxasl_spld_pvout``. 
 
-.. note::
-    If a simple structural image was provided instead of an ``FSL_ANAT`` output folder, 
-    the ``FAST`` segmentation tool is automatically run to obtain partial volume estimates.
-    This adds considerably to the run-time so it's generally recommended to run ``FSL_ANAT``
-    separately first.
-
 In this results directory you will still find an analysis performed without partial volume correction
-in oxasl/native_space as before. The results of partial volume correction can be found in oxasl/native_space/pvcorr. 
+in ``native_space`` as before. The results of partial volume correction can be found in ``native_space/pvcorr``. 
 In this directory the output perfusion data ``perfusion_calib.nii.gz`` is now an estimate of perfusion 
 **only in gray matter**. It has been joined by a new set of images for 
 the estimation of white matter perfusion, e.g., ``perfusion_wm_calib.nii.gz``. 
@@ -631,10 +637,14 @@ Generate HTML report
 ^^^^^^^^^^^^^^^^^^^^
 
 This option is available on the ``Output`` tab and will generate a summary report of the
-whole pipeline in the directory that you specify. Quantiphyse will attempt to open
-the report in your default web browser when the pipeline has completed, but if this
-does not happen you can navigate to the directory yourself and open the ``index.html``
-file.
+whole pipeline in the directory that you specify. To get this you will need to select
+the checkbox and enter or choose a directory to store the report in.
+
+.. image:: screenshots/asl_tutorial_report_dir.png
+
+Quantiphyse will attempt to open the report in your default web browser when the pipeline 
+has completed, but if this does not happen you can navigate to the directory yourself and 
+open the ``index.html`` file.
 
 Below is an example of the information included in the report:
 
@@ -642,7 +652,7 @@ Below is an example of the information included in the report:
 
 The links are arranged in the order of the processing steps and each link leads to
 a page giving more detail on this part of the pipeline. For example here's it's 
-summary of the motion correction step:
+summary of the motion correction step for the single-PLD data:
 
 .. image:: screenshots/asl_tutorial_report_moco.png
 

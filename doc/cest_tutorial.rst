@@ -49,7 +49,7 @@ Three are visible at startup:
  - ``Data statistics`` displays summary statistics for data set
  - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
 
-Select a widget by clicking on its tab, just to the left of the image viewer. 
+Select a widget by clicking on its tab, just to the right of the image viewer. 
 
 More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
 will tell you when you need to open a new widget.
@@ -60,9 +60,12 @@ User Guide.
 Loading the CEST Data
 ---------------------
 
-If you are taking part in an organized practical workshop, the data required will be available in your home
-directory, in the ``fsl_course/CEST`` folder. If not, you should contact the authors as the data used is 
-unpublished research data and cannot be made available for direct download.
+If you are taking part in an organized practical workshop, the data required may be available in your home
+directory, in the ``fsl_course/CEST`` folder. If not, an encrypted zipfile containing the data can be 
+downloaded below - you will be given the password by the course organizers:
+
+  - `Self extracting Windows archive <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EVp6AQUJVTlLtGHS1tPlVtkB0JinWE1hdeK85BRBncnztw?e=HSkcv5>`_
+  - `Encrypted 7zip archive for Unix <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EUkP9jm0Y2ZFq6vc1jOvWf4B_uNcFOIBeEttxk03gQ--Cw?e=hXQTae>`_
 
 .. image:: screenshots/drag_drop_choice.png
     :align: right

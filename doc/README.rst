@@ -52,12 +52,8 @@ Tutorials
 
 Download
 --------
-If you already have a Python installation, Quantiphyse is available on PyPi::
 
-    pip install quantiphyse
-
-Note that Cython and Numpy must already be installed in order to build the core extensions.
-We hope to be able to provide wheels for Windows and Mac soon to avoid this.
+Quantiphyse is available on PyPi - see :ref:`install`.
 
 Major releases of Quantiphyse are also available via the `Oxford University Innovation Software 
 Store <https://process.innovation.ox.ac.uk/software>`_. The packages held by OUI have no 
