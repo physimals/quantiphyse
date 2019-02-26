@@ -504,7 +504,7 @@ class Process(QtCore.QObject, LogSource):
         self._completed = True
         if self.status == self.SUCCEEDED:
             try:
-                self.timeout(self._queue)
+                #self.timeout(self._queue)
                 self.finished(self._worker_output)
                 self.sig_progress.emit(1)
             except Exception as exc:
