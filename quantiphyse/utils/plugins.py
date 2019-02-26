@@ -82,12 +82,12 @@ def get_plugins(key=None, class_name=None):
         PLUGIN_MANIFEST = {}
 
         plugin_dirs = {
-            "quantiphyse.packages" : get_local_file("packages/core"), 
-            "quantiphyse.plugins" : get_local_file("packages/plugins"),
+            "quantiphyse.packages.core" : get_local_file("packages/core"), 
+            "quantiphyse.packages.plugins" : get_local_file("packages/plugins"),
         }
         for pkg, plugin_dir in plugin_dirs.items():
-            if os.path.exists(plugin_dir):
-                __import__(pkg)
+            #if os.path.exists(plugin_dir):
+            #    __import__(pkg)
             _load_plugins_from_dir(plugin_dir, pkg, PLUGIN_MANIFEST)
 
         _load_plugins_from_entry_points(PLUGIN_MANIFEST)
