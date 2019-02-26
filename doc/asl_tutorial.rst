@@ -29,23 +29,42 @@ http://www.neuroimagingprimers.org/examples/introduction-primer-example-boxes/
 .. contents:: Contents
     :local:
 
+
 Basic Orientation
 -----------------
 
-This is a quick orientation guide to Quantiphyse if you've not used it before. Start the
-program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
+Before we do any data modelling, this is a quick orientation guide to Quantiphyse if you've 
+not used it before. You can skip this section if you already know how the program works.
+
+Start the program by typing ``quantiphyse`` at a command prompt, or clicking on the Quantiphyse
 icon |qp| in the menu or dock.
 
 .. |qp| image:: screenshots/qp_logo.png 
     :scale: 40%
+
+.. image:: screenshots/main_window_empty.png
+
+Loading some data
+^^^^^^^^^^^^^^^^^
+
+If you are taking part in an organized practical, the data required will be available in your home
+directory, in the ``fsl_course/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
+https://fsl.fmrib.ox.ac.uk/fslcourse/ (Scroll down to the section entitled ``Data Files`` and choose the ASL 
+data from the list of download links).
+
+Start by loading the ASL data into Quantiphyse - use ``File->Load Data`` or drag and drop to load
+the file ``spld_asltc.nii.gz``. In the ``Load Data`` dialog select ``Data``.
+
+.. image:: screenshots/asl_tutorial_filetype.png
+
+The data should look as follows:
 
 .. image:: screenshots/main_window_basic.png
 
 Image view
 ^^^^^^^^^^
 
-The left part of the window contains three orthogonal views of your data. We will describe
-how to load data in the main tutorial.
+The left part of the window contains three orthogonal views of your data.
 
  - Left mouse click to select a point of focus using the crosshairs
  - Left mouse click and drag to pan the view
@@ -82,23 +101,6 @@ Perfusion quantification using Single PLD pcASL
 
 In this section we will generate a perfusion image using the simplest analysis possible on
 the simplest ASL data possible.
-
-The data
-^^^^^^^^
-
-If you are taking part in an organized practical, the data required will be available in your home
-directory, in the ``fsl_course/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
-https://fsl.fmrib.ox.ac.uk/fslcourse/ (Scroll down to the section entitled ``Data Files`` and choose the ASL 
-data from the list of download links).
-
-Start by loading the ASL data into Quantiphyse - use ``File->Load Data`` or drag and drop to load
-the file ``spld_asltc.nii.gz``. In the ``Load Data`` dialog select ``Data``.
-
-.. image:: screenshots/asl_tutorial_filetype.png
-
-The data should look as follows:
-
-.. image:: screenshots/asl_tutorial_data_spld.png
 
 Click on the ``Voxel Analysis`` widget - it is visible by default to the right of the main image view, 
 then click on part of the cortex. You should see something similar to this:
