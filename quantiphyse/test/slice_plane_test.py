@@ -163,16 +163,14 @@ class OrthoSliceTest(unittest.TestCase):
         xdata, _, _, _ = NumpyData(XD, name="test", grid=datagrid).slice_data(plane)
         ydata, _, _, _ = NumpyData(YD, name="test", grid=datagrid).slice_data(plane)
         zdata, _, transv, offset = NumpyData(ZD, name="test", grid=datagrid).slice_data(plane)
-        #print(xdata)
-        #print(ydata)
-        #print(zdata)
-        #print(transv)
-        #print(offset)
+        
+        # Reversal is reflected in the transformation
+        self.assertTrue(np.all(transv == [[1, 0], [0, -1]]))
 
         self.assertTrue(np.all(ydata == SLICEPOS))
         for x in range(GRIDSIZE):
             self.assertTrue(np.all(xdata[x,:] == x))
-            self.assertTrue(np.all(zdata[:,x] == GRIDSIZE-1-x))
+            self.assertTrue(np.all(zdata[:,x] == x))
 
     def testOrthoOffset(self):
         grid = DataGrid((GRIDSIZE, GRIDSIZE, GRIDSIZE), np.identity(4))
@@ -191,16 +189,11 @@ class OrthoSliceTest(unittest.TestCase):
         xdata, _, _, _ = NumpyData(XD, name="test", grid=datagrid).slice_data(plane)
         ydata, _, _, _ = NumpyData(YD, name="test", grid=datagrid).slice_data(plane)
         zdata, _, transv, offset = NumpyData(ZD, name="test", grid=datagrid).slice_data(plane)
-        #print(xdata)
-        #print(ydata)
-        #print(zdata)
-        #print(transv)
-        #print(offset)
 
-        #self.assertTrue(np.all(ydata == SLICEPOS))
+        self.assertTrue(np.all(ydata == SLICEPOS))
         for x in range(GRIDSIZE):
-            self.assertTrue(np.all(xdata[x,:] == max(0, x-2)))
-            self.assertTrue(np.all(zdata[:,x] == GRIDSIZE-1-x))
+            self.assertTrue(np.all(xdata[x,:] == x))
+            self.assertTrue(np.all(zdata[:,x] == x))
 
 if __name__ == '__main__':
     unittest.main()

@@ -111,7 +111,7 @@ class SaveAllExceptProcess(Process):
 
     def run(self, options):
         exceptions = list(options.keys())
-        for k in exceptions.keys(): options.pop(k)
+        for k in exceptions: options.pop(k)
 
         for name, qpdata in self.ivm.data.items():
             if name in exceptions: 

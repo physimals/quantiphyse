@@ -9,7 +9,7 @@ quantiphyse/**/*.cpp
 quantiphyse/**/*.c
 quantiphyse/**/*.pyd
 quantiphyse/_version.py
-quantiphyse/packages/plugins
+quantiphyse/packages/plugins/*/*
 *.sh
 *.so
 *~
