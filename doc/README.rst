@@ -47,8 +47,9 @@ interested in commercial licensing you shold contact OUI in the first instance.
 Tutorials
 ---------
 
- - `ASL-MRI tutorial <asl_tutorial.html>`_
  - `CEST-MRI tutorial <cest_tutorial.html>`_
+ - `IMAGO ASL-MRI tutorial <imago_tutorial.html>`_
+ - `FSL ASL-MRI tutorial <asl_tutorial.html>`_
 
 Download
 --------
