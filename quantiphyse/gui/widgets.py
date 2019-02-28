@@ -1475,9 +1475,13 @@ class FslDirWidget(QtGui.QFrame):
         info_icon = icon.style().standardIcon(QtGui.QStyle.SP_MessageBoxInformation)
         icon.setPixmap(info_icon.pixmap(32, 32))
         hbox.addWidget(icon)
-        hbox.addWidget(QtGui.QLabel("Using FSL in"))
+        lbl = QtGui.QLabel("Using FSL in")
+        hbox.addWidget(lbl)
+        hbox.setAlignment(lbl, QtCore.Qt.AlignTop) # Because the elided label always goes to the top...
+        
         self.label = ElidedLabel()
         hbox.addWidget(self.label)
+
         btn = QtGui.QPushButton("Change")
         btn.clicked.connect(self._change_fsldir)
         hbox.addWidget(btn)
