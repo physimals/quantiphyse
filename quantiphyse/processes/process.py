@@ -22,7 +22,10 @@ import re
 from six.moves import queue as singleproc_queue
 
 import numpy as np
-from PySide import QtCore, QtGui
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import NumpyData, save
 from quantiphyse.utils import LogSource, QpException, get_plugins, set_local_file_path

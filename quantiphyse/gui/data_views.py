@@ -9,7 +9,11 @@ from __future__ import division, unicode_literals, absolute_import, print_functi
 import collections
 import logging
 
-from PySide import QtCore, QtGui
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
+
 import numpy as np
 
 import pyqtgraph as pg

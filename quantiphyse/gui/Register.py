@@ -12,7 +12,10 @@ import warnings
 
 import requests
 
-from PySide import QtGui, QtCore
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 import quantiphyse.gui.dialogs
 from quantiphyse.utils import get_icon, get_version, get_local_file

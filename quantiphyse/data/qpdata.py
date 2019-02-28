@@ -23,7 +23,10 @@ import math
 import numpy as np
 import scipy
 
-from PySide import QtCore
+try:
+    from PySide import QtCore
+except ImportError:
+    from PySide2 import QtCore
 
 from quantiphyse.utils import sf, QpException
 

@@ -6,7 +6,10 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import print_function, division, absolute_import
 
-from PySide import QtGui, QtCore
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.utils import get_icon, get_local_file
