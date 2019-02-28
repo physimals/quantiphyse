@@ -93,7 +93,8 @@ class RegWidget(QpWidget):
         nvols_reg, nvols_ref = 1, 1
         if regdata is not None:
             nvols_reg = regdata.nvols
-        if mode == "moco":
+            
+        if mode == "moco" and regdata is not None:
             nvols_ref = regdata.nvols
         elif mode == "reg" and refdata is not None:
             nvols_ref = refdata.nvols
