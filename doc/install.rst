@@ -18,18 +18,33 @@ In practice it is often *not* as simple as this. There are a couple of reasons f
    be installed but a suitable package isn't always available for every version of Python.
    
 Below are a number of 'recipes' for different platforms which have been verified to 
-work. 
+work. If you find a problem with one of these recipes, please report it using the
+`Issue Tracker <https://github.com/ibme-qubic/quantiphyse/issues>`_.
+
+.. note::
+    To use some plugins you'll need to have a working ``FSL`` installation. For more 
+    information go to `FSL installation <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_.
 
 .. contents:: Platforms
     :local:
 
-Ubuntu 16.04
-------------
+Ubuntu 16.04 / 18.04
+--------------------
 
 From a terminal window::
 
     sudo apt install libqt4-dev qt4-qmake cmake python-dev python-setuptools
+
+To install pip on Ubuntu 16.04::
+
     sudo easy_install pip
+
+On Ubuntu 18.04::
+
+    sudo apt install python-pip
+
+Now install the build dependencies::
+
     pip install cython numpy --user
     pip install quantiphyse --user
 
@@ -42,18 +57,40 @@ Go get a coffee and come back later.
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl --user
     pip install deprecation==1.2 --user
 
 The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
-more information.
+more information. 
 
 Alternatively, you can use `Anaconda`_ in Ubuntu.
 
 Centos 7
 --------
 
-To be completed...
+This recipe was tested in a Gnome Desktop installation. Open a terminal window and use the following::
+
+    sudo yum install qt-devel cmake python-devel gcc gcc-c++
+    sudo easy_install pip
+    pip install cython numpy six==1.10.0 setuptools --upgrade --user
+    pip install quantiphyse --user
+
+The last step will take a while! The PySide GUI library is being built - the 
+terminal will show::
+
+    Running setup.py install for PySide ... |
+
+Go watch some cat videos and come back later. 
+
+The recipe above just installs the main application. To install plugins use::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl --user
+    pip install deprecation==1.2 --user
+
+The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
+more information. 
+
+Alternatively, you can use `Anaconda`_ in Ubuntu.
 
 Windows
 -------
@@ -98,7 +135,7 @@ Once installed, use the following commands from a command prompt::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl
     pip install deprecation==1.2
 
 The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
