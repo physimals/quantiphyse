@@ -93,16 +93,6 @@ def get_extensions():
     if sys.platform.startswith('win'):
         compile_args.append('/EHsc')
 
-    # T1 map generation extension
-
-    extensions.append(Extension("quantiphyse.packages.core.t1.t1_model",
-                                sources=['quantiphyse/packages/core/t1/t1_model.pyx',
-                                         'quantiphyse/packages/core/t1/src/linear_regression.cpp',
-                                         'quantiphyse/packages/core/t1/src/T10_calculation.cpp'],
-                                include_dirs=['quantiphyse/packages/core/t1/src/',
-                                              numpy.get_include()],
-                                language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
-
     # Supervoxel extensions
 
     extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic.additional.bspline_smoothing",
