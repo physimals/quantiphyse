@@ -10,12 +10,6 @@ import subprocess
 import re
 
 from setuptools import setup, find_packages
-from setuptools.extension import Extension
-
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
-
-import numpy
 
 MODULE = "quantiphyse"
 
@@ -84,36 +78,6 @@ def get_version(rootdir):
                 version = "unknown"
     return version
 
-def get_extensions():
-    """ Get built-in extensions """
-    extensions = []
-    compile_args = []
-    link_args = []
-
-    if sys.platform.startswith('win'):
-        compile_args.append('/EHsc')
-
-    # Supervoxel extensions
-
-    extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic.additional.bspline_smoothing",
-                                sources=["quantiphyse/packages/core/supervoxels/perfusionslic/additional/bspline_smoothing.pyx"],
-                                include_dirs=[numpy.get_include()]))
-
-    extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic.additional.create_im",
-                                sources=["quantiphyse/packages/core/supervoxels/perfusionslic/additional/create_im.pyx"],
-                                include_dirs=[numpy.get_include()]))
-
-    extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic._slic_feat",
-                                sources=["quantiphyse/packages/core/supervoxels/perfusionslic/_slic_feat.pyx"],
-                                include_dirs=[numpy.get_include()]))
-
-    extensions.append(Extension("quantiphyse.packages.core.supervoxels.perfusionslic.additional.processing",
-                                sources=["quantiphyse/packages/core/supervoxels/perfusionslic/additional/processing.pyx",
-                                         "quantiphyse/packages/core/supervoxels/src/processing.cpp"],
-                                include_dirs=["quantiphyse/packages/core/supervoxels/src/", numpy.get_include()],
-                                language="c++", extra_compile_args=compile_args, extra_link_args=link_args))
-    return extensions
-
 def get_package_data(rootdir):
     """
     Get extra data files to install into the package, e.g. icons
@@ -148,13 +112,8 @@ kwargs = {
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'License :: Free for non-commercial use',
     ],
-    'cmdclass' : {
-        'build_ext': build_ext
-    },
     'package_data' : get_package_data(module_dir),
     'include_package_data' : True,
-    'setup_requires' : ['Cython'],
-    'ext_modules' : cythonize(get_extensions()),
 }
 
 setup(**kwargs)
