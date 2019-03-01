@@ -976,11 +976,11 @@ class NumberListOption(Option, QtGui.QLineEdit):
 
     def __init__(self, initial=(), intonly=False):
         QtGui.QLineEdit.__init__(self)
-        self.value = initial
         if intonly:
             self._type = int
         else:
             self._type = float
+        self.value = initial
         self.editingFinished.connect(self._edit_changed)
 
     @property
