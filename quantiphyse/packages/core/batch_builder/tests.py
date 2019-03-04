@@ -8,12 +8,12 @@ from quantiphyse.test.widget_test import WidgetTest
 
 from .widget import BatchBuilderWidget
 
-SV = """
-  - Supervoxels:
-      data: data_4d
+CLUSTER = """
+  - KMeans:
+      data: data_3d
       roi: mask
-      n-supervoxels: 4
-      output-name: sv
+      n-clusters: 4
+      output-name: clusters
 """
 class BatchBuilderWidgetTest(WidgetTest):
 
@@ -37,7 +37,7 @@ class BatchBuilderWidgetTest(WidgetTest):
         self.assertFalse(self.error)
 
     def testAddProcess(self):
-        self.ivm.add(self.data_3d, grid=self.grid, name="data_4d")
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.ivm.add(self.mask, grid=self.grid, name="mask")
         self.processEvents()
         yaml = self.w.proc_edit.toPlainText()
@@ -47,7 +47,7 @@ class BatchBuilderWidgetTest(WidgetTest):
         add_idx += len(add_str)
         pre = yaml[:add_idx]
         post = yaml[add_idx:]
-        self.w.proc_edit.setPlainText(pre + SV + post)
+        self.w.proc_edit.setPlainText(pre + CLUSTER + post)
         self.processEvents()
         
         self.w.run_box.runBtn.clicked.emit()
@@ -57,7 +57,7 @@ class BatchBuilderWidgetTest(WidgetTest):
             
         self.assertEqual(self.w.process.status, Process.SUCCEEDED)
         self.assertFalse(self.error)
-        self.assertTrue("sv" in self.ivm.rois)
+        self.assertTrue("clusters" in self.ivm.rois)
 
 if __name__ == '__main__':
     unittest.main()
