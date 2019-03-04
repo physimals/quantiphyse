@@ -659,13 +659,13 @@ class MeasureWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         box.setLayout(vbox)
         
-        dist_btn = QtGui.QPushButton("Measure distance")
-        dist_btn.clicked.connect(self._measure_dist)
-        vbox.addWidget(dist_btn)
+        self._dist_btn = QtGui.QPushButton("Measure distance")
+        self._dist_btn.clicked.connect(self._measure_dist)
+        vbox.addWidget(self._dist_btn)
 
-        angle_btn = QtGui.QPushButton("Measure angle")
-        angle_btn.clicked.connect(self._measure_angle)
-        vbox.addWidget(angle_btn)
+        self._angle_btn = QtGui.QPushButton("Measure angle")
+        self._angle_btn.clicked.connect(self._measure_angle)
+        vbox.addWidget(self._angle_btn)
 
         self._label = QtGui.QLabel()
         vbox.addWidget(self._label)
