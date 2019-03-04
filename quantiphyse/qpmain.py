@@ -22,6 +22,7 @@ from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, set_local_file_path
 from quantiphyse.utils.batch import BatchScript
 from quantiphyse.utils.logger import set_base_log_level
+from quantiphyse.utils.local import get_icon
 from quantiphyse.gui import MainWindow, Register
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
@@ -86,6 +87,7 @@ def main():
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
+    QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
