@@ -61,7 +61,7 @@ class DataStatisticsProcess(Process):
     Calculate summary statistics on data
     """
     
-    PROCESS_NAME = "OverlayStats"
+    PROCESS_NAME = "DataStatistics"
     
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
@@ -172,6 +172,12 @@ class DataStatisticsProcess(Process):
 
         return stat1, regions, hist1, hist1x
 
+class OverlayStatsProcess(DataStatisticsProcess):
+    """
+    For backwards compatibility
+    """
+    PROCESS_NAME = "OverlayStats"
+    
 class ExecProcess(Process):
     """
     Process which can execute arbitrary Python code
