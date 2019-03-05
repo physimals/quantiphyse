@@ -1,2 +1,2 @@
-recursive-include quantiphyse *.pyx *.h *.c *.cpp *.cc *.png *.svg *.stylesheet
+recursive-include quantiphyse *.png *.svg *.stylesheet
 include requirements.txt LICENSE

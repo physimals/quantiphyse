@@ -528,8 +528,8 @@ class Process(QtCore.QObject, LogSource):
         self._timer.start()
 
     def _timer_cb(self):
-        self.timeout(self._queue)
         if self.status == Process.RUNNING:
+            self.timeout(self._queue)
             self._restart_timer()
 
     def _worker_finished_cb(self, result):

@@ -1,12 +1,14 @@
 import unittest
+import re
 
 import numpy as np
 
 from PySide import QtGui
 
+from quantiphyse.data import DataGrid
 from quantiphyse.test.widget_test import WidgetTest
 
-from .widgets import DataStatistics, MultiVoxelAnalysis, VoxelAnalysis
+from .widgets import DataStatistics, MultiVoxelAnalysis, VoxelAnalysis, MeasureWidget
 
 class DataStatisticsTest(WidgetTest):
 
@@ -237,6 +239,173 @@ class VoxelAnalysisTest(WidgetTest):
         self.ivl._pick(0, pt)
         self.processEvents()
         self.assertFalse(self.error)
+
+class MeasureWidgetTest(WidgetTest):
+
+    def widget_class(self):
+        return MeasureWidget
+
+    def testDistance1d(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._dist_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("distance.*\s+(\d+(\.\d+)?)\s*mm", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 1.0, delta=0.01)
+
+    def testDistance2d(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._dist_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 3, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("distance.*\s+(\d+(\.\d+)?)\s*mm", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 1.41421, delta=0.01)
+
+    def testDistance3d(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._dist_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (4, 3, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("distance.*\s+(\d+(\.\d+)?)\s*mm", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 2.4495, delta=0.01)
+
+    def testDistance3dNonSquiffy(self):
+        """
+        Distance with non-squiffy grid
+        """
+        affine = np.identity(4)
+        affine[1, 1] = 2
+        affine[2, 2] = 3
+        grid = DataGrid(self.data_3d.shape, affine)
+
+        self.ivm.add(self.data_3d, grid=grid, name="data_3d")
+        self.harmless_click(self.w._dist_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (4, 3, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("distance.*\s+(\d+(\.\d+)?)\s*mm", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 4.1231, delta=0.01)
+
+    def testAngleStraight(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._angle_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 3, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 4, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("angle.*\s+(\d+(\.\d+)?).*", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 180, delta=0.01)
+
+    def testAngleOrtho(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._angle_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 3, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 3, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("angle.*\s+(\d+(\.\d+)?).*", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 90, delta=0.01)
+
+    def testAngle45(self):
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.harmless_click(self.w._angle_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 3, 3, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("angle.*\s+(\d+(\.\d+)?).*", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 45, delta=0.01)
+
+    def testAngle45Squiffy(self):
+        affine = np.identity(4)
+        affine[1, 1] = 2
+        affine[2, 2] = 3
+        grid = DataGrid(self.data_3d.shape, affine)
+        self.ivm.add(self.data_3d, grid=grid, name="data_3d")
+        self.harmless_click(self.w._angle_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (4, 3, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 3, 2, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("angle.*\s+(\d+(\.\d+)?).*", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 45, delta=0.01)
+
+    def testAngleOrthoSquifffy(self):
+        affine = np.identity(4)
+        affine[1, 1] = 2
+        affine[2, 2] = 3
+        grid = DataGrid(self.data_3d.shape, affine)
+
+        self.ivm.add(self.data_3d, grid=grid, name="data_3d")
+        self.harmless_click(self.w._angle_btn)
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 2, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 2, 3, 0))
+        self.processEvents()
+        self.ivl._pick(0, (2, 3, 3, 0))
+        self.processEvents()
+        self.assertFalse(self.error)
+
+        regex = re.compile("angle.*\s+(\d+(\.\d+)?).*", re.IGNORECASE)
+        m = re.match(regex, self.w._label.text())
+        self.assertTrue(m is not None)
+        self.assertAlmostEquals(float(m.groups()[0]), 90, delta=0.01)
 
 if __name__ == '__main__':
     unittest.main()

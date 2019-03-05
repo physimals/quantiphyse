@@ -159,7 +159,6 @@ class CompareDataWidgetTest(WidgetTest):
         self.assertTrue(np.all(self.w.d2 == 3))
 
     def testIdLine(self):
-        # Check 
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
         self.w.d1_combo.setCurrentIndex(0)
         self.w.d2_combo.setCurrentIndex(0)
