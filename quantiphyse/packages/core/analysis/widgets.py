@@ -642,7 +642,7 @@ class MeasureWidget(QpWidget):
     DISTANCE = "distance"
 
     def __init__(self, **kwargs):
-        super(MeasureWidget, self).__init__(name="Measurements", icon="", 
+        super(MeasureWidget, self).__init__(name="Measurements", icon="measure", 
                                                 desc="Measure distances and angles", 
                                                 group="Analysis", **kwargs)
         self._points = None
