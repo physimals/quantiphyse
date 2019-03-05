@@ -299,6 +299,37 @@ you. By clicking on this option (underneath the Run button) and choosing an outp
 
 .. image:: screenshots/imago_tutorial_save_output_data.png
 
+Comparison to structural changes
+--------------------------------
+
+You may want to see how well the perfusion map corresponds to the tumour visualised on a typical anatomical 
+image. You can load the patient's gadolinium-enhanced T1-weighted scan using ``File->Load Data`` and 
+``MPRAGE_Gd.nii.gz``. 
+
+In order to overlay images on top of this structural image, check the ``Set as main data`` 
+box when loading:
+
+.. image:: screenshots/imago_tutorial_main_data.png
+
+.. note::
+    If you forget to do this you can also select the ``Volumes`` widget, click on the ``MPRAGE_Gd`` image and click
+    the ``Set as main data`` button.
+
+.. image:: screenshots/imago_tutorial_volumes_main_data.png
+
+After setting the anatomical image as the main data you, other images selected from the ``Overlay`` list 
+will be overlaid on top, for example the calibrated perfusion map:
+
+.. image:: screenshots/imago_tutorial_anat.png
+
+The ``Alpha`` slider in the overlay box can be used to adjust the transparency of the overlay and compare to
+the anatomical image underneath.
+
+.. image:: screenshots/imago_tutorial_alpha.png
+
+.. note::
+    These visualisations work best when ``Only in ROI`` is selected as the overlay view option.
+
 References
 ----------
 
