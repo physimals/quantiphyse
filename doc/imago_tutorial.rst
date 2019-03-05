@@ -246,6 +246,12 @@ installation (if you are in an organized practical this should be correct).
 
 .. image:: screenshots/asl_tutorial_fsldir.png
 
+As an additional step, you may want to save your output data. You can of course save the output data from your analysis 
+after it has run using ``File->Save Current Data``, however it’s often useful to have all the output saved automatically for 
+you. By selecting ``Save copy of output data`` (underneath the Run button) and choosing an output folder, this will be done.
+
+.. image:: screenshots/imago_tutorial_save_output_data.png
+
 Finally click ``Run`` at the bottom to run the analysis. You can click the ``View Log`` button 
 to view the progress of the analysis which should only take a few minutes. 
 
@@ -292,12 +298,6 @@ mask is not as informative as it might be for a healthy brain, as we are likely 
 regions.
 
 .. image:: screenshots/imago_tutorial_report_perfusion.png
-
-Finally, you may want to save your output data. You can of course save the output data from your analysis 
-using ``File->Save Current Data`` however it’s often useful to have all the output saved automatically for 
-you. By clicking on this option (underneath the Run button) and choosing an output folder, this will be done.
-
-.. image:: screenshots/imago_tutorial_save_output_data.png
 
 Comparison to structural changes
 --------------------------------
