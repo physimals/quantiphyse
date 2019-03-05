@@ -124,7 +124,7 @@ def save(data, fname, grid=None, outdir=""):
         import yaml
         yaml_metadata = yaml.dump(data.metadata, default_flow_style=False)
         LOG.debug("Writing metadata: %s", yaml_metadata)
-        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
+        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
         img.header.extensions.append(ext)
 
     if not fname:
