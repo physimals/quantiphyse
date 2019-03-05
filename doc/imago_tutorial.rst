@@ -85,7 +85,7 @@ In this section we will quantify perfusion for the dataset just loaded.
 
 This dataset used pCASL labelling, with a duration of 1.8 seconds, and 5 post-labeling delays of 
 0.4, 0.8, 1.2, 1.6 and 2.0 seconds. The label-control ASL series contains 60 volumes, with each 
-PLD repeated 6 times, thus there are 12 volumes (label and control parired) each PLD. The data 
+PLD repeated 6 times, thus there are 12 volumes (label and control paired) each PLD. The data 
 is in the order that it was acquired, which will be important for setting up the analysis.
 
 A perfusion weighted image
@@ -134,14 +134,8 @@ customize the colour map by clicking on the colour bar with the right button.
     drag down with the **right** mouse button briefly on the colour bar. This unlocks the automatic
     Y-axis and will make it easier to drag on the handles to adjust the colour map.
     
-
-Model based analysis
-^^^^^^^^^^^^^^^^^^^^
-
-This dataset used pcASL labeling and we are going to start with an analysis which closely follows 
-the recommendations of the ASL Consensus Paper [3]_ (commonly called the 'White Paper')
-on a good general purpose ASL acquisition, although we have chosen to use a 2D multi-slice readout 
-rather than a full-volume 3D readout.
+Model based analysis - Data set up
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Looking at the ``ASL data processing`` widget we used to generate the PWI, you can see that this
 is a multi-page widget in which each tab describes a different aspect of the analysis pipeline.
@@ -194,8 +188,8 @@ the slice time appears automatically.
 
 .. image:: screenshots/imago_tutorial_slicetime.png
 
-Perfusion Quantification
-^^^^^^^^^^^^^^^^^^^^^^^^
+Model based analysis - Analysis set up
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this section we invert the kinetics of the ASL label delivery to fit a perfusion image, and 
 use the calibration image to get perfusion values in the units of ml/100g/min.
@@ -235,7 +229,7 @@ option, and set the ``Custom reference ROI`` to the ``csfmask`` ROI which we hav
 In the interest of time, this CSF mask has been made manually ahead of time, and provides a conservative mask 
 within the ventricles.
 
-On the ``Analysis`` tab the defaults do not need altering in this instance, except to turn macrovascular component 
+On the ``Analysis`` tab the defaults do not need altering in this instance, except to turn the macrovascular component 
 off.  
 
 .. image:: screenshots/imago_tutorial_analysis.png
@@ -264,8 +258,6 @@ by selecting them from the ``Overlay`` menu below the image display, or by click
  - ``perfusion_native`` - Raw (uncalibrated) perfusion map 
  - ``perfusion_calib_native`` - Calibrated perfusion data in ml/100g/min
  - ``arrival_native`` - time it takes for blood to transit between the labeling and imaging regions.
- - ``aCBV_native`` - relative arterial (cerebral) blood volumes
- - ``aCBV_calib_native`` -  absolute arterial (cerebral) blood volumes
  - ``mask_native`` - An ROI (which appears in the ROI selector under the image view) which represents the region in which the analysis was performed.
 
 We can view these outputs within the brain mask only, by selecting ``mask_native`` from the ROI dropdown. 
