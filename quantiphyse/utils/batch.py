@@ -296,7 +296,7 @@ class Script(Process):
 
         # Set debug level for this individual process based on whether logging
         # was enabled generically, for this case, and for this process
-        if proc_params.get("Debug", generic_params.get("Debug", False)):
+        if "--debug" in sys.argv or proc_params.get("Debug", generic_params.get("Debug", False)):
             set_base_log_level(logging.DEBUG)
         else:
             set_base_log_level(logging.WARN)
