@@ -325,6 +325,9 @@ will be overlaid on top, for example the calibrated perfusion map:
 The ``Alpha`` slider in the overlay box can be used to adjust the transparency of the overlay and compare to
 the anatomical image underneath.
 
+You should be able to see that the T1 enhancing rim of the tumour corresponds to a region of increased perfusion. 
+We could go on to load ROI's of the tumour and contralateral tissue to quantify this, however it is beyond the scope of this tutorial. 
+
 .. image:: screenshots/imago_tutorial_alpha.png
 
 .. note::
