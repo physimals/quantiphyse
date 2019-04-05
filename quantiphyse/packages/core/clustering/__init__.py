@@ -1,10 +1,10 @@
-from .widgets import ClusteringWidget
-from .kmeans import KMeansProcess
-from .tests import ClusteringWidgetTest, KMeansProcessTest
+from .widgets import ClusteringWidget, MeanValuesWidget
+from .kmeans import KMeansProcess, MeanValuesProcess
+from .tests import ClusteringWidgetTest, KMeansProcessTest, MeanValuesProcessTest
 
 QP_MANIFEST = {
-    "widgets" : [ClusteringWidget],
+    "widgets" : [MeanValuesWidget, ClusteringWidget],
     "widget-tests" : [ClusteringWidgetTest,],
-    "process-tests" : [KMeansProcessTest,],
-    "processes" : [KMeansProcess],
+    "process-tests" : [KMeansProcessTest, MeanValuesProcessTest],
+    "processes" : [KMeansProcess, MeanValuesProcess],
 }
