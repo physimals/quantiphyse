@@ -7,6 +7,7 @@ from __future__ import division, print_function
 
 import os
 import logging
+import traceback
 
 import nibabel as nib
 import numpy as np
@@ -40,8 +41,13 @@ class NiftiData(QpData):
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
                 LOG.debug("Found QP metadata: %s", ext.get_content())
-                metadata = yaml.load(ext.get_content())
-                LOG.debug(metadata)
+                try:
+                    metadata = yaml.load(ext.get_content())[0]["QpMetadata"]
+                    LOG.debug(metadata)
+                except (KeyError, yaml.YAMLError):
+                    LOG.warn("Failed to read Quantiphyse metadata")
+                    LOG.warn(ext.get_content())
+                    traceback.print_exc()
 
         xyz_units, vol_units = "mm", None
         units = nii.header.get_xyzt_units()
@@ -121,8 +127,8 @@ def save(data, fname, grid=None, outdir=""):
     img = nib.Nifti1Image(arr, grid.affine, header=header)
     img.update_header()
     if data.metadata:
-        import yaml
-        yaml_metadata = yaml.dump(data.metadata, default_flow_style=False)
+        from quantiphyse.utils.batch import to_yaml
+        yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
         LOG.debug("Writing metadata: %s", yaml_metadata)
         ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
         img.header.extensions.append(ext)

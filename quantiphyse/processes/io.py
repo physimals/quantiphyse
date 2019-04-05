@@ -120,6 +120,9 @@ class SaveAllExceptProcess(Process):
                 save(qpdata, name, outdir=self.outdir)
             except QpException as exc:
                 self.warn("Failed to save %s: %s" % (name, str(exc)))
+            except:
+                import traceback
+                traceback.print_exc()
 
 class SaveDeleteProcess(SaveProcess):
     """
