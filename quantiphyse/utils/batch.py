@@ -26,6 +26,7 @@ import logging
 
 import six
 import yaml
+import numpy as np
 
 from PySide import QtCore
 
@@ -82,13 +83,18 @@ def to_yaml(processes, indent=""):
             if not isinstance(key, six.string_types):
                 raise ValueError("Keys must be strings")
 
+            if value is None:
+                continue
+
             stream.write("%s%s: " % (prefix, key))
             if isinstance(value, six.string_types):
                 stream.write("%s\n" % value)
-            elif isinstance(value, (int, float, list)):
+            elif isinstance(value, (int, float, list, np.floating, np.integer)):
                 stream.write("%s\n" % str(value))
             elif isinstance(value, np.ndarray):
                 stream.write("%s\n" % str(value.tolist()))
+            elif isinstance(value, collections.Sequence):
+                stream.write("%s\n" % str(list(value)))
             elif isinstance(value, collections.Mapping):
                 stream.write("\n")
                 indent += "  "

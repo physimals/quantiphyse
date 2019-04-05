@@ -4,11 +4,14 @@ Quantiphyse - tests for QpData classes
 Copyright (c) 2013-2018 University of Oxford
 """
 
+import os
 import unittest
+import tempfile
 
 import numpy as np
 
 from quantiphyse.data import NumpyData, DataGrid
+import quantiphyse.data.nifti as nifti
 
 GRIDSIZE = 5
 NVOLS = 4
@@ -105,5 +108,35 @@ class NumpyDataTest(unittest.TestCase):
         POS = [2, 3, 4]
         self.assertAlmostEqual(qpd.value(POS), self.floats4d[POS[0], POS[1], POS[2], 0])
         
+class NiftiDataTest(unittest.TestCase):
+    """ Tests for the NiftiData subclass of QpData """
+
+    def setUp(self):
+        self.shape = [GRIDSIZE, GRIDSIZE, GRIDSIZE]
+        self.grid = DataGrid(self.shape, np.identity(4))
+        self.floats = np.random.rand(*self.shape)
+        self.ints = np.random.randint(0, 10, self.shape)
+        self.floats4d = np.random.rand(*(self.shape + [NVOLS,]))
+
+    def testSaveLoadMetadata(self):
+        tempdir = tempfile.mkdtemp(prefix="qp")
+        fname = os.path.join(tempdir, "test.nii.gz")
+        md = {
+            "flibble" : 2.3,
+            "flobble" : 4,
+            "fishcakes" : ["a", "b", "c"],
+            "fluntycaps" : {
+                "gfruffle" : "def",
+                "gfable" : 8,
+            }
+        }
+        qpd = NumpyData(self.floats4d, grid=self.grid, name="test", metadata=md)
+        nifti.save(qpd, fname)
+
+        nifti_data = nifti.NiftiData(fname)
+        for key, value in md.items():
+            self.assertTrue(key in nifti_data.metadata)
+            self.assertEqual(nifti_data.metadata[key], value)
+
 if __name__ == '__main__':
     unittest.main()
