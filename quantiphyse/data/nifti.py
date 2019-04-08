@@ -65,13 +65,13 @@ class NiftiData(QpData):
         QpData.__init__(self, fname, grid, nvols, vol_unit=vol_units, vol_scale=vol_scale, fname=fname, metadata=metadata)
 
     def raw(self):
-        # NB: np.asarray convert data to an in-memory array instead of a numpy file memmap.
+        # NB: copy() converts data to an in-memory array instead of a numpy file memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
         if self.rawdata is None:
             nii = nib.load(self.fname)
-            self.rawdata = np.asarray(nii.get_data())
+            self.rawdata = nii.get_data().copy()
             self.rawdata = self._correct_dims(self.rawdata)
 
         self.voldata = None
