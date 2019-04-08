@@ -138,5 +138,15 @@ class NiftiDataTest(unittest.TestCase):
             self.assertTrue(key in nifti_data.metadata)
             self.assertEqual(nifti_data.metadata[key], value)
 
+    def testLoadSaveSameName(self):
+        qpd = NumpyData(self.floats4d, grid=self.grid, name="test")
+
+        tempdir = tempfile.mkdtemp(prefix="qp")
+        fname = os.path.join(tempdir, "test.nii")
+        nifti.save(qpd, fname)
+
+        nifti_data = nifti.NiftiData(fname)
+        nifti.save(nifti_data, fname)
+
 if __name__ == '__main__':
     unittest.main()
