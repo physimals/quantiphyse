@@ -71,7 +71,8 @@ class NiftiData(QpData):
         # horrible things with performance, and analysis especially when the data is on the network.
         if self.rawdata is None:
             nii = nib.load(self.fname)
-            self.rawdata = nii.get_data().copy()
+            #self.rawdata = nii.get_data().copy()
+            self.rawdata = nii.get_data()
             self.rawdata = self._correct_dims(self.rawdata)
 
         self.voldata = None
@@ -115,9 +116,9 @@ def save(data, fname, grid=None, outdir=""):
     """
     if grid is None:
         grid = data.grid
-        arr = data.raw()
+        arr = data.raw().copy()
     else:
-        arr = data.resample(grid).raw()
+        arr = data.resample(grid).raw().copy()
         
     if hasattr(data, "nifti_header"):
         header = data.nifti_header.copy()
