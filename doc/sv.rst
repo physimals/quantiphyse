@@ -1,5 +1,5 @@
-Supervoxel widget
-=================
+Supervoxel clustering
+=====================
 
 *Widgets -> Clustering -> Supervoxels*
 
