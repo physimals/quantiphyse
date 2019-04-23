@@ -33,7 +33,7 @@ Features
  - Integration with selected FSL tools
  - ROI generation
  - Registration and motion correction
- - Extensible via plugins
+ - Extensible via plugins - see :ref:`plugins`.
 
 License
 -------
@@ -60,29 +60,6 @@ Major releases of Quantiphyse are also available via the `Oxford University Inno
 Store <https://process.innovation.ox.ac.uk/software>`_. The packages held by OUI have no 
 external dependencies and can be installed on Windows, Mac and Linux. They may lag behind
 the current PyPi release in terms of functionality.
-
-Plugins
--------
-
-Some of the functionality described in this documentation requires the installation of plugins.
-The following plugins are available:
-
- - ``quantiphyse-sv`` - Supervoxel clustering
- - ``quantiphyse-fsl`` - Interface to selected FSL tools (requires FSL installation)
- - ``quantiphyse-fabber`` - Bayesian model fitting - required for various specialised tools
- - ``quantiphyse-dce`` - DCE modelling
- - ``quantiphyse-cest`` - CEST-MRI modelling (requires ``quantiphyse-fabber``)
- - ``quantiphyse-asl`` - ASL-MRI modelling (requires FSL installation and ``quantiphyse-fabber``)
- - ``quantiphyse-dsc`` - DSC-MRI modellingg (requires ``quantiphyse-fabber``)
- - ``quantiphyse-t1`` - T1 mapping (requires ``quantiphyse-fabber``)
-
-Plugins are installed from PyPi, e.g.::
-
-    pip install quantiphyse-dce
-
-They will be automatically detected and added to Quantiphyse next time you run it. The packages
-available on the OUI software store have all plugins included which were available at the 
-time of release.
 
 User Guide
 ----------
