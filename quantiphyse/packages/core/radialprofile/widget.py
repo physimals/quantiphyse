@@ -92,12 +92,7 @@ class RadialProfileWidget(QpWidget):
         self.plot.clear()
         rp = self.ivm.extras.get("radial-profile", None)
         if rp is not None:
-            stream = six.StringIO(rp)
-            reader = csv.reader(stream, delimiter="\t", quotechar='"')
-            rows = [row for row in reader]
-            data_names = rows[0][1:]
-            values = [[float(v) for v in row] for row in rows[1:]]
-            xvals = [row[0] for row in values]
-            for idx, name in enumerate(data_names):
-                yvalues = [row[idx+1] for row in values]
-                self.plot.add_line(yvalues, name=name, xvalues=xvals)
+            xvalues = rp.df.index
+            for idx, name in enumerate(rp.df.columns):
+                yvalues = rp.df.values[:,idx]
+                self.plot.add_line(yvalues, name=name, xvalues=xvalues)

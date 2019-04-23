@@ -7,6 +7,7 @@ from __future__ import division, print_function
 
 import os
 import logging
+import traceback
 
 import nibabel as nib
 import numpy as np
@@ -40,8 +41,13 @@ class NiftiData(QpData):
             if ext.get_code() == QP_NIFTI_EXTENSION_CODE:
                 import yaml
                 LOG.debug("Found QP metadata: %s", ext.get_content())
-                metadata = yaml.load(ext.get_content())
-                LOG.debug(metadata)
+                try:
+                    metadata = yaml.load(ext.get_content())[0]["QpMetadata"]
+                    LOG.debug(metadata)
+                except (KeyError, yaml.YAMLError):
+                    LOG.warn("Failed to read Quantiphyse metadata")
+                    LOG.warn(ext.get_content())
+                    traceback.print_exc()
 
         xyz_units, vol_units = "mm", None
         units = nii.header.get_xyzt_units()
@@ -59,13 +65,14 @@ class NiftiData(QpData):
         QpData.__init__(self, fname, grid, nvols, vol_unit=vol_units, vol_scale=vol_scale, fname=fname, metadata=metadata)
 
     def raw(self):
-        # NB: np.asarray convert data to an in-memory array instead of a numpy file memmap.
+        # NB: copy() converts data to an in-memory array instead of a numpy file memmap.
         # Appears to improve speed drastically as well as stop a bug with accessing the subset of the array
         # memmap has been designed to save space on ram by keeping the array on the disk but does
         # horrible things with performance, and analysis especially when the data is on the network.
         if self.rawdata is None:
             nii = nib.load(self.fname)
-            self.rawdata = np.asarray(nii.get_data())
+            #self.rawdata = nii.get_data().copy()
+            self.rawdata = nii.get_data()
             self.rawdata = self._correct_dims(self.rawdata)
 
         self.voldata = None
@@ -109,9 +116,9 @@ def save(data, fname, grid=None, outdir=""):
     """
     if grid is None:
         grid = data.grid
-        arr = data.raw()
+        arr = data.raw().copy()
     else:
-        arr = data.resample(grid).raw()
+        arr = data.resample(grid).raw().copy()
         
     if hasattr(data, "nifti_header"):
         header = data.nifti_header.copy()
@@ -121,10 +128,10 @@ def save(data, fname, grid=None, outdir=""):
     img = nib.Nifti1Image(arr, grid.affine, header=header)
     img.update_header()
     if data.metadata:
-        import yaml
-        yaml_metadata = yaml.dump(data.metadata, default_flow_style=False)
+        from quantiphyse.utils.batch import to_yaml
+        yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
         LOG.debug("Writing metadata: %s", yaml_metadata)
-        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata)
+        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
         img.header.extensions.append(ext)
 
     if not fname:

@@ -16,18 +16,24 @@ distdir = os.path.join(qpdir, "dist")
 bin_files = [
 ]
 
-# Hidden imports are used by plugins but not reference in main code
+# Hidden imports are used by plugins but not referenced in main code
 hidden_imports = [
-    'sphinx',
-    'skimage.segmentation', 
-    'sklearn.metrics',
-    'scipy._lib.messagestream',
     'deprecation',
+    'faulthandler',
+    'fsl',
+    'oxasl',
+    'oxasl_ve',
+    'oxasl_enable',
+    'fabber',
     'quantiphyse.processes.feat_pca',
     'quantiphyse.utils.cmdline',
     'quantiphyse.test.widget_test',
     'quantiphyse.gui.options',
     'quantiphyse.gui.plot',
+    'scipy._lib.messagestream',
+    'skimage.segmentation', 
+    'sklearn.metrics',
+    'sphinx',
 ]
 
 added_files = [

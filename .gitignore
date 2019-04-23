@@ -22,6 +22,7 @@ packaging/deb
 packaging/msi
 packaging/*.log
 packaging/*.err
+packaging/*.out
 packaging/licence.rtf
 packaging/images/qp.iconset
 .DS_Store

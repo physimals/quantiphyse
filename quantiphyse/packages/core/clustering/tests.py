@@ -131,5 +131,18 @@ class KMeansProcessTest(ProcessTest):
         self.assertTrue("clusters_4d" in self.ivm.rois)
         self.assertTrue(os.path.exists(os.path.join(self.output_dir, "case", "4dclusters.nii.gz")))
 
+class MeanValuesProcessTest(ProcessTest):
+
+    def test3d(self):
+        yaml = """
+  - MeanValues:
+        data: data_3d
+        roi: mask
+        output-name: data_roi_mean
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("data_roi_mean" in self.ivm.data)
+
 if __name__ == '__main__':
     unittest.main()

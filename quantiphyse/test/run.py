@@ -3,11 +3,11 @@ import unittest
 from quantiphyse.utils import get_plugins
 
 from .ivm_test import IVMTest
-from .qpd_test import NumpyDataTest
+from .qpd_test import NumpyDataTest, NiftiDataTest
 from .slice_plane_test import OrthoSliceTest
 from .io_test import IoProcessTest
 
-class_tests = [IVMTest, NumpyDataTest, OrthoSliceTest, IoProcessTest,]
+class_tests = [IVMTest, NumpyDataTest, NiftiDataTest, OrthoSliceTest, IoProcessTest,]
 
 def run_tests(test_filter=None):
     """

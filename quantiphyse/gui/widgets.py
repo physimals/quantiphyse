@@ -1115,7 +1115,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
             if status == Process.SUCCEEDED:
                 self.progress.setValue(100)
                 self.step_label.setVisible(False)
-                if self.save_option and self.save_cb.isChecked():
+                if self.save_option and self.save_cb.isChecked() and self.save_folder_edit.text():
                     self.process.save_output(self.save_folder_edit.text())
             elif status == Process.CANCELLED:
                 self.progress.setValue(0)
@@ -1278,7 +1278,7 @@ class RunWidget(QtGui.QGroupBox, LogSource):
             if status == Process.SUCCEEDED:
                 self.progress.setValue(100)
                 self.step_label.setVisible(False)
-                if self.save_option and self.save_cb.isChecked():
+                if self.save_option and self.save_cb.isChecked() and self.save_folder_edit.text():
                     self.process.save_output(self.save_folder_edit.text())
             elif status == Process.CANCELLED:
                 self.progress.setValue(0)

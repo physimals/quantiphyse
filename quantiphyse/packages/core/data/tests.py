@@ -133,7 +133,7 @@ class ResampleDataWidgetTest(WidgetTest):
                     gx, gy, gz = float(x)/2, float(y)/2, float(z)/2
                     from scipy.interpolate import interpn
                     d = interpn((X, Y, Z), self.data_3d, (gx, gy, gz), method="linear", bounds_error=False, fill_value=0)
-                    self.assertAlmostEqual(data_res[x, y, z], d)
+                    self.assertAlmostEqual(data_res[x, y, z], d[0])
 
 class ResampleProcessTest(ProcessTest):
     

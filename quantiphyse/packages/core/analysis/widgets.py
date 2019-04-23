@@ -642,7 +642,7 @@ class MeasureWidget(QpWidget):
     DISTANCE = "distance"
 
     def __init__(self, **kwargs):
-        super(MeasureWidget, self).__init__(name="Measurements", icon="", 
+        super(MeasureWidget, self).__init__(name="Measurements", icon="measure", 
                                                 desc="Measure distances and angles", 
                                                 group="Analysis", **kwargs)
         self._points = None
@@ -689,7 +689,7 @@ class MeasureWidget(QpWidget):
         if len(selection) != 1:
             raise ValueError("Expected single colour")
 
-        points = selection.values()[0]
+        points = list(selection.values())[0]
         if len(points) == 1:
             self._label.setText("Select the second point")
         elif self._mode == self.DISTANCE and len(points) == 2:

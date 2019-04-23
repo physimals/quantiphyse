@@ -77,7 +77,7 @@ def create_deb(distdir, pkgdir, version_str, sysname, version_str_display=None):
     os.system("sudo chown -R root:root %s" % builddir)
 
     # Build the actual deb
-    os.system("dpkg-deb --build %s" % builddir)
+    os.system("dpkg-deb --build %s 2>%s/build_deb.err 1>%s/build_deb.out" % (builddir, pkgdir, pkgdir))
 
     pkg = os.path.join(debdir, pkgname + ".deb")
     shutil.move(pkg, distdir)

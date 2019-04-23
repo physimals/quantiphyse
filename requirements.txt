@@ -1,4 +1,3 @@
-funcsigs
 matplotlib
 nibabel
 numpy
@@ -12,5 +11,4 @@ scikit-learn
 scikit-image
 setuptools
 six
-deprecation
 pandas
