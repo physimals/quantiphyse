@@ -8,14 +8,12 @@ is as simple as::
 
     pip install quantiphyse
 
-In practice it is often *not* as simple as this. There are a couple of reasons for this:
+In practice it is often *not* as simple as this. The main reason is ``PySide`` 
+(the library we use for the user interface). This needs to be compiled against
+a rather old version of the QT GUI library which requires separate installation. 
 
- - Quantiphyse requires ``cython`` and ``numpy`` to build it's own extensions. On
-   Linux you may need to manually install these first (for Mac and Windows binary
-   wheels are available which avoid this).
- - ``PySide`` (the library we use for the user interface) needs to be compiled against
-   a rather old version of QT. Alternatively a binary version of this library can
-   be installed but a suitable package isn't always available for every version of Python.
+Alternatively a binary version of PySide can
+be installed but a suitable package isn't available for every version of Python.
    
 Below are a number of 'recipes' for different platforms which have been verified to 
 work. If you find a problem with one of these recipes, please report it using the
@@ -43,9 +41,8 @@ On Ubuntu 18.04::
 
     sudo apt install python-pip
 
-Now install the build dependencies::
+Now install the application:
 
-    pip install cython numpy --user
     pip install quantiphyse --user
 
 The last step will take a while! The PySide GUI library is being built - the 
@@ -57,13 +54,23 @@ Go get a coffee and come back later.
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
     pip install deprecation==1.2 --user
 
 The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
 more information. 
 
-Alternatively, you can use `Anaconda`_ in Ubuntu.
+Alternatively, you can use `Anaconda`_ in Ubuntu. 
+
+You can also use the method above in a virtualenv or a Conda environment. To do this:
+
+ - Run the first ``sudo apt install`` command above
+ - Create and activate a Conda or virtual environment, e.g. as described in the `Anaconda`_ section
+ - Run the ``pip install`` commands above
+
+This is a slightly better method as it keeps Quantiphyse and all it's dependencies in an isolated
+environment, however it does mean you will need to activate the environment in order to run 
+Quantiphyse.
 
 Centos 7
 --------
@@ -129,13 +136,14 @@ Once installed, use the following commands from a command prompt::
 
     conda create -n qp
     conda activate qp
-    conda install cython funcsigs matplotlib nibabel numpy pillow pyqtgraph pyside pyyaml requests scipy scikit-learn scikit-image setuptools six pandas
+    conda config --add channels conda-forge
+    conda install cython funcsigs matplotlib nibabel numpy pillow pyqtgraph pyside pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
     pip install quantiphyse --no-deps
 
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
     pip install deprecation==1.2
 
 The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
