@@ -7,7 +7,7 @@ In this tutorial, we will simulate some DCE-MRI data and quantify the simulated 
 
 In this example, we will simulate a DCE-MRI data using the two-compartment exchange model (2CXM). First, we specify some basic parameters about the output file. The number of volumes (time points) is related to the total acquisition time and TR. Here we use 30 time points. The voxels per patch indicates the number of voxels (or realizations) to simulate. In this case, we are going to simulate 100 realizations. The noise parameter specifies the noise added to the simulated data. We want to output the noise-free data and parameter ROIs. The setup should look like the following:
 
-.. image:: screenshots/dce_simulation_2cxm/option.jpg
+.. image:: screenshots/dce_simulation_2cxm/options.jpg
 
 Next click on Model Options as we are going to set up the sequence parameters in the simulation. In the Mandatory options fields, the parameters can take either numerical values or text. The non-mandatory can also be modified. It is important to remember these simulated parameter values when we check the quantification results. In this example, we are going to use the following parameter values:
 
