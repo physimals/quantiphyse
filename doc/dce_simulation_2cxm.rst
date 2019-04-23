@@ -1,195 +1,72 @@
-ASL data tab
-------------
+DCE-MRI data simulation
+-----------------------
 
-.. image:: screenshots/asl_data_tab.png
+In this tutorial, we will simulate some DCE-MRI data and quantify the simulated parameters using the DCE-MRI.
 
-This tab describes the structure and acquisition parameters of your ASL data. Once you define the 
-structure of a data set in one ASL widget, others will automatically pick up the same structure when 
-using that data set. In addition, if you save the data set to a Nifti file, the structure information is
-saved as optional metadata and will be recognised when you load the data back into Quantiphyse.
+.. image:: screenshots/dce_simulation_2cxm/menu.jpg
 
-Start by choosing the ASL data
-set you want to analyse from the ``ASL data`` selection box (it must be loaded into Quantiphyse first).
+In this example, we will simulate a DCE-MRI data using the two-compartment exchange model (2CXM). First, we specify some basic parameters about the output file. The number of volumes (time points) is related to the total acquisition time and TR. Here we use 30 time points. The voxels per patch indicates the number of voxels (or realizations) to simulate. In this case, we are going to simulate 100 realizations. The noise parameter specifies the noise added to the simulated data. We want to output the noise-free data and parameter ROIs. The setup should look like the following:
 
-.. image:: screenshots/asl_data.png
+.. image:: screenshots/dce_simulation_2cxm/option.jpg
 
-Data format
-###########
+Next click on Model Options as we are going to set up the sequence parameters in the simulation. In the Mandatory options fields, the parameters can take either numerical values or text. The non-mandatory can also be modified. It is important to remember these simulated parameter values when we check the quantification results. In this example, we are going to use the following parameter values:
 
-The data format describes the labelling scheme used for the data and can be described as 
- - Label-control pairs
- - Control-Label pairs
- - Multiphase
- - Vessel encoded
- - already tag-control subtracted or multiphase
- 
-Note that currently multiphase data is not supported by this widget, however a multiphase
-preprocessing widget is provided.
+.. image:: screenshots/dce_simulation_2cxm/options_input.jpg
 
-.. image:: screenshots/asl_data_format.png
+Finally, we are going to specify the hemodynamic parameters. In the 2CXM, there are four hemodynamic parameters: plasma flow (fp, what is the unit?), permeability surface area product (ps), volume of extravascular extracellular space (ve), and volume of plasma (vp). What is the unit of these parameter values?
 
-Repeats
-#######
+.. image:: screenshots/dce_simulation_2cxm/parameter_values.jpg
 
-By default repeats are fixed. The ASL widget will figure out how many repeats you have.
+Now click Generate test data.
 
-.. image:: screenshots/asl_data_repeats.png
+We should be able to see the simulated data shown in the left panel. Your data may be different from the one shown here due to the differences in noise.
 
-You can also select variable repeats, in which case each TI/PLD may have a different number of
-repeats.
+.. image:: screenshots/dce_simulation_2cxm/simulated_data.jpg
 
-.. image:: screenshots/asl_data_var_repeats.png
+Click on Voxel analysis
 
-The repeats entry is at the bottom with the TIs/PLDs and bolus duration. This is because there
-needs to be the same number of each so it's sensible to keep them together.
+.. image:: screenshots/dce_simulation_2cxm/voxel_analysis.jpg
 
-.. image:: screenshots/asl_data_var_repeats_entry.png
+We will be able to see the time series of the noise free (white) and noisy (orange) data in each voxel.
 
-Data grouping/order
-###################
+.. image:: screenshots/dce_simulation_2cxm/simulated_data_time_series.jpg
 
-This describes the sequence of volumes contained in the ASL data set, and what each volume contains. 
-The two main choices are ``Grouped by TIs`` and ``Grouped by repeats``.
 
-When grouped by TIs, the sequence of volumes would be as follows::
+DCE-MRI data analysis
+-----------------------
 
-  1. Tag for first TI
-  2. Control for first TI
-  3. Rrepeat tag for first TI
-  4. Repeat Control for first TI
-     ... as above for remaining repeats
-  11. Tag for second TI
-  12. Control for second TI
-  13. Repeat tag for second TI
-  14. Repeat Control for second TI
-     ... etc
+In this exercise, we are going to quantify the hemodynamic parameters that we have just simulated. First, bring out the Bayesian DCE-MRI analysis tool.
 
-Data structure visualisation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: screenshots/dce_simulation_2cxm/fabber_dce.jpg
 
-The data structure visualisation shows how the data is grouped inside the file (the volumes in
-the data increase from left to right).
+In the input data, we need to select fabber_test_data_clean. This is the noise free data that we have just simulated. Leave the ROI and T1 map empty for now.
 
-.. image:: screenshots/asl_data_grouped_tis.png
+.. image:: screenshots/dce_simulation_2cxm/input_data.jpg
 
-Starting at the top, this shows that the volumes are divided up into blocks corresponding to
-the 6 TIs we have defined. Within each block we have 8 repeats of this TI, and each repeat
-consists of a label and control image (in that order).
+In Acquisition, we need to match these parameters with the ones that we used in the simulation in the following:
 
-Signal fit visualisation
-~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: screenshots/dce_simulation_2cxm/acquisition.jpg
 
-In addition the ``Signal Fit`` visualisation compares the mean signal from your data with 
-what would be expected for the data grouping you have chosen. In this case they match 
-closely, which is a good check that we have chosen the correct grouping option.
+Finally, in Model options, we need to select 2CXM and specify the T1 value (same with simulations).
 
-.. image:: screenshots/asl_data_sig_match.png
+.. image:: screenshots/dce_simulation_2cxm/model_options.jpg
 
-When grouped by repeats, the volume sequence would be as follows::
+Now. Click Run.
 
-  1. Tag for first TI
-  2. Control for first TI
-  3. Tag for second TI
-  4. Control for second TI
-     ... as above for remaining TIs
-  11. Repeat of Tag for first TI
-  12. Repeat of Control for first TI
-  11. Repeat of Tag for second TI
-  12. Repeat of Control for second TI
-      ... etc
+After the analysis is complete, we will be able to see the results on the left panel.
 
-And the data structure visualisation looks like this:
+Try to run the analysis on the noisy data from the simulation (fabber_test_data). After the analysis is complete, use the Data Statistics tool to check the quantification results of each parameter.
 
-.. image:: screenshots/asl_data_grouped_rpt.png
 
-Signal fit visualisation - bad fit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this case the correct grouping order was by TIs, as we saw above. If we select repeats
-the signal fit will show us that the data do not
-match what we would expect - this means we have got our grouping option wrong!
 
-.. image:: screenshots/asl_data_sig_badmatch.png
 
-Autodetecting the grouping order
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``Auto detect`` button tries to guess (based on the closeness of the signal fit) what the
-best grouping option is for our data. In most cases it will guess correctly, however care should
-be taken if your data does not fit into one of the standard patterns (see ``Custom ordering`` below)
 
-Advanced: custom ordering
-~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Occasionally, you may encounter ASL data with a different structure. For example if might start 
-with tag images for all TIs and repeats, and then have control images for all TIs and repeats
-afterwards. In this case you should select ``Custom`` as the grouping order and enter a string 
-of two or three characters in the text box to define your ordering. The characters should be chosen
-from:
 
- - ``l`` for variation in the label (i.e. tag/control or vessel encoding cycles)
- - ``t`` for variation in the TIs/PLDs
- - ``r`` for variation in the repeat number
 
- The characters should be ordered so the first is the *fastest* varying and the last is the slowest
- varying. For example the two standard 'Grouped by TIs' and 'Grouped by repeats' options would be
- described by the ordering strings ``lrt`` and ``ltr``. If all the tag images are together and
- all the control images follow, and within each block the data is grouped by repeats the ordering
- string would be ``trl``.
- 
-.. image:: screenshots/asl_data_grouped_trl.png
 
-Labelling
-#########
 
-The labelling method is either cASL/pcASL or pASL. In cASL/pcASL, the effective TI for each volume is 
-determined by adding the post-labelling delay (PLD) to the bolus duration. In pASL, the TIs are 
-specified directly.
 
-.. image:: screenshots/asl_data_labelling.png
 
-Readout
-#######
-
-Data acquired with a 3D readout requires no special processing, however if the readout was 2D then
-each slice will be at a slightly different TI/PLD (the volume TI/PLD in this case is the *initial*
-TI/PLD).
-
-Selecting 2D readout enables additional options for setting the the delay time per slice so suitable
-adjustments in the TI/PLD can be made for each slice. It is also possible to specify a multiband readout.
-
-.. image:: screenshots/asl_data_2d_readout.png
-
-TIs/PLDs
-########
-
-The TIs or PLDs recorded in the ASL data must be specified, with the corresponding bolus durations. 
-Initially data is interpreted as single-TI, however additional TIs can be added by typing their values
-into the entry box. Values can be separated by commas or whitespace.
-
-.. image:: screenshots/asl_data_tis.png
-
-If the number of PLDs specified is not consistent with the number of data volumes, a warning is 
-displayed. Here we have removed a PLD so there are only 5 which does not match the data which 
-has 96 volumes.
-
-.. image:: screenshots/asl_data_tis_invalid.png
-
-Here we have specified a label-control dataset with 7 PLDs - this means the number of volumes should be
-a multiple of 14.
-
-Bolus duration(s)
-#################
-
-Most ASL sequences use a single bolus duration whose value should be entered in this box:
-
-.. image:: screenshots/asl_data_bolus.png
-
-It is possible (but unusual) to use a different value for each TI/PLD. In this case a value can
-be given for each TI/PLD:
-
-.. image:: screenshots/asl_data_bolus_var.png
-
-The number of values given must match the number of TIs/PLDs:
-
-.. image:: screenshots/asl_data_bolus_var_wrong.png
