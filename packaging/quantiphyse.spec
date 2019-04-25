@@ -34,6 +34,7 @@ hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
     'sphinx',
+    'pywt._extensions._cwt',
 ]
 
 added_files = [
