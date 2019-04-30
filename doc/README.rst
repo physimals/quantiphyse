@@ -101,7 +101,7 @@ Tools from plugins
    :maxdepth: 1
 
    t1
-   pk
+   dce
    cest
    asl_overview
 
