@@ -104,6 +104,7 @@ Tools from plugins
    dce
    cest
    asl_overview
+   dsc
 
 Advanced Tools
 ==============
