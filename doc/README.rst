@@ -94,5 +94,5 @@ Acknowledgements
  - Julia Schnabel
  - Sir Mike Brady
 
-Images copyright 2018 University of Oxford
+Images © 2017-2019 University of Oxford
 
