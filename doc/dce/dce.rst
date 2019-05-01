@@ -27,3 +27,12 @@ clinical and preclinical applications.
 The interface to the two widgets has been kept as similar as possible to facilitate comparison of
 the methods, however generally the Bayesian approach is preferred for clinical applications as it
 provides a greater range of model and AIF options.
+
+Publications
+------------
+
+The following publications are useful citations for the DCE processing widget:
+
+ - **Bayesian inference method**: *Chappell MA, Groves AR, Whitcher B, Woolrich MW. Variational 
+   Bayesian inference for a non-linear forward model. IEEE Transactions on Signal Processing 
+   57(1):223-236, 2009.*
