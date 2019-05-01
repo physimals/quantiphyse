@@ -103,9 +103,14 @@ def main():
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
+        pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
+        splash = QtGui.QSplashScreen(pixmap)
+        splash.show()
+        app.processEvents()
+
         win = MainWindow(load_data=args.data, widgets=not args.qv)
+        splash.finish(win)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
         Register.check_register()
-
     sys.exit(app.exec_())
