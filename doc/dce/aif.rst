@@ -5,7 +5,9 @@ AIF options for Bayesian DCE modelling
 
 The arterial input function (AIF) is a critical piece of information used in performing 
 blood-borne tracer modelling, such as DCE-MRI. It describes the arterial supply of contrast
-agent to the tissue. 
+agent to the tissue. Quantiphyse supposrts a number of AIF options in the analysis.
+
+.. image:: /screenshots/dce/dce_aifs.jpg
 
 The AIF can be described as a series of values giving either the concentration
 or the DCE signal at the same time intervals used in the DCE acquisition. Note that
