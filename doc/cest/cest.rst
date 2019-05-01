@@ -1,0 +1,38 @@
+QuantiCEST
+==========
+
+- *Widgets -> CEST -> QuantiCEST*
+
+This widget provides CEST analysis using the Fabber Bayesian model fitting framework.
+
+Tutorials
+---------
+
+The following tutorial was presented at BCISMRM and provides a walkthrough of a CEST analysis:
+
+.. toctree::
+  :maxdepth: 1
+
+  BCISMRM Tutorial and data <cest_tutorial>
+
+Reference
+---------
+
+.. toctree::
+  :maxdepth: 1
+
+  user_guide
+
+Publications
+------------
+
+The following publications are useful citations for the QuantiCEST processing widget:
+
+ - **Bayesian inference method**: *Chappell MA, Groves AR, Whitcher B, Woolrich MW. Variational 
+   Bayesian inference for a non-linear forward model. IEEE Transactions on Signal Processing 
+   57(1):223-236, 2009.*
+
+ - **Bayesian CEST analysis**: *Chappell, M. A., Donahue, M. J., Tee, Y. K., Khrapitchev, 
+   A. A., Sibson, N. R., Jezzard, P., & Payne, S. J. (2012). Quantitative Bayesian 
+   model-based analysis of amide proton transfer MRI. Magnetic Resonance in Medicine. 
+   doi:10.1002/mrm.24474*

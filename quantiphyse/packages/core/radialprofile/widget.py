@@ -23,7 +23,7 @@ class RadialProfileWidget(QpWidget):
         super(RadialProfileWidget, self).__init__(name="Radial profile", 
                                                   icon="rp",
                                                   desc="Display radial profile of data", 
-                                                  group="Analysis", **kwargs)
+                                                  group="Visualisation", **kwargs)
         self._updating = False
 
     def init_ui(self):

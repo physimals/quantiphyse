@@ -21,6 +21,10 @@ hidden_imports = [
     'deprecation',
     'faulthandler',
     'fsl',
+    'fsl.data',
+    'fsl.data.atlases',
+    'fsl.data.image',
+    'fsl.wrappers',
     'oxasl',
     'oxasl_ve',
     'oxasl_enable',
@@ -34,6 +38,7 @@ hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
     'sphinx',
+    'pywt._extensions._cwt',
 ]
 
 added_files = [

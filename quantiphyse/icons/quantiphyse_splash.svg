@@ -13,10 +13,10 @@
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
    width="180"
    height="45"
-   sodipodi:docname="quantiphyse.svg"
-   inkscape:export-filename="/home/ibmeuser/ibmecode/build_scripts/build/quantiphyse/quantiphyse/icons/quantiphyse_hires.png"
-   inkscape:export-xdpi="533.33002"
-   inkscape:export-ydpi="533.33002">
+   sodipodi:docname="quantiphyse_splash.svg"
+   inkscape:export-filename="/home/ibmeuser/ibmecode/build_scripts/build/quantiphyse/quantiphyse/icons/quantiphyse_splash.png"
+   inkscape:export-xdpi="266.67001"
+   inkscape:export-ydpi="266.67001">
   <metadata
      id="metadata65">
     <rdf:RDF>
@@ -43,7 +43,7 @@
      id="namedview63"
      showgrid="false"
      inkscape:zoom="2.5371828"
-     inkscape:cx="-138.24403"
+     inkscape:cx="-65.722654"
      inkscape:cy="21.844604"
      inkscape:window-x="67"
      inkscape:window-y="27"
@@ -83,6 +83,13 @@
          transform="scale(1,-1)" />
     </clipPath>
   </defs>
+  <rect
+     id="rect21"
+     width="179.28392"
+     height="44.28392"
+     x="0.35803959"
+     y="0.35804138"
+     style="fill:#323232;fill-opacity:1;stroke:#e5e5e5;stroke-width:0.71607918;stroke-opacity:1" />
   <image
      y="12.98987"
      x="6.0775013"

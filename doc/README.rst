@@ -12,7 +12,7 @@
     :align: right
 
 
-Quantiphyse is a viewing and analysis tool for 3D and 4D biomedical data. It is particularly suited 
+Quantiphyse is a visualisation and analysis tool for 3D and 4D biomedical data. It is particularly suited 
 for physiological or functional imaging data comprised of multi volumes in a 4D (time-) series 
 and/or multimodal imaging data. Quantiphyse is built around the concept of making spatially 
 resolved measurements of physical or physiological processes from imaging data using either 
@@ -27,7 +27,7 @@ automatically created, e.g. supervoxel or clustering methods.
 Features
 --------
 
- - 2D orthographic viewing and navigation of data, regions of interest (ROIs) and overlays
+ - 2D orthographic visualisation and navigation of data, regions of interest (ROIs) and overlays
  - Universal analysis tools including clustering, supervoxel generation and curve comparison
  - Tools for CEST, ASL, DCE and DSC-MRI analysis and modelling
  - Integration with selected FSL tools
@@ -47,9 +47,9 @@ interested in commercial licensing you shold contact OUI in the first instance.
 Tutorials
 ---------
 
- - `CEST-MRI tutorial <cest_tutorial.html>`_
- - `IMAGO ASL-MRI tutorial <imago_tutorial.html>`_
- - `FSL ASL-MRI tutorial <asl_tutorial.html>`_
+ - `CEST-MRI tutorial <cest/cest_tutorial.html>`_
+ - `IMAGO ASL-MRI tutorial <asl/imago_tutorial.html>`_
+ - `FSL ASL-MRI tutorial <asl/asl_tutorial.html>`_
 
 Getting Quantiphyse
 -------------------
@@ -64,58 +64,18 @@ the current PyPi release in terms of functionality.
 User Guide
 ----------
 
-Basic functions
-===============
-
-.. toctree::
-   :maxdepth: 2
-
-   overview
-   getting_started
-   overlay_stats
-   modelfit
-   
-Generic analysis and processing tools
-=====================================
-
 .. toctree::
    :maxdepth: 1
 
-   compare
-   curve_compare
-   simple_maths
-   reg
-   smoothing
-   cluster
-   sv
-   roi_analysis
-   roibuilder
-   mean_values
-   hist
-   rp
-   
-Tools from plugins
-==================
-
-.. toctree::
-   :maxdepth: 1
-
-   t1
-   pk
-   cest
-   asl_overview
-
-Advanced Tools
-==============
-
-.. toctree::
-   :maxdepth: 1
-
-   batch
-   console
-   nifti_extension
+   basics/getting_started
+   asl/asl
+   cest/cest
+   dce/dce
+   dsc/dsc
+   generic/generic_tools
+   advanced/advanced_tools
    faq
-   
+    
 Bugs/Issues
 -----------
 
@@ -137,5 +97,5 @@ Acknowledgements
  - Julia Schnabel
  - Sir Mike Brady
 
-Images copyright 2018 University of Oxford
+Images © 2017-2019 University of Oxford
 

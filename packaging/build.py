@@ -51,6 +51,7 @@ def bundle_plugins():
         "quantiphyse-fabber" : "quantiphyse_fabber",
         "quantiphyse-fsl" : "quantiphyse_fsl",
         "quantiphyse-t1" : "quantiphyse_t1", 
+        "quantiphyse-sv" : "quantiphyse_sv", 
     }
     
     print("  - Bundling plugins...")
