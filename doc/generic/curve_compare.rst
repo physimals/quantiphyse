@@ -1,7 +1,7 @@
-Multi-voxel analysis
-====================
+Multi-voxel visualisation
+=========================
 
-*Widgets -> Analysis -> Multi-voxel Analysis*
+*Widgets -> Visualisation -> Multi-voxel*
 
 This widget shows the signal-time curve at multiple locations.
 

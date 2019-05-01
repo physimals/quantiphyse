@@ -12,7 +12,7 @@
     :align: right
 
 
-Quantiphyse is a viewing and analysis tool for 3D and 4D biomedical data. It is particularly suited 
+Quantiphyse is a visualisation and analysis tool for 3D and 4D biomedical data. It is particularly suited 
 for physiological or functional imaging data comprised of multi volumes in a 4D (time-) series 
 and/or multimodal imaging data. Quantiphyse is built around the concept of making spatially 
 resolved measurements of physical or physiological processes from imaging data using either 
@@ -27,7 +27,7 @@ automatically created, e.g. supervoxel or clustering methods.
 Features
 --------
 
- - 2D orthographic viewing and navigation of data, regions of interest (ROIs) and overlays
+ - 2D orthographic visualisation and navigation of data, regions of interest (ROIs) and overlays
  - Universal analysis tools including clustering, supervoxel generation and curve comparison
  - Tools for CEST, ASL, DCE and DSC-MRI analysis and modelling
  - Integration with selected FSL tools
@@ -68,7 +68,10 @@ User Guide
    :maxdepth: 1
 
    basics/getting_started
-   specialized_tools
+   asl/asl
+   cest/cest
+   dce/dce
+   dsc/dsc
    generic/generic_tools
    advanced/advanced_tools
    faq

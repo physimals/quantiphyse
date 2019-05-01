@@ -1,7 +1,7 @@
 Radial profile widget
 =====================
 
-*Widgets -> Analysis -> Radial profile*
+*Widgets -> Visualisation -> Radial profile*
 
 The radial profile widget plots the mean data value as a function of distance from the currently
 selected point.

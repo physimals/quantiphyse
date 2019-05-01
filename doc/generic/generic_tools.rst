@@ -1,5 +1,5 @@
-Generic analysis and processing tools
-=====================================
+Visualisation and processing tools
+==================================
 
 .. toctree::
    :maxdepth: 1
@@ -16,3 +16,4 @@ Generic analysis and processing tools
    mean_values
    hist
    rp
+   t1

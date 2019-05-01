@@ -1,7 +1,7 @@
 Histogram widget
 ================
 
-*Widgets -> Analysis -> Histogram*
+*Widgets -> Visualisation -> Histogram*
 
 The histogram widget plots a histogram of data values
 

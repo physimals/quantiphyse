@@ -25,7 +25,7 @@ class MultiVoxelAnalysis(QpWidget):
     """
     
     def __init__(self, **kwargs):
-        super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
+        super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel", icon="voxel", desc="Compare signal curves at different voxels", group="Visualisation", position=2, **kwargs)
 
         self.activated = False
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
@@ -40,7 +40,7 @@ class MultiVoxelAnalysis(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False)
+        title = TitleWidget(self, "Multi-Voxel Visualisation", help="curve_compare", batch_btn=False)
         vbox.addWidget(title)
 
         self.plot = Plot(clear_btn=True)
@@ -644,7 +644,7 @@ class MeasureWidget(QpWidget):
     def __init__(self, **kwargs):
         super(MeasureWidget, self).__init__(name="Measurements", icon="measure", 
                                                 desc="Measure distances and angles", 
-                                                group="Analysis", **kwargs)
+                                                group="Visualisation", **kwargs)
         self._points = None
         self._mode = None
 
