@@ -47,9 +47,9 @@ interested in commercial licensing you shold contact OUI in the first instance.
 Tutorials
 ---------
 
- - `CEST-MRI tutorial <cest_tutorial.html>`_
- - `IMAGO ASL-MRI tutorial <imago_tutorial.html>`_
- - `FSL ASL-MRI tutorial <asl_tutorial.html>`_
+ - `CEST-MRI tutorial <cest/cest_tutorial.html>`_
+ - `IMAGO ASL-MRI tutorial <asl/imago_tutorial.html>`_
+ - `FSL ASL-MRI tutorial <asl/asl_tutorial.html>`_
 
 Getting Quantiphyse
 -------------------
@@ -64,59 +64,15 @@ the current PyPi release in terms of functionality.
 User Guide
 ----------
 
-Basic functions
-===============
-
-.. toctree::
-   :maxdepth: 2
-
-   overview
-   getting_started
-   overlay_stats
-   modelfit
-   
-Generic analysis and processing tools
-=====================================
-
 .. toctree::
    :maxdepth: 1
 
-   compare
-   curve_compare
-   simple_maths
-   reg
-   smoothing
-   cluster
-   sv
-   roi_analysis
-   roibuilder
-   mean_values
-   hist
-   rp
-   
-Tools from plugins
-==================
-
-.. toctree::
-   :maxdepth: 1
-
-   t1
-   dce
-   cest
-   asl_overview
-   dsc
-
-Advanced Tools
-==============
-
-.. toctree::
-   :maxdepth: 1
-
-   batch
-   console
-   nifti_extension
+   basics/getting_started
+   specialized_tools
+   generic/generic_tools
+   advanced/advanced_tools
    faq
-   
+    
 Bugs/Issues
 -----------
 
