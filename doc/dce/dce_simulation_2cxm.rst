@@ -45,19 +45,19 @@ Analysis
 
 In this exercise, we are going to quantify the hemodynamic parameters that we have just simulated. First, bring out the Bayesian DCE-MRI analysis tool.
 
-.. image:: screenshots/dce_simulation_2cxm/fabber_dce.jpg
+.. image:: /screenshots/dce_simulation_2cxm/fabber_dce.jpg
 
 In the input data, we need to select fabber_test_data_clean. This is the noise free data that we have just simulated. Leave the ROI and T1 map empty for now.
 
-.. image:: screenshots/dce_simulation_2cxm/input_data.jpg
+.. image:: /screenshots/dce_simulation_2cxm/input_data.jpg
 
 In Acquisition, we need to match these parameters with the ones that we used in the simulation in the following:
 
-.. image:: screenshots/dce_simulation_2cxm/acquisition.jpg
+.. image:: /screenshots/dce_simulation_2cxm/acquisition.jpg
 
 Finally, in Model options, we need to select 2CXM and specify the T1 value (same with simulations).
 
-.. image:: screenshots/dce_simulation_2cxm/model_options.jpg
+.. image:: /screenshots/dce_simulation_2cxm/model_options.jpg
 
 Now. Click Run.
 
