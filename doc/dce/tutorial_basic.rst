@@ -42,7 +42,7 @@ In the AIF option, we are going to select ``Population (Parker)``. A detailed ex
 Model Options
 =============
 
-After specifying the sequence parameters, the next step is to select the appropriate model to analyse the data. In this example, we are going to use ``Standard Tofts Model``. A full description of the different models provided by Quantiphye can be found in `Models available for Bayesian DCE modelling <models.html>`. We are also going to specify the T1 value. Note: T1 values vary in different tissues. Although is it difficult to have a very precise estimation of the T1 value of our tissue of interest, it is important to specify a value that is close to the actual T1 value to improve the quantification of the haemodynamic parameters in our analysis. We will leave the other options unchecked.
+After specifying the sequence parameters, the next step is to select the appropriate model to analyse the data. In this example, we are going to use ``Standard Tofts Model``. A full description of the different models provided by Quantiphye can be found in :ref:`bayesian_dce_models`. We are also going to specify the T1 value. Note: T1 values vary in different tissues. Although is it difficult to have a very precise estimation of the T1 value of our tissue of interest, it is important to specify a value that is close to the actual T1 value to improve the quantification of the haemodynamic parameters in our analysis. We will leave the other options unchecked.
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_model_options.jpg
 
