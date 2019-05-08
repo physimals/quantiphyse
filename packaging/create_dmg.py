@@ -116,9 +116,9 @@ data 'STR#' (5002, "English") {
                         (rez, tmpFile, dmgFile))
         os.system('hdiutil flatten -quiet "%s"' % dmgFile)
     if ret == 0:
-        print "Successfully added license to '%s'" % dmgFile
+        print("Successfully added license to '%s'" % dmgFile)
     else:
-        print "Failed to add license to '%s'" % dmgFile
+        print("Failed to add license to '%s'" % dmgFile)
 
 def add_apps_link(dmg_path):
     """ 
@@ -128,15 +128,17 @@ def add_apps_link(dmg_path):
     path = None
     try:
         a = subprocess.check_output(['hdiutil', 'attach', '-noverify', dmg_path])
-        lines = a.split('\n')
-        path = lines[1].split("\t")[2]
+        lines = a.splitlines()
+        devs = [l.split("\t")[0].strip() for l in lines]
+        path = lines[-1].split("\t")[2].strip()
         os.system('ln -s /Applications "%s/Applications" ' % path) 
     except:
         print("WARNING: Failed to add link to Applications folder")
         print(sys.exc_info())
     finally:
         if path is not None:
-            os.system('hdiutil detach "%s" -quiet' % path)
+            for dev in devs:
+                os.system('hdiutil detach "%s" -quiet' % dev)
     
 def create_dmg(distdir, pkgdir, version_str, sysname, version_str_display=None):
     if version_str_display == None:

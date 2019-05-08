@@ -84,11 +84,13 @@ def bundle_fabber():
     import fabber
     main_lib, main_exe, model_libs, model_exes = fabber.find_fabber()
     for f in [main_lib,] + list(model_libs.values()):
-        shutil.copy(f, libdir)
-        print("    - %s -> %s" % (f, libdir))
+        if f:
+            shutil.copy(f, libdir)
+            print("    - %s -> %s" % (f, libdir))
     for f in [main_exe,] + list(model_exes.values()):
-        shutil.copy(f, bindir)
-        print("    - %s -> %s" % (f, bindir))
+        if f:
+            shutil.copy(f, bindir)
+            print("    - %s -> %s" % (f, bindir))
     print("  - DONE\n")
 
 # Clean up any previous distribution

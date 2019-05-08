@@ -5,7 +5,9 @@ Dynamic Contrast Enhanced (DCE) MRI
 
 .. image:: /screenshots/dce_widget_menu.png
 
-The DCE modelling package allow pharmacokinetic modelling of DCE-MRI using a variety of models.
+Dynamic Contrast Enhanced MRI (DCE-MRI) is an advanced MRI technique that captures the tissue T1 changes over time after the administration of a contrast agent. The most common application of DCE-MRI is in monitoring tumours and multiple sclerosis. Thus, DCE-MRI data are typically acquired from patients with cancer or multiple sclerosis. The objective of analysing DCE-MRI data is to quantify a number of haemodynamic parameters (such as Ktrans, perfusion, and permeability), which are important biomarkers to understand the physiology of tumours.
+
+Here, we will explain the steps to analyse DCE-MRI data to quantify the haemodynamic parameters using Quantiphyse. The DCE modelling package allow pharmacokinetic modelling of DCE-MRI using a variety of models.
 Two independent widgets are provided:
 
 .. toctree::
@@ -36,3 +38,4 @@ The following publications are useful citations for the DCE processing widget:
  - **Bayesian inference method**: *Chappell MA, Groves AR, Whitcher B, Woolrich MW. Variational 
    Bayesian inference for a non-linear forward model. IEEE Transactions on Signal Processing 
    57(1):223-236, 2009.*
+

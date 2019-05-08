@@ -1,3 +1,5 @@
+.. _dce_interface:
+
 DCE modelling widget user interface
 ===================================
 
