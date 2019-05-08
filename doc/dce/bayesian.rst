@@ -14,6 +14,11 @@ Tutorials
 
   - Tutorial coming soon
 
+  .. toctree::
+   :maxdepth: 1
+
+   tutorial_basic
+
 Reference
 ---------
 

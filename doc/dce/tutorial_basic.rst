@@ -27,7 +27,7 @@ We will see that the Bayesian DCE widget has been loaded onto the right hand sid
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_interface.jpg
 
-A full description of the interface can be found in :ref:`_dce_interface`.
+A full description of the interface can be found in :ref:`dce_interface`.
 
 Before we specify the acquisition parameters, we need to make sure that the correct data have been loaded. In the previous step, we have loaded the DCE-MRI data and a ROI map. In the ``Input data`` section, we need to tell Quantiphyse the data that we loaded:
 
@@ -39,7 +39,7 @@ In our case, we are going to use the following values:
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_acquisition_parameters.jpg
 
-In the AIF option, we are going to select ``Population (Parker)``. A detailed explanation on the different AIFs can be found in :ref:`_bayesian_dce_aif`.
+In the AIF option, we are going to select ``Population (Parker)``. A detailed explanation on the different AIFs can be found in :ref:`bayesian_dce_aif`.
 
 Model Options
 =============
