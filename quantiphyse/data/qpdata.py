@@ -687,7 +687,7 @@ class QpData(object):
             tmatrix = np.linalg.inv(tmatrix)
             affine = tmatrix[:3, :3]
             offset = list(tmatrix[:3, 3])
-            output_shape = grid.shape[:]
+            output_shape = list(grid.shape[:])
             if data.ndim == 4:
                 # Make 4D affine with identity transform in 4th dimension
                 affine = np.append(affine, [[0, 0, 0]], 0)
