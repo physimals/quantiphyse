@@ -5,12 +5,12 @@ DCE-MRI Data Analysis Tutorial
 Introduction
 ============
 
-In this tutorial, we are going to explore how to quantify the haemodynamic parameters of DCE-MRI data using Quantiphyse. We will use the Tofts models to perform our analysis.
+In this tutorial, we are going to explore how to quantify the haemodynamic parameters of DCE-MRI data using Quantiphyse. We will use the Tofts model to perform our analysis.
 
 Data Preparation
 ================
 
-First, we need to load the DCE-MRI data and ROI files to Quantiphyse. Be sure to specify the DCE-MRI data as ``Data`` and ROI file as ``ROI``. It is always helpful to check the timeseries of the DCE-MRI data using the ``Voxel analysis`` Widget:
+First, we need to load the DCE-MRI data and the ROI file to Quantiphyse. Be sure to specify the DCE-MRI data as ``Data`` and ROI file as ``ROI``. It is always helpful to check the timeseries of the DCE-MRI data using the ``Voxel analysis`` Widget:
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_timeseries.jpg
 
@@ -25,9 +25,9 @@ We will see that the Bayesian DCE widget has been loaded onto the right hand sid
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_interface.jpg
 
-A full description of the interface can be found `DCE modelling widget user interface <interface.html>`.
+A full description of the interface can be found in `DCE modelling widget user interface <interface.html>`.
 
-Before we specify the acquisition parameters, we need to make sure that the correct data have been loaded. In the previous step, we have loaded the DCE-MRI data, ROI, and a T1 map. In the ``Input data`` section, we need to tell Quantiphyse the data that we loaded:
+Before we specify the acquisition parameters, we need to make sure that the correct data have been loaded. In the previous step, we have loaded the DCE-MRI data and a ROI map. In the ``Input data`` section, we need to tell Quantiphyse the data that we loaded:
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_input_data.jpg
 
@@ -37,12 +37,12 @@ In our case, we are going to use the following values:
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_acquisition_parameters.jpg
 
-In the AIF option, we are going to select ``Population (Parker)``. A detailed explanation on the different AIFs can be found `AIF options for Bayesian DCE modelling <aif.html>`.
+In the AIF option, we are going to select ``Population (Parker)``. A detailed explanation on the different AIFs can be found in `AIF options for Bayesian DCE modelling <aif.html>`.
 
 Model Options
 =============
 
-After specifying the sequence parameters, the next step is to select the appropriate model to analyse the data. In this example, we are going to use ``Standard Tofts Model``. A full description of the different models provided by Quantiphye can be found `Models available for Bayesian DCE modelling <models.html>`. We are also going to specify the T1 value. Note: T1 values vary in different tissues. Although is it difficult to have a very precise estimation of the T1 value of our tissue of interest, it is important to specify a value that is close to the actual T1 value to improve the quantification of the haemodynamic parameters in our analysis. We will leave the other options unchecked.
+After specifying the sequence parameters, the next step is to select the appropriate model to analyse the data. In this example, we are going to use ``Standard Tofts Model``. A full description of the different models provided by Quantiphye can be found in `Models available for Bayesian DCE modelling <models.html>`. We are also going to specify the T1 value. Note: T1 values vary in different tissues. Although is it difficult to have a very precise estimation of the T1 value of our tissue of interest, it is important to specify a value that is close to the actual T1 value to improve the quantification of the haemodynamic parameters in our analysis. We will leave the other options unchecked.
 
 .. image:: /screenshots/dce/DCE_tutorial_basic_model_options.jpg
 
