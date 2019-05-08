@@ -17,23 +17,23 @@ In this example, we will simulate a DCE-MRI data using the two-compartment excha
 
 .. image:: /screenshots/dce_simulation_2cxm/options.jpg
 
-Next click on Model Options as we are going to set up the sequence parameters in the simulation. In the Mandatory options fields, the parameters can take either numerical values or text. The non-mandatory can also be modified. It is important to remember these simulated parameter values when we check the quantification results. In this example, we are going to use the following parameter values:
+Next click on ``Model Options`` as we are going to set up the sequence parameters in the simulation. In the ``Mandatory options`` fields, the parameters can take either numerical values or text. The ``Non-mandatory options`` can also be modified. It is important to remember these simulated parameter values when we check the quantification results. In this example, we are going to use the following parameter values:
 
 .. image:: /screenshots/dce_simulation_2cxm/options_input.jpg
 
-Finally, we are going to specify the hemodynamic parameters. In the 2CXM, there are four hemodynamic parameters: plasma flow (fp, what is the unit?), permeability surface area product (ps), volume of extravascular extracellular space (ve), and volume of plasma (vp). What is the unit of these parameter values?
+Finally, we are going to specify the hemodynamic parameters. In the 2CXM, there are four hemodynamic parameters: plasma flow (fp), permeability surface area product (ps), volume of extravascular extracellular space (ve), and volume of plasma (vp).
 
 .. image:: /screenshots/dce_simulation_2cxm/parameter_values.jpg
 
-Now click Generate test data.
+Now click ``Generate test data``.
 
 We should be able to see the simulated data shown in the left panel. Your data may be different from the one shown here due to the differences in noise.
 
 .. image:: /screenshots/dce_simulation_2cxm/simulated_data.jpg
 
-Click on Voxel analysis
+Click on ``Voxel analysis``
 
-.. image:: screenshots/dce_simulation_2cxm/voxel_analysis.jpg
+.. image:: /screenshots/dce_simulation_2cxm/voxel_analysis.jpg
 
 We will be able to see the time series of the noise free (white) and noisy (orange) data in each voxel.
 
