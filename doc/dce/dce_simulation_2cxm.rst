@@ -1,7 +1,7 @@
 .. _tutorial_simulation:
 
 ==========================================
-DCE-MRI data simulation
+DCE-MRI Simulation and Analysis
 ==========================================
 
 In this tutorial, we will simulate some DCE-MRI data and quantify the simulated parameters using the DCE-MRI analysis pipeline in Quantiphyse.
