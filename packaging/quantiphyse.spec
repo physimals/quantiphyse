@@ -93,6 +93,7 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(('%s/lib/libmkl_avx2.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libmkl_avx.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libpng16.16.dylib' % anaconda_dir, '.' ))
+    hidden_imports.append("_sysconfigdata")
 
 a = Analysis([os.path.join(qpdir, 'qp.py')],
              pathex=[],
