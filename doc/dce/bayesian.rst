@@ -20,7 +20,7 @@ Tutorials
   .. toctree::
    :maxdepth: 1
 
-   tutorial_simulation
+   dce_simulation_2cxm
 
 Reference
 ---------
