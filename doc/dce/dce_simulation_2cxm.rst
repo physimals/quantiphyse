@@ -1,7 +1,13 @@
+.. _tutorial_simulation:
+
+==========================================
 DCE-MRI data simulation
------------------------
+==========================================
 
 In this tutorial, we will simulate some DCE-MRI data and quantify the simulated parameters using the DCE-MRI analysis pipeline in Quantiphyse.
+
+Simulation
+============
 
 First, launch the widget to simulate DCE-MRI data.
 
@@ -34,8 +40,8 @@ We will be able to see the time series of the noise free (white) and noisy (oran
 .. image:: screenshots/dce_simulation_2cxm/simulated_data_time_series.jpg
 
 
-DCE-MRI data analysis
------------------------
+Analysis
+============
 
 In this exercise, we are going to quantify the hemodynamic parameters that we have just simulated. First, bring out the Bayesian DCE-MRI analysis tool.
 
