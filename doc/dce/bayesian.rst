@@ -17,7 +17,7 @@ Tutorials
   .. toctree::
    :maxdepth: 1
 
-   dce_tutorial_basic
+   tutorial_basic
 
 Reference
 ---------
