@@ -22,7 +22,7 @@ Processing:
       cblip: aslcalib_PA
       echospacing: 0.06
       pedir: y
-      fslanat: /home/ibmeuser/data/asl/fsl_course/ASL/T1.anat
+      fslanat: /mnt/hgfs/win/data/asl/fsl_course/T1.anat
       calib: aslcalib
       calib_method: single
       tr: 4.8
@@ -40,6 +40,6 @@ Processing:
 
 Cases:
   Oxasl:
-      InputFolder: /home/ibmeuser/data/asl/fsl_course/ASL/
+      InputFolder: /mnt/hgfs/win/data/asl/fsl_course/
 
 
