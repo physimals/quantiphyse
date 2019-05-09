@@ -20,7 +20,7 @@ class HistogramWidget(QpWidget):
     """
     def __init__(self, **kwargs):
         super(HistogramWidget, self).__init__(name="Histogram", icon="hist",
-                                              desc="Display histograms from data", group="Analysis", **kwargs)
+                                              desc="Display histograms from data", group="Visualisation", **kwargs)
         self._updating = False
 
     def init_ui(self):

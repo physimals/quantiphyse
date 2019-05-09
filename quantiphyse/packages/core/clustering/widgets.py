@@ -19,7 +19,7 @@ from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import QpWidget, OverlayCombo, RoiCombo, NumericOption, TitleWidget
 from quantiphyse.utils import get_pencol
 
-from .kmeans import KMeansProcess
+from .kmeans import KMeansProcess, MeanValuesProcess
 
 class ClusteringWidget(QpWidget):
     """
@@ -339,3 +339,76 @@ PCA reduction is used on 4D data to extract representative curves
             # replot
             self.update_plot()
             self._update_voxel_count()
+
+class MeanValuesWidget(QpWidget):
+    """
+    Convert a data + multi-level ROI into mean values data set
+    """
+    def __init__(self, **kwargs):
+        super(MeanValuesWidget, self).__init__(name="Mean in ROI", icon="meanvals", 
+                                               desc="Replace data with its mean value within each ROI region", 
+                                               group="ROIs", **kwargs)
+
+        layout = QtGui.QVBoxLayout()
+
+        title = TitleWidget(self, "Generate Mean Values Data", help="mean_values")
+        layout.addWidget(title)
+        
+        desc = QtGui.QLabel("This widget will convert the current data set into a "
+                            "new data set in which each ROI region contains the mean "
+                            "value for that region.\n\nThis is generally only useful for "
+                            "multi-level ROIs such as clusters or supervoxels")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        hbox = QtGui.QHBoxLayout()
+        gbox = QtGui.QGroupBox()
+        gbox.setTitle("Options")
+        grid = QtGui.QGridLayout()
+        gbox.setLayout(grid)
+        
+        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
+        self.ovl = OverlayCombo(self.ivm)
+        self.ovl.currentIndexChanged.connect(self._data_changed)
+        grid.addWidget(self.ovl, 0, 1)
+        grid.addWidget(QtGui.QLabel("ROI regions"), 1, 0)
+        self.roi = RoiCombo(self.ivm)
+        grid.addWidget(self.roi, 1, 1)
+        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
+        self.output_name = QtGui.QLineEdit()
+        grid.addWidget(self.output_name, 2, 1)
+
+        btn = QtGui.QPushButton('Generate', self)
+        btn.clicked.connect(self._generate)
+        grid.addWidget(btn, 2, 0)
+        hbox.addWidget(gbox)
+        hbox.addStretch(1)
+        layout.addLayout(hbox)
+        layout.addStretch(1)
+        self.setLayout(layout)
+
+    def _data_changed(self):
+        name = self.ovl.currentText()
+        if name:
+            self.output_name.setText(name + "_means")
+
+    def batch_options(self):
+        options = {
+            "roi" : self.roi.currentText(),
+            "data" : self.ovl.currentText(),
+            "output-name" :  self.output_name.text()
+        }
+        return "MeanValues", options
+
+    def _generate(self):
+        options = self.batch_options()[1]
+
+        if not options["data"]:
+            QtGui.QMessageBox.warning(self, "No data selected", "Load data to generate mean values from", QtGui.QMessageBox.Close)
+            return
+        if not options["roi"]:
+            QtGui.QMessageBox.warning(self, "No ROI selected", "Load an ROI for mean value regions", QtGui.QMessageBox.Close)
+            return
+        
+        process = MeanValuesProcess(self.ivm)
+        process.run(options)

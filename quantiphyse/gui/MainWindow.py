@@ -287,7 +287,7 @@ class MainWindow(QtGui.QMainWindow):
         file_menu.addAction(exit_action)
 
         widget_submenus = {"" : widget_menu}
-        default_widget_groups = ["Analysis", "Processing", "Clustering", "ROIs", "Utilities"]
+        default_widget_groups = ["Visualisation", "Processing", "Clustering", "ROIs", "Utilities"]
         for group in default_widget_groups:
             widget_submenus[group] = widget_menu.addMenu(group)
 

@@ -977,8 +977,12 @@ class NumberListOption(Option, QtGui.QLineEdit):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=()):
+    def __init__(self, initial=(), intonly=False):
         QtGui.QLineEdit.__init__(self)
+        if intonly:
+            self._type = int
+        else:
+            self._type = float
         self.value = initial
         self.editingFinished.connect(self._edit_changed)
 
@@ -987,7 +991,7 @@ class NumberListOption(Option, QtGui.QLineEdit):
         """ List of numbers or empty list if invalid data entered """
         try:
             text = self.text().replace(",", " ")
-            return [float(v) for v in text.split()] 
+            return [self._type(v) for v in text.split()] 
         except ValueError:
             return []
 
@@ -999,7 +1003,7 @@ class NumberListOption(Option, QtGui.QLineEdit):
     def _edit_changed(self):
         try:
             text = self.text().replace(",", " ")
-            numbers = [float(v) for v in text.split()]
+            numbers = [self._type(v) for v in text.split()]
             self.setText(" ".join([str(v) for v in numbers]))
             self.setStyleSheet("")
         except ValueError:

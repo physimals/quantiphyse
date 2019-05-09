@@ -11,20 +11,16 @@ Processing:
             mask.nii:
 
   - Fabber:
-      ptrain: fabber_runtime_files/ptrain_2s.mat
-      save-mean: 
-      noise: white
-      degree: 2
-      save-model-fit: 
-      spec: fabber_runtime_files/dataspec_v2.mat
-      max-iterations: 20
       model-group: cest
-      debug: 
-      pools: fabber_runtime_files/poolmat_2pool.mat
-      output: out
       model: cest
+      spec: fabber_runtime_files/dataspec_v2.mat
+      pools: fabber_runtime_files/poolmat_2pool.mat
+      ptrain: fabber_runtime_files/ptrain_2s.mat
+      noise: white
+      max-iterations: 20
       method: vb
-      overwrite: 
+      save-mean: 
+      save-model-fit: 
 
   - Save:
         mean_B1_off:
@@ -36,7 +32,7 @@ Processing:
 
 Cases:
     CEST_JL586:
-        #InputFolder: C:\Users\ctsu0221\build\data\For_Martin_ENU_JL586
-        InputFolder: /home/ibmeuser/data/cest/paula/
+        #InputFolder: C:\Users\ctsu0221\build\data\cest\For_Martin_ENU_JL586
+        InputFolder: /mnt/hgfs/win/data/cest/For_Martin_ENU_JL586/
         
         

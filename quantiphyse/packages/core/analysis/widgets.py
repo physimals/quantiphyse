@@ -28,7 +28,7 @@ class MultiVoxelAnalysis(QpWidget):
     """
     
     def __init__(self, **kwargs):
-        super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel Analysis", icon="voxel", desc="Compare signal curves at different voxels", group="Analysis", position=2, **kwargs)
+        super(MultiVoxelAnalysis, self).__init__(name="Multi-Voxel", icon="voxel", desc="Compare signal curves at different voxels", group="Visualisation", position=2, **kwargs)
 
         self.activated = False
         self.colors = {'grey':(200, 200, 200), 'red':(255, 0, 0), 'green':(0, 255, 0), 'blue':(0, 0, 255),
@@ -43,7 +43,7 @@ class MultiVoxelAnalysis(QpWidget):
         vbox = QtGui.QVBoxLayout()
         self.setLayout(vbox)
 
-        title = TitleWidget(self, "Multi-Voxel Analysis", help="curve_compare", batch_btn=False)
+        title = TitleWidget(self, "Multi-Voxel Visualisation", help="curve_compare", batch_btn=False)
         vbox.addWidget(title)
 
         self.plot = Plot(clear_btn=True)
@@ -645,9 +645,9 @@ class MeasureWidget(QpWidget):
     DISTANCE = "distance"
 
     def __init__(self, **kwargs):
-        super(MeasureWidget, self).__init__(name="Measurements", icon="", 
+        super(MeasureWidget, self).__init__(name="Measurements", icon="measure", 
                                                 desc="Measure distances and angles", 
-                                                group="Analysis", **kwargs)
+                                                group="Visualisation", **kwargs)
         self._points = None
         self._mode = None
 
@@ -662,13 +662,13 @@ class MeasureWidget(QpWidget):
         vbox = QtGui.QVBoxLayout()
         box.setLayout(vbox)
         
-        dist_btn = QtGui.QPushButton("Measure distance")
-        dist_btn.clicked.connect(self._measure_dist)
-        vbox.addWidget(dist_btn)
+        self._dist_btn = QtGui.QPushButton("Measure distance")
+        self._dist_btn.clicked.connect(self._measure_dist)
+        vbox.addWidget(self._dist_btn)
 
-        angle_btn = QtGui.QPushButton("Measure angle")
-        angle_btn.clicked.connect(self._measure_angle)
-        vbox.addWidget(angle_btn)
+        self._angle_btn = QtGui.QPushButton("Measure angle")
+        self._angle_btn.clicked.connect(self._measure_angle)
+        vbox.addWidget(self._angle_btn)
 
         self._label = QtGui.QLabel()
         vbox.addWidget(self._label)
@@ -692,7 +692,7 @@ class MeasureWidget(QpWidget):
         if len(selection) != 1:
             raise ValueError("Expected single colour")
 
-        points = selection.values()[0]
+        points = list(selection.values())[0]
         if len(points) == 1:
             self._label.setText("Select the second point")
         elif self._mode == self.DISTANCE and len(points) == 2:

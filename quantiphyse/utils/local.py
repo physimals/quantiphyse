@@ -6,6 +6,7 @@ Copyright (c) 2013-2018 University of Oxford
 import sys
 import os
 import logging
+import warnings
 
 LOCAL_FILE_PATH = ""
 LOG = logging.getLogger(__name__)
@@ -30,6 +31,13 @@ def set_local_file_path():
             LOCAL_FILE_PATH = os.getcwd() + '/quantiphyse'
         else:
             LOCAL_FILE_PATH = os.path.dirname(sys.executable)
+        
+        # Frozen packages have Fabber code bundled but allow user override
+        if "FABBERDIR" in os.environ:
+            warnings.warn("Using user's custom Fabber code in $FABBERDIR=%s" % os.environ["FABBERDIR"])
+        else:
+            os.environ["FABBERDIR"] = os.path.join(LOCAL_FILE_PATH, "fabberdir")
+        
     else:
         # Running from a script
         LOCAL_FILE_PATH = os.path.join(os.path.dirname(__file__), os.pardir)

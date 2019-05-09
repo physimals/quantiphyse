@@ -12,7 +12,7 @@
     :align: right
 
 
-Quantiphyse is a viewing and analysis tool for 3D and 4D biomedical data. It is particularly suited 
+Quantiphyse is a visualisation and analysis tool for 3D and 4D biomedical data. It is particularly suited 
 for physiological or functional imaging data comprised of multi volumes in a 4D (time-) series 
 and/or multimodal imaging data. Quantiphyse is built around the concept of making spatially 
 resolved measurements of physical or physiological processes from imaging data using either 
@@ -27,13 +27,13 @@ automatically created, e.g. supervoxel or clustering methods.
 Features
 --------
 
- - 2D orthographic viewing and navigation of data, regions of interest (ROIs) and overlays
+ - 2D orthographic visualisation and navigation of data, regions of interest (ROIs) and overlays
  - Universal analysis tools including clustering, supervoxel generation and curve comparison
  - Tools for CEST, ASL, DCE and DSC-MRI analysis and modelling
  - Integration with selected FSL tools
  - ROI generation
  - Registration and motion correction
- - Extensible via plugins
+ - Extensible via plugins - see :ref:`plugins`.
 
 License
 -------
@@ -47,12 +47,12 @@ interested in commercial licensing you shold contact OUI in the first instance.
 Tutorials
 ---------
 
- - `CEST-MRI tutorial <cest_tutorial.html>`_
- - `IMAGO ASL-MRI tutorial <imago_tutorial.html>`_
- - `FSL ASL-MRI tutorial <asl_tutorial.html>`_
+ - `CEST-MRI tutorial <cest/cest_tutorial.html>`_
+ - `IMAGO ASL-MRI tutorial <asl/imago_tutorial.html>`_
+ - `FSL ASL-MRI tutorial <asl/asl_tutorial.html>`_
 
-Download
---------
+Getting Quantiphyse
+-------------------
 
 Quantiphyse is available on PyPi - see :ref:`install`.
 
@@ -61,87 +61,27 @@ Store <https://process.innovation.ox.ac.uk/software>`_. The packages held by OUI
 external dependencies and can be installed on Windows, Mac and Linux. They may lag behind
 the current PyPi release in terms of functionality.
 
-Plugins
--------
-
-Some of the functionality described in this documentation requires the installation of plugins.
-The following plugins are available:
-
- - ``quantiphyse-dce`` - DCE modelling
- - ``quantiphyse-fabber`` - Bayesian model fitting - required for various specialised tools
- - ``quantiphyse-fsl`` - Interface to selected FSL tools (requires FSL installation)
- - ``quantiphyse-cest`` - CEST-MRI modelling (requires ``quantiphyse-fabber``)
- - ``quantiphyse-asl`` - ASL-MRI modelling (requires FSL installation and ``quantiphyse-fabber``)
- - ``quantiphyse-dsc`` - DSC-MRI modellingg (requires ``quantiphyse-fabber``)
- - ``quantiphyse-t1`` - T1 mapping (requires ``quantiphyse-fabber``)
-
-Plugins are installed from PyPi, e.g.::
-
-    pip install quantiphyse-dce
-
-They will be automatically detected and added to Quantiphyse next time you run it. The packages
-available on the OUI software store have all plugins included which were available at the 
-time of release.
-
 User Guide
 ----------
 
-Basic functions
-===============
-
-.. toctree::
-   :maxdepth: 2
-
-   overview
-   getting_started
-   overlay_stats
-   modelfit
-   
-Generic analysis and processing tools
-=====================================
-
 .. toctree::
    :maxdepth: 1
 
-   compare
-   curve_compare
-   simple_maths
-   reg
-   smoothing
-   cluster
-   sv
-   roi_analysis
-   roibuilder
-   mean_values
-   hist
-   rp
-   
-Tools from plugins
-==================
-
-.. toctree::
-   :maxdepth: 1
-
-   t1
-   pk
-   cest
-   asl_overview
-
-Advanced Tools
-==============
-
-.. toctree::
-   :maxdepth: 1
-
-   batch
-   console
-   nifti_extension
+   basics/getting_started
+   asl/asl
+   cest/cest
+   dce/dce
+   dsc/dsc
+   generic/generic_tools
+   advanced/advanced_tools
    faq
-   
+    
 Bugs/Issues
 -----------
 
-Please report bug, issues, feature requests or other comments to the  `current maintainer: <mailto:martin.craig@eng.ox.ac.uk>`_
+Bugs may be submitted using the Github `issue tracker for Quantiphyse <https://github.com/ibme-qubic/quantiphyse/issues>`_.
+
+For any other comments or feature requests please contact the  `current maintainer: <mailto:martin.craig@eng.ox.ac.uk>`_
 
 Contributors
 ------------
@@ -157,5 +97,5 @@ Acknowledgements
  - Julia Schnabel
  - Sir Mike Brady
 
-Images copyright 2018 University of Oxford
+Images © 2017-2019 University of Oxford
 

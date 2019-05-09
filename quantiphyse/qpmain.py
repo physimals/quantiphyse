@@ -26,6 +26,7 @@ from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, set_local_file_path
 from quantiphyse.utils.batch import BatchScript
 from quantiphyse.utils.logger import set_base_log_level
+from quantiphyse.utils.local import get_icon
 from quantiphyse.gui import MainWindow, Register
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
@@ -90,6 +91,7 @@ def main():
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
+    QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -105,9 +107,14 @@ def main():
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
         # Create window and start main loop
+        pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
+        splash = QtGui.QSplashScreen(pixmap)
+        splash.show()
+        app.processEvents()
+
         win = MainWindow(load_data=args.data, widgets=not args.qv)
+        splash.finish(win)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)
         Register.check_register()
-
     sys.exit(app.exec_())

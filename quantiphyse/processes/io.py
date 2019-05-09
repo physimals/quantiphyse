@@ -26,7 +26,7 @@ class LoadProcess(Process):
         # Force 3D data to be multiple 2D volumes 
         force_mv = options.pop('force-multivol', False)
 
-        for fname, name in data.items() + rois.items():
+        for fname, name in list(data.items()) + list(rois.items()):
             qpdata = self._load_file(fname, name)
             if qpdata is not None: 
                 if force_mv and qpdata.nvols == 1 and qpdata.grid.shape[2] > 1: 
@@ -120,6 +120,9 @@ class SaveAllExceptProcess(Process):
                 save(qpdata, name, outdir=self.outdir)
             except QpException as exc:
                 self.warn("Failed to save %s: %s" % (name, str(exc)))
+            except:
+                import traceback
+                traceback.print_exc()
 
 class SaveDeleteProcess(SaveProcess):
     """

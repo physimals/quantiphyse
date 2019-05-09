@@ -12,12 +12,12 @@ Processing:
 
   # Load data - file names are relative to case folder. Can define data to be loaded
   # globally or individually per case
-  - Load: 
+  - Load:
 
   # Run some processing steps - in this case motion correction followed by model fitting
   - Moco:
+      data: testdata_4d
       method: flirt
-      replace-vol: True
       cost: normcorr
 
   - Fabber:

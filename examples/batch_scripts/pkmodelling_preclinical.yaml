@@ -36,7 +36,7 @@ Processing:
 Cases:
     DCE_C91R2:
         #Folder: Z:\netshares\mvlprojects13\Registration_Data2\Preclinical_EstherK_ben\Ben-Thais-Jola_examples\Ben\Test2\C91R2
-        Folder: /home/ibmeuser/data/dce/Martin_test_data/C96_R1L1_D3_modelling/
+        Folder: /mnt/hgfs/win/data/dce/Martin_test_data/C96_R1L1_D3_modelling/
         Load:
           data:
             DCE.nii: data

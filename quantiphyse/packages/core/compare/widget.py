@@ -21,7 +21,7 @@ class CompareDataWidget(QpWidget):
     """
     def __init__(self, **kwargs):
         QpWidget.__init__(self, name="Compare Data", icon="compare.png", 
-                          desc="Compare two data sets", group="Analysis", **kwargs)
+                          desc="Compare two data sets", group="Visualisation", **kwargs)
         
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()

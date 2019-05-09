@@ -26,6 +26,7 @@ import logging
 
 import six
 import yaml
+import numpy as np
 
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
@@ -82,16 +83,23 @@ def to_yaml(processes, indent=""):
     """
     def _dict_to_yaml(stream, valdict, indent="", prefix=""):
         for key, value in valdict.items():
-            if not isinstance(key, six.string_types):
-                raise ValueError("Keys must be strings")
+            if isinstance(key, int):
+                key = str(key)
+            elif not isinstance(key, six.string_types):
+                raise ValueError("Keys must be strings or ints")
+
+            if value is None:
+                continue
 
             stream.write("%s%s: " % (prefix, key))
             if isinstance(value, six.string_types):
                 stream.write("%s\n" % value)
-            elif isinstance(value, (int, float, list)):
+            elif isinstance(value, (int, float, list, np.floating, np.integer)):
                 stream.write("%s\n" % str(value))
             elif isinstance(value, np.ndarray):
                 stream.write("%s\n" % str(value.tolist()))
+            elif isinstance(value, collections.Sequence):
+                stream.write("%s\n" % str(list(value)))
             elif isinstance(value, collections.Mapping):
                 stream.write("\n")
                 indent += "  "
@@ -299,7 +307,7 @@ class Script(Process):
 
         # Set debug level for this individual process based on whether logging
         # was enabled generically, for this case, and for this process
-        if proc_params.get("Debug", generic_params.get("Debug", False)):
+        if "--debug" in sys.argv or proc_params.get("Debug", generic_params.get("Debug", False)):
             set_base_log_level(logging.DEBUG)
         else:
             set_base_log_level(logging.WARN)

@@ -11,7 +11,6 @@ Processing:
     - Moco:
         method: flirt
         data: data
-        replace-vol: False
         ref-vol: median
         output-name: data_moco_mcflirt
 

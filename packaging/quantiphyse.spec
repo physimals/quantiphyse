@@ -16,18 +16,29 @@ distdir = os.path.join(qpdir, "dist")
 bin_files = [
 ]
 
-# Hidden imports are used by plugins but not reference in main code
+# Hidden imports are used by plugins but not referenced in main code
 hidden_imports = [
-    'sphinx',
-    'skimage.segmentation', 
-    'sklearn.metrics',
-    'scipy._lib.messagestream',
     'deprecation',
+    'faulthandler',
+    'fsl',
+    'fsl.data',
+    'fsl.data.atlases',
+    'fsl.data.image',
+    'fsl.wrappers',
+    'oxasl',
+    'oxasl_ve',
+    'oxasl_enable',
+    'fabber',
     'quantiphyse.processes.feat_pca',
     'quantiphyse.utils.cmdline',
     'quantiphyse.test.widget_test',
     'quantiphyse.gui.options',
     'quantiphyse.gui.plot',
+    'scipy._lib.messagestream',
+    'skimage.segmentation', 
+    'sklearn.metrics',
+    'sphinx',
+    'pywt._extensions._cwt',
 ]
 
 added_files = [
@@ -82,6 +93,7 @@ elif sys.platform.startswith("darwin"):
     bin_files.append(('%s/lib/libmkl_avx2.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libmkl_avx.dylib' % anaconda_dir, '.' ))
     bin_files.append(('%s/lib/libpng16.16.dylib' % anaconda_dir, '.' ))
+    hidden_imports.append("_sysconfigdata")
 
 a = Analysis([os.path.join(qpdir, 'qp.py')],
              pathex=[],
