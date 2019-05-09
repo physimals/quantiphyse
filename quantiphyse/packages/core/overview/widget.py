@@ -156,7 +156,7 @@ class DataListWidget(QtGui.QTableView):
             QtGui.QStandardItem(data.name),
             QtGui.QStandardItem(fname)
         ]
-        
+
         if fname:
             tooltip = fname
         else:
@@ -171,8 +171,7 @@ class DataListWidget(QtGui.QTableView):
             self.model.setColumnCount(3)
             self.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
             self.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(3, QtGui.QHeaderView.Stretch)
+            self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
             for row, name in enumerate(sorted(self.ivm.data.keys())):
                 data = self.ivm.data.get(name)
                 self.model.appendRow(self._get_table_items(data))
