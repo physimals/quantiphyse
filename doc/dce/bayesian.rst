@@ -12,12 +12,15 @@ and, for example, allows a measured T1 value to vary slightly to better fit the 
 Tutorials
 ---------
 
-  - Tutorial coming soon
-
   .. toctree::
    :maxdepth: 1
 
    tutorial_basic
+
+  .. toctree::
+   :maxdepth: 1
+
+   dce_simulation_2cxm
 
 Reference
 ---------
