@@ -18,9 +18,13 @@ import logging
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
 except ImportError:
+    # Note that pyqtgraph actually writes all the contents of QtWidgets into
+    # QtGui on import! This is sort-of nice because we don't need to switch
+    # existing PySide code that uses, e.g. QtGui.QMainWindow, but it's a bit
+    # invasive compared with the 'nicer' option or importing PySide.QtGui
+    # as QtWidgets. We will go with the pyqtgraph method for now but might
+    # need to make changes if this causes problems later.
     from PySide2 import QtGui, QtCore, QtWidgets
-  
-import pyqtgraph as pg
 
 from quantiphyse.test import run_tests
 from quantiphyse.utils import QpException, set_local_file_path
@@ -82,6 +86,7 @@ def main():
     # Apply global options
     if args.debug:
         set_base_log_level(logging.DEBUG)
+        import pyqtgraph as pg
         pg.systemInfo()
     else:
         set_base_log_level(logging.WARN)
