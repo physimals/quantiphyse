@@ -76,8 +76,12 @@ class RadialProfileProcess(Process):
 
         for col, data in enumerate(data_items):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
-                
-            weights = data.resample(grid).volume(vol)
+
+            if vol is None and data.nvols > 1:
+                # All volumes - average over volumes for 4D data
+                weights = np.mean(data.resample(grid).raw(), -1)
+            else:
+                weights = data.resample(grid).volume(vol)
 
             # Generate histogram by distance, weighted by data
             rpd, _ = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))
