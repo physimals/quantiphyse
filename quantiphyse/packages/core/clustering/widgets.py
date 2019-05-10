@@ -229,17 +229,11 @@ PCA reduction is used on 4D data to extract representative curves
         Run kmeans clustering using normalised PCA modes
         """
         options = self.batch_options()[1]
-        
-        try:
-            self.run_btn.setDown(True)
-            self.run_btn.setDisabled(True)
-            self.process.run(options)
-            self._update_voxel_count()
-            self.update_plot()
-        finally:
-            # enable button again
-            self.run_btn.setDown(False)
-            self.run_btn.setDisabled(False)
+
+        self.process.run(options)
+        self._update_voxel_count()
+        if self.n_pca.label.isVisible():
+            self.update_plot()     
 
     def _update_voxel_count(self):
         self.count_table.clear()
