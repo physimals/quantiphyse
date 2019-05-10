@@ -149,6 +149,10 @@ plugins::
 The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
 more information.
 
+On Mac you will also need to do::
+
+    pip install pyobjc
+
 In the future we hope to put Quantiphyse into conda itself so the whole
 process can consist of ``conda install quantiphyse``.  
 
