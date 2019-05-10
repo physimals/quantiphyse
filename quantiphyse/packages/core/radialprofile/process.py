@@ -58,7 +58,8 @@ class RadialProfileProcess(Process):
         x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         if roi is not None:
-            r[roi == 0] = -1
+            roidata = roi.resample(grid).raw()
+            r[roidata == 0] = -1
         rmin = r[r > 0].min()
 
         # Generate histogram of number of voxels in each bin
