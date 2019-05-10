@@ -8,9 +8,8 @@ Processing:
         data:
             testdata_4d_moving.nii.gz: data
     
-    - Reg:
+    - Moco:
         method: deeds
-        mode: moco
         data: data
         ref-vol: median
         output-name: data_moco_deeds 

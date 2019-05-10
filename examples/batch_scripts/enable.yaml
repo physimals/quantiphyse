@@ -5,8 +5,6 @@ Processing:
   - Load:
       data:
         mpld_asltc.nii.gz: asldata
-        aslcalib.nii.gz:
-        aslcalib_PA.nii.gz:
       rois:
         csfmask.nii.gz:
 
@@ -21,7 +19,7 @@ Processing:
       mc: True
       use_enable: True
       min_nvols: 3
-      fslanat: /home/ibmeuser/data/asl/fsl_course/ASL/T1.anat
+      fslanat: /mnt/hgfs/win/data/asl/fsl_course/T1.anat
       inferbat: True
       inferart: True
       pvcorr: False
@@ -29,12 +27,12 @@ Processing:
       spatial: True
 
   - Save:
-      perfusion_calib_native:
-      aCBV_calib_native:
+      perfusion_native:
+      aCBV_native:
       arrival_native:
 
 Cases:
   Oxasl:
-      InputFolder: /home/ibmeuser/data/asl/fsl_course/ASL/
+      InputFolder: /mnt/hgfs/win/data/asl/fsl_course/
 
 

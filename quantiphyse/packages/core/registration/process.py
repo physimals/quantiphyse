@@ -254,3 +254,13 @@ class ApplyTransformProcess(Process):
         self.log(apply_log)
         self.ivm.add(registered, name=output_name, make_current=True)
         
+class MocoProcess(RegProcess):
+    """
+    Explicit motion correction process for backwards compat
+    """
+
+    PROCESS_NAME = "Moco"
+
+    def run(self, options):
+        options["mode"] = "moco"
+        return RegProcess.run(self, options)

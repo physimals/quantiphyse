@@ -4,7 +4,7 @@ Debug: False
 Processing:
   - Load:
       data:
-        asl_phase_shifted_5.nii: multiphase_data
+        asl_phase_shifted_5_OPTIMAL/asl_phase_shifted_5.nii: multiphase_data
       rois:
         mask.nii.gz: mask
 
@@ -34,6 +34,6 @@ Processing:
 
 Cases:
   AslMultiphase:
-      InputFolder: /home/ibmeuser/data/asl/jlarkin/TagDurations/TD=1.4/asl_phase_shifted_5_OPTIMAL/
+      InputFolder: /mnt/hgfs/win/data/asl/jlarkin/TagDurations/TD=1.4/
 
 
