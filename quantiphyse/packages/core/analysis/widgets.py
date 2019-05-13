@@ -283,7 +283,7 @@ class DataStatistics(QpWidget):
     def deactivate(self):
         self.ivm.sig_current_roi.disconnect(self.update_all)
         self.ivm.sig_all_data.disconnect(self.update_all)
-        self.ivm.sig_current_data.connect(self.update_all)
+        self.ivm.sig_current_data.disconnect(self.update_all)
         self.ivl.sig_focus_changed.disconnect(self.focus_changed)
 
     def mode_changed(self, idx):
