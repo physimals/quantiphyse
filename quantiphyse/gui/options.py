@@ -254,7 +254,7 @@ class DataOption(Option, QtGui.QComboBox):
                 if item.checkState() == QtCore.Qt.Checked:
                     ret.append(self.itemText(idx))
         else:
-            current = self.currentText()        
+            current = self.currentText()
             if self._none_option and current == "<none>":
                 ret = None
             elif self._explicit and current == "":
@@ -338,7 +338,7 @@ class DataOption(Option, QtGui.QComboBox):
 
     def _data_changed(self):
         all_data_names = list(self.ivm.data.keys())
-        if all_data_names == self._all_data_names:
+        if all_data_names and all_data_names == self._all_data_names:
             return
         
         self._all_data_names = all_data_names
