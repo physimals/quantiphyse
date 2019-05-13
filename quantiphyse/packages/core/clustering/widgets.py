@@ -88,6 +88,7 @@ PCA reduction is used on 4D data to extract representative curves
         self.plotwin = pg.GraphicsLayoutWidget()
         self.plotwin.setBackground(background=None)
         self.plot = self.plotwin.addPlot(title="Cluster representative curves")
+        self.plot.setLabel('left', "Signal Enhancement")
         self.plotwin.setVisible(False)        
         layout.addWidget(self.plotwin)
 
@@ -249,15 +250,6 @@ PCA reduction is used on 4D data to extract representative curves
                 voxel_count = np.sum(roi.raw() == region)
                 self.count_table.setItem(0, col_idx, QtGui.QStandardItem(str(np.around(voxel_count))))
                 col_idx += 1
-        
-    def reset_graph(self):
-        """
-        Reset and clear the graph
-        """
-        self.plotwin.removeItem(self.plot)
-        self.plot = self.plotwin.addPlot(title="Cluster representative curves")
-        self.plot.setLabel('left', "Signal Enhancement")
-        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
 
     def update_plot(self):
         """
@@ -265,7 +257,12 @@ PCA reduction is used on 4D data to extract representative curves
         :return:
         """
         # Clear graph
-        self.reset_graph()
+        self.plot.clear()
+        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
+        if self.plot.legend is not None:
+            # Work around pyqtgraph legend bug - the legend is recreated multiple times!
+            # https://stackoverflow.com/questions/42792858/pyqtgraph-delete-persisting-legend-in-pyqt4-gui
+            self.plot.legend.scene().removeItem(self.plot.legend)
         data = self.ivm.data.get(self.data_combo.currentText(), None)
         roi = self.ivm.rois.get(self.output_name.text(), None)
         if roi is not None and data is not None and data.nvols > 1:
