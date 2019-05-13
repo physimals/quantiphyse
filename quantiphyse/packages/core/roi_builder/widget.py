@@ -42,6 +42,8 @@ class RoiBuilderWidget(QpWidget):
         self._history = collections.deque(maxlen=10)
         self._tool = None
         self.grid = None
+        self.roi = None
+        self.roiname = None
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -252,11 +254,13 @@ class RoiBuilderWidget(QpWidget):
             # FIXME this will only work if ROI is NumpyData. Otherwise we are
             # manipulating a numpy array which may just be a proxy for the file
             # storage.
+            regions = roi.regions
+            current_label = self.options.option("label").value
+            if self.roiname != roi.name or current_label not in regions.keys():
+                self.options.option("label").value = min(list(regions.keys()) + [1, ])
             self.roiname = roi.name
             self.grid = roi.grid
             self.roidata = roi.raw()
-            regions = roi.regions
-            self.options.option("label").value = min(list(regions.keys()) + [1, ])
 
     def _new_roi(self):
         dialog = QtGui.QDialog(self)
