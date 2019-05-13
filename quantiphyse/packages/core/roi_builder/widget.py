@@ -78,7 +78,7 @@ class RoiBuilderWidget(QpWidget):
         self._undo_btn = QtGui.QPushButton()
         self._undo_btn.clicked.connect(self.undo)
         self._undo_btn.setEnabled(False)
-        undo_icon = QtGui.QIcon.fromTheme("edit-undo")
+        undo_icon = QtGui.QIcon(get_icon("undo"))
         self._undo_btn.setIcon(undo_icon)
         self._undo_btn.setToolTip("Undo last action")
         self._undo_btn.setFixedSize(32, 32)
