@@ -85,6 +85,8 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
     hidden_imports.append('pywt._extensions._cwt')
+    # Issue #19 - FIXME hardcoded path
+    bin_files.append(('/home/ibmeuser/.conda/envs/qp/lib/libiomp5.so', '.' ))
 elif sys.platform.startswith("darwin"):
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")
