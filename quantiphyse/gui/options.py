@@ -217,6 +217,8 @@ class DataOption(Option, QtGui.QComboBox):
         super(DataOption, self).__init__(parent)
         self.ivm = ivm
         self._changed = False
+        self._current_value = []
+        self._all_data_names = []
 
         self._include_3d = kwargs.get("include_3d", True)
         self._include_4d = kwargs.get("include_4d", not kwargs.get("static_only", False))
@@ -293,6 +295,7 @@ class DataOption(Option, QtGui.QComboBox):
                     raise ValueError("Data item %s is not a valid choice for this option")
             else:
                 raise ValueError("Can't specify multiple data items when DataOption is not in multi select mode")
+        self._current_value = self.value
 
     def _item_pressed(self, idx):
         item = self.model().itemFromIndex(idx)
@@ -324,13 +327,22 @@ class DataOption(Option, QtGui.QComboBox):
         else:
             return "<Select data items>"
 
-    def _index_changed(self):
+    def _index_changed(self, idx):
         if self._multi:
             self.setCurrentIndex(0)
         self._update_highlight()
-        self.sig_changed.emit()
+        new_value = self.value
+        if self._current_value != new_value:
+            self._current_value = new_value
+            self.sig_changed.emit()
 
     def _data_changed(self):
+        all_data_names = list(self.ivm.data.keys())
+        if all_data_names == self._all_data_names:
+            return
+        
+        self._all_data_names = all_data_names
+        current = self.value
         self.blockSignals(True)
         try:
             data = []
@@ -338,7 +350,6 @@ class DataOption(Option, QtGui.QComboBox):
                 if self._include_nonrois or (qpd.roi and self._include_rois):
                     data.append(name)
 
-            current = self.value
             self.clear()
             
             if self._none_option and not self._multi:
