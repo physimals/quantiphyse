@@ -38,6 +38,8 @@ hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
     'sphinx',
+    'sphinx.transforms.post_transforms.code',
+    'sphinx.transforms.post_transforms.compat',
     'pywt._extensions._cwt',
 ]
 
