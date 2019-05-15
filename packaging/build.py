@@ -113,7 +113,7 @@ def bundle_fsl_win():
         "bin/convert_xfm.exe",
         "bin/topup.exe",
         "bin/applytopup.exe",
-        #"data/standard/MNI152_T1_2mm_brain.nii.gz",
+        "data/standard/MNI152_T1_2mm_brain.nii.gz",
         "etc/flirtsch/b02b0.cnf",
         "etc/flirtsch/bbr.sch",
         "etc/flirtsch/xyztrans.sch",
