@@ -1,10 +1,10 @@
 # Quantiphyse
 
-Viewer for 3D/4D data and Pk modelling
+Viewer and data processing for 3D/4D medical imaging data
 
 ## Overview
 
-This viewer provides tools for modelling and analysis of 3D/4D volumetric data, principally MRI data. 
+Quantiphyse provides tools for modelling and analysis of 3D/4D volumetric data, principally MRI data. 
 
 Core features:
 - Loading/Saving 3D/4D NIFTI files
@@ -18,25 +18,16 @@ Features available via plugins
 
 See: [http://quantiphyse.readthedocs.org/en/latest/](http://quantiphyse.readthedocs.org/en/latest/) for full documentation.
 
-## Installation
-
-If you already have a Python installation, Quantiphyse is available on PyPi::
-
-    pip install quantiphyse
-
-Note that Cython and Numpy must already be installed in order to build the core extensions.
-We hope to be able to provide wheels for Windows and Mac soon to avoid this.
-
-Major releases of Quantiphyse are available via the Oxford University Innovation Software 
-Store (https://process.innovation.ox.ac.uk/software). If you are interested in commercial licensing
-you shold contact OUI in the first instance. The packages held by OUI have no external dependencies
-and can be installed on Windows, Mac and Linux.
-
 ## License
 
 Quantiphyse is available free under an academic (non-commercial) license. See the `LICENSE` file for
 full details, and contact [OUI](https://process.innovation.ox.ac.uk/software) if interested in 
 commercial licensing.
+
+## Installation
+
+See https://quantiphyse.readthedocs.io/en/latest/basics/install.html for current installation
+instructions
 
 ### Running from source code (for developers)
 
@@ -68,13 +59,6 @@ The `--snapshot` option removes the version number from package filenames so you
 
 The `--maxi` option builds a package which includes selected plugins, assuming these are downloaded
 
-### OSX
-
-Installing from source on OSX is not fun. The major issue is QT since the required version (4.8) is 
-deprecated and hard to install properly. 
-
-I have had most success using Anaconda and installing PySide using the conda tool. This should bring in the appropriate version of QT.
-
 ## To Do list
 
 ### Issue tracker
@@ -91,23 +75,34 @@ Current issues can be viewed on the GitHub issue tracker (https://github.com/ibm
 #### v0.8 (Target Mar 2019)
 
  - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      DONE
- - Improved registration support (apply transform)                      DONE NEEDS TESTING
- - Improved manual data alignment tools                                 PART DONE
- - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       PART DONE
- - Fabber T1 (integrate with existing T1 widget?)                       PART DONE
- - Fabber DCE (integrate with existing DCE widget?)                     PART DONE
- - DSC widget                                                           PART DONE
- - Improvements to ROI builder - working 'paint' tool                   PART DONE
+ - Improved registration support (apply transform)                      DONE
+ - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       DONE
+ - Fabber T1                                                            DONE
+ - Fabber DCE                                                           DONE
+ - DSC widget                                                           DONE
+ - Improvements to ROI builder - working 'paint' tool                   DONE
+ - Motion simulation                                                    DONE
+ - Add noise                                                            DONE
 
 #### v1.0 (Target June 2019)
 
  - Stable interface for QpWidget, QpData, Process
+ - Python 3                                                             DONE needs testing
+ - Support PySide and PySide2 - ideally the latter by default           pyside2 branch needs testing
+ - Improved manual data alignment tools                                 PART DONE
  - Otherwise no firm plans yet - selection from 'Vague plans' below
+
+### Migration to PySide2
+
+ - The current implementation uses PySide which is based on Qt4
+ - Update to PySide2 when released which uses Qt5
+ - Will provide support for HiDPI screens and proper scaling in OSx
+ - PyQtgraph is currently the stumbling block as release version does not support Pyside2
+ - Current git version has PySide2 modifications but not yet tested
+ - Consider move to VisPy if this does not come to fruition
 
 #### Vague Plans for Future
 
- - Python 3 (not fully tested currently but should be mostly OK)
- 
  - Refactoring of view classes
    - This is a mess at the moment. Need all view options to be stored as metadata
      and cleaner separation between the ImageView widget and the individual OrthoView
@@ -142,16 +137,5 @@ Current issues can be viewed on the GitHub issue tracker (https://github.com/ibm
    - Enhancing fraction
 
  - Simulation tools
-   - Motion simulation  DONE
-   - Add noise          DONE
    - Fabber test data
    - 'Simulated brain'
-
-### Migration to PySide2
-
- - The current implementation uses PySide which is based on Qt4
- - Update to PySide2 when released which uses Qt5
- - Will provide support for HiDPI screens and proper scaling in OSx
- - PyQtgraph is currently the stumbling block as release version does not support Pyside2
- - Current git version has PySide2 modifications but not yet tested
- - Consider move to VisPy if this does not come to fruition
