@@ -6,7 +6,7 @@ import shutil
 import platform
 
 # See below for full explanation...
-OSX_LIBPNG_HACK = True
+OSX_LIBPNG_HACK = False
 
 pkgdir = os.path.abspath(os.path.dirname(SPEC))
 qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
