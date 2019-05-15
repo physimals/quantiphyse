@@ -61,7 +61,8 @@ class RadialProfileProcess(Process):
         x, y, z = np.indices(grid.shape)
         r = np.sqrt((voxel_sizes[0]*(x - centre[0]))**2 + (voxel_sizes[1]*(y - centre[1]))**2 + (voxel_sizes[2]*(z - centre[2]))**2)
         if roi is not None:
-            r[roi == 0] = -1
+            roidata = roi.resample(grid).raw()
+            r[roidata == 0] = -1
         rmin = r[r > 0].min()
 
         # Generate histogram of number of voxels in each bin
@@ -78,8 +79,12 @@ class RadialProfileProcess(Process):
 
         for col, data in enumerate(data_items):
             self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s" % data.name))
-                
-            weights = data.resample(grid).volume(vol)
+
+            if vol is None and data.nvols > 1:
+                # All volumes - average over volumes for 4D data
+                weights = np.mean(data.resample(grid).raw(), -1)
+            else:
+                weights = data.resample(grid).volume(vol)
 
             # Generate histogram by distance, weighted by data
             rpd, _ = np.histogram(r, weights=weights, bins=bins, range=(rmin, r.max()))

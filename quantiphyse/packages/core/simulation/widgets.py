@@ -54,7 +54,7 @@ class SimMotionWidget(QpWidget):
     Widget to simulate random motion on a 4D data set
     """
     def __init__(self, **kwargs):
-        super(SimMotionWidget, self).__init__(name="Simulate motion", icon="motion", 
+        super(SimMotionWidget, self).__init__(name="Simulate motion", icon="reg", 
                                               desc="Simulate random motion on a 4D data set", 
                                               group="Simulation", **kwargs)
 

@@ -71,14 +71,21 @@ def create_test_data(output_dir):
     nii_mask.to_filename(os.path.join(output_dir, "testdata_mask.nii.gz"))
 
 def main():
-    if len(sys.argv) < 2:
-        sys.stderr.write("Usage: run_examples.py <output_dir> [--debug]\n")
+    argv = sys.argv
+    if len(argv) < 2:
+        sys.stderr.write("Usage: run_examples.py <output_dir> [test name] [--debug]\n")
         sys.exit(1)
-    outdir = sys.argv[1]
-    if "--debug" in sys.argv:
+    outdir = argv[1]
+    if "--debug" in argv:
         debug = "--debug"
+        argv = [s for s in argv if s != "--debug"]
     else:
         debug = ""
+
+    if len(argv) > 2:
+        test_name = argv[2]
+    else:
+        test_name = ""
 
     if os.path.isdir(outdir):
         sys.stderr.write("WARNING: output dir already exists\n")
@@ -93,9 +100,9 @@ def main():
     examples = glob.glob(os.path.join(qpdir, "examples", "batch_scripts", "*.yaml"))
     os.chdir(outdir)
     for ex in sorted(examples):
-        print("**** Running example: %s" % ex)
-        os.system("python -u %s/qp.py --batch=%s %s" % (qpdir, ex, debug))
-
+        if not test_name or test_name in ex:
+            print("**** Running example: %s" % ex)
+            os.system("python -u %s/qp.py --batch=%s %s" % (qpdir, ex, debug))
 
 if __name__ == "__main__":
     main()

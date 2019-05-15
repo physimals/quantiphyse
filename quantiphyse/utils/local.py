@@ -38,6 +38,9 @@ def set_local_file_path():
         else:
             os.environ["FABBERDIR"] = os.path.join(LOCAL_FILE_PATH, "fabberdir")
         
+        # If we are on Windows and there is no sign of FSL, look for bundled code
+        if "FSLDIR" not in os.environ and sys.platform.startswith("win"):
+            os.environ["FSLDIR"] = os.path.join(LOCAL_FILE_PATH, "fsldir")
     else:
         # Running from a script
         LOCAL_FILE_PATH = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -46,6 +49,10 @@ def set_local_file_path():
         # Use local working directory otherwise
         LOG.warn("Reverting to current directory as local path")
         LOCAL_FILE_PATH = os.getcwd()
+
+    if "FSLOUTPUTTYPE" not in os.environ:
+        # Required for FSLMATHS - should really be in FSL widget
+        os.environ["FSLOUTPUTTYPE"] = "NIFTI_GZ"
 
     LOG.debug("Local directory: %s", LOCAL_FILE_PATH)
 

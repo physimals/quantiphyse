@@ -66,7 +66,7 @@ class RadialProfileWidget(QpWidget):
     def processes(self):
         opts = self.options.values()
         opts["centre"] = self.ivl.focus()
-        if not opts.pop("allvols", False):
+        if opts.pop("allvols", False):
             opts["centre"] = opts["centre"][:3]
 
         return {

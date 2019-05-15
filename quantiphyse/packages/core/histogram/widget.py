@@ -36,9 +36,11 @@ class HistogramWidget(QpWidget):
         self.options.add("All volumes", BoolOption(default=False), key="allvols")
         self.options.add("Y-axis scale", ChoiceOption(["Count", "Probability"]), key="yscale")
         self.options.add("Number of bins", NumericOption(minval=5, maxval=500, default=100, intonly=True), key="bins")
-        self.options.add("Min value", NumericOption(minval=0, maxval=500, default=0), key="min")
+        self.options.add("Min value", NumericOption(minval=0, maxval=100, default=0), key="min")
         self.options.add("Max value", NumericOption(minval=0, maxval=500, default=100), key="max")
         self.options.option("yscale").sig_changed.connect(self._yscale_changed)
+        self.options.option("min").sig_changed.connect(self._min_changed)
+        self.options.option("min").sig_changed.connect(self._max_changed)
         vbox.addWidget(self.options)
 
         self.plot = Plot(qpo=None, parent=self, title="Data histogram", display_mode=False)
@@ -70,6 +72,14 @@ class HistogramWidget(QpWidget):
 
     def _yscale_changed(self):
         self.plot.set_ylabel(self.options.option("yscale").value)
+
+    def _min_changed(self):
+        minval = self.options.option("min").value
+        self.options.option("max").setLimits(minval=minval)
+
+    def _max_changed(self):
+        maxval = self.options.option("max").value
+        self.options.option("min").setLimits(maxval=maxval)
 
     def _data_changed(self):
         if self._updating: return

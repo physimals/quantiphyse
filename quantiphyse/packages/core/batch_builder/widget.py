@@ -76,10 +76,11 @@ class BatchBuilderWidget(QpWidget):
 
     def _reset(self):
         if self.changed and self.proc_edit.toPlainText().strip() != "":
-            ok = QtGui.QMessageBox.warning(self, "Reset to current data", 
-                                           "Changes to batch file will be lost",
-                                           QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            if not ok: return
+            btn = QtGui.QMessageBox.warning(self, "Reset to current data",
+                                            "Changes to batch file will be lost",
+                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            if btn != QtGui.QMessageBox.Ok:
+                return
         
         t = ""
         if self.ivm.main is not None:

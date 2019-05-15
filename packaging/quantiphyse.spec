@@ -6,7 +6,7 @@ import shutil
 import platform
 
 # See below for full explanation...
-OSX_LIBPNG_HACK = True
+OSX_LIBPNG_HACK = False
 
 pkgdir = os.path.abspath(os.path.dirname(SPEC))
 qpdir = os.path.abspath(os.path.join(pkgdir, os.pardir))
@@ -38,6 +38,8 @@ hidden_imports = [
     'skimage.segmentation', 
     'sklearn.metrics',
     'sphinx',
+    'sphinx.transforms.post_transforms.code',
+    'sphinx.transforms.post_transforms.compat',
     'pywt._extensions._cwt',
 ]
 
@@ -59,8 +61,6 @@ excludes = [
     '_tkinter',
     'pkgres',
     'mplconfig',
-    'mpldata',
-    'mpl-data',
     'wx',
 ]
 
@@ -85,6 +85,8 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("linux"):
     hidden_imports.append('FileDialog')
     hidden_imports.append('pywt._extensions._cwt')
+    # Issue #19 - FIXME hardcoded path
+    bin_files.append(('/home/ibmeuser/.conda/envs/qp/lib/libiomp5.so', '.' ))
 elif sys.platform.startswith("darwin"):
     osx_bundle = True
     home_dir = os.environ.get("HOME", "")

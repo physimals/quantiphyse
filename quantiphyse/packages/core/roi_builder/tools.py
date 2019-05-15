@@ -325,6 +325,8 @@ class WalkerTool(Tool):
         self._pick_mode_changed(self.pickmode)
 
     def selected(self):
+        self.pickmode = 0
+        self.segmode = 0
         self.ivl.sig_selection_changed.connect(self._points_changed)
         self._init()
         
@@ -341,8 +343,11 @@ class WalkerTool(Tool):
 
             for pos in points:
                 pos = [int(p+0.5) for p in pos]
+                # Clamp points to within range of ROI
+                for dim in range(3):
+                    pos[dim] = min(max(pos[dim], 0), self.labels.shape[dim]-1)
                 self.labels[pos[0], pos[1], pos[2]] = label
-
+                
     def _segment(self):
         data = self.ivm.data[self.ov_combo.currentText()].resample(self.builder.grid)
         labels = self.labels

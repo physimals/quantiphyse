@@ -29,7 +29,7 @@ DESC = """
 Widget for creating test ROIs and basic manual segmentation
 """
 
-TOOLS = [CrosshairsTool(), PenTool(), PainterTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool(), WalkerTool(), BucketTool()]
+TOOLS = [CrosshairsTool(), PenTool(), PainterTool(), EraserTool(), RectTool(), EllipseTool(), PolygonTool(), PickTool(), BucketTool()]
 
 class RoiBuilderWidget(QpWidget):
     """
@@ -45,6 +45,8 @@ class RoiBuilderWidget(QpWidget):
         self._history = collections.deque(maxlen=10)
         self._tool = None
         self.grid = None
+        self.roi = None
+        self.roiname = None
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -81,7 +83,7 @@ class RoiBuilderWidget(QpWidget):
         self._undo_btn = QtGui.QPushButton()
         self._undo_btn.clicked.connect(self.undo)
         self._undo_btn.setEnabled(False)
-        undo_icon = QtGui.QIcon.fromTheme("edit-undo")
+        undo_icon = QtGui.QIcon(get_icon("undo"))
         self._undo_btn.setIcon(undo_icon)
         self._undo_btn.setToolTip("Undo last action")
         self._undo_btn.setFixedSize(32, 32)
@@ -255,11 +257,13 @@ class RoiBuilderWidget(QpWidget):
             # FIXME this will only work if ROI is NumpyData. Otherwise we are
             # manipulating a numpy array which may just be a proxy for the file
             # storage.
+            regions = roi.regions
+            current_label = self.options.option("label").value
+            if self.roiname != roi.name or current_label not in regions.keys():
+                self.options.option("label").value = min(list(regions.keys()) + [1, ])
             self.roiname = roi.name
             self.grid = roi.grid
             self.roidata = roi.raw()
-            regions = roi.regions
-            self.options.option("label").value = min(list(regions.keys()) + [1, ])
 
     def _new_roi(self):
         dialog = QtGui.QDialog(self)

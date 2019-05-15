@@ -149,7 +149,11 @@ class ImageVolumeManagement(QtCore.QObject):
         
         # If replacing existing data, delete the old one first
         if data.name in self.data:
-            self.delete(data.name)
+            del self.data[data.name]
+            if self.current_data is not None and self.current_data.name == data.name:
+                make_current = True
+            if self.main is not None and self.main.name ==  data.name:
+                make_main = True
             
         self.data[data.name] = data
 
