@@ -41,82 +41,169 @@ v0.8
 
 ## Test build / system
 
-> Fill in with the platform and distribution the test was done against
+Simultaneous test on Windows 7, Ubuntu 18.04, OSX Mojave 10.14.1
 
 ## General checks
 
 Should do these last, tick to indicate that you have been doing the checks and
 not found any problems.
 
-- [ ] No errors or output on console
-- [ ] No visible GUI artifacts
-- [ ] Load volume, ROI and overlay
-  - [ ] From menu
-  - [ ] From drag/drop
-  - [ ] From command line
-- [ ] Verify view against previous release.
-- [ ] different resolution data (e.g. asl vs struc)
-- [ ] Check crosshair position on click in all windows
-- [ ] Check pan/zoom in normal and maximised mode
-- [ ] Check double click to maximise and then minimise, windows in consistent grid
-- [ ] Check space and time sliders consistent with previous version
-- [ ] Load second overlay, check switching
-- [ ] Load second ROI, check switching
-- [ ] Clear all data, load replacement data set check range handled correctly
-- [ ] Load large volume / overlay / roi to check large file handling on 64 bit system
-- [ ] Value of main data, ROI and overlay updates on click, respects voxel boundaries
-- [ ] Relative position of overlay/ROI
-- [ ] Change levels, updates view and histogram
-- [ ] Automatic levels as percentile, check 100%, 90% within/without ROI
-- [ ] Check handling of out of range values above/below 
-- [ ] Colourmap selector updates histogram and view
-- [ ] Shaded, contour, both and None working
-- [ ] Alpha slider fast and working
+- [x] Check for errors or output on console
+- [x] Check for visible GUI artifacts
+- [x] Load volume, ROI and overlay
+  - [x] From menu
+  - [x] From drag/drop
+  - [x] From command line
+- [x] Verify view against previous release.
+- [x] different resolution data (e.g. asl vs struc)
+- [x] Check crosshair position on click in all windows
+- [x] Check pan/zoom in normal and maximised mode
+- [x] Check double click to maximise and then minimise, windows in consistent grid
+- [x] Check space and time sliders consistent with previous version
+- [x] Load second overlay, check switching
+- [x] Load second ROI, check switching
+- [x] Clear all data, load replacement data set check range handled correctly
+- [x] Load large volume / overlay / roi to check large file handling on 64 bit system
+- [x] Value of main data, ROI and overlay updates on click, respects voxel boundaries
+- [x] Relative position of overlay/ROI
+- [x] Change levels, updates view and histogram
+- [x] Automatic levels as percentile, check 100%, 90% within/without ROI
+- [x] Check handling of out of range values above/below 
+- [x] Colourmap selector updates histogram and view
+- [x] Shaded, contour, both and None working
+- [x] Alpha slider fast and working
 
+#### Notes
+
+ - OSX console errors (modalSession) - believed to be QT4 issue
 
 ## Widget checks
 
-### Data statistics
+### Data statistics - PASS
 
-### Histogram 
+### Histogram - PASS
 
-### Radial profile 
+#### Notes
 
-### Voxel analysis 
+ - Some GUI artifacts on Mac
 
-### Multi-voxel analysis
+### Radial profile - PASS
 
-### Compare data
+#### Notes
 
-### Measurement
+ - Issue #15: On Mac, error on first click after changing data selection
 
-### Simple Maths
+Not a blocker. Only impacts one platform, may be bug in dependency and does not 
+prevent usage
 
-### Smoothing
+### Voxel analysis - PASS
 
-### Registration
+### Multi-voxel analysis - PASS
 
-### PCA
+### Compare data - PASS
 
-### Clustering 
+### Measurement - PASS
 
-### Supervoxels
+### Simple Maths - PASS
 
-### ROI analysis
+#### Notes
 
-### ROI builder
+ - Does not switch to output data set
+ - Output name taken from data space selection
+ - Silly output when data space does not match selection - documentation issue?
+ - Issue #18: Integer data incorrectly flagged as ROI
 
-### Mean in ROI 
+Not blocker issue, since not a high-profile tool and one which expects a degree of
+user awareness.
 
-### Orient data
+### Smoothing - PASS
 
-### Batch builder
+### PCA - PASS
 
-### Resample
+#### Notes
 
-### PK modelling
+ - Segfault on selection on Windows - not reproducible, no backtrace
 
-### T10 map Generation
+### Clustering - PASS
+
+#### Notes
+
+ - Issue #20: Occasional segfault on all platforms although not using clustering recently
+
+### Supervoxels - PASS
+
+### ROI analysis - PASS
+
+### Mean in ROI - PASS
+
+#### Notes
+
+ - Voxel analysis values don't seem to perfectly align with click location - check rounding of point of focus
+
+### ROI builder - PASS
+
+#### Notes
+
+ - Segfaults on Mac?
+ - Issue #21: Random walker error - this tool has been disabled for the release
+
+### Orient data - PASS
+
+#### Notes
+
+ - UI poor - needs an overhaul but not a blocker as rarely used tool
+
+### Resample - PASS
+
+#### Notes
+
+ - Repeated use prone to PySide segfault bug (retrieveMetaObject)
+
+### Mean in ROI - PASS
+
+### Registration / Apply Transform - PASS
+
+#### Notes
+
+ - Also Apply To not good with ROIs
+ - Poor option availability for FLIRT/MCFLIRT
+
+### Batch builder - PASS
+
+#### Notes
+
+ - `Reset` can't distinguish between files loaded and those generated by processings steps 
+
+### Add Noise - PASS
+
+### Simulate Motion - PASS
+
+### ASL Preprocess - PASS
+
+### Multiphase ASL - PASS
+
+### ASL pipeline - PASS
+
+#### Notes
+
+ - Log does not always complete
+ - No report on Mac?
+
+### CEST - PASS
+
+### DCE - PASS
+
+### Bayesian DCE - PASS
+
+### DSC - PASS
+
+### T1 - PASS
+
+### Fabber T1 - PASS
+
+### Fabber - PASS
+
+### Simulated Fabber Data - PASS
 
 ## Batch examples
 
@@ -124,17 +211,18 @@ not found any problems.
 - [x] CEST
 - [x] Clustering
 - [x] DSC
+- [x] ENABLE
 - [x] Fabber
 - [x] Mean values
-- [X] Moco DEEDS
-- [ ] Moco MCFLIRT : failure?
-- [X] Multiphase ASL
+- [x] Moco DEEDS
+- [x] Moco MCFLIRT
+- [x] Multiphase ASL
 - [x] Multiple cases
 - [x] OXASL
-- [ ] Pipeline : failure?
+- [x] Pipeline
 - [x] PK preclinical
-- [ ] PK clinical : quiba data not found
-- [ ] Reg DEEDS :  WARNING Failed to save mask_reg_deeds
+- [x] PK clinical
+- [x] Reg DEEDS
 - [ ] Reg FLIRT NOT YET IMPLEMENTED
 - [ ] Reg FNIRT NOT YET IMPLEMENTED
 - [x] Resampling
@@ -142,7 +230,7 @@ not found any problems.
 - [x] Simple maths
 - [x] Summary stats
 - [x] Supervoxels
-- [ ] T10 clinical : No such file or no access: '/home/ibmeuser/data/dce/Martin_test_data/RIT005_PRE/fa15_aligned.nii'
+- [x] T10 clinical
 - [x] T10 preclinical
 - [ ] Fabber T1 NOT YET IMPLEMENTED
 
