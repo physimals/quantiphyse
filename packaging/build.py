@@ -94,6 +94,9 @@ def bundle_fabber():
         if f:
             shutil.copy(f, bindir)
             print("    - %s -> %s" % (f, bindir))
+    if platform == "osx":
+        # Need to put it into he OSX bundle as well
+        shutil.copytree(fabberdir, "%s/%s.app/Contents/MacOS/fabberdir" % (DIST_DIR, PACKAGE_NAME))
     print("  - DONE\n")
 
 def bundle_fsl_win():
