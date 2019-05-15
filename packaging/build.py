@@ -77,9 +77,12 @@ def bundle_fabber():
     print("  - Bundling Fabber code...")
     fabberdir = os.path.join(DIST_DIR, PACKAGE_NAME, "fabberdir")
     bindir = os.path.join(fabberdir, "bin")
-    libdir = os.path.join(fabberdir, "lib")
     os.makedirs(bindir)
-    os.makedirs(libdir)
+    if sys.platform.startswith("win"):
+        libdir = bindir
+    else:
+        libdir = os.path.join(fabberdir, "lib")
+        os.makedirs(libdir)
 
     import fabber
     main_lib, main_exe, model_libs, model_exes = fabber.find_fabber()
