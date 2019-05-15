@@ -61,8 +61,6 @@ excludes = [
     '_tkinter',
     'pkgres',
     'mplconfig',
-    'mpldata',
-    'mpl-data',
     'wx',
 ]
 
