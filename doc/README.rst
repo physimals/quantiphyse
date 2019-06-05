@@ -90,6 +90,7 @@ Contributors
  - `Ben Irving <mailto:mail@birving.com>`_ (Original author)
  - `Michael Chappell <mailto:michael.chappell@eng.ox.ac.uk>`_
  - Paula Croal
+ - Moss Zhao
 
 Acknowledgements
 ----------------
