@@ -189,6 +189,7 @@ class Process(QtCore.QObject, LogSource):
         self.debug("Executing %s", self.proc_id)
         self.status = self.NOTSTARTED
         self._log = ""
+        self.exception = object()
         self._completed = False
         try:
             self.run(options)
