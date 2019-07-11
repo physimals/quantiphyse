@@ -12,7 +12,7 @@ def norm_percentile(data, percentile=90):
     """
     Normalise the data by dividing by a given percentile
 
-    :param data: Numpy array whose last dimension is assumed to be 
+    :param data: Numpy array whose last dimension is assumed to be
                  the volume sequence
     """
     norm = np.percentile(data, percentile)
@@ -21,19 +21,19 @@ def norm_percentile(data, percentile=90):
 def norm_median(data, volume_idx=None):
     """
     Normalise the data by dividing by the median of a given volume
-    
-    :param data: Numpy array whose last dimension is assumed to be 
+
+    :param data: Numpy array whose last dimension is assumed to be
                  the volume sequence
     """
-    if volume_idx is None: 
+    if volume_idx is None:
         volume_idx = data.shape[-1] / 2
     return data / np.median(data[:, volume_idx])
 
 def norm_indiv(data):
     """
     Scale each volume individually so it lies between 0 and 1
-    
-    :param data: Numpy array whose last dimension is assumed to be 
+
+    :param data: Numpy array whose last dimension is assumed to be
                  the volume sequence
     """
     data = data - np.min(data, axis=0)
@@ -44,8 +44,8 @@ def norm_sigenh(data, nvols=3):
     Scale each data point by dividing by a 'baseline' value and then subtracting 1
 
     This results in 'signal enhancement' curves, starting at 0
-    
-    :param data: Numpy array whose last dimension is assumed to be 
+
+    :param data: Numpy array whose last dimension is assumed to be
                  the volume sequence
     """
     data_nvols = data.shape[-1]
