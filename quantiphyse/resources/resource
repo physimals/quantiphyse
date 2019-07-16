@@ -2,6 +2,7 @@
   <qresource>
     <file>checkbox.png</file>
     <file alias="down_arrow.png">down_arrow.png</file>
+    <file alias="up_arrow.png">up_arrow.png</file>
     <file>handle.png</file>
   </qresource>
 </RCC>
