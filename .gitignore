@@ -32,4 +32,4 @@ test/examples_output
 qp.icns
 .pytest_cache
 doc/html
-
+qp_out
