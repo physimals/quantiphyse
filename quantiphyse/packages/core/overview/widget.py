@@ -6,8 +6,6 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import print_function, division, absolute_import
 
-import os
-
 from PySide import QtGui, QtCore
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
@@ -96,7 +94,7 @@ class OverviewWidget(QpWidget):
     def _rename(self):
         if self.data_list.selected is not None:
             name = self.data_list.selected.name
-            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name", 
+            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name",
                                                       QtGui.QLineEdit.Normal, name)
             if result:
                 self.ivm.rename(name, text)
@@ -104,17 +102,11 @@ class OverviewWidget(QpWidget):
     def _set_main(self):
         if self.data_list.selected is not None:
             self.ivm.set_main_data(self.data_list.selected.name)
-            
+
     def _toggle_roi(self):
         if self.data_list.selected is not None:
             self.data_list.selected.roi = not self.data_list.selected.roi
             self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
-
-class elideLeftItem(QtGui.QStyledItemDelegate):
-    def paint(self, painter, option, index):
-        opt = QtGui.QStyleOptionViewItem(option)
-        opt.textElideMode = QtCore.Qt.ElideLeft
-        QtGui.QStyledItemDelegate.paint(self, painter, opt, index)
 
 class DataListWidget(QtGui.QTableView):
     """
@@ -140,8 +132,7 @@ class DataListWidget(QtGui.QTableView):
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.setShowGrid(False)
-        self._elide_delegate = elideLeftItem()
-        self.setItemDelegateForColumn(2, self._elide_delegate)
+        self.setTextElideMode(QtCore.Qt.ElideLeft)
         self.setAlternatingRowColors(True)
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(self.verticalHeader().minimumSectionSize()+2)
@@ -169,7 +160,7 @@ class DataListWidget(QtGui.QTableView):
             QtGui.QStandardItem(data.name),
             QtGui.QStandardItem(fname)
         ]
-        
+
         if fname:
             tooltip = fname
         else:
