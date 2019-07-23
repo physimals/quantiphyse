@@ -32,7 +32,7 @@ from .slice_viewer import OrthoSliceViewer
 from .histogram_widget import MultiImageHistogramWidget
 
 class DataSummary(QtGui.QWidget):
-    """ 
+    """
     Data summary bar
     """
     def __init__(self, ivl):

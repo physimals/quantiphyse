@@ -24,7 +24,8 @@ class OverviewWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", group="DEFAULT", position=0, **kwargs)
+        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", 
+                                             group="DEFAULT", position=0, **kwargs)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
