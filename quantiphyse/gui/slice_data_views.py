@@ -9,8 +9,12 @@ from __future__ import division, unicode_literals, absolute_import
 import collections
 import logging
 
-from PySide import QtCore, QtGui
 import numpy as np
+
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 import pyqtgraph as pg
 
@@ -211,12 +215,6 @@ class SliceDataView(QtCore.QObject):
 
     def __getattr__(self, name):
         return self._qpdata.metadata.get(name, self._default_options.get(name, None))
-
-    def __setattr__(self, name, value):
-        if name[0] == "_" or name in ("plane", "vol"):
-            super(SliceDataView, self).__setattr__(name, value)
-        else:
-            self._qpdata.metadata[name] = value
 
     def _metadata_changed(self, key):
         LOG.debug("View metadata changed: %s", key)
