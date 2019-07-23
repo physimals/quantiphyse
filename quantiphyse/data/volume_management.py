@@ -242,8 +242,8 @@ class ImageVolumeManagement(QtCore.QObject):
         self._data_exists(name)
         qpd = self.data[name]
         qpd.name = newname
-        self.data[newname] = qpd
         del self.data[name]
+        self.data[newname] = qpd
         self.sig_all_data.emit(list(self.data.keys()))
 
     def delete(self, name):

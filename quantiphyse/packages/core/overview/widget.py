@@ -97,7 +97,7 @@ class OverviewWidget(QpWidget):
     def _rename(self):
         if self.data_list.selected is not None:
             name = self.data_list.selected.name
-            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name", 
+            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name",
                                                       QtGui.QLineEdit.Normal, name)
             if result:
                 self.ivm.rename(name, text)
@@ -105,18 +105,20 @@ class OverviewWidget(QpWidget):
     def _set_main(self):
         if self.data_list.selected is not None:
             self.ivm.set_main_data(self.data_list.selected.name)
-            
+
     def _toggle_roi(self):
         if self.data_list.selected is not None:
             self.data_list.selected.roi = not self.data_list.selected.roi
             self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
-            
+
 class DataListWidget(QtGui.QTableView):
     """
     Table showing loaded volumes
     """
     def __init__(self, parent):
         super(DataListWidget, self).__init__(parent)
+        self.setStyleSheet("font-size: 10px; alternate-background-color: #6c6c6c;")
+
         self.ivm = parent.ivm
         self._selected = None
         self._roi_icon = QtGui.QIcon(get_icon("roi_data.png"))
@@ -132,8 +134,13 @@ class DataListWidget(QtGui.QTableView):
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.setShowGrid(False)
+        self.setTextElideMode(QtCore.Qt.ElideLeft)
+        self.setAlternatingRowColors(True)
         self.verticalHeader().setVisible(False)
-        self.horizontalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(self.verticalHeader().minimumSectionSize()+2)
+        self.horizontalHeader().setVisible(True)
+        self.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
 
         self.clicked.connect(self._clicked)
         self.ivm.sig_main_data.connect(self._update_list)
@@ -161,14 +168,20 @@ class DataListWidget(QtGui.QTableView):
             tooltip = fname
         else:
             tooltip = "Not saved to file"
-        items[1].setToolTip(tooltip)
+
+        for item in items:
+            item.setToolTip(tooltip)
         return items
 
     def _update_list(self):
         try:
             self.blockSignals(True)
+            scroll_pos = self.verticalScrollBar().value()
+
             self.model.clear()
             self.model.setColumnCount(3)
+            self.model.setHorizontalHeaderLabels(["", "Name", "File"])
+            self.model.setHeaderData(0, QtCore.Qt.Horizontal, self._vis_icon, QtCore.Qt.DecorationRole)
             self.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
             self.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
             self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
@@ -191,6 +204,8 @@ class DataListWidget(QtGui.QTableView):
                     icon = None
                 index = self.model.index(row, 0)
                 self.model.setData(index, icon, QtCore.Qt.DecorationRole)
+
+            self.verticalScrollBar().setValue(scroll_pos)
         finally:
             self.blockSignals(False)
 
@@ -207,7 +222,3 @@ class DataListWidget(QtGui.QTableView):
                 self.ivm.set_current_roi(data.name if data != self.ivm.current_roi else None)
             else:
                 self.ivm.set_current_data(data.name if data != self.ivm.current_data else None)
-            self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
-        #elif col == 1:
-        #    data.roi = not data.roi
-        #    self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
