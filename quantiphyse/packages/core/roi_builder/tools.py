@@ -10,7 +10,10 @@ import numpy as np
 import skimage.segmentation
 import scipy.ndimage
 
-from PySide import QtGui
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption, NumericSlider

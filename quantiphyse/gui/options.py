@@ -23,7 +23,10 @@ import collections
 import six
 import numpy as np
 
-from PySide import QtGui, QtCore
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url
 from quantiphyse.gui.dialogs import MatrixViewerDialog
@@ -1018,6 +1021,67 @@ class NumberListOption(Option, QtGui.QLineEdit):
             # Colour edit red but don't change anything
             self.setStyleSheet("QLineEdit {background-color: #d05050}")
         self.sig_changed.emit()
+
+    def dragEnterEvent(self, event):
+        """ Called when item is dragged into the matrix grid"""
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        """ Called when item is dragged over the matrix grid"""
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        """ 
+        Called when item is dropped onto the matrix grid
+        
+        If it's a filename-like item, try to load a matrix
+        from the file. Otherwise ignore it
+        """
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            for url in event.mimeData().urls():
+                self._load_file(local_file_from_drop_url(url))
+        else:
+            event.ignore()
+
+    def _load_file(self, filename):
+        fvals, nrows, ncols = load_matrix(filename)
+
+        if ncols <= 0:
+            raise RuntimeError("No numeric data found in file")
+        elif ncols == 1:
+            self.value = [row[0] for row in fvals]
+        elif nrows == 1:
+            self.value = fvals[0]
+        else:
+            # Choose row or column you want
+            row, col = self._choose_row_col(fvals)
+            if row is not None:
+                self.value = fvals[row]
+            elif col is not None:
+                self.value = [v[col] for v in fvals]
+
+    def _choose_row_col(self, vals):
+        d = MatrixViewerDialog(self, vals, title="Choose a row or column", text="Select a row or column containing the data you want")
+        if d.exec_():
+            ranges = d.table.selectedRanges()
+            if ranges:
+                r = ranges[0]
+                if r.topRow() == r.bottomRow():
+                    # Row select
+                    return r.topRow(), None
+                elif r.leftColumn() == r.rightColumn():
+                    # Column select
+                    return None, r.leftColumn()
+        return None, None
 
 class PickPointOption(Option, QtGui.QWidget):
     """ 

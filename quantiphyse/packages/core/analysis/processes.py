@@ -9,7 +9,10 @@ import six
 import numpy as np
 import scipy
 
-from PySide import QtGui
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import NumpyData, OrthoSlice
 from quantiphyse.utils import QpException, table_to_extra, sf

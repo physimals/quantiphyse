@@ -89,7 +89,6 @@ def get_plugins(key=None, class_name=None):
             #if os.path.exists(plugin_dir):
             #    __import__(pkg)
             _load_plugins_from_dir(plugin_dir, pkg, PLUGIN_MANIFEST)
-
         _load_plugins_from_entry_points(PLUGIN_MANIFEST)
     
     if key is not None:

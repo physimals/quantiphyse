@@ -10,7 +10,10 @@ import logging
 import keyword
 import re
 
-from PySide import QtCore
+try:
+    from PySide import QtCore
+except ImportError:
+    from PySide2 import QtCore
 
 import numpy as np
 

@@ -9,7 +9,10 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 import math
 
 import numpy as np
-from PySide import QtCore, QtGui
+try:
+    from PySide import QtGui, QtCore, QtGui as QtWidgets
+except ImportError:
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.pickers import PickMode
