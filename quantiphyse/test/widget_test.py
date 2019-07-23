@@ -15,7 +15,7 @@ import scipy
 from PySide import QtCore
 
 from quantiphyse.data import DataGrid, ImageVolumeManagement
-from quantiphyse.gui import ViewOptions, ImageView
+from quantiphyse.gui import ViewOptions, OrthoViewer
 from quantiphyse.utils import QpException, get_plugins
 
 class WidgetTest(unittest.TestCase):
@@ -40,7 +40,7 @@ class WidgetTest(unittest.TestCase):
 
         self.ivm = ImageVolumeManagement()
         self.opts = ViewOptions(None, self.ivm)
-        self.ivl = ImageView(self.ivm, self.opts)
+        self.ivl = OrthoViewer(self.ivm, self.opts)
 
         get_plugins()
         wclass = self.widget_class()
