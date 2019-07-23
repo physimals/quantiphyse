@@ -215,7 +215,19 @@ class DataListWidget(QtGui.QTableView):
         row, col, name, data = self._selection(index)
         self._selected = data
         if col == 0:
-            if data.roi:
-                self.ivm.set_current_roi(data.name if data != self.ivm.current_roi else None)
-            else:
-                self.ivm.set_current_data(data.name if data != self.ivm.current_data else None)
+            data.metadata["visible"] = not data.metadata.get("visible", True)
+            self._update_icon(data, row)
+
+    def _update_icon(self, data, row):
+        is_main = data == self.ivm.main
+        is_visible = data.metadata.get("visible", True)
+        if is_main and is_visible:
+            icon = self._main_vis_icon
+        elif is_main:
+            icon = self._main_icon
+        elif is_visible:
+            icon = self._vis_icon
+        else:
+            icon = None
+        index = self.model.index(row, 0)
+        self.model.setData(index, icon, QtCore.Qt.DecorationRole)
