@@ -1,7 +1,15 @@
 """
 Quantiphyse - classes which draw data views
 
-Copyright (c) 2013-2018 University of Oxford
+An OrthoDataView is associated with a QpData object and is responsible for
+drawing it onto a OrthoSliceView.
+
+Each OrthoDataView maintains its own set of GraphicsItems (images, contour lines etc)
+for each OrthoSliceView it is asked to draw into. View parameters can be set on
+a OrthoDataView - it must decide whether to signal a fresh redraw or whether it can
+just update its GraphicsItems witihout redrawing.
+
+Copyright (c) 2013-2019 University of Oxford
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
@@ -26,15 +34,15 @@ class MaskableImage(pg.ImageItem):
     def __init__(self, image=None, **kwargs):
         pg.ImageItem.__init__(self, image, **kwargs)
         self.mask = None
-        self.boundary = DataView.BOUNDARY_TRANS
+        self.boundary = OrthoDataView.BOUNDARY_TRANS
 
-    def setBoundaryMode(self, mode):
+    def set_boundary_mode(self, mode):
         """
         Set the boundary mode, i.e. how data outside the colour map
         range is treated. It can be made transparent or clamped to
         the max/min colour
 
-        :param mode: DataView.BOUNDARY_TRANS or DataView.BOUNDARY_CLAMP
+        :param mode: OrthoDataView.BOUNDARY_TRANS or OrthoDataView.BOUNDARY_CLAMP
         """
         self.boundary = mode
 
@@ -54,22 +62,22 @@ class MaskableImage(pg.ImageItem):
             if self.mask is not None:
                 argb[:, :, 3][self.mask == 0] = 0
 
-            if self.boundary == DataView.BOUNDARY_TRANS:
+            if self.boundary == OrthoDataView.BOUNDARY_TRANS:
                 # Make out of range values transparent
                 trans = np.logical_or(self.image < self.levels[0], self.image > self.levels[1])
                 argb[:, :, 3][trans] = 0
-            elif self.boundary == DataView.BOUNDARY_LOWERTRANS:
+            elif self.boundary == OrthoDataView.BOUNDARY_LOWERTRANS:
                 # Make out of range values transparent
                 trans = self.image < self.levels[0]
                 argb[:, :, 3][trans] = 0
-            elif self.boundary == DataView.BOUNDARY_UPPERTRANS:
+            elif self.boundary == OrthoDataView.BOUNDARY_UPPERTRANS:
                 # Make out of range values transparent
                 trans = self.image > self.levels[1]
                 argb[:, :, 3][trans] = 0
 
         self.qimage = pg.functions.makeQImage(argb, alpha)
 
-class DataView(QtCore.QObject):
+class OrthoDataView(QtCore.QObject):
     """
     View of a data item
     """
@@ -80,178 +88,122 @@ class DataView(QtCore.QObject):
     BOUNDARY_UPPERTRANS = 3
 
     # Signals when view parameters are changed
-    sig_view_changed = QtCore.Signal(object)
+    sig_changed = QtCore.Signal(object)
 
-    # Signals when the view items need to be redrawn
-    sig_redraw = QtCore.Signal(object)
+    def __init__(self, data):
+        super(OrthoDataView, self).__init__()
+        self.data = data
 
-    def __init__(self, ivm):
-        super(DataView, self).__init__()
-        self.ivm = ivm
+        self.default_options = {
+            "visible" : True,
+            "roi_only" : False,
+            "boundary" : self.BOUNDARY_TRANS,
+            "alpha" : 255,
+            "cmap_range" : _cmap_range(self.data),
+            "z_value" : -1,
+            "interp_order" : 0,
+            "cmap" : "jet",
+        }
+        self.redraw_options = [
+            "visible",
+            "roi_only",
+            "z_value",
+            "interp_order"
+            "shade",
+            "contour",
+        ]
+        self.ortho_views = {}
+        self.histogram = None
+        self.mask = None
+        self.sig_changed.connect(self.update)
 
-        self.default_options = {}
-        self.redraw_options = []
-        self.data = None
-        self.sig_view_changed.connect(self.update)
+    def __getattr__(self, opt):
+        return self.data.metadata.get(opt, self.default_options.get(opt, None))
 
-    def get(self, opt):
-        if self.data is not None:
-            return self.data.metadata.get(opt, self.default_options.get(opt, None))
-        else:
-            return self.default_options.get(opt, None)
-
-    def set(self, name, value):
+    def set_view_opt(self, name, value):
         """
         Set a data view option
 
         Depending on the option being set, the data view may be redrawn
-        
+
         :param name: Option name
         :param value: Option value
         """
-        if self.data is not None:
-            self.data.metadata[name] = value
-            self.sig_view_changed.emit(self)
-            if name in self.redraw_options:
-                self.sig_redraw.emit(self)
-
-    def redraw(self, viewbox, slice_plane, slice_vol):
-        """
-        Redraw graphics items associated with the specified pg.ViewBox
-
-        :param viewbox: pg.ViewBox to redraw
-        :param slice_plane: OrthoSlice defining the slice to draw
-        :param slice_vol: Index of the volume to use
-        """
-        pass
-
-    def update(self):
-        """
-        Update existing graphics items for view parameters without redrawing
-        """
-        pass
-
-class ImageDataView(DataView):
-    """
-    View of data rendered as an image slice
-    """
-
-    def __init__(self, ivm):
-        super(ImageDataView, self).__init__(ivm)
-        self.default_options = {
-            "visible" : True,
-            "roi_only" : False,
-            "boundary" : self.BOUNDARY_CLAMP,
-            "alpha" : 255,
-            "cmap" : "grey",
-            "cmap_range" : None,
-            "z_value" : -1,
-            "interp_order" : 0,
-        }
-        self.redraw_options += ["visible", "roi_only", "z_value", "interp_order"]
-        self.imgs = {}
-        self.histogram = None
-        self.mask = None
-
-    def redraw(self, viewbox, slice_plane, slice_vol):
-        img = self._get_img(viewbox)
+        self.data.metadata[name] = value
         self.update()
-        if img.isVisible():
-            slicedata, slicemask, scale, offset = self.data.slice_data(slice_plane, vol=slice_vol, interp_order=self.get("interp_order"))
-            img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
-                                              offset[0], offset[1]))
-            img.setImage(slicedata, autoLevels=False)
+        if name in self.redraw_options:
+            self.redraw()
 
-            if self.mask is not None and self.get("roi_only"):
-                maskdata, _, _, _ = self.mask.slice_data(slice_plane)
-                img.mask = np.logical_and(maskdata, slicemask)
-            else:
-                img.mask = slicemask
-       
-    def update(self):
-        for img in self.imgs.values():
-            img.setVisible(self.data is not None and self.get("visible"))
-            img.setZValue(self.get("z_value"))
-            img.setBoundaryMode(self.get("boundary"))
-            img.setLevels(self.get("cmap_range"))
+    def add_ortho_view(self, ortho_view):
+        """
+        """
+        name = ortho_view.vb.name
+        self.ortho_views[name] = ortho_view
+        img = MaskableImage()
+        self.imgs[name] = img
+        if self.histogram is not None:
+            self.histogram.add_img(img)
 
-    def _get_img(self, viewbox):
-        if viewbox.name not in self.imgs:
-            img = MaskableImage()
-            viewbox.addItem(img)
-            self.imgs[viewbox.name] = img
-            if self.histogram is not None:
-                self.histogram.add_img(img)
-        return self.imgs[viewbox.name]
-
-    def _init_cmap(self, percentile=100):
-        if self.data is not None and self.get("cmap_range") is None:
-            # Initial colourmap range
-            flat = self.data.volume(int(self.data.nvols/2)).flatten()
-            self.data.metadata["cmap_range"] = _cmap_range(flat, percentile)
-
-class MainDataView(ImageDataView):
-    """
-    View of main data
-    """
-
-    def __init__(self, ivm):
-        super(MainDataView, self).__init__(ivm)
-        self.ivm.sig_main_data.connect(self._main_data_changed)
-
-    def _main_data_changed(self, data):
-        self.data = data
-        self._init_cmap(percentile=99)
-        self.sig_view_changed.emit(self)
-        self.sig_redraw.emit(self)
-
-class OverlayView(ImageDataView):
-    """
-    View of the current overlay
-
-    Stores details about visual parameters, e.g. color map and range
-    """
-
-    def __init__(self, ivm):
-        super(OverlayView, self).__init__(ivm)
-
-        self.default_options.update({
-            "boundary" : self.BOUNDARY_TRANS,
-            "cmap" : "jet",
-            "z_value" : 0,
-        })
-
-        self.ivm.sig_current_roi.connect(self._current_roi_changed)
-        self.ivm.sig_current_data.connect(self._current_data_changed)
-
-    def _remask(self, roi):
-        if roi is not None and self.data is not None:
+    def set_roi(self, roi):
+        """
+        Set the associated ROI. The images may (if specified)
+        be masked by the ROI
+        """
+        if roi is not None:
             self.mask = roi.resample(self.data.grid)
         else:
             self.mask = None
 
-    def _current_roi_changed(self, roi):
-        self._remask(roi)
-        self.sig_view_changed.emit(self)
-        self.sig_redraw.emit(self)
+    def redraw(self, *ortho_views):
+        """
+        Redraw graphics items
+        """
+        if not ortho_views:
+            ortho_views = self.ortho_views.values()
 
-    def _current_data_changed(self, data):
-        self.data = data
-        self._init_cmap()
-        self._remask(self.ivm.current_roi)
-        self.sig_view_changed.emit(self)
-        self.sig_redraw.emit(self)
+        self.update(ortho_views)
+        for ortho_view in ortho_views:
+            name = ortho_view.vb.name
+            img = self.imgs[name]
+            if img.isVisible():
+                slicedata, slicemask, scale, offset = self.data.slice_data(ortho_view.slice_plane,
+                                                                           vol=ortho_view.slice_vol,
+                                                                           interp_order=self.interp_order)
+                img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1],
+                                                  scale[1, 0], scale[1, 1],
+                                                  offset[0], offset[1]))
+                img.setImage(slicedata, autoLevels=False)
 
-class RoiView(ImageDataView):
+                if self.mask is not None and self.roi_only:
+                    maskdata, _, _, _ = self.mask.slice_data(ortho_view.slice_plane)
+                    img.mask = np.logical_and(maskdata, slicemask)
+                else:
+                    img.mask = slicemask
+
+    def update(self, *ortho_views):
+        """
+        Update image view parameters without redrawing
+        """
+        if not ortho_views:
+            ortho_views = self.ortho_views.values()
+
+        for ortho_view in ortho_views:
+            name = ortho_view.vb.name
+            img = self.imgs[name]
+            img.setVisible(self.data is not None and self.visible)
+            img.setZValue(self.z_value)
+            img.set_boundary_mode(self.boundary)
+            img.setLevels(self.cmap_range)
+
+class RoiView(OrthoDataView):
     """
     View of a ROI,
 
-    Stores details about visual parameters, e.g. display style (contour, shaded, etc)
+    ROIs are drawn in different styles to data items (contour, shaded, etc)
     """
 
     def __init__(self, ivm):
         super(RoiView, self).__init__(ivm)
-
         self.default_options.update({
             "shade" : True,
             "contour" : False,
@@ -260,63 +212,89 @@ class RoiView(ImageDataView):
             "z_value" : 1,
         })
         self.contours = {}
-        self.redraw_options += ["shade", "contour", "z_value"]
 
-        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+    def add_ortho_view(self, ortho_view):
+        self.contours[ortho_view.vb.name] = []
+        OrthoDataView.add_ortho_view(self, ortho_view)
 
-    def redraw(self, viewbox, slice_plane, slice_vol):
-        img = self._get_img(viewbox)
-        contours = self._get_contours(viewbox)
-        self.update()
-        n_contours = 0
-        if self.data is not None:
-            slicedata, _, scale, offset = self.data.slice_data(slice_plane)
-            transform = QtGui.QTransform(scale[0, 0], scale[0, 1], scale[1, 0], scale[1, 1],
-                                         offset[0], offset[1])
+    def redraw(self, *ortho_views):
+        if not ortho_views:
+            ortho_views = self.ortho_views.values()
 
+        self.update(ortho_views)
+        for ortho_view in ortho_views:
+            name = ortho_view.vb.name
+            img = self.imgs[name]
             if img.isVisible():
+                slicedata, _, scale, offset = self.data.slice_data(slice_plane=ortho_view.slice_plane)
+                transform = QtGui.QTransform(scale[0, 0], scale[0, 1],
+                                             scale[1, 0], scale[1, 1],
+                                             offset[0], offset[1])
                 img.setImage(slicedata, autoLevels=False)
-                img.setTransform(transform)
+            img.setTransform(transform)
 
-            if self.get("contour"):
+            contours = self.contours[name]
+            n_contours = 0
+            if self.contour:
                 # Update data and level for existing contour items, and create new ones if needed
                 for val in self.data.regions:
                     pencol = get_pencol(self.data, val)
                     if val != 0:
                         if n_contours == len(contours):
                             contours.append(pg.IsocurveItem())
-                            viewbox.addItem(contours[n_contours])
+                            ortho_view.vb.addItem(contours[n_contours])
 
                         contour = contours[n_contours]
                         contour.setTransform(transform)
                         contour.setData((slicedata == val).astype(np.int))
                         contour.setLevel(1)
-                        contour.setPen(pg.mkPen(pencol, width=self.get("outline_width")))
+                        contour.setPen(pg.mkPen(pencol, width=self.outline_width))
                         n_contours += 1
 
-        # Clear data from contours not required - FIXME delete them?
-        for idx in range(n_contours, len(contours)):
-            contours[idx].setData(None)
+            # Clear data from contours not required - FIXME delete them?
+            for idx in range(n_contours, len(contours)):
+                contours[idx].setData(None)
 
-    def update(self):
-        for img in self.imgs.values():
-            img.setVisible(self.data is not None and self.get("shade"))
-            img.setZValue(self.get("z_value"))
-            img.setBoundaryMode(self.get("boundary"))
-            lut = get_lut(self.data, self.get("alpha"))
+    def update(self, *ortho_views):
+        if not ortho_views:
+            ortho_views = self.ortho_views.values()
+
+        for ortho_view in ortho_views:
+            name = ortho_view.vb.name
+            img = self.imgs[name]
+            img.setVisible(self.data is not None and self.shade)
+            img.setZValue(self.z_value)
+            img.set_boundary_mode(self.boundary)
+            lut = get_lut(self.data, self.alpha)
             img.setLookupTable(lut)
             img.setLevels([0, len(lut)-1], update=True)
-            
-    def _get_contours(self, viewbox):
-        if viewbox.name not in self.contours:
-            self.contours[viewbox.name] = []
-        return self.contours[viewbox.name]
 
-    def _current_roi_changed(self, roi):
-        self.data = roi
-        self.sig_view_changed.emit(self)
-        self.sig_redraw.emit(self)
-           
+class MainDataView(OrthoDataView):
+    """
+    View of main data
+
+    Just the same as a regular overlay but always grey and at the back
+    """
+    def __init__(self, data):
+        OrthoDataView.__init__(self, data)
+        self._cmap_range = _cmap_range(self.data, percentile=99)
+
+    def __getattr__(self, name):
+        if name == "cmap":
+            return "grey"
+        elif name == "z_value":
+            return -999
+        elif name == "cmap_range":
+            return self._cmap_range
+        else:
+            return OrthoDataView.__getattr__(self, name)
+
+    def set_view_opt(self, name, value):
+        if name not in ("cmap", "cmap_range", "z_value"):
+            OrthoDataView.set_view_opt(self, name, value)
+        elif name == "cmap_range":
+            self._cmap_range = value
+
 class RoiViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
     def __init__(self, ivl, view):
@@ -351,7 +329,7 @@ class RoiViewWidget(QtGui.QGroupBox):
         self.roi_combo.currentIndexChanged.connect(self._combo_changed)
         self.roi_view_combo.currentIndexChanged.connect(self._view_changed)
         self.roi_alpha_sld.valueChanged.connect(self._alpha_changed)
-        view.sig_view_changed.connect(self._update)
+        view.sig_changed.connect(self._update)
 
     def _update(self, view):
         if view is not None:
@@ -360,15 +338,15 @@ class RoiViewWidget(QtGui.QGroupBox):
                 self.roi_alpha_sld.blockSignals(True)
                 self.roi_combo.blockSignals(True)
 
-                if view.get("shade") and view.get("contour"):
+                if view.shade and view.contour:
                     self.roi_view_combo.setCurrentIndex(2)
-                elif view.get("shade"):
+                elif view.shade:
                     self.roi_view_combo.setCurrentIndex(0)
-                elif view.get("contour"):
+                elif view.contour:
                     self.roi_view_combo.setCurrentIndex(1)
                 else:
                     self.roi_view_combo.setCurrentIndex(3)
-                self.roi_alpha_sld.setValue(view.get("alpha"))
+                self.roi_alpha_sld.setValue(view.alpha)
 
                 if view.data is not None:
                     idx = self.roi_combo.findText(view.data.name)
@@ -389,12 +367,12 @@ class RoiViewWidget(QtGui.QGroupBox):
             self.ivl.ivm.set_current_roi(None)
 
     def _view_changed(self, idx):
-        self.view.set("shade", idx in (0, 2))
-        self.view.set("contour", idx in (1, 2))
+        self.view.set_view_opt("shade", idx in (0, 2))
+        self.view.set_view_opt("contour", idx in (1, 2))
 
     def _alpha_changed(self, alpha):
         """ Set the ROI transparency """
-        self.view.set("alpha", alpha)
+        self.view.set_view_opt("alpha", alpha)
 
 class OverlayViewWidget(QtGui.QGroupBox):
     """ Change view options for ROI """
@@ -448,7 +426,7 @@ class OverlayViewWidget(QtGui.QGroupBox):
         self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
         self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
         self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self.view.sig_view_changed.connect(self._update)
+        self.view.sig_changed.connect(self._update)
 
     def _update(self, view):
         widgets = [self.ov_view_combo, self.ov_cmap_combo,
@@ -457,16 +435,16 @@ class OverlayViewWidget(QtGui.QGroupBox):
             for widget in widgets:
                 widget.blockSignals(True)
 
-            if not view.get("visible"):
+            if not view.visible:
                 self.ov_view_combo.setCurrentIndex(2)
-            elif view.get("roi_only"):
+            elif view.roi_only:
                 self.ov_view_combo.setCurrentIndex(1)
             else:
                 self.ov_view_combo.setCurrentIndex(0)
 
-            # 'Custom' only appears as a flag to indicate the user has messed with the 
+            # 'Custom' only appears as a flag to indicate the user has messed with the
             # LUT using the histogram widget. Otherwise is is hidden
-            cmap = view.get("cmap")
+            cmap = view.cmap
             if cmap == "custom":
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
@@ -479,10 +457,10 @@ class OverlayViewWidget(QtGui.QGroupBox):
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
                     self.ov_cmap_combo.removeItem(idx)
-                idx = self.ov_cmap_combo.findText(view.get("cmap"))
+                idx = self.ov_cmap_combo.findText(view.cmap)
                 self.ov_cmap_combo.setCurrentIndex(idx)
 
-            self.ov_alpha_sld.setValue(view.get("alpha"))
+            self.ov_alpha_sld.setValue(view.alpha)
 
             self.ov_levels_btn.setEnabled(view.data is not None)
             if view.data is not None:
@@ -506,16 +484,16 @@ class OverlayViewWidget(QtGui.QGroupBox):
 
     def _cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
-        self.view.set("cmap", cmap)
+        self.view.set_view_opt("cmap", cmap)
 
     def _view_changed(self, idx):
         """ Viewing style (all or within ROI only) changed """
-        self.view.set("visible", idx in (0, 1))
-        self.view.set("roi_only", (idx == 1))
+        self.view.set_view_opt("visible", idx in (0, 1))
+        self.view.set_view_opt("roi_only", (idx == 1))
 
     def _alpha_changed(self, alpha):
         """ Set the data transparency """
-        self.view.set("alpha", alpha)
+        self.view.set_view_opt("alpha", alpha)
 
     def _show_ov_levels(self):
         dlg = LevelsDialog(self, self.ivl, self.ivm, self.view)
@@ -537,7 +515,7 @@ class LevelsDialog(QtGui.QDialog):
 
         grid = QtGui.QGridLayout()
         self.min_spin = self._add_spin(grid, "Minimum", 0)
-        self.max_spin = self._add_spin(grid, "Maximum", 1)   
+        self.max_spin = self._add_spin(grid, "Maximum", 1)
 
         grid.addWidget(QtGui.QLabel("Percentage of data range"), 2, 0)
         hbox = QtGui.QHBoxLayout()
@@ -559,7 +537,7 @@ class LevelsDialog(QtGui.QDialog):
         self.combo.addItem("Clamped to max/min colour")
         self.combo.addItem("Transparent at lower, clamped at upper")
         self.combo.addItem("Clamped at lower, transparent at upper")
-        self.combo.setCurrentIndex(self.view.get("boundary"))
+        self.combo.setCurrentIndex(self.view.boundary)
         self.combo.currentIndexChanged.connect(self._bound_changed)
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
@@ -569,28 +547,28 @@ class LevelsDialog(QtGui.QDialog):
         vbox.addWidget(bbox)
 
         self.setLayout(vbox)
-    
+
     def _add_spin(self, grid, label, row):
         grid.addWidget(QtGui.QLabel(label), row, 0)
         spin = QtGui.QDoubleSpinBox()
         spin.setMaximum(1e20)
         spin.setMinimum(-1e20)
-        spin.setValue(self.view.get("cmap_range")[row])
+        spin.setValue(self.view.cmap_range[row])
         spin.valueChanged.connect(self._val_changed(row))
         grid.addWidget(spin, row, 1)
         return spin
 
     def _val_changed(self, row):
         def _changed(val):
-            cmap_range = list(self.view.get("cmap_range"))
+            cmap_range = list(self.view.cmap_range)
             cmap_range[row] = val
-            self.view.set("cmap_range", cmap_range)
+            self.view.set_view_opt("cmap_range", cmap_range)
         return _changed
 
     def _bound_changed(self, idx):
-        self.view.set("boundary", idx)
-    
-    def _reset(self):
+        self.view.set_view_opt("boundary", idx)
+
+    def _reset_view_opt(self):
         percentile = self.percentile_spin.value()
         flat = self.view.data.volume(self.ivl.focus()[3]).flatten()
         if self.use_roi.isChecked() and self.ivm.current_roi is not None:
@@ -599,9 +577,10 @@ class LevelsDialog(QtGui.QDialog):
         cmin, cmax = _cmap_range(flat, percentile)
         self.min_spin.setValue(cmin)
         self.max_spin.setValue(cmax)
-        self.view.set("cmap_range", [cmin, cmax])
+        self.view.set_view_opt("cmap_range", [cmin, cmax])
 
 def _cmap_range(data, percentile=100):
+    data = data.volume(int(data.nvols/2)).flatten()
     # This ignores infinite values too unlike np.nanmin/np.nanmax
     nonans = np.isfinite(data)
     cmin, cmax = np.min(data[nonans]), np.max(data[nonans])

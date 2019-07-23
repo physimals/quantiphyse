@@ -15,7 +15,7 @@ import requests
 from PySide import QtGui, QtCore
 
 import quantiphyse.gui.dialogs
-from quantiphyse.utils import get_icon, get_version, get_local_file
+from quantiphyse.utils import get_icon, get_version
 from quantiphyse._version import __license__
 
 LICENSE_ACCEPTED_KEY = "license_accepted"

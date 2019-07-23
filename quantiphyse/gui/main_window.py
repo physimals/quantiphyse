@@ -14,12 +14,12 @@ from PySide import QtCore, QtGui
 import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.gui.widgets import FingerTabWidget
 from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
 from quantiphyse import __contrib__, __acknowledge__
 
-from .ViewOptions import ViewOptions
-from .ImageView import ImageView
+from .widgets import FingerTabWidget
+from .view_options import ViewOptions
+from .ortho_viewer import OrthoViewer
 
 class DragOptions(QtGui.QDialog):
     """
@@ -129,7 +129,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.ivm = ImageVolumeManagement()
         self.view_options_dlg = ViewOptions(self, self.ivm)
-        self.ivl = ImageView(self.ivm, self.view_options_dlg)
+        self.ivl = OrthoViewer(self.ivm, self.view_options_dlg)
 
         # Load style sheet
         stylesheet = get_local_file("resources/darkorange.stylesheet")
