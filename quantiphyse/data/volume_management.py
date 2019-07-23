@@ -89,7 +89,8 @@ class ImageVolumeManagement(QtCore.QObject):
         """
         # Remove invalid characters and make sure there's something left
         name = re.sub('[^0-9a-zA-Z_]', '', name)
-        if not name: name = "data"
+        if not name:
+            name = "data"
 
         # Add underscore if it's a keyword or starts with a digit
         if name[0] in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') or keyword.iskeyword(name):
@@ -124,7 +125,7 @@ class ImageVolumeManagement(QtCore.QObject):
         Add data item to IVM
 
         Data will be made the main data if make_main is True, or there is no main data
-        
+
         Data will be made current if make_current is not specified and there is no
         current data, and make_main is not True
 
@@ -138,7 +139,7 @@ class ImageVolumeManagement(QtCore.QObject):
         if isinstance(data, np.ndarray):
             if grid is None or name is None:
                 raise RuntimeError("add: Numpy data must have a name and a grid")
-            data = NumpyData(data, grid, name, roi=roi)       
+            data = NumpyData(data, grid, name, roi=roi)
         elif not isinstance(data, QpData):
             raise QpException("add: data must be Numpy array or QpData")
 
@@ -146,15 +147,15 @@ class ImageVolumeManagement(QtCore.QObject):
             data.name = name
 
         self._valid_name(data.name)
-        
+
         # If replacing existing data, delete the old one first
         if data.name in self.data:
             del self.data[data.name]
             if self.current_data is not None and self.current_data.name == data.name:
                 make_current = True
-            if self.main is not None and self.main.name ==  data.name:
+            if self.main is not None and self.main.name == data.name:
                 make_main = True
-            
+
         self.data[data.name] = data
 
         # Make main data if requested or if not specified and there is no current main data
@@ -169,7 +170,8 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # Make current if requested, or if not specified and it is the first non-main data/ROI
         if make_current is None:
-            make_current = ((data.roi and self.current_roi is None) or (not data.roi and self.current_data is None)) and not make_main
+            make_current = ((data.roi and self.current_roi is None) or
+                            (not data.roi and self.current_data is None)) and not make_main
         if make_current:
             if data.roi:
                 self.set_current_roi(data.name)
@@ -204,7 +206,7 @@ class ImageVolumeManagement(QtCore.QObject):
         :return: True if qpd is the current ROI
         """
         return self.current_roi is not None and roi is not None and self.current_roi.name == roi.name
-        
+
     def set_current_data(self, name):
         """
         Set a named data item as the current data
@@ -307,13 +309,13 @@ class ImageVolumeManagement(QtCore.QObject):
         for name, qpd in self.data.items():
             if qpd.nvols == 1:
                 values[name] = qpd.value(pos, grid)
-                
+
         return values
 
     def timeseries(self, pos, grid=None):
         """
         Return time/volume series curves for all 4D data items
-       
+
         :param pos: Position as a 3D or 4D vector. If 4D last value is the volume index
                     (0 for 3D). If ``grid`` not specified, position is in world space
         :param grid: If specified, interpret position in this ``DataGrid`` co-ordinate space.
@@ -323,5 +325,5 @@ class ImageVolumeManagement(QtCore.QObject):
         for qpd in self.data.values():
             if qpd.nvols > 1:
                 timeseries[qpd.name] = qpd.timeseries(pos, grid)
-                
+
         return timeseries

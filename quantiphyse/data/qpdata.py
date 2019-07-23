@@ -104,7 +104,7 @@ class DataGrid(object):
         self._shape = list(shape)[:]
         self._affine_orig = np.copy(affine)
         self._units = units
-        
+
     @property
     def units(self):
         """ Units of world grid. Typically mm. Currently no support for different units in different directions """
@@ -336,7 +336,7 @@ class OrthoSlice(DataGrid):
 
 class MetaSignaller(QtCore.QObject):
     """
-    This is required because you can't multiply inherit 
+    This is required because you can't multiply inherit
     from a a QObject and a dict
     """
     sig_changed = QtCore.Signal(str)
@@ -347,18 +347,26 @@ class Metadata(dict):
 
     Emits a QT signal when keys are changed
     """
+
     def __init__(self, *args):
         dict.__init__(self, *args)
         self._signaller = MetaSignaller()
-        
+
     @property
     def sig_changed(self):
+        """ Signals when a key's value has been changed """
         return self._signaller.sig_changed
+
+    def __getitem__(self, key):
+        # Default to None if not in dictionary
+        return self.get(key, None)
 
     def __setitem__(self, key, value):
         if isinstance(value, dict):
+            # Make dictionary attributes into our
+            # subclass so they can send their own signals
             value = Metadata(value)
-            
+
         dict.__setitem__(self, key, value)
         self.sig_changed.emit(key)
 
@@ -404,6 +412,7 @@ class QpData(object):
 
     @property
     def metadata(self):
+        """ Metadata dictionary """
         return self._meta
 
     @property
@@ -447,7 +456,7 @@ class QpData(object):
         """
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
-        
+
         if self._meta.get("roi_regions", None) is None:
             regions = np.unique(self.raw().astype(np.int))
             regions = np.delete(regions, np.where(regions == 0))
@@ -461,7 +470,7 @@ class QpData(object):
                 self._meta["roi_regions"] = roi_regions
         return self._meta["roi_regions"]
 
-    @property 
+    @property
     def fname(self):
         """
         File name origin of data or None if not from a file
@@ -471,7 +480,7 @@ class QpData(object):
     @fname.setter
     def fname(self, name):
         self._meta["fname"] = name
-        
+
     def set_2dt(self):
         """
         Force 3D static data into the form of 2D multi-volume
@@ -533,7 +542,7 @@ class QpData(object):
             grid = DataGrid([1, 1, 1], np.identity(4))
         if len(pos) == 3:
             pos = list(pos) + [0,]
-            
+
         data_pos = [int(math.floor(v+0.5)) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
         if min(data_pos) < 0:
             # Out of range but will be misinterpreted by indexing!
@@ -579,32 +588,48 @@ class QpData(object):
     def uncache(self):
         """
         Remove large stored data arrays from memory
-        
+
         Subclasses may implement this method to clear any caches they keep of data
         read from disk. The method will be called when the data is not active (although
         of course the data might be needed at any point). Subclasses which do not read
         data from a file might implement the method to write the data out to a temporary
         file which is then re-read on the next call to ``raw()`` or ``volume()``
-        
+
         This method is optional and does not have to be implemented"""
         pass
 
-    def range(self, vol=None):
+    def range(self, vol=None, percentile=100):
         """
         Return data min and max
 
         Note that obtaining the range of a large 4D data set may be expensive!
 
         :param vol: Index of volume to use, if not specified use whole data set
+        :param percentile: If specified, return maximim value as this percentile
         :return: Tuple of min value, max value
         """
-        if vol is None:
+        if vol is None and percentile == 100:
             if self._meta.get("range", None) is None:
-                self._meta["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
+                # This ignores infinite values too unlike np.nanmin/np.nanmax
+                data = self.raw()
+                nonans = np.isfinite(data)
+                dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
+                self._meta["range"] = dmin, dmax
             return self._meta["range"]
         else:
-            voldata = self.volume(vol)
-            return np.nanmin(voldata), np.nanmax(voldata)
+            if vol is not None:
+                data = self.volume(vol)
+            else:
+                data = self.raw()
+            nonans = np.isfinite(data)
+            dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
+
+            if percentile < 100:
+                perc_max = np.nanpercentile(data, percentile)
+                if perc_max > dmin:
+                    dmax = perc_max
+
+            return dmin, dmax
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
@@ -681,7 +706,7 @@ class QpData(object):
             if data.ndim == 4:
                 reorder = reorder + [3]
             data = np.transpose(data, reorder)
-            
+
         if flip:
             for dim in flip:
                 data = np.flip(data, dim)
@@ -729,7 +754,7 @@ class QpData(object):
         :param interp_order: Order of interpolation for non-orthogonal slices
         """
         rawdata = self.volume(vol)
-        
+
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
 
@@ -791,14 +816,14 @@ class QpData(object):
             #LOG.debug("OrthoSlice: data naxis: %i" % data_naxis)
             #LOG.debug("OrthoSlice: data affine")
             #LOG.debug(self.grid.affine)
-            
+
             #LOG.debug("OrthoSlice: new normal=", data_scaled_normal)
             #LOG.debug("OrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
             #LOG.debug("OrthoSlice: trans matrix:\n%s" % (str(trans_v)))
             #LOG.debug("OrthoSlice: slice origin=", slice_origin)
             #LOG.debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
             #LOG.debug("OrthoSlice: new plane offset: %s" % (str(offset)))
-            
+
             #LOG.debug("Origin: ", slice_origin)
             #LOG.debug("Basis", slice_basis)
             #LOG.debug("Shape", slice_shape)
@@ -809,7 +834,7 @@ class QpData(object):
             else:
                 # Generate mask by flagging out of range data with value less than data minimum
                 dmin = np.min(rawdata)
-                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), 
+                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3),
                                        order=interp_order, mode='constant', cval=dmin-100)
                 smask = np.ones(sdata.shape)
                 smask[sdata < dmin] = 0
@@ -869,7 +894,7 @@ class NumpyData(QpData):
             # Use float32 rather than default float64 to reduce storage
             data = data.astype(np.float32)
         self.rawdata = data
-        
+
         if data.ndim > 3:
             nvols = data.shape[3]
             if nvols == 1:
@@ -878,7 +903,7 @@ class NumpyData(QpData):
             nvols = 1
 
         QpData.__init__(self, name, grid, nvols, **kwargs)
-    
+
     def raw(self):
         if self._meta.get("raw_2dt", False) and self.rawdata.ndim == 3:
             # Single-slice, interpret 3rd dimension as time
