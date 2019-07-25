@@ -339,7 +339,7 @@ class MetaSignaller(QtCore.QObject):
     This is required because you can't multiply inherit
     from a a QObject and a dict
     """
-    sig_changed = QtCore.Signal(str)
+    sig_changed = QtCore.Signal(str, str)
 
 class Metadata(dict):
     """
@@ -368,7 +368,7 @@ class Metadata(dict):
             value = Metadata(value)
 
         dict.__setitem__(self, key, value)
-        self.sig_changed.emit(key)
+        self.sig_changed.emit(key, value)
 
 class QpData(object):
     """
