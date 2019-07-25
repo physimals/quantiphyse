@@ -121,6 +121,7 @@ class DataListWidget(QtGui.QTableView):
         self.setStyleSheet("font-size: 10px; alternate-background-color: #6c6c6c;")
 
         self.ivm = parent.ivm
+        self.ivl = parent.ivl
         self._selected = None
         self._roi_icon = QtGui.QIcon(get_icon("roi_data.png"))
         self._data_icon = QtGui.QIcon(get_icon("data.png"))
@@ -219,12 +220,11 @@ class DataListWidget(QtGui.QTableView):
         row, col, name, data = self._selection(index)
         self._selected = data
         if col == 0:
-            data.metadata["visible"] = not data.metadata.get("visible", True)
-            self._update_icon(data, row)
+            visible = not self.ivl.data_view_param(data.name, "visible")
+            self.ivl.set_data_view_param(data.name, "visible", visible)
+            self._update_visible_icon(data, row, visible, data == self.ivm.main)
 
-    def _update_icon(self, data, row):
-        is_main = data == self.ivm.main
-        is_visible = data.metadata.get("visible", True)
+    def _update_visible_icon(self, data, row, is_visible, is_main):
         if is_main and is_visible:
             icon = self._main_vis_icon
         elif is_main:

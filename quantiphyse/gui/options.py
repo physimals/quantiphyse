@@ -30,7 +30,7 @@ except ImportError:
 
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url
 from quantiphyse.gui.dialogs import MatrixViewerDialog
-from quantiphyse.gui.pickers import PickMode
+from quantiphyse.gui.ortho_viewer.pickers import PickMode
 
 LOG = logging.getLogger(__name__)
 

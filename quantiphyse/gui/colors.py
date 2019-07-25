@@ -13,6 +13,32 @@ import pyqtgraph as pg
 
 LOG = logging.getLogger(__name__)
 
+def initial_cmap_range(qpdata, percentile=100):
+    """
+    Get an initial colourmap range for a data item.
+
+    This is taken by ignoring NaN and infinity and returning
+    a percentile of the data range. By default returns
+    the full min to max range.
+
+    :return: Sequence of (min, max)
+    """
+    data = qpdata.volume(int(qpdata.nvols/2)).flatten()
+    # This ignores infinite values too unlike np.nanmin/np.nanmax
+    nonans = np.isfinite(data)
+    cmin, cmax = np.min(data[nonans]), np.max(data[nonans])
+    # Issue #101: if min is exactly zero, make it slightly more
+    # as a heuristic for data sets where zero=background
+    if cmin == 0:
+        cmin = 1e-7*cmax
+
+    if percentile < 100:
+        perc_max = np.nanpercentile(data, percentile)
+        if perc_max > cmin:
+            cmax = perc_max
+
+    return cmin, cmax
+
 def get_lut(cmap_name, alpha=255):
     """
     Get the colour lookup table by name.

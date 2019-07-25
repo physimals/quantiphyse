@@ -20,7 +20,7 @@ except ImportError:
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, TextOption
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
-from quantiphyse.gui.pickers import PickMode
+from quantiphyse.gui.ortho_viewer.pickers import PickMode
 from quantiphyse.utils import get_icon
 
 from .tools import CrosshairsTool, PenTool, WalkerTool, PainterTool, EraserTool, RectTool, EllipseTool, PolygonTool, PickTool, BucketTool

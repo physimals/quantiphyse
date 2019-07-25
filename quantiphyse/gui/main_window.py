@@ -23,7 +23,7 @@ from quantiphyse import __contrib__, __acknowledge__
 
 from .widgets import FingerTabWidget
 from .view_options import ViewOptions
-from .ortho_viewer import OrthoViewer
+from .ortho_viewer.ortho_viewer import OrthoViewer
 
 class DragOptions(QtGui.QDialog):
     """

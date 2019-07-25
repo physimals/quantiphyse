@@ -16,6 +16,8 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, absolute_import
 
+from collections import OrderedDict
+
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
 except ImportError:
@@ -24,189 +26,73 @@ except ImportError:
 import numpy as np
 
 from quantiphyse.utils import LogSource
-from quantiphyse.data import DataGrid
+from quantiphyse.data.qpdata import DataGrid, MetaSignaller
+from quantiphyse.gui.colors import initial_cmap_range, get_lut
 
-from .widgets import OptionsButton
 from .pickers import PICKERS, PointPicker
 from .slice_viewer import OrthoSliceViewer
 from .histogram_widget import MultiImageHistogramWidget
+from .view_params_widget import DataViewParamsWidget
+from .maskable_image import Boundary
+from .navigators import NavigationBox
 
-class DataSummary(QtGui.QWidget):
-    """
-    Data summary bar
-    """
-    def __init__(self, ivl):
-        self.opts = ivl.opts
-        self.ivl = ivl
+MAIN_DATA = ""
 
-        QtGui.QWidget.__init__(self)
-        hbox = QtGui.QHBoxLayout()
-        hbox.setContentsMargins(0, 0, 0, 0)
-        self.vol_name = QtGui.QLineEdit()
-        policy = self.vol_name.sizePolicy()
-        policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
-        self.vol_name.setSizePolicy(policy)
-        hbox.addWidget(self.vol_name)
-        hbox.setStretchFactor(self.vol_name, 1)
-        self.vol_data = QtGui.QLineEdit()
-        self.vol_data.setFixedWidth(70)
-        hbox.addWidget(self.vol_data)
-        self.roi_region = QtGui.QLineEdit()
-        self.roi_region.setFixedWidth(70)
-        hbox.addWidget(self.roi_region)
-        self.ov_data = QtGui.QLineEdit()
-        self.ov_data.setFixedWidth(70)
-        hbox.addWidget(self.ov_data)
-        self.view_options_btn = OptionsButton(self)
-        hbox.addWidget(self.view_options_btn)
-        self.setLayout(hbox)
+DEFAULT_MAIN_VIEW = {
+    "visible" : True,
+    "roi_only" : False,
+    "boundary" : Boundary.CLAMP,
+    "alpha" : 255,
+    "z_value" : -999,
+    "interp_order" : 0,
+    "cmap" : "grey",
+}
 
-        ivl.ivm.sig_main_data.connect(self._main_changed)
-        ivl.sig_focus_changed.connect(self._update)
-        ivl.ivm.sig_current_data.connect(self._update)
+DEFAULT_DATA_VIEW = {
+    "visible" : True,
+    "roi_only" : False,
+    "boundary" : Boundary.TRANS,
+    "alpha" : 255,
+    "interp_order" : 0,
+    "cmap" : "jet",
+}
 
-    def show_options(self):
-        """
-        Show the view options dialog
-        """
-        self.opts.show()
-        self.opts.raise_()
+DEFAULT_ROI_VIEW = {
+    "visible" : True,
+    "alpha" : 127,
+    "shade" : True,
+    "contour" : False,
+    "interp_order" : 0,
+}
 
-    def _main_changed(self, data):
-        name = ""
-        if data is not None:
-            if data.fname is not None:
-                name = data.fname
-            else:
-                name = data.name
-        self.vol_name.setText(name)
-        self._update()
+class DataView(object):
 
-    def _update(self):
-        pos, grid = self.ivl.focus(), self.ivl.grid
-        main, roi, data = self.ivl.ivm.main, self.ivl.ivm.current_roi, self.ivl.ivm.current_data
-        if main is not None:
-            self.vol_data.setText(main.value(pos, grid, as_str=True))
-        if roi is not None:
-            roi_value = roi.regions.get(int(roi.value(pos, grid)), "")
-            if roi_value == "":
-                roi_value = "1"
-            self.roi_region.setText(roi_value)
-        if data is not None:
-            self.ov_data.setText(data.value(pos, grid, as_str=True))
+    def __init__(self, defaults=None):
+        self._dict = {}
+        if defaults:
+            self._dict.update(defaults)
+        self._signaller = MetaSignaller()
 
-class Navigator(LogSource):
-    """
-    Slider control which alters position along an axis
-    """
+    @property
+    def sig_changed(self):
+        """ Signals when a key's value has been changed """
+        return self._signaller.sig_changed
+    
+    def __getattr__(self, name):
+        return self._dict.get(name, None)
 
-    def __init__(self, ivl, label, axis, layout_grid, layout_ypos):
-        LogSource.__init__(self)
-        self.ivl = ivl
-        self.axis = axis
-        self.data_axis = axis
-        self.data_grid = None
-        self._pos = -1
+    def __setattr__(self, name, value):
+        if name[0] == "_":
+            object.__setattr__(self, name, value)
+        elif self._dict.get(name, None) != value:
+            self._dict[name] = value
+            # Update lookup table when colormap or alpha changed
+            if name == "cmap" or "lut" not in self._dict:
+                self._dict["lut"] = get_lut(self.cmap, alpha=self.alpha)
+            if name == "alpha":
+                self._dict["lut"] = [list(rgba)[:3] + [self.alpha] for rgba in self.lut]
 
-        layout_grid.addWidget(QtGui.QLabel(label), layout_ypos, 0)
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.slider.setMinimumWidth(100)
-        self.slider.valueChanged.connect(self._changed)
-        layout_grid.addWidget(self.slider, layout_ypos, 1)
-
-        self.spin = QtGui.QSpinBox()
-        self.spin.valueChanged.connect(self._changed)
-        layout_grid.addWidget(self.spin, layout_ypos, 2)
-
-        self.ivl.ivm.sig_main_data.connect(self._main_data_changed)
-        self.ivl.sig_focus_changed.connect(self._focus_changed)
-
-    def _changed(self, value):
-        if value != self._pos and self.data_grid is not None:
-            pos = self.ivl.focus(self.data_grid)
-            pos[self.data_axis] = value
-            self.ivl.set_focus(pos, self.data_grid)
-
-    def _main_data_changed(self, data):
-        if data is not None:
-            self.data_grid = data.grid
-            self.data_axis = data.grid.get_ras_axes()[self.axis]
-
-            if self.axis < 3:
-                self._set_size(self.data_grid.shape[self.data_axis])
-            else:
-                self._set_size(data.nvols)
-
-            self._focus_changed()
-        else:
-            self.data_grid = None
-            self.data_axis = self.axis
-            self._set_size(1)
-            self._pos = 0
-
-    def _focus_changed(self):
-        if self.data_grid is not None:
-            self._pos = int(self.ivl.focus(self.data_grid)[self.data_axis]+0.5)
-            self.debug("Pos for slider %i %i", self.axis, self._pos)
-            try:
-                self.slider.blockSignals(True)
-                self.spin.blockSignals(True)
-                self.slider.setValue(self._pos)
-                self.spin.setValue(self._pos)
-            finally:
-                self.slider.blockSignals(False)
-                self.spin.blockSignals(False)
-
-    def _set_size(self, size):
-        try:
-            self.slider.blockSignals(True)
-            self.spin.blockSignals(True)
-            self.slider.setRange(0, size-1)
-            self.spin.setMaximum(size-1)
-        finally:
-            self.slider.blockSignals(False)
-            self.spin.blockSignals(False)
-
-class VolumeNavigator(Navigator):
-    """
-    Slider navigator control specifically for the volume axis
-    """
-
-    def __init__(self, *args, **kwargs):
-        Navigator.__init__(self, label="Volume", axis=3, *args, **kwargs)
-        self.ivl.ivm.sig_all_data.connect(self._data_changed)
-
-    def _main_data_changed(self, data):
-        if data is not None:
-            self.data_grid = data.grid
-        self._data_changed()
-
-    def _data_changed(self):
-        max_num_vols = max([d.nvols for d in self.ivl.ivm.data.values()] + [1, ])
-        self._set_size(max_num_vols)
-        self._focus_changed()
-
-class NavigationBox(QtGui.QGroupBox):
-    """
-    Box containing 4D navigators
-    """
-    def __init__(self, ivl):
-        QtGui.QGroupBox.__init__(self)
-        self.ivl = ivl
-
-        grid = QtGui.QGridLayout()
-        grid.setVerticalSpacing(2)
-        grid.setContentsMargins(5, 5, 5, 5)
-        self.setLayout(grid)
-
-        self.navs = []
-        self.navs.append(Navigator(ivl, "Axial", 2, grid, 0))
-        self.navs.append(Navigator(ivl, "Sagittal", 0, grid, 1))
-        self.navs.append(Navigator(ivl, "Coronal", 1, grid, 2))
-        self.navs.append(VolumeNavigator(ivl, layout_grid=grid, layout_ypos=3))
-        grid.setColumnStretch(0, 0)
-        grid.setColumnStretch(1, 2)
+            self.sig_changed.emit(name, value)
 
 class OrthoViewer(QtGui.QSplitter, LogSource):
     """
@@ -242,6 +128,9 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
     # Emission of this signal depends on the picking mode selected
     sig_selection_changed = QtCore.Signal(object)
 
+    # Signal emitted when the view parameters on a data item are changed
+    sig_data_view_changed = QtCore.Signal(str, str)
+    
     def __init__(self, ivm, opts):
         LogSource.__init__(self)
         QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
@@ -252,6 +141,8 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         self.ivm = ivm
         self.opts = opts
         self.picker = PointPicker(self)
+        self._data_views = OrderedDict()
+        self._singleview = True
         self.arrows = []
 
         # Create three orthogonal slice viewers
@@ -304,8 +195,8 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         hbox.addWidget(nav_box)
         #roi_box = RoiViewWidget(self, self.current_roi_view)
         #hbox.addWidget(roi_box)
-        #ovl_box = OverlayViewWidget(self, self.current_data_view)
-        #hbox.addWidget(ovl_box)
+        ovl_box = DataViewParamsWidget(self)
+        hbox.addWidget(ovl_box)
         vbox.addLayout(hbox)
 
         # Overall layout with the viewers above and the controls below
@@ -316,7 +207,8 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
 
         # Connect to signals
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.opts.sig_options_changed.connect(self._opts_changed)
+        self.ivm.sig_all_data.connect(self._data_changed)
+        #self.opts.sig_options_changed.connect(self._opts_changed)
 
     def focus(self, grid=None):
         """
@@ -387,6 +279,20 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         self.arrows = []
         self.sig_arrows_changed.emit(self.arrows)
 
+    
+    def data_view(self, name):
+        if name not in self._data_views:
+            raise KeyError("No such data: %s" % name)
+        else:
+            return self._data_views[name]
+            
+    def _update_vis(self, key, value):
+        # In single-view mode hide existing data of same type
+        if key == "visible" and value == True and self._singleview:
+            for existing_name, view in self._data_views.items():
+                if existing_name != name and existing_name != MAIN_DATA and self.ivm.data[existing_name].roi == qpdata.roi:
+                    view.visible = False
+                    
     def _pick(self, win, pos):
         """
         Called when a point is picked in one of the viewing windows
@@ -423,14 +329,6 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
                 self.ortho_views[oview].setVisible(True)
                 self.ortho_views[oview].update()
 
-    def _opts_changed(self):
-        # View options have been changed
-        z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
-        # FIXME
-        #self.current_roi_view.set("z_value", z_roi)
-        #self.current_data_view.set("z_value", 1-z_roi)
-        #self.current_data_view.set("interp_order", self.opts.interp_order)
-
     def _main_data_changed(self, data):
         if data is not None:
             self.grid = data.grid.get_standard()
@@ -451,7 +349,41 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
             # 3-slice view
             self._toggle_maximise(0, state=0)
             data_axes = data.grid.get_ras_axes()
+            self._data_views[MAIN_DATA] = DataView(DEFAULT_MAIN_VIEW)
+            self._data_views[MAIN_DATA].cmap_range = initial_cmap_range(data, 99)
+
             for idx in range(3):
+                self.ortho_views[idx].set_grid(self.grid)
+                self.ortho_views[idx].add_data_view(data, self._data_views[MAIN_DATA], name=MAIN_DATA)
                 self.ortho_views[idx].reset()
                 if data.grid.shape[data_axes[idx]] == 1:
                     self._toggle_maximise(idx, state=1)
+
+    def _data_changed(self, data_names):
+        new_data = [name for name in data_names if name not in self._data_views]
+        removed_data = [name for name in self._data_views if name != MAIN_DATA and name not in data_names]
+
+        for name in removed_data:
+            for idx in range(3):
+                self.ortho_views[idx].remove_data_view(name)
+
+        max_z_value = max([view.z_value for view in self._data_views.values()])
+        for new_idx, name in enumerate(new_data):
+            qpdata = self.ivm.data[name]
+            if qpdata.roi:
+                self._data_views[name] = DataView(DEFAULT_ROI_VIEW)
+            else:
+                self._data_views[name] = DataView(DEFAULT_DATA_VIEW)
+
+            self._data_views[name].cmap_range = initial_cmap_range(qpdata)
+            self._data_views[name].z_value = max_z_value + new_idx + 1
+
+            # Regenerate z values for remaining data
+            for idx, view in enumerate(sorted(self._data_views.items(), 
+                                       key=lambda view: view[1].z_value)):
+                self._data_views[name].z_value = idx
+
+            for idx in range(3):
+                self.ortho_views[idx].add_data_view(qpdata, self._data_views[name])
+
+ 
