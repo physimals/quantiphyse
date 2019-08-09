@@ -86,8 +86,8 @@ class MultiImageHistogramWidget(pg.HistogramLUTWidget):
     def _update_histogram(self):
         if self.view.data is not None:
             arr = remove_nans(self.view.data.volume(self.vol))
-            flat = arr.reshape(-1)
-            img = pg.ImageItem(flat.reshape([1, -1]))
+            flat = arr.reshape([1, -1]).astype(np.float32)
+            img = pg.ImageItem(flat)
             hist = img.getHistogram()
             if hist[0] is None: return
             self.plot.setData(*hist)
