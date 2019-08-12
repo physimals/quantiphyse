@@ -238,7 +238,9 @@ class DataOption(Option, QtGui.QComboBox):
         self.ivm.sig_all_data.connect(self._data_changed)
         if self._multi:
             self.view().pressed.connect(self._item_pressed)
-    
+            delegate = QtWidgets.QStyledItemDelegate(self.view())
+            self.view().setItemDelegate(delegate)
+
     @property
     def value(self):
         """ 
