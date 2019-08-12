@@ -65,7 +65,7 @@ class OrthoView(pg.GraphicsView):
         self.dummy = pg.ImageItem()
         self.dummy.setVisible(False)
 
-        self.vb = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0, 0, 255), width=3.0))
+        self.vb = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((127, 127, 127), width=2.0))
         self.vb.setAspectLocked(True)
         self.vb.setBackgroundColor([0, 0, 0])
         self.vb.enableAutoRange()
