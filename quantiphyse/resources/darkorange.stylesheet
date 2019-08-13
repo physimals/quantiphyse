@@ -380,6 +380,10 @@ QTabWidget::pane {
     top: 1px;
 }
 
+QTabWidget::tab-bar {
+    top: 0;
+}
+
 QTabBar::tab:last
 {
     margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
