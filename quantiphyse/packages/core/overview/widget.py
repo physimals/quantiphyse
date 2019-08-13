@@ -6,13 +6,15 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import print_function, division, absolute_import
 
+import os
+
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
-from quantiphyse.utils import get_icon, get_local_file
+from quantiphyse.utils import default_save_dir, get_icon, get_local_file
 from quantiphyse import __contrib__, __acknowledge__
 
 SUMMARY = "\nCreators: " + ", ".join([author for author in __contrib__]) \
@@ -69,6 +71,9 @@ class OverviewWidget(QpWidget):
         btn = QtGui.QPushButton("Delete")
         btn.clicked.connect(self._delete)
         hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Save")
+        btn.clicked.connect(self._save)
+        hbox.addWidget(btn)
         btn = QtGui.QPushButton("Set as main data")
         btn.clicked.connect(self._set_main)
         hbox.addWidget(btn)
@@ -101,6 +106,21 @@ class OverviewWidget(QpWidget):
                                                       QtGui.QLineEdit.Normal, name)
             if result:
                 self.ivm.rename(name, text)
+
+    def _save(self):
+        if self.data_list.selected is not None:
+            name = self.data_list.selected.name
+            data = self.ivm.data[name]
+            if hasattr(data, "fname") and data.fname is not None:
+                fname = data.fname
+            else:
+                fname = os.path.join(default_save_dir(), name + ".nii")
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+                                                         filter="NIFTI files (*.nii *.nii.gz)")
+            if fname != '':
+                save(self.ivm.data[name], fname)
+            else: # Cancelled
+                pass
 
     def _set_main(self):
         if self.data_list.selected is not None:
