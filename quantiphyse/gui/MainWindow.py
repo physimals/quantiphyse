@@ -30,7 +30,7 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False):
+    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False, possible_roi=True):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
@@ -51,10 +51,12 @@ class DragOptions(QtGui.QDialog):
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
         hbox = QtGui.QHBoxLayout()
-        btn = QtGui.QPushButton("ROI")
-        btn.clicked.connect(self._roi)
-        hbox.addWidget(btn)
+        if possible_roi:
+            btn = QtGui.QPushButton("ROI")
+            btn.clicked.connect(self._roi)
+            hbox.addWidget(btn)
         btn = QtGui.QPushButton("Data")
+        btn.setDefault(True)
         btn.clicked.connect(self._data)
         hbox.addWidget(btn)
         btn = QtGui.QPushButton("Cancel")
@@ -416,7 +418,8 @@ class MainWindow(QtGui.QMainWindow):
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
-        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, default_main=self.ivm.main is None)
+        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, 
+                              default_main=self.ivm.main is None, possible_roi=(data.nvols ==1))
         if not options.exec_(): return
         
         data.name = options.name
