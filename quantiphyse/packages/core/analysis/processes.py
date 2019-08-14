@@ -200,6 +200,8 @@ class ExecProcess(Process):
         # Note that all data is combined using their raw grids so these
         # must all match if the result is to work - that is the user's job!
         gridfrom = options.pop("grid", None)
+        is_roi = options.pop("output-is-roi", False)
+
         if gridfrom is None:
             grid = self.ivm.main.grid
         else:
@@ -219,6 +221,6 @@ class ExecProcess(Process):
             else:
                 try:
                     result = eval(proc, exec_globals)
-                    self.ivm.add(result, grid=grid, name=name)
+                    self.ivm.add(result, grid=grid, name=name, roi=is_roi)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))

@@ -455,6 +455,7 @@ class SimpleMathsWidget(QpWidget):
         self.optbox.add("Data space from", DataOption(self.ivm), key="grid")
         self.optbox.add("Command", TextOption(), key="cmd")
         self.optbox.add("Output name", OutputNameOption(src_data=self.optbox.option("grid")), key="output-name")
+        self.optbox.add("Output is an ROI", BoolOption(), key="output-is-roi")
         layout.addWidget(self.optbox)
         
         hbox = QtGui.QHBoxLayout()
@@ -469,6 +470,7 @@ class SimpleMathsWidget(QpWidget):
         return {
             "Exec" : {
                 "grid" : self.optbox.option("grid").value,
+                "output-is-roi" : self.optbox.option("output-is-roi").value,
                 self.optbox.option("output-name").value : self.optbox.option("cmd").value,
             }
         }
