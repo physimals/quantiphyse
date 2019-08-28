@@ -58,8 +58,14 @@ def update_metadata(rootdir, version_str, timestamp_str):
 def get_requirements(rootdir):
     """ Get a list of all entries in the requirements file """
     with io.open(os.path.join(rootdir, 'requirements.txt'), encoding='utf-8') as f:
-        return [l.strip() for l in f.readlines()]
-
+        requirements = [l.strip() for l in f.readlines()]
+        for req in list(requirements):
+            if req.startswith("git+"):
+                module = req.split("egg=")[-1]
+                requirements.remove(req)
+                requirements.append(module)
+    return requirements
+    
 def get_version(rootdir):
     """ Get the current version number (and update it in the module _version.py file if necessary)"""
     version, timestamp = git_version()[1], git_timestamp()
