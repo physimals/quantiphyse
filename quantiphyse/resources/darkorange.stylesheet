@@ -509,6 +509,7 @@ QSpinBox {
 QSpinBox::up-button {
     border: none;
     image: url(:/up_arrow.png);
+    width: 16px;
 }
 
 QSpinBox::up-button:hover {
@@ -518,6 +519,7 @@ QSpinBox::up-button:hover {
 QSpinBox::down-button {
     border: none;
     image: url(:/down_arrow.png);
+    width: 16px;
 }
 
 QSpinBox::down-button:hover {
