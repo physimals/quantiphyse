@@ -130,11 +130,13 @@ You will need to install the Anaconda environment before using any of these reci
 When selecting a Python version, ``Python 2.7`` is the version on which Quantiphyse
 has been most tested, however you can also use ``python 3.x``. We intend to make
 Quantiphyse compatible with both version of Python for the foreseeable future
-although we are currently moving to Python 3 as the main development platform.
+although we are currently moving to Python 3 as the main development platform. The 
+instructions below create a Python 2.7 environment as the dependencies (such as PySide)
+are better supported on this version.
 
-Once installed, use the following commands from a command prompt::
+Once Anaconda is installed, use the following commands from a command prompt::
 
-    conda create -n qp
+    conda create -n qp python=2.7
     conda activate qp
     conda config --add channels conda-forge
     conda install cython funcsigs matplotlib nibabel numpy pillow pyqtgraph pyside pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
