@@ -72,6 +72,7 @@ User Guide
    cest/cest
    dce/dce
    dsc/dsc
+   qbold/qbold
    generic/generic_tools
    advanced/advanced_tools
    faq
