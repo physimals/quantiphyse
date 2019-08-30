@@ -48,7 +48,7 @@ directory, in the ``course_data/qBOLD`` folder.
     (Click the link ``streamlined-qBOLD_stud…`` to download a compressed archive of the data).
 
 Start by loading the qBOLD data into Quantiphyse - use ``File->Load Data`` or drag and drop to load the file 
-``sub-01_task-csfnull_rec-filtered_ase_av.nii.gz`` in the ``sub-01/func`` folder. In the Load Data dialog select Data.
+``sub-01_sqbold_gase.nii.gz`` in the ``sub-01/func`` folder. In the Load Data dialog select Data.
 
 .. image:: /screenshots/qbold/drag_drop_choice.png
 
