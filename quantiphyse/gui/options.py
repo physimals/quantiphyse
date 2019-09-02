@@ -28,7 +28,7 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
-from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url
+from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url, default_save_dir, set_default_save_dir
 from quantiphyse.gui.dialogs import MatrixViewerDialog
 from quantiphyse.gui.pickers import PickMode
 
@@ -984,45 +984,63 @@ class VectorOption(MatrixOption):
                     return None, r.leftColumn()
         return None, None    
   
-class NumberListOption(Option, QtGui.QLineEdit):
+class NumberListOption(Option, QtGui.QWidget):
     """ 
     A list of numbers which may be entered space or comma separated
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, initial=(), intonly=False):
-        QtGui.QLineEdit.__init__(self)
+        QtGui.QWidget.__init__(self)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(hbox)
+
+        self._edit = QtGui.QLineEdit()
+        self._edit.dropEvent = self.dropEvent
+        hbox.addWidget(self._edit)
+        self._btn = QtGui.QPushButton("Load")
+        self._btn.clicked.connect(self._load_clicked)
+        hbox.addWidget(self._btn)
+
         if intonly:
             self._type = int
         else:
             self._type = float
         self.value = initial
-        self.editingFinished.connect(self._edit_changed)
+        self._edit.editingFinished.connect(self._edit_changed)
 
     @property
     def value(self):
         """ List of numbers or empty list if invalid data entered """
         try:
-            text = self.text().replace(",", " ")
+            text = self._edit.text().replace(",", " ")
             return [self._type(v) for v in text.split()] 
         except ValueError:
             return []
 
     @value.setter
     def value(self, vals):
-        self.setText(" ".join([str(v) for v in vals]))
+        self._edit.setText(" ".join([str(v) for v in vals]))
         self._edit_changed()
 
     def _edit_changed(self):
         try:
-            text = self.text().replace(",", " ")
+            text = self._edit.text().replace(",", " ")
             numbers = [self._type(v) for v in text.split()]
-            self.setText(" ".join([str(v) for v in numbers]))
-            self.setStyleSheet("")
+            self._edit.setText(" ".join([str(v) for v in numbers]))
+            self._edit.setStyleSheet("")
         except ValueError:
             # Colour edit red but don't change anything
-            self.setStyleSheet("QLineEdit {background-color: #d05050}")
+            self._edit.setStyleSheet("QLineEdit {background-color: #d05050}")
         self.sig_changed.emit()
+
+    def _load_clicked(self):
+        filename, _ = QtGui.QFileDialog.getOpenFileName(dir=default_save_dir())
+        if filename:
+            set_default_save_dir(os.path.dirname(filename))
+            self._load_file(filename)
 
     def dragEnterEvent(self, event):
         """ Called when item is dragged into the matrix grid"""
@@ -1190,7 +1208,7 @@ class FileOption(Option, QtGui.QWidget):
         if self._dirs:
             path = QtGui.QFileDialog.getExistingDirectory(dir=self.value)
         else:
-            path = QtGui.QFileDialog.getOpenFileName(dir=os.path.dirname(self.value))
+            path, _ = QtGui.QFileDialog.getOpenFileName(dir=os.path.dirname(self.value))
         self._edit.setText(path)
         self.sig_changed.emit()
 
