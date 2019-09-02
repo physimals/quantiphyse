@@ -48,7 +48,7 @@ Loading some data
 ^^^^^^^^^^^^^^^^^
 
 If you are taking part in an organized practical, the data required will be available in your home
-directory, in the ``fsl_course/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
+directory, in the ``course_data/ASL`` folder. If not, the data can be can be downloaded from the FSL course site: 
 https://fsl.fmrib.ox.ac.uk/fslcourse/ (Scroll down to the section entitled ``Data Files`` and choose the ASL 
 data from the list of download links).
 
@@ -602,7 +602,7 @@ tab. On the ``Analysis`` tab, select ``Partial Volume Correction``.
 Again, this analysis will not be very quick and so you might not wish to click ``Run`` right now.
 
 You will find the results of this analysis already completed for you in the directory
-``~/fsl_course_data/ASL/oxasl_mpld_pvout``. This results directory contains, as a further subdirectory, 
+``~/course_data/ASL/oxasl_mpld_pvout``. This results directory contains, as a further subdirectory, 
 ``pvcorr``, within the ``native_space`` subdirectory, the partial volume corrected results: gray matter 
 (``perfusion_calib.nii.gz etc``) and white matter perfusion (``perfusion_wm_calib.nii.gz etc``) maps. 
 

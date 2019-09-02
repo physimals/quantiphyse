@@ -25,7 +25,7 @@ Loading the data
 ^^^^^^^^^^^^^^^^
 
 If you are taking part in an organized practical workshop, the data required may be available in your home
-directory, in the ``fsl_course/IMAGO`` folder. If not, an encrypted zipfile containing the data can be 
+directory, in the ``course_data/IMAGO`` folder. If not, an encrypted zipfile containing the data can be 
 downloaded below - you will be given the password by the course organizers:
 
   - `Self extracting Windows archive <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EU-VO64VDvxFiZXC9lbrWckBc9wFpl1DiNeEsX2B8XJK6A?e=DgK3Oc>`_
