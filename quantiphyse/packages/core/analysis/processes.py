@@ -156,6 +156,7 @@ class DataStatisticsProcess(Process):
         for region, name in roi.regions.items():
             # get data for a single label of the roi
             in_roi = data_arr[roi_arr == region]
+            in_roi = in_roi[np.isfinite(in_roi)]
             if in_roi.size > 0:
                 mean, med, std = np.mean(in_roi), np.median(in_roi), np.std(in_roi)
                 mx, mn = np.max(in_roi), np.min(in_roi)
