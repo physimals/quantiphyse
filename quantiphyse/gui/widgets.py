@@ -1481,9 +1481,12 @@ class FslDirWidget(QtGui.QFrame):
         lbl = QtGui.QLabel("Using FSL in")
         hbox.addWidget(lbl)
         hbox.setAlignment(lbl, QtCore.Qt.AlignTop) # Because the elided label always goes to the top...
-        
-        self.label = ElidedLabel()
-        hbox.addWidget(self.label)
+        vbox = QtGui.QVBoxLayout() 
+        self._fsldir_label = ElidedLabel()
+        vbox.addWidget(self._fsldir_label)
+        self._fsldevdir_label = ElidedLabel()
+        vbox.addWidget(self._fsldevdir_label)
+        hbox.addLayout(vbox)
 
         btn = QtGui.QPushButton("Change")
         btn.clicked.connect(self._change_fsldir)
@@ -1559,15 +1562,22 @@ class FslDirWidget(QtGui.QFrame):
             self.sig_changed.emit(self.fsldir)
             
     def _update_label(self):
-        text = self.fsldir
+        text = []
+        if self.fsldir:
+            text.append(self.fsldir)
         if self.fsldevdir:
-            text += "\n%s" % self.fsldevdir
-        if text:
-            self.label.setText(text)
-            self.label.setToolTip(text)
+            text.append(self.fsldevdir)
+
+        self._fsldevdir_label.setText("")
+        if len(text) > 0:
+            self._fsldir_label.setText(text[0])
+            self._fsldir_label.setToolTip(text[0])
+            if len(text) > 1:
+                self._fsldevdir_label.setText(text[1])
+                self._fsldevdir_label.setToolTip(text[1])
         else:
-            self.label.setText("FSLDIR not set - click button to set")
-            self.label.setToolTip("")
+            self._fsldir_label.setText("FSLDIR not set - click button to set")
+            self._fsldir_label.setToolTip("")
 
     def _possible_fsldir(self, folder):
         return os.path.exists(os.path.join(folder, "bin", "flirt"))
