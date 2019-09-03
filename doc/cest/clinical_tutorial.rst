@@ -238,7 +238,9 @@ Here we are most interested in the behaviour of the Amide pool: ``cest_rstar_Ami
 there is a relatively large tumour on the right hand side of the brain. If we select ``cest_rstar_Amide`` from 
 the overlay selector (below the viewing window), an increase in CESTR* is evident around the outer edge of 
 the tumour. To see this clearly, we can set the color map range to between 0 and 4.5 using the 
-'levels' button from the overlay selector below the viewer:
+'levels' |levels| button from the overlay selector below the viewer:
+
+.. |levels| image:: /screenshots/overlay_levels.png 
 
 .. image:: /screenshots/cest/clinical_amide_rstar_levels.png
 
