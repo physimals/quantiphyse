@@ -237,7 +237,12 @@ macromolecular pool), and these values will be summarised for each voxel underne
 Here we are most interested in the behaviour of the Amide pool: ``cest_rstar_Amide``. In this clinical example, 
 there is a relatively large tumour on the right hand side of the brain. If we select ``cest_rstar_Amide`` from 
 the overlay selector (below the viewing window), an increase in CESTR* is evident around the outer edge of 
-the tumour.
+the tumour. To see this clearly, we can set the color map range to between 0 and 4.5 using the 
+'levels' button from the overlay selector below the viewer:
+
+.. image:: /screenshots/cest/clinical_amide_rstar_levels.png
+
+The CESTR* map should then appear as folows:
 
 .. image:: /screenshots/cest/clinical_amide_rstar.png
 
@@ -247,7 +252,8 @@ the options to smooth ``cest_rstar_Amide`` with a smoothing kernel size of 3mm:
 
 .. image:: /screenshots/cest/clinical_smoothing.png
 
-The output of this smoothing appears as follows (windowed between 0 and 4.5:
+The output of this smoothing appears as follows (again with the color map set to
+between 0 and 4.5 as before):
 
 .. image:: /screenshots/cest/clinical_smoothing_output.png
 
