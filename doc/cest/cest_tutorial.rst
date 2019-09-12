@@ -326,8 +326,8 @@ the ``Run`` button.
 
 .. image:: /screenshots/cest_tutorial_lda.png
 
-LDA works by fitting a subset of the raw CEST data (within ±1ppm, and beyond ±30ppm) to a water pool (or a water 
-plus MT pool if chosen), and then subtracting this model fit from the data. This leaves behind the smaller non-water 
+LDA works by fitting a subset of the raw CEST data (within ±1ppm, and beyond ±30ppm) to a water pool,
+and then subtracting this model fit from the data. This leaves behind the smaller non-water 
 peaks in the data, called a Lorentzian Difference spectrum. QuantiCEST outputs this as ``lorenz_diff.nii.gz``.
 This can be viewed in the ``Voxel Analysis`` widget alongside the data signal and the model-based fit:
 
