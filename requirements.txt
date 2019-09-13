@@ -12,3 +12,4 @@ scikit-image
 setuptools
 six
 pandas
+cython
