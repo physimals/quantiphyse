@@ -2,7 +2,7 @@ matplotlib
 nibabel
 numpy
 Pillow
-git+git://github.com/pyqtgraph/pyqtgraph@ad7453c7818eddb3b18354c65370f416cb668b29#egg=pyqtgraph
+pyqtgraph-qp
 PySide2
 PyYAML
 requests
