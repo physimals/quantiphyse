@@ -3,20 +3,14 @@
 Installation of Quantiphyse
 ===========================
 
-Quantiphyse is in PyPi and therefore *in principle* if you have Python, installation 
-is as simple as::
+Quantiphyse is in PyPi. If you have Python and 'pip' working, installation 
+*may* be as simple as::
 
     pip install quantiphyse
 
-In practice it is often *not* as simple as this. The main reason is ``PySide`` 
-(the library we use for the user interface). This needs to be compiled against
-a rather old version of the QT GUI library which requires separate installation. 
-
-Alternatively a binary version of PySide can
-be installed but a suitable package isn't available for every version of Python.
-   
-Below are a number of 'recipes' for different platforms which have been verified to 
-work. If you find a problem with one of these recipes, please report it using the
+In practice it *not* always as simple as this. So, below are a number of 'recipes' 
+for different platforms which have been verified to work. If you find a problem with 
+one of these recipes, please report it using the
 `Issue Tracker <https://github.com/ibme-qubic/quantiphyse/issues>`_.
 
 .. note::
@@ -26,18 +20,27 @@ work. If you find a problem with one of these recipes, please report it using th
 .. contents:: Platforms
     :local:
 
-Ubuntu 16.04 / 18.04
---------------------
+Ubuntu 16.04
+------------
 
-From a terminal window::
-
-    sudo apt install libqt4-dev qt4-qmake cmake python-dev python-setuptools
-
-To install pip on Ubuntu 16.04::
+From a terminal window:
 
     sudo easy_install pip
 
-On Ubuntu 18.04::
+Now install the application:
+
+    pip install quantiphyse --user
+
+The recipe above just installs the main application. To install plugins use::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+
+Alternatively, you can use `Anaconda`_ in Ubuntu.
+
+Ubuntu 18.04
+------------
+
+From a terminal window:
 
     sudo apt install python-pip
 
@@ -45,59 +48,66 @@ Now install the application:
 
     pip install quantiphyse --user
 
-The last step will take a while! The PySide GUI library is being built - the 
-terminal will show::
-
-    Running setup.py install for PySide ... |
-
-Go get a coffee and come back later.
-
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
-    pip install deprecation==1.2 --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
 
-The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
-more information. 
+.. note::
+    In some cases on Ubuntu 18.04 you may find that 'quantiphyse' will not run from
+    the command line until you have either logged out and back in again or run
+    ``source $HOME/.profile`` at the command prompt.
 
-Alternatively, you can use `Anaconda`_ in Ubuntu. 
-
-You can also use the method above in a virtualenv or a Conda environment. To do this:
-
- - Run the first ``sudo apt install`` command above
- - Create and activate a Conda or virtual environment, e.g. as described in the `Anaconda`_ section
- - Run the ``pip install`` commands above
-
-This is a slightly better method as it keeps Quantiphyse and all it's dependencies in an isolated
-environment, however it does mean you will need to activate the environment in order to run 
-Quantiphyse.
+Alternatively, you can use `Anaconda`_ in Ubuntu.
 
 Centos 7
 --------
 
-This recipe was tested in a Gnome Desktop installation. Open a terminal window and use the following::
+This recipe was tested in a Gnome Desktop installation. Open a terminal window and
+use the following::
 
-    sudo yum install qt-devel cmake python-devel gcc gcc-c++
     sudo easy_install pip
-    pip install cython numpy six==1.10.0 setuptools --upgrade --user
     pip install quantiphyse --user
-
-The last step will take a while! The PySide GUI library is being built - the 
-terminal will show::
-
-    Running setup.py install for PySide ... |
-
-Go watch some cat videos and come back later. 
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl --user
-    pip install deprecation==1.2 --user
+    sudo yum install gcc-c++ python-devel
+    sudo pip install setuptools --upgrade
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
 
-The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
-more information. 
+Alternatively, you can use `Anaconda`_ in Centos.
 
-Alternatively, you can use `Anaconda`_ in Ubuntu.
+Use of virtualenv
+-----------------
+
+``virtualenv`` is a tool for creating isolated Python environments. It can be preferable to installing
+applications in the system Python environment. You can use ``virtualenv`` on most platforms - for example
+to install into Ubuntu use::
+
+    sudo apt install python-virtualenv
+
+Once installed you have to create and 'activate' the environment before installing applications::
+
+    virtualenv $HOME/venvs/qp
+    source $HOME/venvs/qp/bin/activate
+    pip install quantiphyse
+
+To install Quantiphyse plugins use::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+
+When you have finished using a virtualenv you must 'deactivate' it by simply running::
+
+    deactivate
+
+To run an application installed in a virtualenv it must be activated first, e.g.::
+
+    source $HOME/venvs/qp/bin/activate
+    quantiphyse
+
+.. note::
+    Some Quantiphyse plugins require a C++ compiler to build extensions. You may need to install this
+    before you can install the plugins. See the Ubuntu and Centos sections above for examples of how
+    to install a C++ compiler on these platforms. 
 
 Windows
 -------
@@ -108,56 +118,100 @@ to install Python - see `Anaconda`_ below.
 Mac OSX
 -------
 
-On Mac we recommend either the Anaconda python distribution - see 
-`Anaconda`_ or `Homebrew`_. The system python has 
-difficulties installing ``PySide`` due to the old version of Qt that 
-is required.
-
-Homebrew
---------
-
-To be completed...
+On Mac we recommend the Anaconda python distribution - see 
+`Anaconda`_. If you have experience of installation using Homebrew please
+contact us with your recipe.
 
 Anaconda
 --------
 
-Anaconda (`<https://www.anaconda.org>`_) is an easy to install distribuction of Python which
-also includes the ``conda`` tool for installing packages. We find ``conda`` generally better than 
-``pip`` for dependency management and binary packages such as ``pyside``. Anaconda can
-be installed on Windows, Mac and Linux.
+Anaconda (`<https://www.anaconda.org>`_) is an easy to install distribution of Python which
+also includes the ``conda`` tool for installing packages. 
 
 You will need to install the Anaconda environment before using any of these recipes.
 When selecting a Python version, ``Python 2.7`` is the version on which Quantiphyse
 has been most tested, however you can also use ``python 3.x``. We intend to make
 Quantiphyse compatible with both version of Python for the foreseeable future
-although we are currently moving to Python 3 as the main development platform. The 
-instructions below create a Python 2.7 environment as the dependencies (such as PySide)
-are better supported on this version.
+although we are currently moving to Python 3 as the main development platform.
 
-Once Anaconda is installed, use the following commands from a command prompt::
+Once Anaconda is installed, follow the instructions in the relevant section below:
+
+.. note::
+    In the future we hope to put Quantiphyse into conda itself so the whole
+    process can consist of ``conda install quantiphyse``.  
+
+Anaconda Python 2.7
+~~~~~~~~~~~~~~~~~~~
+
+On Windows you must first install Visual C++ for Python 2.7 from:
+
+http://aka.ms/vcpython27
+    
+Then use the following commands::
 
     conda create -n qp python=2.7
     conda activate qp
-    conda config --add channels conda-forge
-    conda install cython funcsigs matplotlib nibabel numpy pillow pyqtgraph pyside pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
+    conda install -c conda-forge cython funcsigs matplotlib nibabel numpy pillow pyside2 pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
+    pip install pyqtgraph-qp
     pip install quantiphyse --no-deps
 
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-cest quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
-    pip install deprecation==1.2
-
-The last step corrects a startup problem caused by a dependency - see the :ref:`faq` for
-more information.
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
 
 On Mac you will also need to do::
 
     pip install pyobjc
 
-In the future we hope to put Quantiphyse into conda itself so the whole
-process can consist of ``conda install quantiphyse``.  
+Anaconda Python 3.x
+~~~~~~~~~~~~~~~~~~~
 
+On Windows you must first install Visual C++ tools for Python 3 from:
 
+https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
 
+Then use the following commands::
 
+    conda create -n qp python=3
+    conda activate qp
+    conda install -c conda-forge cython funcsigs matplotlib nibabel numpy pillow pyside2 pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
+    pip install pyqtgraph-qp
+    pip install quantiphyse --no-deps
+
+This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
+plugins::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+
+On Mac you will also need to do::
+
+    pip install pyobjc
+
+Anaconda Python 3.x (dependencies from pip)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This variation takes dependencies from ``pip`` rather than conda. Normally it is preferable to use
+``conda`` for dependencies as you can run into problems when using different package managers for the
+same package. However you may want to try this recipe if the previous ones do not work for you.
+(but please `tell us as well <https://github.com/ibme-qubic/quantiphyse/issues>`_ so we can fix 
+the instructions!)::
+
+On Windows you must first install Visual C++ tools for Python 3 from:
+
+https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
+
+Then use the following commands::
+
+    conda create -n qp python=3
+    conda activate qp
+    pip install quantiphyse
+
+This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
+plugins::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+
+On Mac you will also need to do::
+
+    pip install pyobjc

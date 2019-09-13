@@ -32,6 +32,19 @@ This can be fixed with::
 
 The cause is an apparently invalid requirements specification in a dependency package.
 
+Error installing dependencies using conda
+-----------------------------------------
+
+The error usually includes the following::
+
+    UnsatisfiableError: The following specifications were found to be incompatible with each other:
+
+The cause seems to be a bug in Conda version 4.7.x when using the conda-forge channel. To fix, use the following
+to downgrade to an older version of conda::
+
+    conda config --set allow_conda_downgrades true
+    conda install conda=4.6.14
+
 Running
 ^^^^^^^
 
