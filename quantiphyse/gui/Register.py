@@ -23,19 +23,33 @@ from quantiphyse._version import __license__
 
 LICENSE_ACCEPTED_KEY = "license_accepted"
 
+def license_accepted():
+    settings = QtCore.QSettings()
+    if settings.contains(LICENSE_ACCEPTED_KEY):
+        try:
+            return int(settings.value(LICENSE_ACCEPTED_KEY))
+        except:
+            # Invalid value - assume not accepted
+            return 0
+    return 0
+
+def set_license_accepted(accepted=1):
+    settings = QtCore.QSettings()
+    settings.setValue(LICENSE_ACCEPTED_KEY, accepted)
+
 def check_register():
     """
     Check if the user has accepted the license agreement and if not show the 
     license/registration dialog
     """
-    settings = QtCore.QSettings()
-    if not settings.contains(LICENSE_ACCEPTED_KEY) or not int(settings.value(LICENSE_ACCEPTED_KEY)):
+    if not license_accepted():
         accepted = LicenseDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
-        settings.setValue(LICENSE_ACCEPTED_KEY, int(accepted))
+        set_license_accepted(accepted)
         if accepted:
             RegisterDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
 
-    if not int(settings.value(LICENSE_ACCEPTED_KEY)):
+    if not license_accepted():
+        # User got the license dialog but did not accept it
         sys.exit(-1)
 
 class LicenseDialog(QtGui.QDialog):
