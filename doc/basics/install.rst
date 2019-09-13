@@ -23,11 +23,11 @@ one of these recipes, please report it using the
 Ubuntu 16.04
 ------------
 
-From a terminal window:
+From a terminal window::
 
     sudo easy_install pip
 
-Now install the application:
+Now install the application::
 
     pip install quantiphyse --user
 
@@ -40,11 +40,11 @@ Alternatively, you can use `Anaconda`_ in Ubuntu.
 Ubuntu 18.04
 ------------
 
-From a terminal window:
+From a terminal window::
 
     sudo apt install python-pip
 
-Now install the application:
+Now install the application::
 
     pip install quantiphyse --user
 
