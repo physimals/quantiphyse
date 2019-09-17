@@ -37,6 +37,9 @@ SPLIT_AXIS = 0
 #: Whether to use multiprocessing - can be disabled for debugging
 MULTIPROC = True
 
+# Guard against processes which fail with massive logfiles
+MAX_LOG_SIZE=100000
+
 LOG = logging.getLogger(__name__)
 
 def _worker_initialize():
@@ -539,13 +542,13 @@ class Process(QtCore.QObject, LogSource):
     def _worker_finished_cb(self, result):
         worker_id, success, output = result
         self.debug("Process worker finished: id=%i, status=%s", worker_id, str(success))
-        self._workers[worker_id] = None
 
         if self.status in (Process.FAILED, Process.CANCELLED):
             # If one process has already failed or been cancelled, ignore results of others
             self.debug("Ignoring worker, process already failed or cancelled")
             return
         elif success:
+            self._workers[worker_id] = None # FIXME why? Memory leak?
             if worker_id < len(self._worker_output):
                 self._worker_output[worker_id] = output
                 if None not in self._worker_output:
@@ -553,8 +556,13 @@ class Process(QtCore.QObject, LogSource):
         else:
             # If one process fails, they all fail. Output is just the first exception to be caught
             # FIXME cancel other workers?
+            # FIXME log capture is ugly - better to have 'sig_failed' callback
             self.status = Process.FAILED
             self.exception = output
+            if hasattr(output, "log"):
+                self.log(output.log[:MAX_LOG_SIZE])
+                if len(output.log) > MAX_LOG_SIZE:
+                    self.log("WARNING: Exception log was too large - truncated at %i chars" % MAX_LOG_SIZE)
 
         if self.status != Process.RUNNING:
             # Need to use invokeMethod here because the process callback is in a 
