@@ -114,15 +114,63 @@ def get_lib_fname(name):
     else:
         return "lib%s.so" % name
 
-def get_local_shlib(name, loc):
+def get_exe_fname(name):
+    """ Get file name for named executable on current platform """
+    if sys.platform.startswith("win"):
+        return "%s.exe" % name
+    else:
+        return  name
+
+def get_local_shlib(name, loc=None):
     """
-    Get a named shared library which is stored locally to another file
+    Get a named shared library which is stored locally
+
+    :param name: Name of shared library which will be turned into an actual filename
+                 in a platform dependent way
+    :param loc: Directory to make relative to. If not specified, use 'lib' subdirectory
+                of Quantiphyse local file directory
     """
+    if loc is None:
+        loc = os.path.join(LOCAL_FILE_PATH, "lib")
     return get_local_file(get_lib_fname(name), loc)
     
+def get_local_exe(name, loc=None):
+    """
+    Get a named executable which is stored locally
+
+    :param name: Name of executable which will be turned into an actual filename
+                 in a platform dependent way
+    :param loc: Directory to make relative to. If not specified, use 'lib' subdirectory
+                of Quantiphyse local file directory
+    """
+    if loc is None:
+        loc = os.path.join(LOCAL_FILE_PATH, "bin")
+    return get_local_file(get_exe_fname(name), loc)
+
 def default_save_dir():
     return DEFAULT_SAVE_DIR
 
 def set_default_save_dir(save_dir):
     global DEFAULT_SAVE_DIR
     DEFAULT_SAVE_DIR = save_dir
+
+def which(program):
+    """
+    Find an executable locally or in the user's PATH
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    elif is_exe(get_local_exe(program)):
+        return get_local_exe(program)
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, get_exe_fname(program))
+            if is_exe(exe_file):
+                return exe_file
+
+    return None

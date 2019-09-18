@@ -17,7 +17,6 @@ import numpy as np
 from quantiphyse.utils import QpException
 from .qpdata import DataGrid, QpData, NumpyData
 from .nifti import NiftiData, save as save_nifti
-from .dicoms import DicomFolder
 
 LOG = logging.getLogger(__name__)
 
@@ -27,9 +26,7 @@ def load(fname):
 
     :return: QpData instance
     """
-    if os.path.isdir(fname):
-        return DicomFolder(fname)
-    elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
+    if fname.endswith(".nii") or fname.endswith(".nii.gz"):
         return NiftiData(fname)
     else:
         raise QpException("%s: Unrecognized file type" % fname)

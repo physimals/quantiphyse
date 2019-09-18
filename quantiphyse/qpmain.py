@@ -119,7 +119,7 @@ def main():
         splash.show()
         app.processEvents()
 
-        win = MainWindow(load_data=args.data, widgets=not args.qv)
+        win = MainWindow(load_initial=args.data, widgets=not args.qv)
         splash.finish(win)
         sys.excepthook = my_catch_exceptions
         set_main_window(win)

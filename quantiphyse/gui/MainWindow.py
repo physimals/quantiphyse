@@ -7,7 +7,7 @@ Copyright (c) 2013-2018 University of Oxford
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 import os
-
+import glob
 import numpy as np
 
 try:
@@ -18,20 +18,76 @@ except ImportError:
 import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.gui.widgets import FingerTabWidget
+import quantiphyse.data.dicoms
+from quantiphyse.gui.widgets import FingerTabWidget, ElidedLabel
 from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
 from quantiphyse import __contrib__, __acknowledge__
 
 from .ViewOptions import ViewOptions
 from .ImageView import ImageView
 
-class DragOptions(QtGui.QDialog):
+class ImportDicoms(QtGui.QDialog):
+    def __init__(self, parent, dirname):
+        QtGui.QDialog.__init__(self, parent)
+        self._dirname = dirname
+
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        vbox.addWidget(QtGui.QLabel("<font size=5>Import DICOMS</font>"))
+        vbox.addWidget(ElidedLabel("Loading DICOM files from: %s" % dirname))
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(QtGui.QLabel("Filter"))
+        self._filter_edit = QtGui.QLineEdit("*")
+        self._filter_edit.editingFinished.connect(self._update_files)
+        hbox.addWidget(self._filter_edit)
+        self._recurse_cb = QtGui.QCheckBox("Recurse into subdirectories")
+        self._recurse_cb.stateChanged.connect(self._update_files)
+        hbox.addWidget(self._recurse_cb)
+        
+        vbox.addLayout(hbox)
+
+        vbox.addWidget(QtGui.QLabel("Matching files"))
+        self._file_list = QtGui.QListWidget()
+        vbox.addWidget(self._file_list)
+
+        buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        vbox.addWidget(buttons)
+        self._update_files()
+
+    def _update_files(self):
+        self._file_list.clear()
+        filt = self.filter
+        files = glob.glob(os.path.join(self._dirname, filt))
+        print("pre-recurse: " + str(files))
+        if self.recurse:
+            for root, dirnames, filenames in os.walk(self._dirname):
+                print(root, dirnames, filenames)
+                for dirname in dirnames:
+                    files.extend(glob.glob(os.path.join(root, dirname, filt)))
+                    print(dirname, str(files))
+
+        for fname in files:
+            self._file_list.addItem(os.path.relpath(fname, self._dirname))
+
+    @property
+    def filter(self):
+        return self._filter_edit.text()
+
+    @property
+    def recurse(self):
+        return self._recurse_cb.isChecked()
+
+class LoadDataOptions(QtGui.QDialog):
     """
-    Interface for dealing with drag and drop
+    Dialog for loading data interactively
     """
 
     def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False, possible_roi=True):
-        super(DragOptions, self).__init__(parent)
+        super(LoadDataOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
         self.force_t = False
@@ -123,14 +179,17 @@ class MainWindow(QtGui.QMainWindow):
     """
     Main application window
 
-    Initializes volume management object and main view widget.
-    Loads optional widgets
-    Builds menus
-    Requests registration if required
-    Loads data from command line options
+    The main window contains the viewer, menus and (normally) a pane for
+    the widgets. The widget pane is optional if you want a quick starting viewer
     """
 
-    def __init__(self, load_data=None, widgets=True):
+    def __init__(self, load_initial=(), widgets=True):
+        """
+        Constructor
+
+        :param load_initial: Optional sequence of filenames to load non-interactively at startup
+        :param widgets: If True, include widgets - otherwise just create viewing window
+        """
         super(MainWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
@@ -159,6 +218,7 @@ class MainWindow(QtGui.QMainWindow):
         main_widget.setLayout(hbox)
         self.setCentralWidget(main_widget)
         
+        # Load widgets if requested
         if widgets:
             default_size = (1000, 700)
             widgets = get_plugins("widgets")
@@ -177,7 +237,8 @@ class MainWindow(QtGui.QMainWindow):
         else:
             default_size = (700, 700)
 
-        self.init_menu()
+        # Initialize menu bar
+        self._init_menu()
         
         # General properties of main window
         self.setWindowTitle("Quantiphyse %s" % get_version())
@@ -188,9 +249,8 @@ class MainWindow(QtGui.QMainWindow):
         self.show()
 
         # Load any files from the command line
-        if load_data:
-            for fname in load_data:
-                self.load_data(fname=fname)
+        for fname in load_initial:
+            self._load_data(fname=fname, interactive=False)
 
     def _init_tabs(self):
         self.tab_widget = FingerTabWidget(self)
@@ -223,70 +283,79 @@ class MainWindow(QtGui.QMainWindow):
         self.current_widget = self.tab_widget.widget(idx)
         self.current_widget.activate()
         
-    def init_menu(self):
+    def _init_menu(self):
         """
         Set up the main window menus
         """
-        
-        # File --> Load Data
-        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
-        load_action.setShortcut('Ctrl+L')
-        load_action.setStatusTip('Load a 3d or 4d image or ROI')
-        load_action.triggered.connect(self.load_data_interactive)
-
-        # File --> Save Data
-        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
-        save_ovreg_action.setStatusTip('Save current data as a NIFTI file')
-        save_ovreg_action.triggered.connect(self.save_data)
-        save_ovreg_action.setShortcut('Ctrl+S')
-
-        # File --> Save ROI
-        save_roi_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current ROI', self)
-        save_roi_action.setStatusTip('Save current ROI as a NIFTI file')
-        save_roi_action.triggered.connect(self.save_roi)
-
-        # File --> Clear all
-        clear_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
-        clear_action.setStatusTip('Remove all data from the viewer')
-        clear_action.triggered.connect(self._clear)
-
-        # File --> Exit
-        exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
-        exit_action.setShortcut('Ctrl+Q')
-        exit_action.setStatusTip('Exit Application')
-        exit_action.triggered.connect(self.close)
-
-        # About
-        about_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
-        about_action.setStatusTip('About Quantiphyse')
-        about_action.triggered.connect(self._show_about)
-
-        # Help -- > Online help
-        help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
-        help_action.setStatusTip('See online help file')
-        help_action.triggered.connect(self._show_help)
-
-        # Advanced --> Python Console
-        console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
-        console_action.setStatusTip('Run a console for advanced interaction')
-        console_action.triggered.connect(self.show_console)
-        
-        # Advanced --> Install Packages
-        #install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
-        #install_action.setStatusTip('Install additional packages')
-        #install_action.triggered.connect(self.install_packages)
-
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         widget_menu = menubar.addMenu('&Widgets')
         advanced_menu = menubar.addMenu('&Advanced')
         help_menu = menubar.addMenu('&Help')
 
-        file_menu.addAction(load_action)
-        file_menu.addAction(save_ovreg_action)
-        file_menu.addAction(save_roi_action)
-        file_menu.addAction(clear_action)
-        file_menu.addAction(exit_action)
+        # File -> Load Data
+        action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
+        action.setShortcut('Ctrl+L')
+        action.setStatusTip('Load a 3d or 4d image or ROI')
+        action.triggered.connect(self._load_data)
+        file_menu.addAction(action)
+
+        # File -> Import DICOMs
+        action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Import DICOMs', self)
+        action.setShortcut('Ctrl+I')
+        action.setStatusTip('Import DICOM files')
+        action.triggered.connect(self._import_dicoms)
+        file_menu.addAction(action)
+
+        # File -> Save Data
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
+        action.setStatusTip('Save current data as a NIFTI file')
+        action.triggered.connect(self._save_current_data)
+        action.setShortcut('Ctrl+S')
+        file_menu.addAction(action)
+
+        # File -> Save ROI
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), 'Save current &ROI', self)
+        action.setStatusTip('Save current ROI as a NIFTI file')
+        action.triggered.connect(self._save_current_roi)
+        file_menu.addAction(action)
+
+        # File -> Clear all
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
+        action.setStatusTip('Remove all data from the viewer')
+        action.triggered.connect(self._clear)
+        file_menu.addAction(action)
+
+        # File -> Exit
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
+        action.setShortcut('Ctrl+Q')
+        action.setStatusTip('Exit Application')
+        action.triggered.connect(self.close)
+        file_menu.addAction(action)
+
+        # Help -> Online help
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), 'Online &Help', self)
+        action.setStatusTip('See online help file')
+        action.triggered.connect(self._show_help)
+        help_menu.addAction(action)
+
+        # Help -> About
+        action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
+        action.setStatusTip('About Quantiphyse')
+        action.triggered.connect(self._show_about)
+        help_menu.addAction(action)
+
+        # Advanced -> Python Console
+        action = QtGui.QAction(QtGui.QIcon(get_icon("console")), 'Console', self)
+        action.setStatusTip('Run a console for advanced interaction')
+        action.triggered.connect(self._show_console)
+        advanced_menu.addAction(action)
+        
+        # Advanced --> Install Packages
+        #action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
+        #action.setStatusTip('Install additional packages')
+        #action.triggered.connect(self._install_packages)
+        #advanced_menu.addAction(action)
 
         widget_submenus = {"" : widget_menu}
         default_widget_groups = ["Visualisation", "Processing", "Clustering", "ROIs", "Utilities"]
@@ -304,12 +373,6 @@ class MainWindow(QtGui.QMainWindow):
                     action.widget = w
                     action.triggered.connect(self._show_widget)
                     widget_submenus[group].addAction(action)
-
-        help_menu.addAction(help_action)
-        help_menu.addAction(about_action)
-
-        advanced_menu.addAction(console_action)
-        #advanced_menu.addAction(install_action)
 
         # extra info displayed in the status bar
         self.statusBar()
@@ -345,7 +408,7 @@ class MainWindow(QtGui.QMainWindow):
             self.raise_()
             self.activateWindow()
             for fname in fnames:
-                self.load_data_interactive(fname)
+                self._load_data(fname)
         else:
             drag_data.ignore()
 
@@ -368,10 +431,10 @@ class MainWindow(QtGui.QMainWindow):
 
         QtGui.QMessageBox.about(self, "Quantiphyse", text)
 
-    #def install_packages(self):
-    #    raise QpException("Package installation not implemented yet")
+    #def _install_packages(self):
+    #    raise NotImplementedError()
 
-    def show_console(self):
+    def _show_console(self):
         """
         Creates a pop up console that allows interaction with the GUI and data
         Uses:
@@ -400,91 +463,95 @@ class MainWindow(QtGui.QMainWindow):
         console.setGeometry(QtCore.QRect(100, 100, 600, 600))
         console.show()
 
-    def load_data_interactive(self, fname=None, name=None):
+    def _load_data(self, fname=None, name=None, interactive=True):
         """
         Load data into the IVM from a file (which may already be known)
+
+        :param fname: If specified use this filename. Otherwise ask for a filename
+        :param name: If specified, use this name for the data
+        :param interactive: If True, provide options to user interactively. Otherwise
+                            just load silently using default options
         """
         if fname is None:
             fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', default_save_dir())
             if not fname: return
         set_default_save_dir(os.path.dirname(fname))
 
-        # Data is not loaded at this point, however basic metadata is so we can tailor the
-        # options we offer
+        # Raw data is typically not loaded at this point, however basic metadata is so we can 
+        # tailor the options we offer
         data = load(fname)
 
-        # If we have apparently 3d data then we have the 'advanced' option of treating the
-        # third dimension as time - some broken NIFTI files require this.
-        force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
-        force_t = False
-                
-        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, 
-                              default_main=self.ivm.main is None, possible_roi=(data.nvols ==1))
-        if not options.exec_(): return
-        
-        data.name = options.name
-        data.roi = options.type == "roi"
-        if force_t_option: force_t = options.force_t
-        
-        # If we had to do anything evil to make data fit, warn and give user the chance to back out
-        if force_t:
-            msg_box = QtGui.QMessageBox(self)
-            msg_box.setText("3D data was interpreted as multiple 2D volumes")
-            msg_box.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
-            if msg_box.exec_() != QtGui.QMessageBox.Ok: return
-            data.set_2dt()
-        
-        self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
+        if interactive:
+            # If we have apparently 3d data then we have the 'advanced' option of treating the
+            # third dimension as time - some broken NIFTI files require this.
+            force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
+            force_t = False
+                    
+            options = LoadDataOptions(self, fname, self.ivm, 
+                                      force_t_option=force_t_option, 
+                                      default_main=self.ivm.main is None, 
+                                      possible_roi=(data.nvols ==1))
+            if not options.exec_():
+                return
+            
+            data.name = options.name
+            data.roi = options.type == "roi"
+            if force_t_option: force_t = options.force_t
+            
+            # If we had to do anything evil to make data fit, warn and give user the chance to back out
+            if force_t:
+                msg_box = QtGui.QMessageBox(self)
+                msg_box.setText("3D data was interpreted as multiple 2D volumes")
+                msg_box.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+                msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+                if msg_box.exec_() != QtGui.QMessageBox.Ok: return
+                data.set_2dt()
 
-    def load_data(self, fname):
-        """
-        Load data non-interactively. The data will not be flagged as an ROI but the user
-        can change that later if they want. Any finer control and you need to use interactive
-        loading.
-        """
-        qpdata = load(fname)
-        name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
-        qpdata.name = name
-        self.ivm.add(qpdata)
+            self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
+        else:
+            data.name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
+            self.ivm.add(data)
 
-    def save_data(self):
+    def _save_data(self, qpdata):
         """
-        Dialog for saving an data as a nifti file
+        Dialog for saving data as a nifti file
         """
+        if hasattr(qpdata, "fname") and qpdata.fname is not None:
+            fname = qpdata.fname
+        else:
+            fname = os.path.join(default_save_dir(), qpdata.name + ".nii")
+
+        fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+                                                     filter="NIFTI files (*.nii *.nii.gz)")
+        if fname:
+            save(qpdata, fname)
+
+    def _save_current_data(self):
         if self.ivm.current_data is None:
             QtGui.QMessageBox.warning(self, "No data", "No current data to save", QtGui.QMessageBox.Close)
         else:
-            if hasattr(self.ivm.current_data, "fname") and self.ivm.current_data.fname is not None:
-                fname = self.ivm.current_data.fname
-            else:
-                fname = os.path.join(default_save_dir(), self.ivm.current_data.name + ".nii")
-
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
-                                                         filter="NIFTI files (*.nii *.nii.gz)")
-            if fname != '':
-                save(self.ivm.current_data, fname)
-            else: # Cancelled
-                pass
-
-    def save_roi(self):
-        """
-        Dialog for saving an ROI as a nifti file
-        """
+            self._save_data(self.ivm.current_data, "fname")
+            
+    def _save_current_roi(self):
         if self.ivm.current_roi is None:
             QtGui.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtGui.QMessageBox.Close)
         else:
-            if hasattr(self.ivm.current_roi, "fname") and self.ivm.current_roi.fname is not None:
-                fname = self.ivm.current_roi.fname
-            else:
-                fname = os.path.join(default_save_dir(), self.ivm.current_roi.name + ".nii")
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
-                                                         filter="NIFTI files (*.nii *.nii.gz)")
-            if fname != '':
-                save(self.ivm.current_roi, fname)
-            else: # Cancelled
-                pass
+            self._save_data(self.ivm.current_roi, "fname")
 
+    def _import_dicoms(self):
+        dirname = QtGui.QFileDialog.getExistingDirectory(self, 'Select directory containing DICOM files', 
+                                                         dir=default_save_dir())
+        if not dirname:
+            return
+
+        import_dialog = ImportDicoms(self, dirname)
+        if not import_dialog.exec_():
+            return
+
+        qpdata = quantiphyse.data.dicoms.load(dirname, import_dialog.filter)
+        qpdata.name = self.ivm.suggest_name(os.path.split(dirname)[1].split(".", 1)[0])
+        self.ivm.add(qpdata)
+        
     def _clear(self):
         if self.ivm.data:
             msg_box = QtGui.QMessageBox()

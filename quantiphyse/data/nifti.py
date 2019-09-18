@@ -1,5 +1,5 @@
 """
-Quantiphyse - Subclass of QpData for handling Nifti data
+Quantiphyse - Module for loading / saving NIFTI data
 
 Copyright (c) 2013-2018 University of Oxford
 """
@@ -17,6 +17,56 @@ from .qpdata import DataGrid, QpData
 LOG = logging.getLogger(__name__)
 
 QP_NIFTI_EXTENSION_CODE = 42
+
+def load(fname):
+    return NiftiData(fname)
+
+def save(data, fname, grid=None, outdir=""):
+    """
+    Save data to a file
+    
+    :param data: QpData instance
+    :param fname: Output file name
+    :param grid: If specified, grid to save the data on
+    :param outdir: Optional output directory if fname is not absolute
+    """
+    if grid is None:
+        grid = data.grid
+        arr = data.raw().copy()
+    else:
+        arr = data.resample(grid).raw().copy()
+        
+    if hasattr(data, "nifti_header"):
+        header = data.nifti_header.copy()
+    else:
+        header = None
+
+    img = nib.Nifti1Image(arr, grid.affine, header=header)
+    img.update_header()
+    if data.metadata:
+        from quantiphyse.utils.batch import to_yaml
+        yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
+        LOG.debug("Writing metadata: %s", yaml_metadata)
+        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
+        img.header.extensions.append(ext)
+
+    if not fname:
+        fname = data.name
+        
+    _, extension = os.path.splitext(fname)
+    if extension == "":
+        fname += ".nii"
+        
+    if not os.path.isabs(fname):
+        fname = os.path.join(outdir, fname)
+
+    dirname = os.path.dirname(fname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    LOG.debug("Saving %s as %s", data.name, fname)
+    img.to_filename(fname)
+    data.fname = fname
 
 class NiftiData(QpData):
     """
@@ -104,50 +154,3 @@ class NiftiData(QpData):
         if arr.ndim == 4 and arr.shape[3] == 1:
             arr = np.squeeze(arr, axis=-1)
         return arr
-
-def save(data, fname, grid=None, outdir=""):
-    """
-    Save data to a file
-    
-    :param data: QpData instance
-    :param fname: File name
-    :param grid: If specified, grid to save the data on
-    :param outdir: Optional output directory if fname is not absolute
-    """
-    if grid is None:
-        grid = data.grid
-        arr = data.raw().copy()
-    else:
-        arr = data.resample(grid).raw().copy()
-        
-    if hasattr(data, "nifti_header"):
-        header = data.nifti_header.copy()
-    else:
-        header = None
-
-    img = nib.Nifti1Image(arr, grid.affine, header=header)
-    img.update_header()
-    if data.metadata:
-        from quantiphyse.utils.batch import to_yaml
-        yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
-        LOG.debug("Writing metadata: %s", yaml_metadata)
-        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
-        img.header.extensions.append(ext)
-
-    if not fname:
-        fname = data.name
-        
-    _, extension = os.path.splitext(fname)
-    if extension == "":
-        fname += ".nii"
-        
-    if not os.path.isabs(fname):
-        fname = os.path.join(outdir, fname)
-
-    dirname = os.path.dirname(fname)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    LOG.debug("Saving %s as %s", data.name, fname)
-    img.to_filename(fname)
-    data.fname = fname
