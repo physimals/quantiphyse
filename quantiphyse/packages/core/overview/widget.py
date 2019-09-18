@@ -13,6 +13,8 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
+
+from quantiphyse.data import save
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.utils import default_save_dir, get_icon, get_local_file
 from quantiphyse import __contrib__, __acknowledge__
