@@ -17,6 +17,12 @@ one of these recipes, please report it using the
     To use some plugins you'll need to have a working ``FSL`` installation. For more 
     information go to `FSL installation <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_.
 
+.. note::
+    Installable packages for Windows, Mac and Ubuntu are also available from 
+    `OUI <https://process.innovation.ox.ac.uk/software/>`_. These are
+    generally slightly behind the latest version however installation may be more straightforward.
+    If you are a commercial organization **you must contact OUI for a commercial license**.
+
 .. contents:: Platforms
     :local:
 
@@ -76,6 +82,39 @@ The recipe above just installs the main application. To install plugins use::
 
 Alternatively, you can use `Anaconda`_ in Centos.
 
+Mac OSX
+-------
+
+`Anaconda`_ has been the usual method we have used to install Quantiphyse on Mac due
+to poor support for recent versions of Python on Mac.
+
+However, on recent releases of OSX (e.g. Mojave) you can install Quantiphyse into the
+system Python::
+
+    pip install quantiphyse --user
+
+And for the plugins::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+
+The only issue with this is that the Quantiphyse executable is installed in a location which is not
+in the user's PATH - typically ``$HOME/Library/Python2.7/bin/``. So you either need to run
+Quantiphyse from that folder, or add this folder to your PATH by editing ``$HOME/.bash_profile``::
+
+    export PATH=$PATH:$HOME/Library/Python2.7/bin/
+
+If you have experience of installation using Homebrew please
+contact us with your recipe and we can add it here.
+
+Windows
+-------
+
+On Windows we strongly recommend using `Anaconda`_. Note that FSL is not available natively
+for Windows which will restrict the functionality of some of the plugins. 
+
+We have not yet tested Quantiphyse with FSL installed in the Windows Subsystem for Linux - 
+please let us know if you have tried this.
+
 Use of virtualenv
 -----------------
 
@@ -108,19 +147,6 @@ To run an application installed in a virtualenv it must be activated first, e.g.
     Some Quantiphyse plugins require a C++ compiler to build extensions. You may need to install this
     before you can install the plugins. See the Ubuntu and Centos sections above for examples of how
     to install a C++ compiler on these platforms. 
-
-Windows
--------
-
-On Windows we strongly recommend using the Anaconda python distribution 
-to install Python - see `Anaconda`_ below.
-
-Mac OSX
--------
-
-On Mac we recommend the Anaconda python distribution - see 
-`Anaconda`_. If you have experience of installation using Homebrew please
-contact us with your recipe.
 
 Anaconda
 --------
