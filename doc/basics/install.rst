@@ -103,6 +103,9 @@ Quantiphyse from that folder, or add this folder to your PATH by editing ``$HOME
 
     export PATH=$PATH:$HOME/Library/Python2.7/bin/
 
+Note that currently we do not have an easy way of adding Quantiphyse to the dock - one method
+is to create an Automator application which runs the executable.
+
 If you have experience of installation using Homebrew please
 contact us with your recipe and we can add it here.
 
