@@ -131,8 +131,9 @@ def save(data, fname, grid=None, outdir=""):
         from quantiphyse.utils.batch import to_yaml
         yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
         LOG.debug("Writing metadata: %s", yaml_metadata)
-        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
-        img.header.extensions.append(ext)
+        extensions = nib.nifti1.Nifti1Extensions([ext for ext in img.header.extensions if ext.get_code() != QP_NIFTI_EXTENSION_CODE])
+        extensions.append(nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8')))
+        img.header.extensions = extensions
 
     if not fname:
         fname = data.name
