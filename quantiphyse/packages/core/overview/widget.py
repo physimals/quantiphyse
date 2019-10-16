@@ -165,10 +165,10 @@ class DataListWidget(QtGui.QTableView):
         self.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
 
         self.clicked.connect(self._clicked)
-        self.ivm.sig_main_data.connect(self._update_list)
-        self.ivm.sig_current_data.connect(self._update_list)
         self.ivm.sig_all_data.connect(self._update_list)
-        self.ivm.sig_current_roi.connect(self._update_list)
+        self.ivm.sig_main_data.connect(self._update_vis_icons)
+        self.ivm.sig_current_data.connect(self._update_vis_icons)
+        self.ivm.sig_current_roi.connect(self._update_vis_icons)
 
     @property
     def selected(self):
@@ -213,23 +213,30 @@ class DataListWidget(QtGui.QTableView):
 
                 index = self.model.index(row, 1)
                 self.model.setData(index, self._roi_icon if data.roi else self._data_icon, QtCore.Qt.DecorationRole)
-
-                is_main = data == self.ivm.main
-                is_cur = (data == self.ivm.current_data or data == self.ivm.current_roi)
-                if is_main and is_cur:
-                    icon = self._main_vis_icon
-                elif is_main:
-                    icon = self._main_icon
-                elif is_cur:
-                    icon = self._vis_icon
-                else:
-                    icon = None
-                index = self.model.index(row, 0)
-                self.model.setData(index, icon, QtCore.Qt.DecorationRole)
+                self._update_vis_icon(row, data)
 
             self.verticalScrollBar().setValue(scroll_pos)
         finally:
             self.blockSignals(False)
+
+    def _update_vis_icons(self):
+        for row, name in enumerate(sorted(self.ivm.data.keys())):
+            data = self.ivm.data.get(name)
+            self._update_vis_icon(row, data)
+
+    def _update_vis_icon(self, row, qpdata):
+        is_main = qpdata == self.ivm.main
+        is_cur = (qpdata == self.ivm.current_data or qpdata == self.ivm.current_roi)
+        if is_main and is_cur:
+            icon = self._main_vis_icon
+        elif is_main:
+            icon = self._main_icon
+        elif is_cur:
+            icon = self._vis_icon
+        else:
+            icon = None
+        index = self.model.index(row, 0)
+        self.model.setData(index, icon, QtCore.Qt.DecorationRole)
 
     def _selection(self, index):
         row, col = index.row(), index.column()
