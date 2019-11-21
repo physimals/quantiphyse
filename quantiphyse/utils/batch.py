@@ -103,8 +103,7 @@ def to_yaml(processes, indent=""):
                 stream.write("%s\n" % str(list(value)))
             elif isinstance(value, collections.Mapping):
                 stream.write("\n")
-                indent += "  "
-                _dict_to_yaml(stream, value, indent, prefix=indent)
+                _dict_to_yaml(stream, value, indent + "  ", prefix=indent + "  ")
             else:
                 raise ValueError("Unsupported option value type: %s" % type(value))            
 
