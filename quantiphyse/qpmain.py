@@ -75,21 +75,9 @@ def main():
     parser.add_argument('--register', help='Force display of registration dialog', action="store_true")
     args = parser.parse_args()
 
-    # OS specific changes
-    if sys.platform.startswith("darwin") and PYSIDE1:
-        QtGui.QApplication.setGraphicsSystem('native')
-    
-    app = QtGui.QApplication(sys.argv)
-    app.setStyle('plastique')
-    QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
-    QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
-    QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-
     # Apply global options
     if args.debug:
         set_base_log_level(logging.DEBUG)
-        import pyqtgraph as pg
-        pg.systemInfo()
     else:
         set_base_log_level(logging.WARN)
 
@@ -98,21 +86,37 @@ def main():
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
-    QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Check whether any batch processing arguments have been called
     if args.test_all or args.test:
+        app = QtCore.QCoreApplication(sys.argv)
         run_tests(args.test)
         sys.exit(0)
     elif args.batch is not None:
+        app = QtCore.QCoreApplication(sys.argv)
         runner = BatchScript()
         # Add delay to make sure script is run after the main loop starts, in case
         # batch script is completely synchronous
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
     else:
+        # OS specific changes
+        if sys.platform.startswith("darwin") and PYSIDE1:
+            QtGui.QApplication.setGraphicsSystem('native')
+
+        app = QtGui.QApplication(sys.argv)
+        app.setStyle('plastique')
+        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
+        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
+        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
+        QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
+
+        if args.debug:
+            import pyqtgraph as pg
+            pg.systemInfo()
+
         # Create window and start main loop
         pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
         splash = QtGui.QSplashScreen(pixmap)
