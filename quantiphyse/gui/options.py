@@ -990,7 +990,7 @@ class NumberListOption(Option, QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=(), intonly=False):
+    def __init__(self, initial=(), intonly=False, load_btn=True):
         QtGui.QWidget.__init__(self)
 
         hbox = QtGui.QHBoxLayout()
@@ -1002,7 +1002,8 @@ class NumberListOption(Option, QtGui.QWidget):
         hbox.addWidget(self._edit)
         self._btn = QtGui.QPushButton("Load")
         self._btn.clicked.connect(self._load_clicked)
-        hbox.addWidget(self._btn)
+        if load_btn:
+            hbox.addWidget(self._btn)
 
         if intonly:
             self._type = int
