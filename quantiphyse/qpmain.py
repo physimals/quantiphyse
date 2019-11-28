@@ -90,20 +90,20 @@ def main():
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    # Check whether any batch processing arguments have been called
-    if args.test_all or args.test:
-        app = QtCore.QCoreApplication(sys.argv)
-        run_tests(args.test)
-        sys.exit(0)
-    elif args.batch is not None:
+    if args.batch is not None:
+        # Batch runs need a QCoreApplication to avoid initializing the GUI - this
+        # may not be possible when running on a displayless system 
         app = QtCore.QCoreApplication(sys.argv)
         runner = BatchScript()
         # Add delay to make sure script is run after the main loop starts, in case
         # batch script is completely synchronous
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
+        sys.exit(app.exec_())
     else:
-        # OS specific changes
+        # Otherwise we need a QApplication and to initialize the GUI
+
         if sys.platform.startswith("darwin") and PYSIDE1:
+            # Required on Mac with Pyside 1
             QtGui.QApplication.setGraphicsSystem('native')
 
         app = QtGui.QApplication(sys.argv)
@@ -117,15 +117,20 @@ def main():
             import pyqtgraph as pg
             pg.systemInfo()
 
-        # Create window and start main loop
-        pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
-        splash = QtGui.QSplashScreen(pixmap)
-        splash.show()
-        app.processEvents()
+        if args.test_all or args.test:
+            # Run tests
+            run_tests(args.test)
+            sys.exit(0)
+        else:
+            # Create window and start main loop
+            pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
+            splash = QtGui.QSplashScreen(pixmap)
+            splash.show()
+            app.processEvents()
 
-        win = MainWindow(load_data=args.data, widgets=not args.qv)
-        splash.finish(win)
-        sys.excepthook = my_catch_exceptions
-        set_main_window(win)
-        Register.check_register()
-    sys.exit(app.exec_())
+            win = MainWindow(load_data=args.data, widgets=not args.qv)
+            splash.finish(win)
+            sys.excepthook = my_catch_exceptions
+            set_main_window(win)
+            Register.check_register()
+            sys.exit(app.exec_())
