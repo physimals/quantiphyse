@@ -12,7 +12,7 @@ import traceback
 import nibabel as nib
 import numpy as np
 
-from .qpdata import DataGrid, QpData
+from .qpdata import DataGrid, QpData, NumpyData
 
 LOG = logging.getLogger(__name__)
 
@@ -78,20 +78,24 @@ class NiftiData(QpData):
         self.voldata = None
         return self.rawdata
         
-    def volume(self, vol):
+    def volume(self, vol, qpdata=False):
         vol = min(vol, self.nvols-1)
         if self.nvols == 1:
-            return self.raw()
+            ret = self.raw()
         elif self.rawdata is not None:
-            return self.rawdata[:, :, :, vol]
+            ret = self.rawdata[:, :, :, vol]
         else:
             if self.voldata is None:
                 self.voldata = [None,] * self.nvols
             if self.voldata[vol] is None:
                 nii = nib.load(self.fname)
                 self.voldata[vol] = self._correct_dims(nii.dataobj[..., vol])
+            ret = self.voldata[vol]
 
-        return self.voldata[vol]
+        if qpdata:
+            return NumpyData(ret, grid=self.grid, name="%s_vol_%i" % (self.name, vol))
+        else:
+            return ret
 
     def _correct_dims(self, arr):
         while arr.ndim < 3:
@@ -131,8 +135,9 @@ def save(data, fname, grid=None, outdir=""):
         from quantiphyse.utils.batch import to_yaml
         yaml_metadata = to_yaml({"QpMetadata" : data.metadata})
         LOG.debug("Writing metadata: %s", yaml_metadata)
-        ext = nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8'))
-        img.header.extensions.append(ext)
+        extensions = nib.nifti1.Nifti1Extensions([ext for ext in img.header.extensions if ext.get_code() != QP_NIFTI_EXTENSION_CODE])
+        extensions.append(nib.nifti1.Nifti1Extension(QP_NIFTI_EXTENSION_CODE, yaml_metadata.encode('utf-8')))
+        img.header.extensions = extensions
 
     if not fname:
         fname = data.name

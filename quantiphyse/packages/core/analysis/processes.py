@@ -96,6 +96,8 @@ class DataStatisticsProcess(Process):
         if slice_dir is not None:
             sl = OrthoSlice(self.ivm.main.grid, slice_dir, slice_pos)
         
+        vol = options.pop('vol', None)
+
         no_extra = options.pop('no-extras', False)
         hist_bins = options.pop('hist-bins', 20)
         hist_range = options.pop('hist-bins', None)
@@ -109,7 +111,7 @@ class DataStatisticsProcess(Process):
 
         col = 0
         for data in data_items:
-            stats1, roi_labels, _, _ = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice_loc=sl)
+            stats1, roi_labels, _, _ = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice_loc=sl, vol=vol)
             for ii in range(len(stats1['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, roi_labels[ii])))
                 self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
@@ -122,7 +124,7 @@ class DataStatisticsProcess(Process):
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
-    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice_loc=None):
+    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice_loc=None, vol=None):
         """
         Get summary statistics
 
@@ -145,6 +147,9 @@ class DataStatisticsProcess(Process):
         hist1 = []
         hist1x = []
 
+        if vol is not None:
+            data = data.volume(vol, qpdata=True)
+
         if slice_loc is None:
             data_arr = data.raw()
             roi_arr = roi.raw()
@@ -156,6 +161,7 @@ class DataStatisticsProcess(Process):
         for region, name in roi.regions.items():
             # get data for a single label of the roi
             in_roi = data_arr[roi_arr == region]
+            in_roi = in_roi[np.isfinite(in_roi)]
             if in_roi.size > 0:
                 mean, med, std = np.mean(in_roi), np.median(in_roi), np.std(in_roi)
                 mx, mn = np.max(in_roi), np.min(in_roi)
@@ -200,6 +206,8 @@ class ExecProcess(Process):
         # Note that all data is combined using their raw grids so these
         # must all match if the result is to work - that is the user's job!
         gridfrom = options.pop("grid", None)
+        is_roi = options.pop("output-is-roi", False)
+
         if gridfrom is None:
             grid = self.ivm.main.grid
         else:
@@ -219,6 +227,6 @@ class ExecProcess(Process):
             else:
                 try:
                     result = eval(proc, exec_globals)
-                    self.ivm.add(result, grid=grid, name=name)
+                    self.ivm.add(result, grid=grid, name=name, roi=is_roi)
                 except:
                     raise QpException("'%s' did not return valid data (Reason: %s)" % (proc, sys.exc_info()[1]))

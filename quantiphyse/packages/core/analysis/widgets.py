@@ -205,9 +205,14 @@ class DataStatistics(QpWidget):
         hbox.addWidget(self.roi)
         hbox.setStretch(1, 1)
         hbox.setStretch(3, 1)
-
-        #hbox.addStretch(1)
         main_vbox.addLayout(hbox)
+
+        hbox = QtGui.QHBoxLayout()
+        self.current_vol = QtGui.QCheckBox("Current volume only")
+        hbox.addWidget(self.current_vol)
+        hbox.addStretch(1)
+        main_vbox.addLayout(hbox)
+        self.current_vol.stateChanged.connect(self.update_all)
 
         # Summary stats
         stats_box = QtGui.QGroupBox()
@@ -296,6 +301,8 @@ class DataStatistics(QpWidget):
     def focus_changed(self, _):
         if self.stats_table_ss.isVisible():
             self.update_stats_current_slice()
+        if self.stats_table.isVisible() and self.current_vol.isChecked():
+            self.update_stats()
 
     def update_all(self):
         if self.stats_table.isVisible():
@@ -350,6 +357,8 @@ class DataStatistics(QpWidget):
     def populate_stats_table(self, process, options):
         options["data"] = self.data.value
         options["roi"] = self.roi.value
+        if self.current_vol.isChecked():
+            options["vol"] = self.ivl.focus()[3]
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):
@@ -455,6 +464,7 @@ class SimpleMathsWidget(QpWidget):
         self.optbox.add("Data space from", DataOption(self.ivm), key="grid")
         self.optbox.add("Command", TextOption(), key="cmd")
         self.optbox.add("Output name", OutputNameOption(src_data=self.optbox.option("grid")), key="output-name")
+        self.optbox.add("Output is an ROI", BoolOption(), key="output-is-roi")
         layout.addWidget(self.optbox)
         
         hbox = QtGui.QHBoxLayout()
@@ -469,6 +479,7 @@ class SimpleMathsWidget(QpWidget):
         return {
             "Exec" : {
                 "grid" : self.optbox.option("grid").value,
+                "output-is-roi" : self.optbox.option("output-is-roi").value,
                 self.optbox.option("output-name").value : self.optbox.option("cmd").value,
             }
         }

@@ -83,10 +83,11 @@ def to_yaml(processes, indent=""):
     """
     def _dict_to_yaml(stream, valdict, indent="", prefix=""):
         for key, value in valdict.items():
-            if isinstance(key, int):
-                key = str(key)
-            elif not isinstance(key, six.string_types):
-                raise ValueError("Keys must be strings or ints")
+            if not isinstance(key, six.string_types):
+                try:
+                    key = str(int(key))
+                except ValueError:
+                    raise ValueError("Keys must be strings or ints")
 
             if value is None:
                 continue
@@ -102,8 +103,7 @@ def to_yaml(processes, indent=""):
                 stream.write("%s\n" % str(list(value)))
             elif isinstance(value, collections.Mapping):
                 stream.write("\n")
-                indent += "  "
-                _dict_to_yaml(stream, value, indent, prefix=indent)
+                _dict_to_yaml(stream, value, indent + "  ", prefix=indent + "  ")
             else:
                 raise ValueError("Unsupported option value type: %s" % type(value))            
 

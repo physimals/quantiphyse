@@ -135,6 +135,28 @@ class ResampleDataWidgetTest(WidgetTest):
                     d = interpn((X, Y, Z), self.data_3d, (gx, gy, gz), method="linear", bounds_error=False, fill_value=0)
                     self.assertAlmostEqual(data_res[x, y, z], d[0])
 
+    def testDownsample3d(self):
+        """ 3d data downsampled"""
+        self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
+        self.w.resample_type.value = "down"
+        self.w.factor.value = 3
+        self.processEvents()
+
+        self.assertEqual(self.w.data.currentText(), "data_3d")
+        self.assertEqual(self.w.grid_data.currentText(), "data_3d")
+        self.assertEqual(self.w.output_name.value, "data_3d_res")
+        self.assertEqual(self.w.resample_type.value, "down")
+        self.assertEqual(self.w.factor.value, 3)
+
+        self.w.run.btn.clicked.emit()
+        self.processEvents()
+
+        self.assertFalse(self.error)
+        self.assertTrue("data_3d" in self.ivm.data)
+        self.assertTrue("data_3d_res" in self.ivm.data)
+        
+        # FIXME check resampled data
+        
 class ResampleProcessTest(ProcessTest):
     
     def testResample3d(self):

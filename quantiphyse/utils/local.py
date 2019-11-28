@@ -9,6 +9,7 @@ import logging
 import warnings
 
 LOCAL_FILE_PATH = ""
+DEFAULT_SAVE_DIR = ""
 LOG = logging.getLogger(__name__)
 
 def set_local_file_path():
@@ -119,3 +120,9 @@ def get_local_shlib(name, loc):
     """
     return get_local_file(get_lib_fname(name), loc)
     
+def default_save_dir():
+    return DEFAULT_SAVE_DIR
+
+def set_default_save_dir(save_dir):
+    global DEFAULT_SAVE_DIR
+    DEFAULT_SAVE_DIR = save_dir

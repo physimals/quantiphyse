@@ -6,13 +6,17 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import print_function, division, absolute_import
 
+import os
+
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
+
+from quantiphyse.data import save
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
-from quantiphyse.utils import get_icon, get_local_file
+from quantiphyse.utils import default_save_dir, get_icon, get_local_file
 from quantiphyse import __contrib__, __acknowledge__
 
 SUMMARY = "\nCreators: " + ", ".join([author for author in __contrib__]) \
@@ -70,6 +74,9 @@ class OverviewWidget(QpWidget):
         btn = QtGui.QPushButton("Delete")
         btn.clicked.connect(self._delete)
         hbox.addWidget(btn)
+        btn = QtGui.QPushButton("Save")
+        btn.clicked.connect(self._save)
+        hbox.addWidget(btn)
         btn = QtGui.QPushButton("Set as main data")
         btn.clicked.connect(self._set_main)
         hbox.addWidget(btn)
@@ -102,6 +109,21 @@ class OverviewWidget(QpWidget):
                                                       QtGui.QLineEdit.Normal, name)
             if result:
                 self.ivm.rename(name, text)
+
+    def _save(self):
+        if self.data_list.selected is not None:
+            name = self.data_list.selected.name
+            data = self.ivm.data[name]
+            if hasattr(data, "fname") and data.fname is not None:
+                fname = data.fname
+            else:
+                fname = os.path.join(default_save_dir(), name + ".nii")
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+                                                         filter="NIFTI files (*.nii *.nii.gz)")
+            if fname != '':
+                save(self.ivm.data[name], fname)
+            else: # Cancelled
+                pass
 
     def _set_main(self):
         if self.data_list.selected is not None:
@@ -145,10 +167,10 @@ class DataListWidget(QtGui.QTableView):
         self.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
 
         self.clicked.connect(self._clicked)
-        self.ivm.sig_main_data.connect(self._update_list)
-        self.ivm.sig_current_data.connect(self._update_list)
         self.ivm.sig_all_data.connect(self._update_list)
-        self.ivm.sig_current_roi.connect(self._update_list)
+        self.ivm.sig_main_data.connect(self._update_vis_icons)
+        self.ivm.sig_current_data.connect(self._update_vis_icons)
+        self.ivm.sig_current_roi.connect(self._update_vis_icons)
 
     @property
     def selected(self):
@@ -193,23 +215,30 @@ class DataListWidget(QtGui.QTableView):
 
                 index = self.model.index(row, 1)
                 self.model.setData(index, self._roi_icon if data.roi else self._data_icon, QtCore.Qt.DecorationRole)
-
-                is_main = data == self.ivm.main
-                is_cur = (data == self.ivm.current_data or data == self.ivm.current_roi)
-                if is_main and is_cur:
-                    icon = self._main_vis_icon
-                elif is_main:
-                    icon = self._main_icon
-                elif is_cur:
-                    icon = self._vis_icon
-                else:
-                    icon = None
-                index = self.model.index(row, 0)
-                self.model.setData(index, icon, QtCore.Qt.DecorationRole)
+                self._update_vis_icon(row, data)
 
             self.verticalScrollBar().setValue(scroll_pos)
         finally:
             self.blockSignals(False)
+
+    def _update_vis_icons(self):
+        for row, name in enumerate(sorted(self.ivm.data.keys())):
+            data = self.ivm.data.get(name)
+            self._update_vis_icon(row, data)
+
+    def _update_vis_icon(self, row, qpdata):
+        is_main = qpdata == self.ivm.main
+        is_cur = (qpdata == self.ivm.current_data or qpdata == self.ivm.current_roi)
+        if is_main and is_cur:
+            icon = self._main_vis_icon
+        elif is_main:
+            icon = self._main_icon
+        elif is_cur:
+            icon = self._vis_icon
+        else:
+            icon = None
+        index = self.model.index(row, 0)
+        self.model.setData(index, icon, QtCore.Qt.DecorationRole)
 
     def _selection(self, index):
         row, col = index.row(), index.column()

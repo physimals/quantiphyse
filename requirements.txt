@@ -2,8 +2,8 @@ matplotlib
 nibabel
 numpy
 Pillow
-pyqtgraph
-PySide
+pyqtgraph-qp
+PySide2
 PyYAML
 requests
 scipy
@@ -12,3 +12,4 @@ scikit-image
 setuptools
 six
 pandas
+cython

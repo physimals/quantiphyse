@@ -17,6 +17,7 @@ import logging
 
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
+    PYSIDE1 = True
 except ImportError:
     # Note that pyqtgraph actually writes all the contents of QtWidgets into
     # QtGui on import! This is sort-of nice because we don't need to switch
@@ -25,6 +26,7 @@ except ImportError:
     # as QtWidgets. We will go with the pyqtgraph method for now but might
     # need to make changes if this causes problems later.
     from PySide2 import QtGui, QtCore, QtWidgets
+    PYSIDE1 = False
 
 from quantiphyse.test import run_tests
 
@@ -75,21 +77,9 @@ def main():
     parser.add_argument('--register', help='Force display of registration dialog', action="store_true")
     args = parser.parse_args()
 
-    # OS specific changes
-    if sys.platform.startswith("darwin"):
-        QtGui.QApplication.setGraphicsSystem('native')
-    
-    app = QtGui.QApplication(sys.argv)
-    app.setStyle('plastique')
-    QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
-    QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
-    QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-
     # Apply global options
     if args.debug:
         set_base_log_level(logging.DEBUG)
-        import pyqtgraph as pg
-        pg.systemInfo()
     else:
         set_base_log_level(logging.WARN)
 
@@ -98,30 +88,51 @@ def main():
 
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
-    QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
     # Handle CTRL-C correctly
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    # Check whether any batch processing arguments have been called
-    if args.test_all or args.test:
-        run_tests(args.test)
-        sys.exit(0)
-    elif args.batch is not None:
+    if args.batch is not None:
+        # Batch runs need a QCoreApplication to avoid initializing the GUI - this
+        # may not be possible when running on a displayless system 
+        app = QtCore.QCoreApplication(sys.argv)
         runner = BatchScript()
         # Add delay to make sure script is run after the main loop starts, in case
         # batch script is completely synchronous
         QtCore.QTimer.singleShot(200, lambda: runner.execute({"yaml-file" : args.batch}))
+        sys.exit(app.exec_())
     else:
-        # Create window and start main loop
-        pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
-        splash = QtGui.QSplashScreen(pixmap)
-        splash.show()
-        app.processEvents()
+        # Otherwise we need a QApplication and to initialize the GUI
+        
+        if sys.platform.startswith("darwin") and PYSIDE1:
+            # Required on Mac with Pyside 1
+            QtGui.QApplication.setGraphicsSystem('native')
 
-        win = MainWindow(load_data=args.data, widgets=not args.qv)
-        splash.finish(win)
-        sys.excepthook = my_catch_exceptions
-        set_main_window(win)
-        register.check_register()
-    sys.exit(app.exec_())
+        app = QtGui.QApplication(sys.argv)
+        app.setStyle('plastique')
+        QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
+        QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
+        QtCore.QCoreApplication.setApplicationName("Quantiphyse")
+        QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
+
+        if args.debug:
+            import pyqtgraph as pg
+            pg.systemInfo()
+
+        if args.test_all or args.test:
+            # Run tests
+            run_tests(args.test)
+            sys.exit(0)
+        else:
+            # Create window and start main loop
+            pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
+            splash = QtGui.QSplashScreen(pixmap)
+            splash.show()
+            app.processEvents()
+
+            win = MainWindow(load_data=args.data, widgets=not args.qv)
+            splash.finish(win)
+            sys.excepthook = my_catch_exceptions
+            set_main_window(win)
+            register.check_register()
+            sys.exit(app.exec_())

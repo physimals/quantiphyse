@@ -380,6 +380,10 @@ QTabWidget::pane {
     top: 1px;
 }
 
+QTabWidget::tab-bar {
+    top: 0;
+}
+
 QTabBar::tab:last
 {
     margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
@@ -505,6 +509,7 @@ QSpinBox {
 QSpinBox::up-button {
     border: none;
     image: url(:/up_arrow.png);
+    width: 16px;
 }
 
 QSpinBox::up-button:hover {
@@ -514,6 +519,7 @@ QSpinBox::up-button:hover {
 QSpinBox::down-button {
     border: none;
     image: url(:/down_arrow.png);
+    width: 16px;
 }
 
 QSpinBox::down-button:hover {

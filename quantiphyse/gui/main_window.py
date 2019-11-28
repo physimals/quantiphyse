@@ -18,7 +18,7 @@ except ImportError:
 import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.utils import get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
+from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
 from quantiphyse import __contrib__, __acknowledge__
 
 from .widgets import FingerTabWidget
@@ -30,7 +30,7 @@ class DragOptions(QtGui.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False):
+    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False, possible_roi=True):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
@@ -51,10 +51,12 @@ class DragOptions(QtGui.QDialog):
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
         hbox = QtGui.QHBoxLayout()
-        btn = QtGui.QPushButton("ROI")
-        btn.clicked.connect(self._roi)
-        hbox.addWidget(btn)
+        if possible_roi:
+            btn = QtGui.QPushButton("ROI")
+            btn.clicked.connect(self._roi)
+            hbox.addWidget(btn)
         btn = QtGui.QPushButton("Data")
+        btn.setDefault(True)
         btn.clicked.connect(self._data)
         hbox.addWidget(btn)
         btn = QtGui.QPushButton("Cancel")
@@ -141,7 +143,7 @@ class MainWindow(QtGui.QMainWindow):
             self.setStyleSheet(stylesheet_file.read())
 
         # Default dir to load files from is the user's home dir
-        self.default_directory = os.path.expanduser("~")
+        set_default_save_dir(os.path.expanduser("~"))
 
         # Widgets 
         self.widget_groups = {}
@@ -403,9 +405,9 @@ class MainWindow(QtGui.QMainWindow):
         Load data into the IVM from a file (which may already be known)
         """
         if fname is None:
-            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', self.default_directory)
+            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', default_save_dir())
             if not fname: return
-        self.default_directory = os.path.dirname(fname)
+        set_default_save_dir(os.path.dirname(fname))
 
         # Data is not loaded at this point, however basic metadata is so we can tailor the
         # options we offer
@@ -416,7 +418,8 @@ class MainWindow(QtGui.QMainWindow):
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
                 
-        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, default_main=self.ivm.main is None)
+        options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, 
+                              default_main=self.ivm.main is None, possible_roi=(data.nvols ==1))
         if not options.exec_(): return
         
         data.name = options.name
@@ -452,7 +455,13 @@ class MainWindow(QtGui.QMainWindow):
         if self.ivm.current_data is None:
             QtGui.QMessageBox.warning(self, "No data", "No current data to save", QtGui.QMessageBox.Close)
         else:
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
+            if hasattr(self.ivm.current_data, "fname") and self.ivm.current_data.fname is not None:
+                fname = self.ivm.current_data.fname
+            else:
+                fname = os.path.join(default_save_dir(), self.ivm.current_data.name + ".nii")
+
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+                                                         filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_data, fname)
             else: # Cancelled
@@ -465,7 +474,12 @@ class MainWindow(QtGui.QMainWindow):
         if self.ivm.current_roi is None:
             QtGui.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtGui.QMessageBox.Close)
         else:
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=self.default_directory, filter="NIFTI files (*.nii *.nii.gz)")
+            if hasattr(self.ivm.current_roi, "fname") and self.ivm.current_roi.fname is not None:
+                fname = self.ivm.current_roi.fname
+            else:
+                fname = os.path.join(default_save_dir(), self.ivm.current_roi.name + ".nii")
+            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+                                                         filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_roi, fname)
             else: # Cancelled

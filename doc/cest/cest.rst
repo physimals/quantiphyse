@@ -8,12 +8,13 @@ This widget provides CEST analysis using the Fabber Bayesian model fitting frame
 Tutorials
 ---------
 
-The following tutorial was presented at BCISMRM and provides a walkthrough of a CEST analysis:
+The following tutorials provide a walkthrough of a CEST analysis:
 
 .. toctree::
   :maxdepth: 1
 
-  BCISMRM Tutorial and data <cest_tutorial>
+  Tutorial using preclinical data <cest_tutorial>
+  Tutorial using clinical data <clinical_tutorial>
 
 Reference
 ---------
