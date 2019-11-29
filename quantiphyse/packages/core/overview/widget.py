@@ -13,7 +13,7 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
-
+from quantiphyse.data.qpdata import Visible
 from quantiphyse.data import save
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.utils import default_save_dir, get_icon, get_local_file
@@ -28,7 +28,7 @@ class OverviewWidget(QpWidget):
     """
 
     def __init__(self, **kwargs):
-        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded", 
+        super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded",
                                              group="DEFAULT", position=0, **kwargs)
 
     def init_ui(self):
@@ -68,6 +68,18 @@ class OverviewWidget(QpWidget):
         layout.addWidget(self.data_list)
 
         hbox = QtGui.QHBoxLayout()
+        btn = QtGui.QPushButton()
+        btn.setIcon(QtGui.QIcon(get_icon("up.png")))
+        btn.setFixedSize(16, 16)
+        btn.setToolTip("Raise data set in viewing order")
+        btn.clicked.connect(self._up)
+        hbox.addWidget(btn)
+        btn = QtGui.QPushButton()
+        btn.setIcon(QtGui.QIcon(get_icon("down.png")))
+        btn.setFixedSize(16, 16)
+        btn.setToolTip("Lower data set in viewing order")
+        btn.clicked.connect(self._down)
+        hbox.addWidget(btn)
         btn = QtGui.QPushButton("Rename")
         btn.clicked.connect(self._rename)
         hbox.addWidget(btn)
@@ -134,6 +146,27 @@ class OverviewWidget(QpWidget):
             self.data_list.selected.roi = not self.data_list.selected.roi
             self.ivm.sig_all_data.emit(list(self.ivm.data.keys()))
 
+    def _down(self):
+        # FIXME code duplication
+        if self.data_list.selected is not None:
+            last_data = None
+            for data in sorted(self.ivm.data.values(), key=lambda x: x.view.z_order):
+                if data == self.data_list.selected and last_data is not None:
+                    current_z = data.view.z_order
+                    data.view.z_order = last_data.view.z_order
+                    last_data.view.z_order = current_z
+                last_data = data
+
+    def _up(self):
+        if self.data_list.selected is not None:
+            last_data = None
+            for data in sorted(self.ivm.data.values(), key=lambda x: x.view.z_order):
+                if last_data == self.data_list.selected:
+                    current_z = data.view.z_order
+                    data.view.z_order = last_data.view.z_order
+                    last_data.view.z_order = current_z
+                last_data = data
+
 class DataListWidget(QtGui.QTableView):
     """
     Table showing loaded volumes
@@ -145,6 +178,7 @@ class DataListWidget(QtGui.QTableView):
         self.ivm = parent.ivm
         self.ivl = parent.ivl
         self._selected = None
+        self._known_data = []
         self._roi_icon = QtGui.QIcon(get_icon("roi_data.png"))
         self._data_icon = QtGui.QIcon(get_icon("data.png"))
         self._main_icon = QtGui.QIcon(get_icon("main_data.png"))
@@ -167,15 +201,39 @@ class DataListWidget(QtGui.QTableView):
         self.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
 
         self.clicked.connect(self._clicked)
-        self.ivm.sig_all_data.connect(self._update_list)
+        self.ivm.sig_all_data.connect(self._data_changed)
         self.ivm.sig_main_data.connect(self._update_vis_icons)
-        self.ivm.sig_current_data.connect(self._update_vis_icons)
-        self.ivm.sig_current_roi.connect(self._update_vis_icons)
+        self.ivm.sig_current_data.connect(self._update_current)
+        self.ivm.sig_current_roi.connect(self._update_current)
 
     @property
     def selected(self):
         """ Currently selected QpData """
         return self._selected
+
+    def _update_current(self, data):
+        # FIXME highlight row
+        pass
+
+    def _data_changed(self, data_names):
+        for name in data_names:
+            qpdata = self.ivm.data[name]
+            if qpdata not in self._known_data:
+                self._known_data.append(qpdata)
+                qpdata.view.sig_changed.connect(self._view_metadata_changed)
+        
+        for qpdata in self._known_data[:]:
+            if qpdata.name not in data_names:
+                qpdata.view.sig_changed.disconnect(self._view_metadata_changed)
+                self._known_data.remove(qpdata)
+
+        self._update_list()
+
+    def _view_metadata_changed(self, key, _value):
+        if key == "visible":
+            self._update_vis_icons()
+        elif key == "z_order":
+            self._update_list()
 
     def _get_table_items(self, data):
         fname = ""
@@ -209,8 +267,7 @@ class DataListWidget(QtGui.QTableView):
             self.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
             self.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
             self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
-            for row, name in enumerate(sorted(self.ivm.data.keys())):
-                data = self.ivm.data.get(name)
+            for row, data in enumerate(sorted(self.ivm.data.values(), key=lambda x: -x.view.z_order)):
                 self.model.appendRow(self._get_table_items(data))
 
                 index = self.model.index(row, 1)
@@ -222,38 +279,12 @@ class DataListWidget(QtGui.QTableView):
             self.blockSignals(False)
 
     def _update_vis_icons(self):
-        for row, name in enumerate(sorted(self.ivm.data.keys())):
-            data = self.ivm.data.get(name)
+        for row, data in enumerate(sorted(self.ivm.data.values(), key=lambda x: -x.view.z_order)):
             self._update_vis_icon(row, data)
 
     def _update_vis_icon(self, row, qpdata):
         is_main = qpdata == self.ivm.main
-        is_cur = (qpdata == self.ivm.current_data or qpdata == self.ivm.current_roi)
-        if is_main and is_cur:
-            icon = self._main_vis_icon
-        elif is_main:
-            icon = self._main_icon
-        elif is_cur:
-            icon = self._vis_icon
-        else:
-            icon = None
-        index = self.model.index(row, 0)
-        self.model.setData(index, icon, QtCore.Qt.DecorationRole)
-
-    def _selection(self, index):
-        row, col = index.row(), index.column()
-        name = self.model.item(row, 1).text()
-        return row, col, name, self.ivm.data.get(name, None)
-
-    def _clicked(self, index):
-        row, col, name, data = self._selection(index)
-        self._selected = data
-        if col == 0:
-            visible = not self.ivl.data_view_param(data.name, "visible")
-            self.ivl.set_data_view_param(data.name, "visible", visible)
-            self._update_visible_icon(data, row, visible, data == self.ivm.main)
-
-    def _update_visible_icon(self, data, row, is_visible, is_main):
+        is_visible = qpdata.view.visible
         if is_main and is_visible:
             icon = self._main_vis_icon
         elif is_main:
@@ -264,3 +295,23 @@ class DataListWidget(QtGui.QTableView):
             icon = None
         index = self.model.index(row, 0)
         self.model.setData(index, icon, QtCore.Qt.DecorationRole)
+
+    def _selection(self, index):
+        row, col = index.row(), index.column()
+        name = self.model.item(row, 1).text()
+        return row, col, self.ivm.data.get(name, None)
+
+    def _clicked(self, index):
+        row, col, qpdata = self._selection(index)
+        self._selected = qpdata
+        if qpdata.roi and qpdata != self.ivm.current_roi:
+            self.ivm.set_current_roi(qpdata.name)
+        elif not qpdata.roi and qpdata != self.ivm.current_data:
+            self.ivm.set_current_data(qpdata.name)
+
+        if col == 0:
+            if qpdata.view.visible:
+                qpdata.view.visible = Visible.INVISIBLE
+            else:
+                qpdata.view.visible = Visible.VISIBLE
+            self._update_vis_icon(row, qpdata)

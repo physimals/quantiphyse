@@ -1,20 +1,11 @@
 """
-Quantiphyse - classes which draw data views
-
-An OrthoDataView is associated with a QpData object and is responsible for
-drawing it onto a OrthoSliceView.
-
-Each OrthoDataView maintains its own set of GraphicsItems (images, contour lines etc)
-for each OrthoSliceView it is asked to draw into. View parameters can be set on
-a OrthoDataView - it must decide whether to signal a fresh redraw or whether it can
-just update its GraphicsItems witihout redrawing.
+Quantiphyse - widget which allows a data sets view metadata to be changed
 
 Copyright (c) 2013-2019 University of Oxford
 """
 
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-import collections
 import logging
 
 try:
@@ -24,21 +15,20 @@ except ImportError:
 
 import numpy as np
 
-import pyqtgraph as pg
-
-from quantiphyse.utils import get_lut, get_pencol, get_icon
+from quantiphyse.data.qpdata import Visible
+from quantiphyse.utils import get_icon
 from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
 
 LOG = logging.getLogger(__name__)
- 
+
 class DataViewParamsWidget(QtGui.QGroupBox):
-    """ 
+    """
     Change view options for data set
     """
     def __init__(self, ivl):
         QtGui.QGroupBox.__init__(self)
-        self.ivl = ivl
         self.ivm = ivl.ivm
+        self._qpdata = None
 
         grid = QtGui.QGridLayout()
         grid.setVerticalSpacing(2)
@@ -46,7 +36,7 @@ class DataViewParamsWidget(QtGui.QGroupBox):
         self.setLayout(grid)
 
         grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = OverlayCombo(self.ivm, none_option=True, set_first=False)
+        self.overlay_combo = OverlayCombo(self.ivm, none_option=True, set_first=True, follow_current=True)
         grid.addWidget(self.overlay_combo, 0, 1)
         grid.addWidget(QtGui.QLabel("View"), 1, 0)
         self.ov_view_combo = QtGui.QComboBox()
@@ -69,7 +59,6 @@ class DataViewParamsWidget(QtGui.QGroupBox):
         self.ov_levels_btn.setFixedSize(16, 16)
         self.ov_levels_btn.setToolTip("Adjust colour map levels")
         self.ov_levels_btn.clicked.connect(self._show_ov_levels)
-        self.ov_levels_btn.setEnabled(False)
         hbox.addWidget(self.ov_levels_btn)
         grid.addLayout(hbox, 2, 1)
         grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
@@ -80,35 +69,31 @@ class DataViewParamsWidget(QtGui.QGroupBox):
         grid.addWidget(self.ov_alpha_sld, 3, 1)
         grid.setRowStretch(4, 1)
 
+        self._widgets = [self.ov_view_combo, self.ov_cmap_combo,
+                         self.ov_alpha_sld, self.overlay_combo,
+                         self.ov_levels_btn]
+
         self.overlay_combo.currentIndexChanged.connect(self._combo_changed)
         self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
         self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
         self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
-        #self.ivl.sig_data_view_changed.connect(self._update)
+        self._combo_changed(-1)
 
-    def _update(self, name, key):
-        if name != self.data_name:
-            return
-            
-        #FIXME
-        return
-
-        widgets = [self.ov_view_combo, self.ov_cmap_combo,
-                   self.ov_alpha_sld, self.overlay_combo]
+    def _update_widgets(self):
         try:
-            for widget in widgets:
+            for widget in self._widgets:
                 widget.blockSignals(True)
 
-            if not view.visible:
+            if not self._qpdata.view.visible:
                 self.ov_view_combo.setCurrentIndex(2)
-            elif view.roi_only:
+            elif self._qpdata.view.roi_only:
                 self.ov_view_combo.setCurrentIndex(1)
             else:
                 self.ov_view_combo.setCurrentIndex(0)
 
             # 'Custom' only appears as a flag to indicate the user has messed with the
             # LUT using the histogram widget. Otherwise is is hidden
-            cmap = view.cmap
+            cmap = self._qpdata.view.cmap
             if cmap == "custom":
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
@@ -121,43 +106,51 @@ class DataViewParamsWidget(QtGui.QGroupBox):
                 idx = self.ov_cmap_combo.findText("custom")
                 if idx >= 0:
                     self.ov_cmap_combo.removeItem(idx)
-                idx = self.ov_cmap_combo.findText(view.cmap)
+                idx = self.ov_cmap_combo.findText(self._qpdata.view.cmap)
                 self.ov_cmap_combo.setCurrentIndex(idx)
 
-            self.ov_alpha_sld.setValue(view.alpha)
+            self.ov_alpha_sld.setValue(self._qpdata.view.alpha)
 
-            self.ov_levels_btn.setEnabled(view.data is not None)
-            if view.data is not None:
-                idx = self.overlay_combo.findText(view.data.name)
+            if self._qpdata is not None:
+                idx = self.overlay_combo.findText(self._qpdata.name)
                 self.overlay_combo.setCurrentIndex(idx)
             else:
                 self.overlay_combo.setCurrentIndex(-1)
-        except:
-            import traceback
-            traceback.print_exc()
         finally:
-            for widget in widgets:
+            for widget in self._widgets:
                 widget.blockSignals(False)
 
     def _combo_changed(self, idx):
+        if self._qpdata is not None:
+            self._qpdata.view.sig_changed.disconnect(self._update_widgets)
         if idx > 0:
-            self._view = self.ivl.data_view(self.overlay_combo.itemText(idx))
+            self._qpdata = self.ivm.data[self.overlay_combo.itemText(idx)]
+            self._qpdata.view.sig_changed.connect(self._update_widgets)
+            self._update_widgets()
+        else:
+            self._qpdata = None
+        for widget in self._widgets:
+            if widget != self.overlay_combo:
+                widget.setEnabled(self._qpdata is not None)
 
     def _cmap_changed(self, idx):
         cmap = self.ov_cmap_combo.itemText(idx)
-        self._view.cmap = cmap
+        self._qpdata.view.cmap = cmap
 
     def _view_changed(self, idx):
         """ Viewing style (all or within ROI only) changed """
-        self._view.visible = idx in (0, 1)
-        self._view.roi_only = (idx == 1)
+        if idx in (0, 1):
+            self._qpdata.view.visible = Visible.VISIBLE
+        else:
+            self._qpdata.view.visible = Visible.INVISIBLE
+        self._qpdata.view.roi_only = (idx == 1)
 
     def _alpha_changed(self, alpha):
         """ Set the data transparency """
-        self._view.alpha = alpha
+        self._qpdata.view.alpha = alpha
 
     def _show_ov_levels(self):
-        dlg = LevelsDialog(self, self.ivl, self.ivm, self.data)
+        dlg = LevelsDialog(self, self.ivm, self._qpdata)
         dlg.exec_()
 
 class LevelsDialog(QtGui.QDialog):
@@ -165,13 +158,12 @@ class LevelsDialog(QtGui.QDialog):
     Dialog box used to set the colourmap max/min for a data view
     """
 
-    def __init__(self, parent, ivl, ivm, view):
+    def __init__(self, parent, ivm, qpdata):
         super(LevelsDialog, self).__init__(parent)
-        self.ivl = ivl
         self.ivm = ivm
-        self.view = view
+        self._qpdata = qpdata
 
-        self.setWindowTitle("Levels for %s" % view.data.name)
+        self.setWindowTitle("Levels for %s" % self._qpdata.name)
         vbox = QtGui.QVBoxLayout()
 
         grid = QtGui.QGridLayout()
@@ -198,7 +190,7 @@ class LevelsDialog(QtGui.QDialog):
         self.combo.addItem("Clamped to max/min colour")
         self.combo.addItem("Transparent at lower, clamped at upper")
         self.combo.addItem("Clamped at lower, transparent at upper")
-        self.combo.setCurrentIndex(self.view.boundary)
+        self.combo.setCurrentIndex(self._qpdata.view.boundary)
         self.combo.currentIndexChanged.connect(self._bound_changed)
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
@@ -214,45 +206,28 @@ class LevelsDialog(QtGui.QDialog):
         spin = QtGui.QDoubleSpinBox()
         spin.setMaximum(1e20)
         spin.setMinimum(-1e20)
-        spin.setValue(self.view.cmap_range[row])
+        spin.setValue(self._qpdata.view.cmap_range[row])
         spin.valueChanged.connect(self._val_changed(row))
         grid.addWidget(spin, row, 1)
         return spin
 
     def _val_changed(self, row):
         def _changed(val):
-            cmap_range = list(self.view.cmap_range)
+            cmap_range = list(self._qpdata.view.cmap_range)
             cmap_range[row] = val
-            self.view.set_view_opt("cmap_range", cmap_range)
+            self._qpdata.view.cmap_range = cmap_range
         return _changed
 
     def _bound_changed(self, idx):
-        self.view.set_view_opt("boundary", idx)
+        self._qpdata.view.boundary = idx
 
-    def _reset_view_opt(self):
+    def _reset(self):
         percentile = self.percentile_spin.value()
-        flat = self.view.data.volume(self.ivl.focus()[3]).flatten()
+        # FIXME broken
         if self.use_roi.isChecked() and self.ivm.current_roi is not None:
-            flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
+            flat = self._qpdata.mask(self.ivm.current_roi, output_flat=True)
 
-        cmin, cmax = _cmap_range(flat, percentile)
+        cmin, cmax = self._qpdata._cmap_range(vol=self.ivl.focus()[3], percentile=percentile)
         self.min_spin.setValue(cmin)
         self.max_spin.setValue(cmax)
-        self.view.set_view_opt("cmap_range", [cmin, cmax])
-
-def _cmap_range(data, percentile=100):
-    data = data.volume(int(data.nvols/2)).flatten()
-    # This ignores infinite values too unlike np.nanmin/np.nanmax
-    nonans = np.isfinite(data)
-    cmin, cmax = np.min(data[nonans]), np.max(data[nonans])
-    # Issue #101: if min is exactly zero, make it slightly more
-    # as a heuristic for data sets where zero=background
-    if cmin == 0:
-        cmin = 1e-7*cmax
-
-    if percentile < 100:
-        perc_max = np.nanpercentile(data, percentile)
-        if perc_max > cmin:
-            cmax = perc_max
-
-    return cmin, cmax
+        self._qpdata.view.cmap_range = [cmin, cmax]

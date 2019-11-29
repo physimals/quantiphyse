@@ -13,13 +13,9 @@ import numpy as np
 
 import pyqtgraph as pg
 
-LOG = logging.getLogger(__name__)
+from quantiphyse.data.qpdata import Boundary
 
-class Boundary:
-    TRANS = 0
-    CLAMP = 1
-    LOWERTRANS = 2
-    UPPERTRANS = 3
+LOG = logging.getLogger(__name__)
 
 class MaskableImage(pg.ImageItem):
     """
@@ -39,6 +35,7 @@ class MaskableImage(pg.ImageItem):
         :param mode: Boundary.TRANS or Boundary.CLAMP
         """
         self.boundary = mode
+        self.updateImage()
 
     def render(self):
         """

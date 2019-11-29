@@ -104,14 +104,14 @@ class OrthoDataView(QtCore.QObject):
             "boundary" : self.BOUNDARY_TRANS,
             "alpha" : 255,
             "cmap_range" : _cmap_range(self.data),
-            "z_value" : -1,
+            "z_order" : -1,
             "interp_order" : 0,
             "cmap" : "jet",
         }
         self.redraw_options = [
             "visible",
             "roi_only",
-            "z_value",
+            "z_order",
             "interp_order"
             "shade",
             "contour",
@@ -195,7 +195,7 @@ class OrthoDataView(QtCore.QObject):
             name = ortho_view.vb.name
             img = self.imgs[name]
             img.setVisible(self.data is not None and self.visible)
-            img.setZValue(self.z_value)
+            img.setZValue(self.z_order)
             img.set_boundary_mode(self.boundary)
             img.setLevels(self.cmap_range)
 
@@ -213,7 +213,7 @@ class RoiView(OrthoDataView):
             "contour" : False,
             "alpha" : 150,
             "outline_width" : 3.0,
-            "z_value" : 1,
+            "z_order" : 1,
         })
         self.contours = {}
 
@@ -267,7 +267,7 @@ class RoiView(OrthoDataView):
             name = ortho_view.vb.name
             img = self.imgs[name]
             img.setVisible(self.data is not None and self.shade)
-            img.setZValue(self.z_value)
+            img.setZValue(self.z_order)
             img.set_boundary_mode(self.boundary)
             lut = get_lut(self.data, self.alpha)
             img.setLookupTable(lut)
@@ -286,7 +286,7 @@ class MainDataView(OrthoDataView):
     def __getattr__(self, name):
         if name == "cmap":
             return "grey"
-        elif name == "z_value":
+        elif name == "z_order":
             return -999
         elif name == "cmap_range":
             return self._cmap_range
@@ -294,7 +294,7 @@ class MainDataView(OrthoDataView):
             return OrthoDataView.__getattr__(self, name)
 
     def set_view_opt(self, name, value):
-        if name not in ("cmap", "cmap_range", "z_value"):
+        if name not in ("cmap", "cmap_range", "z_order"):
             OrthoDataView.set_view_opt(self, name, value)
         elif name == "cmap_range":
             self._cmap_range = value
@@ -574,7 +574,7 @@ class LevelsDialog(QtGui.QDialog):
 
     def _reset_view_opt(self):
         percentile = self.percentile_spin.value()
-        flat = self.view.data.volume(self.ivl.focus()[3]).flatten()
+        flat = self.view.data.volume(self.(ivl.focus())[3]).flatten()
         if self.use_roi.isChecked() and self.ivm.current_roi is not None:
             flat = self.view.data.mask(self.ivm.current_roi, output_flat=True)
 

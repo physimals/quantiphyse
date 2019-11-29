@@ -23,7 +23,7 @@ from quantiphyse import __contrib__, __acknowledge__
 
 from .widgets import FingerTabWidget
 from .view_options import ViewOptions
-from .ortho_viewer.ortho_viewer import OrthoViewer
+from .viewer.viewer import Viewer
 
 class DragOptions(QtGui.QDialog):
     """
@@ -135,7 +135,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.ivm = ImageVolumeManagement()
         self.view_options_dlg = ViewOptions(self, self.ivm)
-        self.ivl = OrthoViewer(self.ivm, self.view_options_dlg)
+        self.ivl = Viewer(self.ivm, self.view_options_dlg)
 
         # Load style sheet
         stylesheet = get_local_file("resources/darkorange.stylesheet")

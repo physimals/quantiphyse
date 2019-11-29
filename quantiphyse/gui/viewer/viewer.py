@@ -1,5 +1,5 @@
 """
-Quantiphyse - 3D orthographic viewer
+Quantiphyse - Viewer for 3D and 4D data
 
 Plan for multi-volume viewing
 
@@ -16,85 +16,23 @@ Copyright (c) 2013-2018 University of Oxford
 
 from __future__ import division, unicode_literals, absolute_import
 
-from collections import OrderedDict
-
 try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
+    from PySide import QtGui, QtCore
 except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+    from PySide2 import QtGui, QtCore
 
 import numpy as np
 
 from quantiphyse.utils import LogSource
-from quantiphyse.data.qpdata import DataGrid, MetaSignaller
-from quantiphyse.gui.colors import initial_cmap_range, get_lut
+from quantiphyse.data.qpdata import DataGrid
 
 from .pickers import PICKERS, PointPicker
 from .slice_viewer import OrthoSliceViewer
 from .histogram_widget import MultiImageHistogramWidget
 from .view_params_widget import DataViewParamsWidget
-from .maskable_image import Boundary
 from .navigators import NavigationBox
 
-MAIN_DATA = ""
-
-DEFAULT_MAIN_VIEW = {
-    "visible" : True,
-    "roi_only" : False,
-    "boundary" : Boundary.CLAMP,
-    "alpha" : 255,
-    "z_value" : -999,
-    "interp_order" : 0,
-    "cmap" : "grey",
-}
-
-DEFAULT_DATA_VIEW = {
-    "visible" : True,
-    "roi_only" : False,
-    "boundary" : Boundary.TRANS,
-    "alpha" : 255,
-    "interp_order" : 0,
-    "cmap" : "jet",
-}
-
-DEFAULT_ROI_VIEW = {
-    "visible" : True,
-    "alpha" : 127,
-    "shade" : True,
-    "contour" : False,
-    "interp_order" : 0,
-}
-
-class DataView(object):
-
-    def __init__(self, defaults=None):
-        self._dict = {}
-        if defaults:
-            self._dict.update(defaults)
-        self._signaller = MetaSignaller()
-
-    @property
-    def sig_changed(self):
-        """ Signals when a key's value has been changed """
-        return self._signaller.sig_changed
-    
-    def __getattr__(self, name):
-        return self._dict.get(name, None)
-
-    def __setattr__(self, name, value):
-        if name[0] == "_":
-            object.__setattr__(self, name, value)
-        elif self._dict.get(name, None) != value:
-            self._dict[name] = value
-            # Update lookup table when colormap or alpha changed
-            if name == "cmap" or "lut" not in self._dict:
-                self._dict["lut"] = get_lut(self.cmap, alpha=self.alpha)
-            if name == "alpha":
-                self._dict["lut"] = [list(rgba)[:3] + [self.alpha] for rgba in self.lut]
-
-            self.sig_changed.emit(name, value)
-
-class OrthoViewer(QtGui.QSplitter, LogSource):
+class Viewer(QtGui.QSplitter, LogSource):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus
     navigation sliders and data summary view.
@@ -110,13 +48,16 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
     according to this grid by default, the ``focus`` and ``set_focus`` methods allow for
     the co-ordinates to be set or retrieved according to another arbitrary grid.
 
-    :ivar grid: Grid the OrthoViewer uses as the basis for the orthogonal slices.
+    :ivar grid: Grid the Viewer uses as the basis for the orthogonal slices.
                 This is typically an RAS-aligned version of the main data grid, or
                 alternatively an RAS world-grid
     """
 
     # Signal emitted when point of focus is changed
     sig_focus_changed = QtCore.Signal(list)
+
+    # Signal emitted when point of focus is changed
+    sig_grid_changed = QtCore.Signal(object)
 
     # Signal emitted when the set of marker arrows has changed
     sig_arrows_changed = QtCore.Signal(list)
@@ -128,22 +69,16 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
     # Emission of this signal depends on the picking mode selected
     sig_selection_changed = QtCore.Signal(object)
 
-    # Signal emitted when the view parameters on a data item are changed
-    sig_data_view_changed = QtCore.Signal(str, str)
-    
     def __init__(self, ivm, opts):
         LogSource.__init__(self)
         QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
 
-        self.grid = DataGrid([1, 1, 1], np.identity(4))
-        self._pos = [0, 0, 0, 0]
-
         self.ivm = ivm
-        self.opts = opts
-        self.picker = PointPicker(self)
-        self._data_views = OrderedDict()
-        self._singleview = True
-        self.arrows = []
+        self._opts = opts
+        self._grid = DataGrid([1, 1, 1], np.identity(4))
+        self._focus = [0, 0, 0, 0]
+        self._arrows = []
+        self._picker = PointPicker(self)
 
         # Create three orthogonal slice viewers
         # For each viewer, we pass the xyz axis mappings and the labels
@@ -207,8 +142,22 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
 
         # Connect to signals
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        self.ivm.sig_all_data.connect(self._data_changed)
-        #self.opts.sig_options_changed.connect(self._opts_changed)
+        #self._opts.sig_options_changed.connect(self._opts_changed)
+
+    @property
+    def picker(self):
+        """ Current picker object """
+        return self._picker
+
+    @property
+    def grid(self):
+        """ DataGrid object used as the fundamental grid for the viewer """
+        return self._grid
+
+    @property
+    def arrows(self):
+        """ Sequence of arrows defined by the viewer """
+        return self._arrows
 
     def focus(self, grid=None):
         """
@@ -219,9 +168,9 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         :return: 4D sequence containing position plus the current data volume index
         """
         if grid is None:
-            return list(self._pos)
+            return list(self._focus)
         else:
-            world = self.grid.grid_to_world(self._pos)
+            world = self._grid.grid_to_world(self._focus)
             return list(grid.world_to_grid(world))
 
     def set_focus(self, pos, grid=None):
@@ -233,24 +182,24 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         """
         if grid is not None:
             world = grid.grid_to_world(pos)
-            pos = self.grid.world_to_grid(world)
+            pos = self._grid.world_to_grid(world)
 
-        self._pos = list(pos)
-        if len(self._pos) != 4:
+        self._focus = list(pos)
+        if len(self._focus) != 4:
             raise Exception("Position must be 4D")
 
-        self.debug("Cursor position: %s", self._pos)
-        self.sig_focus_changed.emit(self._pos)
+        self.debug("Cursor position: %s", self._focus)
+        self.sig_focus_changed.emit(self._focus)
 
-    def set_picker(self, pickmode):
+    def set_pickmode(self, pickmode):
         """
         Set the picking mode
 
         :param pickmode: Picking mode from :class:`PickMode`
         """
-        self.picker.cleanup()
-        self.picker = PICKERS[pickmode](self)
-        self.sig_picker_changed.emit(self.picker)
+        self._picker.cleanup()
+        self._picker = PICKERS[pickmode](self)
+        self.sig_picker_changed.emit(self._picker)
 
     def add_arrow(self, pos, grid=None, col=None):
         """
@@ -263,49 +212,35 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
         """
         if grid is not None:
             world = grid.grid_to_world(pos)
-            pos = self.grid.world_to_grid(world)
+            pos = self._grid.world_to_grid(world)
 
         if col is None:
             # Default to grey arrow
             col = [127, 127, 127]
 
-        self.arrows.append((pos, col))
-        self.sig_arrows_changed.emit(self.arrows)
+        self._arrows.append((pos, col))
+        self.sig_arrows_changed.emit(self._arrows)
 
     def remove_arrows(self):
         """
         Remove all the arrows that have been placed
         """
-        self.arrows = []
-        self.sig_arrows_changed.emit(self.arrows)
+        self._arrows = []
+        self.sig_arrows_changed.emit(self._arrows)
 
-    
-    def data_view(self, name):
-        if name not in self._data_views:
-            raise KeyError("No such data: %s" % name)
-        else:
-            return self._data_views[name]
-            
-    def _update_vis(self, key, value):
-        # In single-view mode hide existing data of same type
-        if key == "visible" and value == True and self._singleview:
-            for existing_name, view in self._data_views.items():
-                if existing_name != name and existing_name != MAIN_DATA and self.ivm.data[existing_name].roi == qpdata.roi:
-                    view.visible = False
-                    
     def _pick(self, win, pos):
         """
         Called when a point is picked in one of the viewing windows
         """
-        self.picker.pick(win, pos)
-        self.sig_selection_changed.emit(self.picker)
+        self._picker.pick(win, pos)
+        self.sig_selection_changed.emit(self._picker)
 
     def _drag(self, win, pos):
         """
         Called when a drag selection is changed in one of the viewing windows
         """
-        self.picker.drag(win, pos)
-        self.sig_selection_changed.emit(self.picker)
+        self._picker.drag(win, pos)
+        self.sig_selection_changed.emit(self._picker)
 
     def _toggle_maximise(self, win, state=-1):
         """
@@ -331,59 +266,26 @@ class OrthoViewer(QtGui.QSplitter, LogSource):
 
     def _main_data_changed(self, data):
         if data is not None:
-            self.grid = data.grid.get_standard()
+            self._grid = data.grid.get_standard()
             self.debug("Main data raw grid")
             self.debug(data.grid.affine)
             self.debug("RAS aligned")
-            self.debug(self.grid.affine)
+            self.debug(self._grid.affine)
 
             # HACK force a change of focus
             self.set_focus([0, 0, 0, data.nvols], grid=data.grid)
             initial_focus = [float(int(v/2)) for v in data.grid.shape] + [int(data.nvols/2)]
             self.debug("Initial focus (data): %s", initial_focus)
             self.set_focus(initial_focus, grid=data.grid)
-            self.debug("Initial focus (std): %s", self._pos)
+            self.debug("Initial focus (std): %s", self._focus)
 
             # If one of the dimensions has size 1 the data is 2D so
             # maximise the relevant slice. If not, go to standard
             # 3-slice view
             self._toggle_maximise(0, state=0)
             data_axes = data.grid.get_ras_axes()
-            self._data_views[MAIN_DATA] = DataView(DEFAULT_MAIN_VIEW)
-            self._data_views[MAIN_DATA].cmap_range = initial_cmap_range(data, 99)
-
             for idx in range(3):
-                self.ortho_views[idx].set_grid(self.grid)
-                self.ortho_views[idx].add_data_view(data, self._data_views[MAIN_DATA], name=MAIN_DATA)
-                self.ortho_views[idx].reset()
                 if data.grid.shape[data_axes[idx]] == 1:
                     self._toggle_maximise(idx, state=1)
 
-    def _data_changed(self, data_names):
-        new_data = [name for name in data_names if name not in self._data_views]
-        removed_data = [name for name in self._data_views if name != MAIN_DATA and name not in data_names]
-
-        for name in removed_data:
-            for idx in range(3):
-                self.ortho_views[idx].remove_data_view(name)
-
-        max_z_value = max([view.z_value for view in self._data_views.values()])
-        for new_idx, name in enumerate(new_data):
-            qpdata = self.ivm.data[name]
-            if qpdata.roi:
-                self._data_views[name] = DataView(DEFAULT_ROI_VIEW)
-            else:
-                self._data_views[name] = DataView(DEFAULT_DATA_VIEW)
-
-            self._data_views[name].cmap_range = initial_cmap_range(qpdata)
-            self._data_views[name].z_value = max_z_value + new_idx + 1
-
-            # Regenerate z values for remaining data
-            for idx, view in enumerate(sorted(self._data_views.items(), 
-                                       key=lambda view: view[1].z_value)):
-                self._data_views[name].z_value = idx
-
-            for idx in range(3):
-                self.ortho_views[idx].add_data_view(qpdata, self._data_views[name])
-
- 
+            self.sig_grid_changed.emit(self._grid)

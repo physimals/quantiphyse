@@ -1,6 +1,28 @@
 """
 Quantiphyse - 2d ortho slice image viewer
 
+Plans for multi-view
+
+ - Refactor orthoview to (in theory) allow multiple data views. Don't
+   touch IVM or overview widget.
+ - Is view metadata part of QpData metadata? Probably not since
+   some of it we don't want to preserve (e.g. visibility) and other
+   bits are messy e.g. LUT. However want view to persist over potentially
+   different viewers, e.g. 2D/3D... Could have overarching viewer class
+   or put it in IVM. Would include:
+     - visible (All viewers)
+     - roi_only (All viewers?)
+     - boundary (clamp/transparent) (All viewers?)
+     - alpha (All viewers?)
+     - zvalue (Ortho viewer only)
+     - interpolation (Ortho viewer only?)
+     - colourmap (All viewers)
+     - ROI view style (Ortho viewer only?)
+   Maybe add 'view metadata' to QpData?
+ - How does 'current data' work, e.g. for histogram? Selection via
+   menu or Volumes widget.
+ - What about surfaces? Which bits of QpData can they support?
+ 
 Copyright (c) 2013-2018 University of Oxford
 """
 
@@ -687,8 +709,8 @@ class ImageView(QtGui.QSplitter, LogSource):
 
     def _opts_changed(self):
         z_roi = int(self.opts.display_order == self.opts.ROI_ON_TOP)
-        self.current_roi_view.set("z_value", z_roi)
-        self.current_data_view.set("z_value", 1-z_roi)
+        self.current_roi_view.set("z_order", z_roi)
+        self.current_data_view.set("z_order", 1-z_roi)
         self.current_data_view.set("interp_order", self.opts.interp_order)
 
     def _main_data_changed(self, data):

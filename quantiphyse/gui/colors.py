@@ -23,19 +23,11 @@ def initial_cmap_range(qpdata, percentile=100):
 
     :return: Sequence of (min, max)
     """
-    data = qpdata.volume(int(qpdata.nvols/2)).flatten()
-    # This ignores infinite values too unlike np.nanmin/np.nanmax
-    nonans = np.isfinite(data)
-    cmin, cmax = np.min(data[nonans]), np.max(data[nonans])
+    cmin, cmax = qpdata.range(vol=int(qpdata.nvols/2), percentile=percentile)
     # Issue #101: if min is exactly zero, make it slightly more
     # as a heuristic for data sets where zero=background
     if cmin == 0:
         cmin = 1e-7*cmax
-
-    if percentile < 100:
-        perc_max = np.nanpercentile(data, percentile)
-        if perc_max > cmin:
-            cmax = perc_max
 
     return cmin, cmax
 
@@ -43,7 +35,11 @@ def get_lut(cmap_name, alpha=255):
     """
     Get the colour lookup table by name.
 
-    Handles Matplotlib as well as pyqtgraph built in colormaps
+    Handles Matplotlib as well as pyqtgraph built in colormaps.
+    Pyqtgraph is a bit rubbish here - to load a predefined color
+    map and extract the lookup table we need to create a
+    GradientEditorItem even though we're not doing anything involving
+    the GUI.
     """
     gradient = pg.GradientEditorItem()
     try:

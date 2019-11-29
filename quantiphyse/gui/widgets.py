@@ -246,6 +246,9 @@ class OverlayCombo(QtGui.QComboBox):
         self.rois = rois
         self.data = data
         self.ivm.sig_all_data.connect(self._data_changed)
+        self.ivm.sig_current_data.connect(self._current_data_changed)
+        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+        self._follow_current = kwargs.get("follow_current", False)
 
         # Whether the combo should automatically adopt the name of the
         # first data set to be added
@@ -254,6 +257,18 @@ class OverlayCombo(QtGui.QComboBox):
 
         self._data_changed()
     
+    def _current_data_changed(self, qpdata):
+        if self.data and self._follow_current:
+            idx = self.findText(qpdata.name)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+
+    def _current_roi_changed(self, qpdata):
+        if self.rois and self._follow_current:
+            idx = self.findText(qpdata.name)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+
     def _data_changed(self):
         self.blockSignals(True)
         try:
@@ -294,7 +309,7 @@ class OverlayCombo(QtGui.QComboBox):
 
         # If requested, initialize when the first data arrives (and send signal)
         if self._set_first and self._first_data and len(data) > 0:
-            self.setCurrentIndex(0)
+            self.setCurrentIndex(int(self.none_option))
             self._first_data = False
 
 class RoiCombo(OverlayCombo):

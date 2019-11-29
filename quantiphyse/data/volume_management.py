@@ -9,6 +9,7 @@ from __future__ import division
 import logging
 import keyword
 import re
+from collections import OrderedDict
 
 try:
     from PySide import QtCore
@@ -19,7 +20,7 @@ import numpy as np
 
 from quantiphyse.utils import QpException
 
-from .qpdata import QpData
+from .qpdata import QpData, Visible
 from .load_save import NumpyData
 from .extras import Extra
 
@@ -65,10 +66,10 @@ class ImageVolumeManagement(QtCore.QObject):
     def reset(self):
         """ Clear all data """
         self.main = None
-        self.data = {}
+        self.data = OrderedDict()
         self.current_data = None
         self.current_roi = None
-        self.extras = {}
+        self.extras = OrderedDict()
 
         self.sig_main_data.emit(None)
         self.sig_current_data.emit(None)
@@ -156,17 +157,25 @@ class ImageVolumeManagement(QtCore.QObject):
             if self.main is not None and self.main.name == data.name:
                 make_main = True
 
+        # Hide previous default-visibility data sets
+        for qpdata in self.data.values():
+            if qpdata.view.visible == Visible.DEFAULT:
+                qpdata.view.visible = Visible.INVISIBLE
+
         self.data[data.name] = data
+
+        # Set z-order
+        data.view.z_order = len(self.data)
+
+        # Emit the 'data changed' signal
+        self.sig_all_data.emit(list(self.data.keys()))
 
         # Make main data if requested or if not specified and there is no current main data
         if make_main is None:
             make_main = self.main is None
-
         if make_main:
             self.set_main_data(data.name)
-
-        # Emit the 'data changed' signal
-        self.sig_all_data.emit(list(self.data.keys()))
+            data.view.visible = Visible.INVISIBLE
 
         # Make current if requested, or if not specified and it is the first non-main data/ROI
         if make_current is None:

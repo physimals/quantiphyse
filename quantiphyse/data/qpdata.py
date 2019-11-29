@@ -334,6 +334,37 @@ class OrthoSlice(DataGrid):
         """ 3D normal vector to the plane in world co-ordinates"""
         return self._normal
 
+# FIXME maybe should be initialized by the viewer?
+class Boundary:
+    TRANS = 0
+    CLAMP = 1
+    LOWERTRANS = 2
+    UPPERTRANS = 3
+
+class Visible:
+    DEFAULT = 1
+    VISIBLE = 2
+    INVISIBLE = 0
+
+DEFAULT_DATA_VIEW = {
+    "visible" : Visible.DEFAULT,
+    "roi_only" : False,
+    "boundary" : Boundary.TRANS,
+    "alpha" : 255,
+    "interp_order" : 0,
+    "cmap" : "jet",
+    "z_order" : 0,
+}
+
+DEFAULT_ROI_VIEW = {
+    "visible" : Visible.DEFAULT,
+    "alpha" : 127,
+    "shade" : True,
+    "contour" : False,
+    "interp_order" : 0,
+    "z_order" : 0,
+}
+
 class MetaSignaller(QtCore.QObject):
     """
     This is required because you can't multiply inherit
@@ -367,8 +398,25 @@ class Metadata(dict):
             # subclass so they can send their own signals
             value = Metadata(value)
 
-        dict.__setitem__(self, key, value)
-        self.sig_changed.emit(key, value)
+        if self.get(key, None) != value:
+            dict.__setitem__(self, key, value)
+            self.sig_changed.emit(key, value)
+
+    def __getattr__(self, name):
+        """
+        For undefined attributes, return dictionary value
+        """
+        return self.get(name, None)
+
+    def __setattr__(self, name, value):
+        """
+        Set public attributes (not beginning with _) as
+        dictionary values
+        """
+        if name[0] == "_":
+            dict.__setattr__(self, name, value)
+        elif self.get(name, None) != value:
+            self.__setitem__(name, value)
 
 class QpData(object):
     """
@@ -409,6 +457,15 @@ class QpData(object):
 
         self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
         self._meta["vol_units"] = kwargs.get("vol_units", None)
+
+        self.view = Metadata()
+        if self.roi:
+            self.view.update(DEFAULT_ROI_VIEW)
+        else:
+            self.view.update(DEFAULT_DATA_VIEW)
+            # FIXME use of GUI class
+            from quantiphyse.gui.colors import initial_cmap_range
+            self.view.cmap_range = initial_cmap_range(self)
 
     @property
     def metadata(self):
@@ -598,7 +655,7 @@ class QpData(object):
         This method is optional and does not have to be implemented"""
         pass
 
-    def range(self, vol=None, percentile=100):
+    def range(self, vol=None, percentile=100, roi=None):
         """
         Return data min and max
 
@@ -608,7 +665,8 @@ class QpData(object):
         :param percentile: If specified, return maximim value as this percentile
         :return: Tuple of min value, max value
         """
-        if vol is None and percentile == 100:
+        if vol is None and roi is None and percentile == 100:
+            # Absolute data range which we only compute once
             if self._meta.get("range", None) is None:
                 # This ignores infinite values too unlike np.nanmin/np.nanmax
                 data = self.raw()
@@ -621,6 +679,7 @@ class QpData(object):
                 data = self.volume(vol)
             else:
                 data = self.raw()
+                
             nonans = np.isfinite(data)
             dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
 
@@ -630,6 +689,20 @@ class QpData(object):
                     dmax = perc_max
 
             return dmin, dmax
+
+    def cmap_range(self, vol=None, percentile=100):
+        """
+        Return a data min and max suitable for a colour map
+
+        This differs from range() only by a heuristic which
+        tries to make 0 transparent when the data minimum is
+        exactly zero (Issue #101)
+        """
+        cmin, cmax = self.range(vol, percentile)
+        if cmin == 0:
+            cmin = 1e-7*cmax
+
+        return cmin, cmax
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
