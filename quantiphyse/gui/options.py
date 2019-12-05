@@ -40,9 +40,9 @@ class OptionBox(QtGui.QGroupBox):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, title=""):
+    def __init__(self, title="", **kwargs):
         QtGui.QGroupBox.__init__(self, title)
-        if not title:
+        if not title and not kwargs.get("border", False):
             self.setStyleSheet("border: none")
         self.grid = QtGui.QGridLayout()
         self.setLayout(self.grid)
@@ -568,16 +568,17 @@ class NumericOption(Option, QtGui.QWidget):
         #hbox.addWidget(self.min_edit)
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setMaximum(100)
-        self.slider.setMinimum(0)
-        self.slider.setSliderPosition(int(100 * (default - minval) / (maxval - minval)))
+        self.slider.setMaximum(maxval)
+        self.slider.setMinimum(minval)
+        self.slider.setValue(default)
         self.slider.valueChanged.connect(self._slider_changed)
         if kwargs.get("slider", True):
             hbox.addWidget(self.slider)
 
         self.val_edit = QtGui.QLineEdit(str(default))
         self.val_edit.editingFinished.connect(self._edit_changed)
-        hbox.addWidget(self.val_edit)
+        if kwargs.get("edit", True):
+            hbox.addWidget(self.val_edit)
 
     def _changed(self):
         self.sig_changed.emit()
@@ -590,14 +591,14 @@ class NumericOption(Option, QtGui.QWidget):
 
             if val > self.maxval and not self.hardmax:
                 self.maxval = val
+                self.slider.setMaximum(val)
             if val < self.minval and not self.hardmin:
                 self.minval = val
+                self.slider.setMinimum(val)
 
-            val = self.value
-            pos = 100 * (val - self.minval) / (self.maxval - self.minval)
             try:
                 self.slider.blockSignals(True)
-                self.slider.setSliderPosition(int(pos))
+                self.slider.setValue(int(self.value))
             finally:
                 self.slider.blockSignals(False)
 
@@ -608,7 +609,7 @@ class NumericOption(Option, QtGui.QWidget):
         self._changed()
 
     def _slider_changed(self, value):
-        val = self.rtype(self.minval + (self.maxval - self.minval) * float(value) / 100)
+        val = self.rtype(value)
         try:
             self.val_edit.blockSignals(True)
             self._update_edit(val)
