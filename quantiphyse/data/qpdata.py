@@ -348,7 +348,7 @@ class Visible:
 
 DEFAULT_DATA_VIEW = {
     "visible" : Visible.DEFAULT,
-    "roi_only" : False,
+    "roi" : None,
     "boundary" : Boundary.TRANS,
     "alpha" : 255,
     "interp_order" : 0,
@@ -358,10 +358,12 @@ DEFAULT_DATA_VIEW = {
 
 DEFAULT_ROI_VIEW = {
     "visible" : Visible.DEFAULT,
+    "roi" : None,
+    "boundary" : Boundary.TRANS,
     "alpha" : 127,
-    "shade" : True,
     "contour" : False,
     "interp_order" : 0,
+    "cmap" : "jet",
     "z_order" : 0,
 }
 
@@ -441,10 +443,13 @@ class QpData(object):
         self._nvols = nvols
 
         self._meta = Metadata()
+        self.view = Metadata()
         if metadata is not None:
             self._meta.update(metadata)
 
         self._meta["fname"] = kwargs.get("fname", None)
+        self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
+        self._meta["vol_units"] = kwargs.get("vol_units", None)
 
         # Is data set an ROI? If not specified, try making it one
         if roi is None:
@@ -454,18 +459,6 @@ class QpData(object):
                 self.roi = False
         else:
             self.roi = roi
-
-        self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
-        self._meta["vol_units"] = kwargs.get("vol_units", None)
-
-        self.view = Metadata()
-        if self.roi:
-            self.view.update(DEFAULT_ROI_VIEW)
-        else:
-            self.view.update(DEFAULT_DATA_VIEW)
-            # FIXME use of GUI class
-            from quantiphyse.gui.colors import initial_cmap_range
-            self.view.cmap_range = initial_cmap_range(self)
 
     @property
     def metadata(self):
@@ -497,6 +490,10 @@ class QpData(object):
 
     @roi.setter
     def roi(self, is_roi):
+        if "roi" in self._meta and is_roi == self._meta["roi"]:
+            return
+
+        self._meta["roi"] = is_roi
         if is_roi:
             if self.nvols != 1:
                 raise QpException("This data set cannot be an ROI - it is 4D")
@@ -504,7 +501,12 @@ class QpData(object):
                 rawdata = self.raw()
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
-        self._meta["roi"] = is_roi
+
+            self.view = Metadata(DEFAULT_ROI_VIEW)
+            self.view.cmap_range = self.suggest_cmap_range()
+        else:
+            self.view = Metadata(DEFAULT_DATA_VIEW)
+            self.view.cmap_range = self.suggest_cmap_range(vol=int(self.nvols/2))
 
     @property
     def regions(self):
@@ -517,6 +519,10 @@ class QpData(object):
         if self._meta.get("roi_regions", None) is None:
             regions = np.unique(self.raw().astype(np.int))
             regions = np.delete(regions, np.where(regions == 0))
+            if len(regions) == 0:
+                # Always have at least one region defined
+                regions = [1]
+
             if len(regions) == 1:
                 # If there is only one region, don't give it a name
                 self._meta["roi_regions"] = {regions[0] : ""}
@@ -663,6 +669,8 @@ class QpData(object):
 
         :param vol: Index of volume to use, if not specified use whole data set
         :param percentile: If specified, return maximim value as this percentile
+        :param roi: QpData which is an ROI - range is only completed within this ROI
+
         :return: Tuple of min value, max value
         """
         if vol is None and roi is None and percentile == 100:
@@ -679,7 +687,10 @@ class QpData(object):
                 data = self.volume(vol)
             else:
                 data = self.raw()
-                
+
+            if roi is not None:
+                data = data[roi.raw() > 0]
+
             nonans = np.isfinite(data)
             dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
 
@@ -690,7 +701,7 @@ class QpData(object):
 
             return dmin, dmax
 
-    def cmap_range(self, vol=None, percentile=100):
+    def suggest_cmap_range(self, vol=None, percentile=100, roi=None):
         """
         Return a data min and max suitable for a colour map
 
@@ -698,11 +709,14 @@ class QpData(object):
         tries to make 0 transparent when the data minimum is
         exactly zero (Issue #101)
         """
-        cmin, cmax = self.range(vol, percentile)
-        if cmin == 0:
-            cmin = 1e-7*cmax
+        if self.roi:
+            return 0.1, max(self.regions.keys())
+        else:
+            cmin, cmax = self.range(vol, percentile, roi)
+            if cmin == 0:
+                cmin = 1e-7*cmax
 
-        return cmin, cmax
+            return cmin, cmax
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
