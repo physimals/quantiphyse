@@ -1,6 +1,9 @@
 """
 Quantiphyse - widget which allows a data sets view metadata to be changed
 
+The widget automatically switches to show the 'current' data, whether it is
+currently visible or not.
+
 Copyright (c) 2013-2019 University of Oxford
 """
 
@@ -13,154 +16,176 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
-import numpy as np
-
 from quantiphyse.data.qpdata import Visible
-from quantiphyse.utils import get_icon
+from quantiphyse.utils import get_icon, sf
 from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, NumericOption, TextOption
 
 LOG = logging.getLogger(__name__)
 
-class DataViewParamsWidget(QtGui.QGroupBox):
-    """
-    Change view options for data set
-    """
-    def __init__(self, ivl):
-        QtGui.QGroupBox.__init__(self)
+def no_update(f):
+    def wrapper(self, *args, **kwargs):
+        try:
+            self._no_update = True
+            f(self, *args, **kwargs)
+        finally:
+            self._no_update = False
+    return wrapper
+
+class ViewParamsWidget(OptionBox):
+
+    def __init__(self, ivl, rois=True, data=True):
+        OptionBox.__init__(self, border=True)
+        self.ivl = ivl
         self.ivm = ivl.ivm
         self._qpdata = None
+        self._no_update = False
+        self.grid.setVerticalSpacing(2)
 
-        grid = QtGui.QGridLayout()
-        grid.setVerticalSpacing(2)
-        grid.setContentsMargins(5, 5, 5, 5)
-        self.setLayout(grid)
+        self._view_btn = QtGui.QPushButton()
+        self._view_btn.setIcon(QtGui.QIcon(get_icon("visible.png")))
+        self._view_btn.setFixedSize(16, 16)
+        self._view_btn.setToolTip("Visibility")
+        self._view_btn.clicked.connect(self._view_btn_clicked)
+        self._data = self.add("Data" if data else "ROI", DataOption(self.ivm, data=data, rois=rois, follow_current=True), self._view_btn, key="data")
+        self._view_roi = self.add("View ROI", DataOption(self.ivm, data=False, rois=True), checked=True, key="view_roi")
+        self._levels_btn = QtGui.QPushButton()
+        self._levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
+        self._levels_btn.setFixedSize(16, 16)
+        self._levels_btn.setToolTip("Adjust colour map levels")
+        self._levels_btn.clicked.connect(self._levels_clicked)
+        self._cmap = self.add("Colour map", ChoiceOption(["jet", "hot", "gist_heat", "flame", "bipolar", "spectrum", "custom"]), self._levels_btn, key="cmap")
+        self._alpha = self.add("Alpha", NumericOption(minval=0, maxval=255, default=255, edit=False, intonly=True), key="alpha")
+        self._value_label = QtGui.QLabel()
+        self.add("Value", self._value_label)
+        self.add("", stretch=2)
 
-        grid.addWidget(QtGui.QLabel("Overlay"), 0, 0)
-        self.overlay_combo = OverlayCombo(self.ivm, none_option=True, set_first=True, follow_current=True)
-        grid.addWidget(self.overlay_combo, 0, 1)
-        grid.addWidget(QtGui.QLabel("View"), 1, 0)
-        self.ov_view_combo = QtGui.QComboBox()
-        self.ov_view_combo.addItem("All")
-        self.ov_view_combo.addItem("Only in ROI")
-        self.ov_view_combo.addItem("None")
-        grid.addWidget(self.ov_view_combo, 1, 1)
-        grid.addWidget(QtGui.QLabel("Color map"), 2, 0)
-        hbox = QtGui.QHBoxLayout()
-        self.ov_cmap_combo = QtGui.QComboBox()
-        self.ov_cmap_combo.addItem("jet")
-        self.ov_cmap_combo.addItem("hot")
-        self.ov_cmap_combo.addItem("gist_heat")
-        self.ov_cmap_combo.addItem("flame")
-        self.ov_cmap_combo.addItem("bipolar")
-        self.ov_cmap_combo.addItem("spectrum")
-        hbox.addWidget(self.ov_cmap_combo)
-        self.ov_levels_btn = QtGui.QPushButton()
-        self.ov_levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
-        self.ov_levels_btn.setFixedSize(16, 16)
-        self.ov_levels_btn.setToolTip("Adjust colour map levels")
-        self.ov_levels_btn.clicked.connect(self._show_ov_levels)
-        hbox.addWidget(self.ov_levels_btn)
-        grid.addLayout(hbox, 2, 1)
-        grid.addWidget(QtGui.QLabel("Alpha"), 3, 0)
-        self.ov_alpha_sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-        self.ov_alpha_sld.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.ov_alpha_sld.setRange(0, 255)
-        self.ov_alpha_sld.setValue(255)
-        grid.addWidget(self.ov_alpha_sld, 3, 1)
-        grid.setRowStretch(4, 1)
+        self._data.sig_changed.connect(self._data_changed)
+        self._view_roi.sig_changed.connect(self._view_roi_changed)
+        self._cmap.sig_changed.connect(self._cmap_changed)
+        self._alpha.sig_changed.connect(self._alpha_changed)
+        self.ivl.sig_focus_changed.connect(self._focus_changed)
+        self.qpdata = None
 
-        self._widgets = [self.ov_view_combo, self.ov_cmap_combo,
-                         self.ov_alpha_sld, self.overlay_combo,
-                         self.ov_levels_btn]
+    @property
+    def qpdata(self):
+        return self._qpdata
 
-        self.overlay_combo.currentIndexChanged.connect(self._combo_changed)
-        self.ov_view_combo.currentIndexChanged.connect(self._view_changed)
-        self.ov_cmap_combo.currentIndexChanged.connect(self._cmap_changed)
-        self.ov_alpha_sld.valueChanged.connect(self._alpha_changed)
-        self._combo_changed(-1)
-
-    def _update_widgets(self):
-        try:
-            for widget in self._widgets:
-                widget.blockSignals(True)
-
-            if not self._qpdata.view.visible:
-                self.ov_view_combo.setCurrentIndex(2)
-            elif self._qpdata.view.roi_only:
-                self.ov_view_combo.setCurrentIndex(1)
-            else:
-                self.ov_view_combo.setCurrentIndex(0)
-
-            # 'Custom' only appears as a flag to indicate the user has messed with the
-            # LUT using the histogram widget. Otherwise is is hidden
-            cmap = self._qpdata.view.cmap
-            if cmap == "custom":
-                idx = self.ov_cmap_combo.findText("custom")
-                if idx >= 0:
-                    self.ov_cmap_combo.setCurrentIndex(idx)
-                else:
-                    self.ov_cmap_combo.addItem("custom")
-                    idx = self.ov_cmap_combo.findText("custom")
-                    self.ov_cmap_combo.setCurrentIndex(idx)
-            else:
-                idx = self.ov_cmap_combo.findText("custom")
-                if idx >= 0:
-                    self.ov_cmap_combo.removeItem(idx)
-                idx = self.ov_cmap_combo.findText(self._qpdata.view.cmap)
-                self.ov_cmap_combo.setCurrentIndex(idx)
-
-            self.ov_alpha_sld.setValue(self._qpdata.view.alpha)
-
-            if self._qpdata is not None:
-                idx = self.overlay_combo.findText(self._qpdata.name)
-                self.overlay_combo.setCurrentIndex(idx)
-            else:
-                self.overlay_combo.setCurrentIndex(-1)
-        finally:
-            for widget in self._widgets:
-                widget.blockSignals(False)
-
-    def _combo_changed(self, idx):
+    @qpdata.setter
+    def qpdata(self, qpdata):
         if self._qpdata is not None:
-            self._qpdata.view.sig_changed.disconnect(self._update_widgets)
-        if idx > 0:
-            self._qpdata = self.ivm.data[self.overlay_combo.itemText(idx)]
-            self._qpdata.view.sig_changed.connect(self._update_widgets)
-            self._update_widgets()
-        else:
-            self._qpdata = None
-        for widget in self._widgets:
-            if widget != self.overlay_combo:
-                widget.setEnabled(self._qpdata is not None)
+            self._qpdata.view.sig_changed.disconnect(self._view_md_changed)
 
-    def _cmap_changed(self, idx):
-        cmap = self.ov_cmap_combo.itemText(idx)
-        self._qpdata.view.cmap = cmap
+        self._qpdata = qpdata
 
-    def _view_changed(self, idx):
-        """ Viewing style (all or within ROI only) changed """
-        if idx in (0, 1):
-            self._qpdata.view.visible = Visible.VISIBLE
-        else:
-            self._qpdata.view.visible = Visible.INVISIBLE
-        self._qpdata.view.roi_only = (idx == 1)
+        self.option("alpha").setEnabled(qpdata is not None)
+        self._view_btn.setEnabled(qpdata is not None)
+        self.set_visible("cmap", qpdata is not None and not qpdata.roi)
+        self._levels_btn.setVisible(qpdata is not None and not qpdata.roi)
+        self.set_visible("view_roi", qpdata is not None and not qpdata.roi)
 
-    def _alpha_changed(self, alpha):
-        """ Set the data transparency """
-        self._qpdata.view.alpha = alpha
+        if self._qpdata is not None:
+            self._qpdata.view.sig_changed.connect(self._view_md_changed)
+            self._view_md_changed()
 
-    def _show_ov_levels(self):
-        dlg = LevelsDialog(self, self.ivm, self._qpdata)
+    def _view_md_changed(self, _key=None, _value=None):
+        if not self._no_update:
+            try:
+                self.blockSignals(True)
+                if self._qpdata is not None:
+                    self.option("data").value = self._qpdata.name
+                    self.option("alpha").value = self._qpdata.view.alpha
+
+                    if not self._qpdata.roi:
+                        self.set_checked("view_roi", bool(self._qpdata.view.roi))
+                        if self._qpdata.view.roi:
+                            self.option("view_roi").value = self._qpdata.view.roi
+                        self.option("cmap").value = self._qpdata.view.cmap
+                    self._view_btn.setIcon(self._get_visibility_icon())
+            finally:
+                self.blockSignals(False)
+
+    def _data_changed(self):
+        self.qpdata = self.ivm.data.get(self.option("data").value, None)
+        if self.qpdata is not None:
+            self.ivm.set_current_data(self.qpdata.name)
+
+    @no_update
+    def _view_roi_changed(self):
+        self._qpdata.view.roi = None if not self.option("view_roi").isEnabled() else self.option("view_roi").value
+
+    @no_update
+    def _cmap_changed(self):
+        self._qpdata.view.cmap = self.option("cmap").value
+
+    @no_update
+    def _alpha_changed(self):
+        self._qpdata.view.alpha = self.option("alpha").value
+
+    def _levels_clicked(self):
+        dlg = LevelsDialog(self, self.ivm, self.ivl, self._qpdata)
         dlg.exec_()
+
+    def _view_btn_clicked(self):
+        if self._qpdata.roi:
+            VISIBILITIES_ROI = [
+                (True, False),
+                (True, True),
+                (False, True),
+                (False, False),
+            ]
+            idx = 0
+            for idx, vis in enumerate(VISIBILITIES_ROI):
+                if self._qpdata.view.visible == vis[0] and self._qpdata.view.contour == vis[1]:
+                    break
+            next_vis = VISIBILITIES_ROI[(idx+1) % 4]
+            self._qpdata.view.visible = next_vis[0]
+            self._qpdata.view.contour = next_vis[1]
+        else:
+            currently_visible = self._qpdata.view.visible == Visible.VISIBLE
+            self._qpdata.view.visible = Visible.VISIBLE if not currently_visible else Visible.INVISIBLE
+
+    def _focus_changed(self, focus):
+        print("focus_changed")
+        if self._qpdata is not None:
+            value = self._qpdata.value(focus, self.ivl.grid)
+            print(value)
+            if self._qpdata.roi:
+                region = int(value)
+                if region == 0:
+                    text = "(outside ROI)"
+                else:
+                    text = self._qpdata.regions.get(region, "")
+                if text == "":
+                    text = "1"
+            else:
+                text = sf(value, 4)
+            self._value_label.setText(text)
+
+    def _get_visibility_icon(self):
+        if self._qpdata.roi:
+            if self._qpdata.view.contour and self._qpdata.view.visible:
+                icon = "shade_contour.png"
+            elif self._qpdata.view.contour:
+                icon = "contour.png"
+            elif self._qpdata.view.visible:
+                icon = "shade.png"
+            else:
+                icon = "invisible.png"
+        else:
+            icon = "visible.png" if self._qpdata.view.visible else "invisible.png"
+
+        return QtGui.QIcon(get_icon(icon))
 
 class LevelsDialog(QtGui.QDialog):
     """
     Dialog box used to set the colourmap max/min for a data view
     """
 
-    def __init__(self, parent, ivm, qpdata):
+    def __init__(self, parent, ivm, ivl, qpdata):
         super(LevelsDialog, self).__init__(parent)
         self.ivm = ivm
+        self.ivl = ivl
         self._qpdata = qpdata
 
         self.setWindowTitle("Levels for %s" % self._qpdata.name)
@@ -180,8 +205,6 @@ class LevelsDialog(QtGui.QDialog):
         btn = QtGui.QPushButton("Reset")
         btn.clicked.connect(self._reset)
         hbox.addWidget(btn)
-        self.use_roi = QtGui.QCheckBox("Within ROI")
-        hbox.addWidget(self.use_roi)
         grid.addLayout(hbox, 2, 1)
 
         grid.addWidget(QtGui.QLabel("Values outside range are"), 4, 0)
@@ -223,11 +246,12 @@ class LevelsDialog(QtGui.QDialog):
 
     def _reset(self):
         percentile = self.percentile_spin.value()
-        # FIXME broken
-        if self.use_roi.isChecked() and self.ivm.current_roi is not None:
-            flat = self._qpdata.mask(self.ivm.current_roi, output_flat=True)
+        if self._qpdata.view.roi:
+            roi = self.ivm.data[self._qpdata.view.roi]
+        else:
+            roi = None
 
-        cmin, cmax = self._qpdata._cmap_range(vol=self.ivl.focus()[3], percentile=percentile)
+        cmin, cmax = self._qpdata.suggest_cmap_range(vol=self.ivl.focus()[3], percentile=percentile, roi=roi)
         self.min_spin.setValue(cmin)
         self.max_spin.setValue(cmax)
         self._qpdata.view.cmap_range = [cmin, cmax]
