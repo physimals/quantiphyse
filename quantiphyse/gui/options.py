@@ -74,37 +74,48 @@ class OptionBox(QtGui.QGroupBox):
         extra_widgets = [opt for opt in options if opt not in real_options]
 
         if not real_options:
-            # Allow no options for just a label
+            # Allow no options for just a label + potentially other widgets
             real_options = []
             keys = []
 
         if len(keys) != len(real_options):
             raise ValueError("keys must be sequence which is the same length as the number of options")
 
-        self.grid.addWidget(QtGui.QLabel(label), self._current_row, 0, 1, 1 if real_options else 3)
-        opt_col = 1
+        col = 0
+        if label:
+            self.grid.addWidget(QtGui.QLabel(label), self._current_row, col, 1, 1 if real_options else 3)
+            col += 1
+
         if checked:
             cb = QtGui.QCheckBox()
             cb.setChecked(enabled)
-            self.grid.addWidget(cb, self._current_row, 1)
-            opt_col += 1
+            self.grid.addWidget(cb, self._current_row, col)
+            col += 1
 
-        for idx, keyopt in enumerate(zip(keys, real_options)):
-            key, option = keyopt
+        for key, option in zip(keys, real_options):
             if option is None:
                 continue
             LOG.debug("Adding option: %s (key=%s)", option, key)
-            self.grid.addWidget(option, self._current_row, idx+opt_col, 1, 1 if checked else 2)
+            self.grid.addWidget(option, self._current_row, col, 1, 1 if checked else 2)
             if checked:
                 option.setEnabled(enabled)
                 cb.stateChanged.connect(self._cb_toggled(option))
+                col += 1
+            else:
+                col += 2
             self._options[key] = option
             option.sig_changed.connect(self.sig_changed.emit)
 
-        for extra_idx, widget in enumerate(extra_widgets):
-            self.grid.addWidget(widget, self._current_row, len(real_options)+extra_idx+2)
+        for widget in extra_widgets:
+            self.grid.addWidget(widget, self._current_row, col)
+            col += 1
 
-        self._rows[key] = self._current_row
+        if key:
+            self._rows[key] = self._current_row
+            
+        if kwargs.get("stretch", 0):
+            self.grid.setRowStretch(self._current_row, kwargs["stretch"])
+
         self._current_row += 1
 
         if len(real_options) == 1:
@@ -126,7 +137,7 @@ class OptionBox(QtGui.QGroupBox):
             if item is None:
                 break
             item.widget().setVisible(visible)
-            if col == 1 and isinstance(item.widget(), QtGui.QCheckBox) and not isinstance(item.widget(), Option):
+            if isinstance(item.widget(), QtGui.QCheckBox) and not isinstance(item.widget(), Option):
                 checked = item.widget().isChecked()
                 item.widget().setEnabled(visible)
             else:
@@ -241,6 +252,12 @@ class DataOption(Option, QtGui.QComboBox):
             self.view().pressed.connect(self._item_pressed)
             delegate = QtWidgets.QStyledItemDelegate(self.view())
             self.view().setItemDelegate(delegate)
+        else:
+            if kwargs.get("follow_current", False):
+                if self._include_rois:
+                    self.ivm.sig_current_roi.connect(self._update_from_current)
+                if self._include_nonrois:
+                    self.ivm.sig_current_data.connect(self._update_from_current)
 
     @property
     def value(self):
@@ -353,7 +370,7 @@ class DataOption(Option, QtGui.QComboBox):
         try:
             data = []
             for name, qpd in self.ivm.data.items():
-                if self._include_nonrois or (qpd.roi and self._include_rois):
+                if (not qpd.roi and self._include_nonrois) or (qpd.roi and self._include_rois):
                     data.append(name)
 
             self.clear()
@@ -427,6 +444,11 @@ class DataOption(Option, QtGui.QComboBox):
             self.setStyleSheet("QComboBox {background-color: #d05050}")
         else:
             self.setStyleSheet("")
+
+    def _update_from_current(self, qpd):
+        if qpd is not None:
+            if (not qpd.roi and self._include_nonrois) or (qpd.roi and self._include_rois):
+                self.value = qpd.name
 
 class ChoiceOption(Option, QtGui.QComboBox):
     """
