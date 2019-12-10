@@ -17,34 +17,30 @@ import pyqtgraph as pg
 from quantiphyse.utils import LogSource
 from quantiphyse.data import OrthoSlice
 from quantiphyse.data.qpdata import Visible, Boundary, Metadata
-from quantiphyse.gui.colors import get_lut
+from quantiphyse.gui.colors import get_lut, get_col
 from quantiphyse.gui.view_options import ViewOptions
 
 from .maskable_image import MaskableImage
 
 MAIN_DATA = ""
 
-DEFAULT_MAIN_VIEW = {
-    "visible" : Visible.VISIBLE,
-    "roi_only" : False,
-    "boundary" : Boundary.CLAMP,
-    "alpha" : 255,
-    "cmap" : "grey",
-    "z_order" : 0,
-}
+# An arbitrary 'big number' expected to be larger than the largest number of 
+# data sets the viewer is ever likely to hold
+MAX_NUM_DATA_SETS = 1000
 
 class SliceDataView(LogSource):
     """
     Draws a slice through a data item
-    """
+    """ 
 
-    def __init__(self, qpdata, viewbox, plane, vol, view_metadata=None):
+    def __init__(self, ivm, qpdata, viewbox, plane, vol, view_metadata=None):
         """
         :param qpdata: QpData instance
         :param viewbox: pyqtgraph ViewBox instance
         :param view_metadata: View parameters
         """
         LogSource.__init__(self)
+        self._ivm = ivm
         self._qpdata = qpdata
         self._viewbox = viewbox
         self._plane = plane
@@ -52,18 +48,18 @@ class SliceDataView(LogSource):
         self._view = self._qpdata.view
         if view_metadata is not None:
             self._view = view_metadata
+        
         self._redraw_options = [
             "visible",
-            "roi_only",
+            "roi",
             "z_order",
-            "interp_order"
-            "shade",
+            "interp_order",
             "contour",
         ]
         self._img = MaskableImage()
+        self._contours = []
         self._viewbox.addItem(self._img)
         self._lut = get_lut(self._view.cmap, self._view.alpha)
-        self.debug("New slicedataview - redrawing")
         self.update()
         self.redraw()
         self._view.sig_changed.connect(self._view_metadata_changed)
@@ -92,19 +88,31 @@ class SliceDataView(LogSource):
             self._vol = vol
             self.redraw()
 
+    def _view_metadata_changed(self, key, value):
+        self.debug("View params changed: %s=%s", key, value)
+        if key in ("cmap", "lut"):
+            if self._view.cmap != "custom":
+                self._lut = get_lut(self._view.cmap, self._view.alpha)
+            else:
+                self._lut = self._view.lut
+        elif key == "alpha":
+            self._lut = [list(row[:3]) + [self._view.alpha] for row in self._lut]
+        self.update()
+        if key in self._redraw_options:
+            self.redraw()
+
     def update(self):
         """
         Update the image without re-slicing the data
         """
         self.debug("visible? %s", self._view.visible)
         self._img.setVisible(self._view.visible)
-        self._img.setZValue(self._view.z_order)
         self._img.set_boundary_mode(self._view.boundary)
         self._img.setLookupTable(self._lut, update=True)
         self._img.setLevels(self._view.cmap_range)
         self.debug("overlay cmap range %s", self._view.cmap_range)
 
-    def redraw(self, mask=None, interp_order=0):
+    def redraw(self, interp_order=0):
         """
         Update the image when the slice data may have changed
         and therefore may need re-extracting.
@@ -115,21 +123,55 @@ class SliceDataView(LogSource):
         self.debug("slicedataview: redrawing image")
         self.debug(self._vol)
         self.debug("%s, %s", self._plane.basis, self._plane.normal)
-        if self._img.isVisible():
+
+        self._z_order = self._view.z_order
+        if self._qpdata.roi:
+            # FIXME ROIs always on top - should be option
+            self._z_order += MAX_NUM_DATA_SETS
+
+        if self._img.isVisible() or self._view.contour:
             self.debug("visible")
             slicedata, slicemask, scale, offset = self._qpdata.slice_data(self._plane, vol=self._vol,
                                                                           interp_order=interp_order)
-            self._img.setTransform(QtGui.QTransform(scale[0, 0], scale[0, 1],
-                                                    scale[1, 0], scale[1, 1],
-                                                    offset[0], offset[1]))
-            self._img.setImage(slicedata, autoLevels=False)
             self.debug("Image data range: %f, %f", np.min(slicedata), np.max(slicedata))
+            qtransform = QtGui.QTransform(scale[0, 0], scale[0, 1],
+                                          scale[1, 0], scale[1, 1],
+                                          offset[0], offset[1])
+        if self._img.isVisible():
+            self._img.setTransform(qtransform)
+            self._img.setImage(slicedata, autoLevels=False)
+            self._img.setZValue(self._z_order)
 
-            if mask is not None:
-                maskdata, _, _, _ = mask.slice_data(self._plane)
+            if self._view.roi:
+                roi = self._ivm.data[self._view.roi]
+                resampled_roi = roi.resample(self._qpdata.grid)
+                maskdata, _, _, _ = resampled_roi.slice_data(self._plane)
                 self._img.mask = np.logical_and(maskdata, slicemask)
             else:
                 self._img.mask = slicemask
+
+        n_contours = 0
+        if self._view.contour:
+            # Update data and level for existing contour items, and create new ones if needed
+            max_region = max(self._qpdata.regions.keys())
+            for val in self._qpdata.regions:
+                pencol = get_col(self._lut, val, max_region)
+                if val != 0:
+                    if n_contours == len(self._contours):
+                        self._contours.append(pg.IsocurveItem())
+                        self._viewbox.addItem(self._contours[n_contours])
+
+                    contour = self._contours[n_contours]
+                    contour.setTransform(qtransform)
+                    contour.setData((slicedata == val).astype(np.int))
+                    contour.setLevel(1)
+                    contour.setPen(pg.mkPen(pencol, width=3))
+                    contour.setZValue(self._z_order)
+                    n_contours += 1
+
+        # Clear data from contours not required - FIXME delete them?
+        for idx in range(n_contours, len(self._contours)):
+            self._contours[idx].setData(None)
 
     def remove(self):
         """
@@ -137,16 +179,8 @@ class SliceDataView(LogSource):
         """
         self.debug("Removing slice view")
         self._viewbox.removeItem(self._img)
-
-    def _view_metadata_changed(self, key, value):
-        self.debug("View params changed: %s=%s", key, value)
-        if key == "cmap":
-            self._lut = get_lut(self._view.cmap, self._view.alpha)
-        elif key == "alpha":
-            self._lut = [list(row[:3]) + [self._view.alpha] for row in self._lut]
-        self.update()
-        if key in self._redraw_options:
-            self.redraw()
+        for contour in self._contours:
+            self._viewbox.removeItem(contour)
 
 class OrthoSliceViewer(pg.GraphicsView, LogSource):
     """
@@ -185,7 +219,6 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self._vol = 0
         self._plane = OrthoSlice(self.ivl.grid, self.zaxis, self._slicez)
         self._main_view = None
-        self._main_view_md = Metadata(DEFAULT_MAIN_VIEW)
         self._dragging = False
         self._arrow_items = []
         self._data_views = {}
@@ -200,12 +233,12 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
 
         # Crosshairs
         self._vline = pg.InfiniteLine(angle=90, movable=False)
-        self._vline.setZValue(2)
+        self._vline.setZValue(2*MAX_NUM_DATA_SETS)
         self._vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self._vline.setVisible(False)
 
         self._hline = pg.InfiniteLine(angle=0, movable=False)
-        self._hline.setZValue(2)
+        self._hline.setZValue(2*MAX_NUM_DATA_SETS)
         self._hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
         self._hline.setVisible(False)
 
@@ -281,15 +314,6 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self._vline.setVisible(crosshairs == self.ivl.opts.SHOW)
         self._hline.setVisible(crosshairs == self.ivl.opts.SHOW)
 
-    @property
-    def show_main(self):
-        """ True if main grid data is being displayed as a greyscale background """
-        return self._main_view_md.visible == Visible.VISIBLE
-
-    @show_main.setter
-    def show_main(self, show_main):
-        self._main_view_md.visible = int(show_main)
-
     def _grid_changed(self, grid):
         """
         Set the grid that the slice viewer is relative to
@@ -350,16 +374,17 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         for name in data_names:
             if name not in self._data_views:
                 qpdata = self.ivm.data[name]
-                self._data_views[name] = SliceDataView(qpdata, self._viewbox, self._plane, self._vol)
+                self._data_views[name] = SliceDataView(self.ivm, qpdata, self._viewbox, self._plane, self._vol)
+
+        self.crosshairs = len(self._data_views) > 0 and self.ivl.opts.crosshairs
 
     def _main_data_changed(self):
         if MAIN_DATA in self._data_views:
             self._data_views[MAIN_DATA].remove()
             del self._data_views[MAIN_DATA]
-        
+
         if self.ivm.main is not None:
-            self._main_view_md.cmap_range = self.ivm.main.cmap_range(vol=int(self.ivm.main.nvols/2), percentile=99)
-            self._data_views[MAIN_DATA] = SliceDataView(self.ivm.main, self._viewbox, self._plane, self._vol, self._main_view_md)
+            self._data_views[MAIN_DATA] = SliceDataView(self.ivm, self.ivm.main, self._viewbox, self._plane, self._vol, self.ivl.main_view_md)
         self.reset()
 
     def _update_slice(self):
