@@ -157,9 +157,9 @@ class ImageVolumeManagement(QtCore.QObject):
             if self.main is not None and self.main.name == data.name:
                 make_main = True
 
-        # Hide previous default-visibility data sets
+        # Hide previous default-visibility data sets of the same type
         for qpdata in self.data.values():
-            if qpdata.view.visible == Visible.DEFAULT:
+            if qpdata.view.visible == Visible.DEFAULT and qpdata.roi == data.roi:
                 qpdata.view.visible = Visible.INVISIBLE
 
         self.data[data.name] = data
