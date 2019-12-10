@@ -24,13 +24,22 @@ except ImportError:
 import numpy as np
 
 from quantiphyse.utils import LogSource
-from quantiphyse.data.qpdata import DataGrid
+from quantiphyse.data.qpdata import DataGrid, Metadata, Visible, Boundary
 
 from .pickers import PICKERS, PointPicker
 from .slice_viewer import OrthoSliceViewer
-from .histogram_widget import MultiImageHistogramWidget
-from .view_params_widget import DataViewParamsWidget
+from .histogram_widget import HistogramWidget, CurrentDataHistogramWidget
+from .view_params_widget import ViewParamsWidget
 from .navigators import NavigationBox
+
+DEFAULT_MAIN_VIEW = {
+    "visible" : Visible.VISIBLE,
+    "roi_only" : False,
+    "boundary" : Boundary.CLAMP,
+    "alpha" : 255,
+    "cmap" : "grey",
+    "z_order" : 0,
+}
 
 class Viewer(QtGui.QSplitter, LogSource):
     """
@@ -74,7 +83,7 @@ class Viewer(QtGui.QSplitter, LogSource):
         QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
 
         self.ivm = ivm
-        self._opts = opts
+        self.opts = opts
         self._grid = DataGrid([1, 1, 1], np.identity(4))
         self._focus = [0, 0, 0, 0]
         self._arrows = []
@@ -93,10 +102,11 @@ class Viewer(QtGui.QSplitter, LogSource):
             self.ortho_views[win.zaxis] = win
 
         # Histogram which controls colour map and levels for main volume
-        self.main_histogram = MultiImageHistogramWidget()
+        self.main_histogram = HistogramWidget(self)
+        self.main_view_md = Metadata(DEFAULT_MAIN_VIEW)
 
         # Histogram which controls colour map and levels for the current data
-        self.data_histogram = MultiImageHistogramWidget()
+        self.data_histogram = CurrentDataHistogramWidget(self)
 
         # Layout of the ortho slice viewers and histograms
         gview = QtGui.QWidget()
@@ -128,9 +138,9 @@ class Viewer(QtGui.QSplitter, LogSource):
         hbox = QtGui.QHBoxLayout()
         nav_box = NavigationBox(self)
         hbox.addWidget(nav_box)
-        #roi_box = RoiViewWidget(self, self.current_roi_view)
-        #hbox.addWidget(roi_box)
-        ovl_box = DataViewParamsWidget(self)
+        roi_box = ViewParamsWidget(self, rois=True, data=False)
+        hbox.addWidget(roi_box)
+        ovl_box = ViewParamsWidget(self, rois=False, data=True)
         hbox.addWidget(ovl_box)
         vbox.addLayout(hbox)
 
@@ -142,7 +152,7 @@ class Viewer(QtGui.QSplitter, LogSource):
 
         # Connect to signals
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        #self._opts.sig_options_changed.connect(self._opts_changed)
+        #self.opts.sig_options_changed.connect(self._opts_changed)
 
     @property
     def picker(self):
@@ -158,6 +168,15 @@ class Viewer(QtGui.QSplitter, LogSource):
     def arrows(self):
         """ Sequence of arrows defined by the viewer """
         return self._arrows
+
+    @property
+    def show_main(self):
+        """ True if main grid data is being displayed as a greyscale background """
+        return self.main_view_md.visible == Visible.VISIBLE
+
+    @show_main.setter
+    def show_main(self, show_main):
+        self._main_view_md.visible = int(show_main)
 
     def focus(self, grid=None):
         """
@@ -190,6 +209,12 @@ class Viewer(QtGui.QSplitter, LogSource):
 
         self.debug("Cursor position: %s", self._focus)
         self.sig_focus_changed.emit(self._focus)
+
+    def set_picker(self, pickmode):
+        """
+        Deprecated
+        """
+        self.set_pickmode(pickmode)
 
     def set_pickmode(self, pickmode):
         """
@@ -287,5 +312,10 @@ class Viewer(QtGui.QSplitter, LogSource):
             for idx in range(3):
                 if data.grid.shape[data_axes[idx]] == 1:
                     self._toggle_maximise(idx, state=1)
+
+            self.main_histogram.custom_view = self.main_view_md
+            self.main_histogram.qpdata = data
+            if data is not None:
+                self.main_view_md.cmap_range = data.suggest_cmap_range(vol=int(data.nvols/2), percentile=99)
 
             self.sig_grid_changed.emit(self._grid)
