@@ -70,13 +70,13 @@ class OverviewWidget(QpWidget):
         hbox = QtGui.QHBoxLayout()
         btn = QtGui.QPushButton()
         btn.setIcon(QtGui.QIcon(get_icon("up.png")))
-        btn.setFixedSize(16, 16)
+        btn.setFixedSize(24, 24)
         btn.setToolTip("Raise data set in viewing order")
         btn.clicked.connect(self._up)
         hbox.addWidget(btn)
         btn = QtGui.QPushButton()
         btn.setIcon(QtGui.QIcon(get_icon("down.png")))
-        btn.setFixedSize(16, 16)
+        btn.setFixedSize(24, 24)
         btn.setToolTip("Lower data set in viewing order")
         btn.clicked.connect(self._down)
         hbox.addWidget(btn)
@@ -211,9 +211,12 @@ class DataListWidget(QtGui.QTableView):
         """ Currently selected QpData """
         return self._selected
 
-    def _update_current(self, data):
-        # FIXME highlight row
-        pass
+    def _update_current(self, qpdata):
+        if qpdata is not None:
+            matches = self.model.findItems(qpdata.name, QtCore.Qt.MatchExactly, 1)
+            if matches:
+                index = matches[0].index()
+                self.setCurrentIndex(index)
 
     def _data_changed(self, data_names):
         for name in data_names:
@@ -304,9 +307,9 @@ class DataListWidget(QtGui.QTableView):
     def _clicked(self, index):
         row, col, qpdata = self._selection(index)
         self._selected = qpdata
-        if qpdata.roi and qpdata != self.ivm.current_roi:
+        if qpdata.roi:
             self.ivm.set_current_roi(qpdata.name)
-        elif not qpdata.roi and qpdata != self.ivm.current_data:
+        else:
             self.ivm.set_current_data(qpdata.name)
 
         if col == 0:
