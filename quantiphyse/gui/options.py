@@ -297,7 +297,7 @@ class DataOption(Option, QtGui.QComboBox):
                 if idx >= 0:
                     self.setCurrentIndex(idx)
                 else:
-                    raise ValueError("Data item %s is not a valid choice for this option")
+                    raise ValueError("Data item %s is not a valid choice for this option" % val)
             else:
                 raise ValueError("Can't specify multiple data items when DataOption is not in multi select mode")
         self._current_value = self.value
