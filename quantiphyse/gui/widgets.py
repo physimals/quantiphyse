@@ -1125,7 +1125,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
                 if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             else:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
@@ -1179,8 +1179,8 @@ class RunButton(QtGui.QPushButton, LogSource):
         try:
             self.debug("RunButton: Finished: %i %i %s", status, len(log), exception)
             if isinstance(exception, BaseException):
-                if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                if self.debug_enabled():
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             elif status != Process.SUCCEEDED:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
@@ -1288,7 +1288,7 @@ class RunWidget(QtGui.QGroupBox, LogSource):
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
                 if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             else:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
