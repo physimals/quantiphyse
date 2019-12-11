@@ -507,6 +507,9 @@ class Process(QtCore.QObject, LogSource):
         Call finished method and emit sig_progress if successful, and 
         emit finished signal regardless. 
         """
+        if self._completed:
+            return
+
         self.debug("Process completing, status=%i", self.status)
         self._completed = True
         if self.status == self.SUCCEEDED:
