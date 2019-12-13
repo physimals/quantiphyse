@@ -6,9 +6,9 @@ of quantiphyse.gui.widgets which mostly contains thin wrappers around
 Qt widgets.
 
 The idea is that you create an OptionBox and then use ``add()`` to
-add any of the option widgets to it, providing a label and generally 
+add any of the option widgets to it, providing a label and generally
 a key. The ``values()`` method then returns a dictionary of option
-values suitable to feeding in to a ``Process``. 
+values suitable to feeding in to a ``Process``.
 
 Alternatively options can be used directly. All have a ``value``
 property which returns an appropriate value, and a ``sig_changed`` signal
@@ -28,8 +28,9 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
+from quantiphyse.data.extras import NumberListExtra
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url, default_save_dir, set_default_save_dir
-from quantiphyse.gui.dialogs import MatrixViewerDialog
+from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog
 from quantiphyse.gui.pickers import PickMode
 
 LOG = logging.getLogger(__name__)
@@ -56,9 +57,9 @@ class OptionBox(QtGui.QGroupBox):
 
         :param label: Text label for the option widgets
         :param options: Sequence of arguments, each a QtWidget
-        :param key: Optional keyword argument specifying the key to use when 
+        :param key: Optional keyword argument specifying the key to use when
                     returning the option value in ``values()``. Only valid
-                    when a single option is given. If not specified, the 
+                    when a single option is given. If not specified, the
                     label is used.
         :param keys: Optional keyword argument specifying a sequence of keys
                      to use when returning the option values in ``values()``.
@@ -69,7 +70,7 @@ class OptionBox(QtGui.QGroupBox):
         enabled = kwargs.get("enabled", False)
         key = kwargs.get("key", label)
         keys = kwargs.get("keys", [key,])
-        
+
         real_options = [opt for opt in options if isinstance(opt, Option)]
         extra_widgets = [opt for opt in options if opt not in real_options]
 
@@ -110,11 +111,11 @@ class OptionBox(QtGui.QGroupBox):
             return real_options[0]
         else:
             return real_options
-    
+
     def set_visible(self, key, visible=True):
         """
-        Show or hide an option. 
-        
+        Show or hide an option.
+
         FIXME this only works for simple key/single option rows at the moment
         """
         row = self._rows[key]
@@ -184,20 +185,20 @@ class Option(object):
 
     We have a base class mainly so we can use ``isinstance`` to detect option
     widgets.
-    
+
     All option widgets *must* define a ``value`` property method which returns the
     current value of the option in whatever type makes sense to the particular
     option type. Options must also define a Qt signal ``sig_changed`` which takes
     no parameters and is emitted whenever the option value changes.
 
     We would like to define sig_changed in the base class but this requires
-    the class to be a QObject and we would end up with 
+    the class to be a QObject and we would end up with
     multiple inheritance from QObject, QWidget which is probably
     very bad if it gets into the C++
-    
+
     Options should probably make the ``value`` property settable so the option
     UI can be updated programatically.
-    
+
     Options may support other properties, e.g. ``choices`` to set the current set
     of options in a ChoiceOption.
     """
@@ -207,9 +208,9 @@ class DataOption(Option, QtGui.QComboBox):
     """
     A combo box which gives a choice of data
 
-    There is quite a lot of ugliness here because the box can be put into two modes - 
+    There is quite a lot of ugliness here because the box can be put into two modes -
     single and multi-select. In multi-select mode we subvert the QComboBox to provide
-    essentially a dropdown list of checkboxes. In single select mode things can be 
+    essentially a dropdown list of checkboxes. In single select mode things can be
     complicated by providing 'all' and 'none' option.
 
     Probably this class should be split into two for each use case.
@@ -227,7 +228,7 @@ class DataOption(Option, QtGui.QComboBox):
         self._include_4d = kwargs.get("include_4d", not kwargs.get("static_only", False))
         self._include_rois = kwargs.get("rois", False)
         self._include_nonrois = kwargs.get("data", True)
-        
+
         self._none_option = kwargs.get("none_option", False)
         self._all_option = kwargs.get("all_option", False)
         self._multi = kwargs.get("multi", False)
@@ -243,13 +244,13 @@ class DataOption(Option, QtGui.QComboBox):
 
     @property
     def value(self):
-        """ 
+        """
         Get the names of the selected data item(s)
-        
+
         If neither all option nor multi options are specified, returns
         name of currently selected data item. Otherwise returns list of
         all selected data items.
-        
+
         Also returns None if the none option is active and selected.
         """
         if self._multi:
@@ -271,16 +272,16 @@ class DataOption(Option, QtGui.QComboBox):
             else:
                 ret = current
         return ret
-        
+
     @value.setter
     def value(self, val):
-        """ 
+        """
         Set the selected data name(s)
 
         In multi-select mode val should be a sequence of data item names.
         In single-select mode val should be a data item name, or None
         or '<all>' (valid if the none/all options are enabled)
-        """ 
+        """
         if self._multi:
             for name in val:
                 idx = self.findText(name)
@@ -289,7 +290,7 @@ class DataOption(Option, QtGui.QComboBox):
         else:
             if val is None and self._none_option:
                 val = "<none>"
-                
+
             if self._explicit and val is None:
                 self.setCurrentIndex(-1)
             elif isinstance(val, six.string_types):
@@ -345,7 +346,7 @@ class DataOption(Option, QtGui.QComboBox):
         all_data_names = list(self.ivm.data.keys())
         if all_data_names and all_data_names == self._all_data_names:
             return
-        
+
         self._all_data_names = all_data_names
         current = self.value
         self.blockSignals(True)
@@ -356,7 +357,7 @@ class DataOption(Option, QtGui.QComboBox):
                     data.append(name)
 
             self.clear()
-            
+
             if self._none_option and not self._multi:
                 self.addItem("<none>")
             elif self._multi:
@@ -391,7 +392,7 @@ class DataOption(Option, QtGui.QComboBox):
             self.setMinimumWidth(width+50)
         finally:
             self.blockSignals(False)
-        
+
         if self._multi:
             self.setCurrentIndex(0)
         elif isinstance(current, six.string_types):
@@ -399,7 +400,7 @@ class DataOption(Option, QtGui.QComboBox):
             if idx >= 0:
                 self.setCurrentIndex(idx)
             elif not self._explicit:
-                # Default to first item, but do a quick switch to 
+                # Default to first item, but do a quick switch to
                 # make sure signal is sent when first data arrives
                 self.setCurrentIndex(-1)
                 self.setCurrentIndex(0)
@@ -428,8 +429,8 @@ class DataOption(Option, QtGui.QComboBox):
             self.setStyleSheet("")
 
 class ChoiceOption(Option, QtGui.QComboBox):
-    """ 
-    Option which is chosen from a list of possible strings 
+    """
+    Option which is chosen from a list of possible strings
     """
     sig_changed = QtCore.Signal()
 
@@ -447,7 +448,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
         Set the list of options to be chosen from
 
         :param choices: Sequence of strings
-        :param return_values: Optional matching sequence of strings to be returned 
+        :param return_values: Optional matching sequence of strings to be returned
                               as the ``value`` for each choice
         """
         if return_values is None:
@@ -457,7 +458,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
             raise QpException("Number of return values must match number of choices")
         self.return_values = return_values
         self.choice_map = dict(zip([str(choice) for choice in choices], return_values))
-        
+
         try:
             self.blockSignals(True)
             self.clear()
@@ -470,14 +471,14 @@ class ChoiceOption(Option, QtGui.QComboBox):
 
     @property
     def value(self):
-        """ 
-        Value of currently selected option. 
-        
+        """
+        Value of currently selected option.
+
         This is either the selected text, or the corresponding return value
         if these were supplied when the object was created
         """
         return self.choice_map.get(self.currentText(), None)
-    
+
     @value.setter
     def value(self, choice):
         idx = self.findText(str(choice))
@@ -486,7 +487,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
                 if ret == choice:
                     idx = ret_idx
                     break
-            
+
         if idx >= 0:
             self.setCurrentIndex(idx)
         else:
@@ -496,7 +497,7 @@ class ChoiceOption(Option, QtGui.QComboBox):
         self.sig_changed.emit()
 
 class TextOption(Option, QtGui.QLineEdit):
-    """ 
+    """
     Option which contains arbitrary text
     """
     sig_changed = QtCore.Signal()
@@ -509,19 +510,19 @@ class TextOption(Option, QtGui.QLineEdit):
     def value(self):
         """ Current text """
         return self.text()
-    
+
     @value.setter
     def value(self, name):
         self.setText(name)
 
     def _changed(self):
         self.sig_changed.emit()
-     
+
 class OutputNameOption(TextOption):
-    """ 
+    """
     Option used to specify the output data name for a process
     """
-    
+
     def __init__(self, src_data=None, suffix="_out", initial="output"):
         TextOption.__init__(self)
         self.src_data = src_data
@@ -536,7 +537,7 @@ class OutputNameOption(TextOption):
             self.setText(self.src_data.value + self.suffix)
         else:
             self.setText(self.initial)
-     
+
 class NumericOption(Option, QtGui.QWidget):
     """
     Numeric option chooser which uses a slider and two spin boxes
@@ -557,7 +558,7 @@ class NumericOption(Option, QtGui.QWidget):
         else:
             self.rtype = float
             self.decimals = decimals
-            
+
         hbox = QtGui.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
@@ -627,7 +628,7 @@ class NumericOption(Option, QtGui.QWidget):
     def value(self, value):
         self._update_edit(value)
         self._edit_changed()
-    
+
     def _update_edit(self, value):
         if self.rtype == int:
             self.val_edit.setText(str(value))
@@ -651,7 +652,7 @@ class NumericOption(Option, QtGui.QWidget):
             self.blockSignals(False)
 
 class BoolOption(Option, QtGui.QCheckBox):
-    """ 
+    """
     Option used to specify a true or false value
     """
     sig_changed = QtCore.Signal()
@@ -660,7 +661,7 @@ class BoolOption(Option, QtGui.QCheckBox):
         """
         :param default: Initial value of ``value`` property
         :param invert: If True, ``value`` property is the opposite of the check state
-        """ 
+        """
         QtGui.QCheckBox.__init__(self)
         if invert: default = not default
         self.setChecked(default)
@@ -674,7 +675,7 @@ class BoolOption(Option, QtGui.QCheckBox):
             return not self.isChecked()
         else:
             return self.isChecked()
-    
+
     @value.setter
     def value(self, checked):
         if self.invert:
@@ -683,7 +684,7 @@ class BoolOption(Option, QtGui.QCheckBox):
 
     def _changed(self):
         self.sig_changed.emit()
-      
+
 class MatrixOption(Option, QtGui.QTableView):
     """
     Option which returns a 2D matrix of numbers
@@ -694,7 +695,7 @@ class MatrixOption(Option, QtGui.QTableView):
     def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
                  fix_height=False, fix_width=False, readonly=False):
         QtGui.QTableView.__init__(self)
-        
+
         self._model = QtGui.QStandardItemModel()
         self.setModel(self._model)
         self.updating = False
@@ -708,17 +709,17 @@ class MatrixOption(Option, QtGui.QTableView):
         self.verticalHeader().hide()
 
         self.setMatrix(initial, False, col_headers=col_headers, row_headers=row_headers)
-        
+
         if readonly:
             self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         else:
             self.model().itemChanged.connect(self._item_changed)
-        
+
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         #self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.itemDelegate().closeEditor.connect(self._expand_if_required, QtCore.Qt.QueuedConnection)
         self.setAcceptDrops(True)
-        
+
     def valid(self):
         """
         :return: True if matrix contains valid numeric values
@@ -990,20 +991,25 @@ class NumberListOption(Option, QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=(), intonly=False, load_btn=True):
+    def __init__(self, initial=(), intonly=False, load_btn=True, extras_btn=False, ivm=None):
         QtGui.QWidget.__init__(self)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(hbox)
+        self._ivm = ivm
+        self._hbox = QtGui.QHBoxLayout()
+        self._hbox.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._hbox)
 
         self._edit = QtGui.QLineEdit()
         self._edit.dropEvent = self.dropEvent
-        hbox.addWidget(self._edit)
+        self._hbox.addWidget(self._edit)
         self._btn = QtGui.QPushButton("Load")
         self._btn.clicked.connect(self._load_clicked)
         if load_btn:
-            hbox.addWidget(self._btn)
+            self._hbox.addWidget(self._btn)
+
+        self._extras_btn = QtGui.QPushButton("Predefined")
+        self._extras_btn.clicked.connect(self._extras_clicked)
+        if extras_btn:
+            self._hbox.addWidget(self._extras_btn)
 
         if intonly:
             self._type = int
@@ -1041,7 +1047,16 @@ class NumberListOption(Option, QtGui.QWidget):
         filename, _ = QtGui.QFileDialog.getOpenFileName(dir=default_save_dir())
         if filename:
             set_default_save_dir(os.path.dirname(filename))
+
             self._load_file(filename)
+
+    def _extras_clicked(self):
+        extras = self._ivm.search_extras(NumberListExtra)
+        dialog = ChooseFromListDialog(self, [extra.name for extra in extras], extras,
+                                      title="Choose predefined number list")
+        dialog.exec_()
+        if dialog.sel_data:
+            self.value = dialog.sel_data.values
 
     def dragEnterEvent(self, event):
         """ Called when item is dragged into the matrix grid"""
