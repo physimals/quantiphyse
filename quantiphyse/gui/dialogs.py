@@ -56,7 +56,7 @@ class MultiTextViewerDialog(QtGui.QDialog):
             self.tabs.addTab(browser, heading)
 
         vbox.addWidget(self.tabs)
-        
+
         hbox = QtGui.QHBoxLayout()
         self.copy_btn = QtGui.QPushButton("Copy")
         self.copy_btn.clicked.connect(self._copy)
@@ -129,10 +129,10 @@ class MatrixViewerDialog(QtGui.QDialog):
         for row, rvals in enumerate(vals):
             for col, val in enumerate(rvals):
                 self.table.setItem(row, col, QtGui.QTableWidgetItem(str(val)))
-        
+
         self.text = QtGui.QLabel(text)
         vbox.addWidget(self.text)
-        
+
         self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
@@ -155,10 +155,10 @@ class GridEditDialog(QtGui.QDialog):
         self.table = NumberGrid(vals, col_headers=col_headers, row_headers=row_headers, expandable=expandable)
         self.table.sig_changed.connect(self._validate)
         vbox.addWidget(self.table)
-        
+
         self.text = QtGui.QLabel(text)
         vbox.addWidget(self.text)
-        
+
         self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
@@ -169,3 +169,45 @@ class GridEditDialog(QtGui.QDialog):
 
     def _validate(self):
         self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
+
+class ChooseFromListDialog(QtGui.QDialog):
+    """
+    Dialog box enabling one item to be chosen from a list
+    """
+
+    def __init__(self, parent, values, return_values=None, title="Choose"):
+        super(ChooseFromListDialog, self).__init__(parent)
+        self.sel_text = None
+        self.sel_data = None
+
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+
+        if return_values is None:
+            return_values = values
+        self._list = QtGui.QListWidget(self)
+        for value, data in zip(values, return_values):
+            item = QtGui.QListWidgetItem(value)
+            item.setData(QtCore.Qt.UserRole, data)
+            self._list.addItem(item)
+            
+        vbox.addWidget(self._list)
+        self._list.itemClicked.connect(self._item_clicked)
+        self._list.itemDoubleClicked.connect(self._item_double_clicked)
+
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        vbox.addWidget(self.button_box)
+
+        self.setLayout(vbox)
+
+    def _item_clicked(self, item):
+        self.sel_text = item.text()
+        self.sel_data = item.data(QtCore.Qt.UserRole)
+        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+
+    def _item_double_clicked(self, item):
+        self._item_clicked(item)
+        self.accept()
