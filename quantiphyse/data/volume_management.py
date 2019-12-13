@@ -292,6 +292,19 @@ class ImageVolumeManagement(QtCore.QObject):
         self.extras[name] = obj
         self.sig_extras.emit(self.extras.values())
 
+    def search_extras(self, cls=None):
+        """
+        Search extras for those that match given criteria
+        
+        :param cls: Return extras that are instances of this class
+        """
+        matching = []
+        for extra in self.extras.values():
+            if cls is not None and not isinstance(extra, cls):
+                continue
+            matching.append(extra)
+        return matching
+        
     def values(self, pos, grid=None):
         """
         Get all the 3D data values at the current position
