@@ -28,9 +28,10 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
+from quantiphyse.data.extras import NumberListExtra
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url, default_save_dir, set_default_save_dir
-from quantiphyse.gui.dialogs import MatrixViewerDialog
 from quantiphyse.gui.viewer.pickers import PickMode
+from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog
 
 LOG = logging.getLogger(__name__)
 
@@ -315,7 +316,7 @@ class DataOption(Option, QtGui.QComboBox):
                 if idx >= 0:
                     self.setCurrentIndex(idx)
                 else:
-                    raise ValueError("Data item %s is not a valid choice for this option")
+                    raise ValueError("Data item %s is not a valid choice for this option" % val)
             else:
                 raise ValueError("Can't specify multiple data items when DataOption is not in multi select mode")
         self._current_value = self.value
@@ -1022,20 +1023,25 @@ class NumberListOption(Option, QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, initial=(), intonly=False, load_btn=True):
+    def __init__(self, initial=(), intonly=False, load_btn=True, extras_btn=False, ivm=None):
         QtGui.QWidget.__init__(self)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(hbox)
+        self._ivm = ivm
+        self._hbox = QtGui.QHBoxLayout()
+        self._hbox.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._hbox)
 
         self._edit = QtGui.QLineEdit()
         self._edit.dropEvent = self.dropEvent
-        hbox.addWidget(self._edit)
+        self._hbox.addWidget(self._edit)
         self._btn = QtGui.QPushButton("Load")
         self._btn.clicked.connect(self._load_clicked)
         if load_btn:
-            hbox.addWidget(self._btn)
+            self._hbox.addWidget(self._btn)
+
+        self._extras_btn = QtGui.QPushButton("Predefined")
+        self._extras_btn.clicked.connect(self._extras_clicked)
+        if extras_btn:
+            self._hbox.addWidget(self._extras_btn)
 
         if intonly:
             self._type = int
@@ -1073,7 +1079,16 @@ class NumberListOption(Option, QtGui.QWidget):
         filename, _ = QtGui.QFileDialog.getOpenFileName(dir=default_save_dir())
         if filename:
             set_default_save_dir(os.path.dirname(filename))
+
             self._load_file(filename)
+
+    def _extras_clicked(self):
+        extras = self._ivm.search_extras(NumberListExtra)
+        dialog = ChooseFromListDialog(self, [extra.name for extra in extras], extras,
+                                      title="Choose predefined number list")
+        dialog.exec_()
+        if dialog.sel_data:
+            self.value = dialog.sel_data.values
 
     def dragEnterEvent(self, event):
         """ Called when item is dragged into the matrix grid"""
