@@ -22,7 +22,6 @@ from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, 
 from quantiphyse import __contrib__, __acknowledge__
 
 from .widgets import FingerTabWidget
-from .view_options import ViewOptions
 from .viewer.viewer import Viewer
 
 class DragOptions(QtGui.QDialog):
@@ -134,8 +133,7 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
-        self.view_options_dlg = ViewOptions(self, self.ivm)
-        self.ivl = Viewer(self.ivm, self.view_options_dlg)
+        self.ivl = Viewer(self.ivm)
 
         # Load style sheet
         stylesheet = get_local_file("resources/darkorange.stylesheet")
@@ -163,7 +161,7 @@ class MainWindow(QtGui.QMainWindow):
             default_size = (1000, 700)
             widgets = get_plugins("widgets")
             for wclass in widgets:
-                w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
+                w = wclass(ivm=self.ivm, ivl=self.ivl)
                 if w.group not in self.widget_groups:
                     self.widget_groups[w.group] = []
                 self.widget_groups[w.group].append(w)

@@ -55,9 +55,6 @@ class QpWidget(QtGui.QWidget, LogSource):
         # References to core classes
         self.ivm = kwargs.get("ivm", None)
         self.ivl = kwargs.get("ivl", None)
-        self.opts = kwargs.get("opts", None)
-        if self.opts:
-            self.opts.sig_options_changed.connect(self.options_changed)
 
     def get_local_file(self, name):
         """

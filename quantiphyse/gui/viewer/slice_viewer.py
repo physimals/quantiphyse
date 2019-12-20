@@ -15,10 +15,10 @@ import numpy as np
 import pyqtgraph as pg
 
 from quantiphyse.utils import LogSource
+from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility, Boundary
 from quantiphyse.data import OrthoSlice
-from quantiphyse.data.qpdata import Visible, Boundary, Metadata
+from quantiphyse.data.qpdata import Metadata
 from quantiphyse.gui.colors import get_lut, get_col
-from quantiphyse.gui.view_options import ViewOptions
 
 from .maskable_image import MaskableImage
 
@@ -106,7 +106,7 @@ class SliceDataView(LogSource):
         Update the image without re-slicing the data
         """
         self.debug("visible? %s", self._view.visible)
-        self._img.setVisible(self._view.visible)
+        self._img.setVisible(self._view.visible == Visibility.SHOW and (not self._qpdata.roi or self._view.shade))
         self._img.set_boundary_mode(self._view.boundary)
         self._img.setLookupTable(self._lut, update=True)
         self._img.setLevels(self._view.cmap_range)
@@ -130,7 +130,6 @@ class SliceDataView(LogSource):
             self._z_order += MAX_NUM_DATA_SETS
 
         if self._img.isVisible() or self._view.contour:
-            self.debug("visible")
             slicedata, slicemask, scale, offset = self._qpdata.slice_data(self._plane, vol=self._vol,
                                                                           interp_order=interp_order)
             self.debug("Image data range: %f, %f", np.min(slicedata), np.max(slicedata))
@@ -151,7 +150,7 @@ class SliceDataView(LogSource):
                 self._img.mask = slicemask
 
         n_contours = 0
-        if self._view.contour:
+        if self._view.contour and self._view.visible == Visibility.SHOW:
             # Update data and level for existing contour items, and create new ones if needed
             max_region = max(self._qpdata.regions.keys())
             for val in self._qpdata.regions:
@@ -212,12 +211,12 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         """
         LogSource.__init__(self)
         pg.GraphicsView.__init__(self)
-        self.ivl = ivl
+        self._ivl = ivl
         self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
         self._slicez = 0
         self._vol = 0
-        self._plane = OrthoSlice(self.ivl.grid, self.zaxis, self._slicez)
+        self._plane = OrthoSlice(self._ivl.grid, self.zaxis, self._slicez)
         self._main_view = None
         self._dragging = False
         self._arrow_items = []
@@ -235,12 +234,10 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self._vline = pg.InfiniteLine(angle=90, movable=False)
         self._vline.setZValue(2*MAX_NUM_DATA_SETS)
         self._vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-        self._vline.setVisible(False)
 
         self._hline = pg.InfiniteLine(angle=0, movable=False)
         self._hline.setZValue(2*MAX_NUM_DATA_SETS)
         self._hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-        self._hline.setVisible(False)
 
         self._viewbox.addItem(self._vline, ignoreBounds=True)
         self._viewbox.addItem(self._hline, ignoreBounds=True)
@@ -258,15 +255,17 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
             self._labels.append(QtGui.QLabel(ax_labels[axis][1], parent=self))
         for label in self._labels:
             label.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self._orient = ViewOptions.NEUROLOGICAL
 
-        self._grid_changed(self.ivl.grid)
-        self._focus_changed(self.ivl.focus())
+        self._grid_changed(self._ivl.grid)
+        self._focus_changed(self._ivl.focus())
+        self._update_crosshairs()
+        self._update_orientation()
 
         # Connect to signals from the parent viewer
-        self.ivl.sig_grid_changed.connect(self._grid_changed)
-        self.ivl.sig_focus_changed.connect(self._focus_changed)
-        self.ivl.sig_arrows_changed.connect(self._arrows_changed)
+        self._ivl.sig_grid_changed.connect(self._grid_changed)
+        self._ivl.sig_focus_changed.connect(self._focus_changed)
+        self._ivl.sig_arrows_changed.connect(self._arrows_changed)
+        self._ivl.opts.sig_changed.connect(self._view_opts_changed)
 
         # Connect to data change signals
         self.ivm.sig_all_data.connect(self._data_changed)
@@ -282,37 +281,13 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self.debug("Auto range")
         self._viewbox.autoRange()
 
-    @property
-    def orientation(self):
-        """
-        Left/right viewing orientation
-
-        This only affects views which include the left/right axis (index 0, and always
-        displayed as the x axis)
-        """
-        return self._orient
-
-    @orientation.setter
-    def orientation(self, orientation):
-        self._orient = orientation
-        if self.xaxis == 0:
-            if orientation == self.ivl.opts.RADIOLOGICAL:
-                left, right, invert = 1, 0, True
-            else:
-                left, right, invert = 0, 1, False
-            self._viewbox.invertX(invert)
-            self._labels[right].setText("R")
-            self._labels[left].setText("L")
-
-    @property
-    def crosshairs(self):
-        """ True if crosshairs are being displayed"""
-        return self._vline.isVisible()
-
-    @crosshairs.setter
-    def crosshairs(self, crosshairs):
-        self._vline.setVisible(crosshairs == self.ivl.opts.SHOW)
-        self._hline.setVisible(crosshairs == self.ivl.opts.SHOW)
+    def _view_opts_changed(self, key, value):
+        if key in ("orientation", "labels"):
+            self._update_orientation()
+        elif key == "crosshairs":
+            self._update_crosshairs()
+        elif key == "main_data":
+            self._update_main_data()
 
     def _grid_changed(self, grid):
         """
@@ -327,7 +302,6 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self.debug("focus=%s", focus)
 
         if self.isVisible():
-            self.debug("visible")
             self._vline.setPos(float(focus[self.xaxis]))
             self._hline.setPos(float(focus[self.yaxis]))
 
@@ -376,21 +350,44 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
                 qpdata = self.ivm.data[name]
                 self._data_views[name] = SliceDataView(self.ivm, qpdata, self._viewbox, self._plane, self._vol)
 
-        self.crosshairs = len(self._data_views) > 0 and self.ivl.opts.crosshairs
+        self._update_crosshairs()
+        self._update_orientation()
 
     def _main_data_changed(self):
+        self._update_main_data()
+
+    def _update_main_data(self):
         if MAIN_DATA in self._data_views:
             self._data_views[MAIN_DATA].remove()
             del self._data_views[MAIN_DATA]
 
-        if self.ivm.main is not None:
-            self._data_views[MAIN_DATA] = SliceDataView(self.ivm, self.ivm.main, self._viewbox, self._plane, self._vol, self.ivl.main_view_md)
+        if self.ivm.main is not None and self._ivl.opts.main_data == Visibility.SHOW:
+            self._data_views[MAIN_DATA] = SliceDataView(self.ivm, self.ivm.main, self._viewbox, self._plane, self._vol, self._ivl.main_view_md)
         self.reset()
 
+    def _update_crosshairs(self):
+        crosshairs_visible = len(self._data_views) > 0 and self._ivl.opts.crosshairs == Visibility.SHOW
+        self._vline.setVisible(crosshairs_visible)
+        self._hline.setVisible(crosshairs_visible)
+
+    def _update_orientation(self):
+        labels_visible = len(self._data_views) > 0 and self._ivl.opts.labels == Visibility.SHOW
+        for label in self._labels:
+            label.setVisible(labels_visible)
+
+        if self.xaxis == 0:
+            if self._ivl.opts.orientation == Orientation.RADIOLOGICAL:
+                left, right, invert = 1, 0, False
+            else:
+                left, right, invert = 0, 1, True
+            self._viewbox.invertX(invert)
+            self._labels[right].setText("R")
+            self._labels[left].setText("L")
+
     def _update_slice(self):
-        self._slicez = self.ivl.focus()[self.zaxis]
-        self._vol = self.ivl.focus()[3]
-        self._plane = OrthoSlice(self.ivl.grid, self.zaxis, self._slicez)
+        self._slicez = self._ivl.focus()[self.zaxis]
+        self._vol = self._ivl.focus()[3]
+        self._plane = OrthoSlice(self._ivl.grid, self.zaxis, self._slicez)
         for view in self._data_views.values():
             view.plane = self._plane
             view.vol = self._vol
@@ -400,7 +397,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         """
         Update arrows so only those visible are shown
         """
-        current_zpos = int(self.ivl.focus()[self.zaxis] + 0.5)
+        current_zpos = int(self._ivl.focus()[self.zaxis] + 0.5)
         for pos, _, item in self._arrow_items:
             arrow_zpos = int(pos[self.zaxis] + 0.5)
             item.setVisible(current_zpos == arrow_zpos)
@@ -424,9 +421,9 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         and instead trigger a scroll through the volume
         """
         dz = int(event.delta()/120)
-        pos = self.ivl.focus()
+        pos = self._ivl.focus()
         pos[self.zaxis] += dz
-        self.ivl.set_focus(pos)
+        self._ivl.set_focus(pos)
 
     def mousePressEvent(self, event):
         """
@@ -439,14 +436,14 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         if event.button() == QtCore.Qt.LeftButton:
             # Convert co-ords to view grid
             coords = self._dummy.mapFromScene(event.pos())
-            pos = self.ivl.focus()
+            pos = self._ivl.focus()
             pos[self.xaxis] = coords.x()
             pos[self.yaxis] = coords.y()
-            self.ivl.set_focus(pos)
+            self._ivl.set_focus(pos)
 
-            if self.ivl.picker.use_drag:
+            if self._ivl.picker.use_drag:
                 self._dragging = True
-            self.sig_pick.emit(self.zaxis, self.ivl.focus())
+            self.sig_pick.emit(self.zaxis, self._ivl.focus())
 
     def mouseReleaseEvent(self, event):
         """
@@ -474,7 +471,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         """
         if self._dragging:
             coords = self._dummy.mapFromScene(event.pos())
-            pos = self.ivl.focus()
+            pos = self._ivl.focus()
             pos[self.xaxis] = coords.x()
             pos[self.yaxis] = coords.y()
             self.sig_drag.emit(self.zaxis, pos)

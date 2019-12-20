@@ -1,16 +1,6 @@
 """
 Quantiphyse - Viewer for 3D and 4D data
 
-Plan for multi-volume viewing
-
-In single-overlay mode only one data / ROI visible at a time
-In multi-overlay mode, multiple display possible
-
-On loading new data/ROI, previously visible data is made invisible
-Unless user had previously explicitly turned it on
-'Current' data/ROI is selected from the volume overview or the overlay menu
-This is the overlay which allows you to change colourmap etc and shows on the histogram
-
 Copyright (c) 2013-2018 University of Oxford
 """
 
@@ -24,7 +14,8 @@ except ImportError:
 import numpy as np
 
 from quantiphyse.utils import LogSource
-from quantiphyse.data.qpdata import DataGrid, Metadata, Visible, Boundary
+from quantiphyse.data.qpdata import DataGrid, Metadata
+from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility, Boundary
 
 from .pickers import PICKERS, PointPicker
 from .slice_viewer import OrthoSliceViewer
@@ -33,7 +24,7 @@ from .view_params_widget import ViewParamsWidget
 from .navigators import NavigationBox
 
 DEFAULT_MAIN_VIEW = {
-    "visible" : Visible.VISIBLE,
+    "visible" : Visibility.SHOW,
     "roi_only" : False,
     "boundary" : Boundary.CLAMP,
     "alpha" : 255,
@@ -78,16 +69,22 @@ class Viewer(QtGui.QSplitter, LogSource):
     # Emission of this signal depends on the picking mode selected
     sig_selection_changed = QtCore.Signal(object)
 
-    def __init__(self, ivm, opts):
+    def __init__(self, ivm):
         LogSource.__init__(self)
         QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
 
         self.ivm = ivm
-        self.opts = opts
         self._grid = DataGrid([1, 1, 1], np.identity(4))
         self._focus = [0, 0, 0, 0]
         self._arrows = []
         self._picker = PointPicker(self)
+        self.opts = Metadata()
+        self.opts.orientation = Orientation.RADIOLOGICAL
+        self.opts.display_order = DisplayOrder.USER
+        self.opts.crosshairs = Visibility.SHOW
+        self.opts.labels = Visibility.SHOW
+        self.opts.main_data = Visibility.SHOW
+        self.opts.interp = 0
 
         # Create three orthogonal slice viewers
         # For each viewer, we pass the xyz axis mappings and the labels
@@ -152,7 +149,6 @@ class Viewer(QtGui.QSplitter, LogSource):
 
         # Connect to signals
         self.ivm.sig_main_data.connect(self._main_data_changed)
-        #self.opts.sig_options_changed.connect(self._opts_changed)
 
     @property
     def picker(self):
@@ -172,11 +168,19 @@ class Viewer(QtGui.QSplitter, LogSource):
     @property
     def show_main(self):
         """ True if main grid data is being displayed as a greyscale background """
-        return self.main_view_md.visible == Visible.VISIBLE
+        return self.main_view_md.visible == Visibility.SHOW
 
     @show_main.setter
     def show_main(self, show_main):
-        self._main_view_md.visible = int(show_main)
+        self._main_view_md.visible = show_main
+
+    @property
+    def multiview(self):
+        return self._multiview
+
+    @multiview.setter
+    def multiview(self, mv):
+        self._multiview = mv
 
     def focus(self, grid=None):
         """

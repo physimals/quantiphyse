@@ -19,8 +19,9 @@ except ImportError:
 import numpy as np
 
 from quantiphyse.utils import QpException
+from quantiphyse.utils.enums import Visibility
 
-from .qpdata import QpData, Visible
+from .qpdata import QpData
 from .load_save import NumpyData
 from .extras import Extra
 
@@ -151,16 +152,16 @@ class ImageVolumeManagement(QtCore.QObject):
 
         # If replacing existing data, delete the old one first
         if data.name in self.data:
-            del self.data[data.name]
             if self.current_data is not None and self.current_data.name == data.name:
+                self.set_current_data(None)
+                make_current = True
+            if self.current_roi is not None and self.current_roi.name == data.name:
+                self.set_current_roi(None)
                 make_current = True
             if self.main is not None and self.main.name == data.name:
                 make_main = True
-
-        # Hide previous default-visibility data sets of the same type
-        for qpdata in self.data.values():
-            if qpdata.view.visible == Visible.DEFAULT and qpdata.roi == data.roi:
-                qpdata.view.visible = Visible.INVISIBLE
+            del self.data[data.name]
+            self.sig_all_data.emit(list(self.data.keys()))
 
         self.data[data.name] = data
 
@@ -175,8 +176,8 @@ class ImageVolumeManagement(QtCore.QObject):
             make_main = self.main is None
         if make_main:
             self.set_main_data(data.name)
-            data.view.visible = Visible.INVISIBLE
-
+            data.view.visible = Visibility.HIDE
+            
         # Make current if requested, or if not specified and it is the first non-main data/ROI
         if make_current is None:
             make_current = ((data.roi and self.current_roi is None) or

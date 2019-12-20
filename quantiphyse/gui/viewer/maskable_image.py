@@ -13,7 +13,7 @@ import numpy as np
 
 import pyqtgraph as pg
 
-from quantiphyse.data.qpdata import Boundary
+from quantiphyse.utils.enums import Boundary
 
 LOG = logging.getLogger(__name__)
 

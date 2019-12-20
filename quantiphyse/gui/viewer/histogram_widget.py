@@ -52,7 +52,10 @@ class HistogramWidget(pg.HistogramLUTWidget):
     @qpdata.setter
     def qpdata(self, qpdata):
         if self.view is not None:
-            self.view.sig_changed.disconnect(self._view_changed)
+            try:
+                self.view.sig_changed.disconnect(self._view_changed)
+            except:
+                print("his: except1")
 
         self._qpdata = qpdata
         if self.view is not None:
@@ -77,7 +80,10 @@ class HistogramWidget(pg.HistogramLUTWidget):
     @custom_view.setter
     def custom_view(self, view):
         if self.view is not None:
-            self.view.sig_changed.disconnect(self._view_changed)
+            try:
+                self.view.sig_changed.disconnect(self._view_changed)
+            except:
+                print("his: except2")
 
         self._custom_view = view
         if self.view is not None:

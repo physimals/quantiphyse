@@ -29,6 +29,7 @@ except ImportError:
     from PySide2 import QtCore
 
 from quantiphyse.utils import sf, QpException
+from quantiphyse.utils.enums import Visibility, Boundary
 
 # Private copy of pyqtgraph functions for bug fixes
 from . import functions as pg
@@ -334,20 +335,8 @@ class OrthoSlice(DataGrid):
         """ 3D normal vector to the plane in world co-ordinates"""
         return self._normal
 
-# FIXME maybe should be initialized by the viewer?
-class Boundary:
-    TRANS = 0
-    CLAMP = 1
-    LOWERTRANS = 2
-    UPPERTRANS = 3
-
-class Visible:
-    DEFAULT = 1
-    VISIBLE = 2
-    INVISIBLE = 0
-
 DEFAULT_DATA_VIEW = {
-    "visible" : Visible.DEFAULT,
+    "visible" : Visibility.SHOW,
     "roi" : None,
     "boundary" : Boundary.TRANS,
     "alpha" : 255,
@@ -357,10 +346,11 @@ DEFAULT_DATA_VIEW = {
 }
 
 DEFAULT_ROI_VIEW = {
-    "visible" : Visible.DEFAULT,
+    "visible" : Visibility.SHOW,
     "roi" : None,
     "boundary" : Boundary.TRANS,
     "alpha" : 127,
+    "shade" : True,
     "contour" : False,
     "interp_order" : 0,
     "cmap" : "jet",
@@ -372,7 +362,7 @@ class MetaSignaller(QtCore.QObject):
     This is required because you can't multiply inherit
     from a a QObject and a dict
     """
-    sig_changed = QtCore.Signal(str, str)
+    sig_changed = QtCore.Signal(str, object)
 
 class Metadata(dict):
     """
@@ -389,6 +379,14 @@ class Metadata(dict):
     def sig_changed(self):
         """ Signals when a key's value has been changed """
         return self._signaller.sig_changed
+
+    def update(self, *args, **kwargs):
+        """ Needed because built-in update does not call __setitem__ """
+        if len(args) > 1:
+            raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+        other = dict(*args, **kwargs)
+        for key in other:
+            self[key] = other[key]
 
     def __getitem__(self, key):
         # Default to None if not in dictionary
@@ -502,10 +500,10 @@ class QpData(object):
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
 
-            self.view = Metadata(DEFAULT_ROI_VIEW)
+            self.view.update(DEFAULT_ROI_VIEW)
             self.view.cmap_range = self.suggest_cmap_range()
         else:
-            self.view = Metadata(DEFAULT_DATA_VIEW)
+            self.view.update(DEFAULT_DATA_VIEW)
             self.view.cmap_range = self.suggest_cmap_range(vol=int(self.nvols/2))
 
     @property

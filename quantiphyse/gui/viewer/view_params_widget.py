@@ -16,8 +16,8 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
-from quantiphyse.data.qpdata import Visible
 from quantiphyse.utils import get_icon, sf
+from quantiphyse.utils.enums import Visibility
 from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, NumericOption, TextOption
 
@@ -87,13 +87,13 @@ class ViewParamsWidget(OptionBox):
         if self._qpdata is not None:
             self._qpdata.view.sig_changed.connect(self._view_md_changed)
             self._view_md_changed()
+            self.option("data").value = self._qpdata.name
 
     def _view_md_changed(self, _key=None, _value=None):
         if not self._no_update:
             try:
                 self.blockSignals(True)
                 if self._qpdata is not None:
-                    self.option("data").value = self._qpdata.name
                     self.option("alpha").value = self._qpdata.view.alpha
 
                     if not self._qpdata.roi:
@@ -126,30 +126,9 @@ class ViewParamsWidget(OptionBox):
         dlg = LevelsDialog(self, self.ivm, self.ivl, self._qpdata)
         dlg.exec_()
 
-    def _view_btn_clicked(self):
-        if self._qpdata.roi:
-            VISIBILITIES_ROI = [
-                (True, False),
-                (True, True),
-                (False, True),
-                (False, False),
-            ]
-            idx = 0
-            for idx, vis in enumerate(VISIBILITIES_ROI):
-                if self._qpdata.view.visible == vis[0] and self._qpdata.view.contour == vis[1]:
-                    break
-            next_vis = VISIBILITIES_ROI[(idx+1) % 4]
-            self._qpdata.view.visible = next_vis[0]
-            self._qpdata.view.contour = next_vis[1]
-        else:
-            currently_visible = self._qpdata.view.visible == Visible.VISIBLE
-            self._qpdata.view.visible = Visible.VISIBLE if not currently_visible else Visible.INVISIBLE
-
     def _focus_changed(self, focus):
-        print("focus_changed")
         if self._qpdata is not None:
             value = self._qpdata.value(focus, self.ivl.grid)
-            print(value)
             if self._qpdata.roi:
                 region = int(value)
                 if region == 0:
@@ -162,19 +141,39 @@ class ViewParamsWidget(OptionBox):
                 text = sf(value, 4)
             self._value_label.setText(text)
 
-    def _get_visibility_icon(self):
+    def _view_btn_clicked(self):
         if self._qpdata.roi:
-            if self._qpdata.view.contour and self._qpdata.view.visible:
+            if self._qpdata.view.visible == Visibility.HIDE:
+                vis, shade, contour = Visibility.SHOW, True, False
+            elif self._qpdata.view.shade and not self._qpdata.view.contour:
+                vis, shade, contour = Visibility.SHOW, True, True
+            elif self._qpdata.view.shade and self._qpdata.view.contour:
+                vis, shade, contour = Visibility.SHOW, False, True
+            else:
+                vis, shade, contour = Visibility.HIDE, True, False
+
+            self._qpdata.view.visible = vis
+            self._qpdata.view.shade = shade
+            self._qpdata.view.contour = contour
+        else:
+            currently_visible = self._qpdata.view.visible == Visibility.SHOW
+            self._qpdata.view.visible = Visibility.SHOW if not currently_visible else Visibility.HIDE
+
+    def _get_visibility_icon(self):
+        if self._qpdata.view.visible == Visibility.HIDE:
+            icon = "invisible.png"
+        elif self._qpdata.roi:
+            if self._qpdata.view.contour and self._qpdata.view.shade:
                 icon = "shade_contour.png"
             elif self._qpdata.view.contour:
                 icon = "contour.png"
-            elif self._qpdata.view.visible:
+            elif self._qpdata.view.shade:
                 icon = "shade.png"
             else:
                 icon = "invisible.png"
         else:
-            icon = "visible.png" if self._qpdata.view.visible else "invisible.png"
-
+            icon = "visible.png"
+            
         return QtGui.QIcon(get_icon(icon))
 
 class LevelsDialog(QtGui.QDialog):
