@@ -210,6 +210,9 @@ class DataStatistics(QpWidget):
         hbox = QtGui.QHBoxLayout()
         self.current_vol = QtGui.QCheckBox("Current volume only")
         hbox.addWidget(self.current_vol)
+        self.exact_median = QtGui.QCheckBox("Exact median")
+        self.exact_median.setToolTip("Computing an exact median can fail on extremely large data sets")
+        hbox.addWidget(self.exact_median)
         hbox.addStretch(1)
         main_vbox.addLayout(hbox)
         self.current_vol.stateChanged.connect(self.update_all)
@@ -359,6 +362,7 @@ class DataStatistics(QpWidget):
         options["roi"] = self.roi.value
         if self.current_vol.isChecked():
             options["vol"] = self.ivl.focus()[3]
+        options["exact-median"] = self.exact_median.isChecked()
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):

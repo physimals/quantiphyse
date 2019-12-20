@@ -99,8 +99,7 @@ class DataStatisticsProcess(Process):
         vol = options.pop('vol', None)
 
         no_extra = options.pop('no-extras', False)
-        hist_bins = options.pop('hist-bins', 20)
-        hist_range = options.pop('hist-bins', None)
+        exact_median = options.pop('exact-median', False)
         
         self.model.clear()
         self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
@@ -111,20 +110,20 @@ class DataStatisticsProcess(Process):
 
         col = 0
         for data in data_items:
-            stats1, roi_labels, _, _ = self.get_summary_stats(data, roi, hist_bins=hist_bins, hist_range=hist_range, slice_loc=sl, vol=vol)
-            for ii in range(len(stats1['mean'])):
+            stats, roi_labels = self.get_summary_stats(data, roi, slice_loc=sl, vol=vol, exact_median=exact_median)
+            for ii in range(len(stats['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, roi_labels[ii])))
-                self.model.setItem(0, col, QtGui.QStandardItem(sf(stats1['mean'][ii])))
-                self.model.setItem(1, col, QtGui.QStandardItem(sf(stats1['median'][ii])))
-                self.model.setItem(2, col, QtGui.QStandardItem(sf(stats1['std'][ii])))
-                self.model.setItem(3, col, QtGui.QStandardItem(sf(stats1['min'][ii])))
-                self.model.setItem(4, col, QtGui.QStandardItem(sf(stats1['max'][ii])))
+                self.model.setItem(0, col, QtGui.QStandardItem(sf(stats['mean'][ii])))
+                self.model.setItem(1, col, QtGui.QStandardItem(sf(stats['median'][ii])))
+                self.model.setItem(2, col, QtGui.QStandardItem(sf(stats['std'][ii])))
+                self.model.setItem(3, col, QtGui.QStandardItem(sf(stats['min'][ii])))
+                self.model.setItem(4, col, QtGui.QStandardItem(sf(stats['max'][ii])))
                 col += 1
 
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
-    def get_summary_stats(self, data, roi=None, hist_bins=20, hist_range=None, slice_loc=None, vol=None):
+    def get_summary_stats(self, data, roi=None, slice_loc=None, vol=None, exact_median=False):
         """
         Get summary statistics
 
@@ -133,53 +132,68 @@ class DataStatisticsProcess(Process):
 
         :return: Sequence of summary stats dictionary, roi labels
         """
-        # Checks if either ROI or data is None
-        if roi is not None:
-            roi = roi.resample(data.grid)
-        else:
-            roi = NumpyData(np.ones(data.grid.shape[:3]), data.grid, "temp", roi=True)
+        stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
+        regions = []
 
         if data is None:
             stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, list(roi.regions.keys()), np.array([0, 0]), np.array([0, 1])
-
-        stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
-        hist1 = []
-        hist1x = []
+            return stat1, list(roi.regions.keys())
 
         if vol is not None:
             data = data.volume(vol, qpdata=True)
 
         if slice_loc is None:
             data_arr = data.raw()
-            roi_arr = roi.raw()
         else:
             data_arr, _, _, _ = data.slice_data(slice_loc)
-            roi_arr, _, _, _ = roi.slice_data(slice_loc)
 
-        regions = []
-        for region, name in roi.regions.items():
-            # get data for a single label of the roi
-            in_roi = data_arr[roi_arr == region]
-            in_roi = in_roi[np.isfinite(in_roi)]
-            if in_roi.size > 0:
-                mean, med, std = np.mean(in_roi), np.median(in_roi), np.std(in_roi)
-                mx, mn = np.max(in_roi), np.min(in_roi)
-            else:
-                mean, med, std, mx, mn = 0, 0, 0, 0, 0
+        if 0:
+            data_arr = data_arr[np.isfinite(data_arr)]
+
+        # Calculating the exact median requires a copy and sort of the data
+        # which can be expensive for large data sets
+        if exact_median:
+            median = np.nanmedian
+        else:
+            median = self._approx_median
+
+        # Separate ROI and non-ROI cases to avoid making additional array copy
+        # when there is no ROI
+        if roi is not None:
+            roi_arr = roi.resample(data.grid).raw()
+
+            for region, name in roi.regions.items():
+                region_data = data_arr[roi_arr == region]
+                if region_data.size > 0:
+                    mean, med, std = np.nanmean(region_data), median(region_data), np.nanstd(region_data)
+                    mx, mn = np.nanmax(region_data), np.nanmin(region_data)
+                else:
+                    mean, med, std, mx, mn = 0, 0, 0, 0, 0
+
+                stat1['mean'].append(mean)
+                stat1['median'].append(med)
+                stat1['std'].append(std)
+                stat1['max'].append(mx)
+                stat1['min'].append(mn)
+                regions.append(name)
+        else:
+            mean, med, std = np.nanmean(data_arr), median(data_arr), np.nanstd(data_arr)
+            mx, mn = np.nanmax(data_arr), np.nanmin(data_arr)
 
             stat1['mean'].append(mean)
             stat1['median'].append(med)
             stat1['std'].append(std)
             stat1['max'].append(mx)
             stat1['min'].append(mn)
-            regions.append(name)
+            regions.append("")
 
-            y, x = np.histogram(in_roi, bins=hist_bins, range=hist_range)
-            hist1.append(y)
-            hist1x.append(x)
+        return stat1, regions
 
-        return stat1, regions, hist1, hist1x
+    def _approx_median(self, arr):
+        if arr.size > 1e6:
+            indices = np.random.randint(0, arr.size, size=[int(1e6),])
+            arr = np.take(arr, indices)
+        return np.nanmedian(arr)
 
 class OverlayStatsProcess(DataStatisticsProcess):
     """
