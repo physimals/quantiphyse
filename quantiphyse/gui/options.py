@@ -424,6 +424,10 @@ class DataOption(Option, QtGui.QComboBox):
                 self.setCurrentIndex(0)
             else:
                 self.setCurrentIndex(-1)
+            if self.currentIndex() == -1:
+                # There was a previous value which has now disappeared
+                # - this needs to be signalled
+                self.sig_changed.emit()
         elif self._explicit:
             self.setCurrentIndex(-1)
         else:
