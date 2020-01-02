@@ -112,15 +112,18 @@ class ViewParamsWidget(OptionBox):
 
     @no_update
     def _view_roi_changed(self):
-        self._qpdata.view.roi = None if not self.option("view_roi").isEnabled() else self.option("view_roi").value
+        if self._qpdata is not None:
+            self._qpdata.view.roi = None if not self.option("view_roi").isEnabled() else self.option("view_roi").value
 
     @no_update
     def _cmap_changed(self):
-        self._qpdata.view.cmap = self.option("cmap").value
+        if self._qpdata is not None:
+            self._qpdata.view.cmap = self.option("cmap").value
 
     @no_update
     def _alpha_changed(self):
-        self._qpdata.view.alpha = self.option("alpha").value
+        if self._qpdata is not None:
+            self._qpdata.view.alpha = self.option("alpha").value
 
     def _levels_clicked(self):
         dlg = LevelsDialog(self, self.ivm, self.ivl, self._qpdata)
