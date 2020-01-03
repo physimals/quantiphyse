@@ -106,7 +106,7 @@ class SliceDataView(LogSource):
         Update the image without re-slicing the data
         """
         self.debug("visible? %s", self._view.visible)
-        self._img.setVisible(self._view.visible == Visibility.SHOW and (not self._qpdata.roi or self._view.shade))
+        self._img.setVisible(self._view.visible == Visibility.SHOW and (not self._qpdata.roi or bool(self._view.shade)))
         self._img.set_boundary_mode(self._view.boundary)
         self._img.setLookupTable(self._lut, update=True)
         self._img.setLevels(self._view.cmap_range)
@@ -376,10 +376,10 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
             label.setVisible(labels_visible)
 
         if self.xaxis == 0:
-            if self._ivl.opts.orientation == Orientation.RADIOLOGICAL:
-                left, right, invert = 1, 0, False
+            if self._ivl.opts.orientation == Orientation.NEUROLOGICAL:
+                left, right, invert = 0, 1, False
             else:
-                left, right, invert = 0, 1, True
+                left, right, invert = 1, 0, True
             self._viewbox.invertX(invert)
             self._labels[right].setText("R")
             self._labels[left].setText("L")
