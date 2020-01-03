@@ -270,7 +270,7 @@ class DataGrid(object):
                 dim_flip.append(newd)
 
         new_mat = np.copy(mat)
-        if sorted(dim_order) == range(3):
+        if sorted(dim_order) == [0, 1, 2]:
             # The transposition was consistent, so use it
             LOG.debug("Before simplification")
             LOG.debug(new_mat)
@@ -491,7 +491,6 @@ class QpData(object):
         if "roi" in self._meta and is_roi == self._meta["roi"]:
             return
 
-        self._meta["roi"] = is_roi
         if is_roi:
             if self.nvols != 1:
                 raise QpException("This data set cannot be an ROI - it is 4D")
@@ -500,9 +499,11 @@ class QpData(object):
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
 
+            self._meta["roi"] = is_roi
             self.view.update(DEFAULT_ROI_VIEW)
             self.view.cmap_range = self.suggest_cmap_range()
         else:
+            self._meta["roi"] = is_roi
             self.view.update(DEFAULT_DATA_VIEW)
             self.view.cmap_range = self.suggest_cmap_range(vol=int(self.nvols/2))
 
