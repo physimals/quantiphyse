@@ -150,7 +150,7 @@ class SliceDataView(LogSource):
                 self._img.mask = slicemask
 
         n_contours = 0
-        if self._view.contour and self._view.visible == Visibility.SHOW:
+        if self._qpdata.roi and self._view.contour and self._view.visible == Visibility.SHOW:
             # Update data and level for existing contour items, and create new ones if needed
             max_region = max(self._qpdata.regions.keys())
             for val in self._qpdata.regions:
