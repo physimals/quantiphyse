@@ -538,6 +538,16 @@ class Process(QtCore.QObject, LogSource):
         self._timer.start()
 
     def _timer_cb(self):
+        # Check for workers which have failed to start
+        for idx, w in enumerate(self._workers[:]):
+            if w is not None and w.ready() and not w.successful():
+                # Worker has not started successfully so will not generate
+                # a 'finished' callback. We will fake one to make sure we get
+                # an error back. Normally this happpens because of a programming
+                # error (e.g. tried to pass a non-pickleable object)
+                self._worker_finished_cb((idx, False, RuntimeError("Worker %i failed to start. Report this as a bug" % idx)))
+                return
+
         if self.status == Process.RUNNING:
             self.timeout(self._queue)
             self._restart_timer()
