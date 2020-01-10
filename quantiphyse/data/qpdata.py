@@ -418,6 +418,14 @@ class Metadata(dict):
         elif self.get(name, None) != value:
             self.__setitem__(name, value)
 
+    def __reduce__(self):
+        """
+        Make pickleable by leaving out MetaSignaller and
+        construct by passing an instance of dict
+        """
+        copy = self.copy()
+        return (Metadata, (copy, ))
+
 class QpData(object):
     """
     3D or 4D data
