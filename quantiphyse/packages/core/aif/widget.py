@@ -24,6 +24,7 @@ class AifWidget(QpWidget):
         super(AifWidget, self).__init__(name="Arterial Input Function", icon="aif",
                                         desc="Tool for defining an AIF from measured data", group="Utilities", **kwargs)
         self._aif = []
+        self._aif_points = []
 
     def init_ui(self):
         vbox = QtGui.QVBoxLayout()
@@ -81,11 +82,13 @@ class AifWidget(QpWidget):
             self.ivl.set_picker(PickMode.SINGLE)
         else:
             self.ivl.set_picker(PickMode.MULTIPLE)
+            self._selection_changed()
         self._recalc_aif()
 
     def _clear_btn_clicked(self):
         if self.method == "points":
             self.ivl.set_picker(PickMode.MULTIPLE)
+            self._selection_changed() # FIXME should be signalled by picker
 
     def _save_btn_clicked(self):
         name = self._options.option("output-name").value
@@ -96,8 +99,11 @@ class AifWidget(QpWidget):
     def _selection_changed(self):
         if self.method == "roi":
             return
-        else:
-            self._recalc_aif()
+        
+        self._aif_points = []
+        for _col, points in self.ivl.picker.selection().items():
+            self._aif_points += list(points)
+        self._recalc_aif()
 
     def _recalc_aif(self):
         self._aif = []
@@ -125,14 +131,13 @@ class AifWidget(QpWidget):
     def _calc_aif_points(self):
         aif = None
         num_points = 0
-        for _col, points in self.ivl.picker.selection().items():
-            for point in points:
-                sig = self.qpdata.timeseries(point, grid=self.ivl.grid)
-                print(sig)
-                if aif is None:
-                    aif = np.zeros([len(sig)], dtype=np.float32)
-                aif += sig
-                num_points += 1
+        for point in self._aif_points:
+            sig = self.qpdata.timeseries(point, grid=self.ivl.grid)
+            self.debug("AIF signal: %s", sig)
+            if aif is None:
+                aif = np.zeros([len(sig)], dtype=np.float32)
+            aif += sig
+            num_points += 1
 
         if num_points > 0:
             self._aif = aif / num_points
