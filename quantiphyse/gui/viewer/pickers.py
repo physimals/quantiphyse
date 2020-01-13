@@ -248,7 +248,7 @@ class PolygonPicker(Picker):
             self.win = win
             self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
             self.view = self.ivl.ortho_views[self.win]
-            self.view.vb.addItem(self.roisel)
+            self.view._viewbox.addItem(self.roisel)
         elif win != self.win:
             return
 
@@ -287,7 +287,7 @@ class PolygonPicker(Picker):
 
     def cleanup(self):
         if self.view is not None:
-            self.view.vb.removeItem(self.roisel)
+            self.view._viewbox.removeItem(self.roisel)
 
     def _xy_coords(self, pos):
         return float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
@@ -329,7 +329,7 @@ class RectPicker(PolygonPicker):
 
         fx, fy = self._xy_coords(pos)
         self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 255))
-        self.view.vb.addItem(self.roisel)
+        self.view._viewbox.addItem(self.roisel)
         self._points = [(fx, fy), (fx, fy+1), (fx+1, fy+1), (fx+1, fy)]
         self.ox, self.oy = fx, fy
 
@@ -357,7 +357,7 @@ class EllipsePicker(PolygonPicker):
 
         fx, fy = self._xy_coords(pos)
         self.roisel = pg.EllipseROI((fx, fy), (1, 1), pen=(255, 0, 255))
-        self.view.vb.addItem(self.roisel)
+        self.view._viewbox.addItem(self.roisel)
         self.ox, self.oy = fx, fy
         self._points = [(fx, fy), (fx, fy+1), (fx+1, fy+1), (fx+1, fy)]
 
@@ -428,7 +428,7 @@ class FreehandPicker(PolygonPicker):
         pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine,
                          QtCore.Qt.SquareCap, QtCore.Qt.BevelJoin)
         self.roisel.setPen(pen)
-        self.view.vb.addItem(self.roisel)
+        self.view._viewbox.addItem(self.roisel)
         self.path = QtGui.QPainterPath(QtCore.QPointF(fx, fy))
         self.roisel.setPath(self.path)
 

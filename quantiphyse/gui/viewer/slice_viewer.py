@@ -281,6 +281,11 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self.debug("Auto range")
         self._viewbox.autoRange()
 
+    def redraw(self):
+        """ Force a redraw of the viewer, e.g. if data has changed """
+        for view in self._data_views.values():
+            view.redraw()
+
     def _view_opts_changed(self, key, value):
         if key in ("orientation", "labels"):
             self._update_orientation()

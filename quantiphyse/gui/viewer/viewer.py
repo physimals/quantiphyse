@@ -150,6 +150,13 @@ class Viewer(QtGui.QSplitter, LogSource):
         # Connect to signals
         self.ivm.sig_main_data.connect(self._main_data_changed)
 
+    def redraw(self):
+        """
+        Force redraw of all data
+        """
+        for view in self.ortho_views.values():
+            view.redraw()
+            
     @property
     def picker(self):
         """ Current picker object """
