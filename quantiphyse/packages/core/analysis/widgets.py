@@ -574,13 +574,10 @@ class VoxelAnalysis(QpWidget):
             pos = self.ivl.focus()
             sigs = self.ivm.timeseries(pos, self.ivl.grid)
             max_length = max([0,] + [len(sig) for sig in sigs.values()])
-
-            if not self.ivm.main:
-                return
-
-            main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
-            main_curve.extend([0] * max_length)
-            main_curve = main_curve[:max_length]
+            if self.ivm.main is not None:
+                main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
+                main_curve.extend([0] * max_length)
+                main_curve = main_curve[:max_length]
 
             for name in sorted(sigs.keys()):
                 # Make sure data curve is correct length
@@ -588,7 +585,10 @@ class VoxelAnalysis(QpWidget):
                 data_curve.extend([0] * max_length)
                 data_curve = data_curve[:max_length]
 
-                data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+                if self.ivm.main is not None:
+                    data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+                else:
+                    data_rms = 0
 
                 name_item = QtGui.QStandardItem(name)
                 name_item.setCheckable(True)
@@ -600,8 +600,8 @@ class VoxelAnalysis(QpWidget):
 
                 item = QtGui.QStandardItem(sf(data_rms))
                 item.setEditable(False)
-                self.rms_table.setItem(idx, 1, item)
                 idx += 1
+                self.rms_table.setItem(idx, 1, item)
         finally:
             self.updating = False
 
