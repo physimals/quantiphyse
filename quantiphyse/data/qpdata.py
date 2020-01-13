@@ -441,7 +441,7 @@ class QpData(object):
                     (i.e. strings, numbers and lists/dicts of these)
     """
 
-    def __init__(self, name, grid, nvols, roi=False, metadata=None, **kwargs):
+    def __init__(self, name, grid, nvols, roi=False, metadata=None, view=None, **kwargs):
         self.name = name
         self.grid = grid
 
@@ -449,9 +449,11 @@ class QpData(object):
         self._nvols = nvols
 
         self._meta = Metadata()
-        self.view = Metadata()
         if metadata is not None:
             self._meta.update(metadata)
+        self.view = Metadata()
+        if view is not None:
+            self.view.update(view)
 
         self._meta["fname"] = kwargs.get("fname", None)
         self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
@@ -836,7 +838,8 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, metadata=self._meta)
+        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, 
+                         metadata=self._meta, view=self.view)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
