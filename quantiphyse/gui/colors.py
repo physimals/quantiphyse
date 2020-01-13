@@ -41,6 +41,9 @@ def get_lut(cmap_name, alpha=255):
     GradientEditorItem even though we're not doing anything involving
     the GUI.
     """
+    if not cmap_name:
+        cmap_name = "jet"
+        
     gradient = pg.GradientEditorItem()
     try:
         gradient.loadPreset(cmap_name)
