@@ -449,7 +449,7 @@ class BatchScript(Script):
         else:
             self.stdout.write(" FAILED: %i\n" % process.status)
             self.warn(str(process.exception))
-            self.debug(traceback.format_exc(process.exception))
+            self.debug(traceback.format_exception_only(type(process.exception), process.exception))
 
     def _log_progress(self, complete):
         #self.stdout.write("%i%%\n" % int(100*complete))
