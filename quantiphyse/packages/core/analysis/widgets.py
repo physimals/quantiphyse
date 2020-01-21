@@ -570,7 +570,7 @@ class VoxelAnalysis(QpWidget):
             self.rms_table.clear()
             self.rms_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Name"))
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
-            idx = 0
+
             pos = self.ivl.focus()
             sigs = self.ivm.timeseries(pos, self.ivl.grid)
             max_length = max([0,] + [len(sig) for sig in sigs.values()])
@@ -579,7 +579,7 @@ class VoxelAnalysis(QpWidget):
                 main_curve.extend([0] * max_length)
                 main_curve = main_curve[:max_length]
 
-            for name in sorted(sigs.keys()):
+            for idx, name in enumerate(sorted(sigs.keys())):
                 # Make sure data curve is correct length
                 data_curve = sigs[name]
                 data_curve.extend([0] * max_length)
@@ -600,7 +600,6 @@ class VoxelAnalysis(QpWidget):
 
                 item = QtGui.QStandardItem(sf(data_rms))
                 item.setEditable(False)
-                idx += 1
                 self.rms_table.setItem(idx, 1, item)
         finally:
             self.updating = False
