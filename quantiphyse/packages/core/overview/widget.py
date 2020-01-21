@@ -114,6 +114,7 @@ class SingleViewEnforcer:
             if qpdata.name not in data_names:
                 qpdata.view.sig_changed.disconnect(self._get_md_changed_cb(qpdata))
                 self._known_data.remove(qpdata)
+                del self._md_changed_cbs[qpdata]
 
     def _get_md_changed_cb(self, qpdata):
         if qpdata not in self._md_changed_cbs:
