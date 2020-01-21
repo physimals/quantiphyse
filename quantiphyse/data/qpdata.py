@@ -451,6 +451,10 @@ class QpData(object):
         self._meta = Metadata()
         if metadata is not None:
             self._meta.update(metadata)
+        md_roi = self._meta.pop("roi", False)
+        if roi is None:
+            roi = md_roi
+            
         self.view = Metadata()
         if view is not None:
             self.view.update(view)
