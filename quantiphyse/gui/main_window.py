@@ -194,7 +194,7 @@ class MainWindow(QtGui.QMainWindow):
         self.tab_widget = FingerTabWidget(self)
 
         # Add widgets flagged to appear by default
-        for w in self.widget_groups["DEFAULT"]:
+        for w in self.widget_groups.get("DEFAULT", []):
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
@@ -219,7 +219,8 @@ class MainWindow(QtGui.QMainWindow):
         if self.current_widget is not None:
             self.current_widget.deactivate()
         self.current_widget = self.tab_widget.widget(idx)
-        self.current_widget.activate()
+        if self.current_widget is not None:
+            self.current_widget.activate()
         
     def init_menu(self):
         """
