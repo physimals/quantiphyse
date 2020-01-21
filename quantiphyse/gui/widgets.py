@@ -988,8 +988,9 @@ class Citation(QtGui.QWidget):
         hbox.addWidget(label)
         
     def lookup(self):
-        import webbrowser, urllib
-        search_terms = tuple([urllib.quote(s) for s in (self.title, self.author, self.journal)])
+        import webbrowser
+        from six.moves.urllib.parse import quote
+        search_terms = tuple([quote(s) for s in (self.title, self.author, self.journal)])
         url = "https://www.google.com/search?q=%s+%s+%s" % search_terms
         webbrowser.open(url, new=0, autoraise=True)
 
