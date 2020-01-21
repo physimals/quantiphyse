@@ -12,6 +12,7 @@ import numpy as np
 
 from quantiphyse.data.extras import NumberListExtra
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
+from quantiphyse.gui.dialogs import TextViewerDialog
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, BoolOption, ChoiceOption, TextOption
@@ -38,14 +39,17 @@ class AifWidget(QpWidget):
         self._clear_btn = QtGui.QPushButton("Clear points")
         self._options.add("Method", ChoiceOption(["Pick points", "Use existing ROI"], ["points", "roi"]), self._clear_btn, key="method")
         self._options.add("ROI", DataOption(self.ivm, data=False, rois=True), key="roi")
+        self._view_btn = QtGui.QPushButton("View")
+        self._view_btn.setEnabled(False)
         self._save_btn = QtGui.QPushButton("Save")
         self._save_btn.setEnabled(False)
-        self._options.add("AIF name", TextOption("aif"), self._save_btn, key="output-name")
+        self._options.add("AIF name", TextOption("aif"), self._view_btn, self._save_btn, key="output-name")
         self._options.option("method").sig_changed.connect(self._method_changed)
         self._options.option("data").sig_changed.connect(self._recalc_aif)
         self._options.option("roi").sig_changed.connect(self._recalc_aif)
         self._clear_btn.clicked.connect(self._clear_btn_clicked)
         self._save_btn.clicked.connect(self._save_btn_clicked)
+        self._view_btn.clicked.connect(self._view_btn_clicked)
         vbox.addWidget(self._options)
 
         self._plot = Plot(qpo=None, parent=self, title="AIF", display_mode=False)
@@ -96,6 +100,10 @@ class AifWidget(QpWidget):
         self.ivm.add_extra(name, extra)
         self._save_btn.setEnabled(False)
 
+    def _view_btn_clicked(self):
+        aiftxt = ", ".join([str(v) for v in self._aif])
+        TextViewerDialog(self, title="AIF data", text=aiftxt).exec_()
+
     def _selection_changed(self):
         if self.method == "roi":
             return
@@ -108,6 +116,7 @@ class AifWidget(QpWidget):
     def _recalc_aif(self):
         self._aif = []
         self._save_btn.setEnabled(True)
+        self._view_btn.setEnabled(True)
         if self.qpdata is not None:
             if self.method == "roi":
                 self._calc_aif_roi()
