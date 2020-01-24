@@ -33,3 +33,6 @@ qp.icns
 .pytest_cache
 doc/html
 qp_out
+data_autogen
+output
+examples_out
