@@ -509,35 +509,24 @@ class VoxelAnalysis(QpWidget):
         self.plot = Plot(twoaxis=True)
         main_vbox.addWidget(self.plot)
 
-        hbox = QtGui.QHBoxLayout()
+        tabs = QtGui.QTabWidget()
+        main_vbox.addWidget(tabs)
 
         # Table showing RMS deviation
-        rms_box = QtGui.QGroupBox()
-        rms_box.setTitle('Timeseries data')
-        vbox = QtGui.QVBoxLayout()
         self.rms_table = QtGui.QStandardItemModel()
         self.rms_table.itemChanged.connect(self._data_table_changed)
         tview = QtGui.QTableView()
-        tview.resizeColumnsToContents()
         tview.setModel(self.rms_table)
-        vbox.addWidget(tview)
-        rms_box.setLayout(vbox)
-        hbox.addWidget(rms_box)
+        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tabs.addTab(tview, "Timeseries data")
 
         # Table showing value of model parameters
-        params_box = QtGui.QGroupBox()
-        params_box.setTitle('Non-timeseries data')
-        vbox2 = QtGui.QVBoxLayout()
         self.values_table = QtGui.QStandardItemModel()
         tview = QtGui.QTableView()
-        tview.resizeColumnsToContents()
         tview.setModel(self.values_table)
-        vbox2.addWidget(tview)
-        params_box.setLayout(vbox2)
-        hbox.addWidget(params_box)
+        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tabs.addTab(tview, 'Non-timeseries data')
 
-        main_vbox.addLayout(hbox)
-    
     def activate(self):
         self.ivm.sig_all_data.connect(self._update)
         self.ivl.sig_focus_changed.connect(self._update)
