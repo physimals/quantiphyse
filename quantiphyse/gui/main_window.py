@@ -149,13 +149,14 @@ class MainWindow(QtGui.QMainWindow):
 
         # Main layout - image view to left, tabs to right
         main_widget = QtGui.QWidget()
+        self.setCentralWidget(main_widget)
         hbox = QtGui.QHBoxLayout()
+        main_widget.setLayout(hbox)
+
         splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.ivl)
         splitter.setStretchFactor(0, 4)
         hbox.addWidget(splitter)
-        main_widget.setLayout(hbox)
-        self.setCentralWidget(main_widget)
         
         if widgets:
             default_size = (1000, 700)
