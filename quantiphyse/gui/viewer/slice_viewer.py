@@ -224,7 +224,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self.debug("axes=%i, %i, %i", self.xaxis, self.yaxis, self.zaxis)
 
         # View box to display graphics items
-        self._viewbox = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0, 0, 255), width=3.0))
+        self._viewbox = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0x6c, 0x6c, 0x6c), width=2.0))
         self._viewbox.setAspectLocked(True)
         self._viewbox.setBackgroundColor([0, 0, 0])
         self._viewbox.enableAutoRange()
