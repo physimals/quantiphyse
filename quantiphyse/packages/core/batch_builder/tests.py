@@ -38,7 +38,7 @@ class BatchBuilderWidgetTest(WidgetTest):
 
     def testAddProcess(self):
         self.ivm.add(self.data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, roi=True, name="mask")
         self.processEvents()
         yaml = self.w.proc_edit.toPlainText()
         add_str = "# Additional processing steps go here\n"

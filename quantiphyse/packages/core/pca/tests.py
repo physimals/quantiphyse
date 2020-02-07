@@ -48,7 +48,7 @@ class PcaWidgetTest(WidgetTest):
     def test4dDataWithRoi(self):
         """ 4d clustering within an ROI"""
         self.ivm.add(self.data_4d, grid=self.grid, name="data_4d")
-        self.ivm.add(self.mask, grid=self.grid, name="mask")
+        self.ivm.add(self.mask, grid=self.grid, roi=True, name="mask")
         self.w._options.option("data").value = "data_4d"
         self.w._options.option("roi").value = "mask"
         
