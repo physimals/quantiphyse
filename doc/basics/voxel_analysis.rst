@@ -4,10 +4,10 @@ Voxel analysis
 This widget shows data at the selected voxel and is visible by default. 
 
 The upper part of the widget shows a plot of selected time-series (4D) data. A list of 4D
-data sets is shown below the plot on the left hand side. Data can be included or removed
+data sets is shown below the plot on the left hand tab. Data can be included or removed
 from the plot by checking/unchecking the data set name in this list.
 
-The table on the lower right of the widget shows the value of each 3D data set at the selected 
+The table on the right hand tab below the plot shows the value of each 3D data set at the selected 
 point.
 
 Selecting voxels in the viewer window updates the displayed data to the current position.
@@ -18,7 +18,7 @@ One use of this widget is comparing the output of a modelling process with the i
 In this screenshot the output of a DCE PK modelling process is overlaid on the original
 data curve so the degree of fit can be assessed. The parameter outputs from this modelling
 process are 3D data sets so the value of these parameters (Ktrans, kep, etc) can be viewed 
-in the lower right table.
+on the non-timeseries data tab.
 
 The options button allows the behaviour of the plot to be changed:
 
@@ -29,3 +29,7 @@ curves. This uses the selected number of volumes as 'baseline' and scales the re
 such that the mean value of the baseline volumes is 1. The data is then plotted with 1 subtracted so
 the baseline has value 0 and a data value of 1 means a signal enhancement of 1, i.e. a doubling
 of the baseline signal.
+
+Note that if you modify the X or Y axes range on the plot (e.g. by right click and drag), the 
+'Automatic Y-axis' option is disabled - it must be re-enabled from the options button if
+you want to return to matching the plot range to the data.

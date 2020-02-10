@@ -22,6 +22,6 @@ models exist with different levels of complexity.
 .. toctree::
   :maxdepth: 1
 
-  fabber/sim_interface
-  fabber/sim_tutorial
+  sim_interface
+  sim_tutorial
 
