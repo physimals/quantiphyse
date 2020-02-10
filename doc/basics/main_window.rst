@@ -1,8 +1,17 @@
 .. _orientation:
 
-===========
-Orientation
-===========
+========================
+Main interface functions
+========================
+
+The Main Window
+===============
+
+The main window is quite busy, below is an overview of the main functions:
+
+.. image:: /screenshots/overview.png
+
+Below we will describe the main functions accessible from the main window.
 
 Loading and Saving Data
 =======================
@@ -93,13 +102,6 @@ The icon next to the data name shows whether it is an |roi_data| ROI or a |data|
 .. |roi_data| image:: /screenshots/roi_data.png
 .. |data| image:: /screenshots/data.png
 
-The Main Window
-===============
-
-The main window is quite busy, below is an overview of the main functions:
-
-.. image:: /screenshots/overview.png
-
 The Navigation Bar
 ==================
 
@@ -113,7 +115,7 @@ Using Widgets
 
 .. image:: /screenshots/widget_tab.png
     :align: right
-    
+
 *Widgets* appear to the right of the viewer window. Most widgets are accessed from the 'Widgets' menu above the viewer. 
 
 When selected, a widget will appear with a tab to the right of the viewer. You can switch between opened widgets by

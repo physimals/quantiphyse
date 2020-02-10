@@ -1,7 +1,7 @@
 Compare data
 ============
 
-From menu: ``Widgets -> Visualisation -> Compare Data``
+``Widgets -> Visualisation -> Compare Data``
 
 This widget shows a comparison between two data sets. Select the two data sets you are interested in from the menus and
 click ``Go`` to display a scatter plot of corresponding voxel values.
