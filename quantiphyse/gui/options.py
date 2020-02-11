@@ -173,6 +173,9 @@ class OptionBox(QtGui.QGroupBox):
         """
         return self._options[key]
 
+    def has_option(self, key):
+        return key in self._options
+        
     def values(self):
         """
         Get the values of all options as a dict
