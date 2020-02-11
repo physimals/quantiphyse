@@ -156,7 +156,7 @@ class Viewer(QtGui.QSplitter, LogSource):
         """
         for view in self.ortho_views.values():
             view.redraw()
-            
+
     @property
     def picker(self):
         """ Current picker object """
@@ -180,14 +180,6 @@ class Viewer(QtGui.QSplitter, LogSource):
     @show_main.setter
     def show_main(self, show_main):
         self._main_view_md.visible = show_main
-
-    @property
-    def multiview(self):
-        return self._multiview
-
-    @multiview.setter
-    def multiview(self, mv):
-        self._multiview = mv
 
     def focus(self, grid=None):
         """
