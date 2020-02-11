@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   viewBox="0 -256 1792 1792"
+   id="svg3025"
+   version="1.1"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   width="100%"
+   height="100%"
+   sodipodi:docname="single_overlay.svg"
+   inkscape:export-filename="/home/ibmeuser/ibmecode/build_scripts/build/quantiphyse/quantiphyse/icons/single_overlay.png"
+   inkscape:export-xdpi="1.91"
+   inkscape:export-ydpi="1.91">
+  <metadata
+     id="metadata3035">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3033">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-8">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-0"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-9">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-1"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-9-1">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-1-4"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-9-9">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-1-42"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-9-9-6">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-1-42-4"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5703-9-9-2">
+      <rect
+         style="opacity:1;fill:#dd7b61;fill-opacity:1;stroke:none;stroke-width:26.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect5705-1-42-8"
+         width="402.44067"
+         height="410.03391"
+         x="-1746.4407"
+         y="1763.7965"
+         ry="1.06437" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Greyscale"
+       id="filter989">
+      <feColorMatrix
+         values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "
+         id="feColorMatrix987"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix991" />
+      <feColorMatrix
+         id="feColorMatrix993"
+         values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "
+         in="fbSourceGraphic"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix995" />
+      <feColorMatrix
+         id="feColorMatrix997"
+         values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
+  </defs>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1853"
+     inkscape:window-height="1145"
+     id="namedview3031"
+     showgrid="false"
+     inkscape:zoom="0.16"
+     inkscape:cx="-110.09459"
+     inkscape:cy="896"
+     inkscape:window-x="67"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3025" />
+  <rect
+     style="opacity:1;fill:#f0ffed;fill-opacity:1;stroke:#dbd3ff;stroke-width:180.68417358;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     id="rect892-0-2"
+     width="1138.4497"
+     height="1145.7476"
+     x="320.39062"
+     y="68.843544" />
+</svg>

@@ -361,6 +361,7 @@ class Script(Process):
             self._output_items.extend(self._current_process.output_data_items())
             self._next_process()
         else:
+            self.log("".join(traceback.format_exception_only(type(exception), exception)))
             self.log("\nFAILED: %i\n" % status)
             if self._error_action == Script.IGNORE:
                 self.debug("Process failed - ignoring")
@@ -449,7 +450,7 @@ class BatchScript(Script):
         else:
             self.stdout.write(" FAILED: %i\n" % process.status)
             self.warn(str(process.exception))
-            self.debug(traceback.format_exc(process.exception))
+            self.debug("".join(traceback.format_exception_only(type(process.exception), process.exception)))
 
     def _log_progress(self, complete):
         #self.stdout.write("%i%%\n" % int(100*complete))

@@ -29,6 +29,7 @@ except ImportError:
     from PySide2 import QtCore
 
 from quantiphyse.utils import sf, QpException
+from quantiphyse.utils.enums import Visibility, Boundary
 
 # Private copy of pyqtgraph functions for bug fixes
 from . import functions as pg
@@ -104,7 +105,7 @@ class DataGrid(object):
         self._shape = list(shape)[:]
         self._affine_orig = np.copy(affine)
         self._units = units
-        
+
     @property
     def units(self):
         """ Units of world grid. Typically mm. Currently no support for different units in different directions """
@@ -269,7 +270,7 @@ class DataGrid(object):
                 dim_flip.append(newd)
 
         new_mat = np.copy(mat)
-        if sorted(dim_order) == range(3):
+        if sorted(dim_order) == [0, 1, 2]:
             # The transposition was consistent, so use it
             LOG.debug("Before simplification")
             LOG.debug(new_mat)
@@ -334,12 +335,34 @@ class OrthoSlice(DataGrid):
         """ 3D normal vector to the plane in world co-ordinates"""
         return self._normal
 
+DEFAULT_DATA_VIEW = {
+    "visible" : Visibility.SHOW,
+    "roi" : None,
+    "boundary" : Boundary.TRANS,
+    "alpha" : 255,
+    "interp_order" : 0,
+    "cmap" : "jet",
+    "z_order" : 0,
+}
+
+DEFAULT_ROI_VIEW = {
+    "visible" : Visibility.SHOW,
+    "roi" : None,
+    "boundary" : Boundary.TRANS,
+    "alpha" : 127,
+    "shade" : True,
+    "contour" : False,
+    "interp_order" : 0,
+    "cmap" : "jet",
+    "z_order" : 0,
+}
+
 class MetaSignaller(QtCore.QObject):
     """
-    This is required because you can't multiply inherit 
+    This is required because you can't multiply inherit
     from a a QObject and a dict
     """
-    sig_changed = QtCore.Signal(str)
+    sig_changed = QtCore.Signal(str, object)
 
 class Metadata(dict):
     """
@@ -347,17 +370,61 @@ class Metadata(dict):
 
     Emits a QT signal when keys are changed
     """
+
     def __init__(self, *args):
         dict.__init__(self, *args)
-        #self._signaller = MetaSignaller()
-        
-    #@property
-    #def sig_changed(self):
-    #    return self._signaller.sig_changed
+        self._signaller = MetaSignaller()
+
+    @property
+    def sig_changed(self):
+        """ Signals when a key's value has been changed """
+        return self._signaller.sig_changed
+
+    def update(self, *args, **kwargs):
+        """ Needed because built-in update does not call __setitem__ """
+        if len(args) > 1:
+            raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+        other = dict(*args, **kwargs)
+        for key in other:
+            self[key] = other[key]
+
+    def __getitem__(self, key):
+        # Default to None if not in dictionary
+        return self.get(key, None)
 
     def __setitem__(self, key, value):
-        #self.sig_changed.emit(key)
-        dict.__setitem__(self, key, value)
+        if isinstance(value, dict):
+            # Make dictionary attributes into our
+            # subclass so they can send their own signals
+            value = Metadata(value)
+
+        if self.get(key, None) != value:
+            dict.__setitem__(self, key, value)
+            self.sig_changed.emit(key, value)
+
+    def __getattr__(self, name):
+        """
+        For undefined attributes, return dictionary value
+        """
+        return self.get(name, None)
+
+    def __setattr__(self, name, value):
+        """
+        Set public attributes (not beginning with _) as
+        dictionary values
+        """
+        if name[0] == "_":
+            dict.__setattr__(self, name, value)
+        elif self.get(name, None) != value:
+            self.__setitem__(name, value)
+
+    def __reduce__(self):
+        """
+        Make pickleable by leaving out MetaSignaller and
+        construct by passing an instance of dict
+        """
+        copy = self.copy()
+        return (Metadata, (copy, ))
 
 class QpData(object):
     """
@@ -374,7 +441,7 @@ class QpData(object):
                     (i.e. strings, numbers and lists/dicts of these)
     """
 
-    def __init__(self, name, grid, nvols, roi=False, metadata=None, **kwargs):
+    def __init__(self, name, grid, nvols, roi=False, metadata=None, view=None, **kwargs):
         self.name = name
         self.grid = grid
 
@@ -384,8 +451,17 @@ class QpData(object):
         self._meta = Metadata()
         if metadata is not None:
             self._meta.update(metadata)
+        md_roi = self._meta.pop("roi", False)
+        if roi is None:
+            roi = md_roi
+            
+        self.view = Metadata()
+        if view is not None:
+            self.view.update(view)
 
         self._meta["fname"] = kwargs.get("fname", None)
+        self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
+        self._meta["vol_units"] = kwargs.get("vol_units", None)
 
         # Is data set an ROI? If not specified, try making it one
         if roi is None:
@@ -396,11 +472,9 @@ class QpData(object):
         else:
             self.roi = roi
 
-        self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
-        self._meta["vol_units"] = kwargs.get("vol_units", None)
-
     @property
     def metadata(self):
+        """ Metadata dictionary """
         return self._meta
 
     @property
@@ -428,6 +502,9 @@ class QpData(object):
 
     @roi.setter
     def roi(self, is_roi):
+        if "roi" in self._meta and is_roi == self._meta["roi"]:
+            return
+
         if is_roi:
             if self.nvols != 1:
                 raise QpException("This data set cannot be an ROI - it is 4D")
@@ -435,7 +512,14 @@ class QpData(object):
                 rawdata = self.raw()
                 if not np.all(np.equal(np.mod(rawdata, 1), 0)):
                     raise QpException("This data set cannot be an ROI - it does not contain integers")
-        self._meta["roi"] = is_roi
+
+            self._meta["roi"] = is_roi
+            self.view.update(DEFAULT_ROI_VIEW)
+            self.view.cmap_range = self.suggest_cmap_range()
+        else:
+            self._meta["roi"] = is_roi
+            self.view.update(DEFAULT_DATA_VIEW)
+            self.view.cmap_range = self.suggest_cmap_range(vol=int(self.nvols/2))
 
     @property
     def regions(self):
@@ -444,10 +528,14 @@ class QpData(object):
         """
         if not self.roi:
             raise TypeError("Only ROIs have distinct regions")
-        
+
         if self._meta.get("roi_regions", None) is None:
             regions = np.unique(self.raw().astype(np.int))
             regions = np.delete(regions, np.where(regions == 0))
+            if len(regions) == 0:
+                # Always have at least one region defined
+                regions = [1]
+
             if len(regions) == 1:
                 # If there is only one region, don't give it a name
                 self._meta["roi_regions"] = {regions[0] : ""}
@@ -458,7 +546,7 @@ class QpData(object):
                 self._meta["roi_regions"] = roi_regions
         return self._meta["roi_regions"]
 
-    @property 
+    @property
     def fname(self):
         """
         File name origin of data or None if not from a file
@@ -468,7 +556,7 @@ class QpData(object):
     @fname.setter
     def fname(self, name):
         self._meta["fname"] = name
-        
+
     def set_2dt(self):
         """
         Force 3D static data into the form of 2D multi-volume
@@ -530,7 +618,7 @@ class QpData(object):
             grid = DataGrid([1, 1, 1], np.identity(4))
         if len(pos) == 3:
             pos = list(pos) + [0,]
-            
+
         data_pos = [int(math.floor(v+0.5)) for v in self.grid.grid_to_grid(pos[:3], from_grid=grid)]
         if min(data_pos) < 0:
             # Out of range but will be misinterpreted by indexing!
@@ -576,32 +664,72 @@ class QpData(object):
     def uncache(self):
         """
         Remove large stored data arrays from memory
-        
+
         Subclasses may implement this method to clear any caches they keep of data
         read from disk. The method will be called when the data is not active (although
         of course the data might be needed at any point). Subclasses which do not read
         data from a file might implement the method to write the data out to a temporary
         file which is then re-read on the next call to ``raw()`` or ``volume()``
-        
+
         This method is optional and does not have to be implemented"""
         pass
 
-    def range(self, vol=None):
+    def range(self, vol=None, percentile=100, roi=None):
         """
         Return data min and max
 
         Note that obtaining the range of a large 4D data set may be expensive!
 
         :param vol: Index of volume to use, if not specified use whole data set
+        :param percentile: If specified, return maximim value as this percentile
+        :param roi: QpData which is an ROI - range is only completed within this ROI
+
         :return: Tuple of min value, max value
         """
-        if vol is None:
+        if vol is None and roi is None and percentile == 100:
+            # Absolute data range which we only compute once
             if self._meta.get("range", None) is None:
-                self._meta["range"] = np.nanmin(self.raw()), np.nanmax(self.raw())
+                # This ignores infinite values too unlike np.nanmin/np.nanmax
+                data = self.raw()
+                nonans = np.isfinite(data)
+                dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
+                self._meta["range"] = dmin, dmax
             return self._meta["range"]
         else:
-            voldata = self.volume(vol)
-            return np.nanmin(voldata), np.nanmax(voldata)
+            if vol is not None:
+                data = self.volume(vol)
+            else:
+                data = self.raw()
+
+            if roi is not None:
+                data = data[roi.raw() > 0]
+
+            nonans = np.isfinite(data)
+            dmin, dmax = np.min(data[nonans]), np.max(data[nonans])
+
+            if percentile < 100:
+                perc_max = np.nanpercentile(data, percentile)
+                if perc_max > dmin:
+                    dmax = perc_max
+
+            return dmin, dmax
+
+    def suggest_cmap_range(self, vol=None, percentile=100, roi=None):
+        """
+        Return a data min and max suitable for a colour map
+
+        This differs from range() only by a heuristic which
+        tries to make 0 transparent when the data minimum is
+        exactly zero (Issue #101)
+        """
+        if self.roi:
+            return 0.1, max(self.regions.keys())
+        else:
+            cmin, cmax = self.range(vol, percentile, roi)
+            if cmin == 0:
+                cmin = 1e-7*cmax
+
+            return cmin, cmax
 
     def mask(self, roi, region=None, vol=None, invert=False, output_flat=False, output_mask=False):
         """
@@ -678,7 +806,7 @@ class QpData(object):
             if data.ndim == 4:
                 reorder = reorder + [3]
             data = np.transpose(data, reorder)
-            
+
         if flip:
             for dim in flip:
                 data = np.flip(data, dim)
@@ -714,7 +842,8 @@ class QpData(object):
                 # led to non-integer data
                 data = data.astype(np.int32)
 
-        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, metadata=self._meta)
+        return NumpyData(data=data, grid=grid, name=self.name + suffix, roi=self.roi, 
+                         metadata=self._meta, view=self.view)
 
     def slice_data(self, plane, vol=0, interp_order=0):
         """
@@ -726,7 +855,7 @@ class QpData(object):
         :param interp_order: Order of interpolation for non-orthogonal slices
         """
         rawdata = self.volume(vol)
-        
+
         data_origin = np.array(self.grid.grid_to_grid([0, 0, 0], from_grid=plane))
         data_normal = np.array(self.grid.grid_to_grid([0, 0, 1], from_grid=plane, direction=True))
 
@@ -788,14 +917,14 @@ class QpData(object):
             #LOG.debug("OrthoSlice: data naxis: %i" % data_naxis)
             #LOG.debug("OrthoSlice: data affine")
             #LOG.debug(self.grid.affine)
-            
+
             #LOG.debug("OrthoSlice: new normal=", data_scaled_normal)
             #LOG.debug("OrthoSlice: data basis: %s (shape=%s)" % (str(slice_basis), str(slice_shape)))
             #LOG.debug("OrthoSlice: trans matrix:\n%s" % (str(trans_v)))
             #LOG.debug("OrthoSlice: slice origin=", slice_origin)
             #LOG.debug("OrthoSlice: new origin: %s (offset=%s)" % (str(slice_origin), str(data_offset)))
             #LOG.debug("OrthoSlice: new plane offset: %s" % (str(offset)))
-            
+
             #LOG.debug("Origin: ", slice_origin)
             #LOG.debug("Basis", slice_basis)
             #LOG.debug("Shape", slice_shape)
@@ -806,7 +935,7 @@ class QpData(object):
             else:
                 # Generate mask by flagging out of range data with value less than data minimum
                 dmin = np.min(rawdata)
-                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3), 
+                sdata = pg.affineSlice(rawdata, slice_shape, slice_origin, slice_basis, range(3),
                                        order=interp_order, mode='constant', cval=dmin-100)
                 smask = np.ones(sdata.shape)
                 smask[sdata < dmin] = 0
@@ -866,7 +995,7 @@ class NumpyData(QpData):
             # Use float32 rather than default float64 to reduce storage
             data = data.astype(np.float32)
         self.rawdata = data
-        
+
         if data.ndim > 3:
             nvols = data.shape[3]
             if nvols == 1:
@@ -875,7 +1004,7 @@ class NumpyData(QpData):
             nvols = 1
 
         QpData.__init__(self, name, grid, nvols, **kwargs)
-    
+
     def raw(self):
         if self._meta.get("raw_2dt", False) and self.rawdata.ndim == 3:
             # Single-slice, interpret 3rd dimension as time

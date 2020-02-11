@@ -18,7 +18,7 @@ except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 import quantiphyse.gui.dialogs
-from quantiphyse.utils import get_icon, get_version, get_local_file
+from quantiphyse.utils import get_icon, get_version
 from quantiphyse._version import __license__
 
 LICENSE_ACCEPTED_KEY = "license_accepted"

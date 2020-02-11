@@ -140,7 +140,7 @@ class CompareDataWidgetTest(WidgetTest):
         roi = np.random.choice(a=[False, True], size=self.grid.shape)
         data_3d[roi] = 3
         self.ivm.add(data_3d, grid=self.grid, name="data_3d")
-        self.ivm.add(roi, grid=self.grid, name="roi")
+        self.ivm.add(roi, grid=self.grid, roi=True, name="roi")
         self.processEvents()
 
         self.w.d1_combo.setCurrentIndex(0)

@@ -17,7 +17,7 @@ except ImportError:
 
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import OverlayCombo, RoiCombo, NumericOption, NumericSlider
-from quantiphyse.gui.pickers import PickMode
+from quantiphyse.gui.viewer.pickers import PickMode
 from quantiphyse.utils import LogSource
 from quantiphyse.processes.feat_pca import PcaFeatReduce
 

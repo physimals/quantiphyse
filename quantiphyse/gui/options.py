@@ -30,8 +30,8 @@ except ImportError:
 
 from quantiphyse.data.extras import NumberListExtra
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url, default_save_dir, set_default_save_dir
+from quantiphyse.gui.viewer.pickers import PickMode
 from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog
-from quantiphyse.gui.pickers import PickMode
 
 LOG = logging.getLogger(__name__)
 
@@ -41,9 +41,9 @@ class OptionBox(QtGui.QGroupBox):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, title=""):
+    def __init__(self, title="", **kwargs):
         QtGui.QGroupBox.__init__(self, title)
-        if not title:
+        if not title and not kwargs.get("border", False):
             self.setStyleSheet("border: none")
         self.grid = QtGui.QGridLayout()
         self.setLayout(self.grid)
@@ -173,6 +173,9 @@ class OptionBox(QtGui.QGroupBox):
         """
         return self._options[key]
 
+    def has_option(self, key):
+        return key in self._options
+        
     def values(self):
         """
         Get the values of all options as a dict
@@ -351,7 +354,7 @@ class DataOption(Option, QtGui.QComboBox):
         else:
             return "<Select data items>"
 
-    def _index_changed(self, idx):
+    def _index_changed(self, _idx):
         if self._multi:
             self.setCurrentIndex(0)
         self._update_highlight()
@@ -424,6 +427,10 @@ class DataOption(Option, QtGui.QComboBox):
                 self.setCurrentIndex(0)
             else:
                 self.setCurrentIndex(-1)
+            if self.currentIndex() == -1:
+                # There was a previous value which has now disappeared
+                # - this needs to be signalled
+                self.sig_changed.emit()
         elif self._explicit:
             self.setCurrentIndex(-1)
         else:
@@ -591,16 +598,17 @@ class NumericOption(Option, QtGui.QWidget):
         #hbox.addWidget(self.min_edit)
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setMaximum(100)
-        self.slider.setMinimum(0)
-        self.slider.setSliderPosition(int(100 * (default - minval) / (maxval - minval)))
+        self.slider.setMaximum(maxval)
+        self.slider.setMinimum(minval)
+        self.slider.setValue(default)
         self.slider.valueChanged.connect(self._slider_changed)
         if kwargs.get("slider", True):
             hbox.addWidget(self.slider)
 
         self.val_edit = QtGui.QLineEdit(str(default))
         self.val_edit.editingFinished.connect(self._edit_changed)
-        hbox.addWidget(self.val_edit)
+        if kwargs.get("edit", True):
+            hbox.addWidget(self.val_edit)
 
     def _changed(self):
         self.sig_changed.emit()
@@ -613,14 +621,14 @@ class NumericOption(Option, QtGui.QWidget):
 
             if val > self.maxval and not self.hardmax:
                 self.maxval = val
+                self.slider.setMaximum(val)
             if val < self.minval and not self.hardmin:
                 self.minval = val
+                self.slider.setMinimum(val)
 
-            val = self.value
-            pos = 100 * (val - self.minval) / (self.maxval - self.minval)
             try:
                 self.slider.blockSignals(True)
-                self.slider.setSliderPosition(int(pos))
+                self.slider.setValue(int(self.value))
             finally:
                 self.slider.blockSignals(False)
 
@@ -631,7 +639,7 @@ class NumericOption(Option, QtGui.QWidget):
         self._changed()
 
     def _slider_changed(self, value):
-        val = self.rtype(self.minval + (self.maxval - self.minval) * float(value) / 100)
+        val = self.rtype(value)
         try:
             self.val_edit.blockSignals(True)
             self._update_edit(val)
@@ -686,7 +694,8 @@ class BoolOption(Option, QtGui.QCheckBox):
         :param invert: If True, ``value`` property is the opposite of the check state
         """
         QtGui.QCheckBox.__init__(self)
-        if invert: default = not default
+        if invert:
+            default = not default
         self.setChecked(default)
         self.invert = invert
         self.stateChanged.connect(self._changed)
@@ -759,7 +768,8 @@ class MatrixOption(Option, QtGui.QTableView):
         rows = []
         try:
             for r in range(self._model.rowCount()-int(self.expandable[1])):
-                row = [float(self._model.item(r, c).text()) for c in range(self._model.columnCount()-int(self.expandable[0]))]
+                row = [float(self._model.item(r, c).text())
+                       for c in range(self._model.columnCount()-int(self.expandable[0]))]
                 rows.append(row)
         except:
             raise ValueError("Non-numeric data in list")
@@ -773,13 +783,17 @@ class MatrixOption(Option, QtGui.QTableView):
         # QTableWidget is completely incapable of choosing a sensible size. We do our best
         # here but have to allow a bit of random 'padding' in case scrollbars are necessary
         tx, ty = self.horizontalHeader().length()+15, self.verticalHeader().length()+15
-        if self.row_headers is not None: tx += self.verticalHeader().width()
-        if self.col_headers is not None: ty += self.horizontalHeader().height()
+        if self.row_headers is not None:
+            tx += self.verticalHeader().width()
+        if self.col_headers is not None:
+            ty += self.horizontalHeader().height()
         #sh = self.sizeHint()
         #tx = min(tx, sh.width())
         #ty = min(ty, sh.height())
-        if self.fix_height: self.setFixedHeight(ty)
-        if self.fix_width: self.setFixedWidth(tx)
+        if self.fix_height:
+            self.setFixedHeight(ty)
+        if self.fix_width:
+            self.setFixedWidth(tx)
 
     def setMatrix(self, matrix, validate=True, col_headers=None, row_headers=None):
         """
@@ -806,29 +820,29 @@ class MatrixOption(Option, QtGui.QTableView):
         if row_headers:
             self._model.setVerticalHeaderLabels(row_headers)
             self.verticalHeader().show()
-        
+
         self._model.blockSignals(True)
         try:
             for r, rvals in enumerate(matrix):
                 for c, v in enumerate(rvals):
                     item = QtGui.QStandardItem("%g" % v)
                     self._model.setItem(r, c, item)
-            
+
             if self.expandable[0]:
                 for r in range(len(matrix)):
                     item = QtGui.QStandardItem("")
                     self._model.setItem(r, self._model.columnCount()-1, item)
-        
+
             if self.expandable[1]:
                 for c in range(len(matrix[0])):
                     item = QtGui.QStandardItem("")
                     self._model.setItem(self._model.rowCount()-1, c, item)
-        
+
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
         finally:
             self._model.blockSignals(False)
-            
+
         self._set_size()
         self.sig_changed.emit()
 
@@ -844,7 +858,8 @@ class MatrixOption(Option, QtGui.QTableView):
         return empty
 
     def _item_changed(self, item):
-        if self.updating: return
+        if self.updating:
+            return
         self.updating = True
         try:
             if self.default_bg is None:
@@ -854,7 +869,7 @@ class MatrixOption(Option, QtGui.QTableView):
                 float(item.text())
                 item.setBackground(self.default_bg)
             except ValueError:
-                if item.text() != "": 
+                if item.text() != "":
                     item.setBackground(QtGui.QColor('#d05050'))
 
             self.resizeColumnsToContents()
@@ -875,7 +890,7 @@ class MatrixOption(Option, QtGui.QTableView):
                     if item is None or item.text() == "":
                         item = QtGui.QStandardItem(self._model.item(row, last_col-1).text())
                         self._model.setItem(row, last_col, item)
-                    
+
             elif self._range_empty([self._model.columnCount()-2], range(self._model.rowCount())):
                 # Last two columns are empty, so remove last column
                 self._model.setColumnCount(self._model.columnCount()-1)
@@ -889,7 +904,7 @@ class MatrixOption(Option, QtGui.QTableView):
                     item = self._model.item(last_row, col)
                     if item is None or item.text() == "":
                         self._model.setItem(last_row, col, QtGui.QStandardItem(self._model.item(last_row-1, col).text()))
-            
+
             elif self._range_empty(range(self._model.columnCount()), [self._model.rowCount()-2]):
                 # Last-but-one row is empty, so remove last row (which is always empty)
                 self._model.setColumnCount(self._model.columnCount()-1)
@@ -911,9 +926,9 @@ class MatrixOption(Option, QtGui.QTableView):
             event.ignore()
 
     def dropEvent(self, event):
-        """ 
+        """
         Called when item is dropped onto the matrix grid
-        
+
         If it's a filename-like item, try to load a matrix
         from the file. Otherwise ignore it
         """
@@ -924,7 +939,7 @@ class MatrixOption(Option, QtGui.QTableView):
                 self._load_file(local_file_from_drop_url(url))
         else:
             event.ignore()
-            
+
     def _load_file(self, filename):
         fvals, _, ncols = load_matrix(filename)
         if ncols <= 0:
@@ -948,9 +963,9 @@ class VectorOption(MatrixOption):
             expandable = (False, expandable)
             fix_height, fix_width = False, fix_size
 
-        MatrixOption.__init__(self, initial, 
-                              row_headers=row_headers, col_headers=col_headers, 
-                              expandable=expandable, 
+        MatrixOption.__init__(self, initial,
+                              row_headers=row_headers, col_headers=col_headers,
+                              expandable=expandable,
                               fix_height=fix_height, fix_width=fix_width)
 
     def _to_matrix(self, vals):
@@ -995,7 +1010,8 @@ class VectorOption(MatrixOption):
                 self.setList(vals)
 
     def _choose_row_col(self, vals):
-        d = MatrixViewerDialog(self, vals, title="Choose a row or column", text="Select a row or column containing the data you want")
+        d = MatrixViewerDialog(self, vals, title="Choose a row or column",
+                               text="Select a row or column containing the data you want")
         if d.exec_():
             ranges = d.table.selectedRanges()
             if ranges:
@@ -1097,9 +1113,9 @@ class NumberListOption(Option, QtGui.QWidget):
             event.ignore()
 
     def dropEvent(self, event):
-        """ 
+        """
         Called when item is dropped onto the matrix grid
-        
+
         If it's a filename-like item, try to load a matrix
         from the file. Otherwise ignore it
         """
@@ -1129,7 +1145,8 @@ class NumberListOption(Option, QtGui.QWidget):
                 self.value = [v[col] for v in fvals]
 
     def _choose_row_col(self, vals):
-        d = MatrixViewerDialog(self, vals, title="Choose a row or column", text="Select a row or column containing the data you want")
+        d = MatrixViewerDialog(self, vals, title="Choose a row or column",
+                               text="Select a row or column containing the data you want")
         if d.exec_():
             ranges = d.table.selectedRanges()
             if ranges:
@@ -1143,7 +1160,7 @@ class NumberListOption(Option, QtGui.QWidget):
         return None, None
 
 class PickPointOption(Option, QtGui.QWidget):
-    """ 
+    """
     Option used to specify a single point in a data set
     """
     sig_changed = QtCore.Signal()
@@ -1175,16 +1192,16 @@ class PickPointOption(Option, QtGui.QWidget):
         hbox.addWidget(self._btn)
 
         self._point = None
-        
+
     @property
     def value(self):
         """ 3D position as float sequence relative to the grid specified in ``setGrid`` """
         return self._point
-    
+
     def setGrid(self, grid):
         """
         Set the grid to be used when reporting the output point
-        
+
         :param grid: DataGrid instance
         """
         if self._point:
@@ -1202,7 +1219,7 @@ class PickPointOption(Option, QtGui.QWidget):
             pass
 
         self.sig_changed.emit()
-      
+
     def _pick_point(self):
         self._ivl.set_picker(PickMode.SINGLE)
         self._ivl.sig_selection_changed.connect(self._point_picked)
@@ -1218,7 +1235,7 @@ class PickPointOption(Option, QtGui.QWidget):
         self._edit_changed()
 
 class FileOption(Option, QtGui.QWidget):
-    """ 
+    """
     Option used to specify a file or directory
     """
     sig_changed = QtCore.Signal()
@@ -1229,7 +1246,7 @@ class FileOption(Option, QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self)
         self._dirs = dirs
-        
+
         hbox = QtGui.QHBoxLayout()
         self.setLayout(hbox)
         self._edit = QtGui.QLineEdit(initial)
@@ -1237,7 +1254,7 @@ class FileOption(Option, QtGui.QWidget):
         self._btn = QtGui.QPushButton("Choose")
         self._btn.clicked.connect(self._clicked)
         hbox.addWidget(self._btn)
-        
+
     @property
     def value(self):
         """ Return path of selected file """

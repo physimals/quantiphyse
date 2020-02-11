@@ -18,12 +18,11 @@ except ImportError:
 import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.gui.widgets import FingerTabWidget
 from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
 from quantiphyse import __contrib__, __acknowledge__
 
-from .ViewOptions import ViewOptions
-from .ImageView import ImageView
+from .widgets import FingerTabWidget
+from .viewer.viewer import Viewer
 
 class DragOptions(QtGui.QDialog):
     """
@@ -134,8 +133,7 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__()
         
         self.ivm = ImageVolumeManagement()
-        self.view_options_dlg = ViewOptions(self, self.ivm)
-        self.ivl = ImageView(self.ivm, self.view_options_dlg)
+        self.ivl = Viewer(self.ivm)
 
         # Load style sheet
         stylesheet = get_local_file("resources/darkorange.stylesheet")
@@ -151,19 +149,20 @@ class MainWindow(QtGui.QMainWindow):
 
         # Main layout - image view to left, tabs to right
         main_widget = QtGui.QWidget()
+        self.setCentralWidget(main_widget)
         hbox = QtGui.QHBoxLayout()
+        main_widget.setLayout(hbox)
+
         splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.ivl)
         splitter.setStretchFactor(0, 4)
         hbox.addWidget(splitter)
-        main_widget.setLayout(hbox)
-        self.setCentralWidget(main_widget)
         
         if widgets:
             default_size = (1000, 700)
             widgets = get_plugins("widgets")
             for wclass in widgets:
-                w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.view_options_dlg)
+                w = wclass(ivm=self.ivm, ivl=self.ivl)
                 if w.group not in self.widget_groups:
                     self.widget_groups[w.group] = []
                 self.widget_groups[w.group].append(w)
@@ -196,7 +195,7 @@ class MainWindow(QtGui.QMainWindow):
         self.tab_widget = FingerTabWidget(self)
 
         # Add widgets flagged to appear by default
-        for w in self.widget_groups["DEFAULT"]:
+        for w in self.widget_groups.get("DEFAULT", []):
             index = self.tab_widget.addTab(w, w.icon, w.tabname)
             w.init_ui()
             w.visible = True
@@ -221,7 +220,8 @@ class MainWindow(QtGui.QMainWindow):
         if self.current_widget is not None:
             self.current_widget.deactivate()
         self.current_widget = self.tab_widget.widget(idx)
-        self.current_widget.activate()
+        if self.current_widget is not None:
+            self.current_widget.activate()
         
     def init_menu(self):
         """
@@ -487,10 +487,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def _clear(self):
         if self.ivm.data:
-            msg_box = QtGui.QMessageBox()
-            msg_box.setText("Clear all data")
-            msg_box.setInformativeText("Are you sure you want to clear all data?")
-            msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Cancel)
-            if msg_box.exec_() != QtGui.QMessageBox.Yes: return
-        self.ivm.reset()
+            ret = QtGui.QMessageBox.warning(self, "Clear all data", "Are you sure you want to clear all data?",
+                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Cancel)
+            if ret == QtGui.QMessageBox.Yes:
+                self.ivm.reset()

@@ -12,28 +12,31 @@ Processing:
   - Fabber: 
         data: data
         mask: mask
-        disp: False
-        model: dsc
-        save-mean: True
-        noise: white
-        save-model-extras: True
-        inferlambda: True
-        inferart: False
-        aifconc: 
-        save-model-fit: True
-        infermtt: True
-        aif: [814.0, 815.4, 810.2, 794.4, 795.2, 789.0, 794.2, 776.0, 767.0, 769.0, 761.6, 768.0, 780.2, 779.0, 771.8, 787.4, 790.8, 787.0, 784.6, 777.4, 779.6, 782.6, 787.6, 820.8, 748.8, 522.6, 323.6, 189.6, 140.2, 146.6, 178.6, 240.6, 303.4, 397.6, 492.4, 575.2, 652.2, 716.6, 738.2, 762.6, 785.4, 791.0, 801.8, 806.0, 809.2, 804.0, 773.8, 758.2, 757.0, 755.4, 741.4, 735.4, 738.4, 744.0, 752.2, 754.6, 759.4, 749.6, 759.6, 770.0]
-        param-spatial-priors: N+M
-        delt: 1.5
-        inferdelay: True
-        te: 0.065
         model-group: dsc
-        output-rename: 
-          mean_lambda: lam
-          mean_transitm: MTT
-          mean_cbf: rCBF
-        max-iterations: 20
+        model: dsc
+        noise: white
+        save-mean: True
+        save-model-extras: True
+        save-model-fit: True
         method: spatialvb
+        param-spatial-priors: MN+
+        max-iterations: 20
+        te: 0.065
+        delt: 1.5
+        disp: False
+        inferdelay: True
+        inferart: False
+        infermtt: True
+        inferlambda: True
+        aifsig: True
+        aif: [814.0, 815.4, 810.2, 794.4, 795.2, 789.0, 794.2, 776.0, 767.0, 769.0, 761.6, 768.0, 780.2, 779.0, 771.8, 787.4, 790.8, 787.0, 784.6, 777.4, 779.6, 782.6, 787.6, 820.8, 748.8, 522.6, 323.6, 189.6, 140.2, 146.6, 178.6, 240.6, 303.4, 397.6, 492.4, 575.2, 652.2, 716.6, 738.2, 762.6, 785.4, 791.0, 801.8, 806.0, 809.2, 804.0, 773.8, 758.2, 757.0, 755.4, 741.4, 735.4, 738.4, 744.0, 752.2, 754.6, 759.4, 749.6, 759.6, 770.0]
+        output-rename: 
+          modelfit: modelfit
+          mean_sig0: sig0
+          mean_cbf: rCBF
+          mean_transitm: MTT
+          mean_lambda: lam
+          mean_delay: delay
 
   - Save:
         lam :

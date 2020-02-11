@@ -84,7 +84,8 @@ class ResampleProcess(Process):
             if only2d:
                 new_shape[2] = orig_data.shape[2]
 
-            output_data = np.zeros(new_shape, dtype=orig_data.dtype)
+            # Note that output data must be float data type even if original data was integer
+            output_data = np.zeros(new_shape, dtype=np.float32)
             num_samples = 0
             for start1 in range(factor):
                 for start2 in range(factor):
