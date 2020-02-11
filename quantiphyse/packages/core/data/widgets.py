@@ -15,6 +15,7 @@ except ImportError:
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, NumberGrid
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton, NumericOption, BoolOption
+from quantiphyse.utils.enums import Visibility
 
 from .processes import ResampleProcess
 
@@ -176,11 +177,8 @@ class OrientDataWidget(QpWidget):
         self.debug("Final affine\n%s", affine)
         self.gridview.data.grid.affine = affine
         self.gridview.update()
-        # HACK
-        if self.gridview.data == self.ivm.current_data:
-            self.ivm.sig_current_data.emit(self.ivm.current_data)
-        elif self.gridview.data == self.ivm.main:
-            self.ivm.sig_main_data.emit(self.ivm.main)
+        if self.gridview.data.view.visible == Visibility.SHOW or self.gridview.data == self.ivm.main:
+            self.ivl.redraw()
 
     def _rotmtx_3d(self, axis, angle):
         # FIXME this is not quite right when rotating in a plane where
