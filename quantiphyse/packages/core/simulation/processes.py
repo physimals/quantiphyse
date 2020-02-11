@@ -56,6 +56,9 @@ class SimMotionProcess(Process):
         padding = options.pop("padding", 0)
         if padding > 0:
             padding_voxels = [int(math.ceil(padding / size)) for size in data.grid.spacing]
+            for dim in range(3):
+                if data.shape[dim] == 1:
+                    padding_voxels[dim] = 0
             # Need to adjust the origin so the output data lines up with the input
             output_origin = np.copy(data.grid.origin)
             output_shape = np.copy(data.grid.shape)
@@ -72,6 +75,9 @@ class SimMotionProcess(Process):
             if padding > 0:
                 voldata = np.pad(voldata, [(v, v) for v in padding_voxels], 'constant', constant_values=0) 
             shift = np.random.normal(scale=std_voxels, size=3)
+            for dim in range(3):
+                if voldata.shape[dim] == 1:
+                    shift[dim] = 0
             shifted_data = scipy.ndimage.interpolation.shift(voldata, shift)
             moving_data[..., vol] = shifted_data
 
