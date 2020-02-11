@@ -487,10 +487,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def _clear(self):
         if self.ivm.data:
-            msg_box = QtGui.QMessageBox()
-            msg_box.setText("Clear all data")
-            msg_box.setInformativeText("Are you sure you want to clear all data?")
-            msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Cancel)
-            if msg_box.exec_() != QtGui.QMessageBox.Yes: return
-        self.ivm.reset()
+            ret = QtGui.QMessageBox.warning(self, "Clear all data", "Are you sure you want to clear all data?",
+                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Cancel)
+            if ret == QtGui.QMessageBox.Yes:
+                self.ivm.reset()
