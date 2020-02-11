@@ -331,15 +331,15 @@ class DataListWidget(QtGui.QTableView):
         self.clicked.connect(self._clicked)
         self.ivm.sig_all_data.connect(self._data_changed)
         self.ivm.sig_main_data.connect(self._update_vis_icons)
-        self.ivm.sig_current_data.connect(self._update_current)
-        self.ivm.sig_current_roi.connect(self._update_current)
+        self.ivm.sig_current_data.connect(self._set_current)
+        self.ivm.sig_current_roi.connect(self._set_current)
 
     @property
     def selected(self):
         """ Currently selected QpData """
         return self._selected
 
-    def _update_current(self, qpdata):
+    def _set_current(self, qpdata):
         if qpdata is not None:
             matches = self.model.findItems(qpdata.name, QtCore.Qt.MatchExactly, 1)
             if matches:
@@ -405,6 +405,7 @@ class DataListWidget(QtGui.QTableView):
                 self.model.setData(index, self._roi_icon if data.roi else self._data_icon, QtCore.Qt.DecorationRole)
                 self._update_vis_icon(row, data)
 
+            self._set_current(self.selected)
             self.verticalScrollBar().setValue(scroll_pos)
         finally:
             self.blockSignals(False)
