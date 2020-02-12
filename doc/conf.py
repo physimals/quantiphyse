@@ -6,7 +6,7 @@
 
 source_suffix = ['.rst',]
 extensions = ['sphinx.ext.mathjax']
-master_doc = 'README'
+master_doc = 'index'
 project = u'Quantiphyse'
 copyright = u'2019 University of Oxford'
 author = u'Martin Craig, Ben Irving'
