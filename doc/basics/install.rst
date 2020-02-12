@@ -258,3 +258,34 @@ plugins::
 On Mac you will also need to do::
 
     pip install pyobjc
+
+Docker image
+------------
+
+This is a new and currently experimental method of running Quantiphyse.
+
+If you've not used Docker before, it's a means of running applications in an isolated environment with pre-installed 
+dependencies - rather like a virtual machine but using the existing operating system rather than needing one
+of its own.
+
+The easiest way to try Quantiphyse through docker is to first install docker itself - e.g. on Ubuntu you'd do::
+
+    sudo apt install docker
+
+Then clone the github repository:
+
+https://github.com/ibme-qubic/quantiphyse-docker
+
+and run the script::
+
+    python quantiphyse-docker.py
+
+This will download and run a Quantiphyse image. Although you need Python to run the script it does not use
+anything outside the standard library so any version should do.
+
+Currently the Quantiphyse docker image does not have its own copy of FSL - instead it tries to use the one
+installed on your machine currently. This will only work if your machine is binary compatible with Ubuntu. Centos
+should be OK, but Mac is not, so you will not be able to use FSL functionality on Mac. We hope to offer an FSL-included
+version in the future.
+
+Please let us know if you try this method and how you get on with it.
