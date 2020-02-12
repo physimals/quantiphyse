@@ -15,7 +15,7 @@ except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.plot import Plot
-from quantiphyse.gui.pickers import PickMode
+from quantiphyse.gui.viewer.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, TitleWidget, RunButton
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption, TextOption, OutputNameOption
 from quantiphyse.utils import copy_table, get_kelly_col, sf
@@ -210,6 +210,9 @@ class DataStatistics(QpWidget):
         hbox = QtGui.QHBoxLayout()
         self.current_vol = QtGui.QCheckBox("Current volume only")
         hbox.addWidget(self.current_vol)
+        self.exact_median = QtGui.QCheckBox("Exact median")
+        self.exact_median.setToolTip("Computing an exact median can fail on extremely large data sets")
+        hbox.addWidget(self.exact_median)
         hbox.addStretch(1)
         main_vbox.addLayout(hbox)
         self.current_vol.stateChanged.connect(self.update_all)
@@ -359,6 +362,7 @@ class DataStatistics(QpWidget):
         options["roi"] = self.roi.value
         if self.current_vol.isChecked():
             options["vol"] = self.ivl.focus()[3]
+        options["exact-median"] = self.exact_median.isChecked()
         process.run(options)
 
 class RoiAnalysisWidget(QpWidget):
@@ -505,35 +509,24 @@ class VoxelAnalysis(QpWidget):
         self.plot = Plot(twoaxis=True)
         main_vbox.addWidget(self.plot)
 
-        hbox = QtGui.QHBoxLayout()
+        tabs = QtGui.QTabWidget()
+        main_vbox.addWidget(tabs)
 
         # Table showing RMS deviation
-        rms_box = QtGui.QGroupBox()
-        rms_box.setTitle('Timeseries data')
-        vbox = QtGui.QVBoxLayout()
         self.rms_table = QtGui.QStandardItemModel()
         self.rms_table.itemChanged.connect(self._data_table_changed)
         tview = QtGui.QTableView()
-        tview.resizeColumnsToContents()
         tview.setModel(self.rms_table)
-        vbox.addWidget(tview)
-        rms_box.setLayout(vbox)
-        hbox.addWidget(rms_box)
+        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tabs.addTab(tview, "Timeseries data")
 
         # Table showing value of model parameters
-        params_box = QtGui.QGroupBox()
-        params_box.setTitle('Non-timeseries data')
-        vbox2 = QtGui.QVBoxLayout()
         self.values_table = QtGui.QStandardItemModel()
         tview = QtGui.QTableView()
-        tview.resizeColumnsToContents()
         tview.setModel(self.values_table)
-        vbox2.addWidget(tview)
-        params_box.setLayout(vbox2)
-        hbox.addWidget(params_box)
+        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tabs.addTab(tview, 'Non-timeseries data')
 
-        main_vbox.addLayout(hbox)
-    
     def activate(self):
         self.ivm.sig_all_data.connect(self._update)
         self.ivl.sig_focus_changed.connect(self._update)
@@ -566,25 +559,25 @@ class VoxelAnalysis(QpWidget):
             self.rms_table.clear()
             self.rms_table.setHorizontalHeaderItem(0, QtGui.QStandardItem("Name"))
             self.rms_table.setHorizontalHeaderItem(1, QtGui.QStandardItem("RMS (Position)"))
-            idx = 0
+
             pos = self.ivl.focus()
             sigs = self.ivm.timeseries(pos, self.ivl.grid)
             max_length = max([0,] + [len(sig) for sig in sigs.values()])
+            if self.ivm.main is not None:
+                main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
+                main_curve.extend([0] * max_length)
+                main_curve = main_curve[:max_length]
 
-            if not self.ivm.main:
-                return
-
-            main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
-            main_curve.extend([0] * max_length)
-            main_curve = main_curve[:max_length]
-
-            for name in sorted(sigs.keys()):
+            for idx, name in enumerate(sorted(sigs.keys())):
                 # Make sure data curve is correct length
                 data_curve = sigs[name]
                 data_curve.extend([0] * max_length)
                 data_curve = data_curve[:max_length]
 
-                data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+                if self.ivm.main is not None:
+                    data_rms = np.sqrt(np.mean(np.square([v1-v2 for v1, v2 in zip(main_curve, data_curve)])))
+                else:
+                    data_rms = 0
 
                 name_item = QtGui.QStandardItem(name)
                 name_item.setCheckable(True)
@@ -597,7 +590,6 @@ class VoxelAnalysis(QpWidget):
                 item = QtGui.QStandardItem(sf(data_rms))
                 item.setEditable(False)
                 self.rms_table.setItem(idx, 1, item)
-                idx += 1
         finally:
             self.updating = False
 

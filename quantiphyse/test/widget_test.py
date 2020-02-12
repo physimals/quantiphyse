@@ -18,7 +18,7 @@ except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import DataGrid, ImageVolumeManagement
-from quantiphyse.gui import ViewOptions, ImageView
+from quantiphyse.gui.viewer.viewer import Viewer
 from quantiphyse.utils import QpException, get_plugins
 
 class WidgetTest(unittest.TestCase):
@@ -42,13 +42,12 @@ class WidgetTest(unittest.TestCase):
         sys.excepthook = self._exc
 
         self.ivm = ImageVolumeManagement()
-        self.opts = ViewOptions(None, self.ivm)
-        self.ivl = ImageView(self.ivm, self.opts)
+        self.ivl = Viewer(self.ivm)
 
         get_plugins()
         wclass = self.widget_class()
         if wclass is not None:
-            self.w = wclass(ivm=self.ivm, ivl=self.ivl, opts=self.opts)
+            self.w = wclass(ivm=self.ivm, ivl=self.ivl)
             self.w.init_ui()
             self.w.activate()
             self.w.show()

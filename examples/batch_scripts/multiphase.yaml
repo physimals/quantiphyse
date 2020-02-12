@@ -34,6 +34,6 @@ Processing:
 
 Cases:
   AslMultiphase:
-      InputFolder: /mnt/hgfs/win/data/asl/jlarkin/TagDurations/TD=1.4/
+      InputFolder: /mnt/hgfs/win/data/asl/multiphase/jlarkin/TagDurations/TD=1.4/
 
 

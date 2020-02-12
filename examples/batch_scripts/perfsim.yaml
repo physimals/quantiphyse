@@ -1,0 +1,61 @@
+OutputFolder: qp_out
+Debug: False
+
+Processing:
+
+  # Additional processing steps go here
+  - PerfSim: 
+      struc-model: checkerboard
+      data-model: dsc
+      noise-percent: 10
+      output: sim_data
+      output-param-maps: False
+      struc-model-options: 
+        voxels-per-patch: 20
+      data-model-options: 
+        delt: 1.0  # in seconds
+        te: 1.0
+        aif: [814.0, 815.4, 810.2, 794.4, 795.2, 789.0, 794.2, 776.0, 767.0, 769.0, 761.6, 768.0, 780.2, 779.0, 771.8, 787.4, 790.8, 787.0, 784.6, 777.4, 779.6, 782.6, 787.6, 820.8, 748.8, 522.6, 323.6, 189.6, 140.2, 146.6, 178.6, 240.6, 303.4, 397.6, 492.4, 575.2, 652.2, 716.6, 738.2, 762.6, 785.4, 791.0, 801.8, 806.0, 809.2, 804.0, 773.8, 758.2, 757.0, 755.4, 741.4, 735.4, 738.4, 744.0, 752.2, 754.6, 759.4, 749.6, 759.6, 770.0]
+        aifsig: True
+        aifconc: False
+      param-values: 
+        data: 
+          sig0: [100.0, 200.0, 500.0]
+          cbf: [10.0, 20.0, 50.0, 100.0]
+
+  - Fabber: 
+      model-group: dsc
+      save-mean: True
+      save-model-fit: True
+      noise: white
+      max-iterations: 20
+      allow-bad-voxels: True
+      data: sim_data
+      mask: 
+      model: dsc
+      te: 1.0
+      delt: 0.01666666 # in minutes
+      disp: False
+      inferdelay: False
+      inferart: False
+      save-model-extras: False
+      infermtt: False
+      inferlambda: False
+      aif: [814.0, 815.4, 810.2, 794.4, 795.2, 789.0, 794.2, 776.0, 767.0, 769.0, 761.6, 768.0, 780.2, 779.0, 771.8, 787.4, 790.8, 787.0, 784.6, 777.4, 779.6, 782.6, 787.6, 820.8, 748.8, 522.6, 323.6, 189.6, 140.2, 146.6, 178.6, 240.6, 303.4, 397.6, 492.4, 575.2, 652.2, 716.6, 738.2, 762.6, 785.4, 791.0, 801.8, 806.0, 809.2, 804.0, 773.8, 758.2, 757.0, 755.4, 741.4, 735.4, 738.4, 744.0, 752.2, 754.6, 759.4, 749.6, 759.6, 770.0]
+      aifconc: False
+      aifsig: True
+      output-rename: 
+        mean_sig0: sig0
+        mean_cbf: rCBF
+        mean_transitm: MTT
+        mean_lambda: lam
+        mean_abv: rABV
+        mean_delay: delay
+        mean_artdelay: artdelay
+        dsc_residual: dsc_residue
+
+  - SaveAllExcept:
+
+Cases:
+  Case1:
+    Folder: /home/ibmeuser/ibmecode/build_scripts/build/quantiphyse

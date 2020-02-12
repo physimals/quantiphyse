@@ -11,12 +11,22 @@ class Extra(object):
     Base class for things which can be stored in the IVM apart from data sets.
 
     Essentially the only thing an Extra needs to be able to do is be written
-    out as a string. We force subclasses to override this. 
+    out as a string. We force subclasses to override this.
 
     We also provide a metadata dictionary - ideally extras should write their
     metadata in __str__ but in practice this may not be possible when we want
-    the output to be compatible with external programs (e.g. writing out a 
+    the output to be compatible with external programs (e.g. writing out a
     matrix as TSV)
+
+    In the future we might expand the Extra base class to define other behaviours,
+    e.g. flexible saving to an output file, alternative capabilities... But we
+    want to keep things simple for now while we figure out what use can
+    be made of them.
+
+    Currently the main uses for Extras are:
+
+      - Tabular output, e.g. data statistics which we might want to write out to a file
+      - Matrix outputs, e.g. affine transformations which are the output of a registration
     """
     def __init__(self, name):
         self.name = name
@@ -24,6 +34,27 @@ class Extra(object):
 
     def __str__(self):
         raise NotImplementedError("Subclasses of Extra must implement __str__")
+
+class NumberListExtra(Extra):
+    """
+    Extra which represents a list of numbers
+    """
+    def __init__(self, name, values):
+        """
+        :param name: Extra name
+        :param values: Sequence of numeric values
+        """
+        Extra.__init__(self, name)
+
+        # Check all values are numeric
+        [float(v) for v in values]
+        self.values = values
+
+    def __str__(self):
+        """
+        Output as simple space-separated list
+        """
+        return " ".join([str(v) for v in self.values])
 
 class MatrixExtra(Extra):
     """
@@ -71,6 +102,8 @@ class MatrixExtra(Extra):
 class DataFrameExtra(Extra):
     """
     Extra which represents a Pandas data frame
+
+    This is useful for representing general tabular data.
     """
     def __init__(self, name, df):
         """

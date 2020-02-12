@@ -14,7 +14,8 @@ except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, NumberGrid
-from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton, NumericOption
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton, NumericOption, BoolOption
+from quantiphyse.utils.enums import Visibility
 
 from .processes import ResampleProcess
 
@@ -24,7 +25,7 @@ class ResampleDataWidget(QpWidget):
     """
     def __init__(self, **kwargs):
         super(ResampleDataWidget, self).__init__(name="Resample Data", icon="resample.png", 
-                                                 desc="Resample data onto the same grid as another data item",
+                                                 desc="Resample data onto a different grid",
                                                  group="Utilities", **kwargs)
         
     def init_ui(self):
@@ -33,26 +34,32 @@ class ResampleDataWidget(QpWidget):
 
         vbox.addWidget(TitleWidget(self))
 
-        optbox = OptionBox("Resampling options")
-        self.data = optbox.add("Data to resample", DataOption(self.ivm))
-        self.grid_data = optbox.add("Resample onto grid from", DataOption(self.ivm))
-        self.order = optbox.add("Interpolation", ChoiceOption(["Nearest neighbour", "Linear", "Quadratic", "Cubic"], [0, 1, 2, 3]))
-        self.output_name = optbox.add("Output name", OutputNameOption(src_data=self.data, suffix="_res"))
-        vbox.addWidget(optbox)
+        self.optbox = OptionBox("Resampling options")
+        self.data = self.optbox.add("Data to resample", DataOption(self.ivm), key="data")
+        self.resample_type = self.optbox.add("Resampling method", ChoiceOption(["On to grid from another data set", "Upsample", "Downsample"], ["data", "up", "down"]), key="type")
+        self.grid_data = self.optbox.add("Use grid from", DataOption(self.ivm), key="grid")
+        self.factor = self.optbox.add("Factor", NumericOption(default=2, minval=2, maxval=10, intonly=True), key="factor")
+        self.slicewise = self.optbox.add("2D only", BoolOption(), key="2d")
+        self.order = self.optbox.add("Interpolation", ChoiceOption(["Nearest neighbour", "Linear", "Quadratic", "Cubic"], [0, 1, 2, 3], default=1), key="order")
+        self.output_name = self.optbox.add("Output name", OutputNameOption(src_data=self.data, suffix="_res"), key="output-name")
+        vbox.addWidget(self.optbox)
+        self.resample_type.sig_changed.connect(self._resample_type_changed)
 
         self.run = RunButton("Resample", self._run)
         vbox.addWidget(self.run)
-
         vbox.addStretch(1)
-    
-    def batch_options(self):
-        options = {
-            "data" : self.data.value,
-            "grid" : self.grid_data.value,
-            "output-name" : self.output_name.value,
-            "order" : self.order.value,
-        }
 
+        self._resample_type_changed()
+
+    def _resample_type_changed(self):
+        resample_type = self.resample_type.value
+        self.optbox.set_visible("grid", resample_type == "data")
+        self.optbox.set_visible("factor", resample_type != "data")
+        self.optbox.set_visible("order", resample_type != "down")
+        self.optbox.set_visible("2d", resample_type != "data")
+
+    def batch_options(self):
+        options = self.optbox.values()
         return "Resample", options
 
     def _run(self):
@@ -170,11 +177,8 @@ class OrientDataWidget(QpWidget):
         self.debug("Final affine\n%s", affine)
         self.gridview.data.grid.affine = affine
         self.gridview.update()
-        # HACK
-        if self.gridview.data == self.ivm.current_data:
-            self.ivm.sig_current_data.emit(self.ivm.current_data)
-        elif self.gridview.data == self.ivm.main:
-            self.ivm.sig_main_data.emit(self.ivm.main)
+        if self.gridview.data.view.visible == Visibility.SHOW or self.gridview.data == self.ivm.main:
+            self.ivl.redraw()
 
     def _rotmtx_3d(self, axis, angle):
         # FIXME this is not quite right when rotating in a plane where

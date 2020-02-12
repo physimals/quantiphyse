@@ -261,7 +261,7 @@ PCA reduction is used on 4D data to extract representative curves
         """
         # Clear graph
         self.plot.clear()
-        self.plot.setLabel('bottom', self.opts.t_type, units=self.opts.t_unit)
+        self.plot.setLabel('bottom', "Volume", "")
         if self.plot.legend is not None:
             # Work around pyqtgraph legend bug - the legend is recreated multiple times!
             # https://stackoverflow.com/questions/42792858/pyqtgraph-delete-persisting-legend-in-pyqt4-gui

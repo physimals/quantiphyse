@@ -9,6 +9,6 @@ Getting Started
 
    install
    overview
-   orientation
-   overlay_stats
-   modelfit
+   main_window
+   data_statistics
+   voxel_analysis

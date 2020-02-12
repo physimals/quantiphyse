@@ -28,8 +28,8 @@ Features
 --------
 
  - 2D orthographic visualisation and navigation of data, regions of interest (ROIs) and overlays
- - Universal analysis tools including clustering, supervoxel generation and curve comparison
- - Tools for CEST, ASL, DCE and DSC-MRI analysis and modelling
+ - Generic analysis tools including clustering, supervoxel generation and curve comparison
+ - Tools for CEST, ASL, DCE, DSC and qBOLD MRI analysis and modelling
  - Integration with selected FSL tools
  - ROI generation
  - Registration and motion correction

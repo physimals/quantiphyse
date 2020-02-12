@@ -55,9 +55,6 @@ class QpWidget(QtGui.QWidget, LogSource):
         # References to core classes
         self.ivm = kwargs.get("ivm", None)
         self.ivl = kwargs.get("ivl", None)
-        self.opts = kwargs.get("opts", None)
-        if self.opts:
-            self.opts.sig_options_changed.connect(self.options_changed)
 
     def get_local_file(self, name):
         """
@@ -246,6 +243,9 @@ class OverlayCombo(QtGui.QComboBox):
         self.rois = rois
         self.data = data
         self.ivm.sig_all_data.connect(self._data_changed)
+        self.ivm.sig_current_data.connect(self._current_data_changed)
+        self.ivm.sig_current_roi.connect(self._current_roi_changed)
+        self._follow_current = kwargs.get("follow_current", False)
 
         # Whether the combo should automatically adopt the name of the
         # first data set to be added
@@ -254,6 +254,18 @@ class OverlayCombo(QtGui.QComboBox):
 
         self._data_changed()
     
+    def _current_data_changed(self, qpdata):
+        if self.data and self._follow_current:
+            idx = self.findText(qpdata.name)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+
+    def _current_roi_changed(self, qpdata):
+        if self.rois and self._follow_current:
+            idx = self.findText(qpdata.name)
+            if idx >= 0:
+                self.setCurrentIndex(idx)
+
     def _data_changed(self):
         self.blockSignals(True)
         try:
@@ -294,7 +306,7 @@ class OverlayCombo(QtGui.QComboBox):
 
         # If requested, initialize when the first data arrives (and send signal)
         if self._set_first and self._first_data and len(data) > 0:
-            self.setCurrentIndex(0)
+            self.setCurrentIndex(int(self.none_option))
             self._first_data = False
 
 class RoiCombo(OverlayCombo):
@@ -976,8 +988,9 @@ class Citation(QtGui.QWidget):
         hbox.addWidget(label)
         
     def lookup(self):
-        import webbrowser, urllib
-        search_terms = tuple([urllib.quote(s) for s in (self.title, self.author, self.journal)])
+        import webbrowser
+        from six.moves.urllib.parse import quote
+        search_terms = tuple([quote(s) for s in (self.title, self.author, self.journal)])
         url = "https://www.google.com/search?q=%s+%s+%s" % search_terms
         webbrowser.open(url, new=0, autoraise=True)
 
@@ -1125,7 +1138,7 @@ class RunBox(QtGui.QGroupBox, LogSource):
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
                 if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             else:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
@@ -1179,8 +1192,8 @@ class RunButton(QtGui.QPushButton, LogSource):
         try:
             self.debug("RunButton: Finished: %i %i %s", status, len(log), exception)
             if isinstance(exception, BaseException):
-                if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                if self.debug_enabled():
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             elif status != Process.SUCCEEDED:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
@@ -1288,7 +1301,7 @@ class RunWidget(QtGui.QGroupBox, LogSource):
                 self.step_label.setVisible(False)
             elif isinstance(exception, BaseException):
                 if self.debug_enabled(): 
-                    traceback.print_exc(exception)
+                    traceback.print_exception(type(exception), exception, None)
                 raise exception
             else:
                 raise QpException("Process finished with error status %i but no error was returned" % status)
