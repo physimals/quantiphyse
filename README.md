@@ -74,39 +74,32 @@ Current issues can be viewed on the GitHub issue tracker (https://github.com/ibm
 
 #### v0.8 (Target Mar 2019)
 
- - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      DONE
- - Improved registration support (apply transform)                      DONE
- - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       DONE
- - Fabber T1                                                            DONE
- - Fabber DCE                                                           DONE
- - DSC widget                                                           DONE
- - Improvements to ROI builder - working 'paint' tool                   DONE
- - Motion simulation                                                    DONE
- - Add noise                                                            DONE
+ - Integration of selected FSL tools (FLIRT, FAST, BET, FSL_ANAT?)      [x]
+ - Improved registration support (apply transform)                      [x]
+ - Improved ASL tools based on oxasl (inc. ENABLE, VEASL, DEBLUR)       [x]
+ - Fabber T1                                                            [x]
+ - Fabber DCE                                                           [x]
+ - DSC widget                                                           [x]
+ - Improvements to ROI builder - working 'paint' tool                   [x]
+ - Motion simulation                                                    [x]
+ - Add noise                                                            [x]
 
-#### v1.0 (Target June 2019)
+#### v0.10 (Target 2020)
 
- - Stable interface for QpWidget, QpData, Process
- - Python 3                                                             DONE needs testing
- - Support PySide and PySide2 - ideally the latter by default           pyside2 branch needs testing
- - Improved manual data alignment tools                                 PART DONE
- - Otherwise no firm plans yet - selection from 'Vague plans' below
+ - Stable interface for QpWidget, QpData, Process                       [ ]
+ - Python 3                                                             [x]
+ - Support PySide and PySide2 - ideally the latter by default           [x]
+ - Improved manual data alignment tools                                 [ ]
+ - Multi-overlay view                                                   [x]
+ - Perfusion simulator                                                  [x]
 
 ### Migration to PySide2
 
- - The current implementation uses PySide which is based on Qt4
- - Update to PySide2 when released which uses Qt5
- - Will provide support for HiDPI screens and proper scaling in OSx
- - PyQtgraph is currently the stumbling block as release version does not support Pyside2
- - Current git version has PySide2 modifications but not yet tested
- - Consider move to VisPy if this does not come to fruition
+ - Current version of Quantipihyse is targeted at Pyside2
+ - *Should* still run under Pyside1 but not guaranteed
+ - Currently using our own fork of `pyqtgraph` awaiting official release with Pyside2 support
 
 #### Vague Plans for Future
-
- - Refactoring of view classes
-   - This is a mess at the moment. Need all view options to be stored as metadata
-     and cleaner separation between the ImageView widget and the individual OrthoView
-     widgets.
 
  - MoCo/Registration
    - Bartek's MC method
@@ -114,11 +107,12 @@ Current issues can be viewed on the GitHub issue tracker (https://github.com/ibm
  - 3D view
    - Probably not that useful but fun and may be easy(?) with vispy. Reliant on good refactoring of ImageView
    - Application to surfaces (Tom K?)
+   - Use VisPy?
 
  - Add Jola's texture analysis which sounds cool, whatever it is
 
  - PK modelling validation
-   - QIBA in progress
+   - QIBA [x]
    - QIN
 
  - Simplify/rewrite generic Fabber interface
@@ -135,7 +129,3 @@ Current issues can be viewed on the GitHub issue tracker (https://github.com/ibm
  - Add semiquantitative measures
    - Area under the curve
    - Enhancing fraction
-
- - Simulation tools
-   - Fabber test data
-   - 'Simulated brain'
