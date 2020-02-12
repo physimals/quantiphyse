@@ -427,6 +427,7 @@ class BatchScript(Script):
 
     def _log_start_case(self, case):
         self.stdout.write("Processing case: %s\n" % case.case_id)
+        sys.stdout.flush()
 
     def _log_done_case(self, case):
         pass
@@ -436,6 +437,7 @@ class BatchScript(Script):
         self.stdout.write("  - Running %s...  0%%" % process.proc_id)
         for key, value in params.items():
             self.debug("      %s=%s" % (key, str(value)))
+        sys.stdout.flush()
                 
     def _log_done_process(self, process, params):
         if process.status == Process.SUCCEEDED:
@@ -451,6 +453,7 @@ class BatchScript(Script):
             self.stdout.write(" FAILED: %i\n" % process.status)
             self.warn(str(process.exception))
             self.debug("".join(traceback.format_exception_only(type(process.exception), process.exception)))
+        sys.stdout.flush()
 
     def _log_progress(self, complete):
         #self.stdout.write("%i%%\n" % int(100*complete))
@@ -463,6 +466,7 @@ class BatchScript(Script):
 
     def _log_done_script(self):
         self.stdout.write("Script finished\n")
+        sys.stdout.flush()
         if self._quit_on_exit:
             QtCore.QCoreApplication.instance().quit()
 
