@@ -46,10 +46,8 @@ Processing:
         save-model-fit: True
         
   - Save:
-        qiba_data:
-        qiba_mask:
+        qiba:
         mean_ktrans:
-        mean_kep:
         mean_ve:
         modelfit:
 
