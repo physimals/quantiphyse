@@ -32,6 +32,54 @@ DEFAULT_MAIN_VIEW = {
     "z_order" : 0,
 }
 
+class SingleViewEnforcer:
+    """
+    Enforces single-overlay view mode
+
+    This is a kind of kludge class to make the viewer behave like it used to
+    i.e. with only one overlay/roi visible at a time. It does this by continuously
+    monitoring the data in the IVM and making sure the 'current' data/roi is the only
+    one visible.
+    """
+    def __init__(self, ivm):
+        self._ivm = ivm
+        self._data_changed(self._ivm.data.keys())
+        self._ivm.sig_all_data.connect(self._data_changed)
+        self._ivm.sig_current_data.connect(self._current_changed)
+        self._ivm.sig_current_roi.connect(self._current_changed)
+
+    def __del__(self):
+        self.die()
+
+    def die(self):
+        """
+        Stop enforcing single view mode. Normally called prior to deletion
+        but allow it to be called explicitly so we don't rely on the timing of __del__
+        """
+        if self._ivm is not None:
+            self._ivm.sig_all_data.disconnect(self._data_changed)
+            self._ivm.sig_current_data.disconnect(self._current_changed)
+            self._ivm.sig_current_roi.disconnect(self._current_changed)
+            self._ivm = None
+
+    def _current_changed(self, qpdata):
+        if qpdata is not None:
+            qpdata.view.visible = Visibility.SHOW
+            self._hide_others(qpdata)
+
+    def _data_changed(self, data_names):
+        for name in data_names:
+            qpdata = self._ivm.data[name]
+            if qpdata.view.visible == Visibility.SHOW and \
+                qpdata != self._ivm.current_data and \
+                qpdata != self._ivm.current_roi:
+                qpdata.view.visible = Visibility.HIDE
+
+    def _hide_others(self, qpdata):
+        for data in self._ivm.data.values():
+            if data.name != qpdata.name and data.roi == qpdata.roi and data.view.visible == Visibility.SHOW:
+                data.view.visible = Visibility.HIDE
+
 class Viewer(QtGui.QSplitter, LogSource):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus
@@ -78,6 +126,7 @@ class Viewer(QtGui.QSplitter, LogSource):
         self._focus = [0, 0, 0, 0]
         self._arrows = []
         self._picker = PointPicker(self)
+        self._single_view_enforcer = None
         self.opts = Metadata()
         self.opts.orientation = Orientation.RADIOLOGICAL
         self.opts.display_order = DisplayOrder.USER
@@ -180,6 +229,20 @@ class Viewer(QtGui.QSplitter, LogSource):
     @show_main.setter
     def show_main(self, show_main):
         self._main_view_md.visible = show_main
+
+    @property
+    def multiview(self):
+        return self._single_view_enforcer is None
+
+    @multiview.setter
+    def multiview(self, mv):
+        if self.multiview == bool(mv):
+            return
+        elif mv:
+            self._single_view_enforcer.die()
+            self._single_view_enforcer = None
+        else:
+            self._single_view_enforcer = SingleViewEnforcer(self.ivm)
 
     def focus(self, grid=None):
         """

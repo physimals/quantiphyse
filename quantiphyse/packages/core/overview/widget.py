@@ -74,61 +74,6 @@ class IvmDebugger:
         else:
             LOG.debug("Current data: None")
 
-class SingleViewEnforcer:
-    """
-    Enforces single-overlay view mode
-
-    This is a kind of kludge class to make the viewer behave like it used to
-    i.e. with only one overlay/roi visible at a time. It does this by continuously
-    monitoring the data in the IVM and whenever a data item has its visibility turned
-    on it turns off the visibility of all other data sets of the same type
-    """
-    def __init__(self, ivm):
-        self._ivm = ivm
-        self._known_data = []
-        self._md_changed_cbs = {}
-        self._data_changed(self._ivm.data.keys())
-        self._ivm.sig_all_data.connect(self._data_changed)
-
-    def die(self):
-        """
-        Stop enforcing single view mode. Normally called prior to deletion
-        but we don't want to rely on the timing of __del__
-        """
-        self._ivm.sig_all_data.disconnect(self._data_changed)
-        for qpdata, cb in self._md_changed_cbs.items():
-            qpdata.view.sig_changed.disconnect(cb)
-        self._known_data = []
-        self._md_changed_cbs = {}
-
-    def _data_changed(self, data_names):
-        for name in data_names:
-            qpdata = self._ivm.data[name]
-            if qpdata not in self._known_data:
-                self._known_data.append(qpdata)
-                qpdata.view.sig_changed.connect(self._get_md_changed_cb(qpdata))
-                if qpdata.view.visible == Visibility.SHOW:
-                    self._hide_others(qpdata)
-        
-        for qpdata in self._known_data[:]:
-            if qpdata.name not in data_names:
-                qpdata.view.sig_changed.disconnect(self._get_md_changed_cb(qpdata))
-                self._known_data.remove(qpdata)
-                del self._md_changed_cbs[qpdata]
-
-    def _get_md_changed_cb(self, qpdata):
-        if qpdata not in self._md_changed_cbs:
-            def _cb(key, value):
-                if key == "visible" and value == Visibility.SHOW:
-                    self._hide_others(qpdata)
-            self._md_changed_cbs[qpdata] = _cb
-        return self._md_changed_cbs[qpdata]
-
-    def _hide_others(self, qpdata):
-        for data in self._ivm.data.values():
-            if data.name != qpdata.name and data.roi == qpdata.roi and data.view.visible == Visibility.SHOW:
-                data.view.visible = Visibility.HIDE
-
 class OverviewWidget(QpWidget):
     """
     QpWidget which displays welcome info and a list of current data sets
@@ -137,7 +82,6 @@ class OverviewWidget(QpWidget):
     def __init__(self, **kwargs):
         super(OverviewWidget, self).__init__(name="Volumes", icon="volumes", desc="Overview of volumes loaded",
                                              group="DEFAULT", position=0, **kwargs)
-        self._enforcer = SingleViewEnforcer(self.ivm)
 
     def init_ui(self):
         layout = QtGui.QVBoxLayout()
@@ -177,8 +121,8 @@ class OverviewWidget(QpWidget):
 
         hbox = QtGui.QHBoxLayout()
         
-        self._btn(hbox, QtGui.QIcon(get_icon("up.png")), "Raise data set in viewing order", self._up)
-        self._btn(hbox, QtGui.QIcon(get_icon("down.png")), "Lower data set in viewing order", self._down)
+        self._up_btn = self._btn(hbox, QtGui.QIcon(get_icon("up.png")), "Raise data set in viewing order", self._up)
+        self._down_btn = self._btn(hbox, QtGui.QIcon(get_icon("down.png")), "Lower data set in viewing order", self._down)
         self._btn(hbox, QtGui.QIcon.fromTheme("edit-delete"), "Delete selected data set", self._delete)
         self._btn(hbox, QtGui.QIcon.fromTheme("document-save"), "Save selected data set", self._save)
         self._btn(hbox, QtGui.QIcon.fromTheme("view-refresh"), "Reload selected data set", self._reload)
@@ -192,6 +136,7 @@ class OverviewWidget(QpWidget):
 
         layout.addLayout(hbox)
         self.setLayout(layout)
+        self._toggle_single_multi()
 
     def _btn(self, hbox, icon, tooltip, callback):
         btn = QtGui.QPushButton()
@@ -206,12 +151,12 @@ class OverviewWidget(QpWidget):
         ViewerOptions(self, self.ivl).exec_()
 
     def _toggle_single_multi(self):
-        if self._enforcer is not None:
-            self._enforcer.die()
-            self._enforcer = None
+        self.ivl.multiview = not self.ivl.multiview
+        self._up_btn.setVisible(self.ivl.multiview)
+        self._down_btn.setVisible(self.ivl.multiview)
+        if self.ivl.multiview:
             self._single_multi_btn.setIcon(QtGui.QIcon(get_icon("single_overlay.png")))
         else:
-            self._enforcer = SingleViewEnforcer(self.ivm)
             self._single_multi_btn.setIcon(QtGui.QIcon(get_icon("multi_overlay.png")))
 
     def _view_license(self):
@@ -436,14 +381,22 @@ class DataListWidget(QtGui.QTableView):
     def _clicked(self, index):
         row, col, qpdata = self._selection(index)
         self._selected = qpdata
-        if qpdata.roi:
-            self.ivm.set_current_roi(qpdata.name)
-        else:
-            self.ivm.set_current_data(qpdata.name)
 
-        if col == 0:
+        # HACK In multi-view mode we also set the 'current' data on selection. We don't 
+        # do this in single-view mode (unless the visibility column is explicitly
+        # clicked on) because the single view enforceer will make the 'current' data/roi
+        # the visible one. Hence in multiview mode we need to detect clicks on the visibility
+        # icon directly and toggle the visibility accordingly.
+        if self.ivl.multiview or col == 0:
+            if qpdata.roi:
+                self.ivm.set_current_roi(qpdata.name)
+            else:
+                self.ivm.set_current_data(qpdata.name)
+
+        if self.ivl.multiview and col == 0:
             if qpdata.view.visible == Visibility.SHOW:
                 qpdata.view.visible = Visibility.HIDE
             else:
                 qpdata.view.visible = Visibility.SHOW
-            self._update_vis_icon(row, qpdata)
+
+        self._update_vis_icon(row, qpdata)
