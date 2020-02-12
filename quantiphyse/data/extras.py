@@ -17,6 +17,16 @@ class Extra(object):
     metadata in __str__ but in practice this may not be possible when we want
     the output to be compatible with external programs (e.g. writing out a
     matrix as TSV)
+
+    In the future we might expand the Extra base class to define other behaviours,
+    e.g. flexible saving to an output file, alternative capabilities... But we
+    want to keep things simple for now while we figure out what use can
+    be made of them.
+
+    Currently the main uses for Extras are:
+
+      - Tabular output, e.g. data statistics which we might want to write out to a file
+      - Matrix outputs, e.g. affine transformations which are the output of a registration
     """
     def __init__(self, name):
         self.name = name
@@ -92,6 +102,8 @@ class MatrixExtra(Extra):
 class DataFrameExtra(Extra):
     """
     Extra which represents a Pandas data frame
+
+    This is useful for representing general tabular data.
     """
     def __init__(self, name, df):
         """
