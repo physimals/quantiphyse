@@ -1,7 +1,19 @@
 """
 Quantiphyse - Widget which displays list of all data loaded
 
-Copyright (c) 2013-2018 University of Oxford
+Copyright (c) 2013-2020 University of Oxford
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
 
 from __future__ import print_function, division, absolute_import
@@ -19,7 +31,7 @@ from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog
 from quantiphyse.gui.viewer.view_options_dialog import ViewerOptions
 from quantiphyse.utils import default_save_dir, get_icon, get_local_file
 from quantiphyse.utils.enums import Visibility
-from quantiphyse import __contrib__, __acknowledge__
+from quantiphyse import __contrib__, __acknowledge__, __license__
 
 SUMMARY = "\nCreators: " + ", ".join([author for author in __contrib__]) \
           + "\nAcknowlegements: " + ", ".join([ack for ack in __acknowledge__])
@@ -161,10 +173,7 @@ class OverviewWidget(QpWidget):
             self._single_multi_btn.setIcon(QtGui.QIcon(get_icon("multi_overlay.png")))
 
     def _view_license(self):
-        license_file = get_local_file("licence.md")
-        with open(license_file, "r") as f:
-            text = f.read()
-        dlg = TextViewerDialog(self, "Quantiphyse License", text=text)
+        dlg = TextViewerDialog(self, "Quantiphyse License", text=__license__)
         dlg.exec_()
 
     def _delete(self):

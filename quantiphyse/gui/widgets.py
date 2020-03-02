@@ -1,7 +1,19 @@
 """
 Quantiphyse - Miscellaneous custom Qt widgets
 
-Copyright (c) 2013-2018 University of Oxford
+Copyright (c) 2013-2020 University of Oxford
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
 
 import os
@@ -1507,6 +1519,11 @@ class FslDirWidget(QtGui.QFrame):
         self._update_label()
 
     @property
+    def fslwsl(self):
+        """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
+        return os.environ.get('FSLWSL', "0") == "1"
+
+    @property
     def fsldir(self):
         """
         :return: Location of FSL installation
@@ -1558,6 +1575,7 @@ class FslDirWidget(QtGui.QFrame):
         dialog = FslDirDialog(self.fsldir, self.fsldevdir)
         response = dialog.exec_()
         if response:
+            print("fsldir?", dialog.fsldir)
             if self._possible_fsldir(dialog.fsldir):
                 self._settings.setValue("fslqp/fsldir", dialog.fsldir)
             else:
@@ -1589,11 +1607,18 @@ class FslDirWidget(QtGui.QFrame):
                 self._fsldevdir_label.setText(text[1])
                 self._fsldevdir_label.setToolTip(text[1])
         else:
-            self._fsldir_label.setText("FSLDIR not set - click button to set")
+            self._fsldir_label.setText(" Not set - click button to set")
             self._fsldir_label.setToolTip("")
 
     def _possible_fsldir(self, folder):
-        return os.path.exists(os.path.join(folder, "bin", "flirt"))
+        if self.fslwsl:
+            # Note we are running on Windows but need path with Unix separators
+            cmdpath = "%s/bin/flirt" % folder
+            print('wsl test -x "%s"' % cmdpath)
+            retcode = os.system('wsl test -x "%s"' % cmdpath)
+            return retcode == 0
+        else:
+            return os.path.isfile(os.path.join(folder, "bin", "flirt"))
 
 class FslDirDialog(QtGui.QDialog):
     """

@@ -38,12 +38,16 @@ Features
 
 License
 -------
-© 2017-2019 University of Oxford
 
-Quantiphyse is **free for non commercial** use. The license details are displayed on first
-use and the ``LICENSE`` file is included in the distribution. For further information contact
-the `OUI Software Store <https://process.innovation.ox.ac.uk/software>`_. If you are 
-interested in commercial licensing you shold contact OUI in the first instance. 
+© 2017-2020 University of Oxford
+
+Quantiphyse is Open Source software, licensed under the Apache Public License version 2.0
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+License details are displayed on first use and in the ``LICENSE`` file included in the distribution. 
+Note that this does not apply to all available plugins - you should check the licensing
+terms for a plugin before using it.
 
 Tutorials
 ---------
