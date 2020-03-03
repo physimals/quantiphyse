@@ -63,6 +63,7 @@ class QpWidget(QtGui.QWidget, LogSource):
         # so we can look there for icons as well as in the default location
         self.pkgdir = os.path.abspath(os.path.dirname(inspect.getmodule(self).__file__))
         self.icon = QtGui.QIcon(get_icon(kwargs.get("icon", ""), self.pkgdir))
+        self.license = kwargs.get("license", None)
 
         # References to core classes
         self.ivm = kwargs.get("ivm", None)
@@ -1014,8 +1015,23 @@ class OptionsButton(QtGui.QPushButton):
         if widget:
             self.clicked.connect(widget.show_options)
 
+class LicenseButton(QtGui.QPushButton):
+    def __init__(self, license):
+        QtGui.QPushButton.__init__(self)
+        self._license = license
+        self.setIcon(QtGui.QIcon(get_icon("license.png")))
+        self.setIconSize(QtCore.QSize(14, 14))
+        self.setToolTip("Display license information for this widget")
+        self.setStatusTip("Display license information for this widget")
+        self.clicked.connect(self.show_license)
+
+    def show_license(self):
+        self.logview = TextViewerDialog(text=self._license, parent=self)
+        self.logview.show()
+        self.logview.raise_()
+
 class TitleWidget(QtGui.QWidget):
-    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False, icon=True):
+    def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False, lic_btn=True, icon=True):
         QtGui.QWidget.__init__(self)
         if title is None:
             title = widget.name
@@ -1034,6 +1050,7 @@ class TitleWidget(QtGui.QWidget):
         if batch_btn: hbox.addWidget(BatchButton(widget))
         if help_btn: hbox.addWidget(HelpButton(self, help))
         if opts_btn: hbox.addWidget(OptionsButton(widget))
+        if lic_btn and widget.license: hbox.addWidget(LicenseButton(widget.license))
         vbox.addLayout(hbox)
 
         hbox = QtGui.QHBoxLayout()
