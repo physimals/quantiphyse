@@ -28,7 +28,7 @@ one of these recipes, please report it using the
 FSL
 ---
 
-If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` environment:
+If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` environment::
 
     fslpython -m pip install quantiphyse --user
 
