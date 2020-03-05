@@ -21,10 +21,22 @@ one of these recipes, please report it using the
     Installable packages for Windows, Mac and Ubuntu are also available from 
     `OUI <https://process.innovation.ox.ac.uk/software/>`_. These are
     generally slightly behind the latest version however installation may be more straightforward.
-    If you are a commercial organization **you must contact OUI for a commercial license**.
 
 .. contents:: Platforms
     :local:
+
+FSL
+---
+
+If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` environment:
+
+    fslpython -m pip install quantiphyse --user
+
+And for the plugins::
+
+    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+
+Some of the plugins may require build tools to be installed. If you get issues, see the additional requirements above for your platform (e.g. Ubuntu, Centos).
 
 Ubuntu 16.04
 ------------
@@ -108,20 +120,6 @@ is to create an Automator application which runs the executable.
 
 If you have experience of installation using Homebrew please
 contact us with your recipe and we can add it here.
-
-FSLpython
----------
-
-FSL python isn't really a platform, but it is a ready-made Python environment included in recent versions of FSL, 
-and in most cases you can now install Quantiphyse into this environment using:
-
-    fslpython -m pip install quantiphyse --user
-
-And for the plugins::
-
-    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
-
-Some of the plugins may require build tools to be installed, for example see the additional requirements above for Ubuntu and Centos.
 
 Windows
 -------
