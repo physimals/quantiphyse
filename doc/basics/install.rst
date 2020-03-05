@@ -34,7 +34,7 @@ If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` e
 
 And for the plugins::
 
-    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 Some of the plugins may require build tools to be installed. If you get issues, see the additional requirements above for your platform (e.g. Ubuntu, Centos).
 
@@ -51,7 +51,7 @@ Now install the application::
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 Alternatively, you can use `Anaconda`_ in Ubuntu.
 
@@ -68,7 +68,7 @@ Now install the application::
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 .. note::
     In some cases on Ubuntu 18.04 you may find that 'quantiphyse' will not run from
@@ -90,7 +90,7 @@ The recipe above just installs the main application. To install plugins use::
 
     sudo yum install gcc-c++ python-devel
     sudo pip install setuptools --upgrade
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 Alternatively, you can use `Anaconda`_ in Centos.
 
@@ -107,7 +107,7 @@ system Python::
 
 And for the plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 The only issue with this is that the Quantiphyse executable is installed in a location which is not
 in the user's PATH - typically ``$HOME/Library/Python2.7/bin/``. So you either need to run
@@ -147,7 +147,7 @@ Once installed you have to create and 'activate' the environment before installi
 
 To install Quantiphyse plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 When you have finished using a virtualenv you must 'deactivate' it by simply running::
 
@@ -199,7 +199,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
@@ -223,7 +223,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
@@ -251,7 +251,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
