@@ -34,7 +34,7 @@ Features
  - Integration with selected FSL tools
  - ROI generation
  - Registration and motion correction
- - Extensible via plugins - see :ref:`plugins`.
+ - Extensible - see :ref:`plugins`.
 
 License
 -------

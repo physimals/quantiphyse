@@ -21,10 +21,22 @@ one of these recipes, please report it using the
     Installable packages for Windows, Mac and Ubuntu are also available from 
     `OUI <https://process.innovation.ox.ac.uk/software/>`_. These are
     generally slightly behind the latest version however installation may be more straightforward.
-    If you are a commercial organization **you must contact OUI for a commercial license**.
 
 .. contents:: Platforms
     :local:
+
+FSL
+---
+
+If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` environment::
+
+    fslpython -m pip install quantiphyse --user
+
+And for the plugins::
+
+    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
+
+Some of the plugins may require build tools to be installed. If you get issues, see the additional requirements above for your platform (e.g. Ubuntu, Centos).
 
 Ubuntu 16.04
 ------------
@@ -39,7 +51,7 @@ Now install the application::
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 Alternatively, you can use `Anaconda`_ in Ubuntu.
 
@@ -56,7 +68,7 @@ Now install the application::
 
 The recipe above just installs the main application. To install plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 .. note::
     In some cases on Ubuntu 18.04 you may find that 'quantiphyse' will not run from
@@ -78,7 +90,7 @@ The recipe above just installs the main application. To install plugins use::
 
     sudo yum install gcc-c++ python-devel
     sudo pip install setuptools --upgrade
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 Alternatively, you can use `Anaconda`_ in Centos.
 
@@ -95,7 +107,7 @@ system Python::
 
 And for the plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 The only issue with this is that the Quantiphyse executable is installed in a location which is not
 in the user's PATH - typically ``$HOME/Library/Python2.7/bin/``. So you either need to run
@@ -108,20 +120,6 @@ is to create an Automator application which runs the executable.
 
 If you have experience of installation using Homebrew please
 contact us with your recipe and we can add it here.
-
-FSLpython
----------
-
-FSL python isn't really a platform, but it is a ready-made Python environment included in recent versions of FSL, 
-and in most cases you can now install Quantiphyse into this environment using:
-
-    fslpython -m pip install quantiphyse --user
-
-And for the plugins::
-
-    fslpython -m pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
-
-Some of the plugins may require build tools to be installed, for example see the additional requirements above for Ubuntu and Centos.
 
 Windows
 -------
@@ -149,7 +147,7 @@ Once installed you have to create and 'activate' the environment before installi
 
 To install Quantiphyse plugins use::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv --user
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
 When you have finished using a virtualenv you must 'deactivate' it by simply running::
 
@@ -201,7 +199,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
@@ -225,7 +223,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
@@ -253,7 +251,7 @@ Then use the following commands::
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
 
 On Mac you will also need to do::
 
