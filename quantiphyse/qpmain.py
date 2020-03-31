@@ -106,7 +106,7 @@ def main():
 
     if args.batch is not None:
         # Batch runs need a QCoreApplication to avoid initializing the GUI - this
-        # may not be possible when running on a displayless system 
+        # would fail when running on a displayless system 
         app = QtCore.QCoreApplication(sys.argv)
         runner = BatchScript()
         # Add delay to make sure script is run after the main loop starts, in case
