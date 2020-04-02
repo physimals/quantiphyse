@@ -60,8 +60,8 @@ class CalcVolumesProcess(Process):
             col_idx = 0
             for region, name in roi.regions.items():
                 if sel_region is None or region == sel_region:
-                    nvoxels = counts[region]
-                    vol = counts[region]*sizes[0]*sizes[1]*sizes[2]
+                    nvoxels = counts[region] if region < len(counts) else 0
+                    vol = nvoxels*sizes[0]*sizes[1]*sizes[2]
                     self.model.setHorizontalHeaderItem(col_idx, QtGui.QStandardItem(name))
                     self.model.setItem(0, col_idx, QtGui.QStandardItem(str(nvoxels)))
                     self.model.setItem(1, col_idx, QtGui.QStandardItem(str(vol)))
