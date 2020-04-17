@@ -240,7 +240,7 @@ class Script(Process):
             if params is None: params = {}
 
             if proc is None:
-                raise QpException("Unknown process: %s" % name)
+                raise RuntimeError("Unknown process: %s" % name)
             else:
                 params["id"] = params.get("id", name)
                 params["__impl"] = proc
@@ -477,7 +477,12 @@ class BatchScript(Script):
         self.stdout.flush()
 
     def _log_done_script(self):
-        self.stdout.write("Script finished\n")
+        if self.status == Process.SUCCEEDED:
+            self.stdout.write("Script finished\n")
+        else:
+            self.stdout.write(" FAILED: %i\n" % self.status)
+            self.warn(str(self.exception))
+            self.debug("".join(traceback.format_exception_only(type(self.exception), self.exception)))
         sys.stdout.flush()
         if self._quit_on_exit:
             QtCore.QCoreApplication.instance().quit()

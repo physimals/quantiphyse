@@ -116,8 +116,9 @@ class PickedRegionTool(Tool):
     def _change(self, mode):
         def _cb():
             selected_points = self.ivl.picker.selection(grid=self.builder.grid)
-            self.builder.modify(vol=selected_points, mode=mode)
-            self.selected()
+            if selected_points is not None:
+                self.builder.modify(vol=selected_points, mode=mode)
+                self.selected()
         return _cb
 
 class PolygonTool(PickedRegionTool):

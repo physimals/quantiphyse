@@ -33,7 +33,7 @@ from quantiphyse.data import NumpyData
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, TextOption
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.gui.viewer.pickers import PickMode
-from quantiphyse.utils import get_icon
+from quantiphyse.utils import get_icon, QpException
 
 from .tools import CrosshairsTool, PenTool, WalkerTool, PainterTool, EraserTool, RectTool, EllipseTool, PolygonTool, PickTool, BucketTool
 
@@ -296,7 +296,10 @@ class RoiBuilderWidget(QpWidget):
         ok = dialog.exec_()
         if ok:
             roiname = optbox.option("name").value
-            grid = self.ivm.data[optbox.option("grid").value].grid
+            gridfrom = optbox.option("grid").value
+            if not roiname or not gridfrom:
+                raise QpException("Must provide a ROI name and a dataset to base it on")
+            grid = self.ivm.data[gridfrom].grid
             roidata = np.zeros(grid.shape, dtype=np.int)
             self.ivm.add(NumpyData(roidata, grid=grid, roi=True, name=roiname), make_current=True)
 

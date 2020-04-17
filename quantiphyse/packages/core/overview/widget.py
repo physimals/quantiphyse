@@ -283,7 +283,7 @@ class DataListWidget(QtGui.QTableView):
         self.horizontalHeader().setVisible(True)
         self.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
 
-        self.clicked.connect(self._clicked)
+        self.selectionModel().currentRowChanged.connect(self._current_row_changed)
         self.ivm.sig_all_data.connect(self._data_changed)
         self.ivm.sig_main_data.connect(self._update_vis_icons)
         self.ivm.sig_current_data.connect(self._set_current)
@@ -385,16 +385,21 @@ class DataListWidget(QtGui.QTableView):
 
     def _selection(self, index):
         row, col = index.row(), index.column()
-        name = self.model.item(row, 1).text()
-        return row, col, self.ivm.data.get(name, None)
+        item = self.model.item(row, 1)
+        if item is None:
+            return row, col, None
+        else:
+            return row, col, self.ivm.data.get(item.text(), None)
 
-    def _clicked(self, index):
+    def _current_row_changed(self, index):
         row, col, qpdata = self._selection(index)
         self._selected = qpdata
+        if qpdata is None:
+            return
 
         # HACK In multi-view mode we also set the 'current' data on selection. We don't 
         # do this in single-view mode (unless the visibility column is explicitly
-        # clicked on) because the single view enforceer will make the 'current' data/roi
+        # clicked on) because the single view enforcer will make the 'current' data/roi
         # the visible one. Hence in multiview mode we need to detect clicks on the visibility
         # icon directly and toggle the visibility accordingly.
         if self.ivl.multiview or col == 0:
