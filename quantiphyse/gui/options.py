@@ -597,9 +597,11 @@ class NumericOption(Option, QtGui.QWidget):
         if intonly:
             self.rtype = int
             self.decimals = 0
+            self.slider_scale = 1
         else:
             self.rtype = float
             self.decimals = decimals
+            self.slider_scale = 10**decimals
 
         hbox = QtGui.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
@@ -610,9 +612,9 @@ class NumericOption(Option, QtGui.QWidget):
         #hbox.addWidget(self.min_edit)
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setMaximum(maxval)
-        self.slider.setMinimum(minval)
-        self.slider.setValue(default)
+        self.slider.setMaximum(maxval*self.slider_scale)
+        self.slider.setMinimum(minval*self.slider_scale)
+        self.slider.setValue(default*self.slider_scale)
         self.slider.valueChanged.connect(self._slider_changed)
         if kwargs.get("slider", True):
             hbox.addWidget(self.slider)
@@ -633,14 +635,14 @@ class NumericOption(Option, QtGui.QWidget):
 
             if val > self.maxval and not self.hardmax:
                 self.maxval = val
-                self.slider.setMaximum(val)
+                self.slider.setMaximum(val*self.slider_scale)
             if val < self.minval and not self.hardmin:
                 self.minval = val
-                self.slider.setMinimum(val)
+                self.slider.setMinimum(val*self.slider_scale)
 
             try:
                 self.slider.blockSignals(True)
-                self.slider.setValue(int(self.value))
+                self.slider.setValue(int(self.value*self.slider_scale))
             finally:
                 self.slider.blockSignals(False)
 
@@ -651,7 +653,7 @@ class NumericOption(Option, QtGui.QWidget):
         self._changed()
 
     def _slider_changed(self, value):
-        val = self.rtype(value)
+        val = self.rtype(value) / self.slider_scale
         try:
             self.val_edit.blockSignals(True)
             self._update_edit(val)
