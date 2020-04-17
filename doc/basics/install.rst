@@ -28,7 +28,7 @@ one of these recipes, please report it using the
 FSL
 ---
 
-If you have FSL v6 or later you can install Quantiphyse into the ``fslpython`` environment::
+If you have FSL v6 or later we recommend that you install Quantiphyse into the ``fslpython`` environment::
 
     fslpython -m pip install quantiphyse --user
 
@@ -100,8 +100,8 @@ Mac OSX
 `Anaconda`_ has been the usual method we have used to install Quantiphyse on Mac due
 to poor support for recent versions of Python on Mac.
 
-However, on recent releases of OSX (e.g. Mojave) you can install Quantiphyse into the
-system Python::
+However, on recent releases of OSX (e.g. Mojave) it may be possible to install Quantiphyse into the
+system Python using::
 
     pip install quantiphyse --user
 
@@ -109,7 +109,12 @@ And for the plugins::
 
     pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim --user
 
-The only issue with this is that the Quantiphyse executable is installed in a location which is not
+.. note::
+    Installation into ``fslpython`` is likely to be a more reliable method on Mac if you 
+    have FSL. While the above method has worked for some users, we have also had issues with
+    incompatible Numpy and Scipy packages that may cause problems with the system python on Mac.
+
+One issue with this is that the Quantiphyse executable is installed in a location which is not
 in the user's PATH - typically ``$HOME/Library/Python2.7/bin/``. So you either need to run
 Quantiphyse from that folder, or add this folder to your PATH by editing ``$HOME/.bash_profile``::
 
