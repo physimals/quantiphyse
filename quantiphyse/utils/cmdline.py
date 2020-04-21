@@ -248,7 +248,8 @@ class CommandProcess(LogProcess):
   
     def _find(self, cmd):
         """ 
-        Find the program, either in the 'local' directory, or in $FSLDEVDIR/bin or $FSLDIR/bin 
+        Find the program in the configured path
+
         This is called each time the program is run so the caller can control where programs
         are searched for at any time
         """
