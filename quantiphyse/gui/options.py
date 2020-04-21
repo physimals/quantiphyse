@@ -629,7 +629,7 @@ class NumericOption(Option, QtGui.QWidget):
 
     def _edit_changed(self):
         try:
-            val = self.rtype(self.val_edit.text())
+            val = self.rtype(float(self.val_edit.text()))
             self.valid = True
             self.val_edit.setStyleSheet("")
 
@@ -665,7 +665,7 @@ class NumericOption(Option, QtGui.QWidget):
     def value(self):
         """ The numeric value selected """
         if self.valid:
-            return self.rtype(self.val_edit.text())
+            return self.rtype(float(self.val_edit.text()))
         else:
             raise QpException("'%s' is not a valid number")
 
@@ -676,7 +676,7 @@ class NumericOption(Option, QtGui.QWidget):
 
     def _update_edit(self, value):
         if self.rtype == int:
-            self.val_edit.setText(str(value))
+            self.val_edit.setText(str(int(value)))
         else:
             self.val_edit.setText(sf(value, sig_fig=self.decimals))
 
@@ -1273,6 +1273,11 @@ class FileOption(Option, QtGui.QWidget):
     def value(self):
         """ Return path of selected file """
         return self._edit.text()
+
+    @value.setter
+    def value(self, path):
+        """ Set the path. Note no validation? """
+        self._edit.setText(path)
 
     def _clicked(self):
         if self._dirs:
