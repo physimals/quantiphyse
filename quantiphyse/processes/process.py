@@ -387,6 +387,7 @@ class Process(QtCore.QObject, LogSource):
         """
         if self.status == Process.RUNNING:
             self.status = Process.CANCELLED
+            self.exception = Exception("Process was cancelled")
             if self._multiproc:
                 # FIXME this does not work. Not incredibly harmful because
                 # with status set to CANCELLED results are ignored anyway.
