@@ -1274,9 +1274,9 @@ class FileOption(Option, QtGui.QWidget):
 
     def _clicked(self):
         if self._dirs:
-            path = QtGui.QFileDialog.getExistingDirectory(dir=self.value)
+            path = QtGui.QFileDialog.getExistingDirectory(parent=self, dir=self.value)
         else:
-            path, _ = QtGui.QFileDialog.getOpenFileName(dir=os.path.dirname(self.value))
+            path, _ = QtGui.QFileDialog.getOpenFileName(parent=self, dir=os.path.dirname(self.value))
         self._edit.setText(path)
         self.sig_changed.emit()
 
