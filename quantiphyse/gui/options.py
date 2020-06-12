@@ -597,9 +597,11 @@ class NumericOption(Option, QtGui.QWidget):
         if intonly:
             self.rtype = int
             self.decimals = 0
+            self.slider_scale = 1
         else:
             self.rtype = float
             self.decimals = decimals
+            self.slider_scale = 10**decimals
 
         hbox = QtGui.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
@@ -610,9 +612,9 @@ class NumericOption(Option, QtGui.QWidget):
         #hbox.addWidget(self.min_edit)
 
         self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.slider.setMaximum(maxval)
-        self.slider.setMinimum(minval)
-        self.slider.setValue(default)
+        self.slider.setMaximum(maxval*self.slider_scale)
+        self.slider.setMinimum(minval*self.slider_scale)
+        self.slider.setValue(default*self.slider_scale)
         self.slider.valueChanged.connect(self._slider_changed)
         if kwargs.get("slider", True):
             hbox.addWidget(self.slider)
@@ -627,20 +629,20 @@ class NumericOption(Option, QtGui.QWidget):
 
     def _edit_changed(self):
         try:
-            val = self.rtype(self.val_edit.text())
+            val = self.rtype(float(self.val_edit.text()))
             self.valid = True
             self.val_edit.setStyleSheet("")
 
             if val > self.maxval and not self.hardmax:
                 self.maxval = val
-                self.slider.setMaximum(val)
+                self.slider.setMaximum(val*self.slider_scale)
             if val < self.minval and not self.hardmin:
                 self.minval = val
-                self.slider.setMinimum(val)
+                self.slider.setMinimum(val*self.slider_scale)
 
             try:
                 self.slider.blockSignals(True)
-                self.slider.setValue(int(self.value))
+                self.slider.setValue(int(self.value*self.slider_scale))
             finally:
                 self.slider.blockSignals(False)
 
@@ -651,7 +653,7 @@ class NumericOption(Option, QtGui.QWidget):
         self._changed()
 
     def _slider_changed(self, value):
-        val = self.rtype(value)
+        val = self.rtype(value) / self.slider_scale
         try:
             self.val_edit.blockSignals(True)
             self._update_edit(val)
@@ -663,7 +665,7 @@ class NumericOption(Option, QtGui.QWidget):
     def value(self):
         """ The numeric value selected """
         if self.valid:
-            return self.rtype(self.val_edit.text())
+            return self.rtype(float(self.val_edit.text()))
         else:
             raise QpException("'%s' is not a valid number")
 
@@ -674,7 +676,7 @@ class NumericOption(Option, QtGui.QWidget):
 
     def _update_edit(self, value):
         if self.rtype == int:
-            self.val_edit.setText(str(value))
+            self.val_edit.setText(str(int(value)))
         else:
             self.val_edit.setText(sf(value, sig_fig=self.decimals))
 
@@ -1271,6 +1273,11 @@ class FileOption(Option, QtGui.QWidget):
     def value(self):
         """ Return path of selected file """
         return self._edit.text()
+
+    @value.setter
+    def value(self, path):
+        """ Set the path. Note no validation? """
+        self._edit.setText(path)
 
     def _clicked(self):
         if self._dirs:
