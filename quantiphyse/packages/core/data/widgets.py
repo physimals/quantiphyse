@@ -176,19 +176,24 @@ class OrientDataWidget(QpWidget):
         world_centre = np.dot(affine[:3, :3], grid_centre)
         self.debug("Initial affine\n%s", affine)
         translation, rotations = self._transform_cache[name]
+
+        R = np.identity(3)
         for axis in range(3):
             angle = rotations[axis]
             rot3d = self._rotmtx_3d(axis, angle)
             affine[:3, :3] = np.dot(rot3d, affine[:3, :3])
-            origin_offset = world_centre - np.dot(rot3d, world_centre)
-            #origin_offset[axis] = 0
-            self.debug("Origin offset\n%s", origin_offset)
-            translation += origin_offset
+            R = np.dot(rot3d, R)
 
-        affine[:3, 3] += translation
+        origin_offset = world_centre - np.dot(R, world_centre)
+        origin_offset += translation
+        self.debug("Origin offset\n%s", origin_offset)
+        affine[:3, 3] += origin_offset
+
         self.debug("Final affine\n%s", affine)
         self.gridview.data.grid.affine = affine
         self.gridview.update()
+        if self.gridview.data == self.ivm.main:
+            self.ivm.sig_main_data.emit(self.ivm.main)
         if self.gridview.data.view.visible == Visibility.SHOW or self.gridview.data == self.ivm.main:
             self.ivl.redraw()
 
