@@ -87,7 +87,14 @@ def local_file_from_drop_url(url):
         from Cocoa import NSURL
         return str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
     else:
-        return str(url.toLocalFile())
+        path = str(url.toLocalFile())
+        if sys.platform.startswith("win"):
+            # QT bug with UNC paths. We can't fix this generally but we want
+            # the WSL specific case to work, so detect that at least
+            wslpath = "\\\\wsl$\\" + path
+            if not os.path.exists(path) and os.path.exists(wslpath):
+                return wslpath
+        return path
 
 def get_icon(name, icon_dir=None):
     """
