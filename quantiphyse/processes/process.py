@@ -546,6 +546,7 @@ class Process(QtCore.QObject, LogSource):
                 # a 'finished' callback. We will fake one to make sure we get
                 # an error back. Normally this happpens because of a programming
                 # error (e.g. tried to pass a non-pickleable object)
+                # FIXME use w.get to obtain error
                 self._worker_finished_cb((idx, False, RuntimeError("Worker %i failed to start. Report this as a bug" % idx)))
                 return
 
