@@ -38,6 +38,11 @@ And for the plugins::
 
 Some of the plugins may require build tools to be installed. If you get issues, see the additional requirements above for your platform (e.g. Ubuntu, Centos).
 
+.. warn::
+    Using ``--user`` with ``pip`` can cause problems if you also have other Python environments
+    on your system (e.g. from Conda). If you already have a separate Conda installation then we
+    suggest using the instructions for an `Anaconda`_ install.
+
 Ubuntu 16.04
 ------------
 
@@ -186,32 +191,12 @@ Once Anaconda is installed, follow the instructions in the relevant section belo
     In the future we hope to put Quantiphyse into conda itself so the whole
     process can consist of ``conda install quantiphyse``.  
 
-Anaconda Python 2.7
+Anaconda Python 3.7
 ~~~~~~~~~~~~~~~~~~~
 
-On Windows you must first install Visual C++ for Python 2.7 from:
-
-http://aka.ms/vcpython27
-    
-Then use the following commands::
-
-    conda create -n qp python=2.7
-    conda activate qp
-    conda install -c conda-forge cython funcsigs matplotlib nibabel numpy pillow pyside2 pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
-    pip install pyqtgraph-qp
-    pip install quantiphyse --no-deps
-
-This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
-plugins::
-
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
-
-On Mac you will also need to do::
-
-    pip install pyobjc
-
-Anaconda Python 3.x
-~~~~~~~~~~~~~~~~~~~
+We recommend Python 3.7 as a reasonably up to date version of Python for which dependencies are generally widely
+available. While Quantiphyse should be compatible with newer Python releases sometimes it is difficult to get
+matching versions of important dependencies such as Numpy.
 
 On Windows you must first install Visual C++ tools for Python 3 from:
 
@@ -219,7 +204,7 @@ https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
 
 Then use the following commands::
 
-    conda create -n qp python=3
+    conda create -n qp python=3.7
     conda activate qp
     conda install -c conda-forge cython funcsigs matplotlib nibabel numpy pillow pyside2 pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
     pip install pyqtgraph-qp
@@ -234,7 +219,7 @@ On Mac you will also need to do::
 
     pip install pyobjc
 
-Anaconda Python 3.x (dependencies from pip)
+Anaconda Python 3.7 (dependencies from pip)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This variation takes dependencies from ``pip`` rather than conda. Normally it is preferable to use
@@ -249,9 +234,36 @@ https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
 
 Then use the following commands::
 
-    conda create -n qp python=3
+    conda create -n qp python=3.7
     conda activate qp
     pip install quantiphyse
+
+This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
+plugins::
+
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim 
+
+On Mac you will also need to do::
+
+    pip install pyobjc
+
+Anaconda Python 2.7
+~~~~~~~~~~~~~~~~~~~
+
+Quantiphyse is compatible with the widely used Python 2.7, although this is now getting rather old
+and is no longer recommended unless you have a special need for it.
+
+On Windows you must first install Visual C++ for Python 2.7 from:
+
+http://aka.ms/vcpython27
+    
+Then use the following commands::
+
+    conda create -n qp python=2.7
+    conda activate qp
+    conda install -c conda-forge cython funcsigs matplotlib nibabel numpy pillow pyside2 pyyaml requests scipy scikit-learn scikit-image setuptools six pandas deprecation
+    pip install pyqtgraph-qp
+    pip install quantiphyse --no-deps
 
 This installs the basic Quantiphyse app. To install plugins use pip, for example this is to install all current
 plugins::
