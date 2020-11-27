@@ -121,9 +121,11 @@ and data sets higher up in the list overlay those below. In multi-view mode, two
 buttons appear allowing data sets to be moved up and down in the volumes list.
 
 |view_options| Change general view options
---------------------------------------------
+------------------------------------------
 
 .. image:: /screenshots/view_options_window.png
+
+The following options are available for the viewer:
 
  - Orientation: By default Quantiphyse uses the 'radiological' view convention where the right
    hand side of the data is displayed on the left of the screen (as if viewing the patient from
