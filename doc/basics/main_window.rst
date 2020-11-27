@@ -85,22 +85,69 @@ The Volumes List
 After loading data it will appear in a list on the ``Volumes`` widget, which is always visible
 by default:
 
-.. image:: /screenshots/overview_list.png
+.. image:: /screenshots/volume_list.png
 
 The icon on the left indicates whether the data is visible or not: |main_data| indicates that this
 is the main data (and will appear as a greyscale background), |visible| indicates that this
-data item is visible, either as an ROI or an overlay on top of the background. 
+data item is visible, either as an ROI or an overlay on top of the background. The icon next 
+to the data name shows whether it is an |roi_data| ROI or a |data| data set.
 
-Currently one overlay and one ROI are visible at a time. This limitation was intended to support
-the most common use case, but in the future the option to display multiple overlaid images will
-be added.
+Underneath the volumes list are a set of icons which can be used to modify the currently selected
+data set:
 
-The icon next to the data name shows whether it is an |roi_data| ROI or a |data| data set.
+ - |delete| Delete the selected data set
+ - |save| Save the selected data set to a Nifti file
+ - |reload| Reload the selected data set from its source file. This is useful when viewing the results
+   of an analysis done outside Quantiphyse
+ - |rename| Rename the selected data set within Quantiphyse. Note that this does not create or rename
+   any files on disk unless you subsequently save the data set
+ - |set_main| Set this data set to be the main (reference) data set
+ - |toggle_roi| Toggle between treating this volume as a data set or as an ROI. Note that to set a
+   data set to be an ROI it must be integer only and 3D. This is useful when you accidentally load
+   an ROI as a data set.
+
+In addition the following buttons control the viewer as a whole:
+
+|multi_view| Toggle between single view mode and multi view mode
+----------------------------------------------------------------
+
+By default Quantiphyse starts in *single-view mode*. In this mode, the main data is displayed as
+a greyscale background and in addition one ROI and one additional dataset can be overlaid on top.
+This is a simple and practical way of viewing data that works well in most cases. 
+
+However we also support a *multi-view mode* where any number of data sets can be overlaid on top
+of the main data. Clicking on the 'visible' column for a data set in the list toggles its visibility
+and data sets higher up in the list overlay those below. In multi-view mode, two additional arrow
+buttons appear allowing data sets to be moved up and down in the volumes list.
+
+|view_options| Change general view options
+--------------------------------------------
+
+.. image:: /screenshots/view_options_window.png
+
+ - Orientation: By default Quantiphyse uses the 'radiological' view convention where the right
+   hand side of the data is displayed on the left of the screen (as if viewing the patient from
+   the end of the bed). Alternatively the 'neurological' convention where patient right is displayed
+   on the right of the screen is also supported.
+ - Crosshairs showing the currently selected view position may be hidden if desired
+ - Similarly the view orientation labels (e.g. R/L for right/left) can be shown or hidden
+ - The greyscale background display of the main data set can be turned on or off
+ - In single view mode ROIs can be displayed on top of data sets or beneath them. In multi-view
+   mode viewing order is user-specified according to the position of the data in the volumes list
+ - The interpolation used when non-orthogonal data is displayed can be selected
 
 .. |main_data| image:: /screenshots/main_data.png
 .. |visible| image:: /screenshots/visible.png
 .. |roi_data| image:: /screenshots/roi_data.png
 .. |data| image:: /screenshots/data.png
+.. |delete| image:: /screenshots/delete_data.png
+.. |save| image:: /screenshots/save_data.png
+.. |reload| image:: /screenshots/reload_data.png
+.. |set_main| image:: /screenshots/set_main.png
+.. |rename| image:: /screenshots/rename_data.png
+.. |toggle_roi| image:: /screenshots/toggle_roi.png
+.. |multi_view| image:: /screenshots/multi_view.png
+.. |view_options| image:: /screenshots/view_options.png
 
 The Navigation Bar
 ==================
