@@ -62,6 +62,8 @@ class OptionBox(QtGui.QGroupBox):
         self._current_row = 0
         self._options = {}
         self._rows = {}
+        # For checked options
+        self.grid.setColumnStretch(2, 1)
 
     def add(self, label, *options, **kwargs):
         """
