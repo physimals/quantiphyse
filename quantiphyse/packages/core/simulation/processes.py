@@ -60,8 +60,10 @@ class SimMotionProcess(Process):
             raise QpException("Can only simulate motion on 4D data")
 
         output_name = options.pop("output-name", "%s_moving" % data.name)
-        std = float(options.pop("std"))
+        std = float(options.pop("std", "0"))
         std_voxels = [std / size for size in data.grid.spacing]
+        std_degrees = float(options.pop("std_rot", "0"))
+        order = int(options.pop("order", "1"))
         output_grid = data.grid
         output_shape = data.grid.shape
             
@@ -82,6 +84,7 @@ class SimMotionProcess(Process):
             output_grid = DataGrid(output_shape, output_affine)
 
         moving_data = np.zeros(list(output_shape) + [data.nvols,])
+        centre_offset = output_shape / 2
         for vol in range(data.nvols):
             voldata = data.volume(vol)
             if padding > 0:
@@ -90,7 +93,17 @@ class SimMotionProcess(Process):
             for dim in range(3):
                 if voldata.shape[dim] == 1:
                     shift[dim] = 0
-            shifted_data = scipy.ndimage.interpolation.shift(voldata, shift)
-            moving_data[..., vol] = shifted_data
+            shifted_data = scipy.ndimage.shift(voldata, shift, order=order)
+
+            # Generate random rotation and scale it to the random angle
+            required_angle = np.random.normal(scale=std_degrees, size=1)
+            rot = scipy.spatial.transform.Rotation.random().as_rotvec()
+            rot_angle = np.degrees(np.sqrt(np.sum(np.square(rot))))
+            rot *= required_angle / rot_angle
+            rot_matrix = scipy.spatial.transform.Rotation.from_rotvec(rot).as_matrix()
+
+            offset=centre_offset-centre_offset.dot(rot_matrix)
+            rotated_data = scipy.ndimage.affine_transform(shifted_data, rot_matrix.T, offset=offset, order=order)
+            moving_data[..., vol] = rotated_data
 
         self.ivm.add(moving_data, grid=output_grid, name=output_name, make_current=True)

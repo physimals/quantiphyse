@@ -20,7 +20,7 @@ try:
 except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
   
-from quantiphyse.gui.options import OptionBox, NumericOption, DataOption, OutputNameOption
+from quantiphyse.gui.options import OptionBox, NumericOption, DataOption, OutputNameOption, ChoiceOption
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
 
 from .processes import AddNoiseProcess, SimMotionProcess
@@ -79,8 +79,10 @@ class SimMotionWidget(QpWidget):
 
         self.option_box = OptionBox("Options")
         data = self.option_box.add("Data set", DataOption(self.ivm, include_4d=True, include_3d=False), key="data")
-        self.option_box.add("Motion standard deviation (mm)", NumericOption(minval=0, maxval=5, default=1, decimals=2), key="std")
+        self.option_box.add("Random translation standard deviation (mm)", NumericOption(minval=0, maxval=5, default=1, decimals=2), key="std")
+        self.option_box.add("Random rotation standard deviation (\N{DEGREE SIGN})", NumericOption(minval=0, maxval=10, default=1, decimals=2), key="std_rot")
         self.option_box.add("Padding (mm)", NumericOption(minval=0, maxval=10, default=5, decimals=1), key="padding", checked=True)
+        self.option_box.add("Interpolation", ChoiceOption(["Nearest neighbour", "Linear", "Quadratic", "Cubic"], return_values=range(4), default=3), key="order")
         self.option_box.add("Output name", OutputNameOption(src_data=data, suffix="_moving"), key="output-name")
         vbox.addWidget(self.option_box)
 
@@ -96,4 +98,4 @@ class SimMotionWidget(QpWidget):
     def run(self):
         options = self.batch_options()[1]
         process = SimMotionProcess(self.ivm)
-        process.execute(options)
+        process.run(options)
