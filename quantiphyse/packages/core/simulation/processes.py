@@ -37,7 +37,13 @@ class AddNoiseProcess(Process):
         data = self.get_data(options)
 
         output_name = options.pop("output-name", "%s_noisy" % data.name)
-        std = float(options.pop("std"))
+        if "std" in options:
+            std = float(options.pop("std"))
+        elif "percent" in options:
+            percent = float(options.pop("percent"))
+            std = np.mean(data.raw()) * float(percent) / 100
+        else:
+            raise QpException("AddNoiseProcess: Must specify either std or percent")
 
         noise = np.random.normal(loc=0, scale=std, size=list(data.grid.shape) + [data.nvols,])
         if data.nvols == 1: 
