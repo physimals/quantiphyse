@@ -120,6 +120,9 @@ def main():
             # Required on Mac with Pyside 1
             QtGui.QApplication.setGraphicsSystem('native')
 
+        # Note that organization info is not up to date but we will 
+        # leave IBME in there as otherwise any previous QSettings (including
+        # registration) will be lost.
         app = QtGui.QApplication(sys.argv)
         app.setStyle('plastique')
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
