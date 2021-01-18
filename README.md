@@ -63,7 +63,7 @@ The `--maxi` option builds a package which includes selected plugins, assuming t
 
 ### Issue tracker
 
-Current issues can be viewed on the GitHub issue tracker (https://github.com/ibme-qubic/quantiphyse/issues)
+Current issues can be viewed on the GitHub issue tracker (https://github.com/physimals/quantiphyse/issues)
 
 ### Roadmap
 

@@ -85,7 +85,7 @@ User Guide
 Bugs/Issues
 -----------
 
-Bugs may be submitted using the Github `issue tracker for Quantiphyse <https://github.com/ibme-qubic/quantiphyse/issues>`_.
+Bugs may be submitted using the Github `issue tracker for Quantiphyse <https://github.com/physimals/quantiphyse/issues>`_.
 
 For any other comments or feature requests please contact the  `current maintainer: <mailto:martin.craig@eng.ox.ac.uk>`_
 
