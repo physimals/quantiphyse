@@ -11,7 +11,7 @@ Quantiphyse is in PyPi. If you have Python and 'pip' working, installation
 In practice it *not* always as simple as this. So, below are a number of 'recipes' 
 for different platforms which have been verified to work. If you find a problem with 
 one of these recipes, please report it using the
-`Issue Tracker <https://github.com/ibme-qubic/quantiphyse/issues>`_.
+`Issue Tracker <https://github.com/physimals/quantiphyse/issues>`_.
 
 .. note::
     To use some plugins you'll need to have a working ``FSL`` installation. For more 
@@ -225,7 +225,7 @@ Anaconda Python 3.7 (dependencies from pip)
 This variation takes dependencies from ``pip`` rather than conda. Normally it is preferable to use
 ``conda`` for dependencies as you can run into problems when using different package managers for the
 same package. However you may want to try this recipe if the previous ones do not work for you.
-(but please `tell us as well <https://github.com/ibme-qubic/quantiphyse/issues>`_ so we can fix 
+(but please `tell us as well <https://github.com/physimals/quantiphyse/issues>`_ so we can fix 
 the instructions!)::
 
 On Windows you must first install Visual C++ tools for Python 3 from:
@@ -289,7 +289,7 @@ The easiest way to try Quantiphyse through docker is to first install docker its
 
 Then clone the github repository:
 
-https://github.com/ibme-qubic/quantiphyse-docker
+https://github.com/physimals/quantiphyse-docker
 
 and run the script::
 
