@@ -42,8 +42,13 @@ class AddNoiseProcess(Process):
         elif "percent" in options:
             percent = float(options.pop("percent"))
             std = np.mean(data.raw()) * float(percent) / 100
+        elif "snr" in options:
+            snr = float(options.pop("snr"))
+            roi = self.get_roi(options, grid=data.grid)
+            signal = np.mean(data.raw()[roi.raw() > 0])
+            std = signal / snr
         else:
-            raise QpException("AddNoiseProcess: Must specify either std or percent")
+            raise QpException("AddNoiseProcess: Must specify either std, percent or snr")
 
         noise = np.random.normal(loc=0, scale=std, size=list(data.grid.shape) + [data.nvols,])
         if data.nvols == 1: 
