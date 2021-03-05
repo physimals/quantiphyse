@@ -184,45 +184,6 @@ def remove_nans(data, fillvalue=0):
     if not np.all(notnans):
         data[np.logical_not(notnans)] = fillvalue
 
-def get_col(cmap, idx, out_of):
-    """ Get RGB color for an index within a range, using a Matplotlib colour map """
-    if out_of == 0: 
-        return [255, 0, 0]
-    else:
-        return [int(255 * rgbf) for rgbf in cmap(float(idx)/out_of)[:3]]
-
-def get_pencol(roi, region):
-    """
-    Get an RGB pen colour for a given ROI region
-    """
-    if roi is None:
-        return (255, 0, 0)
-    else:
-        return get_lut(roi)[region]
-
-def get_lut(roi, alpha=None):
-    """
-    Get the colour look up table for the ROI.
-    """
-    cmap = getattr(cm, 'jet')
-    try:
-        max_region = max(roi.regions.keys())
-    except:
-        # No nonzero regions!
-        max_region = 1
-    if max_region < 3: max_region = 3
-    lut = [[0, 0, 0],] + [[int(255 * rgb1) for rgb1 in cmap(float(v+1)/max_region)[:3]] for v in range(max_region-1, -1, -1)]
-    lut = np.array(lut, dtype=np.ubyte)
-
-    if alpha is not None:
-        # add transparency
-        alpha1 = np.ones((lut.shape[0], 1))
-        alpha1 *= alpha
-        alpha1[0] = 0
-        lut = np.hstack((lut, alpha1))
-
-    return lut
-
 # Kelly (1965) - set of 20 contrasting colours
 # We alter the order a bit to prioritize those that give good contrast to our dark background
 # plus we add an 'off white' at the start

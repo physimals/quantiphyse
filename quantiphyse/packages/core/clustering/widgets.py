@@ -29,7 +29,7 @@ except ImportError:
 
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.widgets import QpWidget, OverlayCombo, RoiCombo, NumericOption, TitleWidget
-from quantiphyse.utils import get_pencol
+from quantiphyse.gui.colors import get_col, get_lut
 
 from .kmeans import KMeansProcess, MeanValuesProcess
 
@@ -291,7 +291,7 @@ PCA reduction is used on 4D data to extract representative curves
                 if np.sum(self.curves[region]) == 0:
                     continue
 
-                pencol = get_pencol(roi, region)
+                pencol = get_col(get_lut(roi.view.cmap), region, max(roi.regions.keys()))
                 curve = self.plot.plot(pen=pencol, width=8.0, name=name)
                 xx = np.arange(len(self.curves[region]))
                 curve.setData(xx, self.curves[region])
