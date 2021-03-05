@@ -121,7 +121,7 @@ class ViewParamsWidget(OptionBox):
     def _data_changed(self):
         self.qpdata = self.ivm.data.get(self.option("data").value, None)
         if self.qpdata is not None:
-            self.ivm.set_current_data(self.qpdata.name)
+            self.ivm.set_current(self.qpdata.name)
 
     @no_update
     def _view_roi_changed(self):
