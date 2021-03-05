@@ -91,7 +91,11 @@ def get_col(lut, idx, range):
     """
     Get RGB color for an index within a range, using a lookup table
     """
-    pos = (idx - range[0]) / (range[1] - range[0])
+    lower, upper = range[0], range[1]
+    if lower == upper:
+        pos = 0
+    else:
+        pos = (idx - range[0]) / (range[1] - range[0])
     return lut[int(pos*(len(lut)-1))]
 
 def get_roi_col(roi, region_idx):
