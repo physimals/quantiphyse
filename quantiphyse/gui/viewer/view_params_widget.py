@@ -32,6 +32,7 @@ from quantiphyse.utils import get_icon, sf
 from quantiphyse.utils.enums import Visibility
 from quantiphyse.gui.widgets import RoiCombo, OverlayCombo
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, NumericOption, TextOption
+from quantiphyse.gui.colors import CMAPS, DEFAULT_CMAP
 
 LOG = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class ViewParamsWidget(OptionBox):
         self._levels_btn.setFixedSize(16, 16)
         self._levels_btn.setToolTip("Adjust colour map levels")
         self._levels_btn.clicked.connect(self._levels_clicked)
-        self._cmap = self.add("Colour map", ChoiceOption(["jet", "hot", "gist_heat", "flame", "bipolar", "spectrum", "custom"]), self._levels_btn, key="cmap")
+        self._cmap = self.add("Colour map", ChoiceOption(CMAPS, default=DEFAULT_CMAP), self._levels_btn, key="cmap")
         self._alpha = self.add("Alpha", NumericOption(minval=0, maxval=255, default=255, edit=False, intonly=True), key="alpha")
         self._value_label = QtGui.QLabel()
         self.add("Value", self._value_label)

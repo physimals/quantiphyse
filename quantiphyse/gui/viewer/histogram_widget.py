@@ -142,9 +142,6 @@ class HistogramWidget(pg.HistogramLUTWidget):
                     self.region.setRegion(cmap_range)
 
                 cmap = self.view.cmap
-                if not cmap:
-                    cmap = "jet"
-        
                 if cmap != "custom":
                     try:
                         self.gradient.loadPreset(cmap)

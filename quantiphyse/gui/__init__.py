@@ -15,8 +15,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-from .main_window import MainWindow
-from .viewer.viewer import Viewer
-
-__all__ = ["MainWindow", "Viewer",]

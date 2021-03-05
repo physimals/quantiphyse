@@ -25,6 +25,11 @@ import pyqtgraph as pg
 
 LOG = logging.getLogger(__name__)
 
+# Standard colour maps. Note that ROI uses jet because it gives more contrast between different indices
+CMAPS = ["hot", "viridis", "magma", "inferno", "plasma", "jet", "gist_heat", "flame", "bipolar", "spectrum", "custom"]
+DEFAULT_CMAP = CMAPS[0]
+DEFAULT_CMAP_ROI = "jet"
+
 def initial_cmap_range(qpdata, percentile=100):
     """
     Get an initial colourmap range for a data item.
@@ -54,8 +59,8 @@ def get_lut(cmap_name, alpha=255):
     the GUI.
     """
     if not cmap_name:
-        cmap_name = "jet"
-        
+        cmap_name = DEFAULT_CMAP
+
     gradient = pg.GradientEditorItem()
     try:
         gradient.loadPreset(cmap_name)
@@ -84,7 +89,7 @@ def get_lut_from_matplotlib(cmap_name):
 
 def get_col(lut, idx, out_of):
     """
-    Get RGB color for an index within a range, using a Matplotlib colour map
+    Get RGB color for an index within a range, using a lookup table
     """
     if out_of == 0 or len(lut) == 0: 
         return [255, 0, 0]

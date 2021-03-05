@@ -47,7 +47,8 @@ from quantiphyse.utils.batch import BatchScript
 from quantiphyse.utils.logger import set_base_log_level
 from quantiphyse.utils.local import get_icon
 
-from quantiphyse.gui import MainWindow, register
+from quantiphyse.gui import register
+from quantiphyse.gui.main_window import MainWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
 # Required to use resources in theme. Check if 2 or 3.

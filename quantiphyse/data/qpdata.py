@@ -42,6 +42,7 @@ except ImportError:
 
 from quantiphyse.utils import sf, QpException
 from quantiphyse.utils.enums import Visibility, Boundary
+from quantiphyse.gui.colors import DEFAULT_CMAP, DEFAULT_CMAP_ROI
 
 # Private copy of pyqtgraph functions for bug fixes
 from . import functions as pg
@@ -353,7 +354,7 @@ DEFAULT_DATA_VIEW = {
     "boundary" : Boundary.TRANS,
     "alpha" : 255,
     "interp_order" : 0,
-    "cmap" : "jet",
+    "cmap" : DEFAULT_CMAP,
     "z_order" : 0,
 }
 
@@ -365,7 +366,7 @@ DEFAULT_ROI_VIEW = {
     "shade" : True,
     "contour" : False,
     "interp_order" : 0,
-    "cmap" : "jet",
+    "cmap" : DEFAULT_CMAP_ROI,
     "z_order" : 0,
 }
 
