@@ -28,7 +28,8 @@ except ImportError:
 from scipy.interpolate import UnivariateSpline
 
 from quantiphyse.gui.widgets import OptionsButton
-from quantiphyse.utils import LogSource, get_kelly_col, get_icon, norecurse
+from quantiphyse.gui.colors import get_kelly_col
+from quantiphyse.utils import LogSource, get_icon, norecurse
 
 class PlotOptions(QtGui.QDialog):
     """

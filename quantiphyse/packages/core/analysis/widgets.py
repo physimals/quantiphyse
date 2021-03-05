@@ -30,7 +30,8 @@ from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.viewer.pickers import PickMode
 from quantiphyse.gui.widgets import QpWidget, RoiCombo, TitleWidget, RunButton
 from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, BoolOption, TextOption, OutputNameOption
-from quantiphyse.utils import copy_table, get_kelly_col, sf
+from quantiphyse.gui.colors import get_kelly_col
+from quantiphyse.utils import copy_table, sf
 
 from .processes import CalcVolumesProcess, DataStatisticsProcess
 
