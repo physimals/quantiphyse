@@ -26,7 +26,7 @@ import pyqtgraph as pg
 LOG = logging.getLogger(__name__)
 
 # Standard colour maps. Note that ROI uses jet because it gives more contrast between different indices
-CMAPS = ["hot", "viridis", "magma", "inferno", "plasma", "jet", "gist_heat", "flame", "bipolar", "spectrum", "custom"]
+CMAPS = ["viridis", "magma", "inferno", "plasma", "cividis", "seismic", "jet", "hot", "gist_heat", "flame", "bipolar", "spectrum", "custom"]
 DEFAULT_CMAP = CMAPS[0]
 DEFAULT_CMAP_ROI = "jet"
 
@@ -87,15 +87,19 @@ def get_lut_from_matplotlib(cmap_name):
     ticks = [(pos, [255 * v for v in cmap(pos)]) for pos in np.linspace(0, 1, 10)]
     return {'ticks': ticks, 'mode': 'rgb'}
 
-def get_col(lut, idx, out_of):
+def get_col(lut, idx, range):
     """
     Get RGB color for an index within a range, using a lookup table
     """
-    if out_of == 0 or len(lut) == 0: 
-        return [255, 0, 0]
-    else:
-        pos = int((len(lut) - 1) * float(idx) / out_of)
-        return lut[pos][:3]
+    pos = (idx - range[0]) / (range[1] - range[0])
+    return lut[int(pos*(len(lut)-1))]
+
+def get_roi_col(roi, region_idx):
+    """
+    Get RGB color for an ROI region
+    """
+    lut = get_lut(roi.view.cmap)
+    return get_col(lut, region_idx, roi.view.cmap_range)
 
 # Kelly (1965) - set of 20 contrasting colours
 # We alter the order a bit to prioritize those that give good contrast to our dark background

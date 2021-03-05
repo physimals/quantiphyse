@@ -736,7 +736,7 @@ class QpData(object):
         exactly zero (Issue #101)
         """
         if self.roi:
-            return 0.1, max(self.regions.keys())
+            return 1, max(self.regions.keys())
         else:
             cmin, cmax = self.range(vol, percentile, roi)
             if cmin == 0:
