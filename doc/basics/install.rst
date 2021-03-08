@@ -57,10 +57,30 @@ On Mac you will also need to do::
 This installs the basic Quantiphyse app - you should be able to run it by typing 'quantiphyse' at
 the command line.
 
-.. note::
-    Before installing the plugins, on Windows you must first install Visual C++ tools for Python 3 from:
-    https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
+Installing plugins
+------------------
 
-To install plugins use pip, for example this is to install all current plugins::
+To install plugins use pip, for example this is to install all current pure-python plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dce quantiphyse-dsc quantiphyse-t1 quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim quantiphyse-deeds
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dsc quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim
+
+Installing plugins requiring compilation
+----------------------------------------
+
+A few plugins contain C/C++ code and not just Python. Currently these plugins are::
+
+    quantiphyse-t1 quantiphyse-dce quantiphyse-deeds
+
+To install these you may need to ensure you have a working build environment, as follows:
+
+Windows
+~~~~~~~
+
+Install Visual C++ tools for Python 3 from: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
+
+Mac
+~~~
+
+Install command line tools from: https://anansewaa.com/install-command-line-tools-on-macos-catalina/
+
+Once the build environment is installed you can ``pip install`` the plugins as normal.
