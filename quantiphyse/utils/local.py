@@ -85,7 +85,13 @@ def local_file_from_drop_url(url):
     if sys.platform.startswith("darwin"):
         # OSx specific changes to allow drag and drop
         from Cocoa import NSURL
-        return str(NSURL.URLWithString_(str(url.toString())).filePathURL().path())
+        url = str(url.toString()).replace(" ", "%20")
+        url_obj = NSURL.URLWithString_(url)
+        if url_obj:
+            return str(url_obj.filePathURL().path())
+        else:
+            LOG.warn("Failed to convert local file URL: %s", url)
+            return None
     else:
         path = str(url.toLocalFile())
         if sys.platform.startswith("win"):

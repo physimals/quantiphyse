@@ -357,7 +357,8 @@ class MainWindow(QtGui.QMainWindow):
             self.raise_()
             self.activateWindow()
             for fname in fnames:
-                self.load_data_interactive(fname)
+                if fname:
+                    self.load_data_interactive(fname)
         else:
             drag_data.ignore()
 
