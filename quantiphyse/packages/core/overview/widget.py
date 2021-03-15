@@ -179,9 +179,9 @@ class OverviewWidget(QpWidget):
     def _delete(self):
         if self.data_list.selected is not None:
             name = self.data_list.selected.name
-            ok = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % name,
-                                           QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            if ok:
+            btn = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % name,
+                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+            if btn == QtGui.QMessageBox.Ok:
                 self.ivm.delete(name)
 
     def _rename(self):
