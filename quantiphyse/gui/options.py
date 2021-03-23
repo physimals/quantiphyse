@@ -1270,6 +1270,7 @@ class FileOption(Option, QtGui.QWidget):
         self._btn = QtGui.QPushButton("Choose")
         self._btn.clicked.connect(self._clicked)
         hbox.addWidget(self._btn)
+        self.setAcceptDrops(True)
 
     @property
     def value(self):
@@ -1280,6 +1281,36 @@ class FileOption(Option, QtGui.QWidget):
     def value(self, path):
         """ Set the path. Note no validation? """
         self._edit.setText(path)
+
+    def dragEnterEvent(self, event):
+        """ Called when item is dragged into the filename edit"""
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        """ Called when item is dragged over the filename edit"""
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        """
+        Called when item is dropped onto the filename edit
+
+        If it's a filename-like item, accept.
+        """
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            for url in event.mimeData().urls():
+                self._edit.setText(local_file_from_drop_url(url))
+                self.sig_changed.emit()
+        else:
+            event.ignore()
 
     def _clicked(self):
         if self._dirs:
