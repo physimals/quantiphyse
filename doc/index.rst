@@ -78,6 +78,7 @@ User Guide
    dce/dce
    dsc/dsc
    qbold/qbold
+   cvr/tutorial
    generic/generic_tools
    advanced/advanced_tools
    faq
