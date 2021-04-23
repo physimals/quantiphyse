@@ -96,9 +96,6 @@ def main():
     else:
         set_base_log_level(logging.WARN)
 
-    if args.register:
-        QtCore.QSettings().setValue("license_accepted", 0)
-
     # Set the local file path, used for finding icons, plugins, etc
     set_local_file_path()
 
@@ -150,5 +147,7 @@ def main():
             splash.finish(win)
             sys.excepthook = my_catch_exceptions
             set_main_window(win)
+            if args.register:
+                register.set_license_accepted(0)
             register.check_register()
             sys.exit(app.exec_())

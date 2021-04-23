@@ -51,14 +51,12 @@ def set_license_accepted(accepted=1):
 
 def check_register():
     """
-    Check if the user has accepted the license agreement and if not show the 
-    license/registration dialog
+    Check if the user has accepted the license agreement and if not exit
+    the program
     """
     if not license_accepted():
         accepted = LicenseDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
         set_license_accepted(accepted)
-        if accepted:
-            RegisterDialog(quantiphyse.gui.dialogs.MAINWIN).exec_()
 
     if not license_accepted():
         # User got the license dialog but did not accept it
@@ -122,80 +120,3 @@ class LicenseDialog(QtGui.QDialog):
 
     def _agree_changed(self, state):
         self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(state)
-
-class RegisterDialog(QtGui.QDialog):
-    """
-    Dialog box which asks a first-time user to  optionally send a registration email
-    """
-    def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
-        self.setWindowTitle("Optional Registration")
-        
-        layout = QtGui.QVBoxLayout()
-
-        hbox = QtGui.QHBoxLayout()
-        pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
-        lpic = QtGui.QLabel(self)
-        lpic.setPixmap(pixmap)
-        hbox.addWidget(lpic)
-        hbox.addStretch(1)
-        layout.addLayout(hbox)
-
-        layout.addWidget(QtGui.QLabel(""))
-
-        # Welcome
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("<font size=5>Optional Registration</font>"))
-        layout.addLayout(hbox)
-
-        # Registration section
-        label = QtGui.QLabel("If you like you can register as a user. This is to "
-                             "help us know where the software is being used.")
-        label.setWordWrap(True)
-        layout.addWidget(label)
-
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("<font size=2>Name"), 0, 0)
-        self.name_edit = QtGui.QLineEdit()
-        grid.addWidget(self.name_edit, 0, 1)
-        grid.addWidget(QtGui.QLabel("<font size=2>Institution"), 0, 2)
-        self.inst_edit = QtGui.QLineEdit()
-        grid.addWidget(self.inst_edit, 0, 3)
-        grid.addWidget(QtGui.QLabel("<font size=2>Email"), 1, 0)
-        self.email_edit = QtGui.QLineEdit()
-        grid.addWidget(self.email_edit, 1, 1, 1, 3)
-        layout.addLayout(grid)
-
-        # Buttons
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-        self.button_box.accepted.connect(self.send_register_email)
-        self.button_box.rejected.connect(self.accept)
-        layout.addWidget(self.button_box)
-
-        self.setLayout(layout)
-        self.setFixedWidth(700)
-
-    def send_register_email(self):
-        """
-        Send registration email
-        
-        Note that this email service has been set only to send to the specified recipient
-        so this cannot be used to spam anybody else! Also note that we catch all exceptions
-        so any failure will not stop the user proceeding.
-        """
-        name = self.name_edit.text()
-        inst = self.inst_edit.text()
-        email = self.email_edit.text()
-        if email:
-            try:
-                outcome = requests.post(
-                    "https://api.mailgun.net/v3/sandboxd8aca8efc95348609a6d63f0c651f4d2.mailgun.org/messages",
-                    auth=("api", "key-c0be61e997b71c2d0c43fa8aeb706a5c"),
-                    data={"from": "Quantiphyse <postmaster@sandboxd8aca8efc95348609a6d63f0c651f4d2.mailgun.org>",
-                          "to": "Martin Craig <martin.craig@eng.ox.ac.uk>",
-                          "subject": "Quantiphyse Registration",
-                          "text": "Name: %s\nInstitution: %s\nEmail: %s\n" % (name, inst, email)})
-            except:
-                traceback.print_exc()
-                warnings.warn("Failed to send registration email")
-        self.accept()
