@@ -251,11 +251,11 @@ class Script(Process):
         yaml_cases = root.pop("Cases", [])
         if isinstance(yaml_cases, dict):
             for case_id in sorted(yaml_cases.keys()):
-                self._cases.append(Case(case_id, yaml_cases[case_id]))
+                self._cases.append(Case(str(case_id), yaml_cases[case_id]))
         else:
             for case in yaml_cases:
                 case_id = list(case.keys())[0]
-                self._cases.append(Case(case_id, case.get(case_id, {})))
+                self._cases.append(Case(str(case_id), case.get(case_id, {})))
         
         # Create default case if we have not been specified any
         if not self._cases:
