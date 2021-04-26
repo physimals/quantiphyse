@@ -58,6 +58,8 @@ from PIL import Image, ImageDraw
 
 from quantiphyse.utils import LogSource
 
+Z_VALUE_ALWAYS_ON_TOP = 9999
+
 class PickMode(object):
     """
     Enumeration of supported pick modes
@@ -259,6 +261,7 @@ class PolygonPicker(Picker):
         if self.win is None:
             self.win = win
             self.roisel = pg.PolyLineROI([], pen=(255, 0, 0))
+            self.roisel.setZValue(Z_VALUE_ALWAYS_ON_TOP)
             self.view = self.ivl.ortho_views[self.win]
             self.view._viewbox.addItem(self.roisel)
         elif win != self.win:
@@ -341,6 +344,7 @@ class RectPicker(PolygonPicker):
 
         fx, fy = self._xy_coords(pos)
         self.roisel = pg.RectROI((fx, fy), (1, 1), pen=(255, 0, 255))
+        self.roisel.setZValue(Z_VALUE_ALWAYS_ON_TOP)
         self.view._viewbox.addItem(self.roisel)
         self._points = [(fx, fy), (fx, fy+1), (fx+1, fy+1), (fx+1, fy)]
         self.ox, self.oy = fx, fy
@@ -369,6 +373,7 @@ class EllipsePicker(PolygonPicker):
 
         fx, fy = self._xy_coords(pos)
         self.roisel = pg.EllipseROI((fx, fy), (1, 1), pen=(255, 0, 255))
+        self.roisel.setZValue(Z_VALUE_ALWAYS_ON_TOP)
         self.view._viewbox.addItem(self.roisel)
         self.ox, self.oy = fx, fy
         self._points = [(fx, fy), (fx, fy+1), (fx+1, fy+1), (fx+1, fy)]
@@ -440,6 +445,7 @@ class FreehandPicker(PolygonPicker):
         pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine,
                          QtCore.Qt.SquareCap, QtCore.Qt.BevelJoin)
         self.roisel.setPen(pen)
+        self.roisel.setZValue(Z_VALUE_ALWAYS_ON_TOP)
         self.view._viewbox.addItem(self.roisel)
         self.path = QtGui.QPainterPath(QtCore.QPointF(fx, fy))
         self.roisel.setPath(self.path)
