@@ -1072,6 +1072,7 @@ class NumberListOption(Option, QtGui.QWidget):
             self._type = float
         self.value = initial
         self._edit.editingFinished.connect(self._edit_changed)
+        self.setAcceptDrops(True)
 
     @property
     def value(self):
@@ -1139,7 +1140,8 @@ class NumberListOption(Option, QtGui.QWidget):
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
             for url in event.mimeData().urls():
-                self._load_file(local_file_from_drop_url(url))
+                local_file = local_file_from_drop_url(url)
+                self._load_file(local_file)
         else:
             event.ignore()
 
