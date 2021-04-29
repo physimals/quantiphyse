@@ -469,8 +469,6 @@ class QpData(object):
             roi = md_roi
             
         self.view = Metadata()
-        if view is not None:
-            self.view.update(view)
 
         self._meta["fname"] = kwargs.get("fname", None)
         self._meta["vol_scale"] = kwargs.get("vol_scale", 1.0)
@@ -484,6 +482,9 @@ class QpData(object):
                 self.roi = False
         else:
             self.roi = roi
+
+        if view is not None:
+            self.view.update(view)
 
     @property
     def metadata(self):
