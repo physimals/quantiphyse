@@ -223,3 +223,24 @@ class ChooseFromListDialog(QtGui.QDialog):
     def _item_double_clicked(self, item):
         self._item_clicked(item)
         self.accept()
+
+class PlotDialog1d(QtGui.QDialog):
+    """
+    Dialog that shows a 1D plot
+    """
+
+    def __init__(self, parent, arr, title="Plot"):
+        QtGui.QDialog.__init__(self, parent)
+
+        if arr.ndim != 1:
+            raise ValueError("Only for 1D plotting")
+
+        self.setWindowTitle(title)
+        vbox = QtGui.QVBoxLayout()
+        self.setLayout(vbox)
+
+        from quantiphyse.gui.plot import Plot
+        plot_widget = Plot(self, title)
+        plot_widget.add_line(arr)
+        vbox.addWidget(plot_widget)
+
