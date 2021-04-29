@@ -43,7 +43,7 @@ except ImportError:
 from quantiphyse.data.extras import NumberListExtra
 from quantiphyse.utils import QpException, sf, load_matrix, local_file_from_drop_url, default_save_dir, set_default_save_dir
 from quantiphyse.gui.viewer.pickers import PickMode
-from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog
+from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog, PlotDialog1d
 
 LOG = logging.getLogger(__name__)
 
@@ -1049,6 +1049,7 @@ class NumberListOption(Option, QtGui.QWidget):
     def __init__(self, initial=(), intonly=False, load_btn=True, extras_btn=False, ivm=None):
         QtGui.QWidget.__init__(self)
         self._ivm = ivm
+        self._value = []
         self._hbox = QtGui.QHBoxLayout()
         self._hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._hbox)
@@ -1077,22 +1078,19 @@ class NumberListOption(Option, QtGui.QWidget):
     @property
     def value(self):
         """ List of numbers or empty list if invalid data entered """
-        try:
-            text = self._edit.text().replace(",", " ")
-            return [self._type(v) for v in text.split()] 
-        except ValueError:
-            return []
+        return self._value
 
     @value.setter
     def value(self, vals):
-        self._edit.setText(" ".join([str(v) for v in vals]))
+        self._edit.setText(" ".join([str(v) for v in self._value]))
+        self._value = vals
         self._edit_changed()
 
     def _edit_changed(self):
         try:
             text = self._edit.text().replace(",", " ")
-            numbers = [self._type(v) for v in text.split()]
-            self._edit.setText(" ".join([str(v) for v in numbers]))
+            self._value = [self._type(v) for v in text.split()]
+            self._edit.setText(" ".join([str(v) for v in self._value]))
             self._edit.setStyleSheet("")
         except ValueError:
             # Colour edit red but don't change anything
@@ -1258,7 +1256,7 @@ class FileOption(Option, QtGui.QWidget):
     """
     sig_changed = QtCore.Signal()
 
-    def __init__(self, dirs=False, initial=""):
+    def __init__(self, dirs=False, initial="", plot_btn=False):
         """
         :param dirs: If True, allow only directories to be selected
         """
@@ -1266,12 +1264,20 @@ class FileOption(Option, QtGui.QWidget):
         self._dirs = dirs
 
         hbox = QtGui.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
         self._edit = QtGui.QLineEdit(initial)
         hbox.addWidget(self._edit)
+
         self._btn = QtGui.QPushButton("Choose")
         self._btn.clicked.connect(self._clicked)
         hbox.addWidget(self._btn)
+
+        if plot_btn:
+            plot_btn = QtGui.QPushButton("Plot")
+            plot_btn.clicked.connect(self._plot)
+            hbox.addWidget(plot_btn)
+
         self.setAcceptDrops(True)
 
     @property
@@ -1321,6 +1327,21 @@ class FileOption(Option, QtGui.QWidget):
             path, _ = QtGui.QFileDialog.getOpenFileName(parent=self, dir=os.path.dirname(self.value))
         self._edit.setText(path)
         self.sig_changed.emit()
+
+    def _plot(self):
+        try:
+            try:
+                arr = np.loadtxt(self.value)
+            except ValueError as exc:
+                arr = np.loadtxt(self.value, delimiter=",")
+        except ValueError as exc:
+            raise QpException("Data in file was not a numeric array: %s" % str(exc))
+
+        if arr.ndim != 1:
+            raise QpException("Can't plot data with > 1 dimensions")
+
+        plot_dialog = PlotDialog1d(self, arr, title=self.value)
+        plot_dialog.exec_()
 
 class RunButton(QtGui.QWidget):
     """
