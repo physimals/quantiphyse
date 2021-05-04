@@ -63,7 +63,8 @@ class NiftiData(QpData):
                         # New style
                         metadata = yaml_data[0]["QpMetadata"]
                     LOG.debug(metadata)
-                except (KeyError, yaml.YAMLError):
+                except:
+                    # Never fail to load a file just because of metadata
                     LOG.warn("Failed to read Quantiphyse metadata")
                     LOG.warn(ext.get_content())
                     traceback.print_exc()
