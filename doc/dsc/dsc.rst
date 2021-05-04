@@ -24,6 +24,7 @@ Reference
   interface
   aif
   models
+  Tutorial using QIN data <dsc_tutorial>
 
 Publications
 ------------
