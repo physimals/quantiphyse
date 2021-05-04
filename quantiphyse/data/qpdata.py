@@ -406,6 +406,10 @@ class Metadata(dict):
         return self.get(key, None)
 
     def __setitem__(self, key, value):
+        # pyyaml does not call the constructor so we may not actually
+        # have a signaller at this stage!
+        if self._signaller is None:
+            self._signaller = MetaSignaller()
         if isinstance(value, dict):
             # Make dictionary attributes into our
             # subclass so they can send their own signals

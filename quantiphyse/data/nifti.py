@@ -24,7 +24,7 @@ import traceback
 import nibabel as nib
 import numpy as np
 
-from .qpdata import DataGrid, QpData, NumpyData
+from .qpdata import DataGrid, QpData, NumpyData, Metadata
 
 LOG = logging.getLogger(__name__)
 
@@ -54,7 +54,14 @@ class NiftiData(QpData):
                 import yaml
                 LOG.debug("Found QP metadata: %s", ext.get_content())
                 try:
-                    metadata = yaml.load(ext.get_content())[0]["QpMetadata"]
+                    yaml_data = yaml.load(ext.get_content())
+                    LOG.debug("YAML data: %s", yaml_data)
+                    if isinstance(yaml_data, Metadata):
+                        # Old style
+                        metadata = yaml_data
+                    else:
+                        # New style
+                        metadata = yaml_data[0]["QpMetadata"]
                     LOG.debug(metadata)
                 except (KeyError, yaml.YAMLError):
                     LOG.warn("Failed to read Quantiphyse metadata")
