@@ -40,7 +40,7 @@ Loading some qBOLD Data
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are taking part in an organized practical workshop, the data required may be available in your home
-directory, in the ``course_data/qBOLD`` folder. 
+directory, in the ``course_data/qbold`` folder.
 
 .. note:: 
     If the data is not provided, it can be can be downloaded from the Oxford 
@@ -123,9 +123,12 @@ and will also be visible as a red shaded region on top of the GESEPI ASE data.
 .. image:: /screenshots/qbold/brain_mask.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, select ``Contour`` from the ``View`` options below the ROI selector:
+region. To do this, click on the icon to the right of the ROI selector (below the image view):
 
-.. image:: /screenshots/qbold/brain_mask_contour.png
+.. image:: /screenshots/cest_tutorial_roi_contour.png
+
+The icon cycles between display modes for the ROI: shaded (with variable transparency selected by the slider below), 
+shaded and outlined, just outlined, or no display at all.
 
 .. note::
     It is possible to generate the brain mask from within Quantiphyse using the FSL integration plugin. We have not done

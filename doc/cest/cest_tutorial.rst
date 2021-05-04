@@ -27,20 +27,19 @@ Loading some CEST Data
 ~~~~~~~~~~~~~~~~~~~~~~
 
 If you are taking part in an organized practical workshop, the data required may be available in your home
-directory, in the ``course_data/CEST_PRECLINICAL`` folder. If not, an encrypted zipfile containing the data can be 
-downloaded below - you will be given the password by the course organizers:
+directory, in the ``course_data/cest/Preclinical`` folder. If not, you will have been given instructions
+on how to obtain the data from the course organizers.
 
-  - `Self extracting Windows archive <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EVp6AQUJVTlLtGHS1tPlVtkB0JinWE1hdeK85BRBncnztw?e=HSkcv5>`_
-  - `Encrypted 7zip archive for Unix <https://unioxfordnexus-my.sharepoint.com/:u:/g/personal/ctsu0221_ox_ac_uk/EUkP9jm0Y2ZFq6vc1jOvWf4B_uNcFOIBeEttxk03gQ--Cw?e=hXQTae>`_
+You will need to load the following data file:
+
+  - ``CEST.nii.gz``
 
 .. image:: /screenshots/drag_drop_choice.png
     :align: right
 
 Files can be loaded in NIFTI or DICOM format either by dragging and dropping in to the view pane, or by clicking 
 ``File`` -> ``Load Data``. When loading a file you should indicate if it is data or an ROI by clicking the 
-appropriate button when the load dialog appears. Load the following data file:
-
-  - ``CEST.nii.gz``
+appropriate button when the load dialog appears. 
 
 The data should appear in the viewing window. 
 
@@ -107,9 +106,12 @@ dropdown under the viewing pane, and will also be visible as a red shaded region
 .. image:: /screenshots/cest_tutorial_roi.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, select ``Contour`` from the ``View`` options below the ROI selector:
+region. To do this, click on the icon to the right of the ROI selector (below the image view):
 
 .. image:: /screenshots/cest_tutorial_roi_contour.png
+
+The icon cycles between display modes for the ROI: shaded (with variable transparency selected by the slider below), 
+shaded and outlined, just outlined, or no display at all.
 
 .. note::
     If you accidentally load an ROI data set as ``Data``, you can set it to be an ROI using the ``Volumes`` widget
