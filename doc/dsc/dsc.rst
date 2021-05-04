@@ -13,7 +13,10 @@ from Dynamic Susceptibility Contrast perfusion MRI of the brain.
 Tutorials
 ---------
 
-  - Tutorial coming soon
+.. toctree::
+  :maxdepth: 1
+
+  Tutorial using QIN data <dsc_tutorial>
 
 Reference
 ---------
@@ -24,7 +27,6 @@ Reference
   interface
   aif
   models
-  Tutorial using QIN data <dsc_tutorial>
 
 Publications
 ------------
