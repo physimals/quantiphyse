@@ -157,7 +157,7 @@ in these voxels using the ``Utilities->AIF`` widget. Open this widget, set the t
 as the input, and choose ``Use existing ROI`` as the option. Select AIFx3 as the ROI and the AIF should be displayed
 below.
 
-.. image:: /screenshots/dsc_aif.png
+.. image:: /screenshots/dsc_aif_options.png
 
 To get this AIF into the DSC widget click ``View`` which shows the sequence of numeric values. Click ``Copy`` to copy 
 these numbers which we will shortly use in the DSC widget itself.
@@ -181,7 +181,7 @@ options can be left at their default values:
 Now click on the ``AIF`` tab and paste the values we copied from the AIF widget into the AIF box (using right click
 of the mouse or ``CTRL-V``). Make sure the options are set to ``Global sequence of values`` and ``DSC signal``.
 
-.. image:: /screenshots/dsc_tutorial_widget_aif.png
+.. image:: /screenshots/dsc_aif.png
 
 Now we are ready to click ``Run`` - the analysis will take a few minutes so read on while you are waiting.
 
