@@ -89,8 +89,19 @@ def load_matrix(filename):
 
     :return: Matrix of numbers (list of list, not Numpy array), number of rows, number of columns
     """
-    with open(filename, "r") as matrix_file:
-        return text_to_matrix(matrix_file.read())
+    try:
+        try:
+            a = np.loadtxt(filename)
+        except ValueError:
+            a = np.loadtxt(filename, delimiter=",")
+    except ValueError as exc:
+        raise QpException("Invalid matrix data: %s" % str(exc))
+
+    a = np.atleast_2d(a)
+    if a.ndim != 2:
+        raise QpException("Matrix data was not 1D or 2D")
+
+    return a, a.shape[0], a.shape[1]
 
 def text_to_matrix(text):
     """
