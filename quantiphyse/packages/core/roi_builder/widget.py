@@ -250,7 +250,10 @@ class RoiBuilderWidget(QpWidget):
                 self.options.option("label_text").value = regions[label]
             else:
                 self.options.option("label_text").value = "Region %i" % label
-        
+                self.debug("New ROI label - Force redraw")
+                regions[label] = ""
+                roi.view.cmap_range = roi.suggest_cmap_range()
+
     def _label_text_changed(self):
         self.debug("Label text changed")
         roi = self.ivm.data.get(self.options.option("roi").value, None)
