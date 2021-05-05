@@ -100,12 +100,13 @@ expression here to do generic preprocessing on data sets.
 Downsampling
 ~~~~~~~~~~~~
 
-This DSC data is very high resolution which means the modelling will be too slow to run for 
-a tutorial setting. To solve this problem we will downsample the data by a factor of 6 in the XY plane
+This DSC data is very high resolution because it has been pre-registered to a high-resolution structural image.
+As a result the modelling will be too slow to run for 
+a tutorial setting. To solve this problem we will downsample the data by a factor of 8 in the XY plane
 which will enable the analysis to run in a reasonable time.
 
 From the ``Widgets`` menu select ``Utilities->Resample`` and set the data set to our trmmed DSC data set.
-Choose ``Downsample`` as the method and ``6`` as the factor, and name the output ``DSC_res``. Make sure you
+Choose ``Downsample`` as the method and ``8`` as the factor, and name the output ``DSC_res``. Make sure you
 also click the ``2d only`` option - otherwise it will reduce the Z resolution as well which we do not want.
 
 .. image:: /screenshots/dsc_resample.png
