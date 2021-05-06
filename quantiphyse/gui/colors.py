@@ -28,7 +28,7 @@ LOG = logging.getLogger(__name__)
 # Standard colour maps. Note that ROI uses jet because it gives more contrast between different indices
 CMAPS = ["viridis", "magma", "inferno", "plasma", "cividis", "seismic", "jet", "hot", "gist_heat", "flame", "bipolar", "spectrum", "custom"]
 DEFAULT_CMAP = "hot"
-DEFAULT_CMAP_ROI = "jet"
+DEFAULT_CMAP_ROI = "plasma"
 
 def initial_cmap_range(qpdata, percentile=100):
     """
