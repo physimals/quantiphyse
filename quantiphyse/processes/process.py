@@ -491,7 +491,8 @@ class Process(QtCore.QObject, LogSource):
         plus the logfile to the output folder
         """
         data_to_save = self.output_data_items()
-        self.debug("Data to save: %s", data_to_save)    
+        self.debug("Data to save: %s", data_to_save)
+        os.makedirs(os.path.abspath(save_folder), exist_ok=True)
         for d in data_to_save:
             qpdata = self.ivm.data.get(d, None)
             if qpdata is not None:
