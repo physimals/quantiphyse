@@ -166,7 +166,8 @@ class SliceDataView(LogSource):
             # Update data and level for existing contour items, and create new ones if needed
             max_region = max(self._qpdata.regions.keys())
             for val in self._qpdata.regions:
-                pencol = get_col(self._lut, val, (1, max_region))
+                # Contours do not have alpha transparency
+                pencol = get_col(self._lut, val, (1, max_region))[:3]
                 if val != 0:
                     if n_contours == len(self._contours):
                         self._contours.append(pg.IsocurveItem())
