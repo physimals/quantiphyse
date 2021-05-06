@@ -1082,8 +1082,7 @@ class NumberListOption(Option, QtGui.QWidget):
 
     @value.setter
     def value(self, vals):
-        self._edit.setText(" ".join([str(v) for v in self._value]))
-        self._value = vals
+        self._edit.setText(" ".join([str(v) for v in vals]))
         self._edit_changed()
 
     def _edit_changed(self):
