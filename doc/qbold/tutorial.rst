@@ -118,7 +118,7 @@ Using a brain ROI is strongly recommended as this will decrease processing time 
 
 In this case the brain mask has been prepared in advance. Load the mask data (``sub-01_sqbold_gase_bet_mask``) 
 and his time select ROI as the data type. Once loaded, it will show up in the ROI dropdown under the viewing pane
-and will also be visible as a red shaded region on top of the GESEPI ASE data.
+and will also be visible as a blue shaded region on top of the GESEPI ASE data.
 
 .. image:: /screenshots/qbold/brain_mask.png
 
@@ -291,6 +291,12 @@ the DBV output for this data:
 
 .. image:: /screenshots/qbold/mean_dbv.png
 
+To make this map visualisation clearer we have set the colour map range to 0-1 by clicking on the levels button |levels|
+in the view options section, below the main viewer window. We have also selected the brain mask as the 'View ROI' which
+means that the map is only displayed inside this ROI.
+
+.. |levels| image:: /screenshots/overlay_levels.png
+
 Estimating OEF when R2′-DBV has been performed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -318,7 +324,7 @@ Equivalently, this can be done using ``fslmaths`` as::
     whereas Quantiphyse will output a ``nan`` value here. To avoid this in quantiphyse you
     can instead use the expression ``np.nan_to_num((mean_r2p * 0.00113) / (0.4 * mean_dbv))``
 
-The OEF map for this data appears as follows, using a colormap range of 0-1 and displaying in the
+The OEF map for this data appears as follows, again using a colormap range of 0-1 and displaying in the
 ROI only:
 
 .. image:: /screenshots/qbold/mean_oef.png
