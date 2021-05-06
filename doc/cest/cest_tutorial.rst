@@ -103,7 +103,7 @@ in the following file:
   - ``Brain_mask.nii.gz``
 
 Load this data set via the ``File`` menu, and his time select ``ROI`` as the data type. Once loaded, it will show up in the ``ROI`` 
-dropdown under the viewing pane, and will also be visible as a red shaded region on the CEST data:
+dropdown under the viewing pane, and will also be visible as a blue shaded region on the CEST data:
 
 .. image:: /screenshots/cest_tutorial_roi.png
 
