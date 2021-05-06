@@ -129,9 +129,6 @@ clicking on different voxels in the image the Z-spectra can be displayed:
   
 .. image:: /screenshots/cest_tutorial_signal.png
 
-Note that the original and motion corrected timeseries are shown - they should be quite similar. You can turn
-individual timeseries datasets on and off by clicking the checkboxes below the signal plot.
-
 Bayesian Model-based Analysis 
 -----------------------------
 

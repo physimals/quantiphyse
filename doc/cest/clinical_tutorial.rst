@@ -104,7 +104,9 @@ dropdown under the viewing pane, and will also be visible as a red shaded region
 .. image:: /screenshots/cest/clinical_roi.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, click on the icon to the right of the ROI selector (below the image view):
+region. To do this, click on the icon |roi_view| to the right of the ROI selector (below the image view):
+
+.. |roi_view| image:: /screenshots/roi_view_icon.png 
 
 .. image:: /screenshots/cest_tutorial_roi_contour.png
 
@@ -148,6 +150,9 @@ clicking on different voxels in the image the Z-spectra can be displayed:
   
 .. image:: /screenshots/cest/clinical_signal.png
 
+Note that the original and motion corrected timeseries are shown - they should be quite similar. You can turn
+individual timeseries datasets on and off by clicking the checkboxes below the signal plot.
+
 Bayesian Model-based Analysis 
 -----------------------------
 
@@ -159,8 +164,8 @@ should look something like this:
 Data and sequence section
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To begin with, make sure the ``CEST`` data set is selected as the CEST data, and the ``Brain_mask``
-ROI is selected as the ROI.
+To begin with, make sure the ``CEST`` data set (or the ``CEST_moco`` data if you did motion correction)
+is selected as the CEST data, and the ``Brain_mask`` ROI is selected as the ROI.
 
 The B0 field strength can be selected as 3T for clinical and 9.4T for preclinical studies. This selection
 varies the pool defaults. If you choose ``Custom`` as the field strength as well as specifying 
@@ -298,7 +303,7 @@ Now enter a new label number (e.g. 2) and change the default name from ``Region 
 To manually draw a contralateral ROI, use either the pen tool |pen| to draw freehand around a region on the opposite
 side of the brain, or use one of the other tools to select a suitable region - for example you could draw it 
 as an ellipse using the |ellipse| tool. After drawing a region, click ``Add`` to add it to the ROI. It should appear 
-in a different colour as it is a different label. Here is an example (the new contralateral region is yellow):
+in a different colour as it is a different label. Here is an example (the new contralateral region is red):
 
 .. image:: /screenshots/cest/clinical_roi_edited.png
 
