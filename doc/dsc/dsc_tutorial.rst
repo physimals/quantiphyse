@@ -27,7 +27,7 @@ If you are taking part in an organized practical workshop, the data required may
 directory, in the ``course_data/dsc`` folder. If not, you will have been given instructions
 on how to obtain the data from the course organizers.
 
-We will start by loading the main DSC data file:
+We will start by loading the main DSC data file for the subject ``patient-03`:
 
   - ``DSC.nii.gz``
 
@@ -133,9 +133,9 @@ Click ``Run`` and an ROI should be generated covering the brain and displayed as
 .. image:: /screenshots/dsc_brain.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, click on the icon to the right of the ROI selector (below the image view):
+region. To do this, click on the |roi_view| icon to the right of the ROI selector (below the image view):
 
-.. image:: /screenshots/roi_view_icon.png
+.. |roi_view| image:: /screenshots/roi_view_icon.png 
 
 The icon cycles between display modes for the ROI: shaded (with variable transparency selected by the slider below), 
 shaded and outlined, just outlined, or no display at all.
@@ -170,11 +170,13 @@ should look something like this:
 
 .. image:: /screenshots/dsc_tutorial_widget.png
 
-For the data select our trimmed and resampled DSC data: ``DSC_res``. For the ROI select the whole brain mask
-``DSC_res_mean_mask``. The TE is 0.03s and the TR is 1.25s - you can find these values in the metadata file ``DSC.json``.
+For the data select our trimmed and resampled DSC data: ``DSC_trim_res``. For the ROI select the whole brain mask
+``DSC_trim_res_mean_mask``. The TE is 0.03s and the TR is 1.25s - you can find these values in the metadata file ``DSC.json``.
 
-We also recommend you set 'Log transform on rCBF' as this prevents negative values in the CBF output. Other
-options can be left at their default values:
+We also recommend you set 'Log transform on rCBF' as this prevents negative values in the CBF output. Also, for 
+this tutorial you should change 'Spatial regularization' to 'None' - this makes the analysis quicker to run and less
+memory hungry. For production analysis however we would recommend using spatial regularization which causes parameter
+maps to undergo adaptive smoothing during the inference process. Other options can be left at their default values:
 
 .. image:: /screenshots/dsc_tutorial_widget_completed.png
 
