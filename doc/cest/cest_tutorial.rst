@@ -46,8 +46,10 @@ The data should appear in the viewing window.
 .. image:: /screenshots/cest_tutorial_1.png
 
 .. note::
-    If your single slice CEST NIFTI file is in 3D format rather than 4D, you may need to select ``Advanced Options``
-    when loading data and ``Treat as 2D multi-volume``. 
+    This data is single slice and there is shown in a single 2D window. Sometimes single-slice timeseries data
+    is (incorrectly) represented as a 3D NIFTI file, and would be displayed as such by quantiphyse. This should not be
+    the case here, however if it occurs with other data files the problem can be corrected by selecting ``Advanced Options``
+    when loading data and choosing ``Treat as 2D multi-volume``. 
 
 Image view
 ~~~~~~~~~~
@@ -106,7 +108,9 @@ dropdown under the viewing pane, and will also be visible as a red shaded region
 .. image:: /screenshots/cest_tutorial_roi.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, click on the icon to the right of the ROI selector (below the image view):
+region. To do this, click on the icon |roi_view| to the right of the ROI selector (below the image view):
+
+.. |roi_view| image:: /screenshots/roi_view_icon.png 
 
 .. image:: /screenshots/cest_tutorial_roi_contour.png
 
@@ -117,33 +121,6 @@ shaded and outlined, just outlined, or no display at all.
     If you accidentally load an ROI data set as ``Data``, you can set it to be an ROI using the ``Volumes`` widget
     (visible by default). Just click on the data set in the list and click the ``Toggle ROI`` button.
 
-Motion Correction
-~~~~~~~~~~~~~~~~~
-
-.. note::
-    If you prefer you can skip this step - motion correction does not improve this data significantly.
-
-Motion correction can be implemented using FSL's MCFLIRT tool within Quantiphyse, or beforehand using FSL. To run 
-within Quantiphyse, select ``Widgets`` ->  ``Registration`` -> ``Registration``. 
-
-To run motion correction on the data, you need to:
-
-  - Set the registration mode to ``Motion Correction``
-  - Ensure the method is set to ``FLIRT/MCFLIRT``
-  - Select ``CEST`` as the ``Moving data``
-  - Select the reference volume as ``Specified volume``. 
-  - For CEST data, you probably want the motion correction reference to be an unsaturated image, so we have set
-    ``Index of reference volume`` to 0 to select the first image in the CEST sequence.
-  - Set the output name to ``CEST_moco``
-
-The resulting setup should look like this:
-
-.. image:: /screenshots/cest_tutorial_moco.png
-
-Click ``Run`` to run the motion correction. The output in this case is not much different to the input as there
-was not much motion in this data, however if you switch between ``CEST`` and ``CEST_moco`` in the ``Overlay``
-selector (below the image view) you may be able to see slight differences.
-
 Visualising Data
 ----------------
 
@@ -151,6 +128,9 @@ Select the ``Voxel Analysis`` widget which is visible by default to the right of
 clicking on different voxels in the image the Z-spectra can be displayed:
   
 .. image:: /screenshots/cest_tutorial_signal.png
+
+Note that the original and motion corrected timeseries are shown - they should be quite similar. You can turn
+individual timeseries datasets on and off by clicking the checkboxes below the signal plot.
 
 Bayesian Model-based Analysis 
 -----------------------------
@@ -230,6 +210,11 @@ to save it in.
 
 .. image:: /screenshots/cest_tutorial_run.png
   
+.. note::
+    If you are participating in a course and choose to save the output data, make sure you save it to a folder in 
+    your home directory, *not* to a folder in the ``course_data`` input data directory. You don't have permission 
+    to write to this directory!
+
 Visualising Processed Data
 --------------------------
 
@@ -240,7 +225,8 @@ can get an idea of how well the model has fitted your data.
 .. image:: /screenshots/cest_tutorial_modelfit.png
 
 For each non-water pool included in the model there will be a corresponding CESTR* map output (here amide and a 
-macromolecular pool), and these values will be summarised for each voxel underneath the timeseries data.
+macromolecular pool). You can see a summary of all of these values by clicking on the ``Non timeseries data``
+underneath the timeseries plot:
 
 .. image:: /screenshots/cest_tutorial_params.png
 
@@ -249,6 +235,12 @@ there is an ischemic region on the right hand side of the brain. If we select ``
 overlay selector (below the viewing window), a reduced CESTR* is just about visible.
 
 .. image:: /screenshots/cest_tutorial_rstar.png
+
+It may help to adjust the colour map levels using the |levels| button in the data set view options
+below the main viewer window - try a display range of 0 to 15. We have also selected the brain mask as the 'View ROI' which only
+displays the part of the data set within this ROI.
+
+.. |levels| image:: /screenshots/overlay_levels.png 
 
 We can extract quantitative metrics for this using regions of interest (ROIs). Before doing this it can 
 help to apply some smoothing to the data. From the menu select ``Widgets->Processing->Smoothing`` and set
@@ -293,7 +285,7 @@ Now enter a new label number (e.g. 2) and change the default name from ``Region 
 To manually draw a contralateral ROI, use either the pen tool |pen| to draw freehand around a region on the opposite
 side of the brain, or use one of the other tools to select a suitable region - for example you could draw it 
 as an ellipse using the |ellipse| tool. After drawing a region, click ``Add`` to add it to the ROI. It should appear 
-in a different colour as it is a different label. Here is an example (the new contralateral region is yellow):
+in a different colour as it is a different label. Here is an example (the new contralateral region is red):
 
 .. image:: /screenshots/cest_tutorial_roi_edited.png
 
