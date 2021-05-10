@@ -14,7 +14,15 @@ Quantiphyse. In the coming months, we plan to optimise this aspect and add addit
 any feedback would be extremely useful, so please contact us if you would like to suggest any alteration
 (joana.pinto@eng.ox.ac.uk, martin.craig@nottingham.ac.uk).
 
-Start the program by typing quantiphyse at a command prompt or clicking on the Quantiphyse icon in the menu or dock.
+Additionally, we would like to thank Dr Sana Suri for providing the example data for this tutorial and Prof Daniel Bulte
+for helping with the analysis pipeline. 
+
+Start the program by typing ``quantiphyse`` at a command prompt or clicking on the Quantiphyse icon |qp| in the menu or dock.
+
+.. |qp| image:: /screenshots/qp_logo.png 
+    :scale: 40%
+
+.. image:: /screenshots/main_window_empty.png
 
 Load the data
 =============
@@ -24,16 +32,66 @@ acquisition scheme (SMS) (TR = 0.8s). We already pre-processed this data using F
 of brain mask, temporal filtering (90s) and spatial smoothing (5mm)). In the future, we plan to include this initial step
 in Quantiphyse.
 
-The pre-processed BOLD data is named filtered_func_data.nii.gz and the brain mask (our ROI) is mask.nii.gz. You can load
+The pre-processed BOLD data is named ``filtered_func_data.nii.gz`` and the brain mask (our ROI) is ``mask.nii.gz``. You can load
 these either using the menu item File->Load data or by dragging and dropping the data files into the viewer window from
 the file manager. If you are taking part in an organised practical workshop, the data required will be available in your
-home directory, in the ``tutorial_data/cvr`` folder.
+home directory, in the ``course_data/cvr/001/cvr.feat`` folder.
 
 Be sure to specify the CVR BOLD data as Data and mask file as ROI.
 
 .. image:: /screenshots/cvr/cvr_data.png
 
-It is always helpful to check the timeseries of the DCE-MRI data using the ``Voxel analysis`` Widget:
+When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
+region. To do this, click on the icon |roi_view| to the right of the ROI selector (below the image view):
+
+.. |roi_view| image:: /screenshots/roi_view_icon.png 
+
+.. image:: /screenshots/cest_tutorial_roi_contour.png
+
+The icon cycles between display modes for the ROI: shaded (with variable transparency selected by the slider below), 
+shaded and outlined, just outlined, or no display at all.
+
+.. note::
+    If you accidentally load an ROI data set as ``Data``, you can set it to be an ROI using the ``Volumes`` widget
+    (visible by default). Just click on the data set in the list and click the ``Toggle ROI`` button.
+
+Image view
+~~~~~~~~~~
+
+The left part of the window normally contains three orthogonal views of your data. In this case the data is a 2D slice so Quantiphyse has maximised the
+relevant viewing window. If you double click on the view it returns to the standard of three orthogonal views - this can be used with 3D data to look at just one of the slice windows at a time.
+
+ - Left mouse click to select a point of focus using the crosshairs
+ - Left mouse click and drag to pan the view
+ - Right mouse click and drag to zoom
+ - Mouse wheel to move through the slices
+ - Double click to 'maximise' a view, or to return to the triple view from the maximised view.
+
+View and navigation controls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Just below the viewer these controls allow you to move the point of focus and also change 
+the view parameters for the current ROI and overlay.
+
+Widgets
+~~~~~~~
+
+The right hand side of the window contains 'widgets' - tools for analysing and processing data.
+Three are visible at startup:
+
+ - ``Volumes`` provides an overview of the data sets you have loaded
+ - ``Data statistics`` displays summary statistics for data set
+ - ``Voxel analysis`` displays timeseries and overlay data at the point of focus
+
+Select a widget by clicking on its tab, just to the right of the image viewer. 
+
+More widgets can be found in the ``Widgets`` menu at the top of the window. The tutorial
+will tell you when you need to open a new widget.
+
+For a slightly more detailed introduction, see the :ref:`getting_started` section of the
+User Guide.
+
+It is always helpful to check the timeseries of the DCE-MRI data by clicking on the ``Voxel analysis`` Widget:
 
 The practical CVR BOLD dataset follows a boxcar paradigm with alternating 60 s periods of air and hypercapnia. The
 voxelwise time-course clearly shows the increase in the BOLD signal during the hypercapnia blocks.
@@ -112,9 +170,6 @@ Click 'Run' to perform the analysis. The following output files will be generate
  - ``sig0_vb`` - The constant signal offset
  - ``modelfit_vb`` - The model fit
 
-The priors currently used are: CVR amplitude: mean of 1 and std 50 and Delay: mean 0 std 50. It may be worthwhile to introduce more
-informative priors in the future.
-
 GLM modelling
 -------------
 
@@ -152,7 +207,7 @@ with the Bayesian approach.
 The major difference between approaches is the delay maps. In regions with high CVR amplitude, both methods agree on the
 delay (mostly GM). However, in regions with lower CVR amplitude values, the Bayesian approach uses the prior and selects
 a delay close to the average value obtained by the automatic timeseries alignment. In contrast, the GLM selects the
-'best' delay even when it might be extreme (CSF).
+'best' delay even when it might be extreme (e.g. in CSF).
 
 .. image:: /screenshots/cvr/delay.png
 
