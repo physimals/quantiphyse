@@ -179,6 +179,8 @@ delay times to be tested can be specified, as well as the step length. Of course
 analysis will take. Unlike the Bayesian approach, only the specific delay times tested will be returned in the delay time map,
 so this will effectively be a discrete rather than a continuous map.
 
+In this tutorial we will tell the GLM modelling tool to search delay times between -10s and 10s, in steps of 1s, as follows:
+
 .. image:: /screenshots/cvr/glm.png
 
 Again, you can specify an output dataset name suffix, e.g. ``glm``.
@@ -202,17 +204,24 @@ methods and compare the results.
 The CVR amplitude are mostly similar, as expected. Only a few voxels around the borders tend to have higher values
 with the Bayesian approach.
 
-.. image:: /screenshots/cvr/cvr.png
+.. image:: /screenshots/cvr/cvr_vb.png
+
+*CVR map using VB*
+
+.. image:: /screenshots/cvr/cvr_glm.png
+
+*CVR map using GLM*
 
 The major difference between approaches is the delay maps. In regions with high CVR amplitude, both methods agree on the
 delay (mostly GM). However, in regions with lower CVR amplitude values, the Bayesian approach uses the prior and selects
 a delay close to the average value obtained by the automatic timeseries alignment. In contrast, the GLM selects the
 'best' delay even when it might be extreme (e.g. in CSF).
 
-.. image:: /screenshots/cvr/delay.png
+.. image:: /screenshots/cvr/delay_vb.png
 
-For regional analysis, we can also load the corresponding GM mask. This mask was previously derived from the structural image
-using FSL’s FAST tool.
+*Delay map using VB*
 
-We should load this mask the same way we did it earlier: using the menu item ``File->Load`` data or by dragging and dropping
-the data files into the viewer window from the file manager.
+.. image:: /screenshots/cvr/delay_glm.png
+
+*Delay map using GLM*
+
