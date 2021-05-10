@@ -179,7 +179,7 @@ delay times to be tested can be specified, as well as the step length. Of course
 analysis will take. Unlike the Bayesian approach, only the specific delay times tested will be returned in the delay time map,
 so this will effectively be a discrete rather than a continuous map.
 
-In this tutorial we will tell the GLM modelling tool to search delay times between -10s and 10s, in steps of 1s, as follows:
+In this tutorial we will tell the GLM modelling tool to search delay times between -50s and 50s, in steps of 1s, as follows:
 
 .. image:: /screenshots/cvr/glm.png
 
