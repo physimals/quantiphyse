@@ -127,7 +127,7 @@ Visualising Data
 Select the ``Voxel Analysis`` widget which is visible by default to the right of the viewing window. By
 clicking on different voxels in the image the Z-spectra can be displayed:
   
-.. image:: /screenshots/cest_tutorial_signal.png
+.. image:: /screenshots/cest/tumour_signal.png
 
 Bayesian Model-based Analysis 
 -----------------------------
