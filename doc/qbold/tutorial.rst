@@ -159,9 +159,9 @@ The resulting setup should look like this:
 
 .. image:: /screenshots/qbold/moco.png
 
-Click ``Run`` to run the motion correction. The output in this case is has some small differences, which can be 
-visualised by switching between ``sub-01_sqbold_gase`` and ``sub-01_sqbold_gase_reg`` in the Overlay selector 
-(below the image view).
+Click ``Run`` to run the motion correction. The output in this case is not very different from the input - you may be
+able to see some small differences, by switching between ``sub-01_sqbold_gase`` and ``sub-01_sqbold_gase_reg`` in the 
+verlay selector (below the image view). You can also see differences using the ``Voxel Analysis`` widget - see below.
 
 Data Smoothing
 ~~~~~~~~~~~~~~
@@ -202,8 +202,8 @@ Next we will specify the spin echo displacement times, or Taus - they represent 
 :math:`R_2^\prime` weightings acquired in the data set. You can enter them manually, or if they are stored in a 
 text file (e.g. with one value per row) you can drag and drop the file onto the entry widget.
 
-For this tutorial we have provided the Tau values in the file tau_values.txt, so click Load, 
-select this file and verify that the values are as follows:
+For this tutorial we have provided the Tau values in the file ``tau_values.txt`` which is in the ``sub-01`` folder, 
+so click Load, select this file and verify that the values are as shown in the screenshot below.
 
 Now set the echo time (TE) of the acquired data - in this case it is 0.074 s - and the repetition time (TR) - 
 which is 3 s. In order to remove the confounding effect of CSF a FLAIR preparation is used to null the 
