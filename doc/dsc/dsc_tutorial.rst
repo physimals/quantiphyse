@@ -27,7 +27,7 @@ If you are taking part in an organized practical workshop, the data required may
 directory, in the ``course_data/dsc`` folder. If not, you will have been given instructions
 on how to obtain the data from the course organizers.
 
-We will start by loading the main DSC data file for the subject ``patient-03`:
+We will start by loading the main DSC data file for the subject ``patient-03``:
 
   - ``DSC.nii.gz``
 
@@ -123,8 +123,9 @@ First we need to take the mean of the DSC timeseries so we have a 3D data set. T
 
 .. image:: /screenshots/dsc_mean.png
 
-From the ``Widgets`` menu select ``FSL->BET`` and then as input data choose our resampled DSC data ``DSC_res``.
-Check the ``Output mask`` option so we get a binary ROI mask for the brain. 
+Now, from the ``Widgets`` menu select ``FSL->BET`` and then as input data choose the mean of our trimmed 
+and resampled DSC data ``DSC_trim_res_mean``. Check the ``Output brain mask`` option so we get a binary 
+ROI mask for the brain. 
 
 .. image:: /screenshots/dsc_bet.png
 
@@ -150,7 +151,8 @@ AIF
 Analysis of DSC data requires the arterial input function to be specified. This is a timeseries that corresponds to
 the supply of the bolus in a feeding artery. The AIF can be defined in various ways, in the case of this data set
 we have already identified a feeding artery in the image and created a small ROI mask identifying it. To load this ROI,
-load the file ``AIFx4.nii.gz`` either from ``File->Load`` or by drag and drop.
+load the file ``AIFx4.nii.gz`` either from ``File->Load`` or by drag and drop. Make sure you select 'ROI' as the data
+set type.
 
 You will probably not be able to see the ROI because it is only 3 very small voxels, but we can extract the DSC signal
 in these voxels using the ``Utilities->AIF`` widget. Open this widget, set the trimmed (but *not* resampled) DSC data
@@ -171,7 +173,7 @@ should look something like this:
 .. image:: /screenshots/dsc_tutorial_widget.png
 
 For the data select our trimmed and resampled DSC data: ``DSC_trim_res``. For the ROI select the whole brain mask
-``DSC_trim_res_mean_mask``. The TE is 0.03s and the TR is 1.25s - you can find these values in the metadata file ``DSC.json``.
+``DSC_trim_res_mean_brain_mask``. The TE is 0.03s and the TR is 1.25s - you can find these values in the metadata file ``DSC.json``.
 
 We also recommend you set 'Log transform on rCBF' as this prevents negative values in the CBF output. Also, for 
 this tutorial you should change 'Spatial regularization' to 'None' - this makes the analysis quicker to run and less
