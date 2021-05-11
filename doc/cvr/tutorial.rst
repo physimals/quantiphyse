@@ -91,7 +91,7 @@ will tell you when you need to open a new widget.
 For a slightly more detailed introduction, see the :ref:`getting_started` section of the
 User Guide.
 
-It is always helpful to check the timeseries of the DCE-MRI data by clicking on the ``Voxel analysis`` Widget:
+It is always helpful to check the timeseries of the BOLD-MRI data by clicking on the ``Voxel analysis`` Widget:
 
 The practical CVR BOLD dataset follows a boxcar paradigm with alternating 60 s periods of air and hypercapnia. The
 voxelwise time-course clearly shows the increase in the BOLD signal during the hypercapnia blocks.
