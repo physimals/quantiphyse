@@ -158,8 +158,8 @@ The Bayesian modelling tool performs inference using a fast variational Bayes te
 
 .. image:: /screenshots/cvr/bayesian.png
 
-We will leave everything at its default, however to avoid the output getting confused with subsequent runs you can specify a data set
-name suffix - e.g. ``vb``.
+We will leave all the settings at their defaults, however to avoid the output getting confused with subsequent runs you can specify a data set
+name suffix - e.g. ``vb`` as above.
 
 Choose a folder, if you would like to save a copy of the output data.
 
