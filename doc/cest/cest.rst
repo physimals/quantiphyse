@@ -13,7 +13,8 @@ The following tutorials provide a walkthrough of a CEST analysis:
 .. toctree::
   :maxdepth: 1
 
-  Tutorial using preclinical data <cest_tutorial>
+  Tutorial using preclinical data (Stroke) <cest_tutorial>
+  Tutorial using preclinical data (Tumour) <preclinical_tutorial_tumour>
   Tutorial using clinical data <clinical_tutorial>
 
 Reference
