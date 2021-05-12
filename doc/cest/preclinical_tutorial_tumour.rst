@@ -228,7 +228,9 @@ underneath the timeseries plot:
 
 .. image:: /screenshots/cest_tutorial_params.png
 
-Here we are most interested in the behaviour of the Amide pool; cest_rstar_Amide. 
+Here we are most interested in the behaviour of the Amide pool; cest_rstar_Amide. In this preclinical example, 
+there is tumour on the left hand side of the brain. If we selectcest_rstar_Amidefrom the overlay selector (below 
+the viewing window), a slight increase in CESTR* is just about visible.
 
 .. image:: /screenshots/cest/tumour_amide_rstar.png
 
@@ -244,16 +246,53 @@ the options to smooth ``cest_rstar_Amide`` with a smoothing kernel size of 0.4mm
 
 .. image:: /screenshots/cest_tutorial_smooth.png
 
-The output of this smoothing appears as follows:
+The output of this smoothing appears as follows. The tumour region, or perhaps more specifically the tumour rim, 
+is a little more visible following smoothing. 
 
 .. image:: /screenshots/cest/tumour_amide_rstar_smoothed.png
 
 Extracting quantitative Metrics
 -------------------------------
 
-We have prepared an ROI for the ischaemic region in the file:
+We have prepared an ROI for the tumour rim in the file:
 
   - ``tumour_rim.nii``
+
+Load this file using ``File->Load Data``, selecting it as an ROI.
+
+Now open the ``Data Statistics`` widget which is visible by default above the ``Voxel Analysis`` widget. We 
+can now select statistics on ``cest_rstar_Amide`` within this ROI (click on ``Summary statistics`` to view):
+
+.. image:: /screenshots/cest/tumour_stats_1.png
+
+Note that it is possible to display statistics from more than one data set, however here we are just going
+to look at the CESTR* for the Amide pool.
+
+To compare with the non-ischemic portion, we will now draw a contralateral ROI. To do this, open the
+``Widgets->ROIs->ROI Builder`` and select the ``tumour_rim`` ROI for editing:
+
+.. image:: /screenshots/cest/tumour_edit_roi.png
+
+The default label of 1 has been used to label the tumour rim, so type ``tumour rim`` in the  ``Label description`` box.
+Now enter a new label number (e.g. 2) and change the default name from ``Region 2`` to ``contralateral``:
+
+.. image:: /screenshots/cest/tumour_roi_labels.png
+
+To manually draw a contralateral ROI, use either the pen tool |pen| to draw freehand around a region on the opposite
+side of the brain, or use one of the other tools to select a suitable region - for example you could draw it 
+as an ellipse using the |ellipse| tool. After drawing a region, click ``Add`` to add it to the ROI. It should appear 
+in a different colour as it is a different label. Here is an example (the new contralateral region is red):
+
+.. image:: /screenshots/cest/tumour_roi_edited.png
+
+Now go back to the ``Data Statistics`` widget where we can compare the CESTR* in the two regions we have defined.
+As expected, CESTR* of the amide pool is higher for the tumour rim than for healthy tissue. 
+
+.. image:: /screenshots/cest/tumour_stats_2.png
+
+.. |ellipse| image:: /screenshots/roi_tools_ellipse.png 
+
+.. |pen| image:: /screenshots/roi_tools_pen.png 
 
 Beyond CESTR*
 -------------
