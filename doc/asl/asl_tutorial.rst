@@ -241,11 +241,12 @@ by selecting them from the ``Overlay`` menu below the image display, or by click
  - ``mask_native`` - An ROI (which appears in the ROI selector under the image view) which represents
    the region in which the analysis was performed.
 
-The images may be clearer if we modify the view style for the ROI from ``Shaded`` to ``Contour``
-(in the ROI options box underneath the image view). This replaces the translucent red mask with
-an outline: 
+When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
+region. To do this, click on the icon |roi_view| to the right of the ROI selector (below the image view):
 
-.. image:: /screenshots/asl_tutorial_roi_contour.png
+.. |roi_view| image:: /screenshots/roi_view_icon.png 
+
+.. image:: /screenshots/cest_tutorial_roi_contour.png
 
 The ``perfusion_calib_native`` image should look similar to the perfusion weighted image we created
 initially, however the data range reflects the fact that it is in physical units in which average GM
