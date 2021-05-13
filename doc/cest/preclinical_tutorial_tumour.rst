@@ -294,6 +294,8 @@ As expected, CESTR* of the amide pool is higher for the tumour rim than for heal
 
 .. |pen| image:: /screenshots/roi_tools_pen.png 
 
+You may want to try running the analysis without T1 and T2 maps loaded and see how the CESTR* maps change.
+
 Beyond CESTR*
 -------------
 
