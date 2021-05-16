@@ -116,11 +116,25 @@ For clinical data, we recommend brain extraction is performed as a preliminary s
 ``–m`` option set to create a binary mask and the -Z option to improve the brain extraction due to the small number of slices. 
 Using a brain ROI is strongly recommended as this will decrease processing time considerably. 
 
-In this case the brain mask has been prepared in advance. Load the mask data (``sub-01_sqbold_gase_bet_mask``) 
-and his time select ROI as the data type. Once loaded, it will show up in the ROI dropdown under the viewing pane
-and will also be visible as a blue shaded region on top of the GESEPI ASE data.
+In this case we will perform brain extraction from within Quantiphyse. We do not currently support the ``-Z`` option so
+we will adjust the threshold to get a reasonable result.
 
-.. image:: /screenshots/qbold/brain_mask.png
+Before brain extraction we will need to take the mean of the 4D data as Bet can only run on a 3D image. To do this we can use the
+``Processing->Simple Maths`` widget which allows us to do simple operations on data sets, similar to FSL maths. Select the
+4D qBOLD data and enter the following expression:
+
+.. image:: /screenshots/qbold/mean_data.png
+
+If you know Python and Numpy you will recognize this code - we can use any simple Numpy expression in the widget.
+
+Now, from the ``Widgets`` menu select ``FSL->BET`` and then as input data choose the mean data we have just generated.
+Check the ``Output brain mask`` option so we get a binary ROI mask for the brain. 
+
+.. image:: /screenshots/qbold/bet.png
+
+Click ``Run`` and an ROI should be generated covering the brain and displayed as follows:
+
+.. image:: /screenshots/qbold/brain.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
 region. To do this, click on the icon to the right of the ROI selector (below the image view):
