@@ -175,8 +175,8 @@ should look something like this:
 For the data select our trimmed and resampled DSC data: ``DSC_trim_res``. For the ROI select the whole brain mask
 ``DSC_trim_res_mean_brain_mask``. The TE is 0.03s and the TR is 1.25s - you can find these values in the metadata file ``DSC.json``.
 
-We also recommend you set 'Log transform on rCBF' as this prevents negative values in the CBF output. Also, for 
-this tutorial you should change 'Spatial regularization' to 'None' - this makes the analysis quicker to run and less
+We also recommend you set ``Log transform on rCBF`` as this prevents negative values in the CBF output. Also, for 
+this tutorial you should change ``Spatial regularization`` to ``None`` - this makes the analysis quicker to run and less
 memory hungry. For production analysis however we would recommend using spatial regularization which causes parameter
 maps to undergo adaptive smoothing during the inference process. Other options can be left at their default values:
 
@@ -208,11 +208,14 @@ can get an idea of how well the model has fitted your data.
 .. image:: /screenshots/dsc_modelfit.png
 
 Note that for clarity we have turned off display of the un-trimmed and un-resampled DSC data, leaving just
-our preprocessed data and model fit - you can do this by clicking the checkboxes under 'Timeseries data'
-at the bottom of the Voxel Analysis widget
-Parameter map values at the selected voxel are also displayed in Voxel Analysis. The various parameter maps can 
-be selected for viewing from the Volumes widget, or using the overlay selector below the image viewer. This is 
-the rCBF output for this data:
+our preprocessed data and model fit - you can do this by clicking the checkboxes under ``Timeseries data``
+at the bottom of the Voxel Analysis widget.
+
+Parameter map values at the selected voxel are also displayed in Voxel Analysis by selecting the `Non-timeseries data``
+tab. 
+
+The various parameter maps can be selected for viewing from the Volumes widget, or using the overlay 
+selector below the image viewer. This is the rCBF output for this data:
 
 .. image:: /screenshots/dsc/rcbf.png
 
@@ -235,7 +238,7 @@ the ROIs ``MaskTumor.nii.gz`` and ``MaskNAWM.nii.gz`` using ``File->Load`` or by
 Make sure you select ``ROI`` as the data set type.
 
 To view summary statistics, select the Data Statistics widget on the right hand side of the window. If you select
-the rCBF map from the first menu, and the MaskTumor ROI from the second you can view the following statistics:
+the ``rCBF`` map from the first menu, and the ``MaskTumor`` ROI from the second you can view the following statistics:
 
 .. image:: /screenshots/dsc/stats1.png
 
@@ -244,16 +247,19 @@ We can compare with the statistics in normal appearing white matter by changing 
 .. image:: /screenshots/dsc/stats2.png
 
 Another way of comparing rCBF in these healthy and pathological ROI is by looking at histogram pattern of this 
-map. From the Widgets menu select Visualisation->Histogram , then enter the following:
+map. From the Widgets menu select ``Visualisation->Histogram`` , then enter the following:
 
 .. image:: /screenshots/dsc/hist1.png
 
-Or we you change ‘Within ROI’ to MaskNAWM and see the historgram there
+You can change ``Within ROI`` to ``MaskNAWM`` and see the historgram there
 
 .. image:: /screenshots/dsc/hist2.png
 
 Note that the number of voxels in the NAWM mask is quite a bit lower than the number in the tumour mask (use 
 ``Widgets->ROIs->ROI analysis`` to see how many) and therefore the shape of the histogram is less informative.
+
+References
+----------
 
 .. [1]	Mouridsen K, Friston K, Hjort N, Gyldensted L, Østergaard L, Kiebel S. Bayesian estimation of cerebral 
 perfusion using a physiological model of microvasculature. NeuroImage 2006;33:570–579. 
