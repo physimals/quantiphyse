@@ -194,7 +194,7 @@ The output data will be loaded into Quantiphyse as the following data sets:
  - ``modelfit``: Predicted signal timeseries for comparison with the actual data
  - ``MTT``: Mean Transit Time predicted by the model, measured in seconds
  - ``sig0``: Mean offset signal predicted by model
- - ``lam``: 
+ - ``lam``: Shape parameter of the gamma distribution used to model the transit times
  - ``delay``: Time to peak of the deconvolved signal cure, measured in seconds
  - ``rCBF``: Relative Cerebral Blood Flow predicted by the model, measured in units of ml/100 g/min
 
@@ -254,3 +254,11 @@ Or we you change ‘Within ROI’ to MaskNAWM and see the historgram there
 
 Note that the number of voxels in the NAWM mask is quite a bit lower than the number in the tumour mask (use 
 ``Widgets->ROIs->ROI analysis`` to see how many) and therefore the shape of the histogram is less informative.
+
+.. [1]	Mouridsen K, Friston K, Hjort N, Gyldensted L, Østergaard L, Kiebel S. Bayesian estimation of cerebral 
+perfusion using a physiological model of microvasculature. NeuroImage 2006;33:570–579. 
+doi: 10.1016/j.neuroimage.2006.06.015
+
+.. [2]	Chappell, M.A., Mehndiratta, A., Calamante F., “Correcting for large vessel contamination in DSC perfusion 
+MRI by extension to a physiological model of the vasculature”, e-print ahead of publication. 
+doi: 10.1002/mrm.25390
