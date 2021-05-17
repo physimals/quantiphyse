@@ -128,7 +128,7 @@ Before brain extraction we will need to take the mean of the 4D data as Bet can 
 If you know Python and Numpy you will recognize this code - we can use any simple Numpy expression in the widget.
 
 Now, from the ``Widgets`` menu select ``FSL->BET`` and then as input data choose the mean data we have just generated.
-Check the ``Output brain mask`` option so we get a binary ROI mask for the brain. 
+Check the ``Output brain mask`` option so we get a binary ROI mask for the brain and change the intensity threshold value to 0.4.
 
 .. image:: /screenshots/qbold/bet.png
 
@@ -136,8 +136,8 @@ Click ``Run`` and an ROI should be generated covering the brain and displayed as
 
 .. image:: /screenshots/qbold/brain.png
 
-When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
-region. To do this, click on the icon to the right of the ROI selector (below the image view):
+When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline, as shown in this screenshot, 
+rather than a shaded region. To do this, click on the icon to the right of the ROI selector (below the image view):
 
 .. image:: /screenshots/cest_tutorial_roi_contour.png
 
@@ -210,7 +210,7 @@ Data and sequence section
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To begin with, make sure the ``sub-01_sqbold_gase_reg_smoothed`` data set is selected as the qBOLD data, 
-and the ``sub-01_sqbold_gase_bet_mask`` brain mask is selected as the ROI.
+and the ``sub-01_sqbold_gase_mean_brain_mask`` brain mask is selected as the ROI.
 
 Next we will specify the spin echo displacement times, or Taus - they represent the different 
 :math:`R_2^\prime` weightings acquired in the data set. You can enter them manually, or if they are stored in a 
