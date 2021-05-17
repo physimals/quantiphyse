@@ -189,6 +189,15 @@ of the mouse or ``CTRL-V``). Make sure the options are set to ``Global sequence 
 
 Now we are ready to click ``Run`` - the analysis will take a few minutes so read on while you are waiting.
 
+The output data will be loaded into Quantiphyse as the following data sets:
+
+ - ``modelfit``: Predicted signal timeseries for comparison with the actual data
+ - ``MTT``: Mean Transit Time predicted by the model, measured in seconds
+ - ``sig0``: Mean offset signal predicted by model
+ - ``lam``: 
+ - ``delay``: Time to peak of the deconvolved signal cure, measured in seconds
+ - ``rCBF``: Relative Cerebral Blood Flow predicted by the model, measured in units of ml/100 g/min
+
 Visualising Processed Data
 --------------------------
 
@@ -201,3 +210,40 @@ can get an idea of how well the model has fitted your data.
 Note that for clarity we have turned off display of the un-trimmed and un-resampled DSC data, leaving just
 our preprocessed data and model fit - you can do this by clicking the checkboxes under 'Timeseries data'
 at the bottom of the Voxel Analysis widget
+Parameter map values at the selected voxel are also displayed in Voxel Analysis. The various parameter maps can 
+be selected for viewing from the Volumes widget, or using the overlay selector below the image viewer. This is 
+the rCBF output for this data:
+
+.. image:: /screenshots/dsc/rcbf.png
+
+To make this map visualisation clearer we have set the colour map range to FIXME by clicking on the levels button 
+in the view options section, below the main viewer window. We have also selected the brain mask as the ‘View ROI’ 
+which means that the map is only displayed inside this ROI.
+
+Quantitative Analysis
+---------------------
+
+DSC-derived maps have different patterns in different pathologies. For instance, in the brain tumor disease, 
+rCBF map tends to be hyperintense in tumor ROI compare to contralateral healthy tissue, and considered as an 
+important biomarker for diagnosis. On the other hand, time parameters such as delay and MTT are of less significant 
+in brain tumor disease, while these maps are critical in stroke disease.
+
+To compare rCBF values in tumor ROI and Normal appearing white matter (NAWM) ROI, first you need to load 
+MaskTumor and MaskNAWM -> Load or by drag and drop. Make sure you select ‘ROI’ as the data set type.
+
+To do Data statistic, select Data statistics from right hand side of the windows contains ‘Widgets’.
+
+.. image:: /screenshots/dsc/stats1.png
+
+Or you can change ‘ROI’ to MaskNAWM to see these values in other ROIs.
+
+.. image:: /screenshots/dsc/stats2.png
+
+The other way of comparing rCBF in these healthy and pathological ROI is by looking at histogram pattern of this 
+map. From the Widgets menu select Visualisation->Histogram , then enter the following:
+
+.. image:: /screenshots/dsc/hist1.png
+
+Or we you change ‘Within ROI’ to MaskNAWM and see the historgram there
+
+.. image:: /screenshots/dsc/hist2.png
