@@ -105,7 +105,7 @@ As a result the modelling will be too slow to run for
 a tutorial setting. To solve this problem we will downsample the data by a factor of 8 in the XY plane
 which will enable the analysis to run in a reasonable time.
 
-From the ``Widgets`` menu select ``Utilities->Resample`` and set the data set to our trmmed DSC data set.
+From the ``Widgets`` menu select ``Utilities->Resample`` and set the data set to our trimmed DSC data set.
 Choose ``Downsample`` as the method and ``8`` as the factor, and name the output ``DSC_res``. Make sure you
 also click the ``2d only`` option - otherwise it will reduce the Z resolution as well which we do not want.
 
@@ -216,9 +216,11 @@ the rCBF output for this data:
 
 .. image:: /screenshots/dsc/rcbf.png
 
-To make this map visualisation clearer we have set the colour map range to FIXME by clicking on the levels button 
+To make this map visualisation clearer we have set the colour map range to 0-0.5 by clicking on the 'levels' |levels| button 
 in the view options section, below the main viewer window. We have also selected the brain mask as the ‘View ROI’ 
-which means that the map is only displayed inside this ROI.
+which means that the map is only displayed inside this ROI, and set the ROI view mode to 'outline' as described previously.
+
+.. |levels| image:: /screenshots/overlay_levels.png 
 
 Quantitative Analysis
 ---------------------
@@ -229,17 +231,19 @@ important biomarker for diagnosis. On the other hand, time parameters such as de
 in brain tumor disease, while these maps are critical in stroke disease.
 
 To compare rCBF values in tumor ROI and Normal appearing white matter (NAWM) ROI, first you need to load 
-MaskTumor and MaskNAWM -> Load or by drag and drop. Make sure you select ‘ROI’ as the data set type.
+the ROIs ``MaskTumor.nii.gz`` and ``MaskNAWM.nii.gz`` using ``File->Load`` or by drag and drop. 
+Make sure you select ``ROI`` as the data set type.
 
-To do Data statistic, select Data statistics from right hand side of the windows contains ‘Widgets’.
+To view summary statistics, select the Data Statistics widget on the right hand side of the window. If you select
+the rCBF map from the first menu, and the MaskTumor ROI from the second you can view the following statistics:
 
 .. image:: /screenshots/dsc/stats1.png
 
-Or you can change ‘ROI’ to MaskNAWM to see these values in other ROIs.
+We can compare with the statistics in normal appearing white matter by changing the ROI to ``MaskNAWM``:
 
 .. image:: /screenshots/dsc/stats2.png
 
-The other way of comparing rCBF in these healthy and pathological ROI is by looking at histogram pattern of this 
+Another way of comparing rCBF in these healthy and pathological ROI is by looking at histogram pattern of this 
 map. From the Widgets menu select Visualisation->Histogram , then enter the following:
 
 .. image:: /screenshots/dsc/hist1.png
@@ -247,3 +251,6 @@ map. From the Widgets menu select Visualisation->Histogram , then enter the foll
 Or we you change ‘Within ROI’ to MaskNAWM and see the historgram there
 
 .. image:: /screenshots/dsc/hist2.png
+
+Note that the number of voxels in the NAWM mask is quite a bit lower than the number in the tumour mask (use 
+``Widgets->ROIs->ROI analysis`` to see how many) and therefore the shape of the histogram is less informative.
