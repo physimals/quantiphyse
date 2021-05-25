@@ -22,8 +22,6 @@ import sys
 import traceback
 import warnings
 
-import requests
-
 try:
     from PySide import QtGui, QtCore, QtGui as QtWidgets
 except ImportError:
