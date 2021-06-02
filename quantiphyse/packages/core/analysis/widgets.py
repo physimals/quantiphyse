@@ -616,6 +616,7 @@ class VoxelAnalysis(QpWidget):
         """
         Regenerate the plot
         """
+        self.debug("clearing plot")
         self.plot.clear() 
 
         # Get all timeseries signals
@@ -640,6 +641,7 @@ class VoxelAnalysis(QpWidget):
         #    return
         #main_curve = self.ivm.main.timeseries(pos, grid=self.ivl.grid)
 
+        self.debug("adding sigs")
         idx, _ = 0, len(sigs)
         for ovl, sig_values in sigs.items():
             if self.data_enabled[ovl] == QtCore.Qt.Checked:
