@@ -26,7 +26,7 @@ except ImportError:
     from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, NumberGrid
-from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton, NumericOption, BoolOption
+from quantiphyse.gui.options import OptionBox, DataOption, ChoiceOption, OutputNameOption, RunButton, NumericOption, NumberListOption, BoolOption
 from quantiphyse.utils.enums import Visibility
 
 from .processes import ResampleProcess
@@ -48,9 +48,10 @@ class ResampleDataWidget(QpWidget):
 
         self.optbox = OptionBox("Resampling options")
         self.data = self.optbox.add("Data to resample", DataOption(self.ivm), key="data")
-        self.resample_type = self.optbox.add("Resampling method", ChoiceOption(["On to grid from another data set", "Upsample", "Downsample"], ["data", "up", "down"]), key="type")
+        self.resample_type = self.optbox.add("Resampling method", ChoiceOption(["On to grid from another data set", "Upsample", "Downsample", "Specified resolution"], ["data", "up", "down", "res"]), key="type")
         self.grid_data = self.optbox.add("Use grid from", DataOption(self.ivm), key="grid")
         self.factor = self.optbox.add("Factor", NumericOption(default=2, minval=2, maxval=10, intonly=True), key="factor")
+        self.voxel_sizes = self.optbox.add("Voxel sizes (mm)", NumberListOption(), key="voxel-sizes")
         self.slicewise = self.optbox.add("2D only", BoolOption(), key="2d")
         self.order = self.optbox.add("Interpolation", ChoiceOption(["Nearest neighbour", "Linear", "Quadratic", "Cubic"], [0, 1, 2, 3], default=1), key="order")
         self.output_name = self.optbox.add("Output name", OutputNameOption(src_data=self.data, suffix="_res"), key="output-name")
@@ -66,9 +67,10 @@ class ResampleDataWidget(QpWidget):
     def _resample_type_changed(self):
         resample_type = self.resample_type.value
         self.optbox.set_visible("grid", resample_type == "data")
-        self.optbox.set_visible("factor", resample_type != "data")
+        self.optbox.set_visible("factor", resample_type in ("up", "down"))
         self.optbox.set_visible("order", resample_type != "down")
-        self.optbox.set_visible("2d", resample_type != "data")
+        self.optbox.set_visible("2d", resample_type in ("up", "down"))
+        self.optbox.set_visible("voxel-sizes", resample_type == "res")
 
     def batch_options(self):
         options = self.optbox.values()

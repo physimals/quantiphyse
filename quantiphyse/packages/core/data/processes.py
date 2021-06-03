@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import math
 
 import numpy as np
 import scipy.ndimage
@@ -128,6 +129,25 @@ class ResampleProcess(Process):
 
             output_grid = DataGrid(output_data.shape[:3], output_affine)
             output_data = NumpyData(output_data, grid=output_grid, name=output_name)
+        elif resample_type == "res":
+            # Resampling to specified resolution
+            voxel_sizes = options.pop("voxel-sizes", None)
+            self.debug("Voxel sizes: %s", voxel_sizes)
+            if voxel_sizes is None:
+                raise QpException("Must specifiy voxel sizes")
+            src_grid = data.grid
+            self.debug("Current voxel sizes: %s", src_grid.spacing)
+            scale_factors = [src_grid.spacing[dim] / voxel_sizes[dim] for dim in range(3)]
+            self.debug("Scale factors: %s", scale_factors)
+            new_shape = [int(math.ceil(src_grid.shape[dim] * scale_factors[dim])) for dim in range(3)]
+            self.debug("New shape is %s", new_shape)
+            self.debug("Input affine: %s", src_grid.affine)
+            output_affine = np.copy(src_grid.affine)
+            for dim in range(3):
+                output_affine[:, dim] /= scale_factors[dim]
+            self.debug("Output affine: %s", output_affine)
+            output_grid = DataGrid(new_shape, output_affine)
+            output_data = data.resample(output_grid, order=order)
         else:
             raise QpException("Unknown resampling type: %s" % resample_type)
 
