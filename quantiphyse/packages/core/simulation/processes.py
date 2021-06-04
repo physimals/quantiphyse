@@ -45,13 +45,28 @@ class AddNoiseProcess(Process):
         elif "snr" in options:
             snr = float(options.pop("snr"))
             roi = self.get_roi(options, grid=data.grid)
-            signal = np.mean(data.raw()[roi.raw() > 0])
+            mode = options.pop("mode", "normal")
+            if mode == "normal":
+                signal = np.mean(data.raw()[roi.raw() > 0])
+            elif mode == "diff":
+                # Slightly hacky mode to support ASL data - define signal as
+                # mean absolute value of pairwise subtracted time series
+                # (abs means don't need to distinguish between TC and CT)
+                # This mode is not exposed in the UI but is used in the
+                # data simulation widget
+                timeseries = data.raw()[roi.raw() > 0]
+                diff = np.abs(timeseries[..., ::2] - timeseries[..., 1::2])
+                signal = np.mean(diff)
+            else:
+                raise QpException("Unsupported noise mode: %s" % mode)
+
             std = signal / snr
         else:
             raise QpException("AddNoiseProcess: Must specify either std, percent or snr")
 
+        self.debug("Adding noise with std=%s", std)
         noise = np.random.normal(loc=0, scale=std, size=list(data.grid.shape) + [data.nvols,])
-        if data.nvols == 1: 
+        if data.nvols == 1:
             noise = np.squeeze(noise, -1)
         noisy_data = data.raw() + noise
         self.ivm.add(noisy_data, grid=data.grid, name=output_name, make_current=True)
