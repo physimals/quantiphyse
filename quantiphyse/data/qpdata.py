@@ -534,6 +534,11 @@ class QpData(object):
             self._meta["roi"] = is_roi
             self.view.update(DEFAULT_ROI_VIEW)
             self.view.cmap_range = self.suggest_cmap_range()
+            # Check region names exist in case they have been left blank in existing metadata
+            for region, name in dict(self.regions).items():
+                if not name:
+                    self.regions[region] = "Region %i" % region
+
         else:
             self._meta["roi"] = is_roi
             self.view.update(DEFAULT_DATA_VIEW)
@@ -551,17 +556,14 @@ class QpData(object):
             regions = np.unique(self.raw().astype(np.int))
             regions = np.delete(regions, np.where(regions == 0))
             if len(regions) == 0:
-                # Always have at least one region defined
+                # Always have at least one region defined even in empty ROI
                 regions = [1]
 
-            if len(regions) == 1:
-                # If there is only one region, don't give it a name
-                self._meta["roi_regions"] = {regions[0] : ""}
-            else:
-                roi_regions = {}
-                for region in regions:
-                    roi_regions[region] = "Region %i" % region
-                self._meta["roi_regions"] = roi_regions
+            roi_regions = {}
+            for region in regions:
+                roi_regions[region] = "Region %i" % region
+            self._meta["roi_regions"] = roi_regions
+
         return self._meta["roi_regions"]
 
     @property
