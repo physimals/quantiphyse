@@ -478,7 +478,7 @@ class SimpleMathsWidget(QpWidget):
         layout.addWidget(info)
 
         self.optbox = OptionBox()
-        self.optbox.add("Data space from", DataOption(self.ivm), key="grid")
+        self.optbox.add("Data space from", DataOption(self.ivm, rois=True), key="grid")
         self.optbox.add("Command", TextOption(), key="cmd")
         self.optbox.add("Output name", OutputNameOption(src_data=self.optbox.option("grid")), key="output-name")
         self.optbox.add("Output is an ROI", BoolOption(), key="output-is-roi")
