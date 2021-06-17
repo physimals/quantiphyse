@@ -50,23 +50,22 @@ class SmoothingProcess(Process):
         if data.nvols > 1:
             sigmas += [0, ]
 
-        #output = scipy.ndimage.filters.gaussian_filter(data.raw(), sigmas, order=order, mode=mode)
         output = self._norm_conv(data.raw(), sigmas, order=order, mode=mode)
         self.ivm.add(NumpyData(output, grid=data.grid, name=output_name), make_current=True)
 
     def _norm_conv(self, data, sigma, **kwargs):
-      """
-      Normalized convolution
+        """
+        Normalized convolution
 
-      This is a way to compensate for data having nan/infinite values.
-      Taken from stackoverflow.com/questions/18697532/gaussian-filtering-a-image-with-nan-in-python
-      """
-      v = data.copy()
-      v[~np.isfinite(data)] = 0
-      vv = scipy.ndimage.filters.gaussian_filter(v, sigma, **kwargs)
+        This is a way to compensate for data having nan/infinite values.
+        Taken from stackoverflow.com/questions/18697532/gaussian-filtering-a-image-with-nan-in-python
+        """
+        v = data.copy()
+        v[~np.isfinite(data)] = 0
+        vv = scipy.ndimage.filters.gaussian_filter(v, sigma, **kwargs)
 
-      w = 0*data.copy()+1
-      w[~np.isfinite(data)] = 0
-      ww = scipy.ndimage.filters.gaussian_filter(w, sigma, **kwargs)
-      
-      return vv/ww
+        w = 0*data.copy()+1
+        w[~np.isfinite(data)] = 0
+        ww = scipy.ndimage.filters.gaussian_filter(w, sigma, **kwargs)
+
+        return vv/ww
