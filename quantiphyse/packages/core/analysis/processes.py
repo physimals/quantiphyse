@@ -159,6 +159,7 @@ class DataStatisticsProcess(Process):
         else:
             data_arr, _, _, _ = data.slice_data(slice_loc)
 
+        # FIXME should we remove non-finite values? Perhaps removed because expensive?
         if 0:
             data_arr = data_arr[np.isfinite(data_arr)]
 
@@ -173,6 +174,8 @@ class DataStatisticsProcess(Process):
         # when there is no ROI
         if roi is not None:
             roi_arr = roi.resample(data.grid).raw()
+            if slice_loc is not None:
+                roi_arr, _, _, _ = roi.slice_data(slice_loc)
 
             for region, name in roi.regions.items():
                 region_data = data_arr[roi_arr == region]
