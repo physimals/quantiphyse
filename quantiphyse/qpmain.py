@@ -27,18 +27,7 @@ import signal
 import traceback
 import logging
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-    PYSIDE1 = True
-except ImportError:
-    # Note that pyqtgraph actually writes all the contents of QtWidgets into
-    # QtGui on import! This is sort-of nice because we don't need to switch
-    # existing PySide code that uses, e.g. QtWidgets.QMainWindow, but it's a bit
-    # invasive compared with the 'nicer' option or importing PySide.QtGui
-    # as QtWidgets. We will go with the pyqtgraph method for now but might
-    # need to make changes if this causes problems later.
-    from PySide2 import QtGui, QtCore, QtWidgets
-    PYSIDE1 = False
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.test import run_tests
 
@@ -113,11 +102,6 @@ def main():
         sys.exit(app.exec_())
     else:
         # Otherwise we need a QApplication and to initialize the GUI
-        
-        if sys.platform.startswith("darwin") and PYSIDE1:
-            # Required on Mac with Pyside 1
-            QtWidgets.QApplication.setGraphicsSystem('native')
-
         # Note that organization info is not up to date but we will 
         # leave IBME in there as otherwise any previous QSettings (including
         # registration) will be lost.
