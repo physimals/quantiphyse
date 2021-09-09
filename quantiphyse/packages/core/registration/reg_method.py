@@ -194,9 +194,9 @@ class RegMethod(LogSource):
         :param generic_options: Dictionary of generic registration options - this is provided so
                the method can customize the options offered depending on the registration mode.
 
-        :return: QtGui.QWidget() to allow options to be controlled
+        :return: QtWidgets.QWidget() to allow options to be controlled
         """
-        return QtGui.QWidget()
+        return QtWidgets.QWidget()
         
     def options(self):
         """

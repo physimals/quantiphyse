@@ -31,7 +31,7 @@ from quantiphyse.gui.widgets import OptionsButton
 from quantiphyse.gui.colors import get_kelly_col
 from quantiphyse.utils import LogSource, get_icon, norecurse
 
-class PlotOptions(QtGui.QDialog):
+class PlotOptions(QtWidgets.QDialog):
     """
     Options dialog for a line plot
     """
@@ -39,20 +39,20 @@ class PlotOptions(QtGui.QDialog):
     sig_options_changed = QtCore.Signal(object)
 
     def __init__(self, graph=None, **kwargs):
-        QtGui.QDialog.__init__(self, graph)
+        QtWidgets.QDialog.__init__(self, graph)
         self.graph = graph
         self.sig_enh = False
         self.smooth = False
 
         self.setWindowTitle('Plot options')
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         self.setLayout(grid)
 
         row = 0
         # Display mode
         if kwargs.get("display_mode", True):
-            grid.addWidget(QtGui.QLabel("Display mode"), row, 0)
-            mode_combo = QtGui.QComboBox()
+            grid.addWidget(QtWidgets.QLabel("Display mode"), row, 0)
+            mode_combo = QtWidgets.QComboBox()
             mode_combo.addItem("Signal")
             mode_combo.addItem("Signal Enhancement")
             mode_combo.currentIndexChanged.connect(self._mode_changed)
@@ -60,19 +60,19 @@ class PlotOptions(QtGui.QDialog):
             row += 1
 
             # Signal enhancement baseline
-            self.se_lbl = QtGui.QLabel('Signal enhancement: Use first')
+            self.se_lbl = QtWidgets.QLabel('Signal enhancement: Use first')
             self.se_lbl.setEnabled(False)
             grid.addWidget(self.se_lbl, row, 0)
 
-            hbox = QtGui.QHBoxLayout()
-            self._norm_frames_spin = QtGui.QSpinBox()
+            hbox = QtWidgets.QHBoxLayout()
+            self._norm_frames_spin = QtWidgets.QSpinBox()
             self._norm_frames_spin.setValue(3)
             self._norm_frames_spin.setMinimum(1)
             self._norm_frames_spin.setMaximum(100)
             self._norm_frames_spin.valueChanged.connect(self._changed)
             self._norm_frames_spin.setEnabled(False)
             hbox.addWidget(self._norm_frames_spin)
-            self.se_lbl2 = QtGui.QLabel('frames as baseline')
+            self.se_lbl2 = QtWidgets.QLabel('frames as baseline')
             self.se_lbl2.setEnabled(False)
             hbox.addWidget(self.se_lbl2)
             hbox.addStretch(1)
@@ -81,26 +81,26 @@ class PlotOptions(QtGui.QDialog):
 
         # Y-axis scale
         if kwargs.get("y_scale", True):
-            hbox = QtGui.QHBoxLayout()
-            self.auto_y_cb = QtGui.QCheckBox('Automatic Y axis scale', self)
+            hbox = QtWidgets.QHBoxLayout()
+            self.auto_y_cb = QtWidgets.QCheckBox('Automatic Y axis scale', self)
             self.auto_y_cb.setChecked(True)
             self.auto_y_cb.stateChanged.connect(self._auto_y_changed)
             grid.addWidget(self.auto_y_cb, row, 0)
 
-            self.min_lbl = QtGui.QLabel("Min")
+            self.min_lbl = QtWidgets.QLabel("Min")
             self.min_lbl.setEnabled(False)
             hbox.addWidget(self.min_lbl)
-            self.min_spin = QtGui.QDoubleSpinBox()
+            self.min_spin = QtWidgets.QDoubleSpinBox()
             self.min_spin.setMinimum(-1e20)
             self.min_spin.setMaximum(1e20)
             self.min_spin.valueChanged.connect(self._changed)
             self.min_spin.setEnabled(False)
             hbox.addWidget(self.min_spin)
 
-            self.max_lbl = QtGui.QLabel("Max")
+            self.max_lbl = QtWidgets.QLabel("Max")
             self.max_lbl.setEnabled(False)
             hbox.addWidget(self.max_lbl)
-            self.max_spin = QtGui.QDoubleSpinBox()
+            self.max_spin = QtWidgets.QDoubleSpinBox()
             self.max_spin.setMinimum(-1e20)
             self.max_spin.setMaximum(1e20)
             self.max_spin.valueChanged.connect(self._changed)
@@ -113,7 +113,7 @@ class PlotOptions(QtGui.QDialog):
 
         # Smoothing
         if kwargs.get("smoothing", True):
-            smooth_cb = QtGui.QCheckBox('Smooth curves', self)
+            smooth_cb = QtWidgets.QCheckBox('Smooth curves', self)
             smooth_cb.setChecked(self.smooth)
             smooth_cb.stateChanged.connect(self._smooth_changed)
             grid.addWidget(smooth_cb, row, 0)
@@ -247,7 +247,7 @@ class LinePlot(LogSource):
         if self.graphics_items:
             self.show()
 
-class Plot(QtGui.QWidget):
+class Plot(QtWidgets.QWidget):
     """
     Widget for plotting graphs
     """
@@ -257,15 +257,15 @@ class Plot(QtGui.QWidget):
 
         :param qpo: Global options
         """
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.items = []
         self.updating = False
         self.legend_pos = (30, 30)
 
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
 
         if kwargs.get("opts_btn", True):
@@ -276,7 +276,7 @@ class Plot(QtGui.QWidget):
 
         if kwargs.get("clear_btn", False):
             clear_icon = QtGui.QIcon(get_icon("clear"))
-            self.clear_btn = QtGui.QPushButton(self)
+            self.clear_btn = QtWidgets.QPushButton(self)
             self.clear_btn.setIcon(clear_icon)
             self.clear_btn.setIconSize(QtCore.QSize(14, 14))
             self.clear_btn.setToolTip("Clear curves")

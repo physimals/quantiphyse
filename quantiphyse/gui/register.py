@@ -60,40 +60,40 @@ def check_register():
         # User got the license dialog but did not accept it
         sys.exit(-1)
 
-class LicenseDialog(QtGui.QDialog):
+class LicenseDialog(QtWidgets.QDialog):
     """
     Dialog box which asks a first-time user to accept the license
     """
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setWindowTitle("License Agreement")
         
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
-        lpic = QtGui.QLabel(self)
+        lpic = QtWidgets.QLabel(self)
         lpic.setPixmap(pixmap)
         hbox.addWidget(lpic)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        layout.addWidget(QtGui.QLabel(""))
+        layout.addWidget(QtWidgets.QLabel(""))
 
         # Welcome
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
-        hbox.addWidget(QtGui.QLabel("\n<font size=5>Welcome to Quantiphyse %s</font>" % get_version()))
+        hbox.addWidget(QtWidgets.QLabel("\n<font size=5>Welcome to Quantiphyse %s</font>" % get_version()))
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        label = QtGui.QLabel("Quantiphyse is <b>free for non-commercial use</b>. If you are interested in using the software "
+        label = QtWidgets.QLabel("Quantiphyse is <b>free for non-commercial use</b>. If you are interested in using the software "
                              "commercially, please contact the technology transfer company of the University: enquiries@innovation.ox.ac.uk")
         label.setWordWrap(True)
         layout.addWidget(label)
 
         # License agreement
-        edit = QtGui.QTextEdit()
+        edit = QtWidgets.QTextEdit()
         edit.setCurrentFont(QtGui.QFont("Monospace", 8))
         edit.append(__license__)
         edit.append("</pre>")
@@ -102,19 +102,19 @@ class LicenseDialog(QtGui.QDialog):
         layout.addWidget(edit)
         
         # Acceptance section
-        self.agree_cb = QtGui.QCheckBox("I agree to abide by the terms of the Quantiphyse license")
+        self.agree_cb = QtWidgets.QCheckBox("I agree to abide by the terms of the Quantiphyse license")
         self.agree_cb.stateChanged.connect(self._agree_changed)
         layout.addWidget(self.agree_cb)
 
         # Buttons
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
         layout.addWidget(self.button_box)
 
         self.setLayout(layout)
         self.setFixedSize(700, 800)
 
     def _agree_changed(self, state):
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(state)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(state)

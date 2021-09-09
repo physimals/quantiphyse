@@ -24,7 +24,7 @@ class HistogramWidget(QpWidget):
         self._updating = False
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self)

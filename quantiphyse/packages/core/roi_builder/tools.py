@@ -67,8 +67,8 @@ class Tool(LogSource):
 
         :return: QtCore.QLayout suitable for embedding in toolbox
         """
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel(self.tooltip), 0, 0, 1, 2)
+        grid = QtWidgets.QGridLayout()
+        grid.addWidget(QtWidgets.QLabel(self.tooltip), 0, 0, 1, 2)
         return grid
 
     def _show_builder_roi(self):
@@ -99,16 +99,16 @@ class PickedRegionTool(Tool):
    
     def interface(self):
         grid = Tool.interface(self)
-        btn = QtGui.QPushButton("Add")
+        btn = QtWidgets.QPushButton("Add")
         btn.clicked.connect(self._change(self.builder.ADD))
         grid.addWidget(btn, 1, 0)
-        btn = QtGui.QPushButton("Erase")
+        btn = QtWidgets.QPushButton("Erase")
         btn.clicked.connect(self._change(self.builder.ERASE))
         grid.addWidget(btn, 1, 1)
-        btn = QtGui.QPushButton("Mask")
+        btn = QtWidgets.QPushButton("Mask")
         btn.clicked.connect(self._change(self.builder.MASK))
         grid.addWidget(btn, 2, 0)
-        btn = QtGui.QPushButton("Discard")
+        btn = QtWidgets.QPushButton("Discard")
         btn.clicked.connect(self.selected)
         grid.addWidget(btn, 2, 1)
         return grid
@@ -206,20 +206,20 @@ class PickTool(Tool):
     def interface(self):
         grid = Tool.interface(self)
 
-        grid.addWidget(QtGui.QLabel("Existing ROI"), 1, 0)
+        grid.addWidget(QtWidgets.QLabel("Existing ROI"), 1, 0)
         self.roi_combo = RoiCombo(self.ivm, none_option=True)
         self.roi_combo.currentIndexChanged.connect(self._existing_roi_changed)
         grid.addWidget(self.roi_combo, 1, 1)
 
-        self.ok_btn = QtGui.QPushButton("Accept")
+        self.ok_btn = QtWidgets.QPushButton("Accept")
         self.ok_btn.setEnabled(False)
         self.ok_btn.clicked.connect(self._accepted)
         grid.addWidget(self.ok_btn, 2, 0)
-        self.cancel_btn = QtGui.QPushButton("Cancel")
+        self.cancel_btn = QtWidgets.QPushButton("Cancel")
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._reset)
         grid.addWidget(self.cancel_btn, 2, 1)
-        self.done_btn = QtGui.QPushButton("Done")
+        self.done_btn = QtWidgets.QPushButton("Done")
         self.done_btn.setEnabled(False)
         self.done_btn.clicked.connect(self._show_builder_roi)
         grid.addWidget(self.done_btn, 2, 2)
@@ -288,19 +288,19 @@ class WalkerTool(Tool):
     def interface(self):
         grid = Tool.interface(self)
 
-        grid.addWidget(QtGui.QLabel("Source data: "), 1, 0)
+        grid.addWidget(QtWidgets.QLabel("Source data: "), 1, 0)
         self.ov_combo = OverlayCombo(self.ivm)
         grid.addWidget(self.ov_combo)
 
-        grid.addWidget(QtGui.QLabel("Click to select points: "), 2, 0)
-        self.pickmode_combo = QtGui.QComboBox()
+        grid.addWidget(QtWidgets.QLabel("Click to select points: "), 2, 0)
+        self.pickmode_combo = QtWidgets.QComboBox()
         self.pickmode_combo.addItem("Inside the ROI")
         self.pickmode_combo.addItem("Outside the ROI")
         self.pickmode_combo.currentIndexChanged.connect(self._pick_mode_changed)
         grid.addWidget(self.pickmode_combo, 2, 1)
         
-        grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
-        self.segmode_combo = QtGui.QComboBox()
+        grid.addWidget(QtWidgets.QLabel("Segmentation mode: "), 3, 0)
+        self.segmode_combo = QtWidgets.QComboBox()
         self.segmode_combo.addItem("Slice")
         self.segmode_combo.addItem("3D")
         self.segmode_combo.currentIndexChanged.connect(self._seg_mode_changed)
@@ -308,10 +308,10 @@ class WalkerTool(Tool):
 
         self.beta = NumericOption("Diffusion difficulty", grid, 4, 0, intonly=True, maxval=20000, default=10000, step=1000)
 
-        btn = QtGui.QPushButton("Segment")
+        btn = QtWidgets.QPushButton("Segment")
         btn.clicked.connect(self._segment)
         grid.addWidget(btn, 5, 0)
-        btn = QtGui.QPushButton("Clear points")
+        btn = QtWidgets.QPushButton("Clear points")
         btn.clicked.connect(self._init)
         grid.addWidget(btn, 5, 1)
 
@@ -424,8 +424,8 @@ class BucketTool(Tool):
     def interface(self):
         grid = Tool.interface(self)
 
-        #grid.addWidget(QtGui.QLabel("Segmentation mode: "), 3, 0)
-        #self.segmode_combo = QtGui.QComboBox()
+        #grid.addWidget(QtWidgets.QLabel("Segmentation mode: "), 3, 0)
+        #self.segmode_combo = QtWidgets.QComboBox()
         #self.segmode_combo.addItem("Slice")
         #self.segmode_combo.addItem("3D")
         #self.segmode_combo.currentIndexChanged.connect(self._dims_changed)
@@ -438,16 +438,16 @@ class BucketTool(Tool):
         self.max_tile_size = NumericSlider("Max distance (voxels)", grid, 6, 0, intonly=True, maxval=500, minval=1, default=100, hardmin=True)
         self.max_tile_size.sig_changed.connect(self._update_roi)
 
-        btn = QtGui.QPushButton("Add")
+        btn = QtWidgets.QPushButton("Add")
         btn.clicked.connect(self._add)
         grid.addWidget(btn, 7, 0)
-        btn = QtGui.QPushButton("Erase")
+        btn = QtWidgets.QPushButton("Erase")
         btn.clicked.connect(self._erase)
         grid.addWidget(btn, 7, 1)
-        btn = QtGui.QPushButton("Mask")
+        btn = QtWidgets.QPushButton("Mask")
         btn.clicked.connect(self._mask)
         grid.addWidget(btn, 8, 0)
-        btn = QtGui.QPushButton("Discard")
+        btn = QtWidgets.QPushButton("Discard")
         btn.clicked.connect(self._init)
         grid.addWidget(btn, 8, 1)
         return grid

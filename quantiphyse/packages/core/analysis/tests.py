@@ -58,7 +58,7 @@ class DataStatisticsTest(WidgetTest):
         self.w.data.value = ["data_3d",]
         self.harmless_click(self.w.butgen)
         self.harmless_click(self.w.copy_btn)
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         rows = [row.split("\t") for row in cb.text().split("\n")]
         self.assertEquals(rows[0][0], "")
         self.assertEquals(rows[0][1].strip(), "data_3d")

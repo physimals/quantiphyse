@@ -96,11 +96,11 @@ class OverviewWidget(QpWidget):
                                              group="DEFAULT", position=0, **kwargs)
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         pixmap = QtGui.QPixmap(get_icon("quantiphyse_75.png"))
-        lpic = QtGui.QLabel(self)
+        lpic = QtWidgets.QLabel(self)
         lpic.setPixmap(pixmap)
         hbox.addWidget(lpic)
         hbox.addStretch(1)
@@ -108,14 +108,14 @@ class OverviewWidget(QpWidget):
         hbox.addWidget(help_btn)
         layout.addLayout(hbox)
 
-        summary_label = QtGui.QLabel(SUMMARY)
+        summary_label = QtWidgets.QLabel(SUMMARY)
         summary_label.setWordWrap(True)
         layout.addWidget(summary_label)
 
-        box = QtGui.QGroupBox()
-        hbox = QtGui.QHBoxLayout()
+        box = QtWidgets.QGroupBox()
+        hbox = QtWidgets.QHBoxLayout()
         box.setLayout(hbox)
-        disc = QtGui.QLabel("<font size=2> Disclaimer: This software has been developed for research purposes only, and "
+        disc = QtWidgets.QLabel("<font size=2> Disclaimer: This software has been developed for research purposes only, and "
                             "should not be used as a diagnostic tool. The authors or distributors will not be "
                             "responsible for any direct, indirect, special, incidental, or consequential damages "
                             "arising of the use of this software. By using the this software you agree to this disclaimer."
@@ -123,7 +123,7 @@ class OverviewWidget(QpWidget):
                             "Please read the Quantiphyse License for more information")
         disc.setWordWrap(True)
         hbox.addWidget(disc, 10)
-        license_btn = QtGui.QPushButton("License")
+        license_btn = QtWidgets.QPushButton("License")
         license_btn.clicked.connect(self._view_license)
         hbox.addWidget(license_btn)
         layout.addWidget(box)
@@ -131,7 +131,7 @@ class OverviewWidget(QpWidget):
         self.data_list = DataListWidget(self)
         layout.addWidget(self.data_list)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         
         self._up_btn = self._btn(hbox, QtGui.QIcon(get_icon("up.png")), "Raise data set in viewing order", self._up)
         self._down_btn = self._btn(hbox, QtGui.QIcon(get_icon("down.png")), "Lower data set in viewing order", self._down)
@@ -151,7 +151,7 @@ class OverviewWidget(QpWidget):
         self._toggle_single_multi()
 
     def _btn(self, hbox, icon, tooltip, callback):
-        btn = QtGui.QPushButton()
+        btn = QtWidgets.QPushButton()
         btn.setIcon(icon)
         btn.setToolTip(tooltip)
         btn.setStatusTip(tooltip)
@@ -179,16 +179,16 @@ class OverviewWidget(QpWidget):
     def _delete(self):
         if self.data_list.selected is not None:
             name = self.data_list.selected.name
-            btn = QtGui.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % name,
-                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            if btn == QtGui.QMessageBox.Ok:
+            btn = QtWidgets.QMessageBox.warning(self, "Delete data", "Delete '%s'?" % name,
+                                            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            if btn == QtWidgets.QMessageBox.Ok:
                 self.ivm.delete(name)
 
     def _rename(self):
         if self.data_list.selected is not None:
             name = self.data_list.selected.name
-            text, result = QtGui.QInputDialog.getText(self, "Renaming '%s'" % name, "New name",
-                                                      QtGui.QLineEdit.Normal, name)
+            text, result = QtWidgets.QInputDialog.getText(self, "Renaming '%s'" % name, "New name",
+                                                      QtWidgets.QLineEdit.Normal, name)
             if result:
                 self.ivm.rename(name, text)
 
@@ -200,7 +200,7 @@ class OverviewWidget(QpWidget):
                 fname = data.fname
             else:
                 fname = os.path.join(default_save_dir(), name + ".nii")
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+            fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
                                                          filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.data[name], fname)
@@ -250,7 +250,7 @@ class OverviewWidget(QpWidget):
                     last_data.view.z_order = current_z
                 last_data = data
 
-class DataListWidget(QtGui.QTableView):
+class DataListWidget(QtWidgets.QTableView):
     """
     Table showing loaded volumes
     """
@@ -272,9 +272,9 @@ class DataListWidget(QtGui.QTableView):
         self.setModel(self.model)
         self._update_list()
 
-        self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.setShowGrid(False)
         self.setTextElideMode(QtCore.Qt.ElideLeft)
         self.setAlternatingRowColors(True)
@@ -350,9 +350,9 @@ class DataListWidget(QtGui.QTableView):
             self.model.setColumnCount(3)
             self.model.setHorizontalHeaderLabels(["", "Name", "File"])
             self.model.setHeaderData(0, QtCore.Qt.Horizontal, self._vis_icon, QtCore.Qt.DecorationRole)
-            self.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Stretch)
+            self.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setResizeMode(2, QtWidgets.QHeaderView.Stretch)
             for row, data in enumerate(sorted(self.ivm.data.values(), key=lambda x: -x.view.z_order)):
                 self.model.appendRow(self._get_table_items(data))
 

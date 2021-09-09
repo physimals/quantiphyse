@@ -39,14 +39,14 @@ class Navigator(LogSource):
         self.data_grid = None
         self._pos = -1
 
-        layout_grid.addWidget(QtGui.QLabel(label), layout_ypos, 0)
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        layout_grid.addWidget(QtWidgets.QLabel(label), layout_ypos, 0)
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setFocusPolicy(QtCore.Qt.NoFocus)
         self.slider.setMinimumWidth(100)
         self.slider.valueChanged.connect(self._changed)
         layout_grid.addWidget(self.slider, layout_ypos, 1)
 
-        self.spin = QtGui.QSpinBox()
+        self.spin = QtWidgets.QSpinBox()
         self.spin.valueChanged.connect(self._changed)
         layout_grid.addWidget(self.spin, layout_ypos, 2)
 
@@ -118,15 +118,15 @@ class VolumeNavigator(Navigator):
         self._set_size(max_num_vols)
         self._focus_changed()
 
-class NavigationBox(QtGui.QGroupBox):
+class NavigationBox(QtWidgets.QGroupBox):
     """
     Box containing 4D navigators
     """
     def __init__(self, ivl):
-        QtGui.QGroupBox.__init__(self)
+        QtWidgets.QGroupBox.__init__(self)
         self.ivl = ivl
 
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         grid.setVerticalSpacing(2)
         grid.setContentsMargins(5, 5, 5, 5)
         self.setLayout(grid)

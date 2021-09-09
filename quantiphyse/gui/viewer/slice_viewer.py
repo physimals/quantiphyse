@@ -264,8 +264,8 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         # Static labels for the view directions
         self._labels = []
         for axis in [self.xaxis, self.yaxis]:
-            self._labels.append(QtGui.QLabel(ax_labels[axis][0], parent=self))
-            self._labels.append(QtGui.QLabel(ax_labels[axis][1], parent=self))
+            self._labels.append(QtWidgets.QLabel(ax_labels[axis][0], parent=self))
+            self._labels.append(QtWidgets.QLabel(ax_labels[axis][1], parent=self))
         for label in self._labels:
             label.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 

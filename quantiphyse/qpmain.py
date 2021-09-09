@@ -33,7 +33,7 @@ try:
 except ImportError:
     # Note that pyqtgraph actually writes all the contents of QtWidgets into
     # QtGui on import! This is sort-of nice because we don't need to switch
-    # existing PySide code that uses, e.g. QtGui.QMainWindow, but it's a bit
+    # existing PySide code that uses, e.g. QtWidgets.QMainWindow, but it's a bit
     # invasive compared with the 'nicer' option or importing PySide.QtGui
     # as QtWidgets. We will go with the pyqtgraph method for now but might
     # need to make changes if this causes problems later.
@@ -116,17 +116,17 @@ def main():
         
         if sys.platform.startswith("darwin") and PYSIDE1:
             # Required on Mac with Pyside 1
-            QtGui.QApplication.setGraphicsSystem('native')
+            QtWidgets.QApplication.setGraphicsSystem('native')
 
         # Note that organization info is not up to date but we will 
         # leave IBME in there as otherwise any previous QSettings (including
         # registration) will be lost.
-        app = QtGui.QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         app.setStyle('plastique')
         QtCore.QCoreApplication.setOrganizationName("ibme-qubic")
         QtCore.QCoreApplication.setOrganizationDomain("eng.ox.ac.uk")
         QtCore.QCoreApplication.setApplicationName("Quantiphyse")
-        QtGui.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
+        QtWidgets.QApplication.setWindowIcon(QtGui.QIcon(get_icon("main_icon.png")))
 
         if args.debug:
             import pyqtgraph as pg
@@ -139,7 +139,7 @@ def main():
         else:
             # Create window and start main loop
             pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
-            splash = QtGui.QSplashScreen(pixmap)
+            splash = QtWidgets.QSplashScreen(pixmap)
             splash.show()
             app.processEvents()
 

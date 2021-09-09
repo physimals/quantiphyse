@@ -61,13 +61,13 @@ class RoiBuilderWidget(QpWidget):
         self.roiname = None
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         
         title = TitleWidget(self, help="roibuilder", batch_btn=False)
         layout.addWidget(title)
 
         self.options = OptionBox("Options")
-        btn = QtGui.QPushButton("New")
+        btn = QtWidgets.QPushButton("New")
         btn.clicked.connect(self._new_roi)
         self.options.add("ROI", DataOption(self.ivm, rois=True, data=False), btn, key="roi")
         self.options.add("Current label", NumericOption(minval=1, slider=False, intonly=True), key="label")
@@ -78,10 +78,10 @@ class RoiBuilderWidget(QpWidget):
         layout.addWidget(self.options)
         
         # Add toolbox buttons in a grid
-        hbox = QtGui.QHBoxLayout()
-        self._toolbox = QtGui.QGroupBox()
+        hbox = QtWidgets.QHBoxLayout()
+        self._toolbox = QtWidgets.QGroupBox()
         self._toolbox.setTitle("Toolbox")
-        self.tools_grid = QtGui.QGridLayout()
+        self.tools_grid = QtWidgets.QGridLayout()
         self._toolbox.setLayout(self.tools_grid)
 
         x, y, cols = 0, 0, 4
@@ -92,7 +92,7 @@ class RoiBuilderWidget(QpWidget):
                 y += 1
                 x = 0
 
-        self._undo_btn = QtGui.QPushButton()
+        self._undo_btn = QtWidgets.QPushButton()
         self._undo_btn.clicked.connect(self.undo)
         self._undo_btn.setEnabled(False)
         undo_icon = QtGui.QIcon(get_icon("undo"))
@@ -107,8 +107,8 @@ class RoiBuilderWidget(QpWidget):
         layout.addLayout(hbox)
 
         # Tool options box - initially invisible
-        hbox = QtGui.QHBoxLayout()
-        self._tool_options = QtGui.QGroupBox()
+        hbox = QtWidgets.QHBoxLayout()
+        self._tool_options = QtWidgets.QGroupBox()
         self._tool_options.setVisible(False)
 
         hbox.addWidget(self._tool_options)
@@ -281,9 +281,9 @@ class RoiBuilderWidget(QpWidget):
             self.roidata = roi.raw()
 
     def _new_roi(self):
-        dialog = QtGui.QDialog(self)
+        dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle("New ROI")
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         dialog.setLayout(vbox)
 
         optbox = OptionBox()
@@ -291,7 +291,7 @@ class RoiBuilderWidget(QpWidget):
         optbox.add("Data space from", DataOption(self.ivm), key="grid")
         vbox.addWidget(optbox)
 
-        buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         vbox.addWidget(buttons)
@@ -322,7 +322,7 @@ class RoiBuilderWidget(QpWidget):
             self._tool.btn.setStyleSheet("border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);")
             # Replace the old tool options with the new one. Need to reparent the
             # existing layout to a temporary widget which will then get deleted 
-            QtGui.QWidget().setLayout(self._tool_options.layout())
+            QtWidgets.QWidget().setLayout(self._tool_options.layout())
             self._tool_options.setLayout(self._tool.interface())
             self._tool_options.setTitle(tool.name)
             self._tool_options.setVisible(True)
@@ -334,7 +334,7 @@ class RoiBuilderWidget(QpWidget):
         tool.ivm = self.ivm
         tool.ivl = self.ivl
         tool.builder = self
-        btn = QtGui.QPushButton()
+        btn = QtWidgets.QPushButton()
         btn.setIcon(QtGui.QIcon(get_icon(tool.name.lower())))
         btn.setToolTip(tool.tooltip)
         btn.setFixedSize(32, 32)

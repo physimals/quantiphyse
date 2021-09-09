@@ -53,7 +53,7 @@ class MultiVoxelAnalysis(QpWidget):
     def init_ui(self):
         self.setStatusTip("Click points on the 4D volume to see data curve")
 
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, "Multi-Voxel Visualisation", help="curve_compare", batch_btn=False)
@@ -77,7 +77,7 @@ class MultiVoxelAnalysis(QpWidget):
         self.options.option("mean").sig_changed.connect(self._mean_changed)
         self.options.option("col").sig_changed.connect(self._col_changed)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.options)
         hbox.addStretch()
         vbox.addLayout(hbox)
@@ -202,17 +202,17 @@ class DataStatistics(QpWidget):
         self.process = DataStatisticsProcess(self.ivm)
         self.process_ss = DataStatisticsProcess(self.ivm)
         
-        main_vbox = QtGui.QVBoxLayout()
+        main_vbox = QtWidgets.QVBoxLayout()
 
         title = TitleWidget(self, help="overlay_stats", batch_btn=False)
         main_vbox.addWidget(title)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel("Data selection"))
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel("Data selection"))
         self.data = DataOption(self.ivm, multi=True)
         self.data.sig_changed.connect(self.update_all)
         hbox.addWidget(self.data)
-        hbox.addWidget(QtGui.QLabel("ROI"))
+        hbox.addWidget(QtWidgets.QLabel("ROI"))
         self.roi = DataOption(self.ivm, data=False, rois=True, none_option=True)
         self.roi.sig_changed.connect(self.update_all)
         hbox.addWidget(self.roi)
@@ -220,10 +220,10 @@ class DataStatistics(QpWidget):
         hbox.setStretch(3, 1)
         main_vbox.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.current_vol = QtGui.QCheckBox("Current volume only")
+        hbox = QtWidgets.QHBoxLayout()
+        self.current_vol = QtWidgets.QCheckBox("Current volume only")
         hbox.addWidget(self.current_vol)
-        self.exact_median = QtGui.QCheckBox("Exact median")
+        self.exact_median = QtWidgets.QCheckBox("Exact median")
         self.exact_median.setToolTip("Computing an exact median can fail on extremely large data sets")
         hbox.addWidget(self.exact_median)
         hbox.addStretch(1)
@@ -231,24 +231,24 @@ class DataStatistics(QpWidget):
         self.current_vol.stateChanged.connect(self.update_all)
 
         # Summary stats
-        stats_box = QtGui.QGroupBox()
+        stats_box = QtWidgets.QGroupBox()
         stats_box.setTitle('Summary Statistics')
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         stats_box.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.butgen = QtGui.QPushButton("Show")
+        hbox = QtWidgets.QHBoxLayout()
+        self.butgen = QtWidgets.QPushButton("Show")
         self.butgen.setToolTip("Show standard statistics for the data in each ROI")
         self.butgen.clicked.connect(self.show_stats)
         hbox.addWidget(self.butgen)
-        self.copy_btn = QtGui.QPushButton("Copy")
+        self.copy_btn = QtWidgets.QPushButton("Copy")
         self.copy_btn.clicked.connect(self.copy_stats)
         self.copy_btn.setVisible(False)
         hbox.addWidget(self.copy_btn)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        self.stats_table = QtGui.QTableView()
+        self.stats_table = QtWidgets.QTableView()
         self.stats_table.resizeColumnsToContents()
         self.stats_table.setModel(self.process.model)
         self.stats_table.setVisible(False)
@@ -258,35 +258,35 @@ class DataStatistics(QpWidget):
 
         # Summary stats (single slice)
 
-        stats_box_ss = QtGui.QGroupBox()
+        stats_box_ss = QtWidgets.QGroupBox()
         stats_box_ss.setTitle('Summary Statistics - Slice')
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         stats_box_ss.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.butgenss = QtGui.QPushButton("Show")
+        hbox = QtWidgets.QHBoxLayout()
+        self.butgenss = QtWidgets.QPushButton("Show")
         self.butgenss.setToolTip("Show standard statistics for the current slice")
         self.butgenss.clicked.connect(self.show_stats_current_slice)
         hbox.addWidget(self.butgenss)
-        self.slice_dir_label = QtGui.QLabel("Slice direction:")
+        self.slice_dir_label = QtWidgets.QLabel("Slice direction:")
         self.slice_dir_label.setVisible(False)
         hbox.addWidget(self.slice_dir_label)
-        self.sscombo = QtGui.QComboBox()
+        self.sscombo = QtWidgets.QComboBox()
         self.sscombo.addItem("Axial")
         self.sscombo.addItem("Coronal")
         self.sscombo.addItem("Sagittal")
-        self.sscombo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        self.sscombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToContents)
         self.sscombo.currentIndexChanged.connect(self.focus_changed)
         self.sscombo.setVisible(False)
         hbox.addWidget(self.sscombo)
-        self.copy_btn_ss = QtGui.QPushButton("Copy")
+        self.copy_btn_ss = QtWidgets.QPushButton("Copy")
         self.copy_btn_ss.clicked.connect(self.copy_stats_ss)
         self.copy_btn_ss.setVisible(False)
         hbox.addWidget(self.copy_btn_ss)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        self.stats_table_ss = QtGui.QTableView()
+        self.stats_table_ss = QtWidgets.QTableView()
         self.stats_table_ss.resizeColumnsToContents()
         self.stats_table_ss.setModel(self.process_ss.model)
         self.stats_table_ss.setVisible(False)
@@ -389,31 +389,31 @@ class RoiAnalysisWidget(QpWidget):
     def init_ui(self):
         self.process = CalcVolumesProcess(self.ivm)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self, help="roi_analysis")
         layout.addWidget(title)
 
-        info = QtGui.QLabel("<i><br>Calculate size and volume of an ROI<br></i>")
+        info = QtWidgets.QLabel("<i><br>Calculate size and volume of an ROI<br></i>")
         info.setWordWrap(True)
         layout.addWidget(info)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('ROI: '))
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel('ROI: '))
         self.combo = RoiCombo(self.ivm)
         self.combo.currentIndexChanged.connect(self.update)
         hbox.addWidget(self.combo)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
-        self.table = QtGui.QTableView()
+        self.table = QtWidgets.QTableView()
         self.table.resizeColumnsToContents()
         self.table.setModel(self.process.model)
         layout.addWidget(self.table)
 
-        hbox = QtGui.QHBoxLayout()
-        self.copy_btn = QtGui.QPushButton("Copy")
+        hbox = QtWidgets.QHBoxLayout()
+        self.copy_btn = QtWidgets.QPushButton("Copy")
         self.copy_btn.clicked.connect(self.copy_stats)
         hbox.addWidget(self.copy_btn)
         hbox.addStretch(1)
@@ -467,13 +467,13 @@ class SimpleMathsWidget(QpWidget):
                                                 group="Processing", **kwargs)
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self, help="simple_maths")
         layout.addWidget(title)
 
-        info = QtGui.QLabel(MATHS_INFO)
+        info = QtWidgets.QLabel(MATHS_INFO)
         info.setWordWrap(True)
         layout.addWidget(info)
 
@@ -484,7 +484,7 @@ class SimpleMathsWidget(QpWidget):
         self.optbox.add("Output is an ROI", BoolOption(), key="output-is-roi")
         layout.addWidget(self.optbox)
         
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         self.go_btn = RunButton(self)
         hbox.addWidget(self.go_btn)
         hbox.addStretch(1)
@@ -513,7 +513,7 @@ class VoxelAnalysis(QpWidget):
         self.updating = False
 
     def init_ui(self):
-        main_vbox = QtGui.QVBoxLayout()
+        main_vbox = QtWidgets.QVBoxLayout()
         self.setLayout(main_vbox)
 
         title = TitleWidget(self, title="Voxel analysis", help="modelfit", batch_btn=False)
@@ -522,22 +522,22 @@ class VoxelAnalysis(QpWidget):
         self.plot = Plot(twoaxis=True)
         main_vbox.addWidget(self.plot)
 
-        tabs = QtGui.QTabWidget()
+        tabs = QtWidgets.QTabWidget()
         main_vbox.addWidget(tabs)
 
         # Table showing RMS deviation
         self.rms_table = QtGui.QStandardItemModel()
         self.rms_table.itemChanged.connect(self._data_table_changed)
-        tview = QtGui.QTableView()
+        tview = QtWidgets.QTableView()
         tview.setModel(self.rms_table)
-        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tview.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         tabs.addTab(tview, "Timeseries data")
 
         # Table showing value of model parameters
         self.values_table = QtGui.QStandardItemModel()
-        tview = QtGui.QTableView()
+        tview = QtWidgets.QTableView()
         tview.setModel(self.values_table)
-        tview.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        tview.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         tabs.addTab(tview, 'Non-timeseries data')
 
     def activate(self):
@@ -670,25 +670,25 @@ class MeasureWidget(QpWidget):
         self._mode = None
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self)
         layout.addWidget(title)
 
-        box = QtGui.QGroupBox("Measurements")
-        vbox = QtGui.QVBoxLayout()
+        box = QtWidgets.QGroupBox("Measurements")
+        vbox = QtWidgets.QVBoxLayout()
         box.setLayout(vbox)
         
-        self._dist_btn = QtGui.QPushButton("Measure distance")
+        self._dist_btn = QtWidgets.QPushButton("Measure distance")
         self._dist_btn.clicked.connect(self._measure_dist)
         vbox.addWidget(self._dist_btn)
 
-        self._angle_btn = QtGui.QPushButton("Measure angle")
+        self._angle_btn = QtWidgets.QPushButton("Measure angle")
         self._angle_btn.clicked.connect(self._measure_angle)
         vbox.addWidget(self._angle_btn)
 
-        self._label = QtGui.QLabel()
+        self._label = QtWidgets.QLabel()
         vbox.addWidget(self._label)
 
         layout.addWidget(box)

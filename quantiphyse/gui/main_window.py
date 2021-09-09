@@ -36,7 +36,7 @@ from quantiphyse import __contrib__, __acknowledge__
 from .widgets import FingerTabWidget
 from .viewer.viewer import Viewer
 
-class DragOptions(QtGui.QDialog):
+class DragOptions(QtWidgets.QDialog):
     """
     Interface for dealing with drag and drop
     """
@@ -50,52 +50,52 @@ class DragOptions(QtGui.QDialog):
         self.type = ""
         self.name = ""
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
 
-        grid = QtGui.QGridLayout()
-        grid.addWidget(QtGui.QLabel("Name:"), 1, 0)
-        self.name_combo = QtGui.QComboBox()
+        grid = QtWidgets.QGridLayout()
+        grid.addWidget(QtWidgets.QLabel("Name:"), 1, 0)
+        self.name_combo = QtWidgets.QComboBox()
         def_name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
         for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves']:
             self.name_combo.addItem(name)
         self.name_combo.setEditable(True)
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         if possible_roi:
-            btn = QtGui.QPushButton("ROI")
+            btn = QtWidgets.QPushButton("ROI")
             btn.clicked.connect(self._roi)
             hbox.addWidget(btn)
-        btn = QtGui.QPushButton("Data")
+        btn = QtWidgets.QPushButton("Data")
         btn.setDefault(True)
         btn.clicked.connect(self._data)
         hbox.addWidget(btn)
-        btn = QtGui.QPushButton("Cancel")
+        btn = QtWidgets.QPushButton("Cancel")
         btn.clicked.connect(self.reject)
         hbox.addWidget(btn)
         layout.addLayout(hbox)
         
-        self.main_cb = QtGui.QCheckBox("Set as main data")
+        self.main_cb = QtWidgets.QCheckBox("Set as main data")
         self.main_cb.setChecked(default_main)
         layout.addWidget(self.main_cb)
         
-        self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
+        self.force_t_cb = QtWidgets.QCheckBox("Treat as 2D multi-volume")
         if force_t_option:
             # Currently only one possible advanced option so hide it when this is not required
-            hbox = QtGui.QHBoxLayout()
-            self.adv_cb = QtGui.QCheckBox("Advanced Options")
+            hbox = QtWidgets.QHBoxLayout()
+            self.adv_cb = QtWidgets.QCheckBox("Advanced Options")
             self.adv_cb.stateChanged.connect(self._adv_changed)
             hbox.addWidget(self.adv_cb)
             layout.addLayout(hbox)
 
-            self.adv_pane = QtGui.QWidget()
-            vbox = QtGui.QVBoxLayout()
+            self.adv_pane = QtWidgets.QWidget()
+            vbox = QtWidgets.QVBoxLayout()
             self.adv_pane.setLayout(vbox)
 
-            grid = QtGui.QGridLayout()
+            grid = QtWidgets.QGridLayout()
             grid.setColumnStretch(2, 1)
 
-            self.force_t_cb = QtGui.QCheckBox("Treat as 2D multi-volume")
+            self.force_t_cb = QtWidgets.QCheckBox("Treat as 2D multi-volume")
             #self.force_t_cb.setVisible(force_t_option)
             grid.addWidget(self.force_t_cb, 0, 0)
             
@@ -122,15 +122,15 @@ class DragOptions(QtGui.QDialog):
         self.make_main = self.main_cb.isChecked()
         self.name = self.name_combo.currentText()
         if self.name in self.ivm.data:
-            btn = QtGui.QMessageBox.warning(self, "Name already exists",
+            btn = QtWidgets.QMessageBox.warning(self, "Name already exists",
                                             "Data already exists with this name - overwrite?",
-                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            if btn == QtGui.QMessageBox.Ok:
+                                            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            if btn == QtWidgets.QMessageBox.Ok:
                 self.accept()
         else:
             self.accept()
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     """
     Main application window
 
@@ -160,12 +160,12 @@ class MainWindow(QtGui.QMainWindow):
         self.current_widget = None
 
         # Main layout - image view to left, tabs to right
-        main_widget = QtGui.QWidget()
+        main_widget = QtWidgets.QWidget()
         self.setCentralWidget(main_widget)
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         main_widget.setLayout(hbox)
 
-        splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.ivl)
         splitter.setStretchFactor(0, 4)
         hbox.addWidget(splitter)
@@ -241,50 +241,50 @@ class MainWindow(QtGui.QMainWindow):
         """
         
         # File --> Load Data
-        load_action = QtGui.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
+        load_action = QtWidgets.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d image or ROI')
         load_action.triggered.connect(self.load_data_interactive)
 
         # File --> Save Data
-        save_ovreg_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
+        save_ovreg_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
         save_ovreg_action.setStatusTip('Save current data as a NIFTI file')
         save_ovreg_action.triggered.connect(self.save_data)
         save_ovreg_action.setShortcut('Ctrl+S')
 
         # File --> Save ROI
-        save_roi_action = QtGui.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current ROI', self)
+        save_roi_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current ROI', self)
         save_roi_action.setStatusTip('Save current ROI as a NIFTI file')
         save_roi_action.triggered.connect(self.save_roi)
 
         # File --> Clear all
-        clear_action = QtGui.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
+        clear_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("clear"), '&Clear all data', self)
         clear_action.setStatusTip('Remove all data from the viewer')
         clear_action.triggered.connect(self._clear)
 
         # File --> Exit
-        exit_action = QtGui.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
+        exit_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("application-exit"), '&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.setStatusTip('Exit Application')
         exit_action.triggered.connect(self.close)
 
         # About
-        about_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
+        about_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("help-about"), '&About', self)
         about_action.setStatusTip('About Quantiphyse')
         about_action.triggered.connect(self._show_about)
 
         # Help -- > Online help
-        help_action = QtGui.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
+        help_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("help-contents"), '&Online Help', self)
         help_action.setStatusTip('See online help file')
         help_action.triggered.connect(self._show_help)
 
         # Advanced --> Python Console
-        console_action = QtGui.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
+        console_action = QtWidgets.QAction(QtGui.QIcon(get_icon("console")), '&Console', self)
         console_action.setStatusTip('Run a console for advanced interaction')
         console_action.triggered.connect(self.show_console)
         
         # Advanced --> Install Packages
-        #install_action = QtGui.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
+        #install_action = QtWidgets.QAction(QtGui.QIcon(get_icon("package")), '&Install Packages', self)
         #install_action.setStatusTip('Install additional packages')
         #install_action.triggered.connect(self.install_packages)
 
@@ -311,7 +311,7 @@ class MainWindow(QtGui.QMainWindow):
                     widget_submenus[group] = widget_menu.addMenu(group)
                     
                 for w in self.widget_groups[group]:
-                    action = QtGui.QAction(w.icon, '&%s' % w.name, self)
+                    action = QtWidgets.QAction(w.icon, '&%s' % w.name, self)
                     action.setStatusTip(w.description)
                     action.widget = w
                     action.triggered.connect(self._show_widget)
@@ -379,7 +379,7 @@ class MainWindow(QtGui.QMainWindow):
         for ack, role in __acknowledge__.items():
             text += "<p align='center'>%s</p>" % ack
 
-        QtGui.QMessageBox.about(self, "Quantiphyse", text)
+        QtWidgets.QMessageBox.about(self, "Quantiphyse", text)
 
     #def install_packages(self):
     #    raise QpException("Package installation not implemented yet")
@@ -418,7 +418,7 @@ class MainWindow(QtGui.QMainWindow):
         Load data into the IVM from a file (which may already be known)
         """
         if fname is None:
-            fname, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', default_save_dir())
+            fname, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', default_save_dir())
             if not fname: return
         set_default_save_dir(os.path.dirname(fname))
 
@@ -441,11 +441,11 @@ class MainWindow(QtGui.QMainWindow):
         
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         if force_t:
-            msg_box = QtGui.QMessageBox(self)
+            msg_box = QtWidgets.QMessageBox(self)
             msg_box.setText("3D data was interpreted as multiple 2D volumes")
-            msg_box.setStandardButtons(QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
-            if msg_box.exec_() != QtGui.QMessageBox.Ok: return
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            msg_box.setDefaultButton(QtWidgets.QMessageBox.Ok)
+            if msg_box.exec_() != QtWidgets.QMessageBox.Ok: return
             data.set_2dt()
         
         self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
@@ -466,14 +466,14 @@ class MainWindow(QtGui.QMainWindow):
         Dialog for saving an data as a nifti file
         """
         if self.ivm.current_data is None:
-            QtGui.QMessageBox.warning(self, "No data", "No current data to save", QtGui.QMessageBox.Close)
+            QtWidgets.QMessageBox.warning(self, "No data", "No current data to save", QtWidgets.QMessageBox.Close)
         else:
             if hasattr(self.ivm.current_data, "fname") and self.ivm.current_data.fname is not None:
                 fname = self.ivm.current_data.fname
             else:
                 fname = os.path.join(default_save_dir(), self.ivm.current_data.name + ".nii")
 
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+            fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
                                                          filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_data, fname)
@@ -485,13 +485,13 @@ class MainWindow(QtGui.QMainWindow):
         Dialog for saving an ROI as a nifti file
         """
         if self.ivm.current_roi is None:
-            QtGui.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtGui.QMessageBox.Close)
+            QtWidgets.QMessageBox.warning(self, "No ROI", "No current ROI to save", QtWidgets.QMessageBox.Close)
         else:
             if hasattr(self.ivm.current_roi, "fname") and self.ivm.current_roi.fname is not None:
                 fname = self.ivm.current_roi.fname
             else:
                 fname = os.path.join(default_save_dir(), self.ivm.current_roi.name + ".nii")
-            fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
+            fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
                                                          filter="NIFTI files (*.nii *.nii.gz)")
             if fname != '':
                 save(self.ivm.current_roi, fname)
@@ -500,7 +500,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def _clear(self):
         if self.ivm.data:
-            ret = QtGui.QMessageBox.warning(self, "Clear all data", "Are you sure you want to clear all data?",
-                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Cancel)
-            if ret == QtGui.QMessageBox.Yes:
+            ret = QtWidgets.QMessageBox.warning(self, "Clear all data", "Are you sure you want to clear all data?",
+                                            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if ret == QtWidgets.QMessageBox.Yes:
                 self.ivm.reset()

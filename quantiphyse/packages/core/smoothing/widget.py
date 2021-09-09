@@ -35,33 +35,33 @@ class SmoothingWidget(QpWidget):
                                               desc="Gaussian smoothing", group="Processing", **kwargs)
         
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, title="Data Smoothing", subtitle="Smooth data using a Gaussian kernel", help="smoothing")
         vbox.addWidget(title)
 
-        hbox = QtGui.QHBoxLayout()
-        gbox = QtGui.QGroupBox()
+        hbox = QtWidgets.QHBoxLayout()
+        gbox = QtWidgets.QGroupBox()
         gbox.setTitle("Options")
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         gbox.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("Data to smooth"), 0, 0)
+        grid.addWidget(QtWidgets.QLabel("Data to smooth"), 0, 0)
         self.data_combo = OverlayCombo(self.ivm)
         self.data_combo.currentIndexChanged.connect(self.data_changed)
         grid.addWidget(self.data_combo, 0, 1)
         self.sigma = NumericOption("Sigma (mm)", grid, xpos=0, ypos=1, minval=0, step=0.1, default=1.0)
-        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
-        self.output_name = QtGui.QLineEdit()
+        grid.addWidget(QtWidgets.QLabel("Output name"), 2, 0)
+        self.output_name = QtWidgets.QLineEdit()
         grid.addWidget(self.output_name, 2, 1)
 
         hbox.addWidget(gbox)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.run_btn = QtGui.QPushButton("Run")
+        hbox = QtWidgets.QHBoxLayout()
+        self.run_btn = QtWidgets.QPushButton("Run")
         self.run_btn.clicked.connect(self.run)
         hbox.addWidget(self.run_btn)
         hbox.addStretch(1)

@@ -37,27 +37,27 @@ class BatchBuilderWidget(QpWidget):
         self.process = BatchScript(self.ivm, stdout=open(os.devnull, "w"), quit_on_exit=False)
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, title="Batch Builder", subtitle=self.description, batch_btn=False)
         vbox.addWidget(title)
 
-        self.proc_edit = QtGui.QPlainTextEdit()
+        self.proc_edit = QtWidgets.QPlainTextEdit()
         self.proc_edit.textChanged.connect(self._validate)
         vbox.addWidget(self.proc_edit, stretch=2)
 
-        hbox = QtGui.QHBoxLayout()
-        #self.new_case_btn = QtGui.QPushButton("New Case")
+        hbox = QtWidgets.QHBoxLayout()
+        #self.new_case_btn = QtWidgets.QPushButton("New Case")
         #hbox.addWidget(self.new_case_btn)
         #hbox.setAlignment(self.new_case_btn, QtCore.Qt.AlignTop)
 
-        self.reset_btn = QtGui.QPushButton("Reset")
+        self.reset_btn = QtWidgets.QPushButton("Reset")
         self.reset_btn.clicked.connect(self._reset)
         hbox.addWidget(self.reset_btn)
         hbox.addStretch(1)
 
-        self.save_btn = QtGui.QPushButton("Save")
+        self.save_btn = QtWidgets.QPushButton("Save")
         self.save_btn.clicked.connect(self._save)
         hbox.addWidget(self.save_btn)
         vbox.addLayout(hbox)
@@ -65,7 +65,7 @@ class BatchBuilderWidget(QpWidget):
         self.run_box = RunBox(self._get_process, self._get_options)
         vbox.addWidget(self.run_box)
 
-        self.proc_warn = QtGui.QLabel("")
+        self.proc_warn = QtWidgets.QLabel("")
         self.proc_warn.setStyleSheet("QLabel { color : red; }")
         vbox.addWidget(self.proc_warn)
 
@@ -88,10 +88,10 @@ class BatchBuilderWidget(QpWidget):
 
     def _reset(self):
         if self.changed and self.proc_edit.toPlainText().strip() != "":
-            btn = QtGui.QMessageBox.warning(self, "Reset to current data",
+            btn = QtWidgets.QMessageBox.warning(self, "Reset to current data",
                                             "Changes to batch file will be lost",
-                                            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-            if btn != QtGui.QMessageBox.Ok:
+                                            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            if btn != QtWidgets.QMessageBox.Ok:
                 return
         
         t = ""
@@ -165,7 +165,7 @@ class BatchBuilderWidget(QpWidget):
         return {"yaml" : self.proc_edit.toPlainText()}
 
     def _save(self):
-        fname, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save batch file', 
+        fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save batch file', 
                                                      dir=self.default_dir, 
                                                      filter="YAML files (*.yaml)")
         if fname != '':

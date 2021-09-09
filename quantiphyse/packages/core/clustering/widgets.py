@@ -44,7 +44,7 @@ class ClusteringWidget(QpWidget):
 
     def init_ui(self):
         self.process = KMeansProcess(self.ivm)
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self, help="cluster")
@@ -54,23 +54,23 @@ class ClusteringWidget(QpWidget):
 <i>Performs clustering of 3D or 4D data using the K-means algorithm.
 PCA reduction is used on 4D data to extract representative curves
 """
-        desc = QtGui.QLabel(DESC)
+        desc = QtWidgets.QLabel(DESC)
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        gbox = QtGui.QGroupBox()
+        gbox = QtWidgets.QGroupBox()
         gbox.setTitle('Clustering options')
 
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         gbox.setLayout(grid)
 
         # Data to cluster
-        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
+        grid.addWidget(QtWidgets.QLabel("Data"), 0, 0)
         self.data_combo = OverlayCombo(self.ivm)
         self.data_combo.currentIndexChanged.connect(self._data_changed)
         grid.addWidget(self.data_combo, 0, 1)
 
-        grid.addWidget(QtGui.QLabel("ROI"), 1, 0)
+        grid.addWidget(QtWidgets.QLabel("ROI"), 1, 0)
         self.roi_combo = RoiCombo(self.ivm, none_option=True)
         grid.addWidget(self.roi_combo, 1, 1)
 
@@ -83,21 +83,21 @@ PCA reduction is used on 4D data to extract representative curves
         self.n_pca.spin.setToolTip("")
 
         # Output ROI name
-        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
-        self.output_name = QtGui.QLineEdit("clusters")
+        grid.addWidget(QtWidgets.QLabel("Output name"), 2, 0)
+        self.output_name = QtWidgets.QLineEdit("clusters")
         grid.addWidget(self.output_name, 2, 1)
         layout.addWidget(gbox)
 
         # Run clustering button
-        hbox = QtGui.QHBoxLayout()
-        self.run_btn = QtGui.QPushButton('Run', self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.run_btn = QtWidgets.QPushButton('Run', self)
         self.run_btn.clicked.connect(self.run_clustering)
         hbox.addWidget(self.run_btn)
         hbox.addStretch(1)
         layout.addLayout(hbox)
 
         # Plot window, showing representative curves for 4D data
-        self.show_curves_btn = QtGui.QPushButton('Show representative curves', self)
+        self.show_curves_btn = QtWidgets.QPushButton('Show representative curves', self)
         self.show_curves_btn.clicked.connect(self._show_curves)
         layout.addWidget(self.show_curves_btn)
         self.plotwin = pg.GraphicsLayoutWidget()
@@ -108,47 +108,47 @@ PCA reduction is used on 4D data to extract representative curves
         layout.addWidget(self.plotwin)
 
         # Statistics
-        self.show_count_btn = QtGui.QPushButton('Show voxel counts', self)
+        self.show_count_btn = QtWidgets.QPushButton('Show voxel counts', self)
         self.show_count_btn.clicked.connect(self._show_counts)
         layout.addWidget(self.show_count_btn)
-        self.stats_gbox = QtGui.QGroupBox()
+        self.stats_gbox = QtWidgets.QGroupBox()
         self.stats_gbox.setTitle('Voxel count')
 
         self.count_table = QtGui.QStandardItemModel()
-        self.count_view = QtGui.QTableView()
+        self.count_view = QtWidgets.QTableView()
         self.count_view.resizeColumnsToContents()
         self.count_view.setModel(self.count_table)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.count_view)
         self.stats_gbox.setLayout(hbox)
         self.stats_gbox.setVisible(False)
         layout.addWidget(self.stats_gbox)
 
         # Merge regions
-        self.show_merge_btn = QtGui.QPushButton('Show merge options', self)
+        self.show_merge_btn = QtWidgets.QPushButton('Show merge options', self)
         self.show_merge_btn.clicked.connect(self._show_merge)
         layout.addWidget(self.show_merge_btn)
         
-        self.merge_gbox = QtGui.QGroupBox()
+        self.merge_gbox = QtWidgets.QGroupBox()
         self.merge_gbox.setTitle('Merge regions')
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.merge_gbox.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.merge_btn = QtGui.QPushButton('Merge', self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.merge_btn = QtWidgets.QPushButton('Merge', self)
         self.merge_btn.clicked.connect(self._run_merge)
         hbox.addWidget(self.merge_btn)
-        hbox.addWidget(QtGui.QLabel('Merge region '))
-        self.merge_region1 = QtGui.QLineEdit('1', self)
+        hbox.addWidget(QtWidgets.QLabel('Merge region '))
+        self.merge_region1 = QtWidgets.QLineEdit('1', self)
         hbox.addWidget(self.merge_region1)
-        hbox.addWidget(QtGui.QLabel(' with '))
-        self.merge_region2 = QtGui.QLineEdit('2', self)
+        hbox.addWidget(QtWidgets.QLabel(' with '))
+        self.merge_region2 = QtWidgets.QLineEdit('2', self)
         hbox.addWidget(self.merge_region2)
         vbox.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.auto_merge_btn = QtGui.QPushButton('AutoMerge', self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.auto_merge_btn = QtWidgets.QPushButton('AutoMerge', self)
         self.auto_merge_btn.clicked.connect(self._run_automerge)
         hbox.addWidget(self.auto_merge_btn)
         hbox.addStretch(1)
@@ -352,36 +352,36 @@ class MeanValuesWidget(QpWidget):
                                                desc="Replace data with its mean value within each ROI region", 
                                                group="ROIs", **kwargs)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
 
         title = TitleWidget(self, "Generate Mean Values Data", help="mean_values")
         layout.addWidget(title)
         
-        desc = QtGui.QLabel("This widget will convert the current data set into a "
+        desc = QtWidgets.QLabel("This widget will convert the current data set into a "
                             "new data set in which each ROI region contains the mean "
                             "value for that region.\n\nThis is generally only useful for "
                             "multi-level ROIs such as clusters or supervoxels")
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        hbox = QtGui.QHBoxLayout()
-        gbox = QtGui.QGroupBox()
+        hbox = QtWidgets.QHBoxLayout()
+        gbox = QtWidgets.QGroupBox()
         gbox.setTitle("Options")
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         gbox.setLayout(grid)
         
-        grid.addWidget(QtGui.QLabel("Data"), 0, 0)
+        grid.addWidget(QtWidgets.QLabel("Data"), 0, 0)
         self.ovl = OverlayCombo(self.ivm)
         self.ovl.currentIndexChanged.connect(self._data_changed)
         grid.addWidget(self.ovl, 0, 1)
-        grid.addWidget(QtGui.QLabel("ROI regions"), 1, 0)
+        grid.addWidget(QtWidgets.QLabel("ROI regions"), 1, 0)
         self.roi = RoiCombo(self.ivm)
         grid.addWidget(self.roi, 1, 1)
-        grid.addWidget(QtGui.QLabel("Output name"), 2, 0)
-        self.output_name = QtGui.QLineEdit()
+        grid.addWidget(QtWidgets.QLabel("Output name"), 2, 0)
+        self.output_name = QtWidgets.QLineEdit()
         grid.addWidget(self.output_name, 2, 1)
 
-        btn = QtGui.QPushButton('Generate', self)
+        btn = QtWidgets.QPushButton('Generate', self)
         btn.clicked.connect(self._generate)
         grid.addWidget(btn, 2, 0)
         hbox.addWidget(gbox)
@@ -407,10 +407,10 @@ class MeanValuesWidget(QpWidget):
         options = self.batch_options()[1]
 
         if not options["data"]:
-            QtGui.QMessageBox.warning(self, "No data selected", "Load data to generate mean values from", QtGui.QMessageBox.Close)
+            QtWidgets.QMessageBox.warning(self, "No data selected", "Load data to generate mean values from", QtWidgets.QMessageBox.Close)
             return
         if not options["roi"]:
-            QtGui.QMessageBox.warning(self, "No ROI selected", "Load an ROI for mean value regions", QtGui.QMessageBox.Close)
+            QtWidgets.QMessageBox.warning(self, "No ROI selected", "Load an ROI for mean value regions", QtWidgets.QMessageBox.Close)
             return
         
         process = MeanValuesProcess(self.ivm)

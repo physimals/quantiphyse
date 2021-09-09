@@ -21,7 +21,7 @@ from __future__ import division, unicode_literals, absolute_import
 try:
     from PySide import QtGui, QtCore
 except ImportError:
-    from PySide2 import QtGui, QtCore
+    from PySide2 import QtGui, QtCore, QtWidgets
 
 import numpy as np
 
@@ -92,7 +92,7 @@ class SingleViewEnforcer:
             if data.name != qpdata.name and data.roi == qpdata.roi and data.view.visible == Visibility.SHOW:
                 data.view.visible = Visibility.HIDE
 
-class Viewer(QtGui.QSplitter, LogSource):
+class Viewer(QtWidgets.QSplitter, LogSource):
     """
     Widget containing three orthogonal slice views, two histogram/LUT widgets plus
     navigation sliders and data summary view.
@@ -131,7 +131,7 @@ class Viewer(QtGui.QSplitter, LogSource):
 
     def __init__(self, ivm):
         LogSource.__init__(self)
-        QtGui.QSplitter.__init__(self, QtCore.Qt.Vertical)
+        QtWidgets.QSplitter.__init__(self, QtCore.Qt.Vertical)
 
         self.ivm = ivm
         self._grid = DataGrid([1, 1, 1], np.identity(4))
@@ -167,8 +167,8 @@ class Viewer(QtGui.QSplitter, LogSource):
         self.data_histogram = CurrentDataHistogramWidget(self)
 
         # Layout of the ortho slice viewers and histograms
-        gview = QtGui.QWidget()
-        self.layout_grid = QtGui.QGridLayout()
+        gview = QtWidgets.QWidget()
+        self.layout_grid = QtWidgets.QGridLayout()
         gview.setLayout(self.layout_grid)
 
         self.layout_grid.setHorizontalSpacing(2)
@@ -186,14 +186,14 @@ class Viewer(QtGui.QSplitter, LogSource):
         self.layout_grid.setRowStretch(1, 1)
 
         # Navigation controls layout
-        control_box = QtGui.QWidget()
-        vbox = QtGui.QVBoxLayout()
+        control_box = QtWidgets.QWidget()
+        vbox = QtWidgets.QVBoxLayout()
         vbox.setSpacing(5)
         control_box.setLayout(vbox)
 
         # Navigation sliders and the ROI/Overlay view controls
         #vbox.addWidget(DataSummary(self))
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         nav_box = NavigationBox(self)
         hbox.addWidget(nav_box)
         roi_box = ViewParamsWidget(self, rois=True, data=False)

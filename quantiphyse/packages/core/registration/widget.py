@@ -44,14 +44,14 @@ class RegWidget(QpWidget):
                 self.warn("Failed to create registration method: %s", method)
                 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self, title="Registration and Motion Correction", help="reg")
         layout.addWidget(title)
 
         if not self.reg_methods:
-            layout.addWidget(QtGui.QLabel("No registration methods found"))
+            layout.addWidget(QtWidgets.QLabel("No registration methods found"))
             layout.addStretch(1)
             return
 
@@ -77,10 +77,10 @@ class RegWidget(QpWidget):
         # Create the options boxes for reg methods - only one visible at a time!
         self.opt_boxes = {}
         for method in self.reg_methods:
-            hbox = QtGui.QHBoxLayout()
-            opt_box = QtGui.QGroupBox()
+            hbox = QtWidgets.QHBoxLayout()
+            opt_box = QtWidgets.QGroupBox()
             opt_box.setTitle(method.display_name)
-            vbox = QtGui.QVBoxLayout()
+            vbox = QtWidgets.QVBoxLayout()
             opt_box.setLayout(vbox)
             vbox.addWidget(method.interface())
             hbox.addWidget(opt_box)
@@ -137,7 +137,7 @@ class RegWidget(QpWidget):
             "Reg" : options,
         }
 
-class TransformOption(Option, QtGui.QComboBox):
+class TransformOption(Option, QtWidgets.QComboBox):
     """ 
     Option for choosing previously calculated registration transforms. 
     These may be stored as data sets or Extras
@@ -145,7 +145,7 @@ class TransformOption(Option, QtGui.QComboBox):
     sig_changed = QtCore.Signal()
 
     def __init__(self, ivm):
-        QtGui.QComboBox.__init__(self)
+        QtWidgets.QComboBox.__init__(self)
         self.ivm = ivm
         self._data_changed()
         self.ivm.sig_all_data.connect(self._data_changed)
@@ -188,29 +188,29 @@ class TransformOption(Option, QtGui.QComboBox):
     def _changed(self):
         self.sig_changed.emit()
 
-class TransformDetails(QtGui.QGroupBox):
+class TransformDetails(QtWidgets.QGroupBox):
     """
     Widget displaying information about a selected transformation
     """
 
     def __init__(self):
-        QtGui.QGroupBox.__init__(self, "Transform details")
-        grid = QtGui.QGridLayout()
+        QtWidgets.QGroupBox.__init__(self, "Transform details")
+        grid = QtWidgets.QGridLayout()
         self.setLayout(grid)
         
-        self._name = QtGui.QLineEdit()
-        grid.addWidget(QtGui.QLabel("Transform name"), 0, 0)
+        self._name = QtWidgets.QLineEdit()
+        grid.addWidget(QtWidgets.QLabel("Transform name"), 0, 0)
         grid.addWidget(self._name, 0, 1)
 
-        self._method = QtGui.QLineEdit()
-        grid.addWidget(QtGui.QLabel("Registration method"), 1, 0)
+        self._method = QtWidgets.QLineEdit()
+        grid.addWidget(QtWidgets.QLabel("Registration method"), 1, 0)
         grid.addWidget(self._method, 1, 1)
 
-        self._type = QtGui.QLineEdit()
-        grid.addWidget(QtGui.QLabel("Transform type"), 2, 0)
+        self._type = QtWidgets.QLineEdit()
+        grid.addWidget(QtWidgets.QLabel("Transform type"), 2, 0)
         grid.addWidget(self._type, 2, 1)
 
-        self._edit = QtGui.QPlainTextEdit()
+        self._edit = QtWidgets.QPlainTextEdit()
         self._edit.setReadOnly(True)
         grid.addWidget(self._edit, 3, 0, 1, 2)
 
@@ -254,14 +254,14 @@ class ApplyTransform(QpWidget):
                 self.warn("Failed to create registration method: %s", method)
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
         title = TitleWidget(self, help="reg")
         layout.addWidget(title)
 
         if not self.reg_methods:
-            layout.addWidget(QtGui.QLabel("No registration methods found"))
+            layout.addWidget(QtWidgets.QLabel("No registration methods found"))
             layout.addStretch(1)
             return
 

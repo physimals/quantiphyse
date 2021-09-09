@@ -31,16 +31,16 @@ class ImageExportWidget(QpWidget):
         super(ImageExportWidget, self).__init__(name="Image Export", desc="Export images and animations", icon="image_export", **kwargs)
 
     def init_ui(self):
-        main_vbox = QtGui.QVBoxLayout()
+        main_vbox = QtWidgets.QVBoxLayout()
         
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Export animation</font>'))
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel('<font size="5">Export animation</font>'))
         hbox.addStretch(1)
         hbox.addWidget(HelpButton(self))
         main_vbox.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        b1 = QtGui.QPushButton('Generate', self)
+        hbox = QtWidgets.QHBoxLayout()
+        b1 = QtWidgets.QPushButton('Generate', self)
         b1.clicked.connect(self.run_time_window_capture)
         hbox.addWidget(b1)
         hbox.addStretch(1)
@@ -61,7 +61,7 @@ class ImageExportWidget(QpWidget):
         shape = self.ivm.vol.shape
 
         # Choose a folder to save images
-        fname = QtGui.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose folder to save images')
         if fname == '':
             return
 

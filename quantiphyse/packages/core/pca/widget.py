@@ -35,7 +35,7 @@ class PcaWidget(QpWidget):
                                         desc="PCA reduction", group="Processing", **kwargs)
         
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, title="PCA reduction", subtitle="Principal Component Analysis for 4D data")
@@ -56,11 +56,11 @@ class PcaWidget(QpWidget):
         self.plot = Plot(qpo=None, parent=self, title="PCA modes")
 
         self.variance_model = QtGui.QStandardItemModel()
-        variance_table = QtGui.QTableView()
+        variance_table = QtWidgets.QTableView()
         variance_table.verticalHeader().hide()
         variance_table.setModel(self.variance_model)
 
-        tabs = QtGui.QTabWidget()
+        tabs = QtWidgets.QTabWidget()
         tabs.addTab(self.plot, "PCA modes")
         tabs.addTab(variance_table, "Explained variance")
         tabs.setCurrentWidget(self.plot)

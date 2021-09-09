@@ -35,7 +35,7 @@ class AddNoiseWidget(QpWidget):
                                              group="Simulation", **kwargs)
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, title="Add Noise", help="noise")
@@ -47,7 +47,7 @@ class AddNoiseWidget(QpWidget):
         self.option_box.add("Output name", OutputNameOption(src_data=data, suffix="_noisy"), key="output-name")
         vbox.addWidget(self.option_box)
 
-        run_btn = QtGui.QPushButton('Run', self)
+        run_btn = QtWidgets.QPushButton('Run', self)
         run_btn.clicked.connect(self.run)
         vbox.addWidget(run_btn)
         
@@ -71,7 +71,7 @@ class SimMotionWidget(QpWidget):
                                               group="Simulation", **kwargs)
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self, title="Simulate Motion", help="sim_motion")
@@ -86,7 +86,7 @@ class SimMotionWidget(QpWidget):
         self.option_box.add("Output name", OutputNameOption(src_data=data, suffix="_moving"), key="output-name")
         vbox.addWidget(self.option_box)
 
-        run_btn = QtGui.QPushButton('Run', self)
+        run_btn = QtWidgets.QPushButton('Run', self)
         run_btn.clicked.connect(self.run)
         vbox.addWidget(run_btn)
         

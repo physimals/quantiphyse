@@ -45,9 +45,9 @@ def error_dialog(msg, title="Warning", detail=None, subtitle="Details:"):
         detail_str = detail_str.replace(os.linesep, "<br>")
         text += "<br><br><b>%s</b><br><br>%s" % (subtitle, detail_str)
 
-    QtGui.QMessageBox.warning(MAINWIN, title, text, QtGui.QMessageBox.Close)
+    QtWidgets.QMessageBox.warning(MAINWIN, title, text, QtWidgets.QMessageBox.Close)
 
-class MultiTextViewerDialog(QtGui.QDialog):
+class MultiTextViewerDialog(QtWidgets.QDialog):
     """
     Text viewer dialog with multiple pages presented as tabs
 
@@ -58,9 +58,9 @@ class MultiTextViewerDialog(QtGui.QDialog):
     def __init__(self, parent, title="Log", pages=()):
         super(MultiTextViewerDialog, self).__init__(parent)
         self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
-        self.tabs = QtGui.QTabWidget()
+        self.tabs = QtWidgets.QTabWidget()
         self._browsers = {}
         for heading, content in pages:
             browser = self._text_browser(content)
@@ -69,12 +69,12 @@ class MultiTextViewerDialog(QtGui.QDialog):
 
         vbox.addWidget(self.tabs)
 
-        hbox = QtGui.QHBoxLayout()
-        self.copy_btn = QtGui.QPushButton("Copy")
+        hbox = QtWidgets.QHBoxLayout()
+        self.copy_btn = QtWidgets.QPushButton("Copy")
         self.copy_btn.clicked.connect(self._copy)
         hbox.addWidget(self.copy_btn)
         hbox.addStretch(1)
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         self.button_box.accepted.connect(self.close)
         hbox.addWidget(self.button_box)
         vbox.addLayout(hbox)
@@ -100,13 +100,13 @@ class MultiTextViewerDialog(QtGui.QDialog):
             scrollbar.setValue(original_pos)
 
     def _text_browser(self, content):
-        browser = QtGui.QTextBrowser()
+        browser = QtWidgets.QTextBrowser()
         browser.setFontFamily("Courier")
         browser.setText(content)
         return browser
 
     def _copy(self):
-        clipboard = QtGui.QApplication.clipboard()
+        clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self.tabs.currentWidget().toPlainText())
 
 class TextViewerDialog(MultiTextViewerDialog):
@@ -126,7 +126,7 @@ class TextViewerDialog(MultiTextViewerDialog):
     def text(self, newtext):
         self.setText("", newtext)
 
-class MatrixViewerDialog(QtGui.QDialog):
+class MatrixViewerDialog(QtWidgets.QDialog):
     """
     Dialog box enabling a read-only viewing of a number matrix
     """
@@ -134,18 +134,18 @@ class MatrixViewerDialog(QtGui.QDialog):
     def __init__(self, parent, vals, title="Data", text=""):
         super(MatrixViewerDialog, self).__init__(parent)
         self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
-        self.table = QtGui.QTableWidget(len(vals), len(vals[0]))
+        self.table = QtWidgets.QTableWidget(len(vals), len(vals[0]))
         vbox.addWidget(self.table)
         for row, rvals in enumerate(vals):
             for col, val in enumerate(rvals):
-                self.table.setItem(row, col, QtGui.QTableWidgetItem(str(val)))
+                self.table.setItem(row, col, QtWidgets.QTableWidgetItem(str(val)))
 
-        self.text = QtGui.QLabel(text)
+        self.text = QtWidgets.QLabel(text)
         vbox.addWidget(self.text)
 
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
         vbox.addWidget(self.button_box)
@@ -153,7 +153,7 @@ class MatrixViewerDialog(QtGui.QDialog):
         self.setLayout(vbox)
         self.resize(500, 500)
 
-class GridEditDialog(QtGui.QDialog):
+class GridEditDialog(QtWidgets.QDialog):
     """
     Dialog box enabling a numerical matrix to be edited
     """
@@ -161,28 +161,28 @@ class GridEditDialog(QtGui.QDialog):
     def __init__(self, parent, vals, col_headers=None, row_headers=None, title="Data", text="", expandable=(True, True)):
         super(GridEditDialog, self).__init__(parent)
         self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
         from .widgets import NumberGrid # prevent circular import dependency
         self.table = NumberGrid(vals, col_headers=col_headers, row_headers=row_headers, expandable=expandable)
         self.table.sig_changed.connect(self._validate)
         vbox.addWidget(self.table)
 
-        self.text = QtGui.QLabel(text)
+        self.text = QtWidgets.QLabel(text)
         vbox.addWidget(self.text)
 
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
         vbox.addWidget(self.button_box)
 
         self.setLayout(vbox)
 
     def _validate(self):
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(self.table.valid())
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(self.table.valid())
 
-class ChooseFromListDialog(QtGui.QDialog):
+class ChooseFromListDialog(QtWidgets.QDialog):
     """
     Dialog box enabling one item to be chosen from a list
     """
@@ -193,13 +193,13 @@ class ChooseFromListDialog(QtGui.QDialog):
         self.sel_data = None
 
         self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
         if return_values is None:
             return_values = values
-        self._list = QtGui.QListWidget(self)
+        self._list = QtWidgets.QListWidget(self)
         for value, data in zip(values, return_values):
-            item = QtGui.QListWidgetItem(value)
+            item = QtWidgets.QListWidgetItem(value)
             item.setData(QtCore.Qt.UserRole, data)
             self._list.addItem(item)
             
@@ -207,10 +207,10 @@ class ChooseFromListDialog(QtGui.QDialog):
         self._list.itemClicked.connect(self._item_clicked)
         self._list.itemDoubleClicked.connect(self._item_double_clicked)
 
-        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
         vbox.addWidget(self.button_box)
 
         self.setLayout(vbox)
@@ -218,25 +218,25 @@ class ChooseFromListDialog(QtGui.QDialog):
     def _item_clicked(self, item):
         self.sel_text = item.text()
         self.sel_data = item.data(QtCore.Qt.UserRole)
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
 
     def _item_double_clicked(self, item):
         self._item_clicked(item)
         self.accept()
 
-class PlotDialog1d(QtGui.QDialog):
+class PlotDialog1d(QtWidgets.QDialog):
     """
     Dialog that shows a 1D plot
     """
 
     def __init__(self, parent, arr, title="Plot"):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
 
         if arr.ndim != 1:
             raise ValueError("Only for 1D plotting")
 
         self.setWindowTitle(title)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         from quantiphyse.gui.plot import Plot

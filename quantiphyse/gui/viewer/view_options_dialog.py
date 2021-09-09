@@ -26,7 +26,7 @@ except ImportError:
 from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility
 from quantiphyse.gui.options import OptionBox, ChoiceOption
 
-class ViewerOptions(QtGui.QDialog):
+class ViewerOptions(QtWidgets.QDialog):
     """
     Dialog box which controls viewer options
     """
@@ -36,8 +36,8 @@ class ViewerOptions(QtGui.QDialog):
         self.setWindowTitle("View Options")
         self._ivl = ivl
 
-        vbox = QtGui.QVBoxLayout()
-        label = QtGui.QLabel('<font size="5">View Options</font>')
+        vbox = QtWidgets.QVBoxLayout()
+        label = QtWidgets.QLabel('<font size="5">View Options</font>')
         vbox.addWidget(label)
 
         self._optbox = OptionBox()

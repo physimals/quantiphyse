@@ -441,7 +441,7 @@ class FreehandPicker(PolygonPicker):
         fx, fy = float(pos[self.view.xaxis]), float(pos[self.view.yaxis])
         self._points.append((fx, fy))
 
-        self.roisel = QtGui.QGraphicsPathItem()
+        self.roisel = QtWidgets.QGraphicsPathItem()
         pen = QtGui.QPen(QtCore.Qt.darkMagenta, 1, QtCore.Qt.SolidLine,
                          QtCore.Qt.SquareCap, QtCore.Qt.BevelJoin)
         self.roisel.setPen(pen)

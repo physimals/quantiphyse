@@ -55,21 +55,21 @@ class ViewParamsWidget(OptionBox):
         self._no_update = False
         self.grid.setVerticalSpacing(2)
 
-        self._view_btn = QtGui.QPushButton()
+        self._view_btn = QtWidgets.QPushButton()
         self._view_btn.setIcon(QtGui.QIcon(get_icon("visible.png")))
         self._view_btn.setFixedSize(16, 16)
         self._view_btn.setToolTip("Visibility")
         self._view_btn.clicked.connect(self._view_btn_clicked)
         self._data = self.add("Data" if data else "ROI", DataOption(self.ivm, data=data, rois=rois, follow_current=True), self._view_btn, key="data")
         self._view_roi = self.add("View ROI", DataOption(self.ivm, data=False, rois=True), checked=True, key="view_roi")
-        self._levels_btn = QtGui.QPushButton()
+        self._levels_btn = QtWidgets.QPushButton()
         self._levels_btn.setIcon(QtGui.QIcon(get_icon("levels.png")))
         self._levels_btn.setFixedSize(16, 16)
         self._levels_btn.setToolTip("Adjust colour map levels")
         self._levels_btn.clicked.connect(self._levels_clicked)
         self._cmap = self.add("Colour map", ChoiceOption(CMAPS, default=DEFAULT_CMAP), self._levels_btn, key="cmap")
         self._alpha = self.add("Alpha", NumericOption(minval=0, maxval=255, default=255, edit=False, intonly=True), key="alpha")
-        self._value_label = QtGui.QLabel()
+        self._value_label = QtWidgets.QLabel()
         self.add("Value", self._value_label)
         self.add("", stretch=2)
 
@@ -192,7 +192,7 @@ class ViewParamsWidget(OptionBox):
             
         return QtGui.QIcon(get_icon(icon))
 
-class LevelsDialog(QtGui.QDialog):
+class LevelsDialog(QtWidgets.QDialog):
     """
     Dialog box used to set the colourmap max/min for a data view
     """
@@ -204,26 +204,26 @@ class LevelsDialog(QtGui.QDialog):
         self._qpdata = qpdata
 
         self.setWindowTitle("Levels for %s" % self._qpdata.name)
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
-        grid = QtGui.QGridLayout()
+        grid = QtWidgets.QGridLayout()
         self.min_spin = self._add_spin(grid, "Minimum", 0)
         self.max_spin = self._add_spin(grid, "Maximum", 1)
 
-        grid.addWidget(QtGui.QLabel("Percentage of data range"), 2, 0)
-        hbox = QtGui.QHBoxLayout()
-        self.percentile_spin = QtGui.QSpinBox()
+        grid.addWidget(QtWidgets.QLabel("Percentage of data range"), 2, 0)
+        hbox = QtWidgets.QHBoxLayout()
+        self.percentile_spin = QtWidgets.QSpinBox()
         self.percentile_spin.setMaximum(100)
         self.percentile_spin.setMinimum(1)
         self.percentile_spin.setValue(100)
         hbox.addWidget(self.percentile_spin)
-        btn = QtGui.QPushButton("Reset")
+        btn = QtWidgets.QPushButton("Reset")
         btn.clicked.connect(self._reset)
         hbox.addWidget(btn)
         grid.addLayout(hbox, 2, 1)
 
-        grid.addWidget(QtGui.QLabel("Values outside range are"), 4, 0)
-        self.combo = QtGui.QComboBox()
+        grid.addWidget(QtWidgets.QLabel("Values outside range are"), 4, 0)
+        self.combo = QtWidgets.QComboBox()
         self.combo.addItem("Transparent")
         self.combo.addItem("Clamped to max/min colour")
         self.combo.addItem("Transparent at lower, clamped at upper")
@@ -233,15 +233,15 @@ class LevelsDialog(QtGui.QDialog):
         grid.addWidget(self.combo, 4, 1)
         vbox.addLayout(grid)
 
-        bbox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         bbox.accepted.connect(self.close)
         vbox.addWidget(bbox)
 
         self.setLayout(vbox)
 
     def _add_spin(self, grid, label, row):
-        grid.addWidget(QtGui.QLabel(label), row, 0)
-        spin = QtGui.QDoubleSpinBox()
+        grid.addWidget(QtWidgets.QLabel(label), row, 0)
+        spin = QtWidgets.QDoubleSpinBox()
         spin.setMaximum(1e20)
         spin.setMinimum(-1e20)
         spin.setValue(self._qpdata.view.cmap_range[row])

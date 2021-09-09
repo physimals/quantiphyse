@@ -47,17 +47,17 @@ from quantiphyse.gui.dialogs import MatrixViewerDialog, ChooseFromListDialog, Pl
 
 LOG = logging.getLogger(__name__)
 
-class OptionBox(QtGui.QGroupBox):
+class OptionBox(QtWidgets.QGroupBox):
     """
     A box containing structured options for a QpWidget
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, title="", **kwargs):
-        QtGui.QGroupBox.__init__(self, title)
+        QtWidgets.QGroupBox.__init__(self, title)
         if not title and not kwargs.get("border", False):
             self.setStyleSheet("border: none")
-        self.grid = QtGui.QGridLayout()
+        self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
         self._current_row = 0
         self._options = {}
@@ -98,11 +98,11 @@ class OptionBox(QtGui.QGroupBox):
 
         col = 0
         if label:
-            self.grid.addWidget(QtGui.QLabel(label), self._current_row, col, 1, 1 if real_options else 3)
+            self.grid.addWidget(QtWidgets.QLabel(label), self._current_row, col, 1, 1 if real_options else 3)
             col += 1
 
         if checked:
-            cb = QtGui.QCheckBox()
+            cb = QtWidgets.QCheckBox()
             cb.setChecked(enabled)
             self.grid.addWidget(cb, self._current_row, col)
             col += 1
@@ -152,7 +152,7 @@ class OptionBox(QtGui.QGroupBox):
             if item is None:
                 break
             item.widget().setVisible(visible)
-            if isinstance(item.widget(), QtGui.QCheckBox) and not isinstance(item.widget(), Option):
+            if isinstance(item.widget(), QtWidgets.QCheckBox) and not isinstance(item.widget(), Option):
                 checked = item.widget().isChecked()
                 item.widget().setEnabled(visible)
             else:
@@ -165,7 +165,7 @@ class OptionBox(QtGui.QGroupBox):
         """
         row = self._rows[key]
         cb = self.grid.itemAtPosition(row, 1)
-        if isinstance(cb.widget(), QtGui.QCheckBox) and not isinstance(cb.widget(), Option):
+        if isinstance(cb.widget(), QtWidgets.QCheckBox) and not isinstance(cb.widget(), Option):
             cb.widget().setChecked(checked)
         else:
             raise ValueError("set_checked called on option '%s' which is not a checked option" % key)
@@ -233,7 +233,7 @@ class Option(object):
     """
     pass
 
-class DataOption(Option, QtGui.QComboBox):
+class DataOption(Option, QtWidgets.QComboBox):
     """
     A combo box which gives a choice of data
 
@@ -350,7 +350,7 @@ class DataOption(Option, QtGui.QComboBox):
 
     def hidePopup(self):
         """
-        Overridden from QtGui.QComboBox
+        Overridden from QtWidgets.QComboBox
 
         To allow multi-select, don't hide the popup when it's clicked on to
         select/deselect data sets, so we can check and uncheck
@@ -359,7 +359,7 @@ class DataOption(Option, QtGui.QComboBox):
         window), this will close the popup
         """
         if not self._changed:
-            QtGui.QComboBox.hidePopup(self)
+            QtWidgets.QComboBox.hidePopup(self)
         self._changed = False
 
     def _visible_text(self, selected_items):
@@ -454,11 +454,11 @@ class DataOption(Option, QtGui.QComboBox):
 
     def setEnabled(self, enable):
         """
-        Overridden from QtGui.QWidget
+        Overridden from QtWidgets.QWidget
 
         Only highlight selector in red when widget is enabled
         """
-        QtGui.QWidget.setEnabled(self, enable)
+        QtWidgets.QWidget.setEnabled(self, enable)
         self._update_highlight()
 
     def _update_highlight(self):
@@ -472,17 +472,17 @@ class DataOption(Option, QtGui.QComboBox):
             if (not qpd.roi and self._include_nonrois) or (qpd.roi and self._include_rois):
                 self.value = qpd.name
 
-class ChoiceOption(Option, QtGui.QComboBox):
+class ChoiceOption(Option, QtWidgets.QComboBox):
     """
     Option which is chosen from a list of possible strings
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, choices=(), return_values=None, default=None):
-        QtGui.QComboBox.__init__(self)
+        QtWidgets.QComboBox.__init__(self)
         self.setChoices(choices, return_values)
         # Bizarre hack to make the dropdown height adjust to the items added
-        self.setView(QtGui.QListView())
+        self.setView(QtWidgets.QListView())
         if default:
             self.value = default
         self.currentIndexChanged.connect(self._changed)
@@ -540,14 +540,14 @@ class ChoiceOption(Option, QtGui.QComboBox):
     def _changed(self):
         self.sig_changed.emit()
 
-class TextOption(Option, QtGui.QLineEdit):
+class TextOption(Option, QtWidgets.QLineEdit):
     """
     Option which contains arbitrary text
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, initial=""):
-        QtGui.QLineEdit.__init__(self, initial)
+        QtWidgets.QLineEdit.__init__(self, initial)
         self.editingFinished.connect(self._changed)
 
     @property
@@ -582,14 +582,14 @@ class OutputNameOption(TextOption):
         else:
             self.setText(self.initial)
 
-class NumericOption(Option, QtGui.QWidget):
+class NumericOption(Option, QtWidgets.QWidget):
     """
     Numeric option chooser which uses a slider and two spin boxes
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, minval=0, maxval=100, default=0, intonly=False, decimals=2, **kwargs):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.minval = minval
         self.maxval = maxval
         self.hardmin = kwargs.get("hardmin", False)
@@ -605,15 +605,15 @@ class NumericOption(Option, QtGui.QWidget):
             self.decimals = decimals
             self.slider_scale = 10**decimals
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
 
-        #self.min_edit = QtGui.QLineEdit(str(minval))
+        #self.min_edit = QtWidgets.QLineEdit(str(minval))
         #self.min_edit.editingFinished.connect(self_min_changed)
         #hbox.addWidget(self.min_edit)
 
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setMaximum(maxval*self.slider_scale)
         self.slider.setMinimum(minval*self.slider_scale)
         self.slider.setValue(default*self.slider_scale)
@@ -621,7 +621,7 @@ class NumericOption(Option, QtGui.QWidget):
         if kwargs.get("slider", True):
             hbox.addWidget(self.slider)
 
-        self.val_edit = QtGui.QLineEdit(str(default))
+        self.val_edit = QtWidgets.QLineEdit(str(default))
         self.val_edit.editingFinished.connect(self._edit_changed)
         if kwargs.get("edit", True):
             hbox.addWidget(self.val_edit)
@@ -698,7 +698,7 @@ class NumericOption(Option, QtGui.QWidget):
         finally:
             self.blockSignals(False)
 
-class BoolOption(Option, QtGui.QCheckBox):
+class BoolOption(Option, QtWidgets.QCheckBox):
     """
     Option used to specify a true or false value
     """
@@ -709,7 +709,7 @@ class BoolOption(Option, QtGui.QCheckBox):
         :param default: Initial value of ``value`` property
         :param invert: If True, ``value`` property is the opposite of the check state
         """
-        QtGui.QCheckBox.__init__(self)
+        QtWidgets.QCheckBox.__init__(self)
         if invert:
             default = not default
         self.setChecked(default)
@@ -733,7 +733,7 @@ class BoolOption(Option, QtGui.QCheckBox):
     def _changed(self):
         self.sig_changed.emit()
 
-class MatrixOption(Option, QtGui.QTableView):
+class MatrixOption(Option, QtWidgets.QTableView):
     """
     Option which returns a 2D matrix of numbers
     """
@@ -742,7 +742,7 @@ class MatrixOption(Option, QtGui.QTableView):
 
     def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
                  fix_height=False, fix_width=False, readonly=False):
-        QtGui.QTableView.__init__(self)
+        QtWidgets.QTableView.__init__(self)
 
         self._model = QtGui.QStandardItemModel()
         self.setModel(self._model)
@@ -759,12 +759,12 @@ class MatrixOption(Option, QtGui.QTableView):
         self.setMatrix(initial, False, col_headers=col_headers, row_headers=row_headers)
 
         if readonly:
-            self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+            self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         else:
             self.model().itemChanged.connect(self._item_changed)
 
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        #self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        #self.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.itemDelegate().closeEditor.connect(self._expand_if_required, QtCore.Qt.QueuedConnection)
         self.setAcceptDrops(True)
 
@@ -1040,29 +1040,29 @@ class VectorOption(MatrixOption):
                     return None, r.leftColumn()
         return None, None    
   
-class NumberListOption(Option, QtGui.QWidget):
+class NumberListOption(Option, QtWidgets.QWidget):
     """ 
     A list of numbers which may be entered space or comma separated
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, initial=(), intonly=False, load_btn=True, extras_btn=False, ivm=None):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self._ivm = ivm
         self._value = []
-        self._hbox = QtGui.QHBoxLayout()
+        self._hbox = QtWidgets.QHBoxLayout()
         self._hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._hbox)
 
-        self._edit = QtGui.QLineEdit()
+        self._edit = QtWidgets.QLineEdit()
         self._edit.dropEvent = self.dropEvent
         self._hbox.addWidget(self._edit)
-        self._btn = QtGui.QPushButton("Load")
+        self._btn = QtWidgets.QPushButton("Load")
         self._btn.clicked.connect(self._load_clicked)
         if load_btn:
             self._hbox.addWidget(self._btn)
 
-        self._extras_btn = QtGui.QPushButton("Predefined")
+        self._extras_btn = QtWidgets.QPushButton("Predefined")
         self._extras_btn.clicked.connect(self._extras_clicked)
         if extras_btn:
             self._hbox.addWidget(self._extras_btn)
@@ -1097,7 +1097,7 @@ class NumberListOption(Option, QtGui.QWidget):
         self.sig_changed.emit()
 
     def _load_clicked(self):
-        filename, _ = QtGui.QFileDialog.getOpenFileName(dir=default_save_dir())
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(dir=default_save_dir())
         if filename:
             set_default_save_dir(os.path.dirname(filename))
 
@@ -1174,7 +1174,7 @@ class NumberListOption(Option, QtGui.QWidget):
                     return None, r.leftColumn()
         return None, None
 
-class PickPointOption(Option, QtGui.QWidget):
+class PickPointOption(Option, QtWidgets.QWidget):
     """
     Option used to specify a single point in a data set
     """
@@ -1185,7 +1185,7 @@ class PickPointOption(Option, QtGui.QWidget):
         :param grid: DataGrid instance - output position will be reported relative to this grid
         :param intonly: If True, positions will be rounded to nearest integer
         """
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self._ivl = ivl
         self._grid = grid
         if intonly:
@@ -1195,14 +1195,14 @@ class PickPointOption(Option, QtGui.QWidget):
             self._rtype = float
             self._offset = 0
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
 
-        self._edit = QtGui.QLineEdit()
+        self._edit = QtWidgets.QLineEdit()
         self._edit.editingFinished.connect(self._edit_changed)
         hbox.addWidget(self._edit)
-        self._btn = QtGui.QPushButton("Pick point")
+        self._btn = QtWidgets.QPushButton("Pick point")
         self._btn.clicked.connect(self._pick_point)
         hbox.addWidget(self._btn)
 
@@ -1249,7 +1249,7 @@ class PickPointOption(Option, QtGui.QWidget):
         self._edit.setText(" ".join([str(self._rtype(v+self._offset)) for v in point[:3]]))
         self._edit_changed()
 
-class FileOption(Option, QtGui.QWidget):
+class FileOption(Option, QtWidgets.QWidget):
     """
     Option used to specify a file or directory
     """
@@ -1259,21 +1259,21 @@ class FileOption(Option, QtGui.QWidget):
         """
         :param dirs: If True, allow only directories to be selected
         """
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self._dirs = dirs
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
-        self._edit = QtGui.QLineEdit(initial)
+        self._edit = QtWidgets.QLineEdit(initial)
         hbox.addWidget(self._edit)
 
-        self._btn = QtGui.QPushButton("Choose")
+        self._btn = QtWidgets.QPushButton("Choose")
         self._btn.clicked.connect(self._clicked)
         hbox.addWidget(self._btn)
 
         if plot_btn:
-            plot_btn = QtGui.QPushButton("Plot")
+            plot_btn = QtWidgets.QPushButton("Plot")
             plot_btn.clicked.connect(self._plot)
             hbox.addWidget(plot_btn)
 
@@ -1321,9 +1321,9 @@ class FileOption(Option, QtGui.QWidget):
 
     def _clicked(self):
         if self._dirs:
-            path = QtGui.QFileDialog.getExistingDirectory(parent=self, dir=self.value)
+            path = QtWidgets.QFileDialog.getExistingDirectory(parent=self, dir=self.value)
         else:
-            path, _ = QtGui.QFileDialog.getOpenFileName(parent=self, dir=os.path.dirname(self.value))
+            path, _ = QtWidgets.QFileDialog.getOpenFileName(parent=self, dir=os.path.dirname(self.value))
         self._edit.setText(path)
         self.sig_changed.emit()
 
@@ -1342,16 +1342,16 @@ class FileOption(Option, QtGui.QWidget):
         plot_dialog = PlotDialog1d(self, arr, title=self.value)
         plot_dialog.exec_()
 
-class RunButton(QtGui.QWidget):
+class RunButton(QtWidgets.QWidget):
     """
     A button which, when clicked, runs an analysis process
     """
 
     def __init__(self, label="Run", callback=None):
-        QtGui.QWidget.__init__(self)
-        hbox = QtGui.QHBoxLayout()
+        QtWidgets.QWidget.__init__(self)
+        hbox = QtWidgets.QHBoxLayout()
         self.setLayout(hbox)
-        self.btn = QtGui.QPushButton(label)
+        self.btn = QtWidgets.QPushButton(label)
         self.btn.clicked.connect(callback)
         hbox.addWidget(self.btn)
         hbox.addStretch(1)

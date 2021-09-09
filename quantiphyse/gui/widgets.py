@@ -32,7 +32,7 @@ from quantiphyse.gui.options import OptionBox, FileOption
 from quantiphyse.gui.dialogs import error_dialog, TextViewerDialog, MultiTextViewerDialog, MatrixViewerDialog
 import quantiphyse.gui.dialogs
 
-class QpWidget(QtGui.QWidget, LogSource):
+class QpWidget(QtWidgets.QWidget, LogSource):
     """
     Base class for a Quantiphyse widget
 
@@ -47,7 +47,7 @@ class QpWidget(QtGui.QWidget, LogSource):
 
     def __init__(self, **kwargs):
         LogSource.__init__(self)
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         
         # Basic metadata
         self.name = kwargs.get("name", "")
@@ -118,25 +118,25 @@ class QpWidget(QtGui.QWidget, LogSource):
         """
         raise NotImplementedError("This widget does not support the batch process system")
 
-class FingerTabBarWidget(QtGui.QTabBar):
+class FingerTabBarWidget(QtWidgets.QTabBar):
     """
     Vertical tab bar used for the analysis widget setSelectionMode
     """
     def __init__(self, tab_widget, parent=None, *args, **kwargs):
         self.tab_size = QtCore.QSize(kwargs.pop('width', 100), kwargs.pop('height', 25))
-        QtGui.QTabBar.__init__(self, parent, *args, **kwargs)
+        QtWidgets.QTabBar.__init__(self, parent, *args, **kwargs)
         self.close_icon = QtGui.QIcon(get_icon("close"))
         self.tab_widget = tab_widget
 
     def paintEvent(self, _):
-        painter = QtGui.QStylePainter(self)
-        option = QtGui.QStyleOptionTab()
+        painter = QtWidgets.QStylePainter(self)
+        option = QtWidgets.QStyleOptionTab()
  
         for index in range(self.count()):
             self.initStyleOption(option, index)
             tab_rect = self.tabRect(index)
             tab_rect.moveLeft(10)
-            painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)
+            painter.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, option)
             painter.drawText(tab_rect, QtCore.Qt.AlignVCenter |
                              QtCore.Qt.AlignHCenter,
                              self.tabText(index))
@@ -151,7 +151,7 @@ class FingerTabBarWidget(QtGui.QTabBar):
         painter.end()
 
     def mousePressEvent(self, evt):
-        QtGui.QTabBar.mousePressEvent(self, evt)
+        QtWidgets.QTabBar.mousePressEvent(self, evt)
         idx = self.tabAt(evt.pos())
         if idx >= 0 and evt.button() == QtCore.Qt.LeftButton:
             tab_rect = self.tabRect(idx)
@@ -167,18 +167,18 @@ class FingerTabBarWidget(QtGui.QTabBar):
     def tabSizeHint(self, _):
         return self.tab_size
 
-class FingerTabWidget(QtGui.QTabWidget):
+class FingerTabWidget(QtWidgets.QTabWidget):
     """
     A QTabWidget equivalent which uses our FingerTabBarWidget
     """
     def __init__(self, parent, *args):
-        QtGui.QTabWidget.__init__(self, parent, *args)
+        QtWidgets.QTabWidget.__init__(self, parent, *args)
         self.setTabBar(FingerTabBarWidget(self, width=110, height=50))
-        self.setTabPosition(QtGui.QTabWidget.West)
+        self.setTabPosition(QtWidgets.QTabWidget.West)
         self.setMovable(False)
         self.setIconSize(QtCore.QSize(16, 16))
     
-class HelpButton(QtGui.QPushButton):
+class HelpButton(QtWidgets.QPushButton):
     """
     A button for online help
     """
@@ -195,7 +195,7 @@ class HelpButton(QtGui.QPushButton):
     def _help_clicked(self):
         show_help(self.section)
 
-class BatchButton(QtGui.QPushButton):
+class BatchButton(QtWidgets.QPushButton):
     """
     A button which displays the batch file code for the current analysis widget
     """
@@ -241,7 +241,7 @@ class BatchButton(QtGui.QPushButton):
             else:
                 error_dialog("This widget does not provide a list of batch options")
 
-class OverlayCombo(QtGui.QComboBox):
+class OverlayCombo(QtWidgets.QComboBox):
     """
     A combo box which gives a choice of data
 
@@ -331,13 +331,13 @@ class RoiCombo(OverlayCombo):
         kwargs["data"] = False
         super(RoiCombo, self).__init__(ivm, *args, **kwargs)
     
-class NumericOption(QtGui.QWidget):
+class NumericOption(QtWidgets.QWidget):
     """ Option whose value must be a number (int or float) """
 
     sig_changed = QtCore.Signal()
 
     def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, step=1, decimals=2, intonly=False, spin=True):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.use_spin = spin
         self.text = text
         self.minval = minval
@@ -349,14 +349,14 @@ class NumericOption(QtGui.QWidget):
         else:
             self.rtype = float
             
-        self.label = QtGui.QLabel(text)
+        self.label = QtWidgets.QLabel(text)
         grid.addWidget(self.label, ypos, xpos)
 
         if spin:
             if intonly:
-                self.spin = QtGui.QSpinBox()
+                self.spin = QtWidgets.QSpinBox()
             else:
-                self.spin = QtGui.QDoubleSpinBox()
+                self.spin = QtWidgets.QDoubleSpinBox()
                 self.spin.setDecimals(decimals)
                 self.spin.setMinimum(minval)
             self.spin.setMaximum(maxval)
@@ -365,7 +365,7 @@ class NumericOption(QtGui.QWidget):
             self.spin.valueChanged.connect(self._changed)
             grid.addWidget(self.spin, ypos, xpos+1)
         else:
-            self.edit = QtGui.QLineEdit(str(default))
+            self.edit = QtWidgets.QLineEdit(str(default))
             self.edit.editingFinished.connect(self._edit_changed)
             grid.addWidget(self.edit, ypos, xpos+1)
 
@@ -391,14 +391,14 @@ class NumericOption(QtGui.QWidget):
         else:
             raise QpException("'%s' is not a valid number")
         
-class NumericSlider(QtGui.QWidget):
+class NumericSlider(QtWidgets.QWidget):
     """
     Numeric option chooser which uses a slider and two spin boxes
     """
     sig_changed = QtCore.Signal()
 
     def __init__(self, text, grid, ypos, xpos=0, minval=0, maxval=100, default=0, intonly=False, **kwargs):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.text = text
         self.minval = minval
         self.maxval = maxval
@@ -411,24 +411,24 @@ class NumericSlider(QtGui.QWidget):
         else:
             self.rtype = float
             
-        self.label = QtGui.QLabel(text)
+        self.label = QtWidgets.QLabel(text)
         grid.addWidget(self.label, ypos, xpos)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         self.setLayout(hbox)
 
-        #self.min_edit = QtGui.QLineEdit(str(minval))
+        #self.min_edit = QtWidgets.QLineEdit(str(minval))
         #self.min_edit.editingFinished.connect(self_min_changed)
         #hbox.addWidget(self.min_edit)
 
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setMaximum(100)
         self.slider.setMinimum(0)
         self.slider.setSliderPosition(int(100 * (default - minval) / (maxval - minval)))
         self.slider.valueChanged.connect(self._slider_changed)
         hbox.addWidget(self.slider)
 
-        self.val_edit = QtGui.QLineEdit(str(default))
+        self.val_edit = QtWidgets.QLineEdit(str(default))
         self.val_edit.editingFinished.connect(self._edit_changed)
         hbox.addWidget(self.val_edit)
 
@@ -491,19 +491,19 @@ class NumericSlider(QtGui.QWidget):
         finally:
             self.blockSignals(False)
 
-class OptionalName(QtGui.QWidget):
+class OptionalName(QtWidgets.QWidget):
     """ String option which can be enabled or disabled """
 
     sig_changed = QtCore.Signal()
 
     def __init__(self, text, grid, ypos, xpos=0, default_on=False, default=""):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
             
-        self.label = QtGui.QCheckBox(text)
+        self.label = QtWidgets.QCheckBox(text)
         self.label.setChecked(default_on)
         grid.addWidget(self.label, ypos, xpos)
 
-        self.edit = QtGui.QLineEdit(default)
+        self.edit = QtWidgets.QLineEdit(default)
         self.edit.editingFinished.connect(self._edit_changed)
         grid.addWidget(self.edit, ypos, xpos+1)
 
@@ -523,26 +523,26 @@ class OptionalName(QtGui.QWidget):
         """ Return the current text entered """
         return self.edit.text()
         
-class ChoiceOption(QtGui.QWidget):
+class ChoiceOption(QtWidgets.QWidget):
     """ Option which is chosen from a list of possible strings """
 
     sig_changed = QtCore.Signal()
 
     def __init__(self, text, grid, ypos, xpos=0, choices=None):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         if choices is None:
             choices = []
         self.choices = choices
         
-        self.label = QtGui.QLabel(text)
+        self.label = QtWidgets.QLabel(text)
         grid.addWidget(self.label, ypos, xpos)
 
-        self.combo = QtGui.QComboBox()
+        self.combo = QtWidgets.QComboBox()
         for c in choices:
             self.combo.addItem(c)
         self.combo.currentIndexChanged.connect(self._changed)
         # Bizarre hack to make the dropdown height adjust to the items added
-        self.combo.setView(QtGui.QListView())
+        self.combo.setView(QtWidgets.QListView())
         grid.addWidget(self.combo, ypos, xpos+1)
 
     def _changed(self):
@@ -552,12 +552,12 @@ class ChoiceOption(QtGui.QWidget):
         """ Get currently selected text """
         return self.combo.currentText()
         
-class NumberList(QtGui.QTableWidget):
+class NumberList(QtWidgets.QTableWidget):
     """
     Horizontal list of numeric values
     """
     def __init__(self, initial):
-        QtGui.QTableWidget.__init__(self, 1, 1)
+        QtWidgets.QTableWidget.__init__(self, 1, 1)
         self.horizontalHeader().hide()
         self.verticalHeader().hide()
         self.setValues(initial)
@@ -586,15 +586,15 @@ class NumberList(QtGui.QTableWidget):
         try:
             self.setColumnCount(len(vals)+1)
             for c, val in enumerate(vals):
-                self.setItem(0, c, QtGui.QTableWidgetItem("%g" % val))
-            self.setItem(0, self.columnCount()-1, QtGui.QTableWidgetItem("..."))
+                self.setItem(0, c, QtWidgets.QTableWidgetItem("%g" % val))
+            self.setItem(0, self.columnCount()-1, QtWidgets.QTableWidgetItem("..."))
             self.resizeColumnsToContents()
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
 
     def contextMenuEvent(self, event):
-        menu = QtGui.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         insertAction = menu.addAction("Insert before")
         deleteAction = menu.addAction("Delete")
         item = self.itemAt(event.pos())
@@ -610,7 +610,7 @@ class NumberList(QtGui.QTableWidget):
         try:
             for c in range(col, self.columnCount()-1):
                 item = self.item(0, c+1)
-                self.setItem(0, c, QtGui.QTableWidgetItem(item.text()))
+                self.setItem(0, c, QtWidgets.QTableWidgetItem(item.text()))
             self.setColumnCount(self.columnCount()-1)
             self.resizeRowsToContents()
         finally:
@@ -622,8 +622,8 @@ class NumberList(QtGui.QTableWidget):
             self.setColumnCount(self.columnCount()+1)
             for c in range(self.columnCount()-1, col, -1):
                 item = self.item(0, c-1)
-                self.setItem(0, c, QtGui.QTableWidgetItem(item.text()))
-            self.setItem(0, col, QtGui.QTableWidgetItem("%g" % val))
+                self.setItem(0, c, QtWidgets.QTableWidgetItem(item.text()))
+            self.setItem(0, col, QtWidgets.QTableWidgetItem("%g" % val))
             self.resizeRowsToContents()
         finally:
             self.blockSignals(False)
@@ -645,7 +645,7 @@ class NumberList(QtGui.QTableWidget):
                 self.blockSignals(True)
                 try:
                     self.setColumnCount(self.columnCount()+1)
-                    self.setItem(0, self.columnCount()-1, QtGui.QTableWidgetItem("..."))
+                    self.setItem(0, self.columnCount()-1, QtWidgets.QTableWidgetItem("..."))
                 finally:
                     self.blockSignals(False)
             self.resizeColumnsToContents()
@@ -704,21 +704,21 @@ class NumberList(QtGui.QTableWidget):
                     return None, r.leftColumn()
         return None, None    
 
-class LoadNumbers(QtGui.QPushButton):
+class LoadNumbers(QtWidgets.QPushButton):
     """
     PushButton which loads values into a NumberList
     """
     def __init__(self, num_list, label="Load"):
-        QtGui.QPushButton.__init__(self, label)
+        QtWidgets.QPushButton.__init__(self, label)
         self.num_list = num_list
         self.clicked.connect(self._button_clicked)
 
     def _button_clicked(self):
-        filename = QtGui.QFileDialog.getOpenFileName()[0]
+        filename = QtWidgets.QFileDialog.getOpenFileName()[0]
         if filename:
             self.num_list.loadFromFile(filename)
 
-class NumberGrid(QtGui.QTableView):
+class NumberGrid(QtWidgets.QTableView):
     """
     Table of numeric values
     """
@@ -727,7 +727,7 @@ class NumberGrid(QtGui.QTableView):
 
     def __init__(self, initial, col_headers=None, row_headers=None, expandable=(True, True),
                  fix_height=False, fix_width=False, readonly=False):
-        QtGui.QTableView.__init__(self)
+        QtWidgets.QTableView.__init__(self)
         
         self._model = QtGui.QStandardItemModel()
         self.setModel(self._model)
@@ -744,12 +744,12 @@ class NumberGrid(QtGui.QTableView):
         self.setValues(initial, False, col_headers=col_headers, row_headers=row_headers)
         
         if readonly:
-            self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+            self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         else:
             self.model().itemChanged.connect(self._item_changed)
         
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        #self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        #self.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.itemDelegate().closeEditor.connect(self._expand_if_required, QtCore.Qt.QueuedConnection)
         self.setAcceptDrops(True)
         
@@ -980,23 +980,23 @@ class NumberHList(NumberVList):
     def setValues(self, values, validate=True):
         NumberGrid.setValues(self, [values,], validate)
 
-class Citation(QtGui.QWidget):
+class Citation(QtWidgets.QWidget):
     def __init__(self, title, author, journal):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.title, self.author, self.journal = title, author, journal
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         self.setLayout(hbox)
 
-        btn = QtGui.QPushButton()
+        btn = QtWidgets.QPushButton()
         icon = QtGui.QIcon(get_icon("citation"))
         btn.setIcon(icon)
-        btn.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
+        btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         btn.clicked.connect(self.lookup)
         hbox.addWidget(btn)
         hbox.setAlignment(btn, QtCore.Qt.AlignTop)
 
         text = "<font size=3><i>" + title + "</i><br>" + author + "<br>" + journal + "</font>"
-        label = QtGui.QLabel(text)
+        label = QtWidgets.QLabel(text)
         label.setWordWrap(True)
         hbox.addWidget(label)
         
@@ -1007,17 +1007,17 @@ class Citation(QtGui.QWidget):
         url = "https://www.google.com/search?q=%s+%s+%s" % search_terms
         webbrowser.open(url, new=0, autoraise=True)
 
-class OptionsButton(QtGui.QPushButton):
+class OptionsButton(QtWidgets.QPushButton):
     def __init__(self, widget=None):
-        QtGui.QPushButton.__init__(self)
+        QtWidgets.QPushButton.__init__(self)
         self.setIcon(QtGui.QIcon(get_icon("options.png")))
         self.setIconSize(QtCore.QSize(14, 14))
         if widget:
             self.clicked.connect(widget.show_options)
 
-class LicenseButton(QtGui.QPushButton):
+class LicenseButton(QtWidgets.QPushButton):
     def __init__(self, license):
-        QtGui.QPushButton.__init__(self)
+        QtWidgets.QPushButton.__init__(self)
         self._license = license
         self.setIcon(QtGui.QIcon(get_icon("license.png")))
         self.setIconSize(QtCore.QSize(14, 14))
@@ -1030,22 +1030,22 @@ class LicenseButton(QtGui.QPushButton):
         self.logview.show()
         self.logview.raise_()
 
-class TitleWidget(QtGui.QWidget):
+class TitleWidget(QtWidgets.QWidget):
     def __init__(self, widget, title=None, subtitle=None, help="", help_btn=True, batch_btn=True, opts_btn=False, lic_btn=True, icon=True):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         if title is None:
             title = widget.name
         if subtitle is None:
             subtitle = widget.description
             
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)         
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         if icon and hasattr(widget, "icon"):
-            icon = QtGui.QLabel()
+            icon = QtWidgets.QLabel()
             icon.setPixmap(widget.icon.pixmap(32, 32))
             hbox.addWidget(icon)
-        hbox.addWidget(QtGui.QLabel('<font size="5">%s</font>' % title))   
+        hbox.addWidget(QtWidgets.QLabel('<font size="5">%s</font>' % title))   
         hbox.addStretch(1)
         if batch_btn: hbox.addWidget(BatchButton(widget))
         if help_btn: hbox.addWidget(HelpButton(self, help))
@@ -1053,13 +1053,13 @@ class TitleWidget(QtGui.QWidget):
         if lic_btn and widget.license: hbox.addWidget(LicenseButton(widget.license))
         vbox.addLayout(hbox)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel(subtitle))      
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel(subtitle))      
         hbox.addStretch(1)
-        hbox.addWidget(QtGui.QLabel(widget.version))
+        hbox.addWidget(QtWidgets.QLabel(widget.version))
         vbox.addLayout(hbox)
 
-class RunBox(QtGui.QGroupBox, LogSource):
+class RunBox(QtWidgets.QGroupBox, LogSource):
 
     sig_postrun = QtCore.Signal()
 
@@ -1070,42 +1070,42 @@ class RunBox(QtGui.QGroupBox, LogSource):
     """
     def __init__(self, get_process_fn=None, get_rundata_fn=None, widget=None, ivm=None, title="Run", btn_label="Run", save_option=False):
         LogSource.__init__(self)
-        QtGui.QGroupBox.__init__(self)
+        QtWidgets.QGroupBox.__init__(self)
         self.save_option = save_option
         
         self.setTitle(title)
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton(btn_label, self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.runBtn = QtWidgets.QPushButton(btn_label, self)
         self.runBtn.clicked.connect(self.start)
         hbox.addWidget(self.runBtn)
-        self.progress = QtGui.QProgressBar(self)
+        self.progress = QtWidgets.QProgressBar(self)
         hbox.addWidget(self.progress)
-        self.cancelBtn = QtGui.QPushButton('Cancel', self)
+        self.cancelBtn = QtWidgets.QPushButton('Cancel', self)
         self.cancelBtn.clicked.connect(self._cancel)
         self.cancelBtn.setEnabled(False)
         hbox.addWidget(self.cancelBtn)
-        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn = QtWidgets.QPushButton('View log', self)
         self.logBtn.clicked.connect(self._view_log)
         self.logBtn.setEnabled(False)
         hbox.addWidget(self.logBtn)
         vbox.addLayout(hbox)
 
-        self.step_label = QtGui.QLabel()
+        self.step_label = QtWidgets.QLabel()
         self.step_label.setVisible(False)
         vbox.addWidget(self.step_label) 
 
         if self.save_option:
-            hbox = QtGui.QHBoxLayout()
-            self.save_cb = QtGui.QCheckBox("Save copy of output data")
+            hbox = QtWidgets.QHBoxLayout()
+            self.save_cb = QtWidgets.QCheckBox("Save copy of output data")
             hbox.addWidget(self.save_cb)
-            self.save_folder_edit = QtGui.QLineEdit()
+            self.save_folder_edit = QtWidgets.QLineEdit()
             hbox.addWidget(self.save_folder_edit)
-            btn = QtGui.QPushButton("Choose folder")
+            btn = QtWidgets.QPushButton("Choose folder")
             btn.clicked.connect(self._choose_output_folder)
             hbox.addWidget(btn)
             self.save_cb.stateChanged.connect(self.save_folder_edit.setEnabled)
@@ -1188,11 +1188,11 @@ class RunBox(QtGui.QGroupBox, LogSource):
         self.logview.raise_()
 
     def _choose_output_folder(self):
-        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
+        outputDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
             self.save_folder_edit.setText(outputDir)
 
-class RunButton(QtGui.QPushButton, LogSource):
+class RunButton(QtWidgets.QPushButton, LogSource):
     """
     Simple button to run the processing associated with a QpWidget
 
@@ -1203,7 +1203,7 @@ class RunButton(QtGui.QPushButton, LogSource):
 
     def __init__(self, widget, label="Run"):
         LogSource.__init__(self)
-        QtGui.QPushButton.__init__(self, label)
+        QtWidgets.QPushButton.__init__(self, label)
 
         self.clicked.connect(self._start)
         self.widget = widget
@@ -1229,7 +1229,7 @@ class RunButton(QtGui.QPushButton, LogSource):
         finally:
             self.sig_postrun.emit()
 
-class RunWidget(QtGui.QGroupBox, LogSource):
+class RunWidget(QtWidgets.QGroupBox, LogSource):
     """
     Box containing a 'run' button, a progress bar, a 'cancel' button and a 'view log' button
 
@@ -1240,41 +1240,41 @@ class RunWidget(QtGui.QGroupBox, LogSource):
 
     def __init__(self, widget, title="Run", btn_label="Run", save_option=False):
         LogSource.__init__(self)
-        QtGui.QGroupBox.__init__(self)
+        QtWidgets.QGroupBox.__init__(self)
         self.save_option = save_option
         
         self.setTitle(title)
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
-        hbox = QtGui.QHBoxLayout()
-        self.runBtn = QtGui.QPushButton(btn_label, self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.runBtn = QtWidgets.QPushButton(btn_label, self)
         self.runBtn.clicked.connect(self.start)
         hbox.addWidget(self.runBtn)
-        self.progress = QtGui.QProgressBar(self)
+        self.progress = QtWidgets.QProgressBar(self)
         hbox.addWidget(self.progress)
-        self.cancelBtn = QtGui.QPushButton('Cancel', self)
+        self.cancelBtn = QtWidgets.QPushButton('Cancel', self)
         self.cancelBtn.clicked.connect(self._cancel)
         self.cancelBtn.setEnabled(False)
         hbox.addWidget(self.cancelBtn)
-        self.logBtn = QtGui.QPushButton('View log', self)
+        self.logBtn = QtWidgets.QPushButton('View log', self)
         self.logBtn.clicked.connect(self._view_log)
         hbox.addWidget(self.logBtn)
         vbox.addLayout(hbox)
 
-        self.step_label = QtGui.QLabel()
+        self.step_label = QtWidgets.QLabel()
         self.step_label.setVisible(False)
         vbox.addWidget(self.step_label) 
 
         if self.save_option:
-            hbox = QtGui.QHBoxLayout()
-            self.save_cb = QtGui.QCheckBox("Save copy of output data")
+            hbox = QtWidgets.QHBoxLayout()
+            self.save_cb = QtWidgets.QCheckBox("Save copy of output data")
             hbox.addWidget(self.save_cb)
-            self.save_folder_edit = QtGui.QLineEdit()
+            self.save_folder_edit = QtWidgets.QLineEdit()
             hbox.addWidget(self.save_folder_edit)
-            btn = QtGui.QPushButton("Choose folder")
+            btn = QtWidgets.QPushButton("Choose folder")
             btn.clicked.connect(self._choose_output_folder)
             hbox.addWidget(btn)
             self.save_cb.stateChanged.connect(self.save_folder_edit.setEnabled)
@@ -1344,11 +1344,11 @@ class RunWidget(QtGui.QGroupBox, LogSource):
         self.logview.raise_()
 
     def _choose_output_folder(self):
-        outputDir = QtGui.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
+        outputDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose directory to save output')
         if outputDir:
             self.save_folder_edit.setText(outputDir)
 
-class OrderList(QtGui.QListView):
+class OrderList(QtWidgets.QListView):
     """
     Vertical list of items which can be re-ordered but not changed directly
     """
@@ -1356,9 +1356,9 @@ class OrderList(QtGui.QListView):
     sig_changed = QtCore.Signal()
 
     def __init__(self, initial=(), col_headers=None):
-        QtGui.QListView.__init__(self)
-        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        #self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        QtWidgets.QListView.__init__(self)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        #self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.model = QtGui.QStandardItemModel()
         self.setModel(self.model)
         #if col_headers:
@@ -1409,40 +1409,40 @@ class OrderList(QtGui.QListView):
             self.setCurrentIndex(self.model.index(idx+1, 0))
             self.sig_changed.emit()
 
-class OrderListButtons(QtGui.QVBoxLayout):
+class OrderListButtons(QtWidgets.QVBoxLayout):
     def __init__(self, orderlist):
-        QtGui.QVBoxLayout.__init__(self)
+        QtWidgets.QVBoxLayout.__init__(self)
         self.list = orderlist
-        self.up_btn = QtGui.QPushButton()
+        self.up_btn = QtWidgets.QPushButton()
         self.up_btn.setIcon(QtGui.QIcon(get_icon("up.png")))
         self.up_btn.setFixedSize(16, 16)
         self.up_btn.clicked.connect(self.list.currentUp)
         self.addWidget(self.up_btn)
-        self.down_btn = QtGui.QPushButton()
+        self.down_btn = QtWidgets.QPushButton()
         self.down_btn.setIcon(QtGui.QIcon(get_icon("down.png")))
         self.down_btn.setFixedSize(16, 16)
         self.down_btn.clicked.connect(self.list.currentDown)
         self.addWidget(self.down_btn)
 
-class WarningBox(QtGui.QFrame):
+class WarningBox(QtWidgets.QFrame):
     """
     Widget which just displays a warning, e.g. when a QpWidget can't be used for some reason
     """
 
     def __init__(self, text=""):
-        QtGui.QFrame.__init__(self)
-        hbox = QtGui.QHBoxLayout()
+        QtWidgets.QFrame.__init__(self)
+        hbox = QtWidgets.QHBoxLayout()
         hbox.setSpacing(0)
         hbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(hbox)
 
         #self.warn_icon = QtGui.QIcon.fromTheme("dialog-error")
-        self.icon = QtGui.QLabel()
-        self.warn_icon = self.icon.style().standardIcon(QtGui.QStyle.SP_MessageBoxWarning)
+        self.icon = QtWidgets.QLabel()
+        self.warn_icon = self.icon.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning)
         self.icon.setPixmap(self.warn_icon.pixmap(32, 32))
         hbox.addWidget(self.icon)
 
-        self.text = QtGui.QLabel()
+        self.text = QtWidgets.QLabel()
         self.text.setWordWrap(True)
         hbox.addWidget(self.text)
         hbox.setStretchFactor(self.text, 2)
@@ -1460,29 +1460,29 @@ class WarningBox(QtGui.QFrame):
     def clear(self):
         self.setVisible(False)
 
-class MultiExpander(QtGui.QWidget):
+class MultiExpander(QtWidgets.QWidget):
     """
     Generic expander widget, alternative to tab box which allows all to be 'closed'
     """
     def __init__(self, widgets, parent=None, default_visible=None):
         super(MultiExpander, self).__init__(parent)
 
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
 
-        self.arrow_right = self.style().standardIcon(QtGui.QStyle.SP_ArrowRight)
-        self.arrow_down = self.style().standardIcon(QtGui.QStyle.SP_ArrowDown)
+        self.arrow_right = self.style().standardIcon(QtWidgets.QStyle.SP_ArrowRight)
+        self.arrow_down = self.style().standardIcon(QtWidgets.QStyle.SP_ArrowDown)
         self.widgets = widgets
         self.toggle_btns = {}
 
-        btn_hbox = QtGui.QHBoxLayout()
-        w_hbox = QtGui.QHBoxLayout()
+        btn_hbox = QtWidgets.QHBoxLayout()
+        w_hbox = QtWidgets.QHBoxLayout()
         for name, w in self.widgets.items():
             if name == default_visible:
                 w.setVisible(True)
-                self.toggle_btns[name] = QtGui.QPushButton(self.arrow_down, name)
+                self.toggle_btns[name] = QtWidgets.QPushButton(self.arrow_down, name)
             else:
                 w.setVisible(False)
-                self.toggle_btns[name] = QtGui.QPushButton(self.arrow_right, name)
+                self.toggle_btns[name] = QtWidgets.QPushButton(self.arrow_right, name)
             self.toggle_btns[name].clicked.connect(self._toggle(name))
             btn_hbox.addWidget(self.toggle_btns[name])
             w_hbox.addWidget(w)
@@ -1503,7 +1503,7 @@ class MultiExpander(QtGui.QWidget):
                     w.setVisible(False)
         return _cb
 
-class ElidedLabel(QtGui.QFrame):
+class ElidedLabel(QtWidgets.QFrame):
     """
     Equivalent to a QLabel but uses ellipsis to clip long text and prevents the
     label from growing beyond it's natural size
@@ -1513,17 +1513,17 @@ class ElidedLabel(QtGui.QFrame):
         https://stackoverflow.com/questions/7381100/text-overflow-for-a-qlabel-s-text-rendering-in-qt
     """
     def __init__(self, text="", parent=None):
-        QtGui.QFrame.__init__(self, parent)
+        QtWidgets.QFrame.__init__(self, parent)
         self._content = text
         self._elided = False
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
 
     def setText(self, text):
         self._content = text
         self.update()
     
     def paintEvent(self, event):
-        QtGui.QFrame.paintEvent(self, event)
+        QtWidgets.QFrame.paintEvent(self, event)
         painter = QtGui.QPainter(self)
         metrics = painter.fontMetrics()
         line_spacing = metrics.lineSpacing()

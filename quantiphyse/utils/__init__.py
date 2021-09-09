@@ -175,7 +175,7 @@ def table_to_extra(tabmod, name):
 
 def copy_table(tabmod):
     """ Copy a QT table model to the clipboard in a form suitable for paste into Excel etc """
-    clipboard = QtGui.QApplication.clipboard()
+    clipboard = QtWidgets.QApplication.clipboard()
     tsv = str(table_to_extra(tabmod, ""))
     clipboard.setText(tsv)
 

@@ -29,20 +29,20 @@ class ExamplePluginWidget(QpWidget):
                                                   group="Examples", **kwargs)
 
     def init_ui(self):
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Example Plugin Widget</font>'))
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel('<font size="5">Example Plugin Widget</font>'))
         hbox.addStretch(1)
         hbox.addWidget(BatchButton(self))
         hbox.addWidget(HelpButton(self, "example_plugin"))
         layout.addLayout(hbox)
         
-        desc = QtGui.QLabel(DESC)
+        desc = QtWidgets.QLabel(DESC)
         desc.setWordWrap(True)
         layout.addWidget(desc)
-        layout.addWidget(QtGui.QLabel(""))
+        layout.addWidget(QtWidgets.QLabel(""))
 
     def activate(self):
         self.ivm.sig_all_data.connect(self.data_changed)
@@ -64,15 +64,15 @@ class ExampleWidget(QpWidget):
         super(ExampleWidget, self).__init__(name="Threshold", desc="Threshold data", icon="quantiphyse", **kwargs)
 
     def init_ui(self):
-        main_vbox = QtGui.QVBoxLayout()
+        main_vbox = QtWidgets.QVBoxLayout()
         
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(QtGui.QLabel('<font size="5">Threshold volume</font>'))
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(QtWidgets.QLabel('<font size="5">Threshold volume</font>'))
         hbox.addStretch(1)
         hbox.addWidget(HelpButton(self))
         main_vbox.addLayout(hbox)
 
-        explanation = QtGui.QLabel('This is a basic example of a \n'
+        explanation = QtWidgets.QLabel('This is a basic example of a \n'
                                    'widget for development purposes. \n'
                                    'A DCE-MRI image and ROI are \n'
                                    'loaded normally and clicking run \n'
@@ -80,21 +80,21 @@ class ExampleWidget(QpWidget):
                                    'in the ROI above a defined threshold.')
         main_vbox.addWidget(explanation)
 
-        hbox = QtGui.QHBoxLayout()
-        self.b1 = QtGui.QPushButton('Process', self)
+        hbox = QtWidgets.QHBoxLayout()
+        self.b1 = QtWidgets.QPushButton('Process', self)
         self.b1.clicked.connect(self.run_threshold)
         hbox.addWidget(self.b1)
         hbox.addStretch(1)
 
-        hbox.addWidget(QtGui.QLabel('ROI threshold value:'))
-        self.val_t1 = QtGui.QLineEdit('1', self)
+        hbox.addWidget(QtWidgets.QLabel('ROI threshold value:'))
+        self.val_t1 = QtWidgets.QLineEdit('1', self)
         hbox.addWidget(self.val_t1)
         main_vbox.addLayout(hbox)
         
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
-        hbox.addWidget(QtGui.QLabel('Slice to threshold:'))
-        self.val_s1 = QtGui.QLineEdit('0', self)
+        hbox.addWidget(QtWidgets.QLabel('Slice to threshold:'))
+        self.val_s1 = QtWidgets.QLineEdit('0', self)
         hbox.addWidget(self.val_s1)
         main_vbox.addLayout(hbox)
 

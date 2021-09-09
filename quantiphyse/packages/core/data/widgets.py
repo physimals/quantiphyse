@@ -41,7 +41,7 @@ class ResampleDataWidget(QpWidget):
                                                  group="Utilities", **kwargs)
         
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         vbox.addWidget(TitleWidget(self))
@@ -92,13 +92,13 @@ class OrientDataWidget(QpWidget):
         self.ivm.sig_all_data.connect(self._all_data_changed)
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self)
         vbox.addWidget(title)
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         self.options = OptionBox("Re-orient data")
         data = self.options.add("Data item", DataOption(self.ivm), key="data")
         data.sig_changed.connect(self._data_changed)
@@ -119,8 +119,8 @@ class OrientDataWidget(QpWidget):
         self.gridview = GridView(self.ivm, self.ivl)
         vbox.addWidget(self.gridview)
 
-        hbox = QtGui.QHBoxLayout()
-        reset_btn = QtGui.QPushButton("Reset to original")
+        hbox = QtWidgets.QHBoxLayout()
+        reset_btn = QtWidgets.QPushButton("Reset to original")
         reset_btn.clicked.connect(self._reset)
         hbox.addWidget(reset_btn)
         hbox.addStretch(1)
@@ -218,7 +218,7 @@ class OrientDataWidget(QpWidget):
         self.debug("\n%s", rot3d)
         return rot3d
 
-class GridView(QtGui.QWidget):
+class GridView(QtWidgets.QWidget):
 
     COORD_LABELS = {
         0 : "unknown",
@@ -233,22 +233,22 @@ class GridView(QtGui.QWidget):
         self.data = None
         self._updating = False
 
-        QtGui.QWidget.__init__(self)
-        grid = QtGui.QGridLayout()
+        QtWidgets.QWidget.__init__(self)
+        grid = QtWidgets.QGridLayout()
         self.setLayout(grid)
 
-        grid.addWidget(QtGui.QLabel("Grid->World Transform"), 1, 0)
+        grid.addWidget(QtWidgets.QLabel("Grid->World Transform"), 1, 0)
         self.transform = NumberGrid(initial=np.identity(3), expandable=(False, False), fix_height=True, fix_width=True, readonly=readonly)
         self.transform.sig_changed.connect(self._changed)
         grid.addWidget(self.transform, 2, 0)
 
-        grid.addWidget(QtGui.QLabel("Origin"), 1, 1)
+        grid.addWidget(QtWidgets.QLabel("Origin"), 1, 1)
         self.origin = NumberGrid(initial=[[0],]*3, expandable=(False, False), fix_height=True, fix_width=True, readonly=readonly)
         self.origin.sig_changed.connect(self._changed)
         grid.addWidget(self.origin, 2, 1)
 
-        grid.addWidget(QtGui.QLabel("Co-ordinate system: "), 3, 0)
-        self.coord_label = QtGui.QLabel("unknown")
+        grid.addWidget(QtWidgets.QLabel("Co-ordinate system: "), 3, 0)
+        self.coord_label = QtWidgets.QLabel("unknown")
         grid.addWidget(self.coord_label, 3, 1)
 
         grid.setColumnStretch(3, 1)

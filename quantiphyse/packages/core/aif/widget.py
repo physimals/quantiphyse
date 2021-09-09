@@ -40,7 +40,7 @@ class AifWidget(QpWidget):
         self._aif_points = []
 
     def init_ui(self):
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
 
         title = TitleWidget(self)
@@ -48,12 +48,12 @@ class AifWidget(QpWidget):
 
         self._options = OptionBox("Options")
         self._options.add("Signal data", DataOption(self.ivm), key="data")
-        self._clear_btn = QtGui.QPushButton("Clear points")
+        self._clear_btn = QtWidgets.QPushButton("Clear points")
         self._options.add("Method", ChoiceOption(["Pick points", "Use existing ROI"], ["points", "roi"]), self._clear_btn, key="method")
         self._options.add("ROI", DataOption(self.ivm, data=False, rois=True), key="roi")
-        self._view_btn = QtGui.QPushButton("View")
+        self._view_btn = QtWidgets.QPushButton("View")
         self._view_btn.setEnabled(False)
-        self._save_btn = QtGui.QPushButton("Save")
+        self._save_btn = QtWidgets.QPushButton("Save")
         self._save_btn.setEnabled(False)
         self._options.add("AIF name", TextOption("aif"), self._view_btn, self._save_btn, key="output-name")
         self._options.option("method").sig_changed.connect(self._method_changed)
