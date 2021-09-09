@@ -19,10 +19,7 @@ import csv
 
 import six
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
   
 from quantiphyse.gui.widgets import QpWidget, TitleWidget
 from quantiphyse.gui.plot import Plot

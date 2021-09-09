@@ -26,10 +26,7 @@ from matplotlib import cm
 import numpy as np
 import pandas as pd
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data.extras import DataFrameExtra
 from .exceptions import QpException

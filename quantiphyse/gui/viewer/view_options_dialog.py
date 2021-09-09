@@ -18,10 +18,7 @@ limitations under the License.
 
 from __future__ import division, unicode_literals, print_function, absolute_import
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility
 from quantiphyse.gui.options import OptionBox, ChoiceOption

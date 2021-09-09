@@ -35,10 +35,7 @@ import math
 import numpy as np
 import scipy
 
-try:
-    from PySide import QtCore
-except ImportError:
-    from PySide2 import QtCore
+from PySide2 import QtCore
 
 from quantiphyse.utils import sf, QpException
 from quantiphyse.utils.enums import Visibility, Boundary

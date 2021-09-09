@@ -20,10 +20,7 @@ import os
 import inspect
 import traceback
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
   
 from quantiphyse.processes import Process
 from quantiphyse.utils import get_icon, load_matrix, local_file_from_drop_url, QpException, show_help, sf, LogSource

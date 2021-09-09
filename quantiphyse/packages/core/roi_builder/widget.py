@@ -24,10 +24,7 @@ import collections
 
 import numpy as np
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import NumpyData
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, TextOption

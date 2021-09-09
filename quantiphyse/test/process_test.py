@@ -29,10 +29,7 @@ import numpy as np
 import scipy
 import nibabel as nib
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import DataGrid, ImageVolumeManagement
 from quantiphyse.processes import Process

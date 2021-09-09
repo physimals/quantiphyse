@@ -21,10 +21,7 @@ from __future__ import print_function, division, absolute_import
 import os
 import logging
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.data import save, load
 from quantiphyse.gui.widgets import QpWidget, HelpButton, TextViewerDialog

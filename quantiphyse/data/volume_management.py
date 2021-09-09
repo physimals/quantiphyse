@@ -23,10 +23,7 @@ import keyword
 import re
 from collections import OrderedDict
 
-try:
-    from PySide import QtCore
-except ImportError:
-    from PySide2 import QtCore
+from PySide2 import QtCore
 
 import numpy as np
 

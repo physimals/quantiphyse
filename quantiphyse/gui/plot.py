@@ -20,10 +20,8 @@ from __future__ import division, unicode_literals, absolute_import
 
 import numpy as np
 import pyqtgraph as pg
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from scipy.interpolate import UnivariateSpline
 

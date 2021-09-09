@@ -16,10 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import numpy as np
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 from quantiphyse.gui.widgets import QpWidget, TitleWidget, RunWidget
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, OutputNameOption

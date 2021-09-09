@@ -7,10 +7,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-try:
-    from PySide import QtGui, QtCore, QtGui as QtWidgets
-except ImportError:
-    from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore, QtWidgets
 
 qt_resource_data = b"\
 \x00\x00\x01B\
