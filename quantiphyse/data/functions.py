@@ -12,11 +12,12 @@ import decimal, re
 import ctypes
 import sys, struct
 
-# THIS CODE IS COPIED DIRECTLY FROM THE LATEST PYQTGRAPH GITHUB. THE RELATIVE
+# THIS CODE IS COPIED DIRECTLY FROM PYQTGRAPH 0.11.1. THE RELATIVE
 # IMPORTS BELOW HAVE BEEN CHANGED TO POINT TO THE INSTALLED PYQTGRAPH AND
 # A MINOR FIX HAS BEEN APPLIED TO affineSlice / interpolateArray TO USE THE
-# cval ARGUMENT.
-from pyqtgraph.python2_3 import asUnicode, basestring
+# cval ARGUMENT. THE PYTHON2-3 COMPATIBILITY FUNCTIONS BELOW HAVE ALSO BEEN 
+# REMOVED AS THEY DO NOT EXIST IN PYQTGRAPH 0.12
+#from pyqtgraph.python2_3 import asUnicode, basestring
 from pyqtgraph.Qt import QtGui, QtCore, USE_PYSIDE
 from pyqtgraph import getConfigOption, setConfigOptions
 from pyqtgraph import debug
@@ -37,7 +38,7 @@ Colors = {
     's': QtGui.QColor(100,100,150,255),
 }  
 
-SI_PREFIXES = asUnicode('yzafpnµm kMGTPEZY')
+SI_PREFIXES = 'yzafpnµm kMGTPEZY'
 SI_PREFIXES_ASCII = 'yzafpnum kMGTPEZY'
 SI_PREFIX_EXPONENTS = dict([(SI_PREFIXES[i], (i-8)*3) for i in range(len(SI_PREFIXES))])
 SI_PREFIX_EXPONENTS['u'] = -6
@@ -108,7 +109,7 @@ def siFormat(x, precision=3, suffix='', space=True, error=None, minVal=1e-25, al
         return fmt % (x*p, pref, suffix)
     else:
         if allowUnicode:
-            plusminus = space + asUnicode("±") + space
+            plusminus = space + "±" + space
         else:
             plusminus = " +/- "
         fmt = "%." + str(precision) + "g%s%s%s%s"
@@ -122,7 +123,6 @@ def siParse(s, regex=FLOAT_REGEX, suffix=None):
     
         siParse('100 μV")  # returns ('100', 'μ', 'V')
     """
-    s = asUnicode(s)
     s = s.strip()
     if suffix is not None and len(suffix) > 0:
         if s[-len(suffix):] != suffix:
@@ -206,7 +206,7 @@ def mkColor(*args):
     """
     err = 'Not sure how to make a color from "%s"' % str(args)
     if len(args) == 1:
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], str):
             c = args[0]
             if c[0] == '#':
                 c = c[1:]
