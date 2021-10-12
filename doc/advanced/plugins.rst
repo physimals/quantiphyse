@@ -15,7 +15,7 @@ Some Quantiphyse functionality requires the installation of plugins. The followi
  - ``quantiphyse-t1`` - T1 mapping
  - ``quantiphyse-sv`` - Supervoxel generation
  - ``quantiphyse-deeds`` - Fully deformable registration using the DEEDS method
- - ``quantiphyse-perfsim`` - Perfusion simulation (Experimental)
+ - ``quantiphyse-datasim`` - Data simulation (Experimental)
 
 Plugins are installed from PyPi, e.g.::
 

@@ -62,7 +62,7 @@ Installing plugins
 
 To install plugins use pip, for example this is to install all current pure-python plugins::
 
-    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dsc quantiphyse-fsl quantiphyse-sv quantiphyse-perfsim
+    pip install quantiphyse-cest quantiphyse-asl quantiphyse-qbold quantiphyse-dsc quantiphyse-fsl quantiphyse-sv quantiphyse-datasim
 
 Installing plugins requiring compilation
 ----------------------------------------
