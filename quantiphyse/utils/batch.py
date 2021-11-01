@@ -198,10 +198,10 @@ class Script(Process):
         if "parsed-yaml" in options:
             root = dict(options.pop("parsed-yaml"))
         elif "yaml" in options:
-            root = yaml.load(options.pop("yaml"))
+            root = yaml.safe_load(options.pop("yaml"))
         elif "yaml-file" in options:
             with open(options.pop("yaml-file"), "r") as yaml_file:
-                root = yaml.load(yaml_file)
+                root = yaml.safe_load(yaml_file)
         else:
             raise RuntimeError("Neither filename nor YAML code provided")
 
