@@ -22,7 +22,7 @@ import re
 from six.moves import queue as singleproc_queue
 
 import numpy as np
-from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtGui, QtCore
 
 from quantiphyse.data import NumpyData, save
 from quantiphyse.utils import LogSource, QpException, get_plugins, set_local_file_path

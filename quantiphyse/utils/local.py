@@ -18,7 +18,6 @@ limitations under the License.
 import sys
 import os
 import logging
-import warnings
 
 LOCAL_FILE_PATH = ""
 DEFAULT_SAVE_DIR = ""

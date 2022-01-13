@@ -17,17 +17,10 @@ limitations under the License.
 """
 from __future__ import division, print_function
 
-import sys
 import os
-import warnings
-import glob
 import logging
 
-import nibabel as nib
-import numpy as np
-
 from quantiphyse.utils import QpException
-from .qpdata import DataGrid, QpData, NumpyData
 from .nifti import NiftiData, save as save_nifti
 from .dicoms import DicomFolder
 

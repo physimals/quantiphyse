@@ -40,7 +40,7 @@ import six
 import yaml
 import numpy as np
 
-from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtCore
 
 from quantiphyse.processes import Process
 from quantiphyse.processes.io import *

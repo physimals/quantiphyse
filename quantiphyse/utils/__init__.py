@@ -22,7 +22,6 @@ import sys
 import tempfile
 import logging
 
-from matplotlib import cm
 import numpy as np
 import pandas as pd
 
