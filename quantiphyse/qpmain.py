@@ -29,6 +29,16 @@ import logging
 
 from PySide2 import QtGui, QtCore, QtWidgets
 
+# This is a workaround for a bug in either tensorflow or pyside which causes
+# a crash if tensorflow is imported after any GUI element has been shown on
+# screen. So we import it here if possible which avoids the crash. We don't
+# depend on tensorflow for the main app (only some plugins) so don't worry
+# if it's not there
+try:
+    import tensorflow
+except ImportError:
+    pass
+
 from quantiphyse.test import run_tests
 
 from quantiphyse.utils import QpException, set_local_file_path
