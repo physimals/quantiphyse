@@ -30,8 +30,7 @@ import numpy as np
 from quantiphyse.utils import QpException
 from quantiphyse.utils.enums import Visibility
 
-from .qpdata import QpData
-from .load_save import NumpyData
+from .qpdata import QpData, NumpyData
 from .extras import Extra
 
 LOG = logging.getLogger(__name__)
