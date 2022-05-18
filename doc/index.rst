@@ -88,14 +88,14 @@ Bugs/Issues
 
 Bugs may be submitted using the Github `issue tracker for Quantiphyse <https://github.com/physimals/quantiphyse/issues>`_.
 
-For any other comments or feature requests please contact the  `current maintainer: <mailto:martin.craig@eng.ox.ac.uk>`_
+For any other comments or feature requests please contact the  `current maintainer: <mailto:martin.craig@nottingham.ac.uk>`_
 
 Contributors
 ------------
 
- - `Martin Craig <mailto:martin.craig@eng.ox.ac.uk>`_ (Current maintainer)
- - `Ben Irving <mailto:mail@birving.com>`_ (Original author)
- - `Michael Chappell <mailto:michael.chappell@eng.ox.ac.uk>`_
+ - `Martin Craig <mailto:martin.craig@nottingham.ac.uk>`_ (Current developer)
+ - `Ben Irving <mailto:mail@birving.com>`_ ('Author of 'PKview', the predecessor to Quantiphyse)
+ - `Michael Chappell <mailto:michael.chappell@nottingham.ac.uk>`_
  - Paula Croal
  - Moss Zhao
 
