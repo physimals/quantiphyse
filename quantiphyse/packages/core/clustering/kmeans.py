@@ -63,7 +63,7 @@ class KMeansProcess(Process):
         else:
             kmeans_data = kmeans_data[:, np.newaxis]
 
-        kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10, n_jobs=1)
+        kmeans = cl.KMeans(init='k-means++', n_clusters=n_clusters, n_init=10)
         kmeans.fit(kmeans_data)
         
         self.log("Elapsed time: %s" % (time.time() - start1))
