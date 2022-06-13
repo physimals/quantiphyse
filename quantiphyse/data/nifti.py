@@ -54,7 +54,7 @@ class NiftiData(QpData):
                 import yaml
                 LOG.debug("Found QP metadata: %s", ext.get_content())
                 try:
-                    yaml_data = yaml.load(ext.get_content())
+                    yaml_data = yaml.safe_load(ext.get_content())
                     LOG.debug("YAML data: %s", yaml_data)
                     if isinstance(yaml_data, Metadata):
                         # Old style
