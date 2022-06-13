@@ -72,7 +72,7 @@ class PcaFeatReduce(LogSource):
 
         self.debug("Using PCA dimensionality reduction")
         reduced_data = self.pca.fit_transform(data_inmask)
-        self.debug("Number of components", reduced_data.shape[1])
+        self.debug("Number of components: %i", reduced_data.shape[1])
 
         if self.norm_modes:
             self.debug("Normalising PCA modes between 0 and 1")
