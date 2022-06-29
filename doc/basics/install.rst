@@ -59,7 +59,7 @@ the command line.
 
 .. note::
     For recent versions of Mac OS (e.g. Big Sur, Monterey) it is necessary to set the following environment variable
-    before running Quantiphyse: `export QT_MAC_WANTS_LAYER=1`.
+    before running Quantiphyse: ``export QT_MAC_WANTS_LAYER=1``.
 
 .. note::
     PySide2 is not currently available for M1-based Macs. It is possible to install Quantiphyse by using
