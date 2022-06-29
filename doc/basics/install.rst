@@ -57,6 +57,15 @@ On Mac you will also need to do::
 This installs the basic Quantiphyse app - you should be able to run it by typing 'quantiphyse' at
 the command line.
 
+.. note::
+    For recent versions of Mac OS (e.g. Big Sur, Monterey) it is necessary to set the following environment variable
+    before running Quantiphyse: `export QT_MAC_WANTS_LAYER=1`.
+
+.. note::
+    PySide2 is not currently available for M1-based Macs. It is possible to install Quantiphyse by using
+    the Rosetta terminal to emulate an i386 environment. You will need to install Miniconda/Anaconda within Rosetta and then
+    use that version of Conda to create an environment for Quantiphyse and then follow the instructions above.
+
 Installing plugins
 ------------------
 
