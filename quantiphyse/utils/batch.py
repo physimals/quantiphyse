@@ -171,6 +171,7 @@ class Script(Process):
         self._error_action = kwargs.get("error_action", Script.IGNORE)
         self._embed_log = kwargs.get("embed_log", False)
         self._output_items = []
+        self._logfile_names = []
 
         # Find all the process implementations
         self.known_processes = dict(BASIC_PROCESSES)
@@ -213,6 +214,7 @@ class Script(Process):
         self._load_yaml(root)
         self.debug(self._pipeline)
         self._output_items = []
+        self._logfile_names = []
         mode = options.pop("mode", "run")
         if mode == "run":
             self.status = Process.RUNNING
@@ -364,6 +366,7 @@ class Script(Process):
         end = time.time()
         self.sig_done_process.emit(self._current_process, dict(self._current_params))
         
+        self._logfile_names.append(self._current_process.logfile_name())
         if status == Process.SUCCEEDED:
             if len(self._pipeline) > 1:
                 self.log("\nDONE (%.1fs)\n" % (end - self._process_start))
@@ -399,6 +402,12 @@ class Script(Process):
         
     def output_data_items(self):
         return self._output_items
+
+    def logfile_name(self):
+        if len(self._logfile_names) == 1:
+            return self._logfile_names[0]
+        else:
+            return "logfile"
 
 class Case(object):
     """

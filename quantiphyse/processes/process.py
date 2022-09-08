@@ -328,6 +328,12 @@ class Process(QtCore.QObject, LogSource):
         """
         return []
 
+    def logfile_name(self):
+        """
+        :return: Name to be given to log file when saving
+        """
+        return "logfile"
+
     def start_bg(self, args, n_workers=1):
         """
         Start a set of background workers
@@ -494,7 +500,7 @@ class Process(QtCore.QObject, LogSource):
             qpdata = self.ivm.data.get(d, None)
             if qpdata is not None:
                 save(qpdata, os.path.join(save_folder, d + ".nii"))
-        logfile = open(os.path.join(save_folder, "logfile"), "w")
+        logfile = open(os.path.join(save_folder, self.logfile_name()), "w")
         logfile.write(self._log)
         logfile.close()
 
