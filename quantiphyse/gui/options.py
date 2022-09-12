@@ -245,6 +245,10 @@ class DataOption(Option, QtWidgets.QComboBox):
 
     def __init__(self, ivm, parent=None, **kwargs):
         super(DataOption, self).__init__(parent)
+        sp = self.sizePolicy()
+        sp.setHorizontalPolicy(QtWidgets.QSizePolicy.Maximum)
+        self.setSizePolicy(sp)
+
         self.ivm = ivm
         self._changed = False
         self._current_value = []
