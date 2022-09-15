@@ -245,10 +245,6 @@ class DataOption(Option, QtWidgets.QComboBox):
 
     def __init__(self, ivm, parent=None, **kwargs):
         super(DataOption, self).__init__(parent)
-        sp = self.sizePolicy()
-        sp.setHorizontalPolicy(QtWidgets.QSizePolicy.Maximum)
-        self.setSizePolicy(sp)
-
         self.ivm = ivm
         self._changed = False
         self._current_value = []
@@ -278,6 +274,11 @@ class DataOption(Option, QtWidgets.QComboBox):
                 if self._include_nonrois:
                     self.ivm.sig_current_data.connect(self._update_from_current)
 
+        # Need to intercept the default resize event
+        # FIXME why can't call superclass method normally?
+        self.resizeEventOrig = self.resizeEvent
+        self.resizeEvent = self._resized
+
     @property
     def value(self):
         """
@@ -294,9 +295,9 @@ class DataOption(Option, QtWidgets.QComboBox):
             for idx in range(1, self.count()):
                 item = self.model().item(idx, 0)
                 if item.checkState() == QtCore.Qt.Checked:
-                    ret.append(self.itemText(idx))
+                    ret.append(self.itemData(idx))
         else:
-            current = self.currentText()
+            current = self.itemData(self.currentIndex())
             if self._none_option and current == "<none>":
                 ret = None
             elif self._explicit and current == "":
@@ -320,7 +321,7 @@ class DataOption(Option, QtWidgets.QComboBox):
         """
         if self._multi:
             for name in val:
-                idx = self.findText(name)
+                idx = self.findData(name)
                 item = self.model().item(idx, 0)
                 item.setCheckState(QtCore.Qt.Checked)
         else:
@@ -330,7 +331,7 @@ class DataOption(Option, QtWidgets.QComboBox):
             if self._explicit and val is None:
                 self.setCurrentIndex(-1)
             elif isinstance(val, six.string_types):
-                idx = self.findText(val)
+                idx = self.findData(val)
                 if idx >= 0:
                     self.setCurrentIndex(idx)
                 else:
@@ -364,6 +365,7 @@ class DataOption(Option, QtWidgets.QComboBox):
         self._changed = False
 
     def _visible_text(self, selected_items):
+        """:return: Text to be used when list not visible for multi-select only"""
         if selected_items:
             return ", ".join(selected_items)
         else:
@@ -377,6 +379,13 @@ class DataOption(Option, QtWidgets.QComboBox):
         if self._current_value != new_value:
             self._current_value = new_value
             self.sig_changed.emit()
+
+    def _update_highlight(self):
+        """Colour red if nothing selected and explicit mode (no default selection) is enabled"""
+        if self._explicit and self.isEnabled() and self.currentIndex() == -1:
+            self.setStyleSheet("QComboBox {background-color: #d05050}")
+        else:
+            self.setStyleSheet("")
 
     def _data_changed(self):
         all_data_names = list(self.ivm.data.keys())
@@ -395,18 +404,18 @@ class DataOption(Option, QtWidgets.QComboBox):
             self.clear()
 
             if self._none_option and not self._multi:
-                self.addItem("<none>")
+                self._add("<none>")
             elif self._multi:
-                self.addItem(self._visible_text(current))
+                self._add(self._visible_text(current))
 
             idx = 1
             for name in sorted(data):
                 data = self.ivm.data.get(name, None)
                 if data.nvols == 1 and self._include_3d:
-                    self.addItem(data.name)
+                    self._add(data.name)
                     added = True
                 elif data.nvols > 1 and self._include_4d:
-                    self.addItem(data.name)
+                    self._add(data.name)
                     added = True
                 else:
                     added = False
@@ -421,7 +430,7 @@ class DataOption(Option, QtWidgets.QComboBox):
                     idx += 1
 
             if self._all_option and not self._multi:
-                self.addItem("<all>")
+                self._add("<all>")
 
             # Make sure names are visible even with drop down arrow
             width = self.minimumSizeHint().width()
@@ -453,6 +462,44 @@ class DataOption(Option, QtWidgets.QComboBox):
             self.setCurrentIndex(0)
         self._update_highlight()
 
+    def _add(self, name):
+        """
+        Add an item, with shortened display name and full name as data
+        """
+        self.addItem(self._elided_name(name), name)
+        self.setItemData(self.count()-1, name, QtCore.Qt.ToolTipRole)
+
+    def _elided_name(self, name):
+        """
+        Put ellipsis between truncated name to make it fit in the combo
+        """
+        if name.startswith("<"):
+            # Special name, not a data set name
+            return name
+        width = self.fontMetrics().boundingRect(name).width()
+        combo_width = self.geometry().width() - 50
+        elided_name = name
+        left_chars = len(elided_name)//2
+        right_chars = left_chars-1
+        while 1:
+            elided_name = elided_name[:left_chars] + "..." + elided_name[-right_chars:]
+            width = self.fontMetrics().boundingRect(elided_name).width()
+            if width < combo_width:
+                break
+            elif left_chars < 2 or right_chars < 2:
+                break
+            if left_chars < right_chars:
+                right_chars -= 1
+            else:
+                left_chars -= 1
+        return elided_name
+
+    def _resized(self, event):
+        self.resizeEventOrig(event)
+        for idx in range(self.count()):
+            data_name = self.itemData(idx)
+            self.setItemText(idx, self._elided_name(data_name))
+
     def setEnabled(self, enable):
         """
         Overridden from QtWidgets.QWidget
@@ -461,12 +508,6 @@ class DataOption(Option, QtWidgets.QComboBox):
         """
         QtWidgets.QWidget.setEnabled(self, enable)
         self._update_highlight()
-
-    def _update_highlight(self):
-        if self._explicit and self.isEnabled() and self.currentIndex() == -1:
-            self.setStyleSheet("QComboBox {background-color: #d05050}")
-        else:
-            self.setStyleSheet("")
 
     def _update_from_current(self, qpd):
         if qpd is not None:
