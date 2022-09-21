@@ -50,6 +50,8 @@ from quantiphyse.gui import register
 from quantiphyse.gui.main_window import MainWindow
 from quantiphyse.gui.dialogs import error_dialog, set_main_window
 
+LOG = logging.getLogger(__name__)
+
 # Required to use resources in theme. Check if 2 or 3.
 if sys.version_info[0] > 2:
     from .resources import resource_py3
@@ -67,6 +69,8 @@ def my_catch_exceptions(exc_type, exc, tb):
         detail = exc.detail
     else:
         detail = traceback.format_exception(exc_type, exc, tb)
+    LOG.debug(str(exc))
+    LOG.debug(detail)
     error_dialog(str(exc), title="Error", detail=detail)
 
 def main():
