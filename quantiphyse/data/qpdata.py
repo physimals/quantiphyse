@@ -75,7 +75,7 @@ def is_ortho_vector(vec, shape=1):
     mod = np.linalg.norm(vec)
     for axis, val in enumerate(vec):
         if abs(abs(val/mod)-1) < tol:
-            return axis, math.copysign(1, val)
+            return axis, int(math.copysign(1, val))
     return None, None
 
 def remove_nans(x, replace_val=0):
