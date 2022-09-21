@@ -243,8 +243,11 @@ class DataOption(Option, QtWidgets.QComboBox):
     """
     sig_changed = QtCore.Signal()
 
+    #BEST_WIDTH = 150
+
     def __init__(self, ivm, parent=None, **kwargs):
         super(DataOption, self).__init__(parent)
+        #self.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.ivm = ivm
         self._changed = False
         self._current_value = []
@@ -278,6 +281,10 @@ class DataOption(Option, QtWidgets.QComboBox):
         # FIXME why can't call superclass method normally?
         self.resizeEventOrig = self.resizeEvent
         self.resizeEvent = self._resized
+
+    #def sizeHint(self):
+    #    default = QtWidgets.QComboBox.sizeHint(self)
+    #    return QtCore.QSize(self.BEST_WIDTH, default.height())
 
     @property
     def value(self):
@@ -341,12 +348,17 @@ class DataOption(Option, QtWidgets.QComboBox):
         self._current_value = self.value
 
     def _item_pressed(self, idx):
+        """ In multi-select mode, one of the checkboxes has been pressed """
         item = self.model().itemFromIndex(idx)
         if item.checkState() == QtCore.Qt.Checked:
             item.setCheckState(QtCore.Qt.Unchecked)
         else:
             item.setCheckState(QtCore.Qt.Checked)
-        self.setItemText(0, self._visible_text(self.value))
+        selected_items = self.value
+        text, tooltip = self._list_text(selected_items)
+        self.setItemText(0, text)
+        self.setItemData(0, text)
+        self.setItemData(0, tooltip, QtCore.Qt.ToolTipRole)
         self.sig_changed.emit()
         self._changed = True
 
@@ -364,12 +376,12 @@ class DataOption(Option, QtWidgets.QComboBox):
             QtWidgets.QComboBox.hidePopup(self)
         self._changed = False
 
-    def _visible_text(self, selected_items):
+    def _list_text(self, selected_items):
         """:return: Text to be used when list not visible for multi-select only"""
         if selected_items:
-            return ", ".join(selected_items)
+            return "%i data sets" % len(selected_items), ",".join(selected_items)
         else:
-            return "<Select data items>"
+            return "<Select data items>", ""
 
     def _index_changed(self, _idx):
         if self._multi:
@@ -406,7 +418,8 @@ class DataOption(Option, QtWidgets.QComboBox):
             if self._none_option and not self._multi:
                 self._add("<none>")
             elif self._multi:
-                self._add(self._visible_text(current))
+                text, tooltip = self._list_text(current)
+                self._add(text, tooltip)
 
             idx = 1
             for name in sorted(data):
@@ -462,12 +475,14 @@ class DataOption(Option, QtWidgets.QComboBox):
             self.setCurrentIndex(0)
         self._update_highlight()
 
-    def _add(self, name):
+    def _add(self, name, tooltip=None):
         """
         Add an item, with shortened display name and full name as data
         """
         self.addItem(self._elided_name(name), name)
-        self.setItemData(self.count()-1, name, QtCore.Qt.ToolTipRole)
+        if not tooltip:
+            tooltip = name
+        self.setItemData(self.count()-1, tooltip, QtCore.Qt.ToolTipRole)
 
     def _elided_name(self, name):
         """
@@ -481,7 +496,7 @@ class DataOption(Option, QtWidgets.QComboBox):
         elided_name = name
         left_chars = len(elided_name)//2
         right_chars = left_chars-1
-        while 1:
+        while width > combo_width:
             elided_name = elided_name[:left_chars] + "..." + elided_name[-right_chars:]
             width = self.fontMetrics().boundingRect(elided_name).width()
             if width < combo_width:
