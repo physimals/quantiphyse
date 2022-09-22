@@ -108,9 +108,9 @@ def to_yaml(processes, indent=""):
                 stream.write("%s\n" % str(value))
             elif isinstance(value, np.ndarray):
                 stream.write("%s\n" % str(value.tolist()))
-            elif isinstance(value, collections.Sequence):
+            elif isinstance(value, collections.abc.Sequence):
                 stream.write("%s\n" % str(list(value)))
-            elif isinstance(value, collections.Mapping):
+            elif isinstance(value, collections.abc.Mapping):
                 stream.write("\n")
                 _dict_to_yaml(stream, value, indent + "  ", prefix=indent + "  ")
             else:
