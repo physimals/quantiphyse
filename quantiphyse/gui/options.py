@@ -471,8 +471,8 @@ class DataOption(Option, QtWidgets.QComboBox):
         elif self._explicit:
             self.setCurrentIndex(-1)
         else:
-            # Must be <all> option
             self.setCurrentIndex(0)
+            self.sig_changed.emit()
         self._update_highlight()
 
     def _add(self, name, tooltip=None):
@@ -625,6 +625,11 @@ class OutputNameOption(TextOption):
     """
 
     def __init__(self, src_data=None, suffix="_out", initial="output"):
+        """
+        :param src_data: Option whose value provides an initial name
+        :param suffix: Suffix to apply to the initial value
+        :param initial: Initial value if src_data not given
+        """
         TextOption.__init__(self)
         self.src_data = src_data
         self.initial = initial
@@ -634,8 +639,8 @@ class OutputNameOption(TextOption):
             src_data.sig_changed.connect(self._reset)
 
     def _reset(self):
-        if self.src_data is not None:
-            self.setText(self.src_data.value + self.suffix)
+        if self.src_data is not None and self.src_data.value is not None:
+            self.setText(str(self.src_data.value) + self.suffix)
         else:
             self.setText(self.initial)
 
