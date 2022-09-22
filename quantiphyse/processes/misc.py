@@ -81,6 +81,7 @@ class RoiCleanupProcess(Process):
                 for slice_idx in range(new.shape[int(slice_axis)]):
                     slices = [slice(None), slice(None), slice(None)]
                     slices[slice_axis] = slice_idx
+                    slices = tuple(slices)
                     new[slices] = scipy.ndimage.morphology.binary_fill_holes(new[slices])
             
                 self.ivm.add(NumpyData(data=new, grid=roi.grid, name=output_name, roi=True))

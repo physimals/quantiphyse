@@ -294,7 +294,7 @@ class PolygonPicker(Picker):
         zpos = int(self.ivl.focus(grid)[gridz] + 0.5)
         if zpos >= 0 and zpos < grid.shape[gridz]:
             slices[gridz] = zpos
-            ret[slices] = slice_mask
+            ret[tuple(slices)] = slice_mask
         return ret
 
     def cleanup(self):

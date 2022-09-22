@@ -912,7 +912,7 @@ class QpData(object):
             if pos >= 0 and pos < rawdata.shape[data_naxis]:
                 slices[data_naxis] = pos
                 LOG.debug("Using Numpy slice: %s %s", slices, rawdata.shape)
-                sdata = rawdata[slices]
+                sdata = rawdata[tuple(slices)]
                 smask = np.ones(slice_shape)
             else:
                 # Requested slice is outside the data range
@@ -996,7 +996,7 @@ class QpData(object):
             bb_start, bb_end = np.where(nonzero)[0][[0, -1]]
             slices[dim] = slice(bb_start, bb_end+1)
 
-        return slices
+        return tuple(slices)
 
 class NumpyData(QpData):
     """

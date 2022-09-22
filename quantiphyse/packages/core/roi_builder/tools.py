@@ -386,6 +386,7 @@ class WalkerTool(Tool):
             #print(zaxis, zpos)
             sl = [slice(None)] * 3
             sl[zaxis] = zpos
+            s1 = tuple(s1)
             arr = arr[sl]
             labels = self.labels[sl]
             del spacing[zaxis] 
@@ -516,7 +517,7 @@ class BucketTool(Tool):
             slices.append(slice(start, end))
             offset.append(start)
         self.debug("Tile: ", slices, offset)
-        return arr[slices], offset
+        return arr[tuple(slices)], offset
 
     def _add(self):
         self.builder.modify(vol=self.roi, mode=self.builder.ADD)

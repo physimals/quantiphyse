@@ -112,7 +112,7 @@ class ResampleProcess(Process):
                         ]
                         if only2d:
                             slices[2] = slice(None)
-                        downsampled_data=orig_data[slices]
+                        downsampled_data=orig_data[tuple(slices)]
                         output_data += downsampled_data
                         num_samples += 1
             output_data /= num_samples

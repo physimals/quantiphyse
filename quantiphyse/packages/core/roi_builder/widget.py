@@ -168,7 +168,7 @@ class RoiBuilderWidget(QpWidget):
                 selected_points, axis, pos = slice2d
                 slices = [slice(None)] * 3
                 slices[axis] = pos
-                change_subset = self.roidata[slices]
+                change_subset = self.roidata[tuple(slices)]
                 # Selection is the axis index and position
                 selection = (axis, pos)
             else:
@@ -226,7 +226,7 @@ class RoiBuilderWidget(QpWidget):
             axis, pos = selection
             slices = [slice(None)] * 3
             slices[axis] = pos
-            self.roidata[slices] = data_orig
+            self.roidata[tuple(slices)] = data_orig
         else:
             for point, orig_value in zip(selection, data_orig):
                 self.roidata[point[0], point[1], point[2]] = orig_value
