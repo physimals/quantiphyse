@@ -39,7 +39,13 @@ home directory, in the ``course_data/cvr/001/cvr.feat`` folder.
 
 Be sure to specify the CVR BOLD data as Data and mask file as ROI.
 
+Filtered functional data:
+
 .. image:: /screenshots/cvr/cvr_data.png
+
+With mask loaded:
+
+.. image:: /screenshots/cvr/cvr_data_with_mask.png
 
 When viewing the output of modelling, it may be clearer if the ROI is displayed as an outline rather than a shaded
 region. To do this, click on the icon |roi_view| to the right of the ROI selector (below the image view):
@@ -50,6 +56,8 @@ region. To do this, click on the icon |roi_view| to the right of the ROI selecto
 
 The icon cycles between display modes for the ROI: shaded (with variable transparency selected by the slider below), 
 shaded and outlined, just outlined, or no display at all.
+
+.. image:: /screenshots/cvr/cvr_data_with_mask_outline.png
 
 .. note::
     If you accidentally load an ROI data set as ``Data``, you can set it to be an ROI using the ``Volumes`` widget
@@ -103,21 +111,25 @@ The CVR analysis Widget
 
 This can be found under ``Widgets->CVR->CVR PETCO2``
 
-.. image:: /screenshots/cvr/widget.png
-
 Acquisition Parameters
 ======================
 
-Firstly, we will select the pre-processed BOLD data and the brain masked, previously loaded.  The BOLD data you loaded will
+Firstly, we will select the pre-processed BOLD data and the brain mask, previously loaded.  The BOLD data you loaded will
 probably already be selected as 'BOLD timeseries data' - if not select it using the list box. For the ROI, make sure you
 have selected the analysis mask loaded previously. It is important to make sure you have selected
 a suitable mask as the ROI - otherwise the analysis will be performed on every voxel in the entire volume which will be
 extremely slow!
 
+Set the TR to match the dataset (0.8s): 
+
+.. image:: /screenshots/cvr/widget.png
+
 In this example, we acquired the corresponding pCO2 trace (a surrogate of CO2 arterial content) using a capnograph
-(this is highly encouraged). The sequence of values recorded is stored in a file named ``co2.txt``. This should be
+(this is highly encouraged). The sequence of values recorded is stored in a file named ``pco2.txt``. This should be
 selected as the 'Physiological Data' input, either by dragging and dropping the file onto the box, or by clicking the
 'Choose' button and selecting the file.
+
+.. image:: /screenshots/cvr/pco2_options.png
 
 After loading the ``co2.txt`` file, we can click the ``Plot`` button to view a simple plot of the timeseries:
 
@@ -162,6 +174,8 @@ We will leave all the settings at their defaults, however to avoid the output ge
 name suffix - e.g. ``vb`` as above.
 
 Choose a folder, if you would like to save a copy of the output data.
+
+.. image:: /screenshots/cvr/save_output.png
 
 Click 'Run' to perform the analysis. The following output files will be generated:
 
