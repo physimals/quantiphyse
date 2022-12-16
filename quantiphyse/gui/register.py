@@ -111,7 +111,7 @@ class LicenseDialog(QtWidgets.QDialog):
         layout.addWidget(self.button_box)
 
         self.setLayout(layout)
-        self.setFixedSize(700, 800)
+        self.resize(600, 400)
 
     def _agree_changed(self, state):
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(state)
