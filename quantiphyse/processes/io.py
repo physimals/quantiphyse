@@ -55,7 +55,7 @@ class LoadProcess(Process):
             data = load(filepath)
             data.name = name
             return data
-        except QpException as exc:
+        except Exception as exc:
             self.warn("Failed to load data: %s (%s)" % (filepath, str(exc)))
 
     def _get_filepath(self, fname, folder=None):
@@ -111,7 +111,7 @@ class SaveProcess(Process):
                     save(qpdata, fname, grid=output_grid, outdir=self.outdir)
                 else:
                     self.warn("Failed to save %s - no such data or ROI found" % name)
-            except QpException as exc:
+            except Exception as exc:
                 self.warn("Failed to save %s: %s" % (name, str(exc)))
 
 class SaveAllExceptProcess(Process):
