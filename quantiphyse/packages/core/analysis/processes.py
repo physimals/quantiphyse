@@ -90,7 +90,14 @@ class DataStatisticsProcess(Process):
                 output_name = "%s_stats" % data_name
         else:
             data_items = data_name
-        data_items = [self.ivm.data[name] for name in data_items]
+
+        qpdata_items = []
+        for name in data_items:
+            if name in self.ivm.data:
+                qpdata_items.append(self.ivm.data[name])
+            else:
+                self.warn("Data item not found: %s" % name)
+
         if output_name is None:
             output_name = "stats"
 
@@ -118,7 +125,7 @@ class DataStatisticsProcess(Process):
         self.model.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
 
         col = 0
-        for data in data_items:
+        for data in qpdata_items:
             stats, roi_labels = self.get_summary_stats(data, roi, slice_loc=sl, vol=vol, exact_median=exact_median)
             for ii in range(len(stats['mean'])):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, roi_labels[ii])))
