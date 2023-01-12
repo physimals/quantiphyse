@@ -241,7 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
         load_action = QtWidgets.QAction(QtGui.QIcon(get_icon("picture")), '&Load Data', self)
         load_action.setShortcut('Ctrl+L')
         load_action.setStatusTip('Load a 3d or 4d image or ROI')
-        load_action.triggered.connect(self.load_data_interactive)
+        load_action.triggered.connect(self.open_data)
 
         # File --> Save Data
         save_ovreg_action = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save current data', self)
@@ -410,13 +410,18 @@ class MainWindow(QtWidgets.QMainWindow):
         console.setGeometry(QtCore.QRect(100, 100, 600, 600))
         console.show()
 
-    def load_data_interactive(self, fname=None, name=None):
+    def open_data(self):
+        """
+        Load data file(s) from disk
+        """
+        fnames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open files', default_save_dir())
+        for fname in fnames:
+            self.load_data_interactive(fname)
+
+    def load_data_interactive(self, fname, name=None):
         """
         Load data into the IVM from a file (which may already be known)
         """
-        if fname is None:
-            fname, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', default_save_dir())
-            if not fname: return
         set_default_save_dir(os.path.dirname(fname))
 
         # Data is not loaded at this point, however basic metadata is so we can tailor the
