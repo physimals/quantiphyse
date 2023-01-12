@@ -210,7 +210,7 @@ class DataStatisticsProcess(Process):
         for data in qpdata_items:
             data_stats, roi_labels = self._get_summary_stats(data, stats, roi, slice_loc=sl, vol=vol)
             for region_idx, label in enumerate(roi_labels):
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, label)))
+                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s %s" % (data.name, label)))
                 for stat_idx, s in enumerate(stats):
                     self.model.setItem(stat_idx, col, QtGui.QStandardItem(sf(data_stats[s][region_idx])))    
                 col += 1
@@ -238,7 +238,11 @@ class DataStatisticsProcess(Process):
         if roi is None:
             roi_labels = [""]
         else:
-            roi_labels = list(roi.regions.keys())
+            roi_labels = list(roi.regions.values())
+            # Special case to avoid ugly suffix when we just
+            # have a single-region mask with no custom label
+            if roi_labels == ["Region 1"]:
+                roi_labels = [""]
 
         if vol is not None:
             if vol < data.nvols:
@@ -265,7 +269,7 @@ class DataStatisticsProcess(Process):
             if slice_loc is not None:
                 roi_arr, _, _, _ = roi.slice_data(slice_loc)
 
-            for region, name in roi.regions.items():
+            for region in roi.regions:
                 region_data = data_arr[roi_arr == region]
                 for s in stats:
                     if region_data.size > 0:
