@@ -177,6 +177,8 @@ class DataStatisticsProcess(Process):
             output_name = "stats"
 
         stats = options.pop("stats", self.DEFAULT_STATS)
+        if stats == "all":
+            stats = list(self.STAT_IMPLS.keys())
         if not isinstance(stats, list):
             stats = [stats]
         for s in list(stats):

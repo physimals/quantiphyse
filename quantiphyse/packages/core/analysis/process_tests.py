@@ -88,7 +88,7 @@ class AnalysisProcessTest(ProcessTest):
         stats: [mean, median, iqr, uq, lq, skewness, kurtosis, n, iqmean, iqn]
         exact-median: True
 
-  - SaveExtras: 
+  - SaveExtras:
         testdata_stats: testdata_stats.tsv
 """
         self.run_yaml(yaml)
@@ -117,6 +117,28 @@ class AnalysisProcessTest(ProcessTest):
         self.assertAlmostEquals(data[7, 1], np.count_nonzero(~np.isnan(self.data_3d)), delta=0.01)
         self.assertAlmostEquals(data[8, 1], np.mean(iqd), delta=0.01)
         self.assertAlmostEquals(data[9, 1], np.count_nonzero(~np.isnan(iqd)), delta=0.01)
+
+    def testSummaryStatsAll(self):
+        yaml = """
+  - DataStatistics:
+        data: data_3d
+        output-name: testdata_stats
+        stats: all
+
+  - SaveExtras:
+        testdata_stats: testdata_stats.tsv
+"""
+        NUM_ALL_STATS = 13 # Needs updating if we add/remove any!
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("testdata_stats" in self.ivm.extras)
+
+        fname = os.path.join(self.output_dir, "case", "testdata_stats.tsv")
+        self.assertTrue(os.path.exists(fname))
+        df = pd.read_csv(fname, sep='\t')
+        data = df.values
+        self.assertEquals(data.shape[0], NUM_ALL_STATS)
+        self.assertEquals(data.shape[1], 2)
 
     def testSummaryStatsMultiple(self):
         yaml = """
