@@ -75,9 +75,84 @@ class DataStatisticsProcess(Process):
     
     PROCESS_NAME = "DataStatistics"
     
+    def _sample(self, arr):
+        """
+        Calculating exact median/quartiles is expensive, so can choose to 
+        use a quicker approximation based on a sample
+        """
+        if not self.exact_median and arr.size > 1e6:
+            indices = np.random.randint(0, arr.size, size=[int(1e6),])
+            arr = np.take(arr, indices)
+        return arr
+
+    def median(self, arr):
+        return np.nanmedian(self._sample(arr))
+
+    def skew(self, arr):
+        return scipy.stats.skew(arr.flatten(), nan_policy='omit')
+
+    def kurtosis(self, arr):
+        return scipy.stats.kurtosis(arr.flatten(), nan_policy='omit')
+
+    def mode(self, arr):
+        return scipy.stats.mode(arr.flatten(), nan_policy='omit')
+
+    def n(self, arr):
+        return np.count_nonzero(~np.isnan(arr))
+
+    def lq(self, arr):
+        return np.nanquantile(self._sample(arr), 0.25)
+
+    def uq(self, arr):
+        return np.nanquantile(self._sample(arr), 0.75)
+
+    def iqr(self, arr):
+        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])
+        return uq-lq
+
+    def iqn(self, arr):
+        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])   
+        arr = arr[arr < uq]
+        arr = arr[arr > lq]
+        return np.count_nonzero(~np.isnan(arr))
+
+    def iqmean(self, arr):
+        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])   
+        arr = arr[arr < uq]
+        arr = arr[arr > lq]
+        return np.nanmean(arr)
+
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
         self.model = QtGui.QStandardItemModel()
+        
+        self.STAT_IMPLS = {
+            "mean" : np.nanmean,
+            "std" : np.nanstd,
+            "median" : self.median,
+            "min" : np.nanmin,
+            "max" : np.nanmax,
+            "lq" : self.lq,
+            "uq" : self.uq,
+            "iqr" : self.iqr,
+            #"mode" : self.mode,
+            #"fwhm" : None,
+            "skewness" : self.skew,
+            "kurtosis" : self.kurtosis,
+            "iqmean" : self.iqmean,
+            "n" : self.n,
+            "iqn" : self.iqn,
+        }
+
+        self.STAT_NAMES = {
+            "lq" : "Lower quartile",
+            "uq" : "Upper quartile",
+            "iqr" : "IQR",
+            "iqmean" : "Interquartile mean",
+            "iqn" : "Interquartile N",
+        }
+
+        self.DEFAULT_STATS = ["mean", "median", "std", "min", "max"]
 
     def run(self, options):
         data_name = options.pop('data', None)
@@ -96,10 +171,18 @@ class DataStatisticsProcess(Process):
             if name in self.ivm.data:
                 qpdata_items.append(self.ivm.data[name])
             else:
-                self.warn("Data item not found: %s" % name)
+                self.warn("Data item not found: %s - ignoring" % name)
 
         if output_name is None:
             output_name = "stats"
+
+        stats = options.pop("stats", self.DEFAULT_STATS)
+        if not isinstance(stats, list):
+            stats = [stats]
+        for s in list(stats):
+            if s not in self.STAT_IMPLS:
+                self.warn("Unknown statistic: %s - ignoring" % s)
+                stats.remove(s)
 
         roi_name = options.pop('roi', None)
         roi = None
@@ -111,68 +194,67 @@ class DataStatisticsProcess(Process):
         sl = None
         if slice_dir is not None:
             sl = OrthoSlice(self.ivm.main.grid, slice_dir, slice_pos)
-        
-        vol = options.pop('vol', None)
 
+        vol = options.pop('vol', None)
         no_extra = options.pop('no-extras', False)
-        exact_median = options.pop('exact-median', False)
-        
+        self.exact_median = options.pop('exact-median', False)
+
         self.model.clear()
-        self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Mean"))
-        self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Median"))
-        self.model.setVerticalHeaderItem(2, QtGui.QStandardItem("STD"))
-        self.model.setVerticalHeaderItem(3, QtGui.QStandardItem("Min"))
-        self.model.setVerticalHeaderItem(4, QtGui.QStandardItem("Max"))
+        for idx, s in enumerate(stats):
+            stat_name = self.STAT_NAMES.get(s, s.capitalize())
+            self.model.setVerticalHeaderItem(idx, QtGui.QStandardItem(stat_name))
 
         col = 0
         for data in qpdata_items:
-            stats, roi_labels = self.get_summary_stats(data, roi, slice_loc=sl, vol=vol, exact_median=exact_median)
-            for ii in range(len(stats['mean'])):
-                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, roi_labels[ii])))
-                self.model.setItem(0, col, QtGui.QStandardItem(sf(stats['mean'][ii])))
-                self.model.setItem(1, col, QtGui.QStandardItem(sf(stats['median'][ii])))
-                self.model.setItem(2, col, QtGui.QStandardItem(sf(stats['std'][ii])))
-                self.model.setItem(3, col, QtGui.QStandardItem(sf(stats['min'][ii])))
-                self.model.setItem(4, col, QtGui.QStandardItem(sf(stats['max'][ii])))
+            data_stats, roi_labels = self._get_summary_stats(data, stats, roi, slice_loc=sl, vol=vol)
+            for region_idx, label in enumerate(roi_labels):
+                self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s\n%s" % (data.name, label)))
+                for stat_idx, s in enumerate(stats):
+                    self.model.setItem(stat_idx, col, QtGui.QStandardItem(sf(data_stats[s][region_idx])))    
                 col += 1
 
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
-    def get_summary_stats(self, data, roi=None, slice_loc=None, vol=None, exact_median=False):
+    def _get_summary_stats(self, data, stats, roi=None, slice_loc=None, vol=None):
         """
         Get summary statistics
 
         :param data: QpData instance for the data to get stats from
+        :param stats: List of names of statistics to extract - must be in STATS_IMPLS!
         :param roi: Restrict data to within this roi
+        :param slice_loc: Restrict data to this OrthoSlice
+        :param vol: Restrict data to this volume index
+        :param exact_median: Use an exact median calculation rather than a faster approximation
 
-        :return: Sequence of summary stats dictionary, roi labels
+        :return: Tuple of summary stats dictionary, roi labels
         """
-        stat1 = {'mean': [], 'median': [], 'std': [], 'max': [], 'min': []}
-        regions = []
+        data_stats = {}
+        for s in stats:
+            data_stats[s] = []
 
-        if data is None:
-            stat1 = {'mean': [0], 'median': [0], 'std': [0], 'max': [0], 'min': [0]}
-            return stat1, list(roi.regions.keys())
+        if roi is None:
+            roi_labels = [""]
+        else:
+            roi_labels = list(roi.regions.keys())
 
         if vol is not None:
-            data = data.volume(vol, qpdata=True)
+            if vol < data.nvols:
+                data = data.volume(vol, qpdata=True)
+            else:
+                # Will cause zeros to be returned
+                data = None
 
+        if data is None:
+            for s in stats:
+                data_stats[s] = [0] * len(roi_labels)
+            return data_stats, roi_labels
+
+        # FIXME does this work with data defined on different grids?
         if slice_loc is None:
             data_arr = data.raw()
         else:
             data_arr, _, _, _ = data.slice_data(slice_loc)
-
-        # FIXME should we remove non-finite values? Perhaps removed because expensive?
-        if 0:
-            data_arr = data_arr[np.isfinite(data_arr)]
-
-        # Calculating the exact median requires a copy and sort of the data
-        # which can be expensive for large data sets
-        if exact_median:
-            median = np.nanmedian
-        else:
-            median = self._approx_median
 
         # Separate ROI and non-ROI cases to avoid making additional array copy
         # when there is no ROI
@@ -183,36 +265,18 @@ class DataStatisticsProcess(Process):
 
             for region, name in roi.regions.items():
                 region_data = data_arr[roi_arr == region]
-                if region_data.size > 0:
-                    mean, med, std = np.nanmean(region_data), median(region_data), np.nanstd(region_data)
-                    mx, mn = np.nanmax(region_data), np.nanmin(region_data)
-                else:
-                    mean, med, std, mx, mn = 0, 0, 0, 0, 0
-
-                stat1['mean'].append(mean)
-                stat1['median'].append(med)
-                stat1['std'].append(std)
-                stat1['max'].append(mx)
-                stat1['min'].append(mn)
-                regions.append(name)
+                for s in stats:
+                    if region_data.size > 0:
+                        value = self.STAT_IMPLS[s](region_data)
+                        data_stats[s].append(value)
+                    else:
+                        data_stats[s].append(0)
         else:
-            mean, med, std = np.nanmean(data_arr), median(data_arr), np.nanstd(data_arr)
-            mx, mn = np.nanmax(data_arr), np.nanmin(data_arr)
+            for s in stats:
+                value = self.STAT_IMPLS[s](data_arr)
+                data_stats[s].append(value)
 
-            stat1['mean'].append(mean)
-            stat1['median'].append(med)
-            stat1['std'].append(std)
-            stat1['max'].append(mx)
-            stat1['min'].append(mn)
-            regions.append("")
-
-        return stat1, regions
-
-    def _approx_median(self, arr):
-        if arr.size > 1e6:
-            indices = np.random.randint(0, arr.size, size=[int(1e6),])
-            arr = np.take(arr, indices)
-        return np.nanmedian(arr)
+        return data_stats, roi_labels
 
 class OverlayStatsProcess(DataStatisticsProcess):
     """

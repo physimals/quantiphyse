@@ -20,6 +20,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import scipy
 
 from quantiphyse.processes import Process
 from quantiphyse.test import ProcessTest
@@ -78,6 +79,44 @@ class AnalysisProcessTest(ProcessTest):
         self.assertAlmostEquals(data[2, 1], np.std(self.data_3d), delta=0.01)
         self.assertAlmostEquals(data[3, 1], np.min(self.data_3d), delta=0.01)
         self.assertAlmostEquals(data[4, 1], np.max(self.data_3d), delta=0.01)
+
+    def testSummaryStatsCustom(self):
+        yaml = """
+  - DataStatistics:
+        data: data_3d
+        output-name: testdata_stats
+        stats: [mean, median, iqr, uq, lq, skewness, kurtosis, n, iqmean, iqn]
+        exact-median: True
+
+  - SaveExtras: 
+        testdata_stats: testdata_stats.tsv
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("testdata_stats" in self.ivm.extras)
+
+        fname = os.path.join(self.output_dir, "case", "testdata_stats.tsv")
+        self.assertTrue(os.path.exists(fname))
+        df = pd.read_csv(fname, sep='\t')
+        data = df.values
+
+        uq, med, lq = np.nanquantile(self.data_3d, [0.75, 0.5, 0.25])
+        iqr = uq - lq
+        iqd = self.data_3d[self.data_3d > lq]
+        iqd = iqd[iqd < uq]
+
+        self.assertEquals(data.shape[0], 10)
+        self.assertEquals(data.shape[1], 2)
+        self.assertAlmostEquals(data[0, 1], np.mean(self.data_3d), delta=0.01)
+        self.assertAlmostEquals(data[1, 1], np.median(self.data_3d), delta=0.01)
+        self.assertAlmostEquals(data[2, 1], iqr, delta=0.01)
+        self.assertAlmostEquals(data[3, 1], uq, delta=0.01)
+        self.assertAlmostEquals(data[4, 1], lq, delta=0.01)
+        self.assertAlmostEquals(data[5, 1], scipy.stats.skew(self.data_3d.flatten()), delta=0.01)
+        self.assertAlmostEquals(data[6, 1], scipy.stats.kurtosis(self.data_3d.flatten()), delta=0.01)
+        self.assertAlmostEquals(data[7, 1], np.count_nonzero(~np.isnan(self.data_3d)), delta=0.01)
+        self.assertAlmostEquals(data[8, 1], np.mean(iqd), delta=0.01)
+        self.assertAlmostEquals(data[9, 1], np.count_nonzero(~np.isnan(iqd)), delta=0.01)
 
     def testSummaryStatsMultiple(self):
         yaml = """
