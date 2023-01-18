@@ -85,7 +85,7 @@ class AnalysisProcessTest(ProcessTest):
   - DataStatistics:
         data: data_3d
         output-name: testdata_stats
-        stats: [mean, median, iqr, uq, lq, skewness, kurtosis, n, iqmean, iqn]
+        stats: [mean, median, iqr, uq, lq, skewness, kurtosis, n, iqmean, iqn, fwhm, mode]
         exact-median: True
 
   - SaveExtras:
@@ -105,7 +105,9 @@ class AnalysisProcessTest(ProcessTest):
         iqd = self.data_3d[self.data_3d > lq]
         iqd = iqd[iqd < uq]
 
-        self.assertEquals(data.shape[0], 10)
+        loc, scale = scipy.stats.norm.fit(self.data_3d)
+
+        self.assertEquals(data.shape[0], 12)
         self.assertEquals(data.shape[1], 2)
         self.assertAlmostEquals(data[0, 1], np.mean(self.data_3d), delta=0.01)
         self.assertAlmostEquals(data[1, 1], np.median(self.data_3d), delta=0.01)
@@ -117,6 +119,8 @@ class AnalysisProcessTest(ProcessTest):
         self.assertAlmostEquals(data[7, 1], np.count_nonzero(~np.isnan(self.data_3d)), delta=0.01)
         self.assertAlmostEquals(data[8, 1], np.mean(iqd), delta=0.01)
         self.assertAlmostEquals(data[9, 1], np.count_nonzero(~np.isnan(iqd)), delta=0.01)
+        self.assertAlmostEquals(data[10, 1], scale*2.355, delta=0.01)
+        self.assertAlmostEquals(data[11, 1], loc, delta=0.01)
 
     def testSummaryStatsAll(self):
         yaml = """
@@ -128,7 +132,7 @@ class AnalysisProcessTest(ProcessTest):
   - SaveExtras:
         testdata_stats: testdata_stats.tsv
 """
-        NUM_ALL_STATS = 13 # Needs updating if we add/remove any!
+        NUM_ALL_STATS = 15 # Needs updating if we add/remove any!
         self.run_yaml(yaml)
         self.assertEqual(self.status, Process.SUCCEEDED)
         self.assertTrue("testdata_stats" in self.ivm.extras)

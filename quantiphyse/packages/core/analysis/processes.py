@@ -95,7 +95,11 @@ class DataStatisticsProcess(Process):
         return scipy.stats.kurtosis(arr.flatten(), nan_policy='omit')
 
     def mode(self, arr):
-        return scipy.stats.mode(arr.flatten(), nan_policy='omit')
+        """
+        For FWHM, fit a Gaussian and return peak location of that
+        """
+        loc, _scale = scipy.stats.norm.fit(arr)
+        return loc
 
     def n(self, arr):
         return np.count_nonzero(~np.isnan(arr))
@@ -122,6 +126,13 @@ class DataStatisticsProcess(Process):
         arr = arr[arr > lq]
         return np.nanmean(arr)
 
+    def fwhm(self, arr):
+        """
+        For FWHM, fit a Gaussian and return fwhm of that
+        """
+        _loc, scale = scipy.stats.norm.fit(arr)
+        return 2.355*scale
+
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
         self.model = QtGui.QStandardItemModel()
@@ -135,8 +146,8 @@ class DataStatisticsProcess(Process):
             "lq" : self.lq,
             "uq" : self.uq,
             "iqr" : self.iqr,
-            #"mode" : self.mode,
-            #"fwhm" : None,
+            "mode" : self.mode,
+            "fwhm" : self.fwhm,
             "skewness" : self.skew,
             "kurtosis" : self.kurtosis,
             "iqmean" : self.iqmean,
@@ -150,6 +161,8 @@ class DataStatisticsProcess(Process):
             "iqr" : "IQR",
             "iqmean" : "Interquartile mean",
             "iqn" : "Interquartile N",
+            "mode" : "Mode estimate",
+            "fwhm" : "FWHM estimate",
         }
 
         self.DEFAULT_STATS = ["mean", "median", "std", "min", "max"]
