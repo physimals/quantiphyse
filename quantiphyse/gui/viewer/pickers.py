@@ -285,7 +285,7 @@ class PolygonPicker(Picker):
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).polygon(points, outline=label, fill=label)
 
-        ret = np.zeros(grid.shape, dtype=int)
+        ret = np.zeros(grid.shape, dtype=np.int32)
         slice_mask = np.array(img)
         if gridx < gridy:
             slice_mask = slice_mask.T
@@ -406,7 +406,7 @@ class EllipsePicker(PolygonPicker):
         img = Image.new('L', (w, h), 0)
         ImageDraw.Draw(img).ellipse(points, outline=label, fill=label)
 
-        ret = np.zeros(grid.shape, dtype=int)
+        ret = np.zeros(grid.shape, dtype=np.int32)
         slice_mask = np.array(img)
         if gridx < gridy:
             slice_mask = slice_mask.T

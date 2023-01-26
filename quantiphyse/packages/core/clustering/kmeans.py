@@ -68,7 +68,7 @@ class KMeansProcess(Process):
         
         self.log("Elapsed time: %s" % (time.time() - start1))
 
-        label_image = np.zeros(data.grid.shape, dtype=int)
+        label_image = np.zeros(data.grid.shape, dtype=np.int32)
         label_image[mask] = kmeans.labels_ + 1
         self.ivm.add(NumpyData(label_image, grid=data.grid, name=output_name, roi=True), make_current=True)
 

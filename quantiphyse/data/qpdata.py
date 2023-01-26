@@ -775,7 +775,7 @@ class QpData(object):
             else:
                 ret.append(data)
             if output_mask:
-                ret.append(np.ones(data.shape[:3], dtype=int))
+                ret.append(np.ones(data.shape[:3], dtype=np.int32))
         else:
             roi = roi.resample(self.grid)
             if region is None:

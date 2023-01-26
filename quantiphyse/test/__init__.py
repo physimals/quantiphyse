@@ -42,7 +42,7 @@ def create_test_data(obj, shape=(10, 10, 10), nt=20, motion_scale=0.5):
     obj.data_3d = np.zeros(shape, dtype=np.float32)
     obj.data_4d = np.zeros(shape + [nt,], dtype=np.float32)
     obj.data_4d_moving = np.zeros(shape + [nt,], dtype=np.float32)
-    obj.mask = np.zeros(shape, dtype=int)
+    obj.mask = np.zeros(shape, dtype=np.int32)
 
     for x in range(shape[0]):
         for y in range(shape[1]):

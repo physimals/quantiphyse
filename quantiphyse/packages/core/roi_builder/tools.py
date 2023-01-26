@@ -261,7 +261,7 @@ class PickTool(Tool):
         picked_region = roi_picked.value(pos, grid=self.builder.grid)
 
         roi_picked_arr = roi_picked.resample(self.builder.grid).raw()
-        self.roi_new = np.zeros(self.builder.grid.shape, dtype=int)
+        self.roi_new = np.zeros(self.builder.grid.shape, dtype=np.int32)
         self.roi_new[roi_picked_arr == picked_region] = 1
 
         self.ivm.add(NumpyData(self.roi_new, grid=self.builder.grid, name=self.temp_name, roi=True), make_current=True)
@@ -331,7 +331,7 @@ class WalkerTool(Tool):
         else:
             self.ivl.set_picker(PickMode.SLICE_MULTIPLE)
             
-        self.labels = np.zeros(self.builder.grid.shape, dtype=int)
+        self.labels = np.zeros(self.builder.grid.shape, dtype=np.int32)
         self._pick_mode_changed(self.pickmode)
 
     def selected(self):
@@ -399,7 +399,7 @@ class WalkerTool(Tool):
 
         if self.segmode == 0:
             # Create 3D volume using 2D slice
-            seg_3d = np.zeros(self.builder.grid.shape, dtype=int)
+            seg_3d = np.zeros(self.builder.grid.shape, dtype=np.int32)
             seg_3d[sl] = seg
             seg = seg_3d
 
@@ -503,7 +503,7 @@ class BucketTool(Tool):
                 break
             tile_size = min(tile_size + 50, max_tile_size)
 
-        self.roi = np.zeros(self.builder.grid.shape, dtype=int)
+        self.roi = np.zeros(self.builder.grid.shape, dtype=np.int32)
         tile_shape = labelled.shape
         self.roi[offset[0]:offset[0]+tile_shape[0], offset[1]:offset[1]+tile_shape[1], offset[2]:offset[2]+tile_shape[2]] = labelled
         self.ivm.add(self.roi, name="_temp_bucket", grid=self.builder.grid, roi=True, make_current=True)
