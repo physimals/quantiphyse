@@ -75,13 +75,19 @@ def get_version(rootdir):
         update_metadata(rootdir, version, timestamp)
     else:
         # Could not get metadata from Git - use the version file if it exists
-        with io.open(os.path.join(rootdir, MODULE, '_version.py'), encoding='utf-8') as f:
-            md = f.read()
-            match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", md, re.M)
-            if match:
-                version = match.group(1)
-            else:
-                version = "unknown"
+        try:
+            with io.open(os.path.join(rootdir, MODULE, '_version.py'), encoding='utf-8') as f_handle:
+                metadata = f_handle.read()
+                match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", metadata, re.M)
+                if match:
+                    version = match.group(1)
+                else:
+                    version = "unknown"
+        except IOError:
+            # No version file!
+            version = "unknown"
+            update_metadata(rootdir, version, "unknown")
+
     return version
 
 def get_package_data(rootdir):
