@@ -550,7 +550,7 @@ class QpData(object):
             raise TypeError("Only ROIs have distinct regions")
 
         if self._meta.get("roi_regions", None) is None:
-            regions = np.unique(self.raw().astype(np.int))
+            regions = np.unique(self.raw().astype(int))
             regions = np.delete(regions, np.where(regions == 0))
             if len(regions) == 0:
                 # Always have at least one region defined even in empty ROI
@@ -775,7 +775,7 @@ class QpData(object):
             else:
                 ret.append(data)
             if output_mask:
-                ret.append(np.ones(data.shape[:3], dtype=np.int))
+                ret.append(np.ones(data.shape[:3], dtype=int))
         else:
             roi = roi.resample(self.grid)
             if region is None:

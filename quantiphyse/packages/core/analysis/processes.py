@@ -53,7 +53,7 @@ class CalcVolumesProcess(Process):
 
         if roi is not None:
             sizes = roi.grid.spacing
-            counts = np.bincount(roi.raw().flatten().astype(np.int))
+            counts = np.bincount(roi.raw().flatten().astype(int))
             col_idx = 0
             for region, name in roi.regions.items():
                 if sel_region is None or region == sel_region:

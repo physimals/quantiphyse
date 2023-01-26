@@ -183,8 +183,8 @@ class LinePlot(LogSource):
         
         self.graph.options.sig_options_changed.connect(self._options_changed)
 
-        self.yvalues = np.copy(np.array(yvalues, dtype=np.double))
-        self.xvalues = np.copy(np.array(xvalues, dtype=np.double))
+        self.yvalues = np.copy(np.array(yvalues, dtype=np.float64))
+        self.xvalues = np.copy(np.array(xvalues, dtype=np.float64))
         self.line_col = kwargs.get("line_col", (255, 255, 255))
         self.line_width = kwargs.get("line_width", 1.0)
         self.line_style = kwargs.get("line_style", QtCore.Qt.SolidLine)

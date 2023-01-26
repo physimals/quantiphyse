@@ -172,7 +172,7 @@ class SliceDataView(LogSource):
 
                     contour = self._contours[n_contours]
                     contour.setTransform(qtransform)
-                    contour.setData((slicedata == val).astype(np.int))
+                    contour.setData((slicedata == val).astype(int))
                     contour.setLevel(1)
                     contour.setPen(pg.mkPen(pencol, width=3))
                     contour.setZValue(self._z_order)

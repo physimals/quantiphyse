@@ -300,7 +300,7 @@ class RoiBuilderWidget(QpWidget):
             if not roiname or not gridfrom:
                 raise QpException("Must provide a ROI name and a dataset to base it on")
             grid = self.ivm.data[gridfrom].grid
-            roidata = np.zeros(grid.shape, dtype=np.int)
+            roidata = np.zeros(grid.shape, dtype=int)
             self.ivm.add(NumpyData(roidata, grid=grid, roi=True, name=roiname), make_current=True)
 
             # Throw away old history. FIXME is this right, should we keep existing data and history?

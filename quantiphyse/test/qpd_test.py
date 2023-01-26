@@ -66,7 +66,7 @@ class NumpyDataTest(unittest.TestCase):
         
     def testRoiFloats(self):
         """ Check that ROIs can contain float data so long as the numbers are really integers """
-        qpd = NumpyData(self.ints.astype(np.float), grid=self.grid, name="test", roi=True)
+        qpd = NumpyData(self.ints.astype(float), grid=self.grid, name="test", roi=True)
         self.assertTrue(issubclass(qpd.raw().dtype.type, np.floating))
         self.assertTrue(qpd.roi)
         

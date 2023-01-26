@@ -147,7 +147,7 @@ class PcaFeatReduce(LogSource):
         if roi is None:
             roi = np.ones(data.shape[0:-1], dtype=bool)
         else:
-            roi = np.array(roi, dtype=np.bool)
+            roi = np.array(roi, dtype=bool)
         data_inmask = data[roi]
 
         if self.norm_input:

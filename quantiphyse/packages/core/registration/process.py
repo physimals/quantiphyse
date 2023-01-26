@@ -60,7 +60,7 @@ def _normalize_output(reg_data, output_data, output_suffix):
     if reg_data.roi:
         # This is not correct for multi-level ROIs - this would basically require support
         # from within the registration algorithm for roi (integer only) data
-        data = np.rint(output_data.raw()).astype(np.int)
+        data = np.rint(output_data.raw()).astype(int)
         output_data = NumpyData(data, grid=output_data.grid, name=output_data.name, roi=True)
     output_data.name = reg_data.name + output_suffix
     return output_data
