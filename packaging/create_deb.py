@@ -64,13 +64,13 @@ def create_deb(distdir, pkgdir, version_str, sysname, version_str_display=None):
     postinst_file = open(postinst, "w")
     postinst_file.write(POSTINSTALL)
     postinst_file.close()
-    os.chmod(postinst, 0555)
+    os.chmod(postinst, 0o555)
 
     postrm = os.path.join(metadir, "postrm")
     postrm_file = open(postrm, "w")
     postrm_file.write(POSTRM)
     postrm_file.close()
-    os.chmod(postrm, 0555)
+    os.chmod(postrm, 0o555)
 
     # Need all files to be owned by root
     # No one-line way to do this in Python?
