@@ -386,7 +386,7 @@ class WalkerTool(Tool):
             #print(zaxis, zpos)
             sl = [slice(None)] * 3
             sl[zaxis] = zpos
-            s1 = tuple(s1)
+            sl = tuple(sl)
             arr = arr[sl]
             labels = self.labels[sl]
             del spacing[zaxis] 
