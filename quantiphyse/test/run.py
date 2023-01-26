@@ -31,4 +31,5 @@ def run_tests(test_filter=None):
         if test_filter is None or test.__name__.lower().startswith(test_filter.lower()):
             suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test))
    
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    return int(not result.wasSuccessful())

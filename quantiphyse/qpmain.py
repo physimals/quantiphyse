@@ -132,8 +132,7 @@ def main():
 
         if args.test_all or args.test:
             # Run tests
-            run_tests(args.test)
-            sys.exit(0)
+            sys.exit(run_tests(args.test))
         else:
             # Create window and start main loop
             pixmap = QtGui.QPixmap(get_icon("quantiphyse_splash.png"))
