@@ -18,6 +18,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          sudo apt install libxcb-icccm4 libxcb-xinerama0
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -30,4 +31,4 @@ jobs:
       - name: Test with pytest
         run: |
           python setup.py build
-          python -m quantiphyse --test-all --fast
+          QT_DEBUG_PLUGINS=1 QT_QPA_PLATFORM=offscreen python -m quantiphyse --test-all
