@@ -1256,7 +1256,7 @@ def makeQImage(imgData, alpha=None, copy=True, transpose=True):
         except:
             if copy:
                 # does not leak memory, is not mutable
-                img = QtGui.QImage(buffer(imgData), imgData.shape[1], imgData.shape[0], imgFormat)
+                img = QtGui.QImage(memoryview(imgData), imgData.shape[1], imgData.shape[0], imgFormat)
             else:
                 # mutable, but leaks memory
                 img = QtGui.QImage(memoryview(imgData), imgData.shape[1], imgData.shape[0], imgFormat)
