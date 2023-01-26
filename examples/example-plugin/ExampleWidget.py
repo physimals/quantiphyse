@@ -5,18 +5,9 @@ Copyright (c) 2013-2018 University of Oxford
 """
 from __future__ import division, unicode_literals, absolute_import, print_function
 
-import sys, os, warnings
-import time
-import traceback
-import re
-import tempfile
+from PySide2 import QtWidgets
 
-import nibabel as nib
-import numpy as np
-import pyqtgraph as pg
-from PySide import QtCore, QtGui
-
-from quantiphyse.utils import QpException, debug
+from quantiphyse.utils import QpException
 from quantiphyse.gui.widgets import QpWidget, BatchButton, HelpButton
 
 DESC = """This is an example of how to create a plugin widget"""
@@ -112,9 +103,9 @@ class ExampleWidget(QpWidget):
         slice = int(self.val_s1.text())
         thresh = float(self.val_t1.text())
 
-        img = self.ivm.vol[:, :, :, slice1]
+        img = self.ivm.vol[:, :, :, slice]
         img = img * (self.ivm.current_roi > 0)
-        img[img1 < thresh] = 0
+        img[img < thresh] = 0
 
         self.ivm.add_data(img, name='thresh', make_current=True)
 
