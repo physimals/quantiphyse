@@ -826,7 +826,7 @@ class MatrixOption(Option, QtWidgets.QTableView):
             self.model().itemChanged.connect(self._item_changed)
 
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        #self.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        #self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.itemDelegate().closeEditor.connect(self._expand_if_required, QtCore.Qt.QueuedConnection)
         self.setAcceptDrops(True)
 

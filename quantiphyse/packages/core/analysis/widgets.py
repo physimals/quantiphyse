@@ -527,14 +527,14 @@ class VoxelAnalysis(QpWidget):
         self.rms_table.itemChanged.connect(self._data_table_changed)
         tview = QtWidgets.QTableView()
         tview.setModel(self.rms_table)
-        tview.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        tview.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         tabs.addTab(tview, "Timeseries data")
 
         # Table showing value of model parameters
         self.values_table = QtGui.QStandardItemModel()
         tview = QtWidgets.QTableView()
         tview.setModel(self.values_table)
-        tview.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        tview.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         tabs.addTab(tview, 'Non-timeseries data')
 
     def activate(self):

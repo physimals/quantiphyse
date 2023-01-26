@@ -347,9 +347,9 @@ class DataListWidget(QtWidgets.QTableView):
             self.model.setColumnCount(3)
             self.model.setHorizontalHeaderLabels(["", "Name", "File"])
             self.model.setHeaderData(0, QtCore.Qt.Horizontal, self._vis_icon, QtCore.Qt.DecorationRole)
-            self.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-            self.horizontalHeader().setResizeMode(2, QtWidgets.QHeaderView.Stretch)
+            self.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
             for row, data in enumerate(sorted(self.ivm.data.values(), key=lambda x: -x.view.z_order)):
                 self.model.appendRow(self._get_table_items(data))
 
