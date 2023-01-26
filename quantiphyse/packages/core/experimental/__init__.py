@@ -18,8 +18,9 @@ limitations under the License.
 
 from __future__ import print_function, division
 
-from PySide2 import QtGui, QtCore, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
+from quantiphyse.utils import QpException
 from quantiphyse.gui.widgets import QpWidget, HelpButton
 
 class ImageExportWidget(QpWidget):
@@ -52,8 +53,7 @@ class ImageExportWidget(QpWidget):
         Capture 4D changes over time
         """
         if self.ivm.vol is None:
-            error_dialog("No data loaded")
-            return
+            raise QpException("No data loaded")
 
         shape = self.ivm.vol.shape
 
