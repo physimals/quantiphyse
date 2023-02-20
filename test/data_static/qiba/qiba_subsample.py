@@ -16,7 +16,7 @@ fname = sys.argv[1]
 subsample_factor = int(sys.argv[2])
 
 img = nib.load(fname)
-data = img.get_data()
+data = img.get_fdata()
 data_subsampled = data[..., ::subsample_factor]
 print("Original data shape: %s" % str(data.shape))
 print("New data shape: %s" % str(data_subsampled.shape))

@@ -91,8 +91,8 @@ class NiftiData(QpData):
         # horrible things with performance, and analysis especially when the data is on the network.
         if self.rawdata is None:
             nii = nib.load(self.fname)
-            #self.rawdata = nii.get_data().copy()
-            self.rawdata = nii.get_data()
+            #self.rawdata = nii.get_fdata().copy()
+            self.rawdata = nii.get_fdata()
             self.rawdata = self._correct_dims(self.rawdata)
 
         self.voldata = None

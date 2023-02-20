@@ -68,7 +68,7 @@ class DicomFolder(QpData):
             nvols = 1
 
         grid = DataGrid(nii.shape[:3], nii.header.get_best_affine())
-        self.dcmdata = nii.get_data()
+        self.dcmdata = nii.get_fdata()
         QpData.__init__(self, fname, grid, nvols, fname=fname)
 
     def raw(self):

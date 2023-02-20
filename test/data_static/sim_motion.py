@@ -19,7 +19,7 @@ msize = float(msize)
 f = nib.load(infile)
 nvols = f.shape[3]
 
-d = f.get_data()
+d = f.get_fdata()
 o = np.zeros(d.shape)
 
 for v in range(nvols):
