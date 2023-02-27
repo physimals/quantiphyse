@@ -40,9 +40,10 @@ Installing Quantiphyse in a Conda environment
     In the future we hope to put Quantiphyse into conda itself so the whole
     process can consist of ``conda install quantiphyse``.  
 
-We recommend Python 3.7 as a reasonably up to date version of Python for which dependencies are generally widely
-available. While Quantiphyse should be compatible with newer Python releases sometimes it is difficult to get
-matching versions of important dependencies such as Numpy.
+We recommend Python 3.7 as it is a reasonably up to date version of Python for which dependencies are generally widely
+available. Quantiphyse should be compatible with newer Python releases sometimes it is difficult to get
+matching versions of important dependencies such as Numpy. Older Python releases such as python 3.6 may also have problems
+with building dependencies. Quantiphyse is not compatible with python 2.
 
 To create a Python 3.7 environment and install Quantiphyse use the following commands::
 
