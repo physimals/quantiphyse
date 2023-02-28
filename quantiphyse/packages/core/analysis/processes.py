@@ -45,17 +45,31 @@ class CalcVolumesProcess(Process):
 
         roi_name = options.pop('roi', None)
         sel_region = options.pop('region', None)
+        roi_names = options.pop('rois', None)
 
-        if roi_name is None:
-            roi = self.ivm.current_roi
+        if roi_name is None and roi_names is None:
+            rois = [self.ivm.current_roi.name]
+        elif roi_name is not None:
+            rois = [roi_name]
         else:
-            roi = self.ivm.rois[roi_name]
+            rois = []
 
-        if roi is not None:
+        if roi_names:
+            rois = rois + list(roi_names)
+
+        col_idx = 0
+        multi_roi = len(rois) > 1
+        for roi_name in rois:
+            roi = self.ivm.rois[roi_name]
             sizes = roi.grid.spacing
             counts = np.bincount(roi.raw().flatten().astype(int))
-            col_idx = 0
+            multi_region = len(roi.regions) > 1
             for region, name in roi.regions.items():
+                if multi_roi and multi_region:
+                    name = "%s %s" % (roi_name, name)
+                elif multi_roi or not multi_region:
+                    name = roi_name
+
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region] if region < len(counts) else 0
                     vol = nvoxels*sizes[0]*sizes[1]*sizes[2]
