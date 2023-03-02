@@ -149,8 +149,8 @@ class MainWindow(QtWidgets.QMainWindow):
         with open(stylesheet, "r") as stylesheet_file:
             self.setStyleSheet(stylesheet_file.read())
 
-        # Default dir to load files from is the user's home dir
-        set_default_save_dir(os.path.expanduser("~"))
+        # Default dir to load files from CWD
+        set_default_save_dir(os.getcwd())
 
         # Widgets 
         self.widget_groups = {}
