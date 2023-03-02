@@ -492,7 +492,7 @@ class DataOption(Option, QtWidgets.QComboBox):
             # Special name, not a data set name
             return name
         width = self.fontMetrics().boundingRect(name).width()
-        combo_width = self.geometry().width() - 50
+        combo_width = self.geometry().width() - 70
         elided_name = name
         left_chars = len(elided_name)//2
         right_chars = left_chars-1
