@@ -31,7 +31,7 @@ def create_test_data(output_dir):
     testdata_3d = np.zeros(TEST_SHAPE, dtype=np.float32)
     testdata_4d = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
     testdata_4d_moving = np.zeros(TEST_SHAPE + [TEST_NT,], dtype=np.float32)
-    testdata_mask = np.zeros(TEST_SHAPE, dtype=np.int)
+    testdata_mask = np.zeros(TEST_SHAPE, dtype=np.int32)
 
     for x in range(TEST_SHAPE[0]):
         for y in range(TEST_SHAPE[1]):
