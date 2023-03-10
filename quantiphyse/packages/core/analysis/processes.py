@@ -60,6 +60,9 @@ class CalcVolumesProcess(Process):
         col_idx = 0
         multi_roi = len(rois) > 1
         for roi_name in rois:
+            if roi_name not in self.ivm.rois:
+                self.log("WARNING: ROI not found: %s" % roi_name)
+                continue
             roi = self.ivm.rois[roi_name]
             sizes = roi.grid.spacing
             counts = np.bincount(roi.raw().flatten().astype(int))
