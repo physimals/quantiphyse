@@ -203,6 +203,8 @@ class DataStatisticsProcess(Process):
             else:
                 self.warn("Data item not found: %s - ignoring" % name)
 
+        data_limits_dict = options.pop("data-limits", {})
+
         if output_name is None:
             output_name = "stats"
 
@@ -238,7 +240,11 @@ class DataStatisticsProcess(Process):
 
         col = 0
         for data in qpdata_items:
-            data_stats, roi_labels = self._get_summary_stats(data, stats, roi, slice_loc=sl, vol=vol)
+            data_limits = data_limits_dict.get(data.name, (None, None))
+            if not isinstance(data_limits, (list, tuple)) or len(data_limits) != 2:
+                self.warn("Invalid data limits: %s - ignoring", data_limits)
+                data_limits = (None, None)
+            data_stats, roi_labels = self._get_summary_stats(data, stats, roi, data_limits, slice_loc=sl, vol=vol)
             for region_idx, label in enumerate(roi_labels):
                 self.model.setHorizontalHeaderItem(col, QtGui.QStandardItem("%s %s" % (data.name, label)))
                 for stat_idx, s in enumerate(stats):
@@ -248,13 +254,14 @@ class DataStatisticsProcess(Process):
         if not no_extra: 
             self.ivm.add_extra(output_name, table_to_extra(self.model, output_name))
 
-    def _get_summary_stats(self, data, stats, roi=None, slice_loc=None, vol=None):
+    def _get_summary_stats(self, data, stats, roi=None, data_limits=(None, None), slice_loc=None, vol=None):
         """
         Get summary statistics
 
         :param data: QpData instance for the data to get stats from
         :param stats: List of names of statistics to extract - must be in STATS_IMPLS!
         :param roi: Restrict data to within this roi
+        :param data_limits: If specified, min/max values of data to be considered for stats
         :param slice_loc: Restrict data to this OrthoSlice
         :param vol: Restrict data to this volume index
         :param exact_median: Use an exact median calculation rather than a faster approximation
@@ -303,16 +310,26 @@ class DataStatisticsProcess(Process):
                 region_data = data_arr[roi_arr == region]
                 for s in stats:
                     if region_data.size > 0:
-                        value = self.STAT_IMPLS[s](region_data)
+                        stats_data = self._restrict_data(region_data, data_limits)
+                        value = self.STAT_IMPLS[s](stats_data)
                         data_stats[s].append(value)
                     else:
                         data_stats[s].append(0)
         else:
             for s in stats:
-                value = self.STAT_IMPLS[s](data_arr)
+                stats_data = self._restrict_data(data_arr, data_limits)
+                value = self.STAT_IMPLS[s](stats_data)
                 data_stats[s].append(value)
 
         return data_stats, roi_labels
+
+    def _restrict_data(self, data, data_limits):
+        dmin, dmax = data_limits
+        if dmin is not None:
+            data = data[data >= dmin]
+        if dmax is not None:
+            data = data[data <= dmax]
+        return data
 
 class OverlayStatsProcess(DataStatisticsProcess):
     """

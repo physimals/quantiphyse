@@ -273,5 +273,35 @@ class AnalysisProcessTest(ProcessTest):
         self.assertEqual(self.status, Process.SUCCEEDED)
         self.assertTrue("test1" in self.ivm.data)
 
+    def testSummaryStatsDataLimits(self):
+        yaml = """
+  - DataStatistics:
+        data: data_3d
+        output-name: testdata_stats
+        data-limits:
+          data_3d: [0.25, 0.75]
+
+  - SaveExtras:
+        testdata_stats: testdata_stats.tsv
+"""
+        self.run_yaml(yaml)
+        self.assertEqual(self.status, Process.SUCCEEDED)
+        self.assertTrue("testdata_stats" in self.ivm.extras)
+
+        fname = os.path.join(self.output_dir, "case", "testdata_stats.tsv")
+        self.assertTrue(os.path.exists(fname))
+        df = pd.read_csv(fname, sep='\t')
+        data = df.values
+        self.assertEquals(data.shape[0], 5)
+        self.assertEquals(data.shape[1], 2)
+
+        allowed_data = self.data_3d[self.data_3d >= 0.25]
+        allowed_data = allowed_data[allowed_data <= 0.75]
+        self.assertAlmostEquals(data[0, 1], np.mean(allowed_data), delta=0.01)
+        self.assertAlmostEquals(data[1, 1], np.median(allowed_data), delta=0.01)
+        self.assertAlmostEquals(data[2, 1], np.std(allowed_data), delta=0.01)
+        self.assertAlmostEquals(data[3, 1], np.min(allowed_data), delta=0.01)
+        self.assertAlmostEquals(data[4, 1], np.max(allowed_data), delta=0.01)
+
 if __name__ == '__main__':
     unittest.main()
