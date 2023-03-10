@@ -61,7 +61,7 @@ class CalcVolumesProcess(Process):
         multi_roi = len(rois) > 1
         for roi_name in rois:
             if roi_name not in self.ivm.rois:
-                self.log("WARNING: ROI not found: %s" % roi_name)
+                self.warn("ROI not found: %s - ignoring" % roi_name)
                 continue
             roi = self.ivm.rois[roi_name]
             sizes = roi.grid.spacing
