@@ -58,6 +58,12 @@ class WidgetTest(unittest.TestCase):
         if hasattr(self, "w"):
             self.w.hide()
             
+    def testWidgetShow(self):
+        """
+        Built-in test that just checks that the widget can be shown without error
+        """
+        pass
+
     def processEvents(self):
         """
         Process outstanding QT events, i.e. let handlers for widget
