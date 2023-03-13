@@ -33,19 +33,28 @@ class CalcVolumesProcess(Process):
     """
 
     PROCESS_NAME = "CalcVolumes"
+    KNOWN_UNITS = {
+        "mm^3" : 1,
+        "ml" : 0.001,
+    }
 
     def __init__(self, ivm, **kwargs):
         Process.__init__(self, ivm, **kwargs)
         self.model = QtGui.QStandardItemModel()
 
     def run(self, options):
-        self.model.clear()
-        self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
-        self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (mm^3)"))
-
         roi_name = options.pop('roi', None)
         sel_region = options.pop('region', None)
         roi_names = options.pop('rois', None)
+        units = options.pop('units', 'mm^3')
+        if units not in self.KNOWN_UNITS:
+            self.warn("Unknown units: %s - ignoring and using mm^3" % units)
+            units = "mm^3"
+        factor = self.KNOWN_UNITS[units]
+
+        self.model.clear()
+        self.model.setVerticalHeaderItem(0, QtGui.QStandardItem("Num voxels"))
+        self.model.setVerticalHeaderItem(1, QtGui.QStandardItem("Volume (%s)" % units))
 
         if roi_name is None and roi_names is None:
             rois = [self.ivm.current_roi.name]
@@ -75,7 +84,7 @@ class CalcVolumesProcess(Process):
 
                 if sel_region is None or region == sel_region:
                     nvoxels = counts[region] if region < len(counts) else 0
-                    vol = nvoxels*sizes[0]*sizes[1]*sizes[2]
+                    vol = nvoxels*sizes[0]*sizes[1]*sizes[2]*factor
                     self.model.setHorizontalHeaderItem(col_idx, QtGui.QStandardItem(name))
                     self.model.setItem(0, col_idx, QtGui.QStandardItem(str(nvoxels)))
                     self.model.setItem(1, col_idx, QtGui.QStandardItem(str(vol)))
