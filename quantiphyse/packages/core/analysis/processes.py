@@ -320,14 +320,20 @@ class DataStatisticsProcess(Process):
                 for s in stats:
                     if region_data.size > 0:
                         stats_data = self._restrict_data(region_data, data_limits)
-                        value = self.STAT_IMPLS[s](stats_data)
+                        if stats_data.size == 0:
+                            value = 0
+                        else:
+                            value = self.STAT_IMPLS[s](stats_data)
                         data_stats[s].append(value)
                     else:
                         data_stats[s].append(0)
         else:
             for s in stats:
                 stats_data = self._restrict_data(data_arr, data_limits)
-                value = self.STAT_IMPLS[s](stats_data)
+                if stats_data.size == 0:
+                    value = 0
+                else:
+                    value = self.STAT_IMPLS[s](stats_data)
                 data_stats[s].append(value)
 
         return data_stats, roi_labels
