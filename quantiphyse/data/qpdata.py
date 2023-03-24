@@ -846,13 +846,14 @@ class QpData(object):
             if is_diagonal(affine):
                 # The transformation is diagonal, so use faster sequence mode
                 affine = np.diagonal(affine)
-            #LOG.debug("WARNING: affine_transform: ")
-            #LOG.debug(affine)
-            #LOG.debug("Offset = ", offset)
-            #LOG.debug("Input shape=", data.shape, data.min(), data.max())
-            #LOG.debug("Output shape=", output_shape)
+            #print("WARNING: affine_transform: ")
+            #print(affine)
+            #offset = [o if o >1e-3 else 0 for o in offset]
+            #print("Offset = ", offset)
+            #print("Input shape=", data.shape, data.min(), data.max())
+            #print("Output shape=", output_shape)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
-                                                  output_shape=output_shape, order=order)
+                                                  output_shape=output_shape, order=order, mode='grid-constant')
 
             if self.roi:
                 # If source data was ROI, output should be, however resampling could have
