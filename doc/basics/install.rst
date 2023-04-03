@@ -67,6 +67,11 @@ the command line.
     the Rosetta terminal to emulate an i386 environment. You will need to install Miniconda/Anaconda within Rosetta and then
     use that version of Conda to create an environment for Quantiphyse and then follow the instructions above.
 
+.. note::
+    On Ubuntu you may get an error when starting quantiphyse similar to: ``This application failed to start because it 
+    could not find or load the Qt platform plugin "xcb".``. This is because certain OS GUI libraries are not installed.
+    A common fix is to run: ``sudo apt install libxcb-xinerama0``.
+
 Installing plugins
 ------------------
 
