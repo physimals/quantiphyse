@@ -152,6 +152,7 @@ class DataList(FileList):
     def __init__(self, ivm):
         FileList.__init__(self, [".nii", ".nii.gz"])
         self.ivm = ivm
+        self._saved_metadata = {}
         self.sig_add.connect(self._add)
         self.sig_remove.connect(self._remove)
         
@@ -165,11 +166,30 @@ class DataList(FileList):
 
     def _add(self, path, relpath):
         qpdata = load(path)
-        self.ivm.add(qpdata, self._get_name(relpath), make_current=True)
+        name = self._get_name(relpath)
+        md = self._saved_metadata.get(name, None)
+        if md is None:
+            md = {}
+            view = {}
+        else:
+            md.pop("fname", None)
+            view = md.pop("view", {})
+        roi, main, current = md.pop("roi", False), md.pop("main", None), md.pop("current", True)
+        qpdata.roi = roi
+        for k, v in md.items():
+            qpdata.metadata[k] = v
+        for k, v in view.items():
+            qpdata.view[k] = v
+        self.ivm.add(qpdata, name, make_current=current, make_main=main)
 
     def _remove(self, path, relpath):
         name = self._get_name(relpath)
         if name in self.ivm.data:
+            qpdata = self.ivm.data[name]
+            self._saved_metadata[name] = dict(qpdata.metadata)
+            self._saved_metadata[name]["main"] = self.ivm.is_main_data(qpdata)
+            self._saved_metadata[name]["current"] = self.ivm.is_current_data(qpdata) or self.ivm.is_current_roi(qpdata)
+            self._saved_metadata[name]["view"] = dict(qpdata.view)
             self.ivm.delete(name) 
     
 class ImgList(QtWidgets.QWidget):
@@ -266,25 +286,16 @@ class BatchExplorer(QpWidget):
         vbox.addWidget(self.tabs)
 
     def activate(self):
-        self.ivm.sig_all_data.connect(self._data_changed)
         self.options.option("rootdir").sig_changed.connect(self._rootdir_changed)
         self.options.option("subjid").sig_changed.connect(self._subjid_changed)
-        self._update()
 
     def deactivate(self):
-        self.ivm.sig_all_data.disconnect(self._data_changed)
         self.options.option("rootdir").sig_changed.disconnect(self._rootdir_changed)
         self.options.option("subjid").sig_changed.disconnect(self._subjid_changed)
 
-    def _data_changed(self):
-        pass
-
-    def _update(self):
-        pass
-
     def _rootdir_changed(self):
         rootdir = self.options.option("rootdir").value
-        subjids = [d for d in os.listdir(rootdir) if os.path.isdir(os.path.join(rootdir, d))]
+        subjids = sorted([d for d in os.listdir(rootdir) if os.path.isdir(os.path.join(rootdir, d))])
         self.options.option("subjid").setChoices(subjids)
 
     def _subjid_changed(self):
