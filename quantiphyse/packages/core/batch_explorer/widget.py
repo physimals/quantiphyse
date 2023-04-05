@@ -99,8 +99,6 @@ class MyFileSystemModel(QtGui.QStandardItemModel):
 
         for path in self._checked:
             self.checkStateChanged.emit(path, False)
-        already_checked = self._checked
-        self._checked = set()
 
         for path, dirs, files in os.walk(rootdir, topdown=True):
             relpath = os.path.relpath(path, self._rootdir)
@@ -112,7 +110,7 @@ class MyFileSystemModel(QtGui.QStandardItemModel):
                         item = QtGui.QStandardItem(f)
                         item.setData(fpath, QtCore.Qt.UserRole)
                         item.setCheckable(True)
-                        if fpath in already_checked:
+                        if fpath in self._checked:
                             item.setCheckState(QtCore.Qt.Checked)
                             self._item_changed(item)
                         parent.appendRow(item)
@@ -123,8 +121,8 @@ class FileList(QtWidgets.QTreeView):
     A tree view that displays a list of files matching a given set of extensions
     """
 
-    sig_add = QtCore.Signal(str)
-    sig_remove = QtCore.Signal(str)
+    sig_add = QtCore.Signal(str, str)
+    sig_remove = QtCore.Signal(str, str)
 
     def __init__(self, extensions):
         QtWidgets.QTreeView.__init__(self)
@@ -142,13 +140,13 @@ class FileList(QtWidgets.QTreeView):
         path = os.path.join(self.model.rootdir, relpath)
         if os.path.isfile(path):
             if checked:
-                self.sig_add.emit(path) 
+                self.sig_add.emit(path, relpath) 
             else:
-                self.sig_remove.emit(path)
+                self.sig_remove.emit(path, relpath)
     
 class DataList(FileList):
     """
-    Tree view that displays Nifti files
+    Tree view that displays Nifti files in the viewer
     """
 
     def __init__(self, ivm):
@@ -163,14 +161,14 @@ class DataList(FileList):
             if fname.endswith(ext):
                 fname = fname[:fname.index(ext)]
                 break
-        name = self.ivm.suggest_name(fname, ensure_unique=False)
+        return self.ivm.suggest_name(fname, ensure_unique=False)
 
-    def _add(self, path):
+    def _add(self, path, relpath):
         qpdata = load(path)
-        self.ivm.add(qpdata, self._get_name(path))
+        self.ivm.add(qpdata, self._get_name(relpath), make_current=True)
 
-    def _remove(self, path):
-        name = self._get_name(path)
+    def _remove(self, path, relpath):
+        name = self._get_name(relpath)
         if name in self.ivm.data:
             self.ivm.delete(name) 
     
@@ -204,13 +202,14 @@ class ImgList(QtWidgets.QWidget):
 
     def _update_grid(self):
         num_imgs = len(self._imgs)
-        grid_size = int(math.ceil(math.sqrt(num_imgs)))
+        gridx = max(1, int(math.ceil(math.sqrt(num_imgs))))
+        gridy = int(math.ceil(num_imgs/gridx))
         self.fig.clear()
 
         idx = 1
         for path in self._imgs:
             img, _artist = self._imgs[path]
-            ax = self.fig.add_subplot(grid_size, grid_size, idx)
+            ax = self.fig.add_subplot(gridy, gridx, idx)
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
             artist = ax.imshow(img)
@@ -220,14 +219,14 @@ class ImgList(QtWidgets.QWidget):
         self.fig.tight_layout()
         self.canvas.draw()
 
-    def _add(self, path):
+    def _add(self, path, relpath):
         import matplotlib.image
         img = matplotlib.image.imread(path)
-        self._imgs[path] = (img, None)
+        self._imgs[relpath] = (img, None)
         self._update_grid()
 
-    def _remove(self, path):
-        self._imgs.pop(path, None)
+    def _remove(self, path, relpath):
+        self._imgs.pop(relpath, None)
         self._update_grid()
 
 class TableList(FileList):
@@ -266,8 +265,6 @@ class BatchExplorer(QpWidget):
         #self.tabs.addTab(self._table_tab, "Tables")
         vbox.addWidget(self.tabs)
 
-        vbox.addStretch(1)
-
     def activate(self):
         self.ivm.sig_all_data.connect(self._data_changed)
         self.options.option("rootdir").sig_changed.connect(self._rootdir_changed)
@@ -287,9 +284,8 @@ class BatchExplorer(QpWidget):
 
     def _rootdir_changed(self):
         rootdir = self.options.option("rootdir").value
-        subjids = [d for d in os.listdir(rootdir) if os.path.isdir(d)]
+        subjids = [d for d in os.listdir(rootdir) if os.path.isdir(os.path.join(rootdir, d))]
         self.options.option("subjid").setChoices(subjids)
-        print(subjids)
 
     def _subjid_changed(self):
         rootdir = self.options.option("rootdir").value
