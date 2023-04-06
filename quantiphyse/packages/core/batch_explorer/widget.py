@@ -169,17 +169,23 @@ class DataList(FileList):
         name = self._get_name(relpath)
         md = self._saved_metadata.get(name, None)
         if md is None:
-            md = {}
-            view = {}
+            from quantiphyse.gui.main_window import DragOptions
+            options = DragOptions(self, path, self.ivm, force_t_option=False,
+                                  default_main=self.ivm.main is None, possible_roi=(qpdata.nvols == 1))
+            if not options.exec_(): return
+
+            qpdata.name = options.name
+            qpdata.roi = options.type == "roi"
+            main, current = options.make_main, True
         else:
             md.pop("fname", None)
             view = md.pop("view", {})
-        roi, main, current = md.pop("roi", False), md.pop("main", None), md.pop("current", True)
-        qpdata.roi = roi
-        for k, v in md.items():
-            qpdata.metadata[k] = v
-        for k, v in view.items():
-            qpdata.view[k] = v
+            roi, main, current = md.pop("roi", False), md.pop("main", None), md.pop("current", True)
+            qpdata.roi = roi
+            for k, v in md.items():
+                qpdata.metadata[k] = v
+            for k, v in view.items():
+                qpdata.view[k] = v
         self.ivm.add(qpdata, name, make_current=current, make_main=main)
 
     def _remove(self, path, relpath):
@@ -203,16 +209,20 @@ class ImgList(QtWidgets.QWidget):
         self.tree = FileList([".png", ".jpg"])
         self._grid_size = 1
         self._imgs = {}
-        
+
         vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
-        vbox.addWidget(self.tree)
+
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter.setStretchFactor(1, 1)
+        vbox.addWidget(splitter)
+        splitter.addWidget(self.tree)
 
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
         from matplotlib.figure import Figure
         self.fig = Figure(figsize=(7, 5), dpi=65, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
         self.canvas = FigureCanvas(self.fig)
-        vbox.addWidget(self.canvas)
+        splitter.addWidget(self.canvas)
 
         self.tree.sig_add.connect(self._add)
         self.tree.sig_remove.connect(self._remove)
@@ -249,10 +259,74 @@ class ImgList(QtWidgets.QWidget):
         self._imgs.pop(relpath, None)
         self._update_grid()
 
-class TableList(FileList):
+class PandasModel(QtCore.QAbstractTableModel):
+    """
+    Class to populate a table view with a pandas dataframe
+
+    https://stackoverflow.com/questions/31475965/fastest-way-to-populate-qtableview-from-pandas-data-frame
+    """
+    def __init__(self, fpath, parent=None):
+        import pandas as pd
+        QtCore.QAbstractTableModel.__init__(self, parent)
+        self._df = pd.read_csv(fpath, sep=None, engine='python')
+
+    def rowCount(self, parent=None):
+        return len(self._df.values)
+
+    def columnCount(self, parent=None):
+        return self._df.columns.size
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if index.isValid():
+            if role == QtCore.Qt.DisplayRole:
+                return str(self._df.iloc[index.row()][index.column()])
+        return None
+
+    def headerData(self, col, orientation, role):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self._df.columns[col]
+        return None
+
+class TableList(QtWidgets.QWidget):
+    """
+    Widget containing a tree view that displays tsv/csv files and
+    a tab widget below that displays the contents of selected files
+    """
 
     def __init__(self):
-        FileList.__init__(self, [".tsv", ".csv"])
+        QtWidgets.QWidget.__init__(self)
+        self.tree = FileList([".csv", ".tsv"])
+        self._tables = {}
+
+        vbox = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox)
+
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter.setStretchFactor(1, 1)
+        vbox.addWidget(splitter)
+        splitter.addWidget(self.tree)
+
+        self.tabs = QtWidgets.QTabWidget()
+        splitter.addWidget(self.tabs)
+
+        self.tree.sig_add.connect(self._add)
+        self.tree.sig_remove.connect(self._remove)
+
+    def setDir(self, rootdir):
+        self.tree.setDir(rootdir)
+
+    def _add(self, path, relpath):
+        w = QtWidgets.QTableView()
+        w.setModel(PandasModel(path))
+        self.tabs.addTab(w, relpath)
+        self._tables[relpath] = w
+
+    def _remove(self, path, relpath):
+        w = self._tables.pop(relpath, None)
+        if w is not None:
+            idx = self.tabs.indexOf(w)
+            if idx >= 0:
+                self.tabs.removeTab(idx)
 
 class BatchExplorer(QpWidget):
     """
@@ -282,7 +356,7 @@ class BatchExplorer(QpWidget):
         self._img_tab = ImgList()
         self.tabs.addTab(self._img_tab, "Images")
         self._table_tab = TableList()
-        #self.tabs.addTab(self._table_tab, "Tables")
+        self.tabs.addTab(self._table_tab, "Tables")
         vbox.addWidget(self.tabs)
 
     def activate(self):
