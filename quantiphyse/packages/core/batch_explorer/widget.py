@@ -170,7 +170,7 @@ class DataList(FileList):
         md = self._saved_metadata.get(name, None)
         if md is None:
             from quantiphyse.gui.main_window import DragOptions
-            options = DragOptions(self, path, self.ivm, force_t_option=False,
+            options = DragOptions(self, path, self.ivm, force_t_option=False, fixed_name=name,
                                   default_main=self.ivm.main is None, possible_roi=(qpdata.nvols == 1))
             if not options.exec_(): return
 

@@ -38,7 +38,7 @@ class DragOptions(QtWidgets.QDialog):
     Interface for dealing with drag and drop
     """
 
-    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False, possible_roi=True):
+    def __init__(self, parent, fname, ivm, force_t_option=False, default_main=False, possible_roi=True, fixed_name=None):
         super(DragOptions, self).__init__(parent)
         self.setWindowTitle("Load Data")
         self.ivm = ivm
@@ -52,10 +52,14 @@ class DragOptions(QtWidgets.QDialog):
         grid = QtWidgets.QGridLayout()
         grid.addWidget(QtWidgets.QLabel("Name:"), 1, 0)
         self.name_combo = QtWidgets.QComboBox()
-        def_name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
-        for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves']:
-            self.name_combo.addItem(name)
-        self.name_combo.setEditable(True)
+        if not fixed_name:
+            def_name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
+            for name in [def_name, 'MRI', 'T10', 'Ktrans', 'kep', 've', 'vp', 'model_curves']:
+                self.name_combo.addItem(name)
+            self.name_combo.setEditable(True)
+        else:
+            self.name_combo.addItem(fixed_name)
+            self.name_combo.setEditable(False)
         grid.addWidget(self.name_combo, 1, 1)
         layout.addLayout(grid)
         hbox = QtWidgets.QHBoxLayout()
@@ -432,15 +436,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # third dimension as time - some broken NIFTI files require this.
         force_t_option = (data.nvols == 1 and data.grid.shape[2] > 1)
         force_t = False
-                
+
         options = DragOptions(self, fname, self.ivm, force_t_option=force_t_option, 
                               default_main=self.ivm.main is None, possible_roi=(data.nvols ==1))
         if not options.exec_(): return
-        
+
         data.name = options.name
         data.roi = options.type == "roi"
         if force_t_option: force_t = options.force_t
-        
+
         # If we had to do anything evil to make data fit, warn and give user the chance to back out
         if force_t:
             msg_box = QtWidgets.QMessageBox(self)
@@ -449,7 +453,7 @@ class MainWindow(QtWidgets.QMainWindow):
             msg_box.setDefaultButton(QtWidgets.QMessageBox.Ok)
             if msg_box.exec_() != QtWidgets.QMessageBox.Ok: return
             data.set_2dt()
-        
+
         self.ivm.add(data, make_main=options.make_main, make_current=not options.make_main)
 
     def load_data(self, fname):
