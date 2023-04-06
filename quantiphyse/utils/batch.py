@@ -418,8 +418,10 @@ class Case(object):
         if params is None:
             params = {}
         self.params = params
-        # This would break compatibility so not for now
-        #self.params["InputId"] = self.params.get("InputId", self.case_id)
+        # Include the case ID as a subfolder of the input folder if
+        # InputUseCaseId is set to True
+        if self.params.get("InputUseCaseId", False):
+            self.params["InputId"] = self.case_id
 
 class BatchScript(Script):
     """
