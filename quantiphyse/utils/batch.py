@@ -323,6 +323,11 @@ class Script(Process):
         else:
             set_base_log_level(logging.WARN)
 
+        # Include the case ID as a subfolder of the input folder if
+        # InputUseCaseId is set to True
+        if generic_params.get("InputUseCaseId", False) and "InputId" not in generic_params:
+            generic_params["InputId"] = self._current_case.case_id
+
         try:
             outdir = os.path.abspath(os.path.join(ifnone(generic_params.get("OutputFolder", ""), ""), 
                                                   ifnone(generic_params.get("OutputId", ""), ""),
@@ -418,10 +423,6 @@ class Case(object):
         if params is None:
             params = {}
         self.params = params
-        # Include the case ID as a subfolder of the input folder if
-        # InputUseCaseId is set to True
-        if self.params.get("InputUseCaseId", False):
-            self.params["InputId"] = self.case_id
 
 class BatchScript(Script):
     """
