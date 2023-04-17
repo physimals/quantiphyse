@@ -138,12 +138,11 @@ class FileList(QtWidgets.QTreeView):
 
     def _changed(self, relpath, checked):
         path = os.path.join(self.model.rootdir, relpath)
-        if os.path.isfile(path):
-            if checked:
-                self.sig_add.emit(path, relpath) 
-            else:
-                self.sig_remove.emit(path, relpath)
-    
+        if checked and os.path.isfile(path):
+            self.sig_add.emit(path, relpath) 
+        elif not checked:
+            self.sig_remove.emit(path, relpath)
+
 class DataList(FileList):
     """
     Tree view that displays Nifti files in the viewer
