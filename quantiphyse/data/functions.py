@@ -13,7 +13,6 @@ import numpy as np
 # A MINOR FIX HAS BEEN APPLIED TO affineSlice / interpolateArray TO USE THE
 # cval ARGUMENT. THE PYTHON2-3 COMPATIBILITY FUNCTIONS BELOW HAVE ALSO BEEN 
 # REMOVED AS THEY DO NOT EXIST IN PYQTGRAPH 0.12
-from pyqtgraph import debug
 
 def affineSliceCoords(shape, origin, vectors, axes):
     """Return the array of coordinates used to sample data arrays in affineSlice().
@@ -201,7 +200,6 @@ def interpolateArray(data, x, default=0.0, order=1, **kargs):
         raise ValueError("interpolateArray requires order=0 or 1 (got %s)" % order)
 
     default = kargs.get("cval", default)
-    prof = debug.Profiler()
 
     nd = data.ndim
     md = x.shape[-1]
@@ -239,11 +237,9 @@ def interpolateArray(data, x, default=0.0, order=1, **kargs):
             axisIndex[axisIndex < 0] = 0
             axisIndex[axisIndex >= data.shape[ax]] = 0
             fieldInds.append(axisIndex)
-        prof()
 
         # Get data values surrounding each requested point
         fieldData = data[tuple(fieldInds)]
-        prof()
     
         ## Interpolate
         s = np.empty((md,) + fieldData.shape, dtype=float)
@@ -259,14 +255,11 @@ def interpolateArray(data, x, default=0.0, order=1, **kargs):
         for i in range(md):
             result = result.sum(axis=0)
 
-    prof()
-
     if totalMask.ndim > 0:
         result[~totalMask] = default
     else:
         if totalMask is False:
             result[:] = default
 
-    prof()
     return result
 
