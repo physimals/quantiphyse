@@ -16,11 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from .widget import AifWidget
-#from .process import AifProcess
-#from .process_tests import HistogramProcessTest
+from .process import AifProcess
+#from .process_tests import AifProcessTest
 
 QP_MANIFEST = {
     "widgets" : [AifWidget],
-    #"processes" : [AifProcess],
-    #"process-tests" : [HistogramProcessTest],
+    "processes" : [AifProcess],
+#    "process-tests" : [AifProcessTest],
 }

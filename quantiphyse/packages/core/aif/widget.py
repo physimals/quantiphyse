@@ -25,6 +25,7 @@ from quantiphyse.gui.dialogs import TextViewerDialog
 from quantiphyse.gui.pickers import PickMode
 from quantiphyse.gui.plot import Plot
 from quantiphyse.gui.options import OptionBox, DataOption, NumericOption, BoolOption, ChoiceOption, TextOption
+from quantiphyse.utils import QpException
 
 class AifWidget(QpWidget):
     """
@@ -163,3 +164,12 @@ class AifWidget(QpWidget):
     def _update_plot(self):
         self._plot.clear()
         self._plot.add_line(self._aif, name="AIF")
+
+    def processes(self):
+        opts = self._options.values()
+        if opts.pop("method") == "roi":
+            return {
+                "Aif" : opts
+            }
+        else:
+            raise QpException("Batch mode not supported for pick points method")

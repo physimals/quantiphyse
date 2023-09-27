@@ -21,7 +21,7 @@ import unittest
 from quantiphyse.processes import Process
 from quantiphyse.test import ProcessTest
 
-class HistogramProcessTest(ProcessTest):
+class AifProcessTest(ProcessTest):
 
     def testHistogram(self):
         yaml = """
