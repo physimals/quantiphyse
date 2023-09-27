@@ -21,15 +21,13 @@ from __future__ import division, unicode_literals, absolute_import
 from PySide2 import QtGui, QtCore, QtWidgets
 
 import numpy as np
-import pyqtgraph as pg
 
 from quantiphyse.utils import LogSource
-from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility, Boundary
+from quantiphyse.utils.enums import Orientation, Visibility
 from quantiphyse.data import OrthoSlice
-from quantiphyse.data.qpdata import Metadata
 from quantiphyse.gui.colors import get_lut, get_col
 
-from .maskable_image import MaskableImage
+from .pqg import Contour, HLine, VLine, Arrow, ViewWidget, MaskableImage
 
 MAIN_DATA = ""
 
@@ -42,22 +40,23 @@ class SliceDataView(LogSource):
     Draws a slice through a data item
     """ 
 
-    def __init__(self, ivm, qpdata, viewbox, plane, vol, view_metadata=None):
+    def __init__(self, ivm, qpdata, viewer, plane, vol, view_metadata=None):
         """
         :param qpdata: QpData instance
-        :param viewbox: pyqtgraph ViewBox instance
+        :param viewer: OrthoSliceViewer viewer instance
         :param view_metadata: View parameters
         """
         LogSource.__init__(self)
         self._ivm = ivm
         self._qpdata = qpdata
-        self._viewbox = viewbox
+        self._viewer = viewer
         self._plane = plane
         self._vol = vol
         self._view = self._qpdata.view
         if view_metadata is not None:
             self._view = view_metadata
         
+        # View options that must trigger a full re-draw
         self._redraw_options = [
             "visible",
             "roi",
@@ -67,7 +66,7 @@ class SliceDataView(LogSource):
         ]
         self._img = MaskableImage()
         self._contours = []
-        self._viewbox.addItem(self._img)
+        self._viewer.add(self._img)
         self._lut = get_lut(self._view.cmap, self._view.alpha)
         self.update()
         self.redraw()
@@ -112,7 +111,7 @@ class SliceDataView(LogSource):
 
     def update(self):
         """
-        Update the image without re-slicing the data
+        Update the image without re-slicing the data, e.g. when only visual parameters have changed
         """
         self.debug("visible? %s", self._view.visible)
         self._img.setVisible(self._view.visible == Visibility.SHOW and (not self._qpdata.roi or bool(self._view.shade)))
@@ -167,14 +166,14 @@ class SliceDataView(LogSource):
                 pencol = get_col(self._lut, val, (1, max_region))[:3]
                 if val != 0:
                     if n_contours == len(self._contours):
-                        self._contours.append(pg.IsocurveItem())
-                        self._viewbox.addItem(self._contours[n_contours])
+                        self._contours.append(Contour())
+                        self._viewer.add(self._contours[n_contours])
 
                     contour = self._contours[n_contours]
                     contour.setTransform(qtransform)
                     contour.setData((slicedata == val).astype(int))
                     contour.setLevel(1)
-                    contour.setPen(pg.mkPen(pencol, width=3))
+                    contour.setColor(pencol)
                     contour.setZValue(self._z_order)
                     n_contours += 1
 
@@ -184,14 +183,14 @@ class SliceDataView(LogSource):
 
     def remove(self):
         """
-        Remove the view from the viewbox
+        Remove the view from the viewer
         """
         self.debug("Removing slice view")
-        self._viewbox.removeItem(self._img)
+        self._viewer.remove(self._img)
         for contour in self._contours:
-            self._viewbox.removeItem(contour)
+            self._viewer.remove(contour)
 
-class OrthoSliceViewer(pg.GraphicsView, LogSource):
+class OrthoSliceViewer(ViewWidget, LogSource):
     """
     Displays an orthographic slice through data/ROIs relative to the
     a main viewer grid
@@ -219,11 +218,13 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
                        in terms of RAS axis sequence indexes
         :param ax_labels: Sequence of labels for the RAS axes
         """
-        LogSource.__init__(self)
-        pg.GraphicsView.__init__(self)
-        self._ivl = ivl
-        self.ivm = ivm
         self.xaxis, self.yaxis, self.zaxis = ax_map
+        LogSource.__init__(self)
+        ViewWidget.__init__(self, name="view_%i" % self.zaxis)
+        self.debug("axes=%i, %i, %i", self.xaxis, self.yaxis, self.zaxis)
+
+        self._ivl = ivl
+        self._ivm = ivm
         self._slicez = 0
         self._vol = 0
         self._plane = OrthoSlice(self._ivl.grid, self.zaxis, self._slicez)
@@ -231,32 +232,14 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         self._dragging = False
         self._arrow_items = []
         self._data_views = {}
-        self.debug("axes=%i, %i, %i", self.xaxis, self.yaxis, self.zaxis)
-
-        # View box to display graphics items
-        self._viewbox = pg.ViewBox(name="view%i" % self.zaxis, border=pg.mkPen((0x6c, 0x6c, 0x6c), width=2.0))
-        self._viewbox.setAspectLocked(True)
-        self._viewbox.setBackgroundColor([0, 0, 0])
-        self._viewbox.enableAutoRange()
-        self.setCentralItem(self._viewbox)
 
         # Crosshairs
-        self._vline = pg.InfiniteLine(angle=90, movable=False)
+        self._vline = VLine()
         self._vline.setZValue(2*MAX_NUM_DATA_SETS)
-        self._vline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-
-        self._hline = pg.InfiniteLine(angle=0, movable=False)
+        self._hline = HLine()
         self._hline.setZValue(2*MAX_NUM_DATA_SETS)
-        self._hline.setPen(pg.mkPen((0, 255, 0), width=1.0, style=QtCore.Qt.DashLine))
-
-        self._viewbox.addItem(self._vline, ignoreBounds=True)
-        self._viewbox.addItem(self._hline, ignoreBounds=True)
-
-        # Dummy image item which enables us to translate click co-ordinates
-        # into image space co-ordinates even when there is no data in the view
-        self._dummy = pg.ImageItem()
-        self._dummy.setVisible(False)
-        self._viewbox.addItem(self._dummy, ignoreBounds=True)
+        self.add(self._vline, ignoreBounds=True)
+        self.add(self._hline, ignoreBounds=True)
 
         # Static labels for the view directions
         self._labels = []
@@ -266,35 +249,25 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         for label in self._labels:
             label.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
-        self._grid_changed(self._ivl.grid)
-        self._focus_changed(self._ivl.focus())
+        self._set_grid(self._ivl.grid)
+        self._set_focus(self._ivl.focus())
         self._update_crosshairs()
         self._update_orientation()
 
         # Connect to signals from the parent viewer
-        self._ivl.sig_grid_changed.connect(self._grid_changed)
-        self._ivl.sig_focus_changed.connect(self._focus_changed)
-        self._ivl.sig_arrows_changed.connect(self._arrows_changed)
+        self._ivl.sig_grid_changed.connect(self._set_grid)
+        self._ivl.sig_focus_changed.connect(self._set_focus)
+        self._ivl.sig_arrows_changed.connect(self._set_arrows)
         self._ivl.opts.sig_changed.connect(self._view_opts_changed)
 
         # Connect to data change signals
-        self.ivm.sig_all_data.connect(self._data_changed)
-        self.ivm.sig_main_data.connect(self._main_data_changed)
+        self._ivm.sig_all_data.connect(self._data_changed)
+        self._ivm.sig_main_data.connect(self._main_data_changed)
 
         # Need to intercept the default resize event
         # FIXME why can't call superclass method normally?
         self.resizeEventOrig = self.resizeEvent
         self.resizeEvent = self._window_resized
-
-    def reset(self):
-        """ Reset the viewer to show all data sets"""
-        self.debug("Auto range")
-        self._viewbox.autoRange()
-
-    def redraw(self):
-        """ Force a redraw of the viewer, e.g. if data has changed """
-        for view in self._data_views.values():
-            view.redraw()
 
     def _view_opts_changed(self, key, value):
         if key in ("orientation", "labels"):
@@ -304,16 +277,17 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         elif key == "main_data":
             self._update_main_data()
 
-    def _grid_changed(self, grid):
+    def _set_grid(self, grid):
         """
         Set the grid that the slice viewer is relative to
         """
-        # Adjust axis scaling to that of the viewing grid so voxels have correct relative size
-        self._viewbox.setAspectLocked(True, ratio=(grid.spacing[self.xaxis] / grid.spacing[self.yaxis]))
         self._update_slice()
         self.reset()
 
-    def _focus_changed(self, focus):
+    def _set_focus(self, focus):
+        """
+        Set the point of focus for the view
+        """
         self.debug("focus=%s", focus)
 
         if self.isVisible():
@@ -324,31 +298,30 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
                 self._update_slice()
                 self._update_visible_arrows()
 
-    def _arrows_changed(self, arrows):
+    def _set_arrows(self, arrows):
         """
         Set the locations and colours of arrows to be drawn
 
         :param arrows: Sequence of tuples: (position, color). Position
                        is a XYZ tuple, color is anything that can
-                       be passed to pyqtgraph.mkPen (e.g. color name
+                       be passed to mkPen (e.g. color name
                        or RGB tuple)
         """
         item_num = 0
         for pos, col in arrows:
             if item_num == len(self._arrow_items):
-                item = pg.ArrowItem()
-                self._viewbox.addItem(item)
+                item = Arrow()
+                self.add(item)
                 self._arrow_items.append((pos, col, item))
             _, _, item = self._arrow_items[item_num]
             item.setPos(float(pos[self.xaxis]), float(pos[self.yaxis]))
-            item.setPen(pg.mkPen(col))
-            item.setBrush(pg.mkBrush(col))
+            item.setColor(col)
             item.setZValue(2)
             self._arrow_items[item_num] = (pos, col, item)
             item_num += 1
 
         for _, _, item in self._arrow_items[item_num:]:
-            self._viewbox.removeItem(item)
+            self.remove(item)
 
         self._arrow_items = self._arrow_items[:item_num]
         self._update_visible_arrows()
@@ -362,8 +335,8 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
 
         for name in data_names:
             if name not in self._data_views:
-                qpdata = self.ivm.data[name]
-                self._data_views[name] = SliceDataView(self.ivm, qpdata, self._viewbox, self._plane, self._vol)
+                qpdata = self._ivm.data[name]
+                self._data_views[name] = SliceDataView(self._ivm, qpdata, self, self._plane, self._vol)
 
         self._update_crosshairs()
         self._update_orientation()
@@ -376,8 +349,8 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
             self._data_views[MAIN_DATA].remove()
             del self._data_views[MAIN_DATA]
 
-        if self.ivm.main is not None and self._ivl.opts.main_data == Visibility.SHOW:
-            self._data_views[MAIN_DATA] = SliceDataView(self.ivm, self.ivm.main, self._viewbox, self._plane, self._vol, self._ivl.main_view_md)
+        if self._ivm.main is not None and self._ivl.opts.main_data == Visibility.SHOW:
+            self._data_views[MAIN_DATA] = SliceDataView(self._ivm, self._ivm.main, self, self._plane, self._vol, self._ivl.main_view_md)
         self.reset()
 
     def _update_crosshairs(self):
@@ -395,7 +368,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
                 left, right, invert = 0, 1, False
             else:
                 left, right, invert = 1, 0, True
-            self._viewbox.invertX(invert)
+            self.invertX(invert)
             self._labels[right].setText("R")
             self._labels[left].setText("L")
 
@@ -432,8 +405,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
 
     def wheelEvent(self, event):
         """
-        Subclassed to remove scroll to zoom from pg.ImageItem
-        and instead trigger a scroll through the volume
+        Scroll through slices on mouse wheel
         """
         dz = int(event.delta()/120)
         pos = self._ivl.focus()
@@ -445,12 +417,12 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         Called when mouse button is pressed on the view
         """
         super(OrthoSliceViewer, self).mousePressEvent(event)
-        if self.ivm.main is None:
+        if self._ivm.main is None:
             return
 
         if event.button() == QtCore.Qt.LeftButton:
             # Convert co-ords to view grid
-            coords = self._dummy.mapFromScene(event.pos())
+            coords = self.coordsFromMouse(event.pos())
             pos = self._ivl.focus()
             pos[self.xaxis] = coords.x()
             pos[self.yaxis] = coords.y()
@@ -485,7 +457,7 @@ class OrthoSliceViewer(pg.GraphicsView, LogSource):
         selection region
         """
         if self._dragging:
-            coords = self._dummy.mapFromScene(event.pos())
+            coords = self.coordsFromMouse(event.pos())
             pos = self._ivl.focus()
             pos[self.xaxis] = coords.x()
             pos[self.yaxis] = coords.y()

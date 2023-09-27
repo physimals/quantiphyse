@@ -1335,7 +1335,7 @@ class RunWidget(QtWidgets.QGroupBox, LogSource):
             self.runBtn.setEnabled(True)
             self.cancelBtn.setEnabled(False)
             self.sig_postrun.emit()
-            
+
     def _view_log(self):
         self.logview.show()
         self.logview.raise_()

@@ -27,7 +27,7 @@ from quantiphyse.data.qpdata import DataGrid, Metadata
 from quantiphyse.utils.enums import Orientation, DisplayOrder, Visibility, Boundary
 
 from .pickers import PICKERS, PointPicker
-from .slice_viewer import OrthoSliceViewer
+from .ortho_slice_viewer import OrthoSliceViewer
 from .histogram_widget import HistogramWidget, CurrentDataHistogramWidget
 from .view_params_widget import ViewParamsWidget
 from .navigators import NavigationBox
@@ -356,13 +356,14 @@ class Viewer(QtWidgets.QSplitter, LogSource):
             self.ortho_views[win2].setVisible(False)
             self.ortho_views[win].setVisible(True)
         elif state == 0 or (state == -1 and not self.ortho_views[win1].isVisible()):
-            # Show all three
+            # Show all three. Need to redraw previously hidden views as data, focus
+            # etc may have changed while they were hidden
             self.layout_grid.addWidget(self.ortho_views[1], 0, 0)
             self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
             self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
             for oview in range(3):
                 self.ortho_views[oview].setVisible(True)
-                self.ortho_views[oview].update()
+                self.ortho_views[oview].redraw()
 
     def _main_data_changed(self, data):
         if data is not None:
