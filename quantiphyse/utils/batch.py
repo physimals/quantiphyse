@@ -336,6 +336,14 @@ class Script(Process):
                                                  ifnone(generic_params.get("InputId", ""), ""),
                                                  ifnone(generic_params.get("InputSubFolder", ""), "")))
             
+            # Basic variable substitution, this is very crude but allows process arguments that are files to express
+            # them relative to the input/output folders
+            for subst_key, subst_value in {"indir" : indir, "outdir" : outdir}.items():
+                subst_key = "${%s}" % subst_key.upper()
+                for k, v in list(proc_params.items()):
+                    if isinstance(v, str) and subst_key in v:
+                        proc_params[k] = v.replace(subst_key, subst_value)
+
             proc_id = proc_params.pop("id")
             process = proc_params.pop("__impl")(self._current_ivm, indir=indir, outdir=outdir, proc_id=proc_id)
             
