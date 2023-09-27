@@ -110,7 +110,13 @@ each case and the output saved in separate subdirectories of the output folder::
         Subj0003:
             InputFolder:   c:\mydata\0003
 
-Here we have three cases with input data stored in three separate folders. 
+Here we have three cases with input data stored in three separate folders.
+
+It is common for the input folder for a subject to take the form: ``<base input folder>/<case ID>``.
+This can be setting ``InputFolder: <base input folder>`` and ``InputUseCaseId: True`` in the defaults section - if this is set, then the case ID
+is appended to the generic base input folder to form the subject-specific input folder. ``InputSubFolder`` can also be used - for example if 
+``InputSubFolder: qpinput`` is set in the defaults section in addition to the above, input files will be loaded from
+``<base input colder>/<case ID>/<qpinput>``.
 
 Output
 ------
@@ -137,6 +143,13 @@ subdirectory. In the above example we would expect the following output structur
     out/Subj0003/mean_c2.nii
     out/Subj0003/mask.nii
     out/Subj0003/Fabber.log
+
+The option ``OutputSubFolder`` can also be specified - this relative path will be appended to the case ID
+when generating the output folder. For example with ``OutputSubFolder: qpout`` a sample output file for the 
+example above would be ``out/Subj0001/qpout/mri.nii``. The use of the case ID in the output folder can 
+also be overridden by setting the parameter ``OutputId`` to be something other than the case ID. It is
+important however that each case is output in a different folder otherwise similarly named files will
+overwrite one another.
 
 Overriding processing options within a case
 -------------------------------------------
