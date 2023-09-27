@@ -158,21 +158,19 @@ class SaveArtifactsProcess(Process):
         Process.__init__(self, ivm, **kwargs)
 
     def run(self, options):
+        format = options.pop("output-format", {})
         for name in list(options.keys()):
-            fname = options.pop(name)
-            if not fname: fname = name
             if name in self.ivm.extras: 
+                fname = options.pop(name)
+                if not fname: fname = name
+                if "." not in fname: fname = "%s.%s" % (fname, "txt")
+                if not os.path.isabs(fname):
+                    fname = os.path.join(self.outdir, fname)
+                dirname = os.path.dirname(fname)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
                 self.debug("Saving '%s' to %s" % (name, fname))
-                self._save_text(str(self.ivm.extras[name]), fname)
+                with open(fname, "w") as f:
+                    self.ivm.extras[name].serialize(f, **format)
             else:
                 self.warn("Extra '%s' not found - not saving" % name)
-
-    def _save_text(self, text, fname, ext="txt"):
-        if text:
-            if "." not in fname: fname = "%s.%s" % (fname, ext)
-            if not os.path.isabs(fname):
-                fname = os.path.join(self.outdir, fname)
-            dirname = os.path.dirname(fname)
-            if not os.path.exists(dirname): os.makedirs(dirname)
-            with open(fname, "w") as text_file:
-                text_file.write(text)

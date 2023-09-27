@@ -23,7 +23,10 @@ class Extra(object):
     Base class for things which can be stored in the IVM apart from data sets.
 
     Essentially the only thing an Extra needs to be able to do is be written
-    out as a string. We force subclasses to override this.
+    out as a string by implementing __str__
+
+    Alternatively an Extra can override the serialize() method which allows
+    formatting options to be taken account of.
 
     We also provide a metadata dictionary - ideally extras should write their
     metadata in __str__ but in practice this may not be possible when we want
@@ -44,8 +47,9 @@ class Extra(object):
         self.name = name
         self.metadata = {}
 
-    def __str__(self):
-        raise NotImplementedError("Subclasses of Extra must implement __str__")
+    def serialize(self, f, **format):
+        text = str(self)
+        f.write(text)
 
 class NumberListExtra(Extra):
     """
@@ -62,11 +66,9 @@ class NumberListExtra(Extra):
         [float(v) for v in values]
         self.values = values
 
-    def __str__(self):
-        """
-        Output as simple space-separated list
-        """
-        return " ".join([str(v) for v in self.values])
+    def serialize(self, f, **format):
+        sep = format.get("sep", " ")
+        f.write(sep.join([str(v) for v in self.values]))
 
 class MatrixExtra(Extra):
     """
