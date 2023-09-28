@@ -123,16 +123,22 @@ class ResampleDataWidgetTest(WidgetTest):
         self.assertTrue(self.ivm.data["data_3d_res"].grid.matches(hires_grid))
         data_res = self.ivm.data["data_3d_res"].raw()
         
-        X = range(self.data_3d.shape[0])
-        Y = range(self.data_3d.shape[1])
-        Z = range(self.data_3d.shape[2])
-        
+        # Pad low-res data with zeros to match interpolation method in qpdata
+        # FIXME are we sure this is the right approach? It takes points outside the 
+        # data array to be zero and extrapolates to that using whatever method (linear, etc)
+        # is in use
+        data_3d_pad = np.pad(self.data_3d, 1)
+
+        X = range(data_3d_pad.shape[0])
+        Y = range(data_3d_pad.shape[1])
+        Z = range(data_3d_pad.shape[2])
+
         for x in range(data_res.shape[0]):
             for y in range(data_res.shape[1]):
                 for z in range(data_res.shape[2]):
-                    gx, gy, gz = float(x)/2, float(y)/2, float(z)/2
+                    gx, gy, gz = 1+float(x)/2, 1+float(y)/2, 1+float(z)/2
                     from scipy.interpolate import interpn
-                    d = interpn((X, Y, Z), self.data_3d, (gx, gy, gz), method="linear", bounds_error=False, fill_value=0)
+                    d = interpn((X, Y, Z), data_3d_pad, (gx, gy, gz), method="linear", bounds_error=False, fill_value=None)
                     self.assertAlmostEqual(data_res[x, y, z], d[0])
 
     def testDownsample3d(self):
