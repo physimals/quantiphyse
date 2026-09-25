@@ -140,17 +140,22 @@ class DataStatisticsProcess(Process):
         uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])
         return uq-lq
 
+    def iqdata(self, arr):
+        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])
+        arr_iq = arr[arr <= uq]
+        arr_iq = arr_iq[arr_iq >= lq]
+        if len(arr_iq) == 0:
+            return arr
+        return arr_iq
+
     def iqn(self, arr):
-        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])   
-        arr = arr[arr < uq]
-        arr = arr[arr > lq]
-        return np.count_nonzero(~np.isnan(arr))
+        return np.count_nonzero(~np.isnan(self.iqdata(arr)))
 
     def iqmean(self, arr):
-        uq, lq = np.nanquantile(self._sample(arr), [0.75, 0.25])   
-        arr = arr[arr < uq]
-        arr = arr[arr > lq]
-        return np.nanmean(arr)
+        return np.nanmean(self.iqdata(arr))
+
+    def iqstd(self, arr):
+        return np.nanstd(self.iqdata(arr))
 
     def fwhm(self, arr):
         """
@@ -177,6 +182,7 @@ class DataStatisticsProcess(Process):
             "skewness" : self.skew,
             "kurtosis" : self.kurtosis,
             "iqmean" : self.iqmean,
+            "iqstd" : self.iqstd,
             "n" : self.n,
             "iqn" : self.iqn,
         }
@@ -186,6 +192,7 @@ class DataStatisticsProcess(Process):
             "uq" : "Upper quartile",
             "iqr" : "IQR",
             "iqmean" : "Interquartile mean",
+            "iqstd" : "Interquartile STD",
             "iqn" : "Interquartile N",
             "mode" : "Mode estimate",
             "fwhm" : "FWHM estimate",
