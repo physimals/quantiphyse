@@ -816,6 +816,7 @@ class QpData(object):
         # Affine transformation matrix from current grid to new grid
         tmatrix = np.dot(np.linalg.inv(grid.affine), self.grid.affine)
         reorder, flip, tmatrix = self.grid.simplify_transforms(tmatrix)
+        LOG.debug("Simplified: reorder %s, flip %s" % (reorder, flip))
 
         # Perform the flips and transpositions which simplify the transformation and
         # may avoid the need for an affine transformation, or make it a simple scaling
@@ -846,12 +847,13 @@ class QpData(object):
             if is_diagonal(affine):
                 # The transformation is diagonal, so use faster sequence mode
                 affine = np.diagonal(affine)
-            #print("WARNING: affine_transform: ")
-            #print(affine)
+            LOG.debug("WARNING: affine_transform: ")
+            LOG.debug(affine)
             #offset = [o if o >1e-3 else 0 for o in offset]
-            #print("Offset = ", offset)
-            #print("Input shape=", data.shape, data.min(), data.max())
-            #print("Output shape=", output_shape)
+            LOG.debug("Offset = %s" % offset)
+            LOG.debug("Input shape=%s %f %f" % (data.shape, data.min(), data.max()))
+            LOG.debug("Output shape=%s" % output_shape)
+            LOG.debug("Order=%s" % order)
             data = scipy.ndimage.affine_transform(data, affine, offset=offset,
                                                   output_shape=output_shape, order=order, mode='grid-constant')
 
