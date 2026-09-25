@@ -129,7 +129,9 @@ class FileList(QtWidgets.QTreeView):
         self._extensions = extensions
         self.model = MyFileSystemModel(extensions)
         self.model.checkStateChanged.connect(self._changed)
-        self.setModel(self.model)
+        self._proxy = QtCore.QSortFilterProxyModel()
+        self._proxy.setSourceModel(self.model)
+        self.setModel(self._proxy)
         self.setSortingEnabled(True)
         self.header().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
 
