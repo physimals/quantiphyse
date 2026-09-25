@@ -248,6 +248,7 @@ class Script(Process):
         # Cases can be expressed as list or dict
         self._cases = []
         yaml_cases = root.pop("Cases", [])
+        self.debug(yaml_cases)
         if isinstance(yaml_cases, dict):
             for case_id in sorted(yaml_cases.keys()):
                 self._cases.append(Case(str(case_id), yaml_cases[case_id]))
