@@ -67,6 +67,9 @@ class SliceDataView(LogSource):
         ]
         self._img = MaskableImage()
         self._contours = []
+        # Set if the data could not be drawn - the view is then hidden rather
+        # than raising an exception on every redraw
+        self._failed = False
         self._viewbox.addItem(self._img)
         self._lut = get_lut(self._view.cmap, self._view.alpha)
         self.update()
@@ -115,7 +118,7 @@ class SliceDataView(LogSource):
         Update the image without re-slicing the data
         """
         self.debug("visible? %s", self._view.visible)
-        self._img.setVisible(self._view.visible == Visibility.SHOW and (not self._qpdata.roi or bool(self._view.shade)))
+        self._img.setVisible(not self._failed and self._view.visible == Visibility.SHOW and (not self._qpdata.roi or bool(self._view.shade)))
         self._img.set_boundary_mode(self._view.boundary)
         self._img.setLookupTable(self._lut, update=True)
         self._img.setLevels(self._view.cmap_range)
@@ -129,6 +132,19 @@ class SliceDataView(LogSource):
         This is more expensive than just changing image parameters so it
         is only triggered when required
         """
+        if self._failed:
+            return
+
+        try:
+            self._redraw(interp_order)
+        except Exception:
+            self.logger.exception("Failed to draw %s - hiding it in this view", self._qpdata.name)
+            self._failed = True
+            self._img.setVisible(False)
+            for contour in self._contours:
+                contour.setData(None)
+
+    def _redraw(self, interp_order):
         self.debug("slicedataview: redrawing image")
         self.debug(self._vol)
         self.debug("%s, %s", self._plane.basis, self._plane.normal)

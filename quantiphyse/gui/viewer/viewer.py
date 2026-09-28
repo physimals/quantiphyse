@@ -372,6 +372,23 @@ class Viewer(QtWidgets.QSplitter, LogSource):
             self.volume_view.setVisible(True)
 
     def _main_data_changed(self, data):
+        try:
+            self._set_main_data(data)
+        except Exception as exc:
+            # Remove data the viewer cannot display, rather than leaving it in the IVM
+            # where it would cause errors on every redraw. The removal is deferred
+            # because we are inside the IVM's main data signal
+            self.logger.exception("Failed to display main data")
+            msg = str(exc)
+            QtCore.QTimer.singleShot(0, lambda: self._remove_bad_data(data, msg))
+
+    def _remove_bad_data(self, data, msg):
+        if data.name in self.ivm.data and self.ivm.data[data.name] is data:
+            self.ivm.delete(data.name)
+        QtWidgets.QMessageBox.warning(self, "Unable to display data",
+                                      "%s could not be displayed and has been removed:\n\n%s" % (data.name, msg))
+
+    def _set_main_data(self, data):
         if data is not None:
             self._grid = data.grid.get_standard()
             self.debug("Main data raw grid")

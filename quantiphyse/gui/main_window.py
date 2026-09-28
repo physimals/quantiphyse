@@ -19,6 +19,7 @@ limitations under the License.
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 import os
+import logging
 
 import numpy as np
 
@@ -27,11 +28,13 @@ from PySide2 import QtGui, QtCore, QtWidgets
 import pyqtgraph.console
 
 from quantiphyse.data import load, save, ImageVolumeManagement
-from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help
+from quantiphyse.utils import set_default_save_dir, default_save_dir, get_icon, get_local_file, get_version, get_plugins, local_file_from_drop_url, show_help, QpException
 from quantiphyse import __contrib__, __acknowledge__
 
 from .widgets import FingerTabWidget
 from .viewer.viewer import Viewer
+
+LOG = logging.getLogger(__name__)
 
 class DragOptions(QtWidgets.QDialog):
     """
@@ -431,6 +434,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Data is not loaded at this point, however basic metadata is so we can tailor the
         # options we offer
         data = load(fname)
+        if not self._check_grid(data, interactive=True): return
 
         # If we have apparently 3d data then we have the 'advanced' option of treating the
         # third dimension as time - some broken NIFTI files require this.
@@ -463,9 +467,39 @@ class MainWindow(QtWidgets.QMainWindow):
         loading.
         """
         qpdata = load(fname)
+        self._check_grid(qpdata, interactive=False)
         name = self.ivm.suggest_name(os.path.split(fname)[1].split(".", 1)[0])
         qpdata.name = name
         self.ivm.add(qpdata)
+
+    def _check_grid(self, data, interactive):
+        """
+        Check the grid of newly loaded data and offer to replace an invalid affine
+        with one based on the voxel sizes only. When not interactive the replacement
+        is made with a logged warning
+
+        :return: False if the user chose not to load the data
+        """
+        try:
+            data.grid.validate()
+            return True
+        except QpException as exc:
+            if not hasattr(data, "use_voxel_grid"):
+                raise
+
+            if interactive:
+                answer = QtWidgets.QMessageBox.question(
+                    self, "Invalid orientation",
+                    "%s\n\n%s\n\nLoad using voxel sizes only (orientation will be ignored)?" % (data.fname, exc),
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+                if answer != QtWidgets.QMessageBox.Yes:
+                    return False
+            else:
+                LOG.warning("%s: %s - using voxel sizes only, orientation will be ignored", data.fname, exc)
+
+            data.use_voxel_grid()
+            data.grid.validate()
+            return True
 
     def save_data(self):
         """
@@ -480,7 +514,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 fname = os.path.join(default_save_dir(), self.ivm.current_data.name + ".nii")
 
             fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
-                                                         filter="NIFTI files (*.nii *.nii.gz)")
+                                                         filter="NIFTI files (*.nii *.nii.gz);;Freesurfer files (*.mgz *.mgh)")
             if fname != '':
                 save(self.ivm.current_data, fname)
             else: # Cancelled
@@ -498,7 +532,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 fname = os.path.join(default_save_dir(), self.ivm.current_roi.name + ".nii")
             fname, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file', dir=fname,
-                                                         filter="NIFTI files (*.nii *.nii.gz)")
+                                                         filter="NIFTI files (*.nii *.nii.gz);;Freesurfer files (*.mgz *.mgh)")
             if fname != '':
                 save(self.ivm.current_roi, fname)
             else: # Cancelled

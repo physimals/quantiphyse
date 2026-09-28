@@ -674,20 +674,30 @@ class VolumeViewer(QtWidgets.QWidget, LogSource):
         if all(key in self._cache for key in needed) and self._grid is not None:
             return
 
-        self._grid = None
-        if self._ivm.main is not None:
-            self._grid = render_grid(self._ivl.grid)
-            for key in needed:
-                if key not in self._cache:
-                    # Overlays use the opacity of the ortho views so that they are
-                    # opaque at 100% alpha, rather than the background's opacity ramp
-                    self._cache[key] = composite_rgba(self._ivm, self._ivl, self._grid, int(self._vol),
-                                                      slice_style=(key != "background"),
-                                                      which=COMPOSITE_LAYERS[key])
+        try:
+            self._grid = None
+            if self._ivm.main is not None:
+                self._grid = render_grid(self._ivl.grid)
+                for key in needed:
+                    if key not in self._cache:
+                        # Overlays use the opacity of the ortho views so that they are
+                        # opaque at 100% alpha, rather than the background's opacity ramp
+                        self._cache[key] = composite_rgba(self._ivm, self._ivl, self._grid, int(self._vol),
+                                                          slice_style=(key != "background"),
+                                                          which=COMPOSITE_LAYERS[key])
 
-        if self._grid is not None:
-            self._view.set_focus(self._grid_focus(self._ivl.focus()))
-        self._view.set_data(self._grid, **self._cache)
+            if self._grid is not None:
+                self._view.set_focus(self._grid_focus(self._ivl.focus()))
+            self._view.set_data(self._grid, **self._cache)
+            self._message.setVisible(False)
+        except Exception as exc:
+            # Show an empty view rather than raising an exception on every update
+            self.logger.exception("Failed to render 3D view")
+            self._grid = None
+            self._cache = {}
+            self._view.set_data(None)
+            self._show_message("Could not render 3D view: %s" % exc)
+            return
         has_data = any(rgba is not None for rgba in self._cache.values())
         if has_data and self._reset_camera:
             self._view.reset_camera()
