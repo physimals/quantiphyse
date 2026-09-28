@@ -158,6 +158,10 @@ class ImageVolumeManagement(QtCore.QObject):
 
         self._valid_name(data.name)
 
+        # Reject data the viewers cannot display before it is added, otherwise
+        # every redraw of the viewers raises an exception
+        data.validate()
+
         # If replacing existing data, delete the old one first
         if data.name in self.data:
             if self.current_data is not None and self.current_data.name == data.name:

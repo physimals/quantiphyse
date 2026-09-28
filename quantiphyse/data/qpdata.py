@@ -168,6 +168,29 @@ class DataGrid(object):
             nvoxels *= self._shape[dim]
         return nvoxels
 
+    def validate(self):
+        """
+        Check that the grid is usable by the viewers, e.g. that the affine
+        is finite and invertible. Only the grid geometry is checked - no
+        voxel data is required
+
+        :raises QpException: if the grid is not valid
+        """
+        if any(int(dim) < 1 for dim in self._shape):
+            raise QpException("Invalid grid shape: %s" % list(self._shape))
+        if not np.all(np.isfinite(self._affine)):
+            raise QpException("Affine contains NaN or infinite values")
+        if not np.allclose(self._affine[3], [0, 0, 0, 1]):
+            raise QpException("Affine bottom row is not [0, 0, 0, 1]")
+        spacing = self.spacing
+        if not all(np.isfinite(space) and space > 0 for space in spacing):
+            raise QpException("Invalid voxel spacing: %s" % spacing)
+        if abs(np.linalg.det(self.transform)) < 1e-9 or np.linalg.cond(self.transform) > 1e6:
+            raise QpException("Affine is singular or ill-conditioned")
+        world_axes = [np.argmax(np.abs(self.transform[:, axis])) for axis in range(3)]
+        if sorted(world_axes) != [0, 1, 2]:
+            raise QpException("Grid axes cannot be matched to RAS axes (oblique or degenerate affine)")
+
     def reset(self):
         """ Reset to original orientation """
         self.affine = self._affine_orig
@@ -486,6 +509,20 @@ class QpData(object):
 
         if view is not None:
             self.view.update(view)
+
+    def validate(self):
+        """
+        Check that the data is usable by the viewers. Only header information
+        (grid and number of volumes) is checked, the voxel data is not loaded
+
+        :raises QpException: if the data is not valid
+        """
+        try:
+            self.grid.validate()
+        except QpException as exc:
+            raise QpException("%s: %s" % (self.name, exc))
+        if self.nvols < 1:
+            raise QpException("%s: Data has no volumes" % self.name)
 
     @property
     def metadata(self):

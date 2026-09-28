@@ -34,7 +34,7 @@ def load(fname):
     """
     if os.path.isdir(fname):
         return DicomFolder(fname)
-    elif fname.endswith(".nii") or fname.endswith(".nii.gz"):
+    elif fname.endswith((".nii", ".nii.gz", ".mgz", ".mgh")):
         return NiftiData(fname)
     else:
         raise QpException("%s: Unrecognized file type" % fname)

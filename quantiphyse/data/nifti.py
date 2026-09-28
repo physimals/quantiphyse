@@ -24,6 +24,7 @@ import traceback
 import nibabel as nib
 import numpy as np
 
+from quantiphyse.utils import QpException
 from .qpdata import DataGrid, QpData, NumpyData, Metadata
 
 LOG = logging.getLogger(__name__)
@@ -32,11 +33,21 @@ QP_NIFTI_EXTENSION_CODE = 42
 
 class NiftiData(QpData):
     """
-    QpData from a Nifti file
+    QpData from a Nifti file, or a Freesurfer MGH/MGZ file
     """
     def __init__(self, fname):
         nii = nib.load(fname)
+        if isinstance(nii, nib.MGHImage):
+            # Convert to a Nifti header so the rest of the code (and saving)
+            # can treat it as Nifti. The voxel data is not loaded by this.
+            # MGH spatial units are always mm and the TR is in ms
+            nii = nib.Nifti1Image.from_image(nii)
+            nii.header.set_xyzt_units("mm", "msec")
         shape = list(nii.shape)
+        if len(shape) > 4:
+            raise QpException("%s: Data has more than 4 dimensions: %s" % (fname, shape))
+        if nii.get_data_dtype().kind not in "biuf":
+            raise QpException("%s: Unsupported data type: %s" % (fname, nii.get_data_dtype()))
         while len(shape) < 3:
             shape.append(1)
 
@@ -81,8 +92,17 @@ class NiftiData(QpData):
         if zooms and len(zooms) > 3:
             vol_scale = zooms[3]
 
+        self._voxel_sizes = list(zooms[:3]) + [1.0] * (3 - len(zooms[:3]))
         grid = DataGrid(shape[:3], nii.header.get_best_affine(), units=xyz_units)
         QpData.__init__(self, fname, grid, nvols, vol_unit=vol_units, vol_scale=vol_scale, fname=fname, metadata=metadata)
+
+    def use_voxel_grid(self):
+        """
+        Replace the grid with one based only on the voxel sizes, ignoring the
+        orientation in the file. Used as a fallback when the affine is invalid
+        """
+        sizes = [float(size) if np.isfinite(size) and size > 0 else 1.0 for size in self._voxel_sizes]
+        self.grid = DataGrid(self.grid.shape, np.diag(sizes + [1.0]), units=self.grid.units)
 
     def raw(self):
         # NB: copy() converts data to an in-memory array instead of a numpy file memmap.
@@ -174,5 +194,6 @@ def save(data, fname, grid=None, outdir=""):
         os.makedirs(dirname)
 
     LOG.debug("Saving %s as %s", data.name, fname)
-    img.to_filename(fname)
+    # nib.save converts to the format given by the extension, e.g. MGH for .mgz
+    nib.save(img, fname)
     data.fname = fname
