@@ -31,6 +31,7 @@ from .slice_viewer import OrthoSliceViewer
 from .histogram_widget import HistogramWidget, CurrentDataHistogramWidget
 from .view_params_widget import ViewParamsWidget
 from .navigators import NavigationBox
+from .volume_viewer import VolumeViewer
 
 DEFAULT_MAIN_VIEW = {
     "visible" : Visibility.SHOW,
@@ -163,6 +164,9 @@ class Viewer(QtWidgets.QSplitter, LogSource):
         # Histogram which controls colour map and levels for the current data
         self.data_histogram = CurrentDataHistogramWidget(self)
 
+        # 3D view of the same data, only set up when the user enables it
+        self.volume_view = VolumeViewer(self, self.ivm)
+
         # Layout of the ortho slice viewers and histograms
         gview = QtWidgets.QWidget()
         self.layout_grid = QtWidgets.QGridLayout()
@@ -174,6 +178,7 @@ class Viewer(QtWidgets.QSplitter, LogSource):
         self.layout_grid.addWidget(self.ortho_views[1], 0, 0,)
         self.layout_grid.addWidget(self.ortho_views[0], 0, 1)
         self.layout_grid.addWidget(self.ortho_views[2], 1, 0)
+        self.layout_grid.addWidget(self.volume_view, 1, 1)
         self.layout_grid.addWidget(self.main_histogram, 0, 2)
         self.layout_grid.addWidget(self.data_histogram, 1, 2)
         self.layout_grid.setColumnStretch(0, 3)
@@ -354,6 +359,7 @@ class Viewer(QtWidgets.QSplitter, LogSource):
             self.layout_grid.addWidget(self.ortho_views[win], 0, 0, 2, 2)
             self.ortho_views[win1].setVisible(False)
             self.ortho_views[win2].setVisible(False)
+            self.volume_view.setVisible(False)
             self.ortho_views[win].setVisible(True)
         elif state == 0 or (state == -1 and not self.ortho_views[win1].isVisible()):
             # Show all three
@@ -363,6 +369,7 @@ class Viewer(QtWidgets.QSplitter, LogSource):
             for oview in range(3):
                 self.ortho_views[oview].setVisible(True)
                 self.ortho_views[oview].update()
+            self.volume_view.setVisible(True)
 
     def _main_data_changed(self, data):
         if data is not None:

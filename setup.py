@@ -112,6 +112,8 @@ kwargs = {
     'author_email' : 'martin.craig@eng.ox.ac.uk',
     'license' : 'Apache-2.0',
     'install_requires' : get_requirements(module_dir),
+    # Optional 3D volume view in the viewer
+    'extras_require' : {"3d" : ["vtk"]},
     'packages' : find_packages(),
     'entry_points' : {
         'gui_scripts': ['quantiphyse = quantiphyse.qpmain:main'],
