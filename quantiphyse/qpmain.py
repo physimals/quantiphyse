@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
 import sys
 import warnings
 if "--debug" not in sys.argv:
@@ -29,15 +30,15 @@ import logging
 
 from PySide2 import QtGui, QtCore, QtWidgets
 
-# This is a workaround for a bug in either tensorflow or pyside which causes
-# a crash if tensorflow is imported after any GUI element has been shown on
-# screen. So we import it here if possible which avoids the crash. We don't
-# depend on tensorflow for the main app (only some plugins) so don't worry
-# if it's not there
-try:
-    import tensorflow
-except ImportError:
-    pass
+# Workaround for a bug in either tensorflow or pyside which caused a crash on
+# CentOS 7 if tensorflow was imported after any GUI element had been shown on
+# screen. Importing tensorflow is slow and only some plugins use it, so this is
+# only done if QP_PRELOAD_TENSORFLOW=1 is set, for systems that still need it
+if os.environ.get("QP_PRELOAD_TENSORFLOW", "0") == "1":
+    try:
+        import tensorflow
+    except ImportError:
+        pass
 
 from quantiphyse.test import run_tests
 
